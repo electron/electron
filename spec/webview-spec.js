@@ -996,6 +996,26 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('context-menu event', () => {
+    it('emits when right-clicked in page', async () => {
+      await loadWebView(webview, { src: 'about:blank' });
+
+      const promise = waitForEvent(webview, 'context-menu');
+
+      // Simulate right-click to create context-menu event.
+      const opts = { x: 0, y: 0, button: 'right' };
+      webview.sendInputEvent({ ...opts, type: 'mouseDown' });
+      webview.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const { params } = await promise;
+
+      expect(params.pageURL).to.equal(webview.getURL());
+      expect(params.frame).to.be.undefined();
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
+    });
+  });
+
   describe('media-started-playing media-paused events', () => {
     beforeEach(function () {
       if (!document.createElement('audio').canPlayType('audio/wav')) {

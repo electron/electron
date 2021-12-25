@@ -84,7 +84,7 @@ bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
   // Check if we can write to the applications directory
   // and then make sure that if the app already exists we can overwrite it
   bool needAuthorization =
-      ![fileManager isWritableFileAtPath:applicationsDirectory] |
+      ![fileManager isWritableFileAtPath:applicationsDirectory] ||
       ([fileManager fileExistsAtPath:destinationPath] &&
        ![fileManager isWritableFileAtPath:destinationPath]);
 

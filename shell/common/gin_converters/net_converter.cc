@@ -317,18 +317,16 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
   *out = base::MakeRefCounted<network::ResourceRequestBody>();
-  for (size_t i = 0; i < list->GetSize(); ++i) {
+  for (size_t i = 0; i < list->GetList().size(); ++i) {
     base::DictionaryValue* dict = nullptr;
     std::string type;
     if (!list->GetDictionary(i, &dict))
       return false;
     dict->GetString("type", &type);
     if (type == "rawData") {
-      base::Value* bytes = nullptr;
-      dict->GetBinary("bytes", &bytes);
-      (*out)->AppendBytes(
-          reinterpret_cast<const char*>(bytes->GetBlob().data()),
-          base::checked_cast<int>(bytes->GetBlob().size()));
+      const base::Value::BlobStorage* bytes = dict->FindBlobKey("bytes");
+      (*out)->AppendBytes(reinterpret_cast<const char*>(bytes->data()),
+                          base::checked_cast<int>(bytes->size()));
     } else if (type == "file") {
       const std::string* file = dict->FindStringKey("filePath");
       if (file == nullptr) {
@@ -336,9 +334,12 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
       }
       int offset = 0, length = -1;
       double modification_time = 0.0;
+      absl::optional<double> maybe_modification_time =
+          dict->FindDoubleKey("modificationTime");
+      if (maybe_modification_time.has_value())
+        modification_time = maybe_modification_time.value();
       dict->GetInteger("offset", &offset);
       dict->GetInteger("file", &length);
-      dict->GetDouble("modificationTime", &modification_time);
       (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(*file),
                               static_cast<uint64_t>(offset),
                               static_cast<uint64_t>(length),

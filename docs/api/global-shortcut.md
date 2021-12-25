@@ -47,7 +47,7 @@ The `globalShortcut` module has the following methods:
 * `accelerator` [Accelerator](accelerator.md)
 * `callback` Function
 
-Returns `Boolean` - Whether or not the shortcut was registered successfully.
+Returns `boolean` - Whether or not the shortcut was registered successfully.
 
 Registers a global shortcut of `accelerator`. The `callback` is called when
 the registered shortcut is pressed by the user.
@@ -66,7 +66,7 @@ the app has been authorized as a [trusted accessibility client](https://develope
 
 ### `globalShortcut.registerAll(accelerators, callback)`
 
-* `accelerators` String[] - an array of [Accelerator](accelerator.md)s.
+* `accelerators` string[] - an array of [Accelerator](accelerator.md)s.
 * `callback` Function
 
 Registers a global shortcut of all `accelerator` items in `accelerators`. The `callback` is called when any of the registered shortcuts are pressed by the user.
@@ -87,7 +87,7 @@ the app has been authorized as a [trusted accessibility client](https://develope
 
 * `accelerator` [Accelerator](accelerator.md)
 
-Returns `Boolean` - Whether this application has registered `accelerator`.
+Returns `boolean` - Whether this application has registered `accelerator`.
 
 When the accelerator is already taken by other applications, this call will
 still return `false`. This behavior is intended by operating systems, since they

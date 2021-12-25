@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
-#define SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
 
 #include <string>
 
@@ -41,6 +41,10 @@ class Cookies : public gin::Wrappable<Cookies>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  Cookies(const Cookies&) = delete;
+  Cookies& operator=(const Cookies&) = delete;
+
  protected:
   Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Cookies() override;
@@ -62,12 +66,10 @@ class Cookies : public gin::Wrappable<Cookies>,
 
   // Weak reference; ElectronBrowserContext is guaranteed to outlive us.
   ElectronBrowserContext* browser_context_;
-
-  DISALLOW_COPY_AND_ASSIGN(Cookies);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_

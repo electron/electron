@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901420cf7a9
+index 0000000000000000000000000000000000000000..d0641c5cbc3c527ce7a73d12118fb42db325be01
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,401 @@
+@@ -0,0 +1,393 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -75,20 +75,12 @@ index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901
 +  ]
 +}
 +
-+action("generate_config_gypi") {
-+  outputs = [
-+    "$target_gen_dir/config.gypi",
-+  ]
-+  script = "tools/generate_config_gypi.py"
-+  args = rebase_path(outputs, root_build_dir)
-+}
-+
 +chdir_action("node_js2c") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +    ":node_js2c_inputs",
 +  ]
-+  config_gypi = [ "$target_gen_dir/config.gypi" ]
++  config_gypi = [ "$root_gen_dir/config.gypi" ]
 +  inputs = library_files + config_gypi
 +  outputs = [
 +    "$target_gen_dir/node_javascript.cc",
@@ -360,10 +352,10 @@ index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901
 +
 +copy("node_gypi_headers") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +  ]
 +  sources = [
-+    "$target_gen_dir/config.gypi",
++    "$root_gen_dir/config.gypi",
 +    "common.gypi",
 +  ]
 +  outputs = [
@@ -414,19 +406,16 @@ index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf44f6009f4
+index 0000000000000000000000000000000000000000..71a37834f4e693c190eb7e7d04e3f5ce67c487ad
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,134 @@
 +config("cares_config") {
 +  include_dirs = [ "include", "src/lib" ]
 +}
 +static_library("cares") {
 +  defines = [ "CARES_STATICLIB" ]
-+  include_dirs = [
-+    "include",
-+    "src/lib",
-+  ]
++  include_dirs = [ "include" ]
 +  public_configs = [ ":cares_config" ]
 +
 +  libs = []
@@ -439,8 +428,11 @@ index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf4
 +  sources = [
 +    "include/ares.h",
 +    "include/ares_dns.h",
++    "include/ares_nameser.h",
 +    "include/ares_rules.h",
 +    "include/ares_version.h",
++    "src/lib/ares__addrinfo2hostent.c",
++    "src/lib/ares__addrinfo_localhost.c",
 +    "src/lib/ares_android.c",
 +    "src/lib/ares_cancel.c",
 +    "src/lib/ares__close_sockets.c",
@@ -483,6 +475,7 @@ index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf4
 +    "src/lib/ares_parse_soa_reply.c",
 +    "src/lib/ares_parse_srv_reply.c",
 +    "src/lib/ares_parse_txt_reply.c",
++    "src/lib/ares_parse_uri_reply.c",
 +    "src/lib/ares_platform.h",
 +    "src/lib/ares_private.h",
 +    "src/lib/ares_process.c",
@@ -669,7 +662,7 @@ index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32b730b1c2
+index 0000000000000000000000000000000000000000..8bfecba74d4d90e9fbf0e2cd301118e4adc6cba8
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
 @@ -0,0 +1,49 @@
@@ -694,6 +687,7 @@ index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32
 +    "-Wno-implicit-fallthrough",
 +    "-Wno-string-plus-int",
 +    "-Wno-unreachable-code-return",
++    "-Wno-unused-but-set-variable",
 +  ]
 +
 +  sources = [
@@ -706,7 +700,6 @@ index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32
 +    "lib/nghttp2_hd_huffman_data.c",
 +    "lib/nghttp2_helper.c",
 +    "lib/nghttp2_http.c",
-+    "lib/nghttp2_ksl.c",
 +    "lib/nghttp2_map.c",
 +    "lib/nghttp2_mem.c",
 +    "lib/nghttp2_npn.c",
@@ -724,10 +717,10 @@ index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..b7002dfebb68199511b63a650c734d3493ccce48
+index 0000000000000000000000000000000000000000..b8deb68cebcf5ac9b831201332edf8c509a7d4c8
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,195 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -776,6 +769,7 @@ index 0000000000000000000000000000000000000000..b7002dfebb68199511b63a650c734d34
 +    "-Wno-unused-variable",
 +    "-Wno-unreachable-code",
 +    "-Wno-unreachable-code-return",
++    "-Wno-unused-but-set-variable",
 +  ]
 +
 +  libs = []
@@ -968,10 +962,10 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..5804390a6185cbc5eac85af592eb0f40632d82ff
+index 0000000000000000000000000000000000000000..e2aec71226f25645b188c2c6d8f89478a4b06ae5
 --- /dev/null
 +++ b/filenames.json
-@@ -0,0 +1,549 @@
+@@ -0,0 +1,603 @@
 +// This file is automatically generated by generate_gn_filenames_json.py
 +// DO NOT EDIT
 +{
@@ -991,10 +985,63 @@ index 0000000000000000000000000000000000000000..5804390a6185cbc5eac85af592eb0f40
 +    {
 +      "dest_dir": "include/node//",
 +      "files": [
++        "//v8/include/v8-array-buffer.h",
++        "//v8/include/v8-callbacks.h",
++        "//v8/include/v8-container.h",
++        "//v8/include/v8-context.h",
++        "//v8/include/v8-cppgc.h",
++        "//v8/include/v8-data.h",
++        "//v8/include/v8-date.h",
++        "//v8/include/v8-debug.h",
++        "//v8/include/v8-embedder-heap.h",
++        "//v8/include/v8-exception.h",
++        "//v8/include/v8-extension.h",
++        "//v8/include/v8-external.h",
++        "//v8/include/v8-fast-api-calls.h",
++        "//v8/include/v8-forward.h",
++        "//v8/include/v8-function-callback.h",
++        "//v8/include/v8-function.h",
++        "//v8/include/v8-initialization.h",
++        "//v8/include/v8-inspector-protocol.h",
++        "//v8/include/v8-inspector.h",
 +        "//v8/include/v8-internal.h",
++        "//v8/include/v8-isolate.h",
++        "//v8/include/v8-json.h",
++        "//v8/include/v8-local-handle.h",
++        "//v8/include/v8-locker.h",
++        "//v8/include/v8-maybe.h",
++        "//v8/include/v8-memory-span.h",
++        "//v8/include/v8-message.h",
++        "//v8/include/v8-metrics.h",
++        "//v8/include/v8-microtask-queue.h",
++        "//v8/include/v8-microtask.h",
++        "//v8/include/v8-object.h",
++        "//v8/include/v8-persistent-handle.h",
 +        "//v8/include/v8-platform.h",
++        "//v8/include/v8-primitive-object.h",
++        "//v8/include/v8-primitive.h",
 +        "//v8/include/v8-profiler.h",
++        "//v8/include/v8-promise.h",
++        "//v8/include/v8-proxy.h",
++        "//v8/include/v8-regexp.h",
++        "//v8/include/v8-script.h",
++        "//v8/include/v8-snapshot.h",
++        "//v8/include/v8-statistics.h",
++        "//v8/include/v8-template.h",
++        "//v8/include/v8-traced-handle.h",
++        "//v8/include/v8-typed-array.h",
++        "//v8/include/v8-unwinder-state.h",
++        "//v8/include/v8-unwinder.h",
++        "//v8/include/v8-util.h",
++        "//v8/include/v8-value-serializer-version.h",
++        "//v8/include/v8-value-serializer.h",
++        "//v8/include/v8-value.h",
++        "//v8/include/v8-version-string.h",
 +        "//v8/include/v8-version.h",
++        "//v8/include/v8-wasm-trap-handler-posix.h",
++        "//v8/include/v8-wasm-trap-handler-win.h",
++        "//v8/include/v8-wasm.h",
++        "//v8/include/v8-weak-callback-info.h",
 +        "//v8/include/v8.h",
 +        "//v8/include/v8config.h"
 +      ]
@@ -1197,6 +1244,7 @@ index 0000000000000000000000000000000000000000..5804390a6185cbc5eac85af592eb0f40
 +    "lib/internal/util/inspect.js",
 +    "lib/internal/util/iterable_weak_map.js",
 +    "lib/internal/streams/add-abort-signal.js",
++    "lib/internal/streams/compose.js",
 +    "lib/internal/streams/duplexify.js",
 +    "lib/internal/streams/destroy.js",
 +    "lib/internal/streams/legacy.js",
@@ -1253,9 +1301,9 @@ index 0000000000000000000000000000000000000000..5804390a6185cbc5eac85af592eb0f40
 +    "lib/internal/modules/esm/translators.js",
 +    "lib/internal/modules/esm/resolve.js",
 +    "lib/internal/modules/esm/create_dynamic_module.js",
++    "lib/internal/modules/esm/load.js",
 +    "lib/internal/modules/esm/module_map.js",
 +    "lib/internal/modules/esm/get_format.js",
-+    "lib/internal/modules/esm/transform_source.js",
 +    "lib/internal/modules/esm/loader.js",
 +    "lib/internal/modules/cjs/helpers.js",
 +    "lib/internal/modules/cjs/loader.js",
@@ -1727,7 +1775,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index fc09960e70b4999635889615f584588ed1ca76d5..9b4de7c6015a700206c331c0c083e4aec200c939 100644
+index e46385fd509a4852e3e2ded064fd2b84d95921a4..fa098c7bf3aaa08c060ea014b7a96b719fea6abf 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1741,23 +1789,6 @@ index fc09960e70b4999635889615f584588ed1ca76d5..9b4de7c6015a700206c331c0c083e4ae
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
  // which the Node binary being built supports.
-diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f0011353caa
---- /dev/null
-+++ b/tools/generate_config_gypi.py
-@@ -0,0 +1,11 @@
-+# TODO: assess which if any of the config variables are important to include in
-+# the js2c'd config.gypi.
-+import sys
-+
-+def main(args):
-+  out = args[0]
-+  with open(out, 'w') as f:
-+    f.write("{'variables':{}}\n")
-+
-+if __name__ == '__main__':
-+  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
 index 0000000000000000000000000000000000000000..8f884a41f57630ac432eb85ebfc9b8bc82cddaca
@@ -1871,10 +1902,10 @@ index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2e
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 24cf51e73199e60b4c24700e1074fe9bd0a399e6..3cbf4f45fabec1a26e0edebb18fb589fbecfbe68 100755
+index 41cc1cbc60a9480cc08df3aa0ebe582c2becc3a2..1256a61024e27506ae14405abc37d0a11f83fc64 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -159,17 +159,18 @@ def files(action):
+@@ -170,17 +170,71 @@ def files(action):
  def headers(action):
    def wanted_v8_headers(files_arg, dest):
      v8_headers = [
@@ -1892,18 +1923,71 @@ index 24cf51e73199e60b4c24700e1074fe9bd0a399e6..3cbf4f45fabec1a26e0edebb18fb589f
 +      '../../v8/include/libplatform/libplatform.h',
 +      '../../v8/include/libplatform/libplatform-export.h',
 +      '../../v8/include/libplatform/v8-tracing.h',
-+      '../../v8/include/v8.h',
++      '../../v8/include/v8-array-buffer.h',
++      '../../v8/include/v8-callbacks.h',
++      '../../v8/include/v8-container.h',
++      '../../v8/include/v8-context.h',
++      '../../v8/include/v8-cppgc.h',
++      '../../v8/include/v8-data.h',
++      '../../v8/include/v8-date.h',
++      '../../v8/include/v8-debug.h',
++      '../../v8/include/v8-embedder-heap.h',
++      '../../v8/include/v8-exception.h',
++      '../../v8/include/v8-extension.h',
++      '../../v8/include/v8-external.h',
++      '../../v8/include/v8-fast-api-calls.h',
++      '../../v8/include/v8-forward.h',
++      '../../v8/include/v8-function-callback.h',
++      '../../v8/include/v8-function.h',
++      '../../v8/include/v8-initialization.h',
++      '../../v8/include/v8-inspector-protocol.h',
++      '../../v8/include/v8-inspector.h',
 +      '../../v8/include/v8-internal.h',
++      '../../v8/include/v8-isolate.h',
++      '../../v8/include/v8-json.h',
++      '../../v8/include/v8-local-handle.h',
++      '../../v8/include/v8-locker.h',
++      '../../v8/include/v8-maybe.h',
++      '../../v8/include/v8-memory-span.h',
++      '../../v8/include/v8-message.h',
++      '../../v8/include/v8-metrics.h',
++      '../../v8/include/v8-microtask-queue.h',
++      '../../v8/include/v8-microtask.h',
++      '../../v8/include/v8-object.h',
++      '../../v8/include/v8-persistent-handle.h',
 +      '../../v8/include/v8-platform.h',
++      '../../v8/include/v8-primitive-object.h',
++      '../../v8/include/v8-primitive.h',
 +      '../../v8/include/v8-profiler.h',
++      '../../v8/include/v8-promise.h',
++      '../../v8/include/v8-proxy.h',
++      '../../v8/include/v8-regexp.h',
++      '../../v8/include/v8-script.h',
++      '../../v8/include/v8-snapshot.h',
++      '../../v8/include/v8-statistics.h',
++      '../../v8/include/v8-template.h',
++      '../../v8/include/v8-traced-handle.h',
++      '../../v8/include/v8-typed-array.h',
++      '../../v8/include/v8-unwinder-state.h',
++      '../../v8/include/v8-unwinder.h',
++      '../../v8/include/v8-util.h',
++      '../../v8/include/v8-value-serializer-version.h',
++      '../../v8/include/v8-value-serializer.h',
++      '../../v8/include/v8-value.h',
++      '../../v8/include/v8-version-string.h',
 +      '../../v8/include/v8-version.h',
-+      '../../v8/include/v8config.h',
++      '../../v8/include/v8-wasm-trap-handler-posix.h',
++      '../../v8/include/v8-wasm-trap-handler-win.h',
++      '../../v8/include/v8-wasm.h',
++      '../../v8/include/v8-weak-callback-info.h',
++      '../../v8/include/v8.h',
++      '../../v8/include/v8config.h'
      ]
 +    v8_headers = [h.replace('deps/', '../../') for h in v8_headers]
      files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
  
-@@ -190,7 +191,7 @@ def headers(action):
+@@ -201,7 +255,7 @@ def headers(action):
    if sys.platform.startswith('aix'):
      action(['out/Release/node.exp'], 'include/node/')
  

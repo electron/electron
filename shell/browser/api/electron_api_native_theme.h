@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
-#define SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -26,6 +26,10 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
+
+  // disable copy
+  NativeTheme(const NativeTheme&) = delete;
+  NativeTheme& operator=(const NativeTheme&) = delete;
 
  protected:
   NativeTheme(v8::Isolate* isolate,
@@ -50,8 +54,6 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
  private:
   ui::NativeTheme* ui_theme_;
   ui::NativeTheme* web_theme_;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeTheme);
 };
 
 }  // namespace api
@@ -71,4 +73,4 @@ struct Converter<ui::NativeTheme::ThemeSource> {
 
 }  // namespace gin
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_

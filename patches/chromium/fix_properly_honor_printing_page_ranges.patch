@@ -10,7 +10,7 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 0fb5c91b8abcdd7e674251bafebfc2c51044ef77..8c134bae25afeb0dbbb6e33182f053bb34e2f978 100644
+index 7fde07c789c35d103174020f590e177eefbe6f2b..07f10be994fcf7d7845f6c297e17f86f27cc4fe9 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
 @@ -83,6 +83,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
@@ -25,10 +25,10 @@ index 0fb5c91b8abcdd7e674251bafebfc2c51044ef77..8c134bae25afeb0dbbb6e33182f053bb
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 9f80fe6f10515849dd02d580db9852e6fbbbaa30..67f5b76a8141857ba02abd806341f06b07a4ebdc 100644
+index dd9bb775164ad483cf7cc26be150da0abba2433f..3704d75b9b25e4b8205736666cb8496225672df5 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -190,7 +190,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -192,7 +192,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index 9f80fe6f10515849dd02d580db9852e6fbbbaa30..67f5b76a8141857ba02abd806341f06b
        return OnError();
      }
    }
-@@ -343,6 +344,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -345,6 +346,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
@@ -62,10 +62,10 @@ index 9f80fe6f10515849dd02d580db9852e6fbbbaa30..67f5b76a8141857ba02abd806341f06b
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index 891e9574625bfbaf2a00eeeb54a20834a2a5fa21..4f47ad753c7593c83fdfd832a9d4a53d2094becf 100644
+index acb040f998546b0e01be45c28c505bbafcf2c141..1083db84804e5ed8b420d3e8e3da372ff15ec2cf 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
-@@ -53,14 +53,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+@@ -54,14 +54,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
    PRINTPAGERANGE ranges[32];
    dialog_options.nStartPage = START_PAGE_GENERAL;
    if (max_pages) {
@@ -100,10 +100,10 @@ index 891e9574625bfbaf2a00eeeb54a20834a2a5fa21..4f47ad753c7593c83fdfd832a9d4a53d
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 62108f0eb91fd04235d29a5e010aa600f76f8288..0e21b30dbe3f6daca9dce6d2b89b063c13d044ee 100644
+index aca31e17a90f95d6a4616fec5b33ce55cd136af0..e340cfae256797b7683fad8b32776a95889a8f46 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
-@@ -238,6 +238,24 @@ void PrintDialogGtk::UpdateSettings(
+@@ -240,6 +240,24 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());

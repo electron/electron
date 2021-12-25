@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NATIVE_WINDOW_H_
-#define SHELL_BROWSER_NATIVE_WINDOW_H_
+#ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_
+#define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_
 
 #include <list>
 #include <memory>
@@ -56,6 +56,10 @@ class NativeWindow : public base::SupportsUserData,
                      public views::WidgetDelegate {
  public:
   ~NativeWindow() override;
+
+  // disable copy
+  NativeWindow(const NativeWindow&) = delete;
+  NativeWindow& operator=(const NativeWindow&) = delete;
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
@@ -412,8 +416,6 @@ class NativeWindow : public base::SupportsUserData,
   gfx::Rect overlay_rect_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
 
 // This class provides a hook to get a NativeWindow from a WebContents.
@@ -438,4 +440,4 @@ class NativeWindowRelay
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NATIVE_WINDOW_H_
+#endif  // ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_

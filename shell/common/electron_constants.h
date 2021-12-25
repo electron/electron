@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_ELECTRON_CONSTANTS_H_
-#define SHELL_COMMON_ELECTRON_CONSTANTS_H_
+#ifndef ELECTRON_SHELL_COMMON_ELECTRON_CONSTANTS_H_
+#define ELECTRON_SHELL_COMMON_ELECTRON_CONSTANTS_H_
 
 #include "base/files/file_path.h"
 #include "build/build_config.h"
@@ -37,4 +37,4 @@ extern const base::FilePath::CharType kPdfPluginPath[];
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_ELECTRON_CONSTANTS_H_
+#endif  // ELECTRON_SHELL_COMMON_ELECTRON_CONSTANTS_H_

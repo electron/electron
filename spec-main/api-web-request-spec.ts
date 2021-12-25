@@ -354,7 +354,7 @@ describe('webRequest module', () => {
 
     it('does not change content-disposition header by default', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
-        expect(details.responseHeaders!['content-disposition']).to.deep.equal([' attachment; filename=aa中aa.txt']);
+        expect(details.responseHeaders!['content-disposition']).to.deep.equal([' attachment; filename="aa中aa.txt"']);
         callback({});
       });
       const { data, headers } = await ajax(defaultURL + 'contentDisposition');

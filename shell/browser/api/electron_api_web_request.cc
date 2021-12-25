@@ -26,6 +26,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace gin {
 
@@ -132,8 +133,10 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
         net::HttpContentDisposition header(value, std::string());
         std::string decodedFilename =
             header.is_attachment() ? " attachment" : " inline";
-        decodedFilename += "; filename=" + header.filename();
-        value = decodedFilename;
+        // The filename must be encased in double quotes for serialization
+        // to happen correctly.
+        std::string filename = "\"" + header.filename() + "\"";
+        value = decodedFilename + "; filename=" + filename;
       }
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
@@ -144,7 +147,8 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
 }
 
 // Overloaded by multiple types to fill the |details| object.
-void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
+void ToDictionary(gin_helper::Dictionary* details,
+                  extensions::WebRequestInfo* info) {
   details->Set("id", info->id);
   details->Set("url", info->url);
   details->Set("method", info->method);
@@ -163,7 +167,7 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   auto* render_frame_host =
       content::RenderFrameHost::FromID(info->render_process_id, info->frame_id);
   if (render_frame_host) {
-    details->Set("frame", render_frame_host);
+    details->SetGetter("frame", render_frame_host);
     auto* web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
     auto* api_web_contents = WebContents::From(web_contents);
@@ -174,34 +178,34 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   }
 }
 
-void ToDictionary(gin::Dictionary* details,
+void ToDictionary(gin_helper::Dictionary* details,
                   const network::ResourceRequest& request) {
   details->Set("referrer", request.referrer);
   if (request.request_body)
     details->Set("uploadData", *request.request_body);
 }
 
-void ToDictionary(gin::Dictionary* details,
+void ToDictionary(gin_helper::Dictionary* details,
                   const net::HttpRequestHeaders& headers) {
   details->Set("requestHeaders", headers);
 }
 
-void ToDictionary(gin::Dictionary* details, const GURL& location) {
+void ToDictionary(gin_helper::Dictionary* details, const GURL& location) {
   details->Set("redirectURL", location);
 }
 
-void ToDictionary(gin::Dictionary* details, int net_error) {
+void ToDictionary(gin_helper::Dictionary* details, int net_error) {
   details->Set("error", net::ErrorToString(net_error));
 }
 
 // Helper function to fill |details| with arbitrary |args|.
 template <typename Arg>
-void FillDetails(gin::Dictionary* details, Arg arg) {
+void FillDetails(gin_helper::Dictionary* details, Arg arg) {
   ToDictionary(details, arg);
 }
 
 template <typename Arg, typename... Args>
-void FillDetails(gin::Dictionary* details, Arg arg, Args... args) {
+void FillDetails(gin_helper::Dictionary* details, Arg arg, Args... args) {
   ToDictionary(details, arg);
   FillDetails(details, args...);
 }
@@ -446,7 +450,7 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin::Dictionary details(isolate, v8::Object::New(isolate));
+  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
   info.listener.Run(gin::ConvertToV8(isolate, details));
 }
@@ -469,7 +473,7 @@ int WebRequest::HandleResponseEvent(ResponseEvent event,
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin::Dictionary details(isolate, v8::Object::New(isolate));
+  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
 
   ResponseCallback response =

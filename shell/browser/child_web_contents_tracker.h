@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_
-#define SHELL_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_
+#ifndef ELECTRON_SHELL_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_
+#define ELECTRON_SHELL_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_
 
 #include <string>
 
@@ -17,6 +17,10 @@ struct ChildWebContentsTracker
     : public content::WebContentsUserData<ChildWebContentsTracker> {
   ~ChildWebContentsTracker() override;
 
+  // disable copy
+  ChildWebContentsTracker(const ChildWebContentsTracker&) = delete;
+  ChildWebContentsTracker& operator=(const ChildWebContentsTracker&) = delete;
+
   GURL url;
   std::string frame_name;
   content::Referrer referrer;
@@ -28,10 +32,8 @@ struct ChildWebContentsTracker
   friend class content::WebContentsUserData<ChildWebContentsTracker>;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(ChildWebContentsTracker);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_
+#endif  // ELECTRON_SHELL_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_

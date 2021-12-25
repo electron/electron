@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_VIEW_MANAGER_H_
-#define SHELL_BROWSER_WEB_VIEW_MANAGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEB_VIEW_MANAGER_H_
+#define ELECTRON_SHELL_BROWSER_WEB_VIEW_MANAGER_H_
 
 #include <map>
 
@@ -15,6 +15,10 @@ class WebViewManager : public content::BrowserPluginGuestManager {
  public:
   WebViewManager();
   ~WebViewManager() override;
+
+  // disable copy
+  WebViewManager(const WebViewManager&) = delete;
+  WebViewManager& operator=(const WebViewManager&) = delete;
 
   void AddGuest(int guest_instance_id,
                 content::WebContents* embedder,
@@ -34,10 +38,8 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   };
   // guest_instance_id => (web_contents, embedder)
   std::map<int, WebContentsWithEmbedder> web_contents_embedder_map_;
-
-  DISALLOW_COPY_AND_ASSIGN(WebViewManager);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_VIEW_MANAGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_VIEW_MANAGER_H_

@@ -5,6 +5,7 @@
 #include <gmodule.h>
 
 #include <memory>
+#include <string>
 
 #include "base/callback.h"
 #include "base/files/file_util.h"
@@ -131,24 +132,25 @@ class FileChooserDialog {
       : parent_(
             static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    const char* confirm_text = gtk_util::kOkLabel;
-
-    if (!settings.button_label.empty())
-      confirm_text = settings.button_label.c_str();
-    else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      confirm_text = gtk_util::kSaveLabel;
-    else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
-      confirm_text = gtk_util::kOpenLabel;
-
     InitGtkFileChooserNativeSupport();
 
+    auto label = settings.button_label;
+
     if (*supports_gtk_file_chooser_native) {
-      dialog_ = GTK_FILE_CHOOSER(
-          dl_gtk_file_chooser_native_new(settings.title.c_str(), NULL, action,
-                                         confirm_text, gtk_util::kCancelLabel));
+      dialog_ = GTK_FILE_CHOOSER(dl_gtk_file_chooser_native_new(
+          settings.title.c_str(), NULL, action,
+          label.empty() ? nullptr : label.c_str(), nullptr));
     } else {
+      const char* confirm_text = gtk_util::GetOkLabel();
+      if (!label.empty())
+        confirm_text = label.c_str();
+      else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+        confirm_text = gtk_util::GetSaveLabel();
+      else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
+        confirm_text = gtk_util::GetOpenLabel();
+
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_dialog_new(
-          settings.title.c_str(), NULL, action, gtk_util::kCancelLabel,
+          settings.title.c_str(), NULL, action, gtk_util::GetCancelLabel(),
           GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL));
     }
 
@@ -211,6 +213,10 @@ class FileChooserDialog {
       parent_->SetEnabled(true);
   }
 
+  // disable copy
+  FileChooserDialog(const FileChooserDialog&) = delete;
+  FileChooserDialog& operator=(const FileChooserDialog&) = delete;
+
   void SetupOpenProperties(int properties) {
     const auto hasProp = [properties](OpenFileDialogProperty prop) {
       return gboolean((properties & prop) != 0);
@@ -242,13 +248,11 @@ class FileChooserDialog {
       gtk_widget_show_all(GTK_WIDGET(dialog_));
 
 #if defined(USE_X11)
-      if (!features::IsUsingOzonePlatform()) {
-        // We need to call gtk_window_present after making the widgets visible
-        // to make sure window gets correctly raised and gets focus.
-        x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
-        gtk_window_present_with_time(GTK_WINDOW(dialog_),
-                                     static_cast<uint32_t>(time));
-      }
+      // We need to call gtk_window_present after making the widgets visible
+      // to make sure window gets correctly raised and gets focus.
+      x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
+      gtk_window_present_with_time(GTK_WINDOW(dialog_),
+                                   static_cast<uint32_t>(time));
 #endif
     }
   }
@@ -311,8 +315,6 @@ class FileChooserDialog {
 
   // Callback for when we update the preview for the selection.
   CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
-
-  DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
@@ -367,6 +369,20 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
   }
 }
 
+bool CanPreview(const struct stat& st) {
+  // Only preview regular files; pipes may hang.
+  // See https://crbug.com/534754.
+  if (!S_ISREG(st.st_mode)) {
+    return false;
+  }
+
+  // Don't preview huge files; they may crash.
+  // https://github.com/electron/electron/issues/31630
+  // Setting an arbitrary filesize max t at 100 MB here.
+  constexpr off_t ArbitraryMax = 100000000ULL;
+  return st.st_size < ArbitraryMax;
+}
+
 void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
   CHECK(!*supports_gtk_file_chooser_native);
   gchar* filename = gtk_file_chooser_get_preview_filename(chooser);
@@ -375,10 +391,8 @@ void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
     return;
   }
 
-  // Don't attempt to open anything which isn't a regular file. If a named
-  // pipe, this may hang. See https://crbug.com/534754.
-  struct stat stat_buf;
-  if (stat(filename, &stat_buf) != 0 || !S_ISREG(stat_buf.st_mode)) {
+  struct stat sb;
+  if (stat(filename, &sb) != 0 || !CanPreview(sb)) {
     g_free(filename);
     gtk_file_chooser_set_preview_widget_active(chooser, FALSE);
     return;
@@ -398,9 +412,8 @@ void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
 }  // namespace
 
 void ShowFileDialog(const FileChooserDialog& dialog) {
-  if (*supports_gtk_file_chooser_native) {
-    dl_gtk_native_dialog_show(static_cast<void*>(dialog.dialog()));
-  } else {
+  // gtk_native_dialog_run() will call gtk_native_dialog_show() for us.
+  if (!*supports_gtk_file_chooser_native) {
     gtk_widget_show_all(GTK_WIDGET(dialog.dialog()));
   }
 }

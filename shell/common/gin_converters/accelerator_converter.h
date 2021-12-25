@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_ACCELERATOR_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_ACCELERATOR_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_ACCELERATOR_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_ACCELERATOR_CONVERTER_H_
 
 #include "gin/converter.h"
 
@@ -22,4 +22,4 @@ struct Converter<ui::Accelerator> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_ACCELERATOR_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_ACCELERATOR_CONVERTER_H_

@@ -20,8 +20,8 @@
 //   console.log("Notification dismissed")
 // };
 
-#ifndef SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
-#define SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
+#ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
+#define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
 
 #include "base/files/scoped_temp_dir.h"
 #include "shell/browser/notifications/notification_presenter.h"
@@ -45,10 +45,8 @@ class NotificationPresenterWin : public NotificationPresenter {
       NotificationDelegate* delegate) override;
 
   base::ScopedTempDir temp_dir_;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
+#endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_

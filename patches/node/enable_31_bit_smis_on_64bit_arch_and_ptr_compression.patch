@@ -8,7 +8,7 @@ node modules will have different (wrong) ideas about how v8 structs are laid
 out in memory on 64-bit machines, and will summarily fail to work.
 
 diff --git a/common.gypi b/common.gypi
-index f1f921f92ed4d504f2cf41bded1821def565c9a3..9525a6639f084136ed25c9b1790a00a461f24b11 100644
+index 4b6a965f65b9ad711507e4dd7ade4d54d52277cc..9e4064b263819756f17fb712a54bd6f828c5be35 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -64,7 +64,7 @@
@@ -20,9 +20,9 @@ index f1f921f92ed4d504f2cf41bded1821def565c9a3..9525a6639f084136ed25c9b1790a00a4
  
      # Disable V8 untrusted code mitigations.
      # See https://github.com/v8/v8/wiki/Untrusted-code-mitigations
-@@ -125,6 +125,9 @@
-         'obj_dir%': '<(PRODUCT_DIR)/obj.target',
-         'v8_base': '<(PRODUCT_DIR)/libv8_snapshot.a',
+@@ -130,6 +130,9 @@
+         'v8_enable_pointer_compression': 0,
+         'v8_enable_31bit_smis_on_64bit_arch': 0,
        }],
 +      ['target_arch == "arm64" or target_arch == "x64"', {
 +        'v8_enable_pointer_compression': 1,

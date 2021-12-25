@@ -6,8 +6,8 @@
 // this code
 // and released it as MIT to the world.
 
-#ifndef SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
-#define SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
+#ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
+#define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
 
 #include <windows.h>
 #include <windows.ui.notifications.h>
@@ -106,8 +106,6 @@ class WindowsToastNotification : public Notification {
   ComPtr<ToastEventHandler> event_handler_;
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
       toast_notification_;
-
-  DISALLOW_COPY_AND_ASSIGN(WindowsToastNotification);
 };
 
 class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
@@ -117,6 +115,10 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
  public:
   explicit ToastEventHandler(Notification* notification);
   ~ToastEventHandler() override;
+
+  // disable copy
+  ToastEventHandler(const ToastEventHandler&) = delete;
+  ToastEventHandler& operator=(const ToastEventHandler&) = delete;
 
   IFACEMETHODIMP Invoke(
       ABI::Windows::UI::Notifications::IToastNotification* sender,
@@ -130,10 +132,8 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
 
  private:
   base::WeakPtr<Notification> notification_;  // weak ref.
-
-  DISALLOW_COPY_AND_ASSIGN(ToastEventHandler);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_
+#endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WINDOWS_TOAST_NOTIFICATION_H_

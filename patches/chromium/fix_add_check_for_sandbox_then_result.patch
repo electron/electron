@@ -8,10 +8,10 @@ patch and doing further investigation in the future.  This patch cannot
 be upstreamed.
 
 diff --git a/sandbox/linux/bpf_dsl/bpf_dsl.cc b/sandbox/linux/bpf_dsl/bpf_dsl.cc
-index 846dc7a83d12be57cb91bd0a7f9e698990776684..1c3dba162b8eb4af28c78e84b5553447e4f1c76a 100644
+index 15dc1427dd1b021512edca74c6aacf2f9efec8c5..bca164d9d8bd65e717a1549ff7a31bf057717da2 100644
 --- a/sandbox/linux/bpf_dsl/bpf_dsl.cc
 +++ b/sandbox/linux/bpf_dsl/bpf_dsl.cc
-@@ -305,6 +305,7 @@ Elser::~Elser() {
+@@ -320,6 +320,7 @@ Elser::~Elser() {
  }
  
  Elser Elser::ElseIf(BoolExpr cond, ResultExpr then_result) const {

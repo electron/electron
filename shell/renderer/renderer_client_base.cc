@@ -71,7 +71,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/renderer/print_render_frame_helper.h"
-#include "printing/print_settings.h"  // nogncheck
+#include "printing/metafile_agent.h"  // nogncheck
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
@@ -82,7 +82,6 @@
 #include "extensions/common/extensions_client.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
-#include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/electron_extensions_client.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
@@ -525,7 +524,6 @@ void RendererClientBase::SetupMainWorldOverrides(
   isolated_api.SetMethod("allowGuestViewElementDefinition",
                          &AllowGuestViewElementDefinition);
   isolated_api.SetMethod("setIsWebView", &SetIsWebView);
-  isolated_api.SetMethod("createNativeImage", &api::NativeImage::CreateEmpty);
 
   auto source_context = GetContext(render_frame->GetWebFrame(), isolate);
   gin_helper::Dictionary global(isolate, source_context->Global());

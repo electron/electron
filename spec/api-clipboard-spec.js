@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const path = require('path');
 const { Buffer } = require('buffer');
-const { ifdescribe } = require('./spec-helpers');
+const { ifdescribe, ifit } = require('./spec-helpers');
 
 const { clipboard, nativeImage } = require('electron');
 
@@ -30,7 +30,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
   describe('clipboard.readHTML()', () => {
     it('returns markup correctly', () => {
       const text = '<string>Hi</string>';
-      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><string>Hi</string>' : '<string>Hi</string>';
+      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : '<string>Hi</string>';
       clipboard.writeHTML(text);
       expect(clipboard.readHTML()).to.equal(markup);
     });
@@ -44,19 +44,15 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
   });
 
-  describe('clipboard.readBookmark', () => {
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform !== 'linux')('clipboard.readBookmark', () => {
     it('returns title and url', () => {
       clipboard.writeBookmark('a title', 'https://electronjs.org');
-      expect(clipboard.readBookmark()).to.deep.equal({
-        title: 'a title',
-        url: 'https://electronjs.org'
-      });
+
+      const readBookmark = clipboard.readBookmark();
+      if (process.platform !== 'win32') {
+        expect(readBookmark.title).to.equal('a title');
+      }
+      expect(clipboard.readBookmark().url).to.equal('https://electronjs.org');
 
       clipboard.writeText('no bookmark');
       expect(clipboard.readBookmark()).to.deep.equal({
@@ -66,13 +62,29 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
   });
 
+  describe('clipboard.read()', () => {
+    ifit(process.platform !== 'linux')('does not crash when reading various custom clipboard types', () => {
+      const type = process.platform === 'darwin' ? 'NSFilenamesPboardType' : 'FileNameW';
+
+      expect(() => {
+        const result = clipboard.read(type);
+      }).to.not.throw();
+    });
+    it('can read data written with writeBuffer', () => {
+      const testText = 'Testing read';
+      const buffer = Buffer.from(testText, 'utf8');
+      clipboard.writeBuffer('public/utf8-plain-text', buffer);
+      expect(clipboard.read('public/utf8-plain-text')).to.equal(testText);
+    });
+  });
+
   describe('clipboard.write()', () => {
     it('returns data correctly', () => {
       const text = 'test';
       const rtf = '{\\rtf1\\utf8 text}';
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
-      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>';
+      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : '<b>Hi</b>';
       const bookmark = { title: 'a title', url: 'test' };
       clipboard.write({
         text: 'test',
@@ -89,18 +101,16 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       expect(readImage.toDataURL()).to.equal(i.toDataURL());
 
       if (process.platform !== 'linux') {
-        expect(clipboard.readBookmark()).to.deep.equal(bookmark);
+        if (process.platform !== 'win32') {
+          expect(clipboard.readBookmark()).to.deep.equal(bookmark);
+        } else {
+          expect(clipboard.readBookmark().url).to.equal(bookmark.url);
+        }
       }
     });
   });
 
-  describe('clipboard.read/writeFindText(text)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'darwin')('clipboard.read/writeFindText(text)', () => {
     it('reads and write text to the find pasteboard', () => {
       clipboard.writeFindText('find this');
       expect(clipboard.readFindText()).to.equal('find this');
@@ -118,6 +128,17 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       expect(() => {
         clipboard.writeBuffer('public/utf8-plain-text', 'hello');
       }).to.throw(/buffer must be a node Buffer/);
+    });
+
+    ifit(process.platform !== 'win32')('writes a Buffer using a raw format that is used by native apps', function () {
+      const message = 'Hello from Electron!';
+      const buffer = Buffer.from(message);
+      let rawFormat = 'text/plain';
+      if (process.platform === 'darwin') {
+        rawFormat = 'public.utf8-plain-text';
+      }
+      clipboard.writeBuffer(rawFormat, buffer);
+      expect(clipboard.readText()).to.equal(message);
     });
   });
 });

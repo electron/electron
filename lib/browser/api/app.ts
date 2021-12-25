@@ -39,7 +39,8 @@ Object.assign(app, {
     hasSwitch: (theSwitch: string) => commandLine.hasSwitch(String(theSwitch)),
     getSwitchValue: (theSwitch: string) => commandLine.getSwitchValue(String(theSwitch)),
     appendSwitch: (theSwitch: string, value?: string) => commandLine.appendSwitch(String(theSwitch), typeof value === 'undefined' ? value : String(value)),
-    appendArgument: (arg: string) => commandLine.appendArgument(String(arg))
+    appendArgument: (arg: string) => commandLine.appendArgument(String(arg)),
+    removeSwitch: (theSwitch: string) => commandLine.removeSwitch(String(theSwitch))
   } as Electron.CommandLine
 });
 

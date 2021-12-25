@@ -47,19 +47,19 @@ The following methods are available on instances of `WebRequest`:
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
     * `response` Object
-      * `cancel` Boolean (optional)
-      * `redirectURL` String (optional) - The original request is prevented from
+      * `cancel` boolean (optional)
+      * `redirectURL` string (optional) - The original request is prevented from
         being sent or completed and is instead redirected to the given URL.
 
 The `listener` will be called with `listener(details, callback)` when a request
@@ -90,18 +90,18 @@ Some examples of valid `urls`:
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `requestHeaders` Record<string, string>
   * `callback` Function
     * `beforeSendResponse` Object
-      * `cancel` Boolean (optional)
+      * `cancel` boolean (optional)
       * `requestHeaders` Record<string, string | string[]> (optional) - When provided, request will be made
   with these headers.
 
@@ -117,13 +117,13 @@ The `callback` has to be called with a `response` object.
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `requestHeaders` Record<string, string>
 
@@ -137,23 +137,23 @@ response are visible by the time this listener is fired.
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
-    * `statusLine` String
+    * `statusLine` string
     * `statusCode` Integer
     * `responseHeaders` Record<string, string[]> (optional)
   * `callback` Function
     * `headersReceivedResponse` Object
-      * `cancel` Boolean (optional)
+      * `cancel` boolean (optional)
       * `responseHeaders` Record<string, string | string[]> (optional) - When provided, the server is assumed
         to have responded with these headers.
-      * `statusLine` String (optional) - Should be provided when overriding
+      * `statusLine` string (optional) - Should be provided when overriding
         `responseHeaders` to change header status otherwise original response
         header's status will be used.
 
@@ -168,19 +168,19 @@ The `callback` has to be called with a `response` object.
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `responseHeaders` Record<string, string[]> (optional)
-    * `fromCache` Boolean - Indicates whether the response was fetched from disk
+    * `fromCache` boolean - Indicates whether the response was fetched from disk
       cache.
     * `statusCode` Integer
-    * `statusLine` String
+    * `statusLine` string
 
 The `listener` will be called with `listener(details)` when first byte of the
 response body is received. For HTTP requests, this means that the status line
@@ -192,20 +192,20 @@ and response headers are available.
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
-    * `redirectURL` String
+    * `redirectURL` string
     * `statusCode` Integer
-    * `statusLine` String
-    * `ip` String (optional) - The server IP address that the request was
+    * `statusLine` string
+    * `ip` string (optional) - The server IP address that the request was
       actually sent to.
-    * `fromCache` Boolean
+    * `fromCache` boolean
     * `responseHeaders` Record<string, string[]> (optional)
 
 The `listener` will be called with `listener(details)` when a server initiated
@@ -217,19 +217,19 @@ redirect is about to occur.
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `responseHeaders` Record<string, string[]> (optional)
-    * `fromCache` Boolean
+    * `fromCache` boolean
     * `statusCode` Integer
-    * `statusLine` String
-    * `error` String
+    * `statusLine` string
+    * `error` string
 
 The `listener` will be called with `listener(details)` when a request is
 completed.
@@ -240,15 +240,15 @@ completed.
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
-    * `fromCache` Boolean
-    * `error` String - The error description.
+    * `fromCache` boolean
+    * `error` string - The error description.
 
 The `listener` will be called with `listener(details)` when an error occurs.

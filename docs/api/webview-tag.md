@@ -101,7 +101,7 @@ The `webview` tag has the following attributes:
 <webview src="https://www.github.com/"></webview>
 ```
 
-A `String` representing the visible URL. Writing to this attribute initiates top-level
+A `string` representing the visible URL. Writing to this attribute initiates top-level
 navigation.
 
 Assigning `src` its own value will reload the current page.
@@ -115,7 +115,7 @@ The `src` attribute can also accept data URLs, such as
 <webview src="http://www.google.com/" nodeintegration></webview>
 ```
 
-A `Boolean`. When this attribute is present the guest page in `webview` will have node
+A `boolean`. When this attribute is present the guest page in `webview` will have node
 integration and can use node APIs like `require` and `process` to access low
 level system resources. Node integration is disabled by default in the guest
 page.
@@ -126,7 +126,7 @@ page.
 <webview src="http://www.google.com/" nodeintegrationinsubframes></webview>
 ```
 
-A `Boolean` for the experimental option for enabling NodeJS support in sub-frames such as iframes
+A `boolean` for the experimental option for enabling NodeJS support in sub-frames such as iframes
 inside the `webview`. All your preloads will load for every iframe, you can
 use `process.isMainFrame` to determine if you are in the main frame or not.
 This option is disabled by default in the guest page.
@@ -137,18 +137,22 @@ This option is disabled by default in the guest page.
 <webview src="https://www.github.com/" plugins></webview>
 ```
 
-A `Boolean`. When this attribute is present the guest page in `webview` will be able to use
+A `boolean`. When this attribute is present the guest page in `webview` will be able to use
 browser plugins. Plugins are disabled by default.
 
 ### `preload`
 
 ```html
+<!-- from a file -->
 <webview src="https://www.github.com/" preload="./test.js"></webview>
+<!-- or if you want to load from an asar archive -->
+<webview src="https://www.github.com/" preload="./app.asar/test.js"></webview>
 ```
 
-A `String` that specifies a script that will be loaded before other scripts run in the guest
-page. The protocol of script's URL must be either `file:` or `asar:`, because it
-will be loaded by `require` in guest page under the hood.
+A `string` that specifies a script that will be loaded before other scripts run in the guest
+page. The protocol of script's URL must be `file:` (even when using `asar:` archives) because
+it will be loaded by Node's `require` under the hood, which treats `asar:` archives as virtual
+directories.
 
 When the guest page doesn't have node integration this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
@@ -163,7 +167,7 @@ the `webPreferences` specified to the `will-attach-webview` event.
 <webview src="https://www.github.com/" httpreferrer="http://cheng.guru"></webview>
 ```
 
-A `String` that sets the referrer URL for the guest page.
+A `string` that sets the referrer URL for the guest page.
 
 ### `useragent`
 
@@ -171,7 +175,7 @@ A `String` that sets the referrer URL for the guest page.
 <webview src="https://www.github.com/" useragent="Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko"></webview>
 ```
 
-A `String` that sets the user agent for the guest page before the page is navigated to. Once the
+A `string` that sets the user agent for the guest page before the page is navigated to. Once the
 page is loaded, use the `setUserAgent` method to change the user agent.
 
 ### `disablewebsecurity`
@@ -180,7 +184,7 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 <webview src="https://www.github.com/" disablewebsecurity></webview>
 ```
 
-A `Boolean`. When this attribute is present the guest page will have web security disabled.
+A `boolean`. When this attribute is present the guest page will have web security disabled.
 Web security is enabled by default.
 
 ### `partition`
@@ -190,7 +194,7 @@ Web security is enabled by default.
 <webview src="https://electronjs.org" partition="electron"></webview>
 ```
 
-A `String` that sets the session used by the page. If `partition` starts with `persist:`, the
+A `string` that sets the session used by the page. If `partition` starts with `persist:`, the
 page will use a persistent session available to all pages in the app with the
 same `partition`. if there is no `persist:` prefix, the page will use an
 in-memory session. By assigning the same `partition`, multiple pages can share
@@ -207,7 +211,7 @@ value will fail with a DOM exception.
 <webview src="https://www.github.com/" allowpopups></webview>
 ```
 
-A `Boolean`. When this attribute is present the guest page will be allowed to open new
+A `boolean`. When this attribute is present the guest page will be allowed to open new
 windows. Popups are disabled by default.
 
 ### `webpreferences`
@@ -216,7 +220,7 @@ windows. Popups are disabled by default.
 <webview src="https://github.com" webpreferences="allowRunningInsecureContent, javascript=no"></webview>
 ```
 
-A `String` which is a comma separated list of strings which specifies the web preferences to be set on the webview.
+A `string` which is a comma separated list of strings which specifies the web preferences to be set on the webview.
 The full list of supported preference strings can be found in [BrowserWindow](browser-window.md#new-browserwindowoptions).
 
 The string follows the same format as the features string in `window.open`.
@@ -230,7 +234,7 @@ Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are i
 <webview src="https://www.github.com/" enableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
 ```
 
-A `String` which is a list of strings which specifies the blink features to be enabled separated by `,`.
+A `string` which is a list of strings which specifies the blink features to be enabled separated by `,`.
 The full list of supported feature strings can be found in the
 [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
 
@@ -240,7 +244,7 @@ The full list of supported feature strings can be found in the
 <webview src="https://www.github.com/" disableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
 ```
 
-A `String` which is a list of strings which specifies the blink features to be disabled separated by `,`.
+A `string` which is a list of strings which specifies the blink features to be disabled separated by `,`.
 The full list of supported feature strings can be found in the
 [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
 
@@ -263,11 +267,11 @@ webview.addEventListener('dom-ready', () => {
 
 * `url` URL
 * `options` Object (optional)
-  * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
-  * `userAgent` String (optional) - A user agent originating the request.
-  * `extraHeaders` String (optional) - Extra headers separated by "\n"
+  * `httpReferrer` (string | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
+  * `userAgent` string (optional) - A user agent originating the request.
+  * `extraHeaders` string (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md))[] (optional)
-  * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
+  * `baseURLForDataURL` string (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Returns `Promise<void>` - The promise will resolve when the page has finished loading
 (see [`did-finish-load`](webview-tag.md#event-did-finish-load)), and rejects
@@ -279,30 +283,30 @@ e.g. the `http://` or `file://`.
 
 ### `<webview>.downloadURL(url)`
 
-* `url` String
+* `url` string
 
 Initiates a download of the resource at `url` without navigating.
 
 ### `<webview>.getURL()`
 
-Returns `String` - The URL of guest page.
+Returns `string` - The URL of guest page.
 
 ### `<webview>.getTitle()`
 
-Returns `String` - The title of guest page.
+Returns `string` - The title of guest page.
 
 ### `<webview>.isLoading()`
 
-Returns `Boolean` - Whether guest page is still loading resources.
+Returns `boolean` - Whether guest page is still loading resources.
 
 ### `<webview>.isLoadingMainFrame()`
 
-Returns `Boolean` - Whether the main frame (and not just iframes or frames within it) is
+Returns `boolean` - Whether the main frame (and not just iframes or frames within it) is
 still loading.
 
 ### `<webview>.isWaitingForResponse()`
 
-Returns `Boolean` - Whether the guest page is waiting for a first-response for the
+Returns `boolean` - Whether the guest page is waiting for a first-response for the
 main resource of the page.
 
 ### `<webview>.stop()`
@@ -319,17 +323,17 @@ Reloads the guest page and ignores cache.
 
 ### `<webview>.canGoBack()`
 
-Returns `Boolean` - Whether the guest page can go back.
+Returns `boolean` - Whether the guest page can go back.
 
 ### `<webview>.canGoForward()`
 
-Returns `Boolean` - Whether the guest page can go forward.
+Returns `boolean` - Whether the guest page can go forward.
 
 ### `<webview>.canGoToOffset(offset)`
 
 * `offset` Integer
 
-Returns `Boolean` - Whether the guest page can go to `offset`.
+Returns `boolean` - Whether the guest page can go to `offset`.
 
 ### `<webview>.clearHistory()`
 
@@ -357,23 +361,23 @@ Navigates to the specified offset from the "current entry".
 
 ### `<webview>.isCrashed()`
 
-Returns `Boolean` - Whether the renderer process has crashed.
+Returns `boolean` - Whether the renderer process has crashed.
 
 ### `<webview>.setUserAgent(userAgent)`
 
-* `userAgent` String
+* `userAgent` string
 
 Overrides the user agent for the guest page.
 
 ### `<webview>.getUserAgent()`
 
-Returns `String` - The user agent for guest page.
+Returns `string` - The user agent for guest page.
 
 ### `<webview>.insertCSS(css)`
 
-* `css` String
+* `css` string
 
-Returns `Promise<String>` - A promise that resolves with a key for the inserted
+Returns `Promise<string>` - A promise that resolves with a key for the inserted
 CSS that can later be used to remove the CSS via
 `<webview>.removeInsertedCSS(key)`.
 
@@ -382,7 +386,7 @@ stylesheet.
 
 ### `<webview>.removeInsertedCSS(key)`
 
-* `key` String
+* `key` string
 
 Returns `Promise<void>` - Resolves if the removal was successful.
 
@@ -391,8 +395,8 @@ by its key, which is returned from `<webview>.insertCSS(css)`.
 
 ### `<webview>.executeJavaScript(code[, userGesture])`
 
-* `code` String
-* `userGesture` Boolean (optional) - Default `false`.
+* `code` string
+* `userGesture` boolean (optional) - Default `false`.
 
 Returns `Promise<any>` - A promise that resolves with the result of the executed code
 or is rejected if the result of the code is a rejected promise.
@@ -411,11 +415,11 @@ Closes the DevTools window of guest page.
 
 ### `<webview>.isDevToolsOpened()`
 
-Returns `Boolean` - Whether guest page has a DevTools window attached.
+Returns `boolean` - Whether guest page has a DevTools window attached.
 
 ### `<webview>.isDevToolsFocused()`
 
-Returns `Boolean` - Whether DevTools window of guest page is focused.
+Returns `boolean` - Whether DevTools window of guest page is focused.
 
 ### `<webview>.inspectElement(x, y)`
 
@@ -434,17 +438,17 @@ Opens the DevTools for the service worker context present in the guest page.
 
 ### `<webview>.setAudioMuted(muted)`
 
-* `muted` Boolean
+* `muted` boolean
 
 Set guest page muted.
 
 ### `<webview>.isAudioMuted()`
 
-Returns `Boolean` - Whether guest page has been muted.
+Returns `boolean` - Whether guest page has been muted.
 
 ### `<webview>.isCurrentlyAudible()`
 
-Returns `Boolean` - Whether audio is currently playing.
+Returns `boolean` - Whether audio is currently playing.
 
 ### `<webview>.undo()`
 
@@ -484,19 +488,19 @@ Executes editing command `unselect` in page.
 
 ### `<webview>.replace(text)`
 
-* `text` String
+* `text` string
 
 Executes editing command `replace` in page.
 
 ### `<webview>.replaceMisspelling(text)`
 
-* `text` String
+* `text` string
 
 Executes editing command `replaceMisspelling` in page.
 
 ### `<webview>.insertText(text)`
 
-* `text` String
+* `text` string
 
 Returns `Promise<void>`
 
@@ -504,11 +508,11 @@ Inserts `text` to the focused element.
 
 ### `<webview>.findInPage(text[, options])`
 
-* `text` String - Content to be searched, must not be empty.
+* `text` string - Content to be searched, must not be empty.
 * `options` Object (optional)
-  * `forward` Boolean (optional) - Whether to search forward or backward, defaults to `true`.
-  * `findNext` Boolean (optional) - Whether to begin a new text finding session with this request. Should be `true` for initial requests, and `false` for follow-up requests. Defaults to `false`.
-  * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
+  * `forward` boolean (optional) - Whether to search forward or backward, defaults to `true`.
+  * `findNext` boolean (optional) - Whether to begin a new text finding session with this request. Should be `true` for initial requests, and `false` for follow-up requests. Defaults to `false`.
+  * `matchCase` boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
 
 Returns `Integer` - The request id used for the request.
@@ -518,7 +522,7 @@ can be obtained by subscribing to [`found-in-page`](webview-tag.md#event-found-i
 
 ### `<webview>.stopFindInPage(action)`
 
-* `action` String - Specifies the action to take place when ending
+* `action` string - Specifies the action to take place when ending
   [`<webview>.findInPage`](#webviewfindinpagetext-options) request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
@@ -529,32 +533,32 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
 ### `<webview>.print([options])`
 
 * `options` Object (optional)
-  * `silent` Boolean (optional) - Don't ask user for print settings. Default is `false`.
-  * `printBackground` Boolean (optional) - Prints the background color and image of
+  * `silent` boolean (optional) - Don't ask user for print settings. Default is `false`.
+  * `printBackground` boolean (optional) - Prints the background color and image of
     the web page. Default is `false`.
-  * `deviceName` String (optional) - Set the printer device name to use. Must be the system-defined name and not the 'friendly' name, e.g 'Brother_QL_820NWB' and not 'Brother QL-820NWB'.
-  * `color` Boolean (optional) - Set whether the printed web page will be in color or grayscale. Default is `true`.
+  * `deviceName` string (optional) - Set the printer device name to use. Must be the system-defined name and not the 'friendly' name, e.g 'Brother_QL_820NWB' and not 'Brother QL-820NWB'.
+  * `color` boolean (optional) - Set whether the printed web page will be in color or grayscale. Default is `true`.
   * `margins` Object (optional)
-    * `marginType` String (optional) - Can be `default`, `none`, `printableArea`, or `custom`. If `custom` is chosen, you will also need to specify `top`, `bottom`, `left`, and `right`.
-    * `top` Number (optional) - The top margin of the printed web page, in pixels.
-    * `bottom` Number (optional) - The bottom margin of the printed web page, in pixels.
-    * `left` Number (optional) - The left margin of the printed web page, in pixels.
-    * `right` Number (optional) - The right margin of the printed web page, in pixels.
-  * `landscape` Boolean (optional) - Whether the web page should be printed in landscape mode. Default is `false`.
-  * `scaleFactor` Number (optional) - The scale factor of the web page.
-  * `pagesPerSheet` Number (optional) - The number of pages to print per page sheet.
-  * `collate` Boolean (optional) - Whether the web page should be collated.
-  * `copies` Number (optional) - The number of copies of the web page to print.
+    * `marginType` string (optional) - Can be `default`, `none`, `printableArea`, or `custom`. If `custom` is chosen, you will also need to specify `top`, `bottom`, `left`, and `right`.
+    * `top` number (optional) - The top margin of the printed web page, in pixels.
+    * `bottom` number (optional) - The bottom margin of the printed web page, in pixels.
+    * `left` number (optional) - The left margin of the printed web page, in pixels.
+    * `right` number (optional) - The right margin of the printed web page, in pixels.
+  * `landscape` boolean (optional) - Whether the web page should be printed in landscape mode. Default is `false`.
+  * `scaleFactor` number (optional) - The scale factor of the web page.
+  * `pagesPerSheet` number (optional) - The number of pages to print per page sheet.
+  * `collate` boolean (optional) - Whether the web page should be collated.
+  * `copies` number (optional) - The number of copies of the web page to print.
   * `pageRanges` Object[] (optional) - The page range to print.
-    * `from` Number - Index of the first page to print (0-based).
-    * `to` Number - Index of the last page to print (inclusive) (0-based).
-  * `duplexMode` String (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
+    * `from` number - Index of the first page to print (0-based).
+    * `to` number - Index of the last page to print (inclusive) (0-based).
+  * `duplexMode` string (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
   * `dpi` Record<string, number> (optional)
-    * `horizontal` Number (optional) - The horizontal dpi.
-    * `vertical` Number (optional) - The vertical dpi.
-  * `header` String (optional) - String to be printed as page header.
-  * `footer` String (optional) - String to be printed as page footer.
-  * `pageSize` String | Size (optional) - Specify page size of the printed document. Can be `A3`,
+    * `horizontal` number (optional) - The horizontal dpi.
+    * `vertical` number (optional) - The vertical dpi.
+  * `header` string (optional) - string to be printed as page header.
+  * `footer` string (optional) - string to be printed as page footer.
+  * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`.
 
 Returns `Promise<void>`
@@ -565,20 +569,20 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
 
 * `options` Object
   * `headerFooter` Record<string, string> (optional) - the header and footer for the PDF.
-    * `title` String - The title for the PDF header.
-    * `url` String - the url for the PDF footer.
-  * `landscape` Boolean (optional) - `true` for landscape, `false` for portrait.
+    * `title` string - The title for the PDF header.
+    * `url` string - the url for the PDF footer.
+  * `landscape` boolean (optional) - `true` for landscape, `false` for portrait.
   * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
     default margin, 1 for no margin, and 2 for minimum margin.
     and `width` in microns.
-  * `scaleFactor` Number (optional) - The scale factor of the web page. Can range from 0 to 100.
+  * `scaleFactor` number (optional) - The scale factor of the web page. Can range from 0 to 100.
   * `pageRanges` Record<string, number> (optional) - The page range to print. On macOS, only the first range is honored.
-    * `from` Number - Index of the first page to print (0-based).
-    * `to` Number - Index of the last page to print (inclusive) (0-based).
-  * `pageSize` String | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
+    * `from` number - Index of the first page to print (0-based).
+    * `to` number - Index of the last page to print (inclusive) (0-based).
+  * `pageSize` string | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
-  * `printBackground` Boolean (optional) - Whether to print CSS backgrounds.
-  * `printSelectionOnly` Boolean (optional) - Whether to print selection only.
+  * `printBackground` boolean (optional) - Whether to print CSS backgrounds.
+  * `printSelectionOnly` boolean (optional) - Whether to print selection only.
 
 Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 
@@ -594,7 +598,7 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 
 ### `<webview>.send(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Returns `Promise<void>`
@@ -609,7 +613,7 @@ examples.
 ### `<webview>.sendToFrame(frameId, channel, ...args)`
 
 * `frameId` [number, number] - `[processId, frameId]`
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Returns `Promise<void>`
@@ -634,14 +638,14 @@ for detailed description of `event` object.
 
 ### `<webview>.setZoomFactor(factor)`
 
-* `factor` Number - Zoom factor.
+* `factor` number - Zoom factor.
 
 Changes the zoom factor to the specified factor. Zoom factor is
 zoom percent divided by 100, so 300% = 3.0.
 
 ### `<webview>.setZoomLevel(level)`
 
-* `level` Number - Zoom level.
+* `level` number - Zoom level.
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
@@ -654,16 +658,16 @@ limits of 300% and 50% of original size, respectively. The formula for this is
 
 ### `<webview>.getZoomFactor()`
 
-Returns `Number` - the current zoom factor.
+Returns `number` - the current zoom factor.
 
 ### `<webview>.getZoomLevel()`
 
-Returns `Number` - the current zoom level.
+Returns `number` - the current zoom level.
 
 ### `<webview>.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
-* `minimumLevel` Number
-* `maximumLevel` Number
+* `minimumLevel` number
+* `maximumLevel` number
 
 Returns `Promise<void>`
 
@@ -675,7 +679,7 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 ### `<webview>.getWebContentsId()`
 
-Returns `Number` - The WebContents ID of this `webview`.
+Returns `number` - The WebContents ID of this `webview`.
 
 ## DOM Events
 
@@ -685,8 +689,8 @@ The following DOM events are available to the `webview` tag:
 
 Returns:
 
-* `url` String
-* `isMainFrame` Boolean
+* `url` string
+* `isMainFrame` boolean
 
 Fired when a load has committed. This includes navigation within the current
 document as well as subframe document-level loads, but does not include
@@ -702,9 +706,9 @@ spinning, and the `onload` event is dispatched.
 Returns:
 
 * `errorCode` Integer
-* `errorDescription` String
-* `validatedURL` String
-* `isMainFrame` Boolean
+* `errorDescription` string
+* `validatedURL` string
+* `isMainFrame` boolean
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -713,7 +717,7 @@ cancelled, e.g. `window.stop()` is invoked.
 
 Returns:
 
-* `isMainFrame` Boolean
+* `isMainFrame` boolean
 
 Fired when a frame has done navigation.
 
@@ -737,8 +741,8 @@ Fired when document in the given frame is loaded.
 
 Returns:
 
-* `title` String
-* `explicitSet` Boolean
+* `title` string
+* `explicitSet` boolean
 
 Fired when page title is set during navigation. `explicitSet` is false when
 title is synthesized from file url.
@@ -747,7 +751,7 @@ title is synthesized from file url.
 
 Returns:
 
-* `favicons` String[] - Array of URLs.
+* `favicons` string[] - Array of URLs.
 
 Fired when page receives favicon urls.
 
@@ -764,9 +768,9 @@ Fired when page leaves fullscreen triggered by HTML API.
 Returns:
 
 * `level` Integer - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
-* `message` String - The actual console message
+* `message` string - The actual console message
 * `line` Integer - The line number of the source that triggered this console message
-* `sourceId` String
+* `sourceId` string
 
 Fired when the guest window logs a console message.
 
@@ -789,7 +793,7 @@ Returns:
   * `activeMatchOrdinal` Integer - Position of the active match.
   * `matches` Integer - Number of Matches.
   * `selectionArea` Rectangle - Coordinates of first match region.
-  * `finalUpdate` Boolean
+  * `finalUpdate` boolean
 
 Fired when a result is available for
 [`webview.findInPage`](#webviewfindinpagetext-options) request.
@@ -808,9 +812,9 @@ console.log(requestId)
 
 Returns:
 
-* `url` String
-* `frameName` String
-* `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
+* `url` string
+* `frameName` string
+* `disposition` string - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window`, `save-to-disk` and `other`.
 * `options` BrowserWindowConstructorOptions - The options which should be used for creating the new
   [`BrowserWindow`](browser-window.md).
@@ -835,7 +839,7 @@ webview.addEventListener('new-window', async (e) => {
 
 Returns:
 
-* `url` String
+* `url` string
 
 Emitted when a user or the page wants to start navigation. It can happen when
 the `window.location` object is changed or a user clicks a link in the page.
@@ -853,9 +857,9 @@ Calling `event.preventDefault()` does __NOT__ have any effect.
 
 Returns:
 
-* `url` String
-* `isInPlace` Boolean
-* `isMainFrame` Boolean
+* `url` string
+* `isInPlace` boolean
+* `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
@@ -866,9 +870,9 @@ Emitted when any frame (including main) starts navigating. `isInPlace` will be
 
 Returns:
 
-* `url` String
-* `isInPlace` Boolean
-* `isMainFrame` Boolean
+* `url` string
+* `isInPlace` boolean
+* `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
@@ -879,7 +883,7 @@ redirect.
 
 Returns:
 
-* `url` String
+* `url` string
 
 Emitted when a navigation is done.
 
@@ -891,10 +895,10 @@ this purpose.
 
 Returns:
 
-* `url` String
+* `url` string
 * `httpResponseCode` Integer - -1 for non HTTP navigations
-* `httpStatusText` String - empty for non HTTP navigations,
-* `isMainFrame` Boolean
+* `httpStatusText` string - empty for non HTTP navigations,
+* `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
@@ -908,8 +912,8 @@ this purpose.
 
 Returns:
 
-* `isMainFrame` Boolean
-* `url` String
+* `isMainFrame` boolean
+* `url` string
 
 Emitted when an in-page navigation happened.
 
@@ -936,7 +940,7 @@ webview.addEventListener('close', () => {
 Returns:
 
 * `frameId` [number, number] - pair of `[processId, frameId]`.
-* `channel` String
+* `channel` string
 * `args` any[]
 
 Fired when the guest page has sent an asynchronous message to embedder page.
@@ -970,8 +974,8 @@ Fired when the renderer process is crashed.
 
 Returns:
 
-* `name` String
-* `version` String
+* `name` string
+* `version` string
 
 Fired when a plugin process is crashed.
 
@@ -991,7 +995,7 @@ Emitted when media is paused or done playing.
 
 Returns:
 
-* `themeColor` String
+* `themeColor` string
 
 Emitted when a page's theme color changes. This is usually due to encountering a meta tag:
 
@@ -1003,7 +1007,7 @@ Emitted when a page's theme color changes. This is usually due to encountering a
 
 Returns:
 
-* `url` String
+* `url` string
 
 Emitted when mouse moves over a link or the keyboard moves the focus to a link.
 
@@ -1021,3 +1025,78 @@ Emitted when DevTools is focused / opened.
 
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [chrome-webview]: https://developer.chrome.com/docs/extensions/reference/webviewTag/
+
+### Event: 'context-menu'
+
+Returns:
+
+* `params` Object
+  * `x` Integer - x coordinate.
+  * `y` Integer - y coordinate.
+  * `linkURL` string - URL of the link that encloses the node the context menu
+    was invoked on.
+  * `linkText` string - Text associated with the link. May be an empty
+    string if the contents of the link are an image.
+  * `pageURL` string - URL of the top level page that the context menu was
+    invoked on.
+  * `frameURL` string - URL of the subframe that the context menu was invoked
+    on.
+  * `srcURL` string - Source URL for the element that the context menu
+    was invoked on. Elements with source URLs are images, audio and video.
+  * `mediaType` string - Type of the node the context menu was invoked on. Can
+    be `none`, `image`, `audio`, `video`, `canvas`, `file` or `plugin`.
+  * `hasImageContents` boolean - Whether the context menu was invoked on an image
+    which has non-empty contents.
+  * `isEditable` boolean - Whether the context is editable.
+  * `selectionText` string - Text of the selection that the context menu was
+    invoked on.
+  * `titleText` string - Title text of the selection that the context menu was
+    invoked on.
+  * `altText` string - Alt text of the selection that the context menu was
+    invoked on.
+  * `suggestedFilename` string - Suggested filename to be used when saving file through 'Save
+    Link As' option of context menu.
+  * `selectionRect` [Rectangle](structures/rectangle.md) - Rect representing the coordinates in the document space of the selection.
+  * `selectionStartOffset` number - Start position of the selection text.
+  * `referrerPolicy` [Referrer](structures/referrer.md) - The referrer policy of the frame on which the menu is invoked.
+  * `misspelledWord` string - The misspelled word under the cursor, if any.
+  * `dictionarySuggestions` string[] - An array of suggested words to show the
+    user to replace the `misspelledWord`.  Only available if there is a misspelled
+    word and spellchecker is enabled.
+  * `frameCharset` string - The character encoding of the frame on which the
+    menu was invoked.
+  * `inputFieldType` string - If the context menu was invoked on an input
+    field, the type of that field. Possible values are `none`, `plainText`,
+    `password`, `other`.
+  * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
+  * `menuSourceType` string - Input source that invoked the context menu.
+    Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
+  * `mediaFlags` Object - The flags for the media element the context menu was
+    invoked on.
+    * `inError` boolean - Whether the media element has crashed.
+    * `isPaused` boolean - Whether the media element is paused.
+    * `isMuted` boolean - Whether the media element is muted.
+    * `hasAudio` boolean - Whether the media element has audio.
+    * `isLooping` boolean - Whether the media element is looping.
+    * `isControlsVisible` boolean - Whether the media element's controls are
+      visible.
+    * `canToggleControls` boolean - Whether the media element's controls are
+      toggleable.
+    * `canPrint` boolean - Whether the media element can be printed.
+    * `canSave` boolean - Whether or not the media element can be downloaded.
+    * `canShowPictureInPicture` boolean - Whether the media element can show picture-in-picture.
+    * `isShowingPictureInPicture` boolean - Whether the media element is currently showing picture-in-picture.
+    * `canRotate` boolean - Whether the media element can be rotated.
+    * `canLoop` boolean - Whether the media element can be looped.
+  * `editFlags` Object - These flags indicate whether the renderer believes it
+    is able to perform the corresponding action.
+    * `canUndo` boolean - Whether the renderer believes it can undo.
+    * `canRedo` boolean - Whether the renderer believes it can redo.
+    * `canCut` boolean - Whether the renderer believes it can cut.
+    * `canCopy` boolean - Whether the renderer believes it can copy.
+    * `canPaste` boolean - Whether the renderer believes it can paste.
+    * `canDelete` boolean - Whether the renderer believes it can delete.
+    * `canSelectAll` boolean - Whether the renderer believes it can select all.
+    * `canEditRichly` boolean - Whether the renderer believes it can edit text richly.
+
+Emitted when there is a new context menu that needs to be handled.

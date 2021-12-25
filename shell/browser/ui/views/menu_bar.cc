@@ -122,6 +122,11 @@ void MenuBar::OnWindowFocus() {
   SetAcceleratorVisibility(pane_has_focus());
 }
 
+void MenuBar::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  node_data->SetNameExplicitlyEmpty();
+  node_data->role = ax::mojom::Role::kMenuBar;
+}
+
 bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
   // Treat pressing Alt the same as pressing Esc.
   const ui::Accelerator& translated =

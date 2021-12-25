@@ -17,9 +17,9 @@
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
-#include "base/single_thread_task_runner.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
@@ -433,12 +433,28 @@ node::Environment* NodeBindings::CreateEnvironment(
       break;
   }
 
-  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
+  v8::Isolate* isolate = context->GetIsolate();
+  gin_helper::Dictionary global(isolate, context->Global());
   // Do not set DOM globals for renderer process.
   // We must set this before the node bootstrapper which is run inside
   // CreateEnvironment
   if (browser_env_ != BrowserEnvironment::kBrowser)
     global.Set("_noBrowserGlobals", true);
+
+  if (browser_env_ == BrowserEnvironment::kBrowser) {
+    const std::vector<std::string> search_paths = {"app.asar", "app",
+                                                   "default_app.asar"};
+    const std::vector<std::string> app_asar_search_paths = {"app.asar"};
+    context->Global()->SetPrivate(
+        context,
+        v8::Private::ForApi(
+            isolate,
+            gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
+        gin::ConvertToV8(isolate,
+                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()
+                             ? app_asar_search_paths
+                             : search_paths));
+  }
 
   std::vector<std::string> exec_args;
   base::FilePath resources_path = GetResourcesPath();
@@ -451,7 +467,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                   node::EnvironmentFlags::kHideConsoleWindows;
+                   node::EnvironmentFlags::kHideConsoleWindows |
+                   node::EnvironmentFlags::kNoGlobalSearchPaths;
 
   if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -

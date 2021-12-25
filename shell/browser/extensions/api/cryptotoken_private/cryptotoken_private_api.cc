@@ -101,7 +101,7 @@ CryptotokenPrivateCanOriginAssertAppIdFunction::
 ExtensionFunction::ResponseAction
 CryptotokenPrivateCanOriginAssertAppIdFunction::Run() {
   std::unique_ptr<cryptotoken_private::CanOriginAssertAppId::Params> params =
-      cryptotoken_private::CanOriginAssertAppId::Params::Create(*args_);
+      cryptotoken_private::CanOriginAssertAppId::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
   const GURL origin_url(params->security_origin);
@@ -159,7 +159,7 @@ CryptotokenPrivateIsAppIdHashInEnterpriseContextFunction::Run() {
   std::unique_ptr<cryptotoken_private::IsAppIdHashInEnterpriseContext::Params>
       params(
           cryptotoken_private::IsAppIdHashInEnterpriseContext::Params::Create(
-              *args_));
+              args()));
   EXTENSION_FUNCTION_VALIDATE(params);
 
 #if 0
@@ -181,7 +181,7 @@ CryptotokenPrivateCanAppIdGetAttestationFunction::
 ExtensionFunction::ResponseAction
 CryptotokenPrivateCanAppIdGetAttestationFunction::Run() {
   std::unique_ptr<cryptotoken_private::CanAppIdGetAttestation::Params> params =
-      cryptotoken_private::CanAppIdGetAttestation::Params::Create(*args_);
+      cryptotoken_private::CanAppIdGetAttestation::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
   return RespondNow(Error("API not supported in Electron"));
@@ -277,7 +277,7 @@ void CryptotokenPrivateCanAppIdGetAttestationFunction::Complete(bool result) {
 ExtensionFunction::ResponseAction
 CryptotokenPrivateRecordRegisterRequestFunction::Run() {
   auto params =
-      cryptotoken_private::RecordRegisterRequest::Params::Create(*args_);
+      cryptotoken_private::RecordRegisterRequest::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
   content::RenderFrameHost* frame = RenderFrameHostForTabAndFrameId(
@@ -293,7 +293,7 @@ CryptotokenPrivateRecordRegisterRequestFunction::Run() {
 
 ExtensionFunction::ResponseAction
 CryptotokenPrivateRecordSignRequestFunction::Run() {
-  auto params = cryptotoken_private::RecordSignRequest::Params::Create(*args_);
+  auto params = cryptotoken_private::RecordSignRequest::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
   content::RenderFrameHost* frame = RenderFrameHostForTabAndFrameId(

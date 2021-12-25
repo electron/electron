@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_NODE_BINDINGS_H_
-#define SHELL_COMMON_NODE_BINDINGS_H_
+#ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
+#define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
 #include <type_traits>
 
 #include "base/files/file_path.h"
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8.h"
@@ -109,6 +108,10 @@ class NodeBindings {
 
   bool in_worker_loop() const { return uv_loop_ == &worker_loop_; }
 
+  // disable copy
+  NodeBindings(const NodeBindings&) = delete;
+  NodeBindings& operator=(const NodeBindings&) = delete;
+
  protected:
   explicit NodeBindings(BrowserEnvironment browser_env);
 
@@ -163,10 +166,8 @@ class NodeBindings {
 #endif
 
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NodeBindings);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_NODE_BINDINGS_H_
+#endif  // ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_

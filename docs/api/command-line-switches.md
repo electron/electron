@@ -61,12 +61,6 @@ throttling in one window, you can take the hack of
 
 Forces the maximum disk space to be used by the disk cache, in bytes.
 
-### --enable-api-filtering-logging
-
-Enables caller stack logging for the following APIs (filtering events):
-
-* `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
-
 ### --enable-logging[=file]
 
 Prints Chromium's logging to stderr (or a log file).

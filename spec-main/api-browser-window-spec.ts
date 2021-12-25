@@ -110,6 +110,11 @@ describe('BrowserWindow module', () => {
       await closed;
     });
 
+    it('should not crash if called after webContents is destroyed', () => {
+      w.webContents.destroy();
+      w.webContents.on('destroyed', () => w.close());
+    });
+
     it('should emit unload handler', async () => {
       await w.loadFile(path.join(fixtures, 'api', 'unload.html'));
       const closed = emittedOnce(w, 'closed');
@@ -947,6 +952,17 @@ describe('BrowserWindow module', () => {
         await resize;
         expectBoundsEqual(w.getSize(), size);
       });
+
+      it('doesn\'t change bounds when maximum size is set', () => {
+        w.setMenu(null);
+        w.setMaximumSize(400, 400);
+        // Without https://github.com/electron/electron/pull/29101
+        // following call would shrink the window to 384x361.
+        // There would be also DCHECK in resize_utils.cc on
+        // debug build.
+        w.setAspectRatio(1.0);
+        expectBoundsEqual(w.getSize(), [400, 400]);
+      });
     });
 
     describe('BrowserWindow.setPosition(x, y)', () => {
@@ -1112,6 +1128,24 @@ describe('BrowserWindow module', () => {
           w.unmaximize();
           await unmaximize;
           expect(w.isMaximized()).to.equal(false);
+        });
+        it('returns the correct value for windows with an aspect ratio', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            fullscreenable: false
+          });
+
+          w.setAspectRatio(16 / 11);
+
+          const maximize = emittedOnce(w, 'resize');
+          w.show();
+          w.maximize();
+          await maximize;
+
+          expect(w.isMaximized()).to.equal(true);
+          w.resizable = false;
+          expect(w.isMaximized()).to.equal(true);
         });
       });
 
@@ -3467,7 +3501,7 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
         expect(c.isVisible()).to.be.false('child is visible');
-        expect(c.getParentWindow().isVisible()).to.be.false('parent is visible');
+        expect(c.getParentWindow()!.isVisible()).to.be.false('parent is visible');
       });
     });
 
@@ -3667,6 +3701,18 @@ describe('BrowserWindow module', () => {
           const w = new BrowserWindow({ show: false, thickFrame: false });
           expect(w.resizable).to.be.false('resizable');
         }
+      });
+
+      // On Linux there is no "resizable" property of a window.
+      ifit(process.platform !== 'linux')('does affect maximizability when disabled and enabled', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.resizable).to.be.true('resizable');
+
+        expect(w.maximizable).to.be.true('maximizable');
+        w.resizable = false;
+        expect(w.maximizable).to.be.false('not maximizable');
+        w.resizable = true;
+        expect(w.maximizable).to.be.true('maximizable');
       });
 
       ifit(process.platform === 'win32')('works for a window smaller than 64x64', () => {
@@ -4127,8 +4173,6 @@ describe('BrowserWindow module', () => {
         const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
         w.setFullScreen(false);
         await leaveFullScreen;
-
-        w.close();
       });
 
       it('can be changed with setFullScreen method', async () => {
@@ -4525,9 +4569,9 @@ describe('BrowserWindow module', () => {
       w1.loadURL('about:blank');
       const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 });
       w2.loadURL('about:blank');
+      const w1Focused = emittedOnce(w1, 'focus');
       w1.webContents.focus();
-      // Give focus some time to switch to w1
-      await delay();
+      await w1Focused;
       expect(w1.webContents.isFocused()).to.be.true('focuses window');
     });
   });
@@ -4645,6 +4689,34 @@ describe('BrowserWindow module', () => {
         await emittedOnce(w.webContents, 'paint');
         expect(w.webContents.frameRate).to.equal(30);
       });
+    });
+  });
+
+  describe('"transparent" option', () => {
+    afterEach(closeAllWindows);
+
+    // Only applicable on Windows where transparent windows can't be maximized.
+    ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        transparent: true,
+        show: true
+      });
+
+      w.loadURL('about:blank');
+      await emittedOnce(w, 'ready-to-show');
+
+      expect(w.isMaximized()).to.be.true();
+
+      // Fails when the transparent HWND is in an invalid maximized state.
+      expect(w.getBounds()).to.deep.equal(display.workArea);
+
+      const newBounds = { width: 256, height: 256, x: 0, y: 0 };
+      w.setBounds(newBounds);
+      expect(w.getBounds()).to.deep.equal(newBounds);
     });
   });
 });

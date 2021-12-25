@@ -22,6 +22,6 @@ void ElectronExtensionWebContentsObserver::CreateForWebContents(
   FromWebContents(web_contents)->Initialize();
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(ElectronExtensionWebContentsObserver)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(ElectronExtensionWebContentsObserver);
 
 }  // namespace extensions

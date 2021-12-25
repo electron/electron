@@ -6,6 +6,7 @@ const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_fr
 
 export interface GuestViewDelegate {
   dispatchEvent (eventName: string, props: Record<string, any>): void;
+  reset(): void;
 }
 
 const DEPRECATED_EVENTS: Record<string, string> = {
@@ -13,6 +14,11 @@ const DEPRECATED_EVENTS: Record<string, string> = {
 } as const;
 
 export function registerEvents (viewInstanceId: number, delegate: GuestViewDelegate) {
+  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${viewInstanceId}`, function () {
+    delegate.reset();
+    delegate.dispatchEvent('destroyed', {});
+  });
+
   ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`, function (event, eventName, props) {
     if (DEPRECATED_EVENTS[eventName] != null) {
       delegate.dispatchEvent(DEPRECATED_EVENTS[eventName], props);
@@ -23,6 +29,7 @@ export function registerEvents (viewInstanceId: number, delegate: GuestViewDeleg
 }
 
 export function deregisterEvents (viewInstanceId: number) {
+  ipcRendererInternal.removeAllListeners(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${viewInstanceId}`);
   ipcRendererInternal.removeAllListeners(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`);
 }
 
@@ -41,10 +48,6 @@ export function createGuest (iframe: HTMLIFrameElement, elementInstanceId: numbe
 
 export function detachGuest (guestInstanceId: number) {
   return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, guestInstanceId);
-}
-
-export function capturePage (guestInstanceId: number, args: any[]) {
-  return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, guestInstanceId, args);
 }
 
 export function invoke (guestInstanceId: number, method: string, args: any[]) {

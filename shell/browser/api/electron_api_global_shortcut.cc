@@ -9,6 +9,7 @@
 #include "base/containers/contains.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/common/extensions/command.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
@@ -21,6 +22,7 @@
 #include "base/mac/mac_util.h"
 #endif
 
+using extensions::Command;
 using extensions::GlobalShortcutListener;
 
 namespace {
@@ -28,21 +30,22 @@ namespace {
 #if defined(OS_MAC)
 bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
   if (base::mac::IsAtLeastOS10_14()) {
-    constexpr ui::KeyboardCode mediaKeys[] = {
-        ui::VKEY_MEDIA_PLAY_PAUSE, ui::VKEY_MEDIA_NEXT_TRACK,
-        ui::VKEY_MEDIA_PREV_TRACK, ui::VKEY_MEDIA_STOP,
-        ui::VKEY_VOLUME_UP,        ui::VKEY_VOLUME_DOWN,
-        ui::VKEY_VOLUME_MUTE};
-
-    if (std::find(std::begin(mediaKeys), std::end(mediaKeys),
-                  accelerator.key_code()) != std::end(mediaKeys)) {
-      bool trusted =
-          electron::api::SystemPreferences::IsTrustedAccessibilityClient(false);
-      if (!trusted)
+    if (Command::IsMediaKey(accelerator)) {
+      if (!electron::api::SystemPreferences::IsTrustedAccessibilityClient(
+              false))
         return true;
     }
   }
   return false;
+}
+
+bool MapHasMediaKeys(
+    const std::map<ui::Accelerator, base::RepeatingClosure>& accelerator_map) {
+  auto media_key = std::find_if(
+      accelerator_map.begin(), accelerator_map.end(),
+      [](const auto& ac) { return Command::IsMediaKey(ac.first); });
+
+  return media_key != accelerator_map.end();
 }
 #endif
 
@@ -83,7 +86,7 @@ bool GlobalShortcut::RegisterAll(
 
   for (auto& accelerator : accelerators) {
     if (!Register(accelerator, callback)) {
-      // unregister all shortcuts if any failed
+      // Unregister all shortcuts if any failed.
       UnregisterSome(registered);
       return false;
     }
@@ -101,8 +104,12 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     return false;
   }
 #if defined(OS_MAC)
-  if (RegisteringMediaKeyForUntrustedClient(accelerator))
-    return false;
+  if (Command::IsMediaKey(accelerator)) {
+    if (RegisteringMediaKeyForUntrustedClient(accelerator))
+      return false;
+
+    GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(false);
+  }
 #endif
 
   if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(accelerator,
@@ -122,6 +129,13 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
   }
   if (accelerator_callback_map_.erase(accelerator) == 0)
     return;
+
+#if defined(OS_MAC)
+  if (Command::IsMediaKey(accelerator) &&
+      !MapHasMediaKeys(accelerator_callback_map_)) {
+    GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(true);
+  }
+#endif
 
   GlobalShortcutListener::GetInstance()->UnregisterAccelerator(accelerator,
                                                                this);

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_CRASH_REPORTER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_CRASH_REPORTER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CRASH_REPORTER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CRASH_REPORTER_H_
 
 #include <map>
 #include <string>
@@ -38,4 +38,4 @@ void Start(const std::string& submit_url,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_CRASH_REPORTER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CRASH_REPORTER_H_

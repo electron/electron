@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_
-#define SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_
 
 #include <memory>
 #include <unordered_map>
@@ -21,6 +21,10 @@ class ElectronSerialDelegate : public content::SerialDelegate {
  public:
   ElectronSerialDelegate();
   ~ElectronSerialDelegate() override;
+
+  // disable copy
+  ElectronSerialDelegate(const ElectronSerialDelegate&) = delete;
+  ElectronSerialDelegate& operator=(const ElectronSerialDelegate&) = delete;
 
   std::unique_ptr<content::SerialChooser> RunChooser(
       content::RenderFrameHost* frame,
@@ -51,10 +55,8 @@ class ElectronSerialDelegate : public content::SerialDelegate {
       controller_map_;
 
   base::WeakPtrFactory<ElectronSerialDelegate> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronSerialDelegate);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_

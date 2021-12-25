@@ -768,18 +768,16 @@ void BaseWindow::AddBrowserView(v8::Local<v8::Value> value) {
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end()) {
-      if (browser_view->web_contents()) {
-        // If we're reparenting a BrowserView, ensure that it's detached from
-        // its previous owner window.
-        auto* owner_window = browser_view->web_contents()->owner_window();
-        if (owner_window && owner_window != window_.get()) {
-          owner_window->RemoveBrowserView(browser_view->view());
-          browser_view->web_contents()->SetOwnerWindow(nullptr);
-        }
-
-        window_->AddBrowserView(browser_view->view());
-        browser_view->web_contents()->SetOwnerWindow(window_.get());
+      // If we're reparenting a BrowserView, ensure that it's detached from
+      // its previous owner window.
+      auto* owner_window = browser_view->owner_window();
+      if (owner_window && owner_window != window_.get()) {
+        owner_window->RemoveBrowserView(browser_view->view());
+        browser_view->SetOwnerWindow(nullptr);
       }
+
+      window_->AddBrowserView(browser_view->view());
+      browser_view->SetOwnerWindow(window_.get());
       browser_views_[browser_view->ID()].Reset(isolate(), value);
     }
   }
@@ -791,10 +789,8 @@ void BaseWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view != browser_views_.end()) {
-      if (browser_view->web_contents()) {
-        window_->RemoveBrowserView(browser_view->view());
-        browser_view->web_contents()->SetOwnerWindow(nullptr);
-      }
+      window_->RemoveBrowserView(browser_view->view());
+      browser_view->SetOwnerWindow(nullptr);
       (*get_that_view).second.Reset(isolate(), value);
       browser_views_.erase(get_that_view);
     }
@@ -806,9 +802,7 @@ void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value,
   gin::Handle<BrowserView> browser_view;
   if (value->IsObject() &&
       gin::ConvertFromV8(isolate(), value, &browser_view)) {
-    if (!browser_view->web_contents())
-      return;
-    auto* owner_window = browser_view->web_contents()->owner_window();
+    auto* owner_window = browser_view->owner_window();
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end() ||
         (owner_window && owner_window != window_.get())) {
@@ -1137,12 +1131,10 @@ void BaseWindow::ResetBrowserViews() {
         !browser_view.IsEmpty()) {
       // There's a chance that the BrowserView may have been reparented - only
       // reset if the owner window is *this* window.
-      if (browser_view->web_contents()) {
-        auto* owner_window = browser_view->web_contents()->owner_window();
-        if (owner_window && owner_window == window_.get()) {
-          browser_view->web_contents()->SetOwnerWindow(nullptr);
-          owner_window->RemoveBrowserView(browser_view->view());
-        }
+      auto* owner_window = browser_view->owner_window();
+      if (owner_window && owner_window == window_.get()) {
+        browser_view->SetOwnerWindow(nullptr);
+        owner_window->RemoveBrowserView(browser_view->view());
       }
     }
 

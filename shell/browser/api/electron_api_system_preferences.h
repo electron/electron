@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
-#define SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
 
 #include <memory>
 #include <string>
@@ -121,6 +121,10 @@ class SystemPreferences
   bool IsHighContrastColorScheme();
   v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
 
+  // disable copy
+  SystemPreferences(const SystemPreferences&) = delete;
+  SystemPreferences& operator=(const SystemPreferences&) = delete;
+
  protected:
   SystemPreferences();
   ~SystemPreferences() override;
@@ -162,11 +166,10 @@ class SystemPreferences
 
   std::unique_ptr<gfx::ScopedSysColorChangeListener> color_change_listener_;
 #endif
-  DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_

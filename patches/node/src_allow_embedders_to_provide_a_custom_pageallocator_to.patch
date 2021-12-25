@@ -40,7 +40,7 @@ index 5bf19a0dda42849159d954181058897c45d280fd..03078ff3869fcd17101f1cdaf77f725d
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context) {
 diff --git a/src/node.h b/src/node.h
-index 48e378079f6d05e7cc1141a8875450b125028789..22e095804bca9d73d22707169c5aff2b13994344 100644
+index 85b5ac6a5a5cb5e4388a92a1d07c9afe17140a8c..4201c0d0460b032721ef42a26d79c38a9ee20c24 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -313,7 +313,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
@@ -53,7 +53,7 @@ index 48e378079f6d05e7cc1141a8875450b125028789..22e095804bca9d73d22707169c5aff2b
  };
  
  enum IsolateSettingsFlags {
-@@ -498,7 +499,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
+@@ -509,7 +510,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
  NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
      NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
          int thread_pool_size,

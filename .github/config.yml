@@ -2,7 +2,7 @@
 newPRWelcomeComment: |
   💖 Thanks for opening this pull request! 💖
 
-  We use [semantic commit messages](https://github.com/electron/electron/blob/master/docs/development/pull-requests.md#commit-message-guidelines) to streamline the release process. Before your pull request can be merged, you should **update your pull request title** to start with a semantic prefix.
+  We use [semantic commit messages](https://github.com/electron/electron/blob/main/docs/development/pull-requests.md#commit-message-guidelines) to streamline the release process. Before your pull request can be merged, you should **update your pull request title** to start with a semantic prefix.
 
   Examples of commit messages with semantic prefixes:
 
@@ -12,9 +12,9 @@ newPRWelcomeComment: |
 
   Things that will help get your PR across the finish line:
 
-  - Follow the JavaScript, C++, and Python [coding style](https://github.com/electron/electron/blob/master/docs/development/coding-style.md).
+  - Follow the JavaScript, C++, and Python [coding style](https://github.com/electron/electron/blob/main/docs/development/coding-style.md).
   - Run `npm run lint` locally to catch formatting errors earlier.
-  - Document any user-facing changes you've made following the [documentation styleguide](https://github.com/electron/electron/blob/master/docs/styleguide.md).
+  - Document any user-facing changes you've made following the [documentation styleguide](https://github.com/electron/electron/blob/main/docs/styleguide.md).
   - Include tests when adding/changing behavior.
   - Include screenshots and animated GIFs whenever possible.
 

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
-#define SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 
 #include <vector>
 
@@ -30,6 +30,10 @@ class View : public gin_helper::Wrappable<View> {
 
   views::View* view() const { return view_; }
 
+  // disable copy
+  View(const View&) = delete;
+  View& operator=(const View&) = delete;
+
  protected:
   explicit View(views::View* view);
   View();
@@ -43,12 +47,10 @@ class View : public gin_helper::Wrappable<View> {
 
   bool delete_view_ = true;
   views::View* view_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(View);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_

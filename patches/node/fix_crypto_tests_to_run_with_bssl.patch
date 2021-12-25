@@ -10,6 +10,26 @@ This should be upstreamed in some form, though it may need to be tweaked
 before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
+diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
+index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a208ed47909 100644
+--- a/test/parallel/test-crypto-async-sign-verify.js
++++ b/test/parallel/test-crypto-async-sign-verify.js
+@@ -88,6 +88,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
+ // ED25519
+ test('ed25519_public.pem', 'ed25519_private.pem', undefined, true);
+ // ED448
++/*
+ test('ed448_public.pem', 'ed448_private.pem', undefined, true);
+ 
+ // ECDSA w/ der signature encoding
+@@ -109,6 +110,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
+ // DSA w/ ieee-p1363 signature encoding
+ test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
+      { dsaEncoding: 'ieee-p1363' });
++*/
+ 
+ // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
+ {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
 index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..b21eb4b97ad778304b3a4e8d549e109614350dfb 100644
 --- a/test/parallel/test-crypto-authenticated.js
@@ -371,7 +391,7 @@ index dd073274aef765e8f1e403aa2c8baf9694b521cb..fc6339e040debe61ecc61a3eb5b26823
  }
  
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index cae9301517c37c7e90292d71fe5a6086cf55e0be..b9bc86e4d8b897cec583dea16f64f680252d2efa 100644
+index 18721fcf289e5545408e309db050a2ff0f4b0140..e5235e0a5fbd68416b4a9480818901b411ed91bd 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -49,7 +49,7 @@ for (const bits of [-1, 0, 1]) {
@@ -401,7 +421,7 @@ index cae9301517c37c7e90292d71fe5a6086cf55e0be..b9bc86e4d8b897cec583dea16f64f680
    };
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -155,18 +155,17 @@ assert.strictEqual(secret1, secret4);
+@@ -133,18 +133,17 @@ assert.strictEqual(secret1, secret4);
  let wrongBlockLength;
  if (common.hasOpenSSL3) {
    wrongBlockLength = {
@@ -488,287 +508,6 @@ index af2146982c7a3bf7bd7527f44e4b17a3b605026e..f6b91f675cfea367c608892dee078b56
  
    // Non-XOF hash functions should accept valid outputLength options as well.
    assert.strictEqual(crypto.createHash('sha224', { outputLength: 28 })
-diff --git a/test/parallel/test-crypto-key-objects.js b/test/parallel/test-crypto-key-objects.js
-index aa03a0379a291a4632b68d428d4e1875d60166a3..a6862ace1fa73473b406fe4513b9e7a99296d365 100644
---- a/test/parallel/test-crypto-key-objects.js
-+++ b/test/parallel/test-crypto-key-objects.js
-@@ -307,11 +307,11 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-   }, common.hasOpenSSL3 ? {
-     message: 'error:1E08010C:DECODER routines::unsupported',
-   } : {
--    message: 'error:0909006C:PEM routines:get_name:no start line',
--    code: 'ERR_OSSL_PEM_NO_START_LINE',
--    reason: 'no start line',
--    library: 'PEM routines',
--    function: 'get_name',
-+    message: /error:2007E073:BIO routines:BIO_new_mem_buf:null parameter|error:0900006e:PEM routines:OPENSSL_internal:NO_START_LINE/,
-+    code: /ERR_OSSL_BIO_NULL_PARAMETER|ERR_OSSL_PEM_NO_START_LINE/,
-+    reason: /null parameter|NO_START_LINE/,
-+    library: /BIO routines|PEM routines/,
-+    function: /BIO_new_mem_buf|OPENSSL_internal/,
-   });
- 
-   // This should not abort either: https://github.com/nodejs/node/issues/29904
-@@ -334,8 +334,8 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-     message: /error:1E08010C:DECODER routines::unsupported/,
-     library: 'DECODER routines'
-   } : {
--    message: /asn1 encoding/,
--    library: 'asn1 encoding routines'
-+    message: /asn1 encoding|DECODE_ERROR/,
-+    library: /asn1 encoding routines|public key routines/
-   });
- }
- 
-@@ -349,6 +349,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-       d: 'wVK6M3SMhQh3NK-7GRrSV-BVWQx1FO5pW8hhQeu_NdA',
-       kty: 'OKP'
-     } },
-+/*
-   { private: fixtures.readKey('ed448_private.pem', 'ascii'),
-     public: fixtures.readKey('ed448_public.pem', 'ascii'),
-     keyType: 'ed448',
-@@ -380,6 +381,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-          'S0jlSYJk',
-       kty: 'OKP'
-     } },
-+*/
- ].forEach((info) => {
-   const keyType = info.keyType;
- 
-@@ -421,7 +423,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-     }
-   }
- });
--
-+/*
- [
-   { private: fixtures.readKey('ec_p256_private.pem', 'ascii'),
-     public: fixtures.readKey('ec_p256_public.pem', 'ascii'),
-@@ -514,7 +516,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-     }
-   }
- });
--
-+*/
- {
-   // Reading an encrypted key without a passphrase should fail.
-   assert.throws(() => createPrivateKey(privateDsa), common.hasOpenSSL3 ? {
-@@ -546,7 +548,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-   }), {
-     message: common.hasOpenSSL3 ?
-       'error:1E08010C:DECODER routines::unsupported' :
--      /bad decrypt/
-+      /bad decrypt|error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT/
-   });
- 
-   const publicKey = createPublicKey(publicDsa);
-@@ -569,7 +571,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-     () => privateKey.export({ format: 'jwk' }),
-     { code: 'ERR_CRYPTO_JWK_UNSUPPORTED_KEY_TYPE' });
- }
--
-+/*
- {
-   // Test RSA-PSS.
-   {
-@@ -715,7 +717,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
-     }
-   }
- }
--
-+*/
- {
-   // Exporting an encrypted private key requires a cipher
-   const privateKey = createPrivateKey(privatePem);
-diff --git a/test/parallel/test-crypto-keygen.js b/test/parallel/test-crypto-keygen.js
-index ed5986e6bfd4211a1cc22fa94aaf68fc1013133f..08986a6793a39b275277c8bf188316f669a53c63 100644
---- a/test/parallel/test-crypto-keygen.js
-+++ b/test/parallel/test-crypto-keygen.js
-@@ -297,6 +297,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-   }));
- }
- 
-+/*
- {
-   // Test RSA-PSS.
-   generateKeyPair('rsa-pss', {
-@@ -339,7 +340,9 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     testSignVerify(publicKey, privateKey);
-   }));
- }
-+*/
- 
-+/*
- {
-   const privateKeyEncoding = {
-     type: 'pkcs8',
-@@ -409,6 +412,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     });
-   }));
- }
-+*/
- 
- {
-   // Test async elliptic curve key generation, e.g. for ECDSA, with a SEC1
-@@ -433,6 +437,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     testSignVerify(publicKey, privateKey);
-   }));
- 
-+  /*
-   // Test async elliptic curve key generation, e.g. for ECDSA, with a SEC1
-   // private key with paramEncoding explicit.
-   generateKeyPair('ec', {
-@@ -454,6 +459,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
- 
-     testSignVerify(publicKey, privateKey);
-   }));
-+  */
- 
-   // Do the same with an encrypted private key.
-   generateKeyPair('ec', {
-@@ -489,6 +495,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     testSignVerify(publicKey, { key: privateKey, passphrase: 'secret' });
-   }));
- 
-+  /*
-   // Do the same with an encrypted private key with paramEncoding explicit.
-   generateKeyPair('ec', {
-     namedCurve: 'prime256v1',
-@@ -522,6 +529,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
- 
-     testSignVerify(publicKey, { key: privateKey, passphrase: 'secret' });
-   }));
-+  */
- }
- 
- {
-@@ -562,6 +570,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     });
-   }));
- 
-+  /*
-   // Test async elliptic curve key generation, e.g. for ECDSA, with an encrypted
-   // private key with paramEncoding explicit.
-   generateKeyPair('ec', {
-@@ -686,6 +695,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-       }
-     }
-   });
-+  */
- }
- 
- // Test invalid parameter encoding.
-@@ -709,6 +719,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     message: "The property 'options.paramEncoding' is invalid. " +
-       "Received 'otherEncoding'"
-   });
-+  /*
-   assert.throws(() => generateKeyPairSync('dsa', {
-     modulusLength: 4096,
-     publicKeyEncoding: {
-@@ -722,6 +733,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     code: 'ERR_CRYPTO_JWK_UNSUPPORTED_KEY_TYPE',
-     message: 'Unsupported JWK Key Type.'
-   });
-+  */
-   assert.throws(() => generateKeyPairSync('ec', {
-     namedCurve: 'secp224r1',
-     publicKeyEncoding: {
-@@ -1060,6 +1072,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-   }
- }
- 
-+  /*
- // Test DSA parameters.
- {
-   // Test invalid modulus lengths.
-@@ -1087,6 +1100,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     });
-   }
- }
-+*/
- 
- // Test EC parameters.
- {
-@@ -1131,13 +1145,13 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-   }));
- 
-   generateKeyPair('ec', {
--    namedCurve: 'secp256k1',
-+    namedCurve: 'secp521r1',
-   }, common.mustSucceed((publicKey, privateKey) => {
-     assert.deepStrictEqual(publicKey.asymmetricKeyDetails, {
--      namedCurve: 'secp256k1'
-+      namedCurve: 'secp521r1'
-     });
-     assert.deepStrictEqual(privateKey.asymmetricKeyDetails, {
--      namedCurve: 'secp256k1'
-+      namedCurve: 'secp521r1'
-     });
-   }));
- }
-@@ -1145,7 +1159,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
- // Test EdDSA key generation.
- {
-   if (!/^1\.1\.0/.test(process.versions.openssl)) {
--    ['ed25519', 'ed448', 'x25519', 'x448'].forEach((keyType) => {
-+    ['ed25519'/*, 'ed448', 'x25519', 'x448'*/].forEach((keyType) => {
-       generateKeyPair(keyType, common.mustSucceed((publicKey, privateKey) => {
-         assert.strictEqual(publicKey.type, 'public');
-         assert.strictEqual(publicKey.asymmetricKeyType, keyType);
-@@ -1159,6 +1173,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-   }
- }
- 
-+/*
- // Test classic Diffie-Hellman key generation.
- {
-   generateKeyPair('dh', {
-@@ -1271,6 +1286,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
-     });
-   }
- }
-+*/
- 
- // Test invalid key encoding types.
- {
-@@ -1471,6 +1487,7 @@ if (!common.hasOpenSSL3) {
-     }, common.mustSucceed((publicKey, privateKey) => {
-       assert.strictEqual(publicKey.type, 'public');
- 
-+      /*
-       for (const passphrase of ['', Buffer.alloc(0)]) {
-         const privateKeyObject = createPrivateKey({
-           passphrase,
-@@ -1478,6 +1495,7 @@ if (!common.hasOpenSSL3) {
-         });
-         assert.strictEqual(privateKeyObject.asymmetricKeyType, 'rsa');
-       }
-+      */
- 
-       // Encrypting with an empty passphrase is not the same as not encrypting
-       // the key, and not specifying a passphrase should fail when decoding it.
-diff --git a/test/parallel/test-crypto-padding-aes256.js b/test/parallel/test-crypto-padding-aes256.js
-index 14d853bdfd0a5dcc5bdb6e00cb20fdbeaabd2aff..3ae6fc47d4c6a8296a2c3c70daf464fad886a88d 100644
---- a/test/parallel/test-crypto-padding-aes256.js
-+++ b/test/parallel/test-crypto-padding-aes256.js
-@@ -32,13 +32,13 @@ const key = Buffer.from('0123456789abcdef0123456789abcdef' +
-                         '0123456789abcdef0123456789abcdef', 'hex');
- 
- function encrypt(val, pad) {
--  const c = crypto.createCipheriv('aes256', key, iv);
-+  const c = crypto.createCipheriv('aes-256-cbc', key, iv);
-   c.setAutoPadding(pad);
-   return c.update(val, 'utf8', 'latin1') + c.final('latin1');
- }
- 
- function decrypt(val, pad) {
--  const c = crypto.createDecipheriv('aes256', key, iv);
-+  const c = crypto.createDecipheriv('aes-256-cbc', key, iv);
-   c.setAutoPadding(pad);
-   return c.update(val, 'latin1', 'utf8') + c.final('utf8');
- }
 diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
 index f1f14b472997e76bb4100edb1c6cf4fc24d1074d..5057e3f9bc5bb78aceffa5e79530f8ceed84e6f7 100644
 --- a/test/parallel/test-crypto-padding.js
@@ -851,7 +590,7 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 444135538ccff8a705806941843717be954ed143..fe07bbbf0b18ae4ff344cb972600d5ee3bd8ede3 100644
+index 6893f0c0e6d49a8e171ec9f156f74656dab9fd06..4c8ccd10e0dcd64669cccca1e8c2e5279d683595 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,6 +29,7 @@ const keySize = 2048;
@@ -1220,6 +959,26 @@ index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa
      });
  }
  
+diff --git a/test/parallel/test-webcrypto-export-import-rsa.js b/test/parallel/test-webcrypto-export-import-rsa.js
+index ab7aa77394ac9989514b7a184900092bd6753996..b0104ac45867a923a8c651e01e8c6975a62f7c61 100644
+--- a/test/parallel/test-webcrypto-export-import-rsa.js
++++ b/test/parallel/test-webcrypto-export-import-rsa.js
+@@ -481,6 +481,7 @@ const testVectors = [
+   await Promise.all(variations);
+ })().then(common.mustCall());
+ 
++/*
+ {
+   const publicPem = fixtures.readKey('rsa_pss_public_2048.pem', 'ascii');
+   const privatePem = fixtures.readKey('rsa_pss_private_2048.pem', 'ascii');
+@@ -522,6 +523,7 @@ const testVectors = [
+     assert.strictEqual(jwk.alg, 'PS256');
+   })().then(common.mustCall());
+ }
++*/
+ 
+ {
+   const ecPublic = crypto.createPublicKey(
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c0d407dbe 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js

@@ -8,8 +8,6 @@
 
 #include <utility>
 
-#include <vector>
-
 #include "base/barrier_closure.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
@@ -94,9 +92,6 @@ std::string MakePartitionName(const std::string& input) {
 }
 
 }  // namespace
-
-const char kSerialGrantedDevicesPref[] =
-    "profile.content_settings.exceptions.serial-chooser-data";
 
 // static
 ElectronBrowserContext::BrowserContextMap&
@@ -194,7 +189,6 @@ void ElectronBrowserContext::InitPrefs() {
   registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                  download_dir);
   registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
-  registry->RegisterDictionaryPref(kSerialGrantedDevicesPref);
   InspectableWebContents::RegisterPrefs(registry.get());
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
@@ -229,7 +223,7 @@ void ElectronBrowserContext::InitPrefs() {
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
       base::ListValue language_codes;
-      language_codes.AppendString(default_code);
+      language_codes.Append(default_code);
       prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries, language_codes);
     }
   }
@@ -291,6 +285,11 @@ content::BrowserPluginGuestManager* ElectronBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_ = std::make_unique<WebViewManager>();
   return guest_manager_.get();
+}
+
+content::PlatformNotificationService*
+ElectronBrowserContext::GetPlatformNotificationService() {
+  return ElectronBrowserClient::Get()->GetPlatformNotificationService();
 }
 
 content::PermissionControllerDelegate*
@@ -413,54 +412,6 @@ void ElectronBrowserContext::SetSSLConfig(network::mojom::SSLConfigPtr config) {
 void ElectronBrowserContext::SetSSLConfigClient(
     mojo::Remote<network::mojom::SSLConfigClient> client) {
   ssl_config_client_ = std::move(client);
-}
-
-void ElectronBrowserContext::GrantObjectPermission(
-    const url::Origin& origin,
-    base::Value object,
-    const std::string& pref_key) {
-  std::string origin_string = origin.Serialize();
-  DictionaryPrefUpdate update(prefs(), pref_key);
-  base::Value* const current_objects = update.Get();
-  if (!current_objects || !current_objects->is_dict()) {
-    base::ListValue objects_for_origin;
-    objects_for_origin.Append(std::move(object));
-    base::DictionaryValue objects_by_origin;
-    objects_by_origin.SetPath(origin_string, std::move(objects_for_origin));
-    prefs()->Set(pref_key, std::move(objects_by_origin));
-  } else {
-    base::Value* const objects_mutable =
-        current_objects->FindListKey(origin_string);
-    if (objects_mutable) {
-      base::Value::ListStorage objects = std::move(*objects_mutable).TakeList();
-      objects.push_back(std::move(object));
-      *objects_mutable = base::Value(std::move(objects));
-    } else {
-      base::Value new_objects(base::Value::Type::LIST);
-      new_objects.Append(std::move(object));
-      current_objects->SetKey(origin_string, std::move(new_objects));
-    }
-  }
-}
-
-std::vector<std::unique_ptr<base::Value>>
-ElectronBrowserContext::GetGrantedObjects(const url::Origin& origin,
-                                          const std::string& pref_key) {
-  auto* current_objects = prefs()->Get(pref_key);
-  if (!current_objects || !current_objects->is_dict()) {
-    return {};
-  }
-
-  const base::Value* objects_for_origin =
-      current_objects->FindPath(origin.Serialize());
-  if (!objects_for_origin)
-    return {};
-
-  std::vector<std::unique_ptr<base::Value>> results;
-  for (const auto& object : objects_for_origin->GetList())
-    results.push_back(std::make_unique<base::Value>(object.Clone()));
-
-  return results;
 }
 
 // static

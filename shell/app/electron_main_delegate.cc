@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
@@ -25,6 +26,7 @@
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
+#include "shell/app/command_line_args.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_gpu_client.h"
@@ -82,11 +84,6 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
   return process_type.empty();
 }
 
-bool IsSandboxEnabled(base::CommandLine* command_line) {
-  return command_line->HasSwitch(switches::kEnableSandbox) ||
-         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
-}
-
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
 bool SubprocessNeedsResourceBundle(const std::string& process_type) {
@@ -131,11 +128,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     case DIR_CRASH_DUMPS:
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
-#if defined(OS_MAC) || defined(OS_WIN)
       cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
-#else
-      cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
-#endif
       create_dir = true;
       break;
     case chrome::DIR_APP_DICTIONARIES:
@@ -151,7 +144,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
 #else
       // On Windows, there's no OS-level centralized location for caches, so
       // store the cache in the app data directory.
-      int parent_key = base::DIR_APP_DATA;
+      int parent_key = base::DIR_ROAMING_APP_DATA;
 #endif
       if (!base::PathService::Get(parent_key, &cur))
         return false;
@@ -451,13 +444,14 @@ ElectronMainDelegate::CreateContentUtilityClient() {
   return utility_client_.get();
 }
 
-int ElectronMainDelegate::RunProcess(
+absl::variant<int, content::MainFunctionParams>
+ElectronMainDelegate::RunProcess(
     const std::string& process_type,
-    const content::MainFunctionParams& main_function_params) {
+    content::MainFunctionParams main_function_params) {
   if (process_type == kRelauncherProcess)
     return relauncher::RelauncherMain(main_function_params);
   else
-    return -1;
+    return std::move(main_function_params);
 }
 
 bool ElectronMainDelegate::ShouldCreateFeatureList() {

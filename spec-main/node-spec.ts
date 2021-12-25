@@ -350,7 +350,7 @@ describe('node feature', () => {
   });
 
   it('Can find a module using a package.json main field', () => {
-    const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')]);
+    const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')], { stdio: 'inherit' });
     expect(result.status).to.equal(0);
   });
 

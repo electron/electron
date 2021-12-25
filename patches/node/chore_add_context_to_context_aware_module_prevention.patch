@@ -8,7 +8,7 @@ modules from being used in the renderer process. This should be upstreamed as
 a customizable error message.
 
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 8b8389ae53608afedc9cc0ad2a6c8461b7aa893e..e79ddab7d73c6297ef1dc74b2a0ce469bf49e37c 100644
+index e323f76261f2028ef58da74066f9112d8a5a8df2..bec34a61e0be78d863e476c75647e3496aa6a2c5 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -4,6 +4,7 @@
@@ -19,7 +19,7 @@ index 8b8389ae53608afedc9cc0ad2a6c8461b7aa893e..e79ddab7d73c6297ef1dc74b2a0ce469
  #include "util.h"
  
  #include <string>
-@@ -466,7 +467,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+@@ -472,7 +473,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
        if (mp->nm_context_register_func == nullptr) {
          if (env->force_context_aware()) {
            dlib->Close();
@@ -27,7 +27,7 @@ index 8b8389ae53608afedc9cc0ad2a6c8461b7aa893e..e79ddab7d73c6297ef1dc74b2a0ce469
 +          char errmsg[1024];
 +          snprintf(errmsg,
 +                   sizeof(errmsg),
-+                   "Loading non-context-aware native module in renderer: '%s', but app.allowRendererProcessReuse is true. See https://github.com/electron/electron/issues/18397.",
++                   "Loading non-context-aware native module in renderer: '%s'. See https://github.com/electron/electron/issues/18397.",
 +                   *filename);
 +          env->ThrowError(errmsg);
            return false;

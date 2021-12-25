@@ -6,7 +6,7 @@ Subject: gtk_visibility.patch
 Allow electron to depend on GTK in the GN build.
 
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index ecf95dda763b4c4515d9af890b93fbe69e300498..81748583fa032c48c11beb97b0d9eea41c1a9679 100644
+index 659002397184ad5017686585c0a5ad641e3312c5..85fdf6513403e7a713444213883fe3e0c101af42 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
 @@ -33,6 +33,7 @@ pkg_config("gtk_internal_config") {
@@ -17,7 +17,7 @@ index ecf95dda763b4c4515d9af890b93fbe69e300498..81748583fa032c48c11beb97b0d9eea4
      # This is the only target that can depend on GTK.  Do not add more targets
      # to this list.
      "//ui/gtk:gtk_stubs",
-@@ -63,6 +64,9 @@ pkg_config("gtkprint_internal_config") {
+@@ -64,6 +65,9 @@ pkg_config("gtkprint_internal_config") {
  }
  
  group("gtkprint") {

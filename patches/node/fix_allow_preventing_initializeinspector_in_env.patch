@@ -36,11 +36,11 @@ index 523d252e08974a10f9a53fb46d3345669cec3380..5bf19a0dda42849159d954181058897c
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 061897d95d8b5f61968c59260e609d7be724b88f..7c7ee3207089bf3e51db646a367bdd6deba18628 100644
+index 1e85bc07a4cc29f3b380da3c0e217a85309eb3a5..845e00208af4b12960ed8b3f3926323af7685185 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -881,6 +881,10 @@ inline bool Environment::hide_console_windows() const {
-   return flags_ & EnvironmentFlags::kHideConsoleWindows;
+@@ -892,6 +892,10 @@ inline bool Environment::no_global_search_paths() const {
+          !options_->global_search_paths;
  }
  
 +inline bool Environment::should_initialize_inspector() const {
@@ -51,31 +51,31 @@ index 061897d95d8b5f61968c59260e609d7be724b88f..7c7ee3207089bf3e51db646a367bdd6d
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index 8760bc4361f199a2e3471c4ca435f8e178c78e7e..33f34ed79452b004b5fb40e70cda6e3d0ee2d1e2 100644
+index 0c3715151488f425a723618252e1277b78fafe5f..e0deca497feb111622b257b952c9ed9161c7d001 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1199,6 +1199,7 @@ class Environment : public MemoryRetainer {
-   inline bool owns_inspector() const;
+@@ -1204,6 +1204,7 @@ class Environment : public MemoryRetainer {
    inline bool tracks_unmanaged_fds() const;
    inline bool hide_console_windows() const;
+   inline bool no_global_search_paths() const;
 +  inline bool should_initialize_inspector() const;
    inline uint64_t thread_id() const;
    inline worker::Worker* worker_context() const;
    Environment* worker_parent_env() const;
 diff --git a/src/node.h b/src/node.h
-index b7f3e97873ef90b635e0648639f1a287a0bd88fa..48e378079f6d05e7cc1141a8875450b125028789 100644
+index 364f789fbcbec8e3234961294698d8e69b04a310..85b5ac6a5a5cb5e4388a92a1d07c9afe17140a8c 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -409,7 +409,11 @@ enum Flags : uint64_t {
-   // Set this flag to force hiding console windows when spawning child
-   // processes. This is usually used when embedding Node.js in GUI programs on
-   // Windows.
--  kHideConsoleWindows = 1 << 5
-+  kHideConsoleWindows = 1 << 5,
+@@ -420,7 +420,11 @@ enum Flags : uint64_t {
+   // $HOME/.node_modules and $NODE_PATH. This is used by standalone apps that
+   // do not expect to have their behaviors changed because of globally
+   // installed modules.
+-  kNoGlobalSearchPaths = 1 << 7
++  kNoGlobalSearchPaths = 1 << 7,
 +  // Controls whether or not the Environment should call InitializeInspector.
 +  // This control is needed by embedders who may not want to initialize the V8
 +  // inspector in situations where it already exists.
-+  kNoInitializeInspector = 1 << 6
++  kNoInitializeInspector = 1 << 8
  };
  }  // namespace EnvironmentFlags
  

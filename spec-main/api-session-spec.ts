@@ -559,8 +559,8 @@ describe('session module', () => {
       const ses = session.fromPartition(`${Math.random()}`);
       let validate: () => void;
       ses.setCertificateVerifyProc(({ hostname, verificationResult, errorCode }, callback) => {
+        if (hostname !== '127.0.0.1') return callback(-3);
         validate = () => {
-          expect(hostname).to.equal('127.0.0.1');
           expect(verificationResult).to.be.oneOf(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID']);
           expect(errorCode).to.be.oneOf([-202, -200]);
         };
@@ -578,8 +578,8 @@ describe('session module', () => {
       const ses = session.fromPartition(`${Math.random()}`);
       let validate: () => void;
       ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult, isIssuedByKnownRoot }, callback) => {
+        if (hostname !== '127.0.0.1') return callback(-3);
         validate = () => {
-          expect(hostname).to.equal('127.0.0.1');
           expect(certificate.issuerName).to.equal('Intermediate CA');
           expect(certificate.subjectName).to.equal('localhost');
           expect(certificate.issuer.commonName).to.equal('Intermediate CA');
@@ -607,6 +607,7 @@ describe('session module', () => {
       const ses = session.fromPartition(`${Math.random()}`);
       let numVerificationRequests = 0;
       ses.setCertificateVerifyProc((e, callback) => {
+        if (e.hostname !== '127.0.0.1') return callback(-3);
         numVerificationRequests++;
         callback(-2);
       });

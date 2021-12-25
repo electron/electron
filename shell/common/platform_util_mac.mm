@@ -21,6 +21,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
+#include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 
 namespace {
@@ -115,6 +116,18 @@ void OpenExternal(const GURL& url,
                      std::move(c).Run(error);
                    });
                  });
+}
+
+// The following function helps with debug builds on the Mac
+gfx::NativeView GetViewForWindow(gfx::NativeWindow native_window) {
+  NOTREACHED();
+  return nil;
+}
+
+// The following function helps with debug builds on the Mac
+gfx::NativeView GetParent(gfx::NativeView view) {
+  NOTREACHED();
+  return nil;
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& full_path,

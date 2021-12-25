@@ -18,6 +18,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/os_crypt.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
@@ -49,6 +50,14 @@
 #endif
 
 namespace {
+
+#if defined(OS_WIN)
+namespace {
+
+const char kNetworkServiceSandboxEnabled[] = "net.network_service_sandbox";
+
+}
+#endif  // defined(OS_WIN)
 
 // The global instance of the SystemNetworkContextmanager.
 SystemNetworkContextManager* g_system_network_context_manager = nullptr;
@@ -92,6 +101,11 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
     DETACH_FROM_SEQUENCE(sequence_checker_);
   }
 
+  // disable copy
+  URLLoaderFactoryForSystem(const URLLoaderFactoryForSystem&) = delete;
+  URLLoaderFactoryForSystem& operator=(const URLLoaderFactoryForSystem&) =
+      delete;
+
   // mojom::URLLoaderFactory implementation:
   void CreateLoaderAndStart(
       mojo::PendingReceiver<network::mojom::URLLoader> request,
@@ -132,8 +146,6 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
 
   SEQUENCE_CHECKER(sequence_checker_);
   SystemNetworkContextManager* manager_;
-
-  DISALLOW_COPY_AND_ASSIGN(URLLoaderFactoryForSystem);
 };
 
 network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
@@ -215,6 +227,19 @@ SystemNetworkContextManager* SystemNetworkContextManager::GetInstance() {
 void SystemNetworkContextManager::DeleteInstance() {
   DCHECK(g_system_network_context_manager);
   delete g_system_network_context_manager;
+}
+
+// c.f.
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/net/system_network_context_manager.cc;l=730-740;drc=15a616c8043551a7cb22c4f73a88e83afb94631c;bpv=1;bpt=1
+bool SystemNetworkContextManager::IsNetworkSandboxEnabled() {
+#if defined(OS_WIN)
+  auto* local_state = g_browser_process->local_state();
+  if (local_state && local_state->HasPrefPath(kNetworkServiceSandboxEnabled)) {
+    return local_state->GetBoolean(kNetworkServiceSandboxEnabled);
+  }
+#endif  // defined(OS_WIN)
+  // If no policy is specified, then delegate to global sandbox configuration.
+  return sandbox::policy::features::IsNetworkSandboxEnabled();
 }
 
 SystemNetworkContextManager::SystemNetworkContextManager(
@@ -341,8 +366,6 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
   // TODO(mmenke): Set up parameters here (in memory cookie store, etc).
   network::mojom::NetworkContextParamsPtr network_context_params =
       CreateDefaultNetworkContextParams();
-
-  network_context_params->context_name = std::string("system");
 
   network_context_params->user_agent =
       electron::ElectronBrowserClient::Get()->GetUserAgent();

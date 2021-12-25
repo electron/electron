@@ -43,7 +43,7 @@ The installer generated with Squirrel will create a shortcut icon with an
 same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
 not be able to pin your app properly in task bar.
 
-Unlike Squirrel.Mac, Windows can host updates on S3 or any other static file host.
+Like Squirrel.Mac, Windows can host updates on S3 or any other static file host.
 You can read the documents of [Squirrel.Windows][squirrel-windows] to get more details
 about how Squirrel.Windows works.
 
@@ -77,10 +77,10 @@ Emitted when there is no available update.
 Returns:
 
 * `event` Event
-* `releaseNotes` String
-* `releaseName` String
+* `releaseNotes` string
+* `releaseName` string
 * `releaseDate` Date
-* `updateURL` String
+* `updateURL` string
 
 Emitted when an update has been downloaded.
 
@@ -102,16 +102,16 @@ The `autoUpdater` object has the following methods:
 ### `autoUpdater.setFeedURL(options)`
 
 * `options` Object
-  * `url` String
-  * `headers` Record<String, String> (optional) _macOS_ - HTTP request headers.
-  * `serverType` String (optional) _macOS_ - Can be `json` or `default`, see the [Squirrel.Mac][squirrel-mac]
+  * `url` string
+  * `headers` Record<string, string> (optional) _macOS_ - HTTP request headers.
+  * `serverType` string (optional) _macOS_ - Can be `json` or `default`, see the [Squirrel.Mac][squirrel-mac]
     README for more information.
 
 Sets the `url` and initialize the auto updater.
 
 ### `autoUpdater.getFeedURL()`
 
-Returns `String` - The current update feed URL.
+Returns `string` - The current update feed URL.
 
 ### `autoUpdater.checkForUpdates()`
 

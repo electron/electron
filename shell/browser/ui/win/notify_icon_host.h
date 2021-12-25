@@ -2,14 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
-#define SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
+#define ELECTRON_SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
 
 #include <windows.h>
 
 #include <vector>
 
-#include "base/macros.h"
 #include "shell/common/gin_converters/guid_converter.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
@@ -23,6 +22,10 @@ class NotifyIconHost {
  public:
   NotifyIconHost();
   ~NotifyIconHost();
+
+  // disable copy
+  NotifyIconHost(const NotifyIconHost&) = delete;
+  NotifyIconHost& operator=(const NotifyIconHost&) = delete;
 
   NotifyIcon* CreateNotifyIcon(absl::optional<UUID> guid);
   void Remove(NotifyIcon* notify_icon);
@@ -61,10 +64,8 @@ class NotifyIconHost {
   // The message ID of the "TaskbarCreated" message, sent to us when we need to
   // reset our status icons.
   UINT taskbar_created_message_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(NotifyIconHost);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WIN_NOTIFY_ICON_HOST_H_

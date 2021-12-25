@@ -4,13 +4,19 @@
 
 #include "shell/common/platform_util.h"
 
+#include <fcntl.h>
+
 #include <stdio.h>
+#include <string>
+#include <vector>
 
 #include "base/cancelable_callback.h"
+#include "base/containers/contains.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/nix/xdg_util.h"
 #include "base/no_destructor.h"
+#include "base/posix/eintr_wrapper.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/threading/thread_restrictions.h"
@@ -20,6 +26,7 @@
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
 #include "shell/common/platform_util_internal.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gtk/gtk_util.h"
 #include "url/gurl.h"
 
@@ -31,10 +38,19 @@ void OpenFolder(const base::FilePath& full_path);
 
 namespace {
 
+const char kMethodListActivatableNames[] = "ListActivatableNames";
+const char kMethodNameHasOwner[] = "NameHasOwner";
+
 const char kFreedesktopFileManagerName[] = "org.freedesktop.FileManager1";
 const char kFreedesktopFileManagerPath[] = "/org/freedesktop/FileManager1";
 
 const char kMethodShowItems[] = "ShowItems";
+
+const char kFreedesktopPortalName[] = "org.freedesktop.portal.Desktop";
+const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
+const char kFreedesktopPortalOpenURI[] = "org.freedesktop.portal.OpenURI";
+
+const char kMethodOpenDirectory[] = "OpenDirectory";
 
 class ShowItemHelper {
  public:
@@ -58,8 +74,136 @@ class ShowItemHelper {
       bus_ = base::MakeRefCounted<dbus::Bus>(bus_options);
     }
 
-    if (!filemanager_proxy_) {
-      filemanager_proxy_ =
+    if (!dbus_proxy_) {
+      dbus_proxy_ = bus_->GetObjectProxy(DBUS_SERVICE_DBUS,
+                                         dbus::ObjectPath(DBUS_PATH_DBUS));
+    }
+
+    if (prefer_filemanager_interface_.has_value()) {
+      if (prefer_filemanager_interface_.value()) {
+        ShowItemUsingFileManager(full_path);
+      } else {
+        ShowItemUsingFreedesktopPortal(full_path);
+      }
+    } else {
+      CheckFileManagerRunning(full_path);
+    }
+  }
+
+ private:
+  void CheckFileManagerRunning(const base::FilePath& full_path) {
+    dbus::MethodCall method_call(DBUS_INTERFACE_DBUS, kMethodNameHasOwner);
+    dbus::MessageWriter writer(&method_call);
+    writer.AppendString(kFreedesktopFileManagerName);
+
+    dbus_proxy_->CallMethod(
+        &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
+        base::BindOnce(&ShowItemHelper::CheckFileManagerRunningResponse,
+                       base::Unretained(this), full_path));
+  }
+
+  void CheckFileManagerRunningResponse(const base::FilePath& full_path,
+                                       dbus::Response* response) {
+    if (prefer_filemanager_interface_.has_value()) {
+      ShowItemInFolder(full_path);
+      return;
+    }
+
+    bool is_running = false;
+
+    if (!response) {
+      LOG(ERROR) << "Failed to call " << kMethodNameHasOwner;
+    } else {
+      dbus::MessageReader reader(response);
+      bool owned = false;
+
+      if (!reader.PopBool(&owned)) {
+        LOG(ERROR) << "Failed to read " << kMethodNameHasOwner << " resposne";
+      } else if (owned) {
+        is_running = true;
+      }
+    }
+
+    if (is_running) {
+      prefer_filemanager_interface_ = true;
+      ShowItemInFolder(full_path);
+    } else {
+      CheckFileManagerActivatable(full_path);
+    }
+  }
+
+  void CheckFileManagerActivatable(const base::FilePath& full_path) {
+    dbus::MethodCall method_call(DBUS_INTERFACE_DBUS,
+                                 kMethodListActivatableNames);
+    dbus_proxy_->CallMethod(
+        &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
+        base::BindOnce(&ShowItemHelper::CheckFileManagerActivatableResponse,
+                       base::Unretained(this), full_path));
+  }
+
+  void CheckFileManagerActivatableResponse(const base::FilePath& full_path,
+                                           dbus::Response* response) {
+    if (prefer_filemanager_interface_.has_value()) {
+      ShowItemInFolder(full_path);
+      return;
+    }
+
+    bool is_activatable = false;
+
+    if (!response) {
+      LOG(ERROR) << "Failed to call " << kMethodListActivatableNames;
+    } else {
+      dbus::MessageReader reader(response);
+      std::vector<std::string> names;
+      if (!reader.PopArrayOfStrings(&names)) {
+        LOG(ERROR) << "Failed to read " << kMethodListActivatableNames
+                   << " response";
+      } else if (base::Contains(names, kFreedesktopFileManagerName)) {
+        is_activatable = true;
+      }
+    }
+
+    prefer_filemanager_interface_ = is_activatable;
+    ShowItemInFolder(full_path);
+  }
+
+  void ShowItemUsingFreedesktopPortal(const base::FilePath& full_path) {
+    if (!object_proxy_) {
+      object_proxy_ = bus_->GetObjectProxy(
+          kFreedesktopPortalName, dbus::ObjectPath(kFreedesktopPortalPath));
+    }
+
+    base::ScopedFD fd(
+        HANDLE_EINTR(open(full_path.value().c_str(), O_RDONLY | O_CLOEXEC)));
+    if (!fd.is_valid()) {
+      LOG(ERROR) << "Failed to open " << full_path << " for URI portal";
+
+      // If the call fails, at least open the parent folder.
+      platform_util::OpenFolder(full_path.DirName());
+
+      return;
+    }
+
+    dbus::MethodCall open_directory_call(kFreedesktopPortalOpenURI,
+                                         kMethodOpenDirectory);
+    dbus::MessageWriter writer(&open_directory_call);
+
+    writer.AppendString("");
+
+    // Note that AppendFileDescriptor() duplicates the fd, so we shouldn't
+    // release ownership of it here.
+    writer.AppendFileDescriptor(fd.get());
+
+    dbus::MessageWriter options_writer(nullptr);
+    writer.OpenArray("{sv}", &options_writer);
+    writer.CloseContainer(&options_writer);
+
+    ShowItemUsingBusCall(&open_directory_call, full_path);
+  }
+
+  void ShowItemUsingFileManager(const base::FilePath& full_path) {
+    if (!object_proxy_) {
+      object_proxy_ =
           bus_->GetObjectProxy(kFreedesktopFileManagerName,
                                dbus::ObjectPath(kFreedesktopFileManagerPath));
     }
@@ -72,25 +216,33 @@ class ShowItemHelper {
         {"file://" + full_path.value()});  // List of file(s) to highlight.
     writer.AppendString({});               // startup-id
 
-    filemanager_proxy_->CallMethod(
-        &show_items_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
-        base::BindOnce(&ShowItemHelper::ShowItemInFolderResponse,
-                       base::Unretained(this), full_path));
+    ShowItemUsingBusCall(&show_items_call, full_path);
   }
 
- private:
+  void ShowItemUsingBusCall(dbus::MethodCall* call,
+                            const base::FilePath& full_path) {
+    object_proxy_->CallMethod(
+        call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
+        base::BindOnce(&ShowItemHelper::ShowItemInFolderResponse,
+                       base::Unretained(this), full_path, call->GetMember()));
+  }
+
   void ShowItemInFolderResponse(const base::FilePath& full_path,
+                                const std::string& method,
                                 dbus::Response* response) {
     if (response)
       return;
 
-    LOG(ERROR) << "Error calling " << kMethodShowItems;
-    // If the FileManager1 call fails, at least open the parent folder.
+    LOG(ERROR) << "Error calling " << method;
+    // If the bus call fails, at least open the parent folder.
     platform_util::OpenFolder(full_path.DirName());
   }
 
   scoped_refptr<dbus::Bus> bus_;
-  dbus::ObjectProxy* filemanager_proxy_ = nullptr;
+  dbus::ObjectProxy* dbus_proxy_ = nullptr;
+  dbus::ObjectProxy* object_proxy_ = nullptr;
+
+  absl::optional<bool> prefer_filemanager_interface_;
 };
 
 // Descriptions pulled from https://linux.die.net/man/1/xdg-open

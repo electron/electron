@@ -55,7 +55,7 @@ The `powerMonitor` module has the following methods:
 
 * `idleThreshold` Integer
 
-Returns `String` - The system's current state. Can be `active`, `idle`, `locked` or `unknown`.
+Returns `string` - The system's current state. Can be `active`, `idle`, `locked` or `unknown`.
 
 Calculate the system idle state. `idleThreshold` is the amount of time (in seconds)
 before considered idle.  `locked` is available on supported systems only.
@@ -68,7 +68,7 @@ Calculate system idle time in seconds.
 
 ### `powerMonitor.isOnBatteryPower()`
 
-Returns `Boolean` - Whether the system is on battery power.
+Returns `boolean` - Whether the system is on battery power.
 
 To monitor for changes in this property, use the `on-battery` and `on-ac`
 events.
@@ -77,6 +77,6 @@ events.
 
 ### `powerMonitor.onBatteryPower`
 
-A `Boolean` property. True if the system is on battery power.
+A `boolean` property. True if the system is on battery power.
 
 See [`powerMonitor.isOnBatteryPower()`](#powermonitorisonbatterypower).

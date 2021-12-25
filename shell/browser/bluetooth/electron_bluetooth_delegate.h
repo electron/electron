@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_BLUETOOTH_ELECTRON_BLUETOOTH_DELEGATE_H_
-#define SHELL_BROWSER_BLUETOOTH_ELECTRON_BLUETOOTH_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_BLUETOOTH_ELECTRON_BLUETOOTH_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_BLUETOOTH_ELECTRON_BLUETOOTH_DELEGATE_H_
 
 #include <memory>
 #include <string>
@@ -52,6 +52,9 @@ class ElectronBluetoothDelegate : public content::BluetoothDelegate {
       content::RenderFrameHost* frame,
       const content::BluetoothScanningPrompt::EventHandler& event_handler)
       override;
+  void ShowDeviceCredentialsPrompt(content::RenderFrameHost* frame,
+                                   const std::u16string& device_identifier,
+                                   CredentialsCallback callback) override;
   blink::WebBluetoothDeviceId GetWebBluetoothDeviceId(
       content::RenderFrameHost* frame,
       const std::string& device_address) override;
@@ -87,4 +90,4 @@ class ElectronBluetoothDelegate : public content::BluetoothDelegate {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_BLUETOOTH_ELECTRON_BLUETOOTH_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_BLUETOOTH_ELECTRON_BLUETOOTH_DELEGATE_H_

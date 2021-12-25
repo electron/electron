@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 095bc943529c38c4f469bf69b79006ca48a4e0d5..0e358e2d140bccf2e987db234cd5922732149168 100644
+index 558fabf35abea86883bdcfe4a600ba72f24bd9dc..d19cd4006e88dc165a6e5fbbe8f1d96547d136f3 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -751,7 +751,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -787,7 +787,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
    }
  #endif
  
@@ -32,10 +32,10 @@ index 095bc943529c38c4f469bf69b79006ca48a4e0d5..0e358e2d140bccf2e987db234cd59227
  
  #if !defined(OS_ANDROID)
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index 29d38782f197cb72a875effab00ffc7960435ac1..694fe67ef751b2a84d8fc3f5ad82854fe2287a11 100644
+index 5fcc7c6c1e27f36f86e972cebbd1808d37ea5b88..bff53783935950facb6cf896d4e906c5f05fe9a8 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
-@@ -50,7 +50,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
+@@ -49,7 +49,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
  
  }  // namespace
  
@@ -44,7 +44,7 @@ index 29d38782f197cb72a875effab00ffc7960435ac1..694fe67ef751b2a84d8fc3f5ad82854f
    // On Android and in tests, schemes may have been registered already.
    if (g_registered_url_schemes)
      return;
-@@ -110,7 +110,8 @@ void RegisterContentSchemes() {
+@@ -109,7 +109,8 @@ void RegisterContentSchemes() {
    // threadsafe so must be called when GURL isn't used on any other thread. This
    // is really easy to mess up, so we say that all calls to Add*Scheme in Chrome
    // must be inside this function.
@@ -68,7 +68,7 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 8c71a579ee69d77547698c2135e3b4453c126b97..9b7fd8949b13d97982a100a36d9f73c9947b8853 100644
+index d076ab515732941a8403c7756272afddcb298f6b..4f3c2d8d4520e6f25d3d79e00d6af03bc842cc38 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -42,6 +42,10 @@ bool ContentMainDelegate::ShouldHandleConsoleControlEvents() {
@@ -83,10 +83,10 @@ index 8c71a579ee69d77547698c2135e3b4453c126b97..9b7fd8949b13d97982a100a36d9f73c9
    return true;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 5e45724edf07ac33c9a423ecb6b6077f19e13b04..84f77390772828554e446d1e6f99198b76e9f835 100644
+index f8f9a6d4316e0eb19585479aab20b441adb391ef..4b35355cf73c1a19587e1954839577df36e6e1d9 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
-@@ -69,6 +69,20 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -73,6 +73,20 @@ class CONTENT_EXPORT ContentMainDelegate {
    // returning initialization error code. Default behavior is CHECK(false).
    virtual int TerminateForFatalInitializationError();
  
