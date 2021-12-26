@@ -43,7 +43,7 @@ ipcMain.on('asynchronous-message', (event, arg) => {
 
 ```js title='preload.js'
 // In preload.
-const { ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron')
 
 // A synchronous message.
 contextBridge.exposeInMainWorld('message_sync', (msg) => {
