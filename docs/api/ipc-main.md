@@ -24,32 +24,51 @@ process, see [webContents.send][web-contents-send] for more information.
 An example of sending and handling messages between the render and main
 processes:
 
-```javascript
+```js title='main.js'
 // In main process.
 const { ipcMain } = require('electron')
-ipcMain.on('asynchronous-message', (event, arg) => {
-  console.log(arg) // prints "ping"
-  event.reply('asynchronous-reply', 'pong')
-})
 
+// A synchronous message.
 ipcMain.on('synchronous-message', (event, arg) => {
   console.log(arg) // prints "ping"
   event.returnValue = 'pong'
 })
-```
 
-```javascript
-// In renderer process (web page).
-// NB. Electron APIs are only accessible from preload, unless contextIsolation is disabled.
-// See https://www.electronjs.org/docs/tutorial/process-model#preload-scripts for more details.
-const { ipcRenderer } = require('electron')
-console.log(ipcRenderer.sendSync('synchronous-message', 'ping')) // prints "pong"
-
-ipcRenderer.on('asynchronous-reply', (event, arg) => {
-  console.log(arg) // prints "pong"
+// A asynchronous message.
+ipcMain.on('asynchronous-message', (event, arg) => {
+  console.log(arg) // prints "ping"
+  event.reply('asynchronous-reply', 'pong')
 })
-ipcRenderer.send('asynchronous-message', 'ping')
 ```
+
+```js title='preload.js'
+// In preload.
+const { ipcRenderer } = require('electron')
+
+// A synchronous message.
+contextBridge.exposeInMainWorld('message_sync', (msg) => {
+  console.log(ipcRenderer.sendSync('synchronous-message', msg)) // prints "pong"
+})
+
+// A asynchronous message.
+contextBridge.exposeInMainWorld('message_async', (msg) => {
+  ipcRenderer.on('asynchronous-reply', (event, arg) => {
+  console.log(arg) // prints "pong"
+  })
+  ipcRenderer.send('asynchronous-message', msg)
+})
+```
+
+```js title='renderer.js'
+// In renderer process (web page).
+
+// A synchronous message.
+window.message_sync('ping')
+
+// A asynchronous message.
+window.message_async('ping')
+```
+
 
 ## Methods
 
