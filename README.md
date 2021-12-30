@@ -85,7 +85,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-- [China](https://npm.taobao.org/mirrors/electron)
+- [Turkey](https://atomxplus.com)
 
 ## Documentation Translations
 
