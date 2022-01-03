@@ -81,7 +81,7 @@ An `Integer` indicating the HTTP protocol minor version number.
 
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 
-### `response.rawHeaders`
+#### `response.rawHeaders`
 
 A `string[]` containing the raw HTTP response headers exactly as they were
 received. The keys and values are in the same list. It is not a list of
