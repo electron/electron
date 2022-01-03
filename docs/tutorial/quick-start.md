@@ -119,7 +119,7 @@ of your project.
 
 Before we can create a window for our application, we need to create the content that
 will be loaded into it. In Electron, each window displays web contents that can be loaded
-from either from a local HTML file or a remote URL.
+from either a local HTML file or a remote URL.
 
 For this tutorial, you will be doing the former. Create an `index.html` file in the root
 folder of your project:
