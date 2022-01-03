@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 39f8bd413199f4090ce89a006d2400fec6f196c6..49c2fdbb599ba513ce069ccf8ac1ebe7ff412363 100644
+index 4a3f4fe1fb97a5715894ff236c5fa2f2684b728d..326833bcf62ac0c0551d2c3664624333c8754e62 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -119,6 +119,11 @@
@@ -22,7 +22,7 @@ index 39f8bd413199f4090ce89a006d2400fec6f196c6..49c2fdbb599ba513ce069ccf8ac1ebe7
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -425,6 +430,79 @@ bool GetFullDataFilePath(
+@@ -433,6 +438,79 @@ bool GetFullDataFilePath(
  
  }  // namespace
  
@@ -102,7 +102,7 @@ index 39f8bd413199f4090ce89a006d2400fec6f196c6..49c2fdbb599ba513ce069ccf8ac1ebe7
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -651,6 +729,13 @@ void NetworkContext::SetClient(
+@@ -659,6 +737,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -116,7 +116,7 @@ index 39f8bd413199f4090ce89a006d2400fec6f196c6..49c2fdbb599ba513ce069ccf8ac1ebe7
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2124,6 +2209,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2135,6 +2220,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)

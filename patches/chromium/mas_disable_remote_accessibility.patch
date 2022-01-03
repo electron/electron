@@ -114,7 +114,7 @@ index d81637c56be6ae889b47d3c33256e49b5507ff73..14024b4779889aa1cb9405893f34764c
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 32dd2a74aa5643e33fc5e226ed7f90c759845668..449792355009a521e7c34685849da5ba797dc3ee 100644
+index 5eb309722b477d061572224adf2ccd2cc2e32e7e..c7970f1262f8da6c8b6dce6d297de6a0b89ab49a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -253,8 +253,10 @@
@@ -167,7 +167,7 @@ index 32dd2a74aa5643e33fc5e226ed7f90c759845668..449792355009a521e7c34685849da5ba
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 47b7905ccd120fe5f161e3840b2b91ecb1312725..c107d30ce9185dd8afcb6fbe63fb465f3092107d 100644
+index 37151bca8d18a3decc418812b6a9ea76eb0c8f3a..3ac702aede00c3eba77751115d6663f561b43c05 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -318,6 +318,13 @@ component("base") {
