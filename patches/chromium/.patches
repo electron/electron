@@ -122,3 +122,4 @@ cherry-pick-a5f54612590d.patch
 cachestorage_store_partial_opaque_responses.patch
 fix_aspect_ratio_with_max_size.patch
 cherry-pick-f0a63e1f361f.patch
+cherry-pick-f781748dcb3c.patch
