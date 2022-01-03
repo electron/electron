@@ -27,6 +27,7 @@ Or use a 3rd party hosted solution:
 * [Backtrace](https://backtrace.io/electron/)
 * [Sentry](https://docs.sentry.io/clients/electron)
 * [BugSplat](https://www.bugsplat.com/docs/platforms/electron)
+* [Bugsnag](https://docs.bugsnag.com/platforms/electron/)
 
 Crash reports are stored temporarily before being uploaded in a directory
 underneath the app's user data directory, called 'Crashpad'. You can override
