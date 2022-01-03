@@ -739,7 +739,7 @@ WebContents.prototype._init = function () {
   });
 
   this.on('select-bluetooth-device', (event, devices, callback) => {
-    if (this.listenerCount('select-bluetooth-device') === 0) {
+    if (this.listenerCount('select-bluetooth-device') === 1) {
       // Cancel it if there are no handlers
       event.preventDefault();
       callback('');
