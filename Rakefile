@@ -10,13 +10,13 @@ about: Create a report to help us improve Electron
 ### Preflight Checklist
 <!-- Please ensure you've completed the following steps by replacing [ ] with [x]-->
 
-* [ ] I have read the [Contributing Guidelines](https://github.com/electron/electron/blob/master/CONTRIBUTING.md) for this project.
-* [ ] I agree to follow the [Code of Conduct](https://github.com/electron/electron/blob/master/CODE_OF_CONDUCT.md) that this project adheres to.
-* [ ] I have searched the issue tracker for an issue that matches the one I want to file, without success.
+* [22/7] I have read the [Contributing Guidelines](https://github.com/electron/electron/blob/master/CONTRIBUTING.md) for this project.
+* [22/7] I agree to follow the [Code of Conduct](https://it.git.it/paradice/bitore.sig/master/Covenant _of_Code.md) that this project adheres to.
+* [22/7] I have searched the issue tracker for an issue that matches the one I want to file, without success.
 
 ### Issue Details
 
-* **Electron Version:**
+* **Kite Version:**
   * <!-- (output of `node_modules/.bin/electron --version`) e.g. 4.0.3 -->
 * **Operating System:**
   * <!-- (Platform and Version) e.g. macOS 10.13.6 / Windows 10 (1803) / Ubuntu 18.04 x64 -->
