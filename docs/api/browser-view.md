@@ -45,13 +45,13 @@ Objects created with `new BrowserView` have the following instance methods:
 #### `view.setAutoResize(options)` _Experimental_
 
 * `options` Object
-  * `width` Boolean (optional) - If `true`, the view's width will grow and shrink together
+  * `width` boolean (optional) - If `true`, the view's width will grow and shrink together
     with the window. `false` by default.
-  * `height` Boolean (optional) - If `true`, the view's height will grow and shrink
+  * `height` boolean (optional) - If `true`, the view's height will grow and shrink
     together with the window. `false` by default.
-  * `horizontal` Boolean (optional) - If `true`, the view's x position and width will grow
+  * `horizontal` boolean (optional) - If `true`, the view's x position and width will grow
     and shrink proportionally with the window. `false` by default.
-  * `vertical` Boolean (optional) - If `true`, the view's y position and height will grow
+  * `vertical` boolean (optional) - If `true`, the view's y position and height will grow
     and shrink proportionally with the window. `false` by default.
 
 #### `view.setBounds(bounds)` _Experimental_
@@ -68,5 +68,5 @@ The `bounds` of this BrowserView instance as `Object`.
 
 #### `view.setBackgroundColor(color)` _Experimental_
 
-* `color` String - Color in `#aarrggbb` or `#argb` form. The alpha channel is
+* `color` string - Color in `#aarrggbb` or `#argb` form. The alpha channel is
   optional.

@@ -4,10 +4,6 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
-import type * as webFrameInitModule from '@electron/internal/renderer/web-frame-init';
-import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
-import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
-import type * as securityWarningsModule from '@electron/internal/renderer/security-warnings';
 
 const { EventEmitter } = events;
 
@@ -45,19 +41,6 @@ const loadableModules = new Map<string, Function>([
   ['url', () => require('url')]
 ]);
 
-// ElectronApiServiceImpl will look for the "ipcNative" hidden object when
-// invoking the 'onMessage' callback.
-v8Util.setHiddenValue(global, 'ipcNative', {
-  onMessage (internal: boolean, channel: string, ports: MessagePort[], args: any[], senderId: number) {
-    if (internal && senderId !== 0) {
-      console.error(`Message ${channel} sent by unexpected WebContents (${senderId})`);
-      return;
-    }
-    const sender = internal ? ipcRendererInternal : electron.ipcRenderer;
-    sender.emit(channel, { sender, senderId, ports }, ...args);
-  }
-});
-
 // ElectronSandboxedRendererClient will look for the "lifecycle" hidden object when
 v8Util.setHiddenValue(global, 'lifecycle', {
   onLoaded () {
@@ -74,9 +57,6 @@ v8Util.setHiddenValue(global, 'lifecycle', {
   }
 });
 
-const { webFrameInit } = require('@electron/internal/renderer/web-frame-init') as typeof webFrameInitModule;
-webFrameInit();
-
 // Pass different process object to the preload script.
 const preloadProcess: NodeJS.Process = new EventEmitter() as any;
 
@@ -85,6 +65,10 @@ Object.assign(preloadProcess, processProps);
 
 Object.assign(process, binding.process);
 Object.assign(process, processProps);
+
+process.getProcessMemoryInfo = preloadProcess.getProcessMemoryInfo = () => {
+  return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
+};
 
 Object.defineProperty(preloadProcess, 'noDeprecation', {
   get () {
@@ -115,7 +99,6 @@ function preloadRequire (module: string) {
 
 // Process command line arguments.
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
-const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 // Similar to nodes --expose-internals flag, this exposes _linkedBinding so
 // that tests can call it to get access to some test only bindings
@@ -123,35 +106,8 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
   preloadProcess._linkedBinding = process._linkedBinding;
 }
 
-const contextIsolation = mainFrame.getWebPreference('contextIsolation');
-const webviewTag = mainFrame.getWebPreference('webviewTag');
-const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
-const isWebView = mainFrame.getWebPreference('isWebView');
-
-switch (window.location.protocol) {
-  case 'devtools:': {
-    // Override some inspector APIs.
-    require('@electron/internal/renderer/inspector');
-    break;
-  }
-  case 'chrome-extension:': {
-    break;
-  }
-  case 'chrome:': {
-    break;
-  }
-  default: {
-    // Override default web functions.
-    const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(isWebView, isHiddenPage);
-  }
-}
-
-// Load webview tag implementation.
-if (process.isMainFrame) {
-  const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(contextIsolation, webviewTag, isWebView);
-}
+// Common renderer initialization
+require('@electron/internal/renderer/common-init');
 
 // Wrap the script into a function executed in global scope. It won't have
 // access to the current scope, so we'll expose a few objects as arguments:
@@ -185,10 +141,4 @@ for (const { preloadPath, preloadSrc, preloadError } of preloadScripts) {
 
     ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadPath, error);
   }
-}
-
-// Warn about security issues
-if (process.isMainFrame) {
-  const { securityWarnings } = require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
-  securityWarnings();
 }

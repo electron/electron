@@ -24,7 +24,7 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/node.cc b/src/node.cc
-index 3ee25ebbd67a01d607456e5158c98ca2fdea396b..6302bb925339d709a54151a8fc8b58f1a2253881 100644
+index e942c108a15a3c50d92c08b344f6691050c7859d..207a95d202b4e422a39f837241f1655f7111b1e3 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -139,6 +139,8 @@ using v8::Undefined;
@@ -36,7 +36,7 @@ index 3ee25ebbd67a01d607456e5158c98ca2fdea396b..6302bb925339d709a54151a8fc8b58f1
  namespace per_process {
  
  // node_revert.h
-@@ -860,7 +862,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -853,7 +855,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -47,7 +47,7 @@ index 3ee25ebbd67a01d607456e5158c98ca2fdea396b..6302bb925339d709a54151a8fc8b58f1
  
    // Cache the original command line to be
    // used in diagnostic reports.
-@@ -894,7 +898,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -887,7 +891,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
@@ -57,7 +57,7 @@ index 3ee25ebbd67a01d607456e5158c98ca2fdea396b..6302bb925339d709a54151a8fc8b58f1
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
                                            errors,
-@@ -937,7 +942,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -930,7 +935,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      return 9;
    }
    per_process::metadata.versions.InitializeIntlVersions();
@@ -67,7 +67,7 @@ index 3ee25ebbd67a01d607456e5158c98ca2fdea396b..6302bb925339d709a54151a8fc8b58f1
    std::string tz;
    if (credentials::SafeGetenv("TZ", &tz) && !tz.empty()) {
 diff --git a/src/node.h b/src/node.h
-index 049163bf27cc7c1d6433b65becab0d7761491f09..09cb7a317cc46e88e5d214996dc87dc6e8730b1a 100644
+index 1f9afa558d0c8b7950a0f5862017e09a08118ec1..45de72bd94cf669ac2badf89d23164cb7022a5b3 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -213,6 +213,8 @@ namespace node {

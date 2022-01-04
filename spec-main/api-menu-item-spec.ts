@@ -462,9 +462,9 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Alt+A' }
       ]);
 
-      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? 'Command+A' : 'Ctrl+A');
-      expect(menu.getAcceleratorTextAt(1)).to.equal('Shift+A');
-      expect(menu.getAcceleratorTextAt(2)).to.equal('Alt+A');
+      expect(menu._getAcceleratorTextAt(0)).to.equal(isDarwin() ? 'Command+A' : 'Ctrl+A');
+      expect(menu._getAcceleratorTextAt(1)).to.equal('Shift+A');
+      expect(menu._getAcceleratorTextAt(2)).to.equal('Alt+A');
     });
 
     it('should display modifiers correctly for special keys', () => {
@@ -474,9 +474,9 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Alt+Tab' }
       ]);
 
-      expect(menu.getAcceleratorTextAt(0)).to.equal(isDarwin() ? 'Command+Tab' : 'Ctrl+Tab');
-      expect(menu.getAcceleratorTextAt(1)).to.equal('Shift+Tab');
-      expect(menu.getAcceleratorTextAt(2)).to.equal('Alt+Tab');
+      expect(menu._getAcceleratorTextAt(0)).to.equal(isDarwin() ? 'Command+Tab' : 'Ctrl+Tab');
+      expect(menu._getAcceleratorTextAt(1)).to.equal('Shift+Tab');
+      expect(menu._getAcceleratorTextAt(2)).to.equal('Alt+Tab');
     });
 
     it('should not display modifiers twice', () => {
@@ -485,8 +485,8 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Shift+Shift+Tab' }
       ]);
 
-      expect(menu.getAcceleratorTextAt(0)).to.equal('Shift+A');
-      expect(menu.getAcceleratorTextAt(1)).to.equal('Shift+Tab');
+      expect(menu._getAcceleratorTextAt(0)).to.equal('Shift+A');
+      expect(menu._getAcceleratorTextAt(1)).to.equal('Shift+Tab');
     });
 
     it('should display correctly for shifted keys', () => {
@@ -499,12 +499,12 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Control+?' }
       ]);
 
-      expect(menu.getAcceleratorTextAt(0)).to.equal('Ctrl+Shift+=');
-      expect(menu.getAcceleratorTextAt(1)).to.equal('Ctrl++');
-      expect(menu.getAcceleratorTextAt(2)).to.equal('Ctrl+Shift+3');
-      expect(menu.getAcceleratorTextAt(3)).to.equal('Ctrl+#');
-      expect(menu.getAcceleratorTextAt(4)).to.equal('Ctrl+Shift+/');
-      expect(menu.getAcceleratorTextAt(5)).to.equal('Ctrl+?');
+      expect(menu._getAcceleratorTextAt(0)).to.equal('Ctrl+Shift+=');
+      expect(menu._getAcceleratorTextAt(1)).to.equal('Ctrl++');
+      expect(menu._getAcceleratorTextAt(2)).to.equal('Ctrl+Shift+3');
+      expect(menu._getAcceleratorTextAt(3)).to.equal('Ctrl+#');
+      expect(menu._getAcceleratorTextAt(4)).to.equal('Ctrl+Shift+/');
+      expect(menu._getAcceleratorTextAt(5)).to.equal('Ctrl+?');
     });
   });
 });

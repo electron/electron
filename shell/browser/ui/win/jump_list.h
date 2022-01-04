@@ -2,15 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
-#define SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
+#define ELECTRON_SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
 
 #include <atlbase.h>
 #include <shobjidl.h>
 #include <vector>
 
 #include "base/files/file_path.h"
-#include "base/macros.h"
 
 namespace electron {
 
@@ -91,6 +90,10 @@ class JumpList {
   explicit JumpList(const std::wstring& app_id);
   ~JumpList();
 
+  // disable copy
+  JumpList(const JumpList&) = delete;
+  JumpList& operator=(const JumpList&) = delete;
+
   // Starts a new transaction, must be called before appending any categories,
   // aborting or committing. After the method returns |min_items| will indicate
   // the minimum number of items that will be displayed in the Jump List, and
@@ -113,10 +116,8 @@ class JumpList {
  private:
   std::wstring app_id_;
   CComPtr<ICustomDestinationList> destinations_;
-
-  DISALLOW_COPY_AND_ASSIGN(JumpList);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WIN_JUMP_LIST_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_
-#define SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_
+#define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_
 
 #include <set>
 #include <string>
@@ -28,6 +28,10 @@ class NotificationPresenter {
 
   std::set<Notification*> notifications() const { return notifications_; }
 
+  // disable copy
+  NotificationPresenter(const NotificationPresenter&) = delete;
+  NotificationPresenter& operator=(const NotificationPresenter&) = delete;
+
  protected:
   NotificationPresenter();
   virtual Notification* CreateNotificationObject(
@@ -39,10 +43,8 @@ class NotificationPresenter {
   void RemoveNotification(Notification* notification);
 
   std::set<Notification*> notifications_;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationPresenter);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_

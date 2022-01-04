@@ -16,3 +16,4 @@ DEPS                                    @electron/wg-upgrades
 /lib/browser/guest-view-manager.ts      @electron/wg-security
 /lib/browser/guest-window-proxy.ts      @electron/wg-security
 /lib/browser/rpc-server.ts              @electron/wg-security
+/lib/renderer/security-warnings.ts      @electron/wg-security

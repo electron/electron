@@ -1,4 +1,5 @@
-import { app, dialog, BrowserWindow, shell, ipcMain } from 'electron';
+import { shell } from 'electron/common';
+import { app, dialog, BrowserWindow, ipcMain } from 'electron/main';
 import * as path from 'path';
 import * as url from 'url';
 

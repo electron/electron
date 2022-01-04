@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_
-#define SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_
+#ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_
+#define ELECTRON_SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_
 
 #include "gin/handle.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -32,6 +32,10 @@ class KeyWeakMap : public gin_helper::Wrappable<KeyWeakMap<K>> {
         .SetMethod("remove", &KeyWeakMap<K>::Remove);
   }
 
+  // disable copy
+  KeyWeakMap(const KeyWeakMap&) = delete;
+  KeyWeakMap& operator=(const KeyWeakMap&) = delete;
+
  protected:
   explicit KeyWeakMap(v8::Isolate* isolate) {
     gin_helper::Wrappable<KeyWeakMap<K>>::Init(isolate);
@@ -53,12 +57,10 @@ class KeyWeakMap : public gin_helper::Wrappable<KeyWeakMap<K>> {
   void Remove(const K& key) { key_weak_map_.Remove(key); }
 
   electron::KeyWeakMap<K> key_weak_map_;
-
-  DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_
+#endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_

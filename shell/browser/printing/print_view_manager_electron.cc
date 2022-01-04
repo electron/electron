@@ -45,6 +45,6 @@ void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
                                               CheckForCancelCallback callback) {
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintViewManagerElectron)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintViewManagerElectron);
 
 }  // namespace electron

@@ -1564,7 +1564,7 @@ describe('asar package', function () {
         forked.on('message', function (stats) {
           try {
             expect(stats.isFile).to.be.true();
-            expect(stats.size).to.equal(778);
+            expect(stats.size).to.equal(3458);
             done();
           } catch (e) {
             done(e);
@@ -1588,7 +1588,7 @@ describe('asar package', function () {
           try {
             const stats = JSON.parse(output);
             expect(stats.isFile).to.be.true();
-            expect(stats.size).to.equal(778);
+            expect(stats.size).to.equal(3458);
             done();
           } catch (e) {
             done(e);

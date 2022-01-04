@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_APP_H_
-#define SHELL_BROWSER_API_ELECTRON_API_APP_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_
 
 #include <map>
 #include <memory>
@@ -30,7 +30,7 @@
 #include "shell/common/gin_helper/promise.h"
 
 #if defined(USE_NSS_CERTS)
-#include "chrome/browser/certificate_manager_model.h"
+#include "shell/browser/certificate_manager_model.h"
 #endif
 
 namespace base {
@@ -78,6 +78,10 @@ class App : public ElectronBrowserClient::Delegate,
   static bool IsPackaged();
 
   App();
+
+  // disable copy
+  App(const App&) = delete;
+  App& operator=(const App&) = delete;
 
  private:
   ~App() override;
@@ -189,9 +193,10 @@ class App : public ElectronBrowserClient::Delegate,
   std::string GetLocale();
   std::string GetLocaleCountryCode();
   void OnSecondInstance(const base::CommandLine& cmd,
-                        const base::FilePath& cwd);
+                        const base::FilePath& cwd,
+                        const std::vector<const uint8_t> additional_data);
   bool HasSingleInstanceLock() const;
-  bool RequestSingleInstanceLock();
+  bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
   bool Relaunch(gin::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
@@ -260,12 +265,10 @@ class App : public ElectronBrowserClient::Delegate,
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(App);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_APP_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_

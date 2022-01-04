@@ -5,7 +5,6 @@ setImmediate(function () {
     const windowOpenerIsNull = window.opener == null;
     ipcRenderer.send('answer', {
       nodeIntegration: webFrame.getWebPreference('nodeIntegration'),
-      sandbox: webFrame.getWebPreference('sandbox'),
       typeofProcess: typeof global.process,
       windowOpenerIsNull
     });

@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Henri Torgemane <henrit@gmail.com>
+Date: Thu, 23 Sep 2021 21:30:33 -0500
+Subject: add ui::ScopedCliboardWriter::WriteUnsafeRawData
+
+This restores some ability to write to the clipboard using raw formats, which
+was removed as part of the Raw Clipboard API scrubbing.
+https://bugs.chromium.org/p/chromium/issues/detail?id=1217643
+
+diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
+index 153f169d2cdef6f8a726c188283a5bc1b7395fa3..3a5d9ab8dafacafb1025e1cb8c157e8a82078424 100644
+--- a/ui/base/clipboard/scoped_clipboard_writer.cc
++++ b/ui/base/clipboard/scoped_clipboard_writer.cc
+@@ -212,6 +212,16 @@ void ScopedClipboardWriter::WriteData(const std::u16string& format,
+   }
+ }
+ 
++void ScopedClipboardWriter::WriteUnsafeRawData(const std::u16string& format,
++                                               mojo_base::BigBuffer data) {
++  static constexpr int kMaxRegisteredFormats = 100;
++  if (counter_ >= kMaxRegisteredFormats)
++    return;
++  counter_++;
++  platform_representations_.push_back(
++      {base::UTF16ToUTF8(format), std::move(data)});
++}
++
+ void ScopedClipboardWriter::Reset() {
+   objects_.clear();
+   platform_representations_.clear();
+diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
+index 879acd4f6f0101a6da3af58d78eeda877ea41a4a..4d4149b6aa34c7073804994cb1c03368830c736d 100644
+--- a/ui/base/clipboard/scoped_clipboard_writer.h
++++ b/ui/base/clipboard/scoped_clipboard_writer.h
+@@ -80,6 +80,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
+   // This is only used to write custom format data.
+   void WriteData(const std::u16string& format, mojo_base::BigBuffer data);
+ 
++  // write raw (non-pickled) data to the clipboard
++  void WriteUnsafeRawData(const std::u16string& format,
++                          mojo_base::BigBuffer data);
++
+   void WriteImage(const SkBitmap& bitmap);
+ 
+   // Mark the data to be written as confidential.

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
-#define SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
+#ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
+#define ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
 
 #include <map>
 #include <string>
@@ -50,6 +50,10 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path);
 #endif
   ~NativeImage() override;
+
+  // disable copy
+  NativeImage(const NativeImage&) = delete;
+  NativeImage& operator=(const NativeImage&) = delete;
 
   static gin::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static gin::Handle<NativeImage> Create(v8::Isolate* isolate,
@@ -132,12 +136,10 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   gfx::Image image_;
 
   v8::Isolate* isolate_;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeImage);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
+#endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_

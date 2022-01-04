@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
-#define SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
 
 #include <memory>
 
@@ -63,10 +63,8 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   bool devtools_visible_ = false;
   views::WidgetDelegate* devtools_window_delegate_ = nullptr;
   std::u16string title_;
-
-  DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_

@@ -324,6 +324,13 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
 
+  RegisterDeleteDelegateCallback(base::BindOnce(
+      [](NativeWindowMac* window) {
+        if (window->window_)
+          window->window_ = nil;
+      },
+      this));
+
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
   window_delegate_.reset([[ElectronNSWindowDelegate alloc] initWithShell:this]);
@@ -609,16 +616,14 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0) {
+  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
-  } else {
-    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
-    NSRect rectWindow = [window_ frame];
-    return (rectScreen.origin.x == rectWindow.origin.x &&
-            rectScreen.origin.y == rectWindow.origin.y &&
-            rectScreen.size.width == rectWindow.size.width &&
-            rectScreen.size.height == rectWindow.size.height);
-  }
+
+  NSRect rectScreen = GetAspectRatio() > 0.0
+                          ? default_frame_for_zoom()
+                          : [[NSScreen mainScreen] visibleFrame];
+
+  return NSEqualRects([window_ frame], rectScreen);
 }
 
 void NativeWindowMac::Minimize() {
@@ -1410,24 +1415,21 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancyType = NSVisualEffectMaterialTitlebar;
   }
 
-  if (@available(macOS 10.11, *)) {
-    if (type == "selection") {
-      vibrancyType = NSVisualEffectMaterialSelection;
-    } else if (type == "menu") {
-      vibrancyType = NSVisualEffectMaterialMenu;
-    } else if (type == "popover") {
-      vibrancyType = NSVisualEffectMaterialPopover;
-    } else if (type == "sidebar") {
-      vibrancyType = NSVisualEffectMaterialSidebar;
-    } else if (type == "medium-light") {
-      EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
-                  "electron");
-      vibrancyType = NSVisualEffectMaterialMediumLight;
-    } else if (type == "ultra-dark") {
-      EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
-                  "electron");
-      vibrancyType = NSVisualEffectMaterialUltraDark;
-    }
+  if (type == "selection") {
+    vibrancyType = NSVisualEffectMaterialSelection;
+  } else if (type == "menu") {
+    vibrancyType = NSVisualEffectMaterialMenu;
+  } else if (type == "popover") {
+    vibrancyType = NSVisualEffectMaterialPopover;
+  } else if (type == "sidebar") {
+    vibrancyType = NSVisualEffectMaterialSidebar;
+  } else if (type == "medium-light") {
+    EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
+                "electron");
+    vibrancyType = NSVisualEffectMaterialMediumLight;
+  } else if (type == "ultra-dark") {
+    EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn, "electron");
+    vibrancyType = NSVisualEffectMaterialUltraDark;
   }
 
   if (@available(macOS 10.14, *)) {
@@ -1715,29 +1717,33 @@ void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
   // we explicitly disable resizing while setting it.
   ScopedDisableResize disable_resize;
 
-  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setStyleMask:[window_ styleMask] | flag];
   else
     [window_ setStyleMask:[window_ styleMask] & (~flag)];
+
   // Change style mask will make the zoom button revert to default, probably
   // a bug of Cocoa or macOS.
-  SetMaximizable(was_maximizable);
+  SetMaximizable(maximizable_);
 }
 
 void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
-  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setCollectionBehavior:[window_ collectionBehavior] | flag];
   else
     [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
+
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
-  SetMaximizable(was_maximizable);
+  SetMaximizable(maximizable_);
 }
 
 views::View* NativeWindowMac::GetContentsView() {
   return root_view_.get();
+}
+
+bool NativeWindowMac::CanMaximize() const {
+  return maximizable_;
 }
 
 void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {

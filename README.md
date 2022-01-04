@@ -1,8 +1,8 @@
 [![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
 
-[![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/master.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
-[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/4lggi9dpjc1qob7k/branch/master?svg=true)](https://ci.appveyor.com/project/electron-bot/electron-ljo26/branch/master)
-[![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.com/invite/electron)
+[![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/main.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/main)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/4lggi9dpjc1qob7k/branch/main?svg=true)](https://ci.appveyor.com/project/electron-bot/electron-ljo26/branch/main)
+[![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.com/invite/APGC3k5yaH)
 
 :memo: Available Translations: 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
 View these docs in other languages at [electron/i18n](https://github.com/electron/i18n/tree/master/content/).
@@ -16,7 +16,7 @@ Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
 This project adheres to the Contributor Covenant
-[code of conduct](https://github.com/electron/electron/tree/master/CODE_OF_CONDUCT.md).
+[code of conduct](https://github.com/electron/electron/tree/main/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable
 behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 
@@ -80,7 +80,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-- [China](https://npm.taobao.org/mirrors/electron)
+- [China](https://npmmirror.com/mirrors/electron)
 
 ## Documentation Translations
 
@@ -97,6 +97,6 @@ and more can be found in the [support document](docs/tutorial/support.md#finding
 
 ## License
 
-[MIT](https://github.com/electron/electron/blob/master/LICENSE)
+[MIT](https://github.com/electron/electron/blob/main/LICENSE)
 
 When using the Electron or other GitHub logos, be sure to follow the [GitHub logo guidelines](https://github.com/logos).

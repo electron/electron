@@ -11,7 +11,7 @@ and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.cc b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-index d6d896b87bb327bd7387335bd5bbac4616316f1e..ec0293ba8b66df5c9a34435cb2a0c9a333ebdf7a 100644
+index ed2ac20679a9357c9493224ec5e08837c7860d6e..7f9a97e11395e5521e100694cd37bcd95bcd8e35 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 @@ -58,7 +58,8 @@ bool GlobalShortcutListenerOzone::RegisterAcceleratorImpl(
@@ -52,10 +52,10 @@ index d6d896b87bb327bd7387335bd5bbac4616316f1e..ec0293ba8b66df5c9a34435cb2a0c9a3
    NotifyKeyPressed(ui::Accelerator(key_code, modifiers));
  }
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.h b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-index 27655641551afe9763cd76afe366f04e56efbbc6..14ff891a057464a1bd570cb14e127ce865d9ba91 100644
+index eb3f3431a3774c3a05afd4c7350f3801e9c8c684..b8970ef9ddb69d6a9fc6d106293e760535b6f4b3 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.h
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-@@ -41,7 +41,8 @@ class GlobalShortcutListenerOzone
+@@ -45,7 +45,8 @@ class GlobalShortcutListenerOzone
    void OnKeyPressed(ui::KeyboardCode key_code,
                      bool is_alt_down,
                      bool is_ctrl_down,
@@ -86,61 +86,6 @@ index 0f344ee352a48497e77a72bb298146c61e7fcf2a..3bad4263ea552fc63445bf5613f8add7
  
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
-diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-index ab719d290288a0cd35851f4e952b39180f4f3a22..882bd38d886d3b499fa8a6403c409fcee1374953 100644
---- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
-+++ b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-@@ -33,7 +33,7 @@ bool GlobalShortcutListenerX11::RegisterAcceleratorImpl(
- 
-   const bool registered = XGlobalShortcutListener::RegisterAccelerator(
-       accelerator.key_code(), accelerator.IsAltDown(), accelerator.IsCtrlDown(),
--      accelerator.IsShiftDown());
-+      accelerator.IsShiftDown(), accelerator.IsCmdDown());
-   if (registered)
-     registered_hot_keys_.insert(accelerator);
- 
-@@ -46,7 +46,7 @@ void GlobalShortcutListenerX11::UnregisterAcceleratorImpl(
- 
-   XGlobalShortcutListener::UnregisterAccelerator(
-       accelerator.key_code(), accelerator.IsAltDown(), accelerator.IsCtrlDown(),
--      accelerator.IsShiftDown());
-+      accelerator.IsShiftDown(), accelerator.IsCmdDown());
- 
-   registered_hot_keys_.erase(accelerator);
- }
-@@ -54,7 +54,8 @@ void GlobalShortcutListenerX11::UnregisterAcceleratorImpl(
- void GlobalShortcutListenerX11::OnKeyPressed(ui::KeyboardCode key_code,
-                                              bool is_alt_down,
-                                              bool is_ctrl_down,
--                                             bool is_shift_down) {
-+                                             bool is_shift_down,
-+                                             bool is_cmd_down) {
-   int modifiers = 0;
-   if (is_alt_down)
-     modifiers |= ui::EF_ALT_DOWN;
-@@ -62,6 +63,8 @@ void GlobalShortcutListenerX11::OnKeyPressed(ui::KeyboardCode key_code,
-     modifiers |= ui::EF_CONTROL_DOWN;
-   if (is_shift_down)
-     modifiers |= ui::EF_SHIFT_DOWN;
-+  if (is_cmd_down)
-+    modifiers |= ui::EF_COMMAND_DOWN;
-   NotifyKeyPressed(ui::Accelerator(key_code, modifiers));
- }
- 
-diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.h b/chrome/browser/extensions/global_shortcut_listener_x11.h
-index 49d1c3224fdab07526a6150318d7603bf4a3f27c..3aab0d9033554035ca2b0909f219592d71213de1 100644
---- a/chrome/browser/extensions/global_shortcut_listener_x11.h
-+++ b/chrome/browser/extensions/global_shortcut_listener_x11.h
-@@ -34,7 +34,8 @@ class GlobalShortcutListenerX11 : public GlobalShortcutListener,
-   void OnKeyPressed(ui::KeyboardCode key_code,
-                     bool is_alt_down,
-                     bool is_ctrl_down,
--                    bool is_shift_down) override;
-+                    bool is_shift_down,
-+                    bool is_cmd_down) override;
- 
-   std::set<ui::Accelerator> registered_hot_keys_;
- };
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
 index 4145418210c2b1033390ec8a2e657cb1fcd048f8..5938f75742b793868638e693a9a8c8dc686dfc46 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
@@ -172,7 +117,7 @@ index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 60f7ad6ffb28fa6554e02a7e031408f4d1124d86..0e8325e993178443d926249c427957bb16991861 100644
+index ada705fb42e88d4bfa05b212c84111be9057a50e..a866b975687dd08ad88031a63f161b3164e82455 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
@@ -188,7 +133,7 @@ index 60f7ad6ffb28fa6554e02a7e031408f4d1124d86..0e8325e993178443d926249c427957bb
    }
    return VKEY_UNKNOWN;
  }
-@@ -191,7 +197,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -192,7 +198,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

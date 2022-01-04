@@ -4,6 +4,7 @@ import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/m
 import * as url from 'url';
 import * as path from 'path';
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
+import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
@@ -390,6 +391,17 @@ WebContents.prototype.getPrinters = function () {
   }
 };
 
+WebContents.prototype.getPrintersAsync = async function () {
+  // TODO(nornagon): this API has nothing to do with WebContents and should be
+  // moved.
+  if (printing.getPrinterListAsync) {
+    return printing.getPrinterListAsync();
+  } else {
+    console.error('Error: Printing feature is disabled.');
+    return [];
+  }
+};
+
 WebContents.prototype.loadFile = function (filePath, options = {}) {
   if (typeof filePath !== 'string') {
     throw new Error('Must pass filePath as a string');
@@ -592,6 +604,9 @@ WebContents.prototype._init = function () {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
+      if (this.listenerCount('ipc-message-sync') === 0 && ipcMain.listenerCount(channel) === 0) {
+        console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
+      }
       this.emit('ipc-message-sync', event, channel, ...args);
       ipcMain.emit(channel, event, ...args);
     }
@@ -674,9 +689,19 @@ WebContents.prototype._init = function () {
           transparent: windowOpenOverriddenOptions.transparent,
           ...windowOpenOverriddenOptions.webPreferences
         } : undefined;
-        this._setNextChildWebPreferences(
-          makeWebPreferences({ embedder: event.sender, secureOverrideWebPreferences })
-        );
+        // TODO(zcbenz): The features string is parsed twice: here where it is
+        // passed to C++, and in |makeBrowserWindowOptions| later where it is
+        // not actually used since the WebContents is created here.
+        // We should be able to remove the latter once the |nativeWindowOpen|
+        // option is removed.
+        const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
+        // Parameters should keep same with |makeBrowserWindowOptions|.
+        const webPreferences = makeWebPreferences({
+          embedder: event.sender,
+          insecureParsedWebPreferences: parsedWebPreferences,
+          secureOverrideWebPreferences
+        });
+        this._setNextChildWebPreferences(webPreferences);
       }
     });
 
@@ -720,6 +745,14 @@ WebContents.prototype._init = function () {
       process.nextTick(() => {
         owner.emit('ready-to-show');
       });
+    }
+  });
+
+  this.on('select-bluetooth-device', (event, devices, callback) => {
+    if (this.listenerCount('select-bluetooth-device') === 1) {
+      // Cancel it if there are no handlers
+      event.preventDefault();
+      callback('');
     }
   });
 

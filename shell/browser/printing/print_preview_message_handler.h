@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_
-#define SHELL_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_
+#ifndef ELECTRON_SHELL_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_
+#define ELECTRON_SHELL_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_
 
 #include <map>
 
@@ -30,6 +30,11 @@ class PrintPreviewMessageHandler
       public content::WebContentsUserData<PrintPreviewMessageHandler> {
  public:
   ~PrintPreviewMessageHandler() override;
+
+  // disable copy
+  PrintPreviewMessageHandler(const PrintPreviewMessageHandler&) = delete;
+  PrintPreviewMessageHandler& operator=(const PrintPreviewMessageHandler&) =
+      delete;
 
   void PrintToPDF(base::DictionaryValue options,
                   gin_helper::Promise<v8::Local<v8::Value>> promise);
@@ -94,10 +99,8 @@ class PrintPreviewMessageHandler
   base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_{this};
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(PrintPreviewMessageHandler);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_

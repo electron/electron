@@ -44,9 +44,6 @@ declare namespace NodeJS {
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
-    weaklyTrackValue(value: any): void;
-    clearWeaklyTrackedValues(): void;
-    getWeaklyTrackedValues(): any[];
     runUntilIdle(): void;
     isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
@@ -63,6 +60,10 @@ declare namespace NodeJS {
     size: number;
     unpacked: boolean;
     offset: number;
+    integrity?: {
+      algorithm: 'SHA256';
+      hash: string;
+    }
   };
 
   type AsarFileStat = {
@@ -74,13 +75,12 @@ declare namespace NodeJS {
   }
 
   interface AsarArchive {
-    readonly path: string;
     getFileInfo(path: string): AsarFileInfo | false;
     stat(path: string): AsarFileStat | false;
     readdir(path: string): string[] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
-    getFd(): number | -1;
+    getFdAndValidateIntegrityLater(): number | -1;
   }
 
   interface AsarBinding {
@@ -106,7 +106,6 @@ declare namespace NodeJS {
   }
 
   interface InternalWebPreferences {
-    contextIsolation: boolean;
     isWebView: boolean;
     hiddenPage: boolean;
     nodeIntegration: boolean;

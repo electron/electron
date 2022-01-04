@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 16 Nov 2021 20:05:57 +0900
+Subject: fix: suppress clang -Wdeprecated-declarations in libuv
+
+Should be upstreamed.
+
+diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
+index 5ffde08e1aed041c4da679156ed10f7e54bfc386..69aff95f68519acc8fc399c4358702b146f802ca 100644
+--- a/deps/uv/src/win/util.c
++++ b/deps/uv/src/win/util.c
+@@ -1949,10 +1949,17 @@ int uv_os_uname(uv_utsname_t* buffer) {
+     #ifdef _MSC_VER
+     #pragma warning(suppress : 4996)
+     #endif
++    #ifdef __clang__
++    #pragma clang diagnostic push
++    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
++    #endif
+     if (GetVersionExW(&os_info) == 0) {
+       r = uv_translate_sys_error(GetLastError());
+       goto error;
+     }
++    #ifdef __clang__
++    #pragma clang diagnostic pop
++    #endif
+   }
+ 
+   /* Populate the version field. */

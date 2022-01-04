@@ -28,10 +28,10 @@ index 7821945da13ece57529c1de14d1cbd7f645d19ab..9be940f4ee047279f5969a6c572d6acb
  
  void GpuDataManagerImpl::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index a8c0d59cb825a791c44c54e55ad7f295ad07a309..a1ef53aa46fb0cfc7bcac121244f77af64a7539f 100644
+index 9b850c01ab110467c3b595f4499d1f39e9f21001..7b0a2d2c2e385d4af5226e448b958181f0bd50ce 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
-@@ -122,6 +122,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+@@ -124,6 +124,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
    // BrowserMainParts override instead.
    void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();
@@ -40,10 +40,10 @@ index a8c0d59cb825a791c44c54e55ad7f295ad07a309..a1ef53aa46fb0cfc7bcac121244f77af
    void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
  
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 569c179aed6ab7b68b484f55d0abf9562044c389..9612ed45ed7d987c5d4e8f7ef348860ab4fc4252 100644
+index 16b1653c8e7dbcd042c17bb4f2c308b7dfd6968b..17fdd083f387d557bff81fc0b0b73b91627ac9e0 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1219,6 +1219,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1171,6 +1171,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }
@@ -57,10 +57,10 @@ index 569c179aed6ab7b68b484f55d0abf9562044c389..9612ed45ed7d987c5d4e8f7ef348860a
  
  void GpuDataManagerImplPrivate::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index afd9e892bd94314b5dc979dadf6fd91f8ad9ff04..02134414e3bab125697b5f3080af2c90d4cee07c 100644
+index ce7af71283ad613e18ce05789396c0b74e937798..f4bf867b3a995d58164085b14ef01e0e8d55a37b 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
-@@ -84,6 +84,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+@@ -88,6 +88,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
    bool VulkanRequested() const;
    void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();

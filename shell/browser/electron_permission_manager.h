@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
-#define SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
 
 #include <memory>
 #include <vector>
@@ -11,6 +11,7 @@
 #include "base/callback.h"
 #include "base/containers/id_map.h"
 #include "content/public/browser/permission_controller_delegate.h"
+#include "gin/dictionary.h"
 
 namespace base {
 class DictionaryValue;
@@ -28,6 +29,11 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   ElectronPermissionManager();
   ~ElectronPermissionManager() override;
 
+  // disable copy
+  ElectronPermissionManager(const ElectronPermissionManager&) = delete;
+  ElectronPermissionManager& operator=(const ElectronPermissionManager&) =
+      delete;
+
   using StatusCallback =
       base::OnceCallback<void(blink::mojom::PermissionStatus)>;
   using StatusesCallback = base::OnceCallback<void(
@@ -42,9 +48,13 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                    const GURL& requesting_origin,
                                    const base::Value&)>;
 
+  using DeviceCheckHandler =
+      base::RepeatingCallback<bool(const v8::Local<v8::Object>&)>;
+
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
   void SetPermissionCheckHandler(const CheckHandler& handler);
+  void SetDevicePermissionHandler(const DeviceCheckHandler& handler);
 
   // content::PermissionControllerDelegate:
   void RequestPermission(content::PermissionType permission,
@@ -81,6 +91,16 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                   const GURL& requesting_origin,
                                   const base::DictionaryValue* details) const;
 
+  bool CheckDevicePermission(content::PermissionType permission,
+                             const url::Origin& origin,
+                             const base::Value* object,
+                             content::RenderFrameHost* render_frame_host) const;
+
+  void GrantDevicePermission(content::PermissionType permission,
+                             const url::Origin& origin,
+                             const base::Value* object,
+                             content::RenderFrameHost* render_frame_host) const;
+
  protected:
   void OnPermissionResponse(int request_id,
                             int permission_id,
@@ -108,12 +128,11 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
   RequestHandler request_handler_;
   CheckHandler check_handler_;
+  DeviceCheckHandler device_permission_handler_;
 
   PendingRequestsMap pending_requests_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronPermissionManager);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_

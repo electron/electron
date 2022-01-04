@@ -52,18 +52,10 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {
       };
       await record(config, outputFilePath);
 
-      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
-
-      // If the `excluded_categories` param above is not respected
-      // the file size will be above 50KB.
-      const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      const expectedMaximumFileSize = 10; // Depends on a platform.
-
-      expect(fileSizeInKiloBytes).to.be.above(0,
-        `the trace output file is empty, check "${outputFilePath}"`);
-      expect(fileSizeInKiloBytes).to.be.below(expectedMaximumFileSize,
-        `the trace output file is suspiciously large (${fileSizeInKiloBytes}KB),
-        check "${outputFilePath}"`);
+      // If the `excluded_categories` param above is not respected, categories
+      // like `node,node.environment` will be included in the output.
+      const content = fs.readFileSync(outputFilePath).toString();
+      expect(content.includes('"cat":"node,node.environment"')).to.be.false();
     });
 
     it('accepts "categoryFilter" and "traceOptions" as a config', async () => {

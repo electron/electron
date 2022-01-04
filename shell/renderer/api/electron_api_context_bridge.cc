@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/feature_list.h"
+#include "base/ignore_result.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
@@ -281,9 +282,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 
     ignore_result(source_promise->Then(
         source_context,
-        gin::ConvertToV8(destination_context->GetIsolate(), then_cb)
+        gin::ConvertToV8(destination_context->GetIsolate(), std::move(then_cb))
             .As<v8::Function>(),
-        gin::ConvertToV8(destination_context->GetIsolate(), catch_cb)
+        gin::ConvertToV8(destination_context->GetIsolate(), std::move(catch_cb))
             .As<v8::Function>()));
 
     object_cache->CacheProxiedObject(value, proxied_promise_handle);

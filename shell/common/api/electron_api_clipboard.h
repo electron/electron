@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_
-#define SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_
+#ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_
+#define ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_
 
 #include <string>
 #include <vector>
@@ -23,6 +23,10 @@ namespace api {
 
 class Clipboard {
  public:
+  // disable copy
+  Clipboard(const Clipboard&) = delete;
+  Clipboard& operator=(const Clipboard&) = delete;
+
   static ui::ClipboardBuffer GetClipboardBuffer(gin_helper::Arguments* args);
   static std::vector<std::u16string> AvailableFormats(
       gin_helper::Arguments* args);
@@ -61,13 +65,10 @@ class Clipboard {
   static void WriteBuffer(const std::string& format_string,
                           const v8::Local<v8::Value> buffer,
                           gin_helper::Arguments* args);
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(Clipboard);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_
+#endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_

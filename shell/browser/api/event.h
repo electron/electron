@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_EVENT_H_
-#define SHELL_BROWSER_API_EVENT_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_EVENT_H_
+#define ELECTRON_SHELL_BROWSER_API_EVENT_H_
 
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
@@ -29,6 +29,10 @@ class Event : public gin::Wrappable<Event> {
   // `invoke` calls.
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result);
 
+  // disable copy
+  Event(const Event&) = delete;
+  Event& operator=(const Event&) = delete;
+
  protected:
   Event();
   ~Event() override;
@@ -41,10 +45,8 @@ class Event : public gin::Wrappable<Event> {
  private:
   // Replyer for the synchronous messages.
   InvokeCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(Event);
 };
 
 }  // namespace gin_helper
 
-#endif  // SHELL_BROWSER_API_EVENT_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_EVENT_H_

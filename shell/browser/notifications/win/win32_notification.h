@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_NOTIFICATION_H_
-#define SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_NOTIFICATION_H_
+#ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_NOTIFICATION_H_
+#define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_NOTIFICATION_H_
 
 #include <string>
 
@@ -29,10 +29,8 @@ class Win32Notification : public electron::Notification {
  private:
   DesktopNotificationController::Notification notification_ref_;
   std::string tag_;
-
-  DISALLOW_COPY_AND_ASSIGN(Win32Notification);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_NOTIFICATION_H_
+#endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_NOTIFICATION_H_

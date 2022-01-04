@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
-#define SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 
 #include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
@@ -62,6 +62,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
+  void OnCapturerCountChanged() override;
 
 #if defined(OS_MAC)
   bool CloseTabAfterEventTrackingIfNeeded() override;
@@ -105,4 +106,4 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_

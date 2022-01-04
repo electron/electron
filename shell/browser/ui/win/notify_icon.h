@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WIN_NOTIFY_ICON_H_
-#define SHELL_BROWSER_UI_WIN_NOTIFY_ICON_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WIN_NOTIFY_ICON_H_
+#define ELECTRON_SHELL_BROWSER_UI_WIN_NOTIFY_ICON_H_
 
 #include <windows.h>  // windows.h must be included first
 
@@ -13,7 +13,6 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
@@ -104,10 +103,8 @@ class NotifyIcon : public TrayIcon {
   std::unique_ptr<views::MenuRunner> menu_runner_;
 
   base::WeakPtrFactory<NotifyIcon> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_WIN_NOTIFY_ICON_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WIN_NOTIFY_ICON_H_

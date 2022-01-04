@@ -235,9 +235,10 @@ void WinFrameView::LayoutCaptionButtons() {
   // portion to return the correct hit test and be manually resized properly.
   // Alternatives can be explored, but the differences in view structures
   // between Electron and Chromium may result in this as the best option.
+  int variable_width =
+      IsMaximized() ? preferred_size.width() : preferred_size.width() - 1;
   caption_button_container_->SetBounds(width() - preferred_size.width(),
-                                       WindowTopY(), preferred_size.width() - 1,
-                                       height);
+                                       WindowTopY(), variable_width, height);
 }
 
 void WinFrameView::LayoutWindowControlsOverlay() {

@@ -5,12 +5,13 @@ Subject: desktop_media_list.patch
 
 * Use our grit resources instead of the chrome ones.
 * Disabled WindowCaptureMacV2 feature for https://github.com/electron/electron/pull/30507
+* Ensure "OnRefreshComplete()" even if there are no items in the list
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index d9737047f54bbf3811ae2a347790f6b3d286da3d..5b69c3a4ade9fa7f105f42ebf0e82750a83cf276 100644
+index 57cfc646f8ea545271c22d79ec158a04b148bc9c..db4d608d3bed841ddf7225d0918e82112c8d08b5 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -86,7 +86,7 @@ class DesktopMediaList {
+@@ -94,7 +94,7 @@ class DesktopMediaList {
    // once per DesktopMediaList instance.  It should not be called after
    // StartUpdating(), and StartUpdating() should not be called until |callback|
    // has been called.
@@ -20,15 +21,16 @@ index d9737047f54bbf3811ae2a347790f6b3d286da3d..5b69c3a4ade9fa7f105f42ebf0e82750
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index a3e1de40e843b5450f417a0455e0e7d7dee1d1bd..63befdc162a4b4a16e8c5099abb0f5af602894fc 100644
+index 24bd95b79479c21182a0d1a61364e1794f900261..2b2a7494ee9bd88fd5c8ebf50a5e29738b2dffd0 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -54,11 +54,11 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+@@ -63,12 +63,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
    Refresh(true);
  }
  
 -void DesktopMediaListBase::Update(UpdateCallback callback) {
 +void DesktopMediaListBase::Update(UpdateCallback callback, bool refresh_thumbnails) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
    DCHECK(sources_.empty());
    DCHECK(!refresh_callback_);
    refresh_callback_ = std::move(callback);
@@ -38,10 +40,10 @@ index a3e1de40e843b5450f417a0455e0e7d7dee1d1bd..63befdc162a4b4a16e8c5099abb0f5af
  
  int DesktopMediaListBase::GetSourceCount() const {
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index a1038183d5b44ca760576bff55534b5841e2e9d2..e9cc308271c561b249ace7dc9e703b549fcfbbd2 100644
+index 98cc4e039ba2b5a467175b15650a7b8ef38e8249..f5aea6a5916b9aa56ee7b81a8de97dc44e04a759 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
-@@ -31,7 +31,7 @@ class DesktopMediaListBase : public DesktopMediaList {
+@@ -35,7 +35,7 @@ class DesktopMediaListBase : public DesktopMediaList {
    void SetThumbnailSize(const gfx::Size& thumbnail_size) override;
    void SetViewDialogWindowId(content::DesktopMediaID dialog_id) override;
    void StartUpdating(DesktopMediaListObserver* observer) override;
@@ -51,7 +53,7 @@ index a1038183d5b44ca760576bff55534b5841e2e9d2..e9cc308271c561b249ace7dc9e703b54
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 5a851f4c89b4ed2b41640bf8bad47b7d8eba8ca1..2dc65acfc355180dc966aab76b39fc1956325b84 100644
+index f777d8e6aa8a36d273a1a23f5e71390fad7e434f..c59706f0e244afa9408a5bfeaf5a51ad10c1f885 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -16,7 +16,7 @@
@@ -74,12 +76,15 @@ index 5a851f4c89b4ed2b41640bf8bad47b7d8eba8ca1..2dc65acfc355180dc966aab76b39fc19
  #endif
  
  }  // namespace
-@@ -425,6 +426,8 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -427,6 +428,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));
 +  } else {
-+    OnRefreshComplete();
++#if defined(USE_AURA)
++    pending_native_thumbnail_capture_ = true;
++#endif
++    UpdateNativeThumbnailsFinished();
    }
  }
  

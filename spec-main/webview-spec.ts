@@ -397,6 +397,23 @@ describe('<webview> tag', function () {
       expect(webview.getZoomFactor()).to.equal(1.2);
       await w.loadURL(`${zoomScheme}://host1`);
     });
+
+    it('does not crash when changing zoom level after webview is destroyed', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          session: webviewSession,
+          contextIsolation: false
+        }
+      });
+      const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
+      await w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
+      await attachPromise;
+      await w.webContents.executeJavaScript('view.remove()');
+      w.webContents.setZoomLevel(0.5);
+    });
   });
 
   describe('requestFullscreen from webview', () => {

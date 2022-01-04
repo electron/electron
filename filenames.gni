@@ -191,6 +191,7 @@ filenames = {
     "shell/browser/ui/tray_icon_cocoa.mm",
     "shell/common/api/electron_api_clipboard_mac.mm",
     "shell/common/api/electron_api_native_image_mac.mm",
+    "shell/common/asar/archive_mac.mm",
     "shell/common/application_info_mac.mm",
     "shell/common/language_util_mac.mm",
     "shell/common/mac/main_application_bundle.h",
@@ -382,8 +383,18 @@ filenames = {
     "shell/browser/file_select_helper.cc",
     "shell/browser/file_select_helper.h",
     "shell/browser/file_select_helper_mac.mm",
+    "shell/browser/font/electron_font_access_delegate.cc",
+    "shell/browser/font/electron_font_access_delegate.h",
     "shell/browser/font_defaults.cc",
     "shell/browser/font_defaults.h",
+    "shell/browser/hid/electron_hid_delegate.cc",
+    "shell/browser/hid/electron_hid_delegate.h",
+    "shell/browser/hid/hid_chooser_context.cc",
+    "shell/browser/hid/hid_chooser_context.h",
+    "shell/browser/hid/hid_chooser_context_factory.cc",
+    "shell/browser/hid/hid_chooser_context_factory.h",
+    "shell/browser/hid/hid_chooser_controller.cc",
+    "shell/browser/hid/hid_chooser_controller.h",
     "shell/browser/javascript_environment.cc",
     "shell/browser/javascript_environment.h",
     "shell/browser/lib/bluetooth_chooser.cc",
@@ -403,6 +414,8 @@ filenames = {
     "shell/browser/native_window.cc",
     "shell/browser/native_window.h",
     "shell/browser/native_window_observer.h",
+    "shell/browser/net/asar/asar_file_validator.cc",
+    "shell/browser/net/asar/asar_file_validator.h",
     "shell/browser/net/asar/asar_url_loader.cc",
     "shell/browser/net/asar/asar_url_loader.h",
     "shell/browser/net/asar/asar_url_loader_factory.cc",
@@ -491,8 +504,6 @@ filenames = {
     "shell/browser/web_contents_preferences.h",
     "shell/browser/web_contents_zoom_controller.cc",
     "shell/browser/web_contents_zoom_controller.h",
-    "shell/browser/web_dialog_helper.cc",
-    "shell/browser/web_dialog_helper.h",
     "shell/browser/web_view_guest_delegate.cc",
     "shell/browser/web_view_guest_delegate.h",
     "shell/browser/web_view_manager.cc",
@@ -662,11 +673,6 @@ filenames = {
     "shell/renderer/web_worker_observer.h",
     "shell/utility/electron_content_utility_client.cc",
     "shell/utility/electron_content_utility_client.h",
-  ]
-
-  lib_sources_nss = [
-    "chromium_src/chrome/browser/certificate_manager_model.cc",
-    "chromium_src/chrome/browser/certificate_manager_model.h",
   ]
 
   lib_sources_extensions = [

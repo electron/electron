@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
-#define SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
 
 #include <memory>
 #include <string>
@@ -51,6 +51,10 @@ class Tray : public gin::Wrappable<Tray>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
+
+  // disable copy
+  Tray(const Tray&) = delete;
+  Tray& operator=(const Tray&) = delete;
 
  private:
   Tray(v8::Isolate* isolate,
@@ -105,12 +109,10 @@ class Tray : public gin::Wrappable<Tray>,
 
   v8::Global<v8::Value> menu_;
   std::unique_ptr<TrayIcon> tray_icon_;
-
-  DISALLOW_COPY_AND_ASSIGN(Tray);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_

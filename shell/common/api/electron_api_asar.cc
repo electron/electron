@@ -32,23 +32,23 @@ class Archive : public gin::Wrappable<Archive> {
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
     return gin::ObjectTemplateBuilder(isolate)
-        .SetProperty("path", &Archive::GetPath)
         .SetMethod("getFileInfo", &Archive::GetFileInfo)
         .SetMethod("stat", &Archive::Stat)
         .SetMethod("readdir", &Archive::Readdir)
         .SetMethod("realpath", &Archive::Realpath)
         .SetMethod("copyFileOut", &Archive::CopyFileOut)
-        .SetMethod("getFd", &Archive::GetFD);
+        .SetMethod("getFdAndValidateIntegrityLater", &Archive::GetFD);
   }
 
   const char* GetTypeName() override { return "Archive"; }
 
+  // disable copy
+  Archive(const Archive&) = delete;
+  Archive& operator=(const Archive&) = delete;
+
  protected:
   Archive(v8::Isolate* isolate, std::unique_ptr<asar::Archive> archive)
       : archive_(std::move(archive)) {}
-
-  // Returns the path of the file.
-  base::FilePath GetPath() { return archive_->path(); }
 
   // Reads the offset and size of file.
   v8::Local<v8::Value> GetFileInfo(v8::Isolate* isolate,
@@ -60,6 +60,20 @@ class Archive : public gin::Wrappable<Archive> {
     dict.Set("size", info.size);
     dict.Set("unpacked", info.unpacked);
     dict.Set("offset", info.offset);
+    if (info.integrity.has_value()) {
+      gin_helper::Dictionary integrity(isolate, v8::Object::New(isolate));
+      asar::HashAlgorithm algorithm = info.integrity.value().algorithm;
+      switch (algorithm) {
+        case asar::HashAlgorithm::SHA256:
+          integrity.Set("algorithm", "SHA256");
+          break;
+        case asar::HashAlgorithm::NONE:
+          CHECK(false);
+          break;
+      }
+      integrity.Set("hash", info.integrity.value().hash);
+      dict.Set("integrity", integrity);
+    }
     return dict.GetHandle();
   }
 
@@ -108,13 +122,11 @@ class Archive : public gin::Wrappable<Archive> {
   int GetFD() const {
     if (!archive_)
       return -1;
-    return archive_->GetFD();
+    return archive_->GetUnsafeFD();
   }
 
  private:
   std::unique_ptr<asar::Archive> archive_;
-
-  DISALLOW_COPY_AND_ASSIGN(Archive);
 };
 
 // static

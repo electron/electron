@@ -120,9 +120,9 @@ file in the directory you executed it in. Both files can be analyzed using
 the Chrome Developer Tools, using the `Performance` and `Memory` tabs
 respectively.
 
-![Performance CPU Profile][performance-cpu-prof]
+![Performance CPU Profile](../images/performance-cpu-prof.png)
 
-![Performance Heap Memory Profile][performance-heap-prof]
+![Performance Heap Memory Profile](../images/performance-heap-prof.png)
 
 In this example, on the author's machine, we saw that loading `request` took
 almost half a second, whereas `node-fetch` took dramatically less memory
@@ -412,8 +412,6 @@ As of writing this article, the popular choices include [Webpack][webpack],
 [Parcel][parcel], and [rollup.js][rollup].
 
 [security]: ./security.md
-[performance-cpu-prof]: ../images/performance-cpu-prof.png
-[performance-heap-prof]: ../images/performance-heap-prof.png
 [chrome-devtools-tutorial]: https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/
 [worker-threads]: https://nodejs.org/api/worker_threads.html
 [web-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers

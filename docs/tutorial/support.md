@@ -3,14 +3,14 @@
 ## Finding Support
 
 If you have a security concern,
-please see the [security document](https://github.com/electron/electron/tree/master/SECURITY.md).
+please see the [security document](https://github.com/electron/electron/tree/main/SECURITY.md).
 
 If you're looking for programming help,
 for answers to questions,
 or to join in discussion with other developers who use Electron,
 you can interact with the community in these locations:
 
-* [`Electron's Discord`](https://discord.com/invite/electron) has channels for:
+* [Electron's Discord server](https://discord.com/invite/APGC3k5yaH) has channels for:
   * Getting help
   * Ecosystem apps like [Electron Forge](https://github.com/electron-userland/electron-forge) and [Electron Fiddle](https://github.com/electron/fiddle)
   * Sharing ideas with other Electron app developers
@@ -26,7 +26,7 @@ you can interact with the community in these locations:
 * [`electron-pl`](https://electronpl.github.io) *(Poland)*
 
 If you'd like to contribute to Electron,
-see the [contributing document](https://github.com/electron/electron/blob/master/CONTRIBUTING.md).
+see the [contributing document](https://github.com/electron/electron/blob/main/CONTRIBUTING.md).
 
 If you've found a bug in a [supported version](#supported-versions) of Electron,
 please report it with the [issue tracker](../development/issues.md).
@@ -50,15 +50,15 @@ as the 4.2.x series are supported.  We only support the latest minor release
 for each stable release series.  This means that in the case of a security fix
 6.1.x will receive the fix, but we will not release a new version of 6.0.x.
 
-The latest stable release unilaterally receives all fixes from `master`,
+The latest stable release unilaterally receives all fixes from `main`,
 and the version prior to that receives the vast majority of those fixes
 as time and bandwidth warrants. The oldest supported release line will receive
 only security fixes directly.
 
 All supported release lines will accept external pull requests to backport
-fixes previously merged to `master`, though this may be on a case-by-case
+fixes previously merged to `main`, though this may be on a case-by-case
 basis for some older supported lines. All contested decisions around release
-line backports will be resolved by the [Releases Working Group](https://github.com/electron/governance/tree/master/wg-releases) as an agenda item at their weekly meeting the week the backport PR is raised.
+line backports will be resolved by the [Releases Working Group](https://github.com/electron/governance/tree/main/wg-releases) as an agenda item at their weekly meeting the week the backport PR is raised.
 
 When an API is changed or removed in a way that breaks existing functionality, the
 previous functionality will be supported for a minimum of two major versions when
@@ -70,10 +70,10 @@ until the maintainers feel the maintenance burden is too high to continue doing 
 
 ### Currently supported versions
 
+* 18.x.y
+* 17.x.y
 * 16.x.y
 * 15.x.y
-* 14.x.y
-* 13
 
 ### End-of-life
 

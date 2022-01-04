@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_OPTIONS_SWITCHES_H_
-#define SHELL_COMMON_OPTIONS_SWITCHES_H_
+#ifndef ELECTRON_SHELL_COMMON_OPTIONS_SWITCHES_H_
+#define ELECTRON_SHELL_COMMON_OPTIONS_SWITCHES_H_
 
 #include "electron/buildflags/buildflags.h"
 
@@ -116,7 +116,6 @@ extern const char kCORSSchemes[];
 extern const char kStreamingSchemes[];
 extern const char kAppUserModelId[];
 extern const char kAppPath[];
-extern const char kEnableApiFilteringLogging[];
 
 extern const char kScrollBounce[];
 extern const char kNodeIntegrationInWorker[];
@@ -138,4 +137,4 @@ extern const char kEnableWebSQL[];
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_OPTIONS_SWITCHES_H_
+#endif  // ELECTRON_SHELL_COMMON_OPTIONS_SWITCHES_H_

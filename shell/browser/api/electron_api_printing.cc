@@ -10,7 +10,11 @@
 #include "shell/common/node_includes.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
+#include "base/task/task_traits.h"
+#include "base/task/thread_pool.h"
 #include "printing/backend/print_backend.h"
+#include "shell/common/gin_helper/promise.h"
+#include "shell/common/process_util.h"
 #endif
 
 namespace gin {
@@ -39,17 +43,49 @@ namespace electron {
 namespace api {
 
 #if BUILDFLAG(ENABLE_PRINTING)
-printing::PrinterList GetPrinterList() {
+printing::PrinterList GetPrinterList(v8::Isolate* isolate) {
+  EmitWarning(node::Environment::GetCurrent(isolate),
+              "Deprecation Warning: getPrinters() is deprecated. "
+              "Use the asynchronous and non-blocking version, "
+              "getPrintersAsync(), instead.",
+              "electron");
   printing::PrinterList printers;
   auto print_backend = printing::PrintBackend::CreateInstance(
       g_browser_process->GetApplicationLocale());
   {
-    // TODO(deepak1556): Deprecate this api in favor of an
-    // async version and post a non blocing task call.
     base::ThreadRestrictions::ScopedAllowIO allow_io;
-    print_backend->EnumeratePrinters(&printers);
+    printing::mojom::ResultCode code =
+        print_backend->EnumeratePrinters(&printers);
+    if (code != printing::mojom::ResultCode::kSuccess)
+      LOG(INFO) << "Failed to enumerate printers";
   }
   return printers;
+}
+
+v8::Local<v8::Promise> GetPrinterListAsync(v8::Isolate* isolate) {
+  gin_helper::Promise<printing::PrinterList> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE, {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
+      base::BindOnce([]() {
+        printing::PrinterList printers;
+        auto print_backend = printing::PrintBackend::CreateInstance(
+            g_browser_process->GetApplicationLocale());
+        printing::mojom::ResultCode code =
+            print_backend->EnumeratePrinters(&printers);
+        if (code != printing::mojom::ResultCode::kSuccess)
+          LOG(INFO) << "Failed to enumerate printers";
+        return printers;
+      }),
+      base::BindOnce(
+          [](gin_helper::Promise<printing::PrinterList> promise,
+             const printing::PrinterList& printers) {
+            promise.Resolve(printers);
+          },
+          std::move(promise)));
+
+  return handle;
 }
 #endif
 
@@ -61,6 +97,7 @@ namespace {
 
 #if BUILDFLAG(ENABLE_PRINTING)
 using electron::api::GetPrinterList;
+using electron::api::GetPrinterListAsync;
 #endif
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -71,6 +108,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
 #if BUILDFLAG(ENABLE_PRINTING)
   dict.SetMethod("getPrinterList", base::BindRepeating(&GetPrinterList));
+  dict.SetMethod("getPrinterListAsync",
+                 base::BindRepeating(&GetPrinterListAsync));
 #endif
 }
 

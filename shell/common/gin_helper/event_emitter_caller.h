@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_
-#define SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_
 
 #include <utility>
 #include <vector>
@@ -88,4 +88,4 @@ v8::Local<v8::Value> CallMethod(gin::Wrappable<T>* object,
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_

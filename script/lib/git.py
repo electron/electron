@@ -232,9 +232,8 @@ def remove_patch_filename(patch):
 def export_patches(repo, out_dir, patch_range=None, dry_run=False):
   if patch_range is None:
     patch_range, num_patches = guess_base_commit(repo)
-    sys.stderr.write(
-        "Exporting {} patches in {} since {}\n".format(num_patches, repo, patch_range[0:7])
-    )
+    sys.stderr.write("Exporting {} patches in {} since {}\n".format(
+        num_patches, repo, patch_range[0:7]))
   patch_data = format_patch(repo, patch_range)
   patches = split_patches(patch_data)
 

@@ -124,9 +124,7 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
     auto type = base::ToLowerASCII(it);
-    if (type == "appcache")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_APPCACHE;
-    else if (type == "cookies")
+    if (type == "cookies")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_COOKIES;
     else if (type == "filesystem")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_FILE_SYSTEMS;
@@ -569,7 +567,7 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   options.Get("uploadThroughput", &conditions->upload_throughput);
   double latency = 0.0;
   if (options.Get("latency", &latency) && latency) {
-    conditions->latency = base::TimeDelta::FromMillisecondsD(latency);
+    conditions->latency = base::Milliseconds(latency);
   }
 
   auto* network_context =
@@ -642,6 +640,18 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetPermissionCheckHandler(handler);
+}
+
+void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
+                                         gin::Arguments* args) {
+  ElectronPermissionManager::DeviceCheckHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetDevicePermissionHandler(handler);
 }
 
 v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
@@ -982,7 +992,7 @@ void Session::SetSpellCheckerLanguages(
                          "\" is not a valid language code");
       return;
     }
-    language_codes.AppendString(code);
+    language_codes.Append(code);
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
                                  language_codes);
@@ -1148,6 +1158,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
+      .SetMethod("setDevicePermissionHandler",
+                 &Session::SetDevicePermissionHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",

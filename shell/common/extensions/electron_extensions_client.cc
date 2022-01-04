@@ -9,7 +9,6 @@
 
 #include "base/lazy_instance.h"
 #include "base/logging.h"
-#include "base/macros.h"
 #include "components/version_info/version_info.h"
 #include "content/public/common/user_agent.h"
 #include "extensions/common/core_extensions_api_provider.h"
@@ -33,6 +32,12 @@ class ElectronPermissionMessageProvider
   ElectronPermissionMessageProvider() = default;
   ~ElectronPermissionMessageProvider() override = default;
 
+  // disable copy
+  ElectronPermissionMessageProvider(const ElectronPermissionMessageProvider&) =
+      delete;
+  ElectronPermissionMessageProvider& operator=(
+      const ElectronPermissionMessageProvider&) = delete;
+
   // PermissionMessageProvider implementation.
   extensions::PermissionMessages GetPermissionMessages(
       const extensions::PermissionIDSet& permissions) const override {
@@ -53,9 +58,6 @@ class ElectronPermissionMessageProvider
       extensions::Manifest::Type extension_type) const override {
     return extensions::PermissionIDSet();
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronPermissionMessageProvider);
 };
 
 base::LazyInstance<ElectronPermissionMessageProvider>::DestructorAtExit

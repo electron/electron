@@ -18,6 +18,8 @@
 #include "base/task/post_task.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/values.h"
+#include "electron/fuses.h"
+#include "shell/common/asar/asar_util.h"
 #include "shell/common/asar/scoped_temporary_file.h"
 
 #if defined(OS_WIN)
@@ -95,6 +97,7 @@ bool GetNodeFromPath(std::string path,
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
+                          bool load_integrity,
                           const base::DictionaryValue* node) {
   int size;
   if (!node->GetInteger("size", &size))
@@ -113,10 +116,55 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
   node->GetBoolean("executable", &info->executable);
 
+#if defined(OS_MAC)
+  if (load_integrity &&
+      electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
+    const base::DictionaryValue* integrity;
+    if (node->GetDictionary("integrity", &integrity)) {
+      IntegrityPayload integrity_payload;
+      std::string algorithm;
+      const base::ListValue* blocks;
+      int block_size;
+      if (integrity->GetString("algorithm", &algorithm) &&
+          integrity->GetString("hash", &integrity_payload.hash) &&
+          integrity->GetInteger("blockSize", &block_size) &&
+          integrity->GetList("blocks", &blocks) && block_size > 0) {
+        integrity_payload.block_size = static_cast<uint32_t>(block_size);
+        for (size_t i = 0; i < blocks->GetList().size(); i++) {
+          std::string block;
+          if (!blocks->GetString(i, &block)) {
+            LOG(FATAL)
+                << "Invalid block integrity value for file in ASAR archive";
+          }
+          integrity_payload.blocks.push_back(block);
+        }
+        if (algorithm == "SHA256") {
+          integrity_payload.algorithm = HashAlgorithm::SHA256;
+          info->integrity = std::move(integrity_payload);
+        }
+      }
+    }
+
+    if (!info->integrity.has_value()) {
+      LOG(FATAL) << "Failed to read integrity for file in ASAR archive";
+      return false;
+    }
+  }
+#endif
+
   return true;
 }
 
 }  // namespace
+
+IntegrityPayload::IntegrityPayload()
+    : algorithm(HashAlgorithm::NONE), block_size(0) {}
+IntegrityPayload::~IntegrityPayload() = default;
+IntegrityPayload::IntegrityPayload(const IntegrityPayload& other) = default;
+
+Archive::FileInfo::FileInfo()
+    : unpacked(false), executable(false), size(0), offset(0) {}
+Archive::FileInfo::~FileInfo() = default;
 
 Archive::Archive(const base::FilePath& path)
     : initialized_(false), path_(path), file_(base::File::FILE_OK) {
@@ -191,6 +239,32 @@ bool Archive::Init() {
     return false;
   }
 
+#if defined(OS_MAC)
+  // Validate header signature if required and possible
+  if (electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled() &&
+      RelativePath().has_value()) {
+    absl::optional<IntegrityPayload> integrity = HeaderIntegrity();
+    if (!integrity.has_value()) {
+      LOG(FATAL) << "Failed to get integrity for validatable asar archive: "
+                 << RelativePath().value();
+      return false;
+    }
+
+    // Currently we only support the sha256 algorithm, we can add support for
+    // more below ensure we read them in preference order from most secure to
+    // least
+    if (integrity.value().algorithm != HashAlgorithm::NONE) {
+      ValidateIntegrityOrDie(header.c_str(), header.length(),
+                             integrity.value());
+    } else {
+      LOG(FATAL) << "No eligible hash for validatable asar archive: "
+                 << RelativePath().value();
+    }
+
+    header_validated_ = true;
+  }
+#endif
+
   absl::optional<base::Value> value = base::JSONReader::Read(header);
   if (!value || !value->is_dict()) {
     LOG(ERROR) << "Failed to parse header";
@@ -202,6 +276,16 @@ bool Archive::Init() {
       base::Value::ToUniquePtrValue(std::move(*value)));
   return true;
 }
+
+#if !defined(OS_MAC)
+absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
+  return absl::nullopt;
+}
+
+absl::optional<base::FilePath> Archive::RelativePath() const {
+  return absl::nullopt;
+}
+#endif
 
 bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
   if (!header_)
@@ -215,7 +299,7 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
   if (node->GetString("link", &link))
     return GetFileInfo(base::FilePath::FromUTF8Unsafe(link), info);
 
-  return FillFileInfoWithNode(info, header_size_, node);
+  return FillFileInfoWithNode(info, header_size_, header_validated_, node);
 }
 
 bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
@@ -238,7 +322,7 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
     return true;
   }
 
-  return FillFileInfoWithNode(stats, header_size_, node);
+  return FillFileInfoWithNode(stats, header_size_, header_validated_, node);
 }
 
 bool Archive::Readdir(const base::FilePath& path,
@@ -304,7 +388,8 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
 
   auto temp_file = std::make_unique<ScopedTemporaryFile>();
   base::FilePath::StringType ext = path.Extension();
-  if (!temp_file->InitFromFile(&file_, ext, info.offset, info.size))
+  if (!temp_file->InitFromFile(&file_, ext, info.offset, info.size,
+                               info.integrity))
     return false;
 
 #if defined(OS_POSIX)
@@ -319,7 +404,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   return true;
 }
 
-int Archive::GetFD() const {
+int Archive::GetUnsafeFD() const {
   return fd_;
 }
 

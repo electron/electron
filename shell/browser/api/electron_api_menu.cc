@@ -236,13 +236,11 @@ std::u16string Menu::GetToolTipAt(int index) const {
   return model_->GetToolTipAt(index);
 }
 
-#if DCHECK_IS_ON()
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
   return accelerator.GetShortcutText();
 }
-#endif
 
 bool Menu::IsItemCheckedAt(int index) const {
   return model_->IsItemCheckedAt(index);
@@ -297,9 +295,7 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
-#if DCHECK_IS_ON()
-      .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
-#endif
+      .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
 #if defined(OS_MAC)
       .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
 #endif

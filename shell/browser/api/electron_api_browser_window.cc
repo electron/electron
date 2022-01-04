@@ -37,14 +37,22 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
       gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
-  // Copy the backgroundColor to webContents.
   v8::Local<v8::Value> value;
   bool transparent = false;
+  options.Get(options::kTransparent, &transparent);
+
+  std::string vibrancy_type;
+#if defined(OS_MAC)
+  options.Get(options::kVibrancyType, &vibrancy_type);
+#endif
+
+  // Copy the backgroundColor to webContents.
   if (options.Get(options::kBackgroundColor, &value)) {
     web_preferences.SetHidden(options::kBackgroundColor, value);
-  } else if (options.Get(options::kTransparent, &transparent) && transparent) {
-    // If the BrowserWindow is transparent, also propagate transparency to the
-    // WebContents unless a separate backgroundColor has been set.
+  } else if (!vibrancy_type.empty() || transparent) {
+    // If the BrowserWindow is transparent or a vibrancy type has been set,
+    // also propagate transparency to the WebContents unless a separate
+    // backgroundColor has been set.
     web_preferences.SetHidden(options::kBackgroundColor,
                               ToRGBAHex(SK_ColorTRANSPARENT));
   }
@@ -246,7 +254,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
     ScheduleUnresponsiveEvent(5000);
 
   // Already closed by renderer.
-  if (!web_contents())
+  if (!web_contents() || !api_web_contents_)
     return;
 
   // Required to make beforeunload handler work.
@@ -362,7 +370,11 @@ void BrowserWindow::Blur() {
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
-  web_contents()->SetPageBaseBackgroundColor(ParseHexColor(color_name));
+  SkColor color = ParseHexColor(color_name);
+  web_contents()->SetPageBaseBackgroundColor(color);
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetBackgroundColor(color);
   // Also update the web preferences object otherwise the view will be reset on
   // the next load URL call
   if (api_web_contents_) {
@@ -459,7 +471,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
       &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
   base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
       FROM_HERE, window_unresponsive_closure_.callback(),
-      base::TimeDelta::FromMilliseconds(ms));
+      base::Milliseconds(ms));
 }
 
 void BrowserWindow::NotifyWindowUnresponsive() {

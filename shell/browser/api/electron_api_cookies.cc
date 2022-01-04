@@ -192,7 +192,7 @@ std::string InclusionStatusToString(net::CookieInclusionStatus status) {
 std::string StringToCookieSameSite(const std::string* str_ptr,
                                    net::CookieSameSite* same_site) {
   if (!str_ptr) {
-    *same_site = net::CookieSameSite::NO_RESTRICTION;
+    *same_site = net::CookieSameSite::LAX_MODE;
     return "";
   }
   const std::string& str = *str_ptr;
@@ -249,6 +249,7 @@ v8::Local<v8::Promise> Cookies::Get(v8::Isolate* isolate,
     options.set_do_not_update_access_time();
 
     manager->GetCookieList(GURL(url), options,
+                           net::CookiePartitionKeychain::Todo(),
                            base::BindOnce(&FilterCookieWithStatuses,
                                           std::move(dict), std::move(promise)));
   }

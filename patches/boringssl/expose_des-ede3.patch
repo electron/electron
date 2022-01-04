@@ -6,20 +6,19 @@ Subject: expose des-ede3
 This should be upstreamed.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
-index 5ede89f9f0761d1da1baa899e9a02b77ffcffe93..8205e121c152fe4e2d8df34a1ac2fe0498381f31 100644
+index 0c30b0329d32b94b22f342f95035e927797d0aaf..d97f67fb03756169446edf6b41d3a33fe3ae8205 100644
 --- a/crypto/cipher_extra/cipher_extra.c
 +++ b/crypto/cipher_extra/cipher_extra.c
-@@ -97,6 +97,8 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
-     return EVP_rc4();
-   } else if (OPENSSL_strcasecmp(name, "des-cbc") == 0) {
-     return EVP_des_cbc();
-+  } else if (OPENSSL_strcasecmp(name, "des-ede3") == 0) {
-+    return EVP_des_ede3();
-   } else if (OPENSSL_strcasecmp(name, "des-ede3-cbc") == 0 ||
-              // This is not a name used by OpenSSL, but tcpdump registers it
-              // with |EVP_add_cipher_alias|. Our |EVP_add_cipher_alias| is a
+@@ -93,6 +93,7 @@ static const struct {
+     {NID_des_ecb, "des-ecb", EVP_des_ecb},
+     {NID_des_ede_cbc, "des-ede-cbc", EVP_des_ede_cbc},
+     {NID_des_ede_ecb, "des-ede", EVP_des_ede},
++    {NID_des_ede3_ecb, "des-ede3", EVP_des_ede3},
+     {NID_des_ede3_cbc, "des-ede3-cbc", EVP_des_ede3_cbc},
+     {NID_rc2_cbc, "rc2-cbc", EVP_rc2_cbc},
+     {NID_rc4, "rc4", EVP_rc4},
 diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
-index c6c901eaff474eaa3f06128ea825b8203d064a52..f577cd23bf72b94b2651fe5eeb757106f5adaea2 100644
+index d443f4dc2daea0b7aa86ae75d31d995fae667ba9..5e71420b765019edea82a33884ace539cd91bda5 100644
 --- a/decrepit/evp/evp_do_all.c
 +++ b/decrepit/evp/evp_do_all.c
 @@ -39,6 +39,7 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
