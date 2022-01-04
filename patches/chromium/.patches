@@ -111,3 +111,4 @@ load_v8_snapshot_in_browser_process.patch
 fix_patch_out_permissions_checks_in_exclusive_access.patch
 fix_aspect_ratio_with_max_size.patch
 build_disable_partitionalloc_on_mac.patch
+revert_stop_using_nsrunloop_in_renderer_process.patch
