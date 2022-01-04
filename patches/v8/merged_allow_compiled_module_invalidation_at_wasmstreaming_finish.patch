@@ -1,0 +1,181 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hiroshige Hayashizaki <hiroshige@chromium.org>
+Date: Tue, 23 Nov 2021 22:32:18 +0900
+Subject: Merged: Allow compiled module invalidation at WasmStreaming::Finish()
+
+This CL adds `can_use_compiled_module` parameter to
+WasmStreaming::Finish() that is used by Chromium
+https://chromium-review.googlesource.com/c/chromium/src/+/3282643
+to invalidate compiled module bytes after SetCompiledModuleBytes().
+
+(cherry picked from commit b0c6dd86bd563672dba6256f482dc5e145f094ae)
+
+Bug: chromium:1260939
+Change-Id: I28554ed79ed56349fa38517ed03785e0c8146b4d
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3306788
+Commit-Queue: Hiroshige Hayashizaki <hiroshige@chromium.org>
+Reviewed-by: Andreas Haas <ahaas@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.6@{#36}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+
+diff --git a/include/v8.h b/include/v8.h
+index 3fbba577edd160184fa431cb796025c9038b25bb..f8525f281105432a5859cfa9b8230f740f2584ec 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -5156,8 +5156,12 @@ class V8_EXPORT WasmStreaming final {
+    * {Finish} should be called after all received bytes where passed to
+    * {OnBytesReceived} to tell V8 that there will be no more bytes. {Finish}
+    * does not have to be called after {Abort} has been called already.
++   * If {can_use_compiled_module} is true and {SetCompiledModuleBytes} was
++   * previously called, the compiled module bytes can be used.
++   * If {can_use_compiled_module} is false, the compiled module bytes previously
++   * set by {SetCompiledModuleBytes} should not be used.
+    */
+-  void Finish();
++  void Finish(bool can_use_compiled_module = true);
+ 
+   /**
+    * Abort streaming compilation. If {exception} has a value, then the promise
+@@ -5172,6 +5176,8 @@ class V8_EXPORT WasmStreaming final {
+    * can be used, false otherwise. The buffer passed via {bytes} and {size}
+    * is owned by the caller. If {SetCompiledModuleBytes} returns true, the
+    * buffer must remain valid until either {Finish} or {Abort} completes.
++   * The compiled module bytes should not be used until {Finish(true)} is
++   * called, because they can be invalidated later by {Finish(false)}.
+    */
+   bool SetCompiledModuleBytes(const uint8_t* bytes, size_t size);
+ 
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 65f400ff50a31e14a2140056d05c5cb6edc6cd55..5fab60150e45ec4f3e0b4afdd129b8a144dc7fdd 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -9872,7 +9872,7 @@ void WasmStreaming::OnBytesReceived(const uint8_t* bytes, size_t size) {
+   UNREACHABLE();
+ }
+ 
+-void WasmStreaming::Finish() { UNREACHABLE(); }
++void WasmStreaming::Finish(bool can_use_compiled_module) { UNREACHABLE(); }
+ 
+ void WasmStreaming::Abort(MaybeLocal<Value> exception) { UNREACHABLE(); }
+ 
+diff --git a/src/wasm/streaming-decoder.cc b/src/wasm/streaming-decoder.cc
+index 1556036bbabb07e9524fe11fba42b4e5229a3b4b..cfb59f2826cf735c1d97bfdb31841b7224ee473e 100644
+--- a/src/wasm/streaming-decoder.cc
++++ b/src/wasm/streaming-decoder.cc
+@@ -35,7 +35,7 @@ class V8_EXPORT_PRIVATE AsyncStreamingDecoder : public StreamingDecoder {
+   // The buffer passed into OnBytesReceived is owned by the caller.
+   void OnBytesReceived(Vector<const uint8_t> bytes) override;
+ 
+-  void Finish() override;
++  void Finish(bool can_use_compiled_module) override;
+ 
+   void Abort() override;
+ 
+@@ -259,7 +259,7 @@ size_t AsyncStreamingDecoder::DecodingState::ReadBytes(
+   return num_bytes;
+ }
+ 
+-void AsyncStreamingDecoder::Finish() {
++void AsyncStreamingDecoder::Finish(bool can_use_compiled_module) {
+   TRACE_STREAMING("Finish\n");
+   DCHECK(!stream_finished_);
+   stream_finished_ = true;
+@@ -268,9 +268,12 @@ void AsyncStreamingDecoder::Finish() {
+   if (deserializing()) {
+     Vector<const uint8_t> wire_bytes = VectorOf(wire_bytes_for_deserializing_);
+     // Try to deserialize the module from wire bytes and module bytes.
+-    if (processor_->Deserialize(compiled_module_bytes_, wire_bytes)) return;
++    if (can_use_compiled_module &&
++        processor_->Deserialize(compiled_module_bytes_, wire_bytes))
++      return;
+ 
+-    // Deserialization failed. Restart decoding using |wire_bytes|.
++    // Compiled module bytes are invalidated by can_use_compiled_module = false
++    // or the deserialization failed. Restart decoding using |wire_bytes|.
+     compiled_module_bytes_ = {};
+     DCHECK(!deserializing());
+     OnBytesReceived(wire_bytes);
+diff --git a/src/wasm/streaming-decoder.h b/src/wasm/streaming-decoder.h
+index 0dfbf1bf78d9ec01d5bf4ed6eee45b3faf63d034..059a659e58b09f6522fba64d064cd0ede82e3eee 100644
+--- a/src/wasm/streaming-decoder.h
++++ b/src/wasm/streaming-decoder.h
+@@ -77,7 +77,7 @@ class V8_EXPORT_PRIVATE StreamingDecoder {
+   // The buffer passed into OnBytesReceived is owned by the caller.
+   virtual void OnBytesReceived(Vector<const uint8_t> bytes) = 0;
+ 
+-  virtual void Finish() = 0;
++  virtual void Finish(bool can_use_compiled_module = true) = 0;
+ 
+   virtual void Abort() = 0;
+ 
+@@ -95,6 +95,7 @@ class V8_EXPORT_PRIVATE StreamingDecoder {
+   }
+ 
+   // Passes previously compiled module bytes from the embedder's cache.
++  // The content shouldn't be used until Finish(true) is called.
+   bool SetCompiledModuleBytes(Vector<const uint8_t> compiled_module_bytes) {
+     compiled_module_bytes_ = compiled_module_bytes;
+     return true;
+@@ -122,6 +123,8 @@ class V8_EXPORT_PRIVATE StreamingDecoder {
+ 
+   std::string url_;
+   ModuleCompiledCallback module_compiled_callback_;
++  // The content of `compiled_module_bytes_` shouldn't be used until
++  // Finish(true) is called.
+   Vector<const uint8_t> compiled_module_bytes_;
+ };
+ 
+diff --git a/src/wasm/sync-streaming-decoder.cc b/src/wasm/sync-streaming-decoder.cc
+index 7152806d9d91e7b4a6d01340fa5b1881a5d6e8d1..02b2a6d1c908406d987b0e7c653f24626c91a7b0 100644
+--- a/src/wasm/sync-streaming-decoder.cc
++++ b/src/wasm/sync-streaming-decoder.cc
+@@ -32,7 +32,7 @@ class V8_EXPORT_PRIVATE SyncStreamingDecoder : public StreamingDecoder {
+     buffer_size_ += bytes.size();
+   }
+ 
+-  void Finish() override {
++  void Finish(bool can_use_compiled_module) override {
+     // We copy all received chunks into one byte buffer.
+     auto bytes = std::make_unique<uint8_t[]>(buffer_size_);
+     uint8_t* destination = bytes.get();
+@@ -43,7 +43,7 @@ class V8_EXPORT_PRIVATE SyncStreamingDecoder : public StreamingDecoder {
+     CHECK_EQ(destination - bytes.get(), buffer_size_);
+ 
+     // Check if we can deserialize the module from cache.
+-    if (deserializing()) {
++    if (can_use_compiled_module && deserializing()) {
+       HandleScope scope(isolate_);
+       SaveAndSwitchContext saved_context(isolate_, *context_);
+ 
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index 7f1d8e261fffdf4616a69b7bc3a6e6d90cc99ceb..02546b0acfeb3b391588c24bab433c37a20127ed 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -57,7 +57,9 @@ class WasmStreaming::WasmStreamingImpl {
+   void OnBytesReceived(const uint8_t* bytes, size_t size) {
+     streaming_decoder_->OnBytesReceived(i::VectorOf(bytes, size));
+   }
+-  void Finish() { streaming_decoder_->Finish(); }
++  void Finish(bool can_use_compiled_module) {
++    streaming_decoder_->Finish(can_use_compiled_module);
++  }
+ 
+   void Abort(MaybeLocal<Value> exception) {
+     i::HandleScope scope(reinterpret_cast<i::Isolate*>(isolate_));
+@@ -112,9 +114,9 @@ void WasmStreaming::OnBytesReceived(const uint8_t* bytes, size_t size) {
+   impl_->OnBytesReceived(bytes, size);
+ }
+ 
+-void WasmStreaming::Finish() {
++void WasmStreaming::Finish(bool can_use_compiled_module) {
+   TRACE_EVENT0("v8.wasm", "wasm.FinishStreaming");
+-  impl_->Finish();
++  impl_->Finish(can_use_compiled_module);
+ }
+ 
+ void WasmStreaming::Abort(MaybeLocal<Value> exception) {
