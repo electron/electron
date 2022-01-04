@@ -19,7 +19,7 @@ This document uses the following convention to categorize breaking changes:
 Prior to Electron 15, `window.open` was by default shimmed to use
 `BrowserWindowProxy`. This meant that `window.open('about:blank')` did not work
 to open synchronously scriptable child windows, among other incompatibilities.
-Sice Electron 15 `nativeWindowOpen` was enabled by default.
+Since Electron 15, `nativeWindowOpen` has been enabled by default.
 
 See the documentation for [window.open in Electron](api/window-open.md)
 for more details.
