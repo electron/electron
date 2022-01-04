@@ -22,3 +22,5 @@ merged_cppgc_fix_marking_of_ephemerons_with_keys_in_construction.patch
 cherry-pick-feef10137b16.patch
 cherry-pick-014e1f857c33.patch
 cherry-pick-5d2b5e7c006c.patch
+cherry-pick-418c276ef228.patch
+merged_allow_compiled_module_invalidation_at_wasmstreaming_finish.patch
