@@ -1,0 +1,420 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Tue, 16 Nov 2021 22:16:15 +0000
+Subject: M96: [FileAPI] Move origin checks in BlobURLStore sooner.
+
+Rather than waiting to verify if a valid origin was passed in until
+register/revoke time, check if the origin is valid at the time the
+mojo interface is requested. This avoids the need to pass the
+delegate on to BlobURLStoreImpl, further decoupling this from
+BlobRegistryImpl.
+
+(cherry picked from commit 15cfa2bed3ce9dcdd0a06d3cd3b8330e3591acdc)
+
+Bug: 1262183
+Change-Id: I4889685d03501158abfe4f87c647dc468d005f78
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3264353
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#940015}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3285385
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1078}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/chrome/browser/chrome_security_exploit_browsertest.cc b/chrome/browser/chrome_security_exploit_browsertest.cc
+index ca2f5cbbaa845d281b44e60ff93e0ba536961d24..8be1504b801e6690d94d7e68fcd4f3b0e43e9862 100644
+--- a/chrome/browser/chrome_security_exploit_browsertest.cc
++++ b/chrome/browser/chrome_security_exploit_browsertest.cc
+@@ -483,8 +483,8 @@ IN_PROC_BROWSER_TEST_F(ChromeSecurityExploitBrowserTestMojoBlobURLs,
+ 
+   // If the process is killed, this test passes.
+   EXPECT_EQ(
+-      "Received bad user message: Non committable URL passed to "
+-      "BlobURLStore::Register",
++      "Received bad user message: "
++      "URL with invalid origin passed to BlobURLStore::Register",
+       crash_observer.Wait());
+ }
+ 
+@@ -526,7 +526,7 @@ IN_PROC_BROWSER_TEST_F(ChromeSecurityExploitBrowserTestMojoBlobURLs,
+ 
+   // If the process is killed, this test passes.
+   EXPECT_EQ(
+-      "Received bad user message: Non committable URL passed to "
+-      "BlobURLStore::Register",
++      "Received bad user message: "
++      "URL with invalid origin passed to BlobURLStore::Register",
+       crash_observer.Wait());
+ }
+diff --git a/content/browser/blob_storage/blob_url_unittest.cc b/content/browser/blob_storage/blob_url_unittest.cc
+index 317ce6c282abc81f472b7c911d9a2eabdb86a1d4..66360f2ab627f85935734320ab6ac402d5fe4bd5 100644
+--- a/content/browser/blob_storage/blob_url_unittest.cc
++++ b/content/browser/blob_storage/blob_url_unittest.cc
+@@ -184,15 +184,14 @@ class BlobURLTest : public testing::Test {
+ 
+   void TestRequest(const std::string& method,
+                    const net::HttpRequestHeaders& extra_headers) {
+-    GURL url("blob:blah");
++    auto origin = url::Origin::Create(GURL("https://example.com"));
++    auto url = GURL("blob:" + origin.Serialize() + "/id1");
+     network::ResourceRequest request;
+     request.url = url;
+     request.method = method;
+     request.headers = extra_headers;
+ 
+-    storage::MockBlobRegistryDelegate delegate;
+-    storage::BlobURLStoreImpl url_store(blob_url_registry_.AsWeakPtr(),
+-                                        &delegate);
++    storage::BlobURLStoreImpl url_store(origin, blob_url_registry_.AsWeakPtr());
+ 
+     mojo::PendingRemote<blink::mojom::Blob> blob_remote;
+     storage::BlobImpl::Create(
+diff --git a/content/browser/security_exploit_browsertest.cc b/content/browser/security_exploit_browsertest.cc
+index 5073d38cef7124b7ca1d0b38da2fcdc8683e45fb..eb5cb552c4e5d71cae2958c93d99645ce3d040b2 100644
+--- a/content/browser/security_exploit_browsertest.cc
++++ b/content/browser/security_exploit_browsertest.cc
+@@ -782,7 +782,7 @@ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTestMojoBlobURLs,
+   // If the process is killed, this test passes.
+   EXPECT_EQ(
+       "Received bad user message: "
+-      "Non committable URL passed to BlobURLStore::Register",
++      "URL with invalid origin passed to BlobURLStore::Register",
+       crash_observer.Wait());
+ }
+ 
+diff --git a/storage/browser/blob/blob_registry_impl.cc b/storage/browser/blob/blob_registry_impl.cc
+index c01eb0635324a171a64c6c13b4ef7288b3f5de45..7c7686309f799f25ce30ec1dc18c75e608829ee2 100644
+--- a/storage/browser/blob/blob_registry_impl.cc
++++ b/storage/browser/blob/blob_registry_impl.cc
+@@ -634,13 +634,14 @@ void BlobRegistryImpl::GetBlobFromUUID(
+ void BlobRegistryImpl::URLStoreForOrigin(
+     const url::Origin& origin,
+     mojo::PendingAssociatedReceiver<blink::mojom::BlobURLStore> receiver) {
+-  // TODO(mek): Pass origin on to BlobURLStoreImpl so it can use it to generate
+-  // Blob URLs, and verify at this point that the renderer can create URLs for
+-  // that origin.
+   Delegate* delegate = receivers_.current_context().get();
+   DCHECK(delegate);
++  if (!origin.opaque() && !delegate->CanCommitURL(origin.GetURL())) {
++    mojo::ReportBadMessage(
++        "Non committable origin passed to BlobRegistryImpl::URLStoreForOrigin");
++  }
+   auto self_owned_associated_receiver = mojo::MakeSelfOwnedAssociatedReceiver(
+-      std::make_unique<BlobURLStoreImpl>(url_registry_, delegate),
++      std::make_unique<BlobURLStoreImpl>(origin, url_registry_),
+       std::move(receiver));
+   if (g_url_store_creation_hook)
+     g_url_store_creation_hook->Run(self_owned_associated_receiver);
+diff --git a/storage/browser/blob/blob_url_store_impl.cc b/storage/browser/blob/blob_url_store_impl.cc
+index b46ee60849c9b758e022d7e576de61b080fd59f5..d4edd988f5982788f5157d27fbfa31abcb1eede7 100644
+--- a/storage/browser/blob/blob_url_store_impl.cc
++++ b/storage/browser/blob/blob_url_store_impl.cc
+@@ -5,6 +5,7 @@
+ #include "storage/browser/blob/blob_url_store_impl.h"
+ 
+ #include "base/bind.h"
++#include "base/strings/strcat.h"
+ #include "mojo/public/cpp/bindings/receiver_set.h"
+ #include "storage/browser/blob/blob_impl.h"
+ #include "storage/browser/blob/blob_url_loader_factory.h"
+@@ -58,9 +59,9 @@ class BlobURLTokenImpl : public blink::mojom::BlobURLToken {
+   const base::UnguessableToken token_;
+ };
+ 
+-BlobURLStoreImpl::BlobURLStoreImpl(base::WeakPtr<BlobUrlRegistry> registry,
+-                                   BlobRegistryImpl::Delegate* delegate)
+-    : registry_(std::move(registry)), delegate_(delegate) {}
++BlobURLStoreImpl::BlobURLStoreImpl(const url::Origin& origin,
++                                   base::WeakPtr<BlobUrlRegistry> registry)
++    : origin_(origin), registry_(std::move(registry)) {}
+ 
+ BlobURLStoreImpl::~BlobURLStoreImpl() {
+   if (registry_) {
+@@ -72,20 +73,9 @@ BlobURLStoreImpl::~BlobURLStoreImpl() {
+ void BlobURLStoreImpl::Register(mojo::PendingRemote<blink::mojom::Blob> blob,
+                                 const GURL& url,
+                                 RegisterCallback callback) {
+-  if (!url.SchemeIsBlob()) {
+-    mojo::ReportBadMessage("Invalid scheme passed to BlobURLStore::Register");
+-    std::move(callback).Run();
+-    return;
+-  }
+-  if (!delegate_->CanCommitURL(url)) {
+-    mojo::ReportBadMessage(
+-        "Non committable URL passed to BlobURLStore::Register");
+-    std::move(callback).Run();
+-    return;
+-  }
+-  if (BlobUrlUtils::UrlHasFragment(url)) {
+-    mojo::ReportBadMessage(
+-        "URL with fragment passed to BlobURLStore::Register");
++  // TODO(mek): Generate blob URLs here, rather than validating the URLs the
++  // renderer process generated.
++  if (!BlobUrlIsValid(url, "Register")) {
+     std::move(callback).Run();
+     return;
+   }
+@@ -97,19 +87,8 @@ void BlobURLStoreImpl::Register(mojo::PendingRemote<blink::mojom::Blob> blob,
+ }
+ 
+ void BlobURLStoreImpl::Revoke(const GURL& url) {
+-  if (!url.SchemeIsBlob()) {
+-    mojo::ReportBadMessage("Invalid scheme passed to BlobURLStore::Revoke");
+-    return;
+-  }
+-  if (!delegate_->CanCommitURL(url)) {
+-    mojo::ReportBadMessage(
+-        "Non committable URL passed to BlobURLStore::Revoke");
++  if (!BlobUrlIsValid(url, "Revoke"))
+     return;
+-  }
+-  if (BlobUrlUtils::UrlHasFragment(url)) {
+-    mojo::ReportBadMessage("URL with fragment passed to BlobURLStore::Revoke");
+-    return;
+-  }
+ 
+   if (registry_)
+     registry_->RemoveUrlMapping(url);
+@@ -144,4 +123,38 @@ void BlobURLStoreImpl::ResolveForNavigation(
+   new BlobURLTokenImpl(registry_, url, std::move(blob), std::move(token));
+ }
+ 
++bool BlobURLStoreImpl::BlobUrlIsValid(const GURL& url,
++                                      const char* method) const {
++  if (!url.SchemeIsBlob()) {
++    mojo::ReportBadMessage(
++        base::StrCat({"Invalid scheme passed to BlobURLStore::", method}));
++    return false;
++  }
++  url::Origin url_origin = url::Origin::Create(url);
++  // For file:// origins blink sometimes creates blob URLs with "null" as origin
++  // and other times "file://" (based on a runtime setting). On the other hand,
++  // `origin_` will always be a non-opaque file: origin for pages loaded from
++  // file:// URLs. To deal with this, we treat file:// origins and
++  // opaque origins separately from non-opaque origins.
++  bool valid_origin = true;
++  if (url_origin.scheme() == url::kFileScheme) {
++    valid_origin = origin_.scheme() == url::kFileScheme;
++  } else if (url_origin.opaque()) {
++    valid_origin = origin_.opaque() || origin_.scheme() == url::kFileScheme;
++  } else {
++    valid_origin = origin_ == url_origin;
++  }
++  if (!valid_origin) {
++    mojo::ReportBadMessage(base::StrCat(
++        {"URL with invalid origin passed to BlobURLStore::", method}));
++    return false;
++  }
++  if (BlobUrlUtils::UrlHasFragment(url)) {
++    mojo::ReportBadMessage(
++        base::StrCat({"URL with fragment passed to BlobURLStore::", method}));
++    return false;
++  }
++  return true;
++}
++
+ }  // namespace storage
+diff --git a/storage/browser/blob/blob_url_store_impl.h b/storage/browser/blob/blob_url_store_impl.h
+index 6b4a738a4646f8d8e35e8bb1be5aba391e612917..5db371d7c6d50520d8b40a3b4cb6d6bbf920b570 100644
+--- a/storage/browser/blob/blob_url_store_impl.h
++++ b/storage/browser/blob/blob_url_store_impl.h
+@@ -11,8 +11,9 @@
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "mojo/public/cpp/bindings/remote.h"
+-#include "storage/browser/blob/blob_registry_impl.h"
++#include "storage/browser/blob/blob_url_registry.h"
+ #include "third_party/blink/public/mojom/blob/blob_url_store.mojom.h"
++#include "url/origin.h"
+ 
+ namespace storage {
+ 
+@@ -21,8 +22,9 @@ class BlobUrlRegistry;
+ class COMPONENT_EXPORT(STORAGE_BROWSER) BlobURLStoreImpl
+     : public blink::mojom::BlobURLStore {
+  public:
+-  BlobURLStoreImpl(base::WeakPtr<BlobUrlRegistry> registry,
+-                   BlobRegistryImpl::Delegate* delegate);
++  BlobURLStoreImpl(const url::Origin& origin,
++                   base::WeakPtr<BlobUrlRegistry> registry);
++
+   ~BlobURLStoreImpl() override;
+ 
+   void Register(mojo::PendingRemote<blink::mojom::Blob> blob,
+@@ -39,8 +41,12 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) BlobURLStoreImpl
+       mojo::PendingReceiver<blink::mojom::BlobURLToken> token) override;
+ 
+  private:
++  // Checks if the passed in url is a valid blob url for this blob url store.
++  // Returns false and reports a bad mojo message if not.
++  bool BlobUrlIsValid(const GURL& url, const char* method) const;
++
++  const url::Origin origin_;
+   base::WeakPtr<BlobUrlRegistry> registry_;
+-  BlobRegistryImpl::Delegate* delegate_;
+ 
+   std::set<GURL> urls_;
+ 
+diff --git a/storage/browser/blob/blob_url_store_impl_unittest.cc b/storage/browser/blob/blob_url_store_impl_unittest.cc
+index b81232212472036878e0918523be17bb2c2a8b8a..4244890c48240769b1333492bb870420fa26b869 100644
+--- a/storage/browser/blob/blob_url_store_impl_unittest.cc
++++ b/storage/browser/blob/blob_url_store_impl_unittest.cc
+@@ -18,7 +18,6 @@
+ #include "storage/browser/blob/blob_impl.h"
+ #include "storage/browser/blob/blob_storage_context.h"
+ #include "storage/browser/blob/blob_url_registry.h"
+-#include "storage/browser/test/mock_blob_registry_delegate.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+ using blink::mojom::BlobURLStore;
+@@ -70,9 +69,9 @@ class BlobURLStoreImplTest : public testing::Test {
+ 
+   mojo::PendingRemote<BlobURLStore> CreateURLStore() {
+     mojo::PendingRemote<BlobURLStore> result;
+-    mojo::MakeSelfOwnedReceiver(std::make_unique<BlobURLStoreImpl>(
+-                                    url_registry_.AsWeakPtr(), &delegate_),
+-                                result.InitWithNewPipeAndPassReceiver());
++    mojo::MakeSelfOwnedReceiver(
++        std::make_unique<BlobURLStoreImpl>(kOrigin, url_registry_.AsWeakPtr()),
++        result.InitWithNewPipeAndPassReceiver());
+     return result;
+   }
+ 
+@@ -102,15 +101,19 @@ class BlobURLStoreImplTest : public testing::Test {
+   }
+ 
+   const std::string kId = "id";
+-  const GURL kValidUrl = GURL("blob:id");
++  const url::Origin kOrigin = url::Origin::Create(GURL("https://example.com"));
++  const GURL kValidUrl = GURL("blob:" + kOrigin.Serialize() + "/id1");
++  const GURL kValidUrl2 = GURL("blob:" + kOrigin.Serialize() + "/id2");
+   const GURL kInvalidUrl = GURL("bolb:id");
+-  const GURL kFragmentUrl = GURL("blob:id#fragment");
++  const GURL kFragmentUrl = GURL(kValidUrl.spec() + "#fragment");
++  const url::Origin kWrongOrigin =
++      url::Origin::Create(GURL("https://test.com"));
++  const GURL kWrongOriginUrl = GURL("blob:" + kWrongOrigin.Serialize() + "/id");
+ 
+  protected:
+   base::test::TaskEnvironment task_environment_;
+   std::unique_ptr<BlobStorageContext> context_;
+   BlobUrlRegistry url_registry_;
+-  MockBlobRegistryDelegate delegate_;
+   std::vector<std::string> bad_messages_;
+ };
+ 
+@@ -119,7 +122,7 @@ TEST_F(BlobURLStoreImplTest, BasicRegisterRevoke) {
+       CreateBlobFromString(kId, "hello world");
+ 
+   // Register a URL and make sure the URL keeps the blob alive.
+-  BlobURLStoreImpl url_store(url_registry_.AsWeakPtr(), &delegate_);
++  BlobURLStoreImpl url_store(kOrigin, url_registry_.AsWeakPtr());
+   RegisterURL(&url_store, std::move(blob), kValidUrl);
+ 
+   blob = url_registry_.GetBlobFromUrl(kValidUrl);
+@@ -147,15 +150,13 @@ TEST_F(BlobURLStoreImplTest, RegisterInvalidScheme) {
+   EXPECT_EQ(1u, bad_messages_.size());
+ }
+ 
+-TEST_F(BlobURLStoreImplTest, RegisterCantCommit) {
++TEST_F(BlobURLStoreImplTest, RegisterWrongOrigin) {
+   mojo::PendingRemote<blink::mojom::Blob> blob =
+       CreateBlobFromString(kId, "hello world");
+ 
+-  delegate_.can_commit_url_result = false;
+-
+   mojo::Remote<BlobURLStore> url_store(CreateURLStore());
+-  RegisterURL(url_store.get(), std::move(blob), kValidUrl);
+-  EXPECT_FALSE(url_registry_.GetBlobFromUrl(kValidUrl));
++  RegisterURL(url_store.get(), std::move(blob), kWrongOriginUrl);
++  EXPECT_FALSE(url_registry_.GetBlobFromUrl(kWrongOriginUrl));
+   EXPECT_EQ(1u, bad_messages_.size());
+ }
+ 
+@@ -170,14 +171,13 @@ TEST_F(BlobURLStoreImplTest, RegisterUrlFragment) {
+ }
+ 
+ TEST_F(BlobURLStoreImplTest, ImplicitRevoke) {
+-  const GURL kValidUrl2("blob:id2");
+   mojo::Remote<blink::mojom::Blob> blob(
+       CreateBlobFromString(kId, "hello world"));
+   mojo::PendingRemote<blink::mojom::Blob> blob2;
+   blob->Clone(blob2.InitWithNewPipeAndPassReceiver());
+ 
+   auto url_store =
+-      std::make_unique<BlobURLStoreImpl>(url_registry_.AsWeakPtr(), &delegate_);
++      std::make_unique<BlobURLStoreImpl>(kOrigin, url_registry_.AsWeakPtr());
+   RegisterURL(url_store.get(), blob.Unbind(), kValidUrl);
+   EXPECT_TRUE(url_registry_.GetBlobFromUrl(kValidUrl));
+   RegisterURL(url_store.get(), std::move(blob2), kValidUrl2);
+@@ -193,8 +193,8 @@ TEST_F(BlobURLStoreImplTest, RevokeThroughDifferentURLStore) {
+   mojo::PendingRemote<blink::mojom::Blob> blob =
+       CreateBlobFromString(kId, "hello world");
+ 
+-  BlobURLStoreImpl url_store1(url_registry_.AsWeakPtr(), &delegate_);
+-  BlobURLStoreImpl url_store2(url_registry_.AsWeakPtr(), &delegate_);
++  BlobURLStoreImpl url_store1(kOrigin, url_registry_.AsWeakPtr());
++  BlobURLStoreImpl url_store2(kOrigin, url_registry_.AsWeakPtr());
+ 
+   RegisterURL(&url_store1, std::move(blob), kValidUrl);
+   EXPECT_TRUE(url_registry_.GetBlobFromUrl(kValidUrl));
+@@ -210,11 +210,9 @@ TEST_F(BlobURLStoreImplTest, RevokeInvalidScheme) {
+   EXPECT_EQ(1u, bad_messages_.size());
+ }
+ 
+-TEST_F(BlobURLStoreImplTest, RevokeCantCommit) {
+-  delegate_.can_commit_url_result = false;
+-
++TEST_F(BlobURLStoreImplTest, RevokeWrongOrigin) {
+   mojo::Remote<BlobURLStore> url_store(CreateURLStore());
+-  url_store->Revoke(kValidUrl);
++  url_store->Revoke(kWrongOriginUrl);
+   url_store.FlushForTesting();
+   EXPECT_EQ(1u, bad_messages_.size());
+ }
+@@ -230,7 +228,7 @@ TEST_F(BlobURLStoreImplTest, Resolve) {
+   mojo::PendingRemote<blink::mojom::Blob> blob =
+       CreateBlobFromString(kId, "hello world");
+ 
+-  BlobURLStoreImpl url_store(url_registry_.AsWeakPtr(), &delegate_);
++  BlobURLStoreImpl url_store(kOrigin, url_registry_.AsWeakPtr());
+   RegisterURL(&url_store, std::move(blob), kValidUrl);
+ 
+   blob = ResolveURL(&url_store, kValidUrl);
+@@ -245,7 +243,7 @@ TEST_F(BlobURLStoreImplTest, Resolve) {
+ }
+ 
+ TEST_F(BlobURLStoreImplTest, ResolveNonExistentURL) {
+-  BlobURLStoreImpl url_store(url_registry_.AsWeakPtr(), &delegate_);
++  BlobURLStoreImpl url_store(kOrigin, url_registry_.AsWeakPtr());
+ 
+   mojo::PendingRemote<blink::mojom::Blob> blob =
+       ResolveURL(&url_store, kValidUrl);
+@@ -255,7 +253,7 @@ TEST_F(BlobURLStoreImplTest, ResolveNonExistentURL) {
+ }
+ 
+ TEST_F(BlobURLStoreImplTest, ResolveInvalidURL) {
+-  BlobURLStoreImpl url_store(url_registry_.AsWeakPtr(), &delegate_);
++  BlobURLStoreImpl url_store(kOrigin, url_registry_.AsWeakPtr());
+ 
+   mojo::PendingRemote<blink::mojom::Blob> blob =
+       ResolveURL(&url_store, kInvalidUrl);
+@@ -266,7 +264,7 @@ TEST_F(BlobURLStoreImplTest, ResolveAsURLLoaderFactory) {
+   mojo::PendingRemote<blink::mojom::Blob> blob =
+       CreateBlobFromString(kId, "hello world");
+ 
+-  BlobURLStoreImpl url_store(url_registry_.AsWeakPtr(), &delegate_);
++  BlobURLStoreImpl url_store(kOrigin, url_registry_.AsWeakPtr());
+   RegisterURL(&url_store, std::move(blob), kValidUrl);
+ 
+   mojo::Remote<network::mojom::URLLoaderFactory> factory;
+@@ -292,7 +290,7 @@ TEST_F(BlobURLStoreImplTest, ResolveForNavigation) {
+   mojo::PendingRemote<blink::mojom::Blob> blob =
+       CreateBlobFromString(kId, "hello world");
+ 
+-  BlobURLStoreImpl url_store(url_registry_.AsWeakPtr(), &delegate_);
++  BlobURLStoreImpl url_store(kOrigin, url_registry_.AsWeakPtr());
+   RegisterURL(&url_store, std::move(blob), kValidUrl);
+ 
+   mojo::Remote<blink::mojom::BlobURLToken> token_remote;
