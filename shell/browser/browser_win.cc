@@ -65,7 +65,7 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty())
-    *exe = base::StringPrintf(L"\"%ls\" %ls \"%%1\"", exe->c_str(),
+    *exe = base::StringPrintf(L"\"%ls\" \"%ls\" \"%%1\"", exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
   else
     *exe = base::StringPrintf(L"\"%ls\" \"%%1\"", exe->c_str());
