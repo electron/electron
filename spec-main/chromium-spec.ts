@@ -813,6 +813,17 @@ describe('chromium features', () => {
       expect(typeofProcessGlobal).to.equal('undefined');
     });
 
+    it('can disable node integration when it is enabled on the parent window with nativeWindowOpen: true', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen: true } });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript(`
+        { b = window.open('about:blank', '', 'nodeIntegration=no,show=no'); null }
+      `);
+      const [, contents] = await emittedOnce(app, 'web-contents-created');
+      const typeofProcessGlobal = await contents.executeJavaScript('typeof process');
+      expect(typeofProcessGlobal).to.equal('undefined');
+    });
+
     it('disables JavaScript when it is disabled on the parent window', async () => {
       const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
       w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
