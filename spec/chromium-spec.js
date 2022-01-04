@@ -154,16 +154,6 @@ describe('chromium feature', () => {
     });
   });
 
-  describe('window.postMessage', () => {
-    it('throws an exception when the targetOrigin cannot be converted to a string', () => {
-      const b = window.open('');
-      expect(() => {
-        b.postMessage('test', { toString: null });
-      }).to.throw('Cannot convert object to primitive value');
-      b.close();
-    });
-  });
-
   describe('window.opener.postMessage', () => {
     it('sets source and origin correctly', async () => {
       const message = waitForEvent(window, 'message');
