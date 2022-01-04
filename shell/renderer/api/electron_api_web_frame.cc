@@ -495,6 +495,14 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return gin::ConvertToV8(isolate, prefs.context_isolation);
     } else if (pref_name == options::kGuestInstanceID) {
       // NOTE: guestInstanceId is internal-only.
+      // FIXME(zcbenz): For child windows opened with window.open('') from
+      // webview, the WebPreferences is inherited from webview and the value
+      // of |guest_instance_id| is wrong.
+      // Please check ElectronRenderFrameObserver::DidInstallConditionalFeatures
+      // for the background.
+      auto* web_frame = render_frame->GetWebFrame();
+      if (web_frame->Opener())
+        return gin::ConvertToV8(isolate, 0);
       return gin::ConvertToV8(isolate, prefs.guest_instance_id);
     } else if (pref_name == options::kHiddenPage) {
       // NOTE: hiddenPage is internal-only.
