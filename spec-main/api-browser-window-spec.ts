@@ -2466,7 +2466,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
+        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([

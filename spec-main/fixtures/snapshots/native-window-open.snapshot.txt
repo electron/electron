@@ -82,7 +82,7 @@
         "nodeIntegration": false,
         "sandbox": true,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
+        "nodeIntegrationInSubFrames": false
       },
       "x": 100,
       "y": 100,

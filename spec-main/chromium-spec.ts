@@ -810,8 +810,8 @@ describe('chromium features', () => {
       expect(typeofProcessGlobal).to.equal('undefined');
     });
 
-    it('can disable node integration when it is enabled on the parent window with nativeWindowOpen: true', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen: true } });
+    it('can disable node integration when it is enabled on the parent window', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript(`
         { b = window.open('about:blank', '', 'nodeIntegration=no,show=no'); null }

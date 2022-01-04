@@ -617,7 +617,6 @@ describe('<webview> tag', function () {
     it('does not crash when creating window with noopener', async () => {
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        webpreferences: 'nativeWindowOpen=1',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-noopener.html')}`
       });
       await emittedOnce(app, 'browser-window-created');

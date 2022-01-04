@@ -45,7 +45,6 @@ declare namespace NodeJS {
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
     runUntilIdle(): void;
-    isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
   }
 

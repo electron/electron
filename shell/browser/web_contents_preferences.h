@@ -116,7 +116,6 @@ class WebContentsPreferences
   absl::optional<int> default_monospace_font_size_;
   absl::optional<int> minimum_font_size_;
   absl::optional<std::string> default_encoding_;
-  int opener_id_;
   bool is_webview_;
   std::vector<std::string> custom_args_;
   std::vector<std::string> custom_switches_;

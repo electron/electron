@@ -147,7 +147,6 @@ void WebContentsPreferences::Clear() {
   default_monospace_font_size_ = absl::nullopt;
   minimum_font_size_ = absl::nullopt;
   default_encoding_ = absl::nullopt;
-  opener_id_ = 0;
   is_webview_ = false;
   custom_args_.clear();
   custom_switches_.clear();
@@ -221,7 +220,6 @@ void WebContentsPreferences::Merge(
   std::string encoding;
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
-  web_preferences.Get(options::kOpenerID, &opener_id_);
   web_preferences.Get(options::kCustomArgs, &custom_args_);
   web_preferences.Get("commandLineSwitches", &custom_switches_);
   web_preferences.Get("disablePopups", &disable_popups_);
@@ -404,7 +402,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 void WebContentsPreferences::SaveLastPreferences() {
   last_web_preferences_ = base::Value(base::Value::Type::DICTIONARY);
-  last_web_preferences_.SetKey(options::kOpenerID, base::Value(opener_id_));
   last_web_preferences_.SetKey(options::kNodeIntegration,
                                base::Value(node_integration_));
   last_web_preferences_.SetKey(options::kNodeIntegrationInSubFrames,
@@ -500,15 +497,9 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (preload_path_)
     prefs->preload = *preload_path_;
 
-  // Check if we have node integration specified.
-  prefs->node_integration = IsEnabled(options::kNodeIntegration);
-
-  // Whether to enable node integration in Worker.
-  prefs->node_integration_in_worker =
-      IsEnabled(options::kNodeIntegrationInWorker);
-
-  prefs->node_integration_in_sub_frames =
-      IsEnabled(options::kNodeIntegrationInSubFrames);
+  prefs->node_integration = node_integration_;
+  prefs->node_integration_in_worker = node_integration_in_worker_;
+  prefs->node_integration_in_sub_frames = node_integration_in_sub_frames_;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   prefs->enable_spellcheck = spellcheck_;

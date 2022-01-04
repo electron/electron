@@ -219,7 +219,8 @@ describe('webContents.setWindowOpenHandler', () => {
       const size = await childWindow.webContents.executeJavaScript("getComputedStyle(document.querySelector('body')).fontSize");
       expect(size).to.equal('30px');
       done();
-    })
+    });
+
     browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
   });
 

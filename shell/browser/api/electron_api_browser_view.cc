@@ -81,8 +81,7 @@ BrowserView::BrowserView(gin::Arguments* args,
 
   v8::Local<v8::Value> value;
 
-  // Copy the webContents option to webPreferences. This is only used internally
-  // to implement nativeWindowOpen option.
+  // Copy the webContents option to webPreferences.
   if (options.Get("webContents", &value)) {
     web_preferences.SetHidden("webContents", value);
   }

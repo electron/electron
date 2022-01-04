@@ -2054,7 +2054,7 @@ describe('webContents module', () => {
   describe('page-title-updated event', () => {
     afterEach(closeAllWindows);
     it('is emitted with a full title for pages with no navigation', async () => {
-      const bw = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      const bw = new BrowserWindow({ show: false });
       await bw.loadURL('about:blank');
       bw.webContents.executeJavaScript('child = window.open("", "", "show=no"); null');
       const [, child] = await emittedOnce(app, 'web-contents-created');
