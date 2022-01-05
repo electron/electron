@@ -75,11 +75,8 @@ SerialChooserController::SerialChooserController(
                          web_contents->GetBrowserContext())
                          ->AsWeakPtr();
   DCHECK(chooser_context_);
-
-  // This needs to be posted from the UI thread to match Chromium behavior.
-  content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE, base::BindOnce(&SerialChooserController::RunGetDevices,
-                                weak_factory_.GetWeakPtr()));
+  chooser_context_->GetPortManager()->GetDevices(base::BindOnce(
+      &SerialChooserController::OnGetDevices, weak_factory_.GetWeakPtr()));
 }
 
 SerialChooserController::~SerialChooserController() {
@@ -87,11 +84,6 @@ SerialChooserController::~SerialChooserController() {
   if (chooser_context_) {
     chooser_context_->RemovePortObserver(this);
   }
-}
-
-void SerialChooserController::RunGetDevices() {
-  chooser_context_->GetPortManager()->GetDevices(base::BindOnce(
-      &SerialChooserController::OnGetDevices, weak_factory_.GetWeakPtr()));
 }
 
 api::Session* SerialChooserController::GetSession() {
