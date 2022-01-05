@@ -49,6 +49,7 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   void OnPortManagerConnectionError() override {}
 
  private:
+  void RunGetDevices();
   api::Session* GetSession();
   void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
   bool FilterMatchesAny(const device::mojom::SerialPortInfo& port) const;
