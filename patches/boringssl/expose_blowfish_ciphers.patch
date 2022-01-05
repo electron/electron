@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Wed, 5 Jan 2022 13:08:10 -0800
+Subject: expose blowfish ciphers
+
+This exposes the (decrepit) blowfish cipher family, bf-cbc, bf-cfb and
+bf-ecb through the EVP interface. This adds references to decrepit code
+from non-decrepit code, so upstream is unlikely to take the patch.
+
+diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
+index cfdb69e3c556fea11aa7c2d28d4b7da524df15c3..a040bee3de5187c9009a2d5bf3cb59d7f10d797a 100644
+--- a/crypto/cipher_extra/cipher_extra.c
++++ b/crypto/cipher_extra/cipher_extra.c
+@@ -89,6 +89,9 @@ static const struct {
+     {NID_aes_256_ecb, "aes-256-ecb", EVP_aes_256_ecb},
+     {NID_aes_256_gcm, "aes-256-gcm", EVP_aes_256_gcm},
+     {NID_aes_256_ofb128, "aes-256-ofb", EVP_aes_256_ofb},
++    {NID_bf_cbc, "bf-cbc", EVP_bf_cbc},
++    {NID_bf_cbc, "bf-cfb", EVP_bf_cfb},
++    {NID_bf_cbc, "bf-ecb", EVP_bf_ecb},
+     {NID_des_cbc, "des-cbc", EVP_des_cbc},
+     {NID_des_ecb, "des-ecb", EVP_des_ecb},
+     {NID_des_ede_cbc, "des-ede-cbc", EVP_des_ede_cbc},
+diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
+index 5e71420b765019edea82a33884ace539cd91bda5..43fc792697519325725e9ce87801c5dc176c70a1 100644
+--- a/decrepit/evp/evp_do_all.c
++++ b/decrepit/evp/evp_do_all.c
+@@ -36,6 +36,9 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+   callback(EVP_aes_128_gcm(), "AES-128-GCM", NULL, arg);
+   callback(EVP_aes_192_gcm(), "AES-192-GCM", NULL, arg);
+   callback(EVP_aes_256_gcm(), "AES-256-GCM", NULL, arg);
++  callback(EVP_bf_cbc(), "BF-CBC", NULL, arg);
++  callback(EVP_bf_cfb(), "BF-CFB", NULL, arg);
++  callback(EVP_bf_ecb(), "BF-ECB", NULL, arg);
+   callback(EVP_des_cbc(), "DES-CBC", NULL, arg);
+   callback(EVP_des_ecb(), "DES-ECB", NULL, arg);
+   callback(EVP_des_ede(), "DES-EDE", NULL, arg);
+@@ -63,6 +66,9 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
+   callback(EVP_aes_128_gcm(), "aes-128-gcm", NULL, arg);
+   callback(EVP_aes_192_gcm(), "aes-192-gcm", NULL, arg);
+   callback(EVP_aes_256_gcm(), "aes-256-gcm", NULL, arg);
++  callback(EVP_bf_cbc(), "bf-cbc", NULL, arg);
++  callback(EVP_bf_cfb(), "bf-cfb", NULL, arg);
++  callback(EVP_bf_ecb(), "bf-ecb", NULL, arg);
+   callback(EVP_des_cbc(), "des-cbc", NULL, arg);
+   callback(EVP_des_ecb(), "des-ecb", NULL, arg);
+   callback(EVP_des_ede(), "des-ede", NULL, arg);

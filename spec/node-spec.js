@@ -396,6 +396,12 @@ describe('node feature', () => {
       require('crypto').createCipheriv('aes-256-cfb', '0123456789abcdef0123456789abcdef', '0123456789abcdef');
     });
 
+    it('should be able to create a bf-{cbc,cfb,ecb} ciphers', () => {
+      require('crypto').createCipheriv('bf-cbc', Buffer.from('0123456789abcdef'), Buffer.from('01234567'));
+      require('crypto').createCipheriv('bf-cfb', Buffer.from('0123456789abcdef'), Buffer.from('01234567'));
+      require('crypto').createCipheriv('bf-ecb', Buffer.from('0123456789abcdef'), Buffer.from('01234567'));
+    });
+
     it('should list des-ede-cbc in getCiphers', () => {
       expect(require('crypto').getCiphers()).to.include('des-ede-cbc');
     });
