@@ -157,7 +157,7 @@ cherry-pick-b2c4e4dc21e5.patch
 check_direction_of_rtcencodedframes.patch
 cherry-pick-6a8a2098f9fa.patch
 speculative_fix_for_eye_dropper_getcolor_crash.patch
-mas_gate_private_enterprise_APIs
+mas_gate_private_enterprise_APIs.patch
 cherry-pick-c69dddfe1cde.patch
 cherry-pick-8af66de55aad.patch
 move_networkstateobserver_from_document_to_window.patch
@@ -170,4 +170,3 @@ use_weakptrs_for_the_threadediconloader_s_background_tasks.patch
 cachestorage_store_partial_opaque_responses.patch
 cherry-pick-a5f54612590d.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
-mas_gate_private_enterprise_APIs.patch
