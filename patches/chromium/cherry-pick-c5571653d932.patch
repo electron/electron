@@ -1,0 +1,184 @@
+From c5571653d9323402e7ab316f97e675b8e7f2c6e1 Mon Sep 17 00:00:00 2001
+From: Jarryd <jarrydg@chromium.org>
+Date: Wed, 29 Dec 2021 19:49:22 +0000
+Subject: [PATCH] Quota: Use Threadsafe Pressure Callback.
+
+Fixes UAF by removing use of raw ptr to StorageNotificationService.
+Instead, the service's interface exposes a method to create a
+thread-safe callback to pass to the quota manager instead.
+
+This change also changes the parameter type for the call chain from
+url::Origin to blink::StorageKey to match the type Quota is keyed on.
+
+Bug:1275020
+
+(cherry picked from commit e304c0373f9cc4a65d39d7094e4897627e83390e)
+
+Change-Id: Icc696d22fa41324e7a6c056599db635bb5de6291
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3347939
+Reviewed-by: Joshua Bell <jsbell@chromium.org>
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Commit-Queue: Jarryd Goodman <jarrydg@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#953375}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3360203
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Owners-Override: Krishna Govind <govind@chromium.org>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#1352}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+---
+
+diff --git a/chrome/browser/storage/storage_notification_service_impl.cc b/chrome/browser/storage/storage_notification_service_impl.cc
+index 62c1950..f37e0e7 100644
+--- a/chrome/browser/storage/storage_notification_service_impl.cc
++++ b/chrome/browser/storage/storage_notification_service_impl.cc
+@@ -10,6 +10,8 @@
+ #include "build/build_config.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/common/chrome_switches.h"
++#include "content/public/browser/browser_task_traits.h"
++#include "content/public/browser/browser_thread.h"
+ 
+ #if !defined(OS_ANDROID)
+ #include "chrome/browser/ui/storage_pressure_bubble.h"
+@@ -35,8 +37,26 @@
+ 
+ }  // namespace
+ 
++StoragePressureNotificationCallback
++StorageNotificationServiceImpl::CreateThreadSafePressureNotificationCallback() {
++  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
++  auto thread_unsafe_callback = base::BindRepeating(
++      &StorageNotificationServiceImpl::MaybeShowStoragePressureNotification,
++      weak_ptr_factory_.GetWeakPtr());
++  return base::BindRepeating(
++      [](StoragePressureNotificationCallback cb, blink::StorageKey key) {
++        content::GetUIThreadTaskRunner({})->PostTask(
++            FROM_HERE,
++            base::BindOnce([](StoragePressureNotificationCallback callback,
++                              blink::StorageKey key) { callback.Run(key); },
++                           std::move(cb), key));
++      },
++      std::move(thread_unsafe_callback));
++}
++
+ void StorageNotificationServiceImpl::MaybeShowStoragePressureNotification(
+-    const url::Origin origin) {
++    const blink::StorageKey storage_key) {
++  auto origin = storage_key.origin();
+   if (!disk_pressure_notification_last_sent_at_.is_null() &&
+       base::TimeTicks::Now() - disk_pressure_notification_last_sent_at_ <
+           GetThrottlingInterval()) {
+diff --git a/chrome/browser/storage/storage_notification_service_impl.h b/chrome/browser/storage/storage_notification_service_impl.h
+index 497a306..44fe169b 100644
+--- a/chrome/browser/storage/storage_notification_service_impl.h
++++ b/chrome/browser/storage/storage_notification_service_impl.h
+@@ -5,10 +5,12 @@
+ #ifndef CHROME_BROWSER_STORAGE_STORAGE_NOTIFICATION_SERVICE_IMPL_H_
+ #define CHROME_BROWSER_STORAGE_STORAGE_NOTIFICATION_SERVICE_IMPL_H_
+ 
++#include "base/memory/weak_ptr.h"
+ #include "base/time/time.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "components/keyed_service/core/keyed_service.h"
+ #include "content/public/browser/storage_notification_service.h"
++#include "third_party/blink/public/common/storage_key/storage_key.h"
+ 
+ class StorageNotificationServiceImpl
+     : public content::StorageNotificationService,
+@@ -16,13 +18,20 @@
+  public:
+   StorageNotificationServiceImpl();
+   ~StorageNotificationServiceImpl() override;
+-  void MaybeShowStoragePressureNotification(const url::Origin) override;
++  // Called from the UI thread, this method returns a callback that can passed
++  // to any thread, and proxies calls to
++  // `MaybeShowStoragePressureNotification()` back to the UI thread. It wraps a
++  // weak pointer to `this`.
++  StoragePressureNotificationCallback
++  CreateThreadSafePressureNotificationCallback() override;
++  void MaybeShowStoragePressureNotification(const blink::StorageKey) override;
+   base::TimeTicks GetLastSentAtForTesting() {
+     return disk_pressure_notification_last_sent_at_;
+   }
+ 
+  private:
+   base::TimeTicks disk_pressure_notification_last_sent_at_;
++  base::WeakPtrFactory<StorageNotificationServiceImpl> weak_ptr_factory_{this};
+ };
+ 
+ #endif  // CHROME_BROWSER_STORAGE_STORAGE_NOTIFICATION_SERVICE_IMPL_H_
+diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
+index 95e5475..fece856 100644
+--- a/content/browser/storage_partition_impl.cc
++++ b/content/browser/storage_partition_impl.cc
+@@ -1161,23 +1161,14 @@
+   StorageNotificationService* storage_notification_service =
+       browser_context_->GetStorageNotificationService();
+   if (storage_notification_service) {
+-    // base::Unretained is safe to use because the BrowserContext is guaranteed
+-    // to outlive QuotaManager. This is because BrowserContext outlives this
+-    // StoragePartitionImpl, which destroys the QuotaManager on teardown.
+-    base::RepeatingCallback<void(const blink::StorageKey)>
+-        send_notification_function = base::BindRepeating(
+-            [](StorageNotificationService* service,
+-               const blink::StorageKey storage_key) {
+-              GetUIThreadTaskRunner({})->PostTask(
+-                  FROM_HERE,
+-                  base::BindOnce(&StorageNotificationService::
+-                                     MaybeShowStoragePressureNotification,
+-                                 base::Unretained(service),
+-                                 std::move(storage_key.origin())));
+-            },
+-            base::Unretained(storage_notification_service));
+-
+-    quota_manager_->SetStoragePressureCallback(send_notification_function);
++    // The weak ptr associated with the pressure notification callback will be
++    // created and evaluated by a task runner on the UI thread, as confirmed by
++    // the DCHECK's above, ensuring that the task runner does not attempt to run
++    // the callback in the case that the storage notification service is already
++    // destructed.
++    quota_manager_->SetStoragePressureCallback(
++        storage_notification_service
++            ->CreateThreadSafePressureNotificationCallback());
+   }
+ 
+   // Each consumer is responsible for registering its QuotaClient during
+diff --git a/content/public/browser/storage_notification_service.h b/content/public/browser/storage_notification_service.h
+index 9a2009c..31dfea6b 100644
+--- a/content/public/browser/storage_notification_service.h
++++ b/content/public/browser/storage_notification_service.h
+@@ -8,6 +8,15 @@
+ #include "base/bind.h"
+ #include "url/origin.h"
+ 
++namespace blink {
++class StorageKey;
++}
++
++namespace {
++using StoragePressureNotificationCallback =
++    base::RepeatingCallback<void(const blink::StorageKey)>;
++}
++
+ namespace content {
+ 
+ // This interface is used to create a connection between the storage layer and
+@@ -24,12 +33,15 @@
+ 
+   ~StorageNotificationService() = default;
+ 
+-  // This pure virtual function should be implemented in the embedder layer
++  // These pure virtual functions should be implemented in the embedder layer
+   // where calls to UI and notification code can be implemented. This closure
+   // is passed to QuotaManager in StoragePartitionImpl, where it is called
+   // when QuotaManager determines appropriate to alert the user that the device
+   // is in a state of storage pressure.
+-  virtual void MaybeShowStoragePressureNotification(const url::Origin) = 0;
++  virtual void MaybeShowStoragePressureNotification(
++      const blink::StorageKey) = 0;
++  virtual StoragePressureNotificationCallback
++  CreateThreadSafePressureNotificationCallback() = 0;
+ };
+ 
+ }  // namespace content
