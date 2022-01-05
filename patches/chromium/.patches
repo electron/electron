@@ -124,3 +124,4 @@ fix_aspect_ratio_with_max_size.patch
 cherry-pick-109fde1088be.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
 cherry-pick-f781748dcb3c.patch
+cherry-pick-c5571653d932.patch
