@@ -107,7 +107,7 @@ fix_media_key_usage_with_globalshortcuts.patch
 cherry-pick-ec42dfd3545f.patch
 cherry-pick-39090918efac.patch
 add_ui_scopedcliboardwriter_writeunsaferawdata.patch
-mas_gate_private_enterprise_APIs
+mas_gate_private_enterprise_APIs.patch
 cherry-pick-8af66de55aad.patch
 cherry-pick-c69dddfe1cde.patch
 cherry-pick-2e7c9b33453b.patch
@@ -120,7 +120,6 @@ use_weakptrs_for_the_threadediconloader_s_background_tasks.patch
 cherry-pick-1a8af2da50e4.patch
 cherry-pick-a5f54612590d.patch
 cachestorage_store_partial_opaque_responses.patch
-mas_gate_private_enterprise_APIs.patch
 fix_aspect_ratio_with_max_size.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
 cherry-pick-f781748dcb3c.patch
