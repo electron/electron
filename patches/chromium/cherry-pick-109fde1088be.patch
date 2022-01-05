@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Lippautz <mlippautz@chromium.org>
+Date: Tue, 2 Nov 2021 21:21:27 +0000
+Subject: MediaStreamSource: Retain observers till callbacks have been executed
+
+(cherry picked from commit d1055cb23b15e42381bc815eeabb207ce18394d9)
+
+Bug: chromium:1263620
+Change-Id: I0655474bd3c5f4f927db1834e95b2724a20ba4e9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3247159
+Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Elad Alon <eladalon@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#935842}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3257492
+Auto-Submit: Elad Alon <eladalon@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4638@{#1004}
+Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
+
+diff --git a/third_party/blink/renderer/platform/mediastream/media_stream_source.cc b/third_party/blink/renderer/platform/mediastream/media_stream_source.cc
+index b37a4b9297b87092233c600953eb01af820b6df1..15ac4cce06d419646979a52a00628b152ec516de 100644
+--- a/third_party/blink/renderer/platform/mediastream/media_stream_source.cc
++++ b/third_party/blink/renderer/platform/mediastream/media_stream_source.cc
+@@ -32,6 +32,7 @@
+ 
+ #include "third_party/blink/public/platform/modules/webrtc/webrtc_logging.h"
+ #include "third_party/blink/renderer/platform/audio/audio_bus.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/mediastream/media_stream_audio_source.h"
+ #include "third_party/blink/renderer/platform/mediastream/webaudio_destination_consumer.h"
+ 
+@@ -171,11 +172,13 @@ void MediaStreamSource::SetReadyState(ReadyState ready_state) {
+     ready_state_ = ready_state;
+ 
+     // Observers may dispatch events which create and add new Observers;
+-    // take a snapshot so as to safely iterate.
++    // take a snapshot so as to safely iterate. Wrap the observers in
++    // weak persistents to allow cancelling callbacks in case they are reclaimed
++    // until the callback is executed.
+     Vector<base::OnceClosure> observer_callbacks;
+-    for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+-      observer_callbacks.push_back(
+-          base::BindOnce(&Observer::SourceChangedState, *it));
++    for (const auto& it : observers_) {
++      observer_callbacks.push_back(WTF::Bind(&Observer::SourceChangedState,
++                                             WrapWeakPersistent(it.Get())));
+     }
+     for (auto& observer_callback : observer_callbacks) {
+       std::move(observer_callback).Run();

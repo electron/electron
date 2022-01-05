@@ -122,5 +122,6 @@ cherry-pick-a5f54612590d.patch
 cachestorage_store_partial_opaque_responses.patch
 fix_aspect_ratio_with_max_size.patch
 cherry-pick-dbde8795233a.patch
+cherry-pick-109fde1088be.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
 cherry-pick-f781748dcb3c.patch
