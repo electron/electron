@@ -1,4 +1,4 @@
-import { app, ipcMain, session, webFrameMain } from 'electron/main';
+import { app, ipcMain, session, deprecate, webFrameMain } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
@@ -734,6 +734,11 @@ WebContents.prototype._init = function () {
         }
       });
     });
+
+    const prefs = this.getLastWebPreferences() || {};
+    if (prefs.nativeWindowOpen === false) {
+      deprecate.log('Deprecation Warning: Disabling nativeWindowOpen is deprecated. The nativeWindowOpen option will be removed in Electron 18.');
+    }
   }
 
   this.on('login', (event, ...args) => {

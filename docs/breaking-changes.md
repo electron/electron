@@ -45,6 +45,16 @@ However, you should consider further restricting the information returned to
 the renderer; for instance, displaying a source selector to the user and only
 returning the selected source.
 
+### Deprecated: `nativeWindowOpen`
+
+Prior to Electron 15, `window.open` was by default shimmed to use
+`BrowserWindowProxy`. This meant that `window.open('about:blank')` did not work
+to open synchronously scriptable child windows, among other incompatibilities.
+Since Electron 15, `nativeWindowOpen` has been enabled by default.
+
+See the documentation for [window.open in Electron](api/window-open.md)
+for more details.
+
 ## Planned Breaking API Changes (16.0)
 
 ### Behavior Changed: `crashReporter` implementation switched to Crashpad on Linux
