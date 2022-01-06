@@ -107,8 +107,7 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 #if defined(USE_OZONE)
   // Ozone X11 likes to prefer custom frames, but we don't need them unless
   // on Wayland.
-  if (features::IsUsingOzonePlatform() &&
-      !ui::OzonePlatform::GetInstance()
+  if (!ui::OzonePlatform::GetInstance()
            ->GetPlatformRuntimeProperties()
            .supports_server_side_window_decorations) {
     has_client_frame_ = true;
