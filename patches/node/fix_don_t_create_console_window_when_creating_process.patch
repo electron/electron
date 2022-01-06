@@ -7,7 +7,7 @@ This patch prevents console windows from being created during
 execSync calls, or spawnSync calls where shell is true. Otherwise,
 Windows users will see command prompts pop up for those calls.
 
-The patch can be removed when the windowsHide parameter
+The patch has been upstreamed with https://github.com/nodejs/node/pull/41412
 for those calls is changed to have a default value of true.
 
 diff --git a/src/spawn_sync.cc b/src/spawn_sync.cc
