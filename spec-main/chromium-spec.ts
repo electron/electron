@@ -589,7 +589,6 @@ describe('chromium features', () => {
 
     it('should register for custom scheme', (done) => {
       const customSession = session.fromPartition('custom-scheme');
-      const { serviceWorkerScheme } = global as any;
       customSession.protocol.registerFileProtocol(serviceWorkerScheme, (request, callback) => {
         let file = url.parse(request.url).pathname!;
         if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
@@ -1294,7 +1293,6 @@ describe('chromium features', () => {
     });
 
     describe('enableWebSQL webpreference', () => {
-      const standardScheme = (global as any).standardScheme;
       const origin = `${standardScheme}://fake-host`;
       const filePath = path.join(fixturesPath, 'pages', 'storage', 'web_sql.html');
       const sqlPartition = 'web-sql-preference-test';
