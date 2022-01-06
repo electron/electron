@@ -217,6 +217,10 @@ function makeBrowserWindowOptions ({ embedder, features, overrideOptions }: {
       height: 600,
       ...parsedOptions,
       ...overrideOptions,
+      // Note that for |nativeWindowOpen: true| the WebContents is created in
+      // |api::WebContents::WebContentsCreatedWithFullParams|, with prefs
+      // parsed in the |-will-add-new-contents| event.
+      // The |webPreferences| here is only used by |nativeWindowOpen: false|.
       webPreferences: makeWebPreferences({
         embedder,
         insecureParsedWebPreferences: parsedWebPreferences,
