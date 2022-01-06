@@ -187,7 +187,7 @@ documentation](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel).
 
 ### `ipcRenderer.sendTo(webContentsId, channel, ...args)`
 
-* `webContentsId` Number
+* `webContentsId` number
 * `channel` string
 * `...args` any[]
 
