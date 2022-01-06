@@ -19,6 +19,7 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
+#include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -257,10 +258,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
 
-  auto* native_widget = new views::DesktopNativeWidgetAura(widget());
-  params.native_widget = native_widget;
-  params.desktop_window_tree_host =
-      new ElectronDesktopWindowTreeHostLinux(this, native_widget);
+  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
+    auto* native_widget = new views::DesktopNativeWidgetAura(widget());
+    params.native_widget = native_widget;
+    params.desktop_window_tree_host =
+        new ElectronDesktopWindowTreeHostLinux(this, native_widget);
+  }
 #endif
 
   widget()->Init(std::move(params));
@@ -565,7 +568,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #elif defined(USE_X11)
   views::DesktopWindowTreeHostPlatform* tree_host =
-      ElectronDesktopWindowTreeHostLinux::GetHostForWidget(
+      views::DesktopWindowTreeHostLinux::GetHostForWidget(
           GetAcceleratedWidget());
   if (enable) {
     tree_host->RemoveEventRewriter(event_disabler_.get());

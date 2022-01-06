@@ -12,6 +12,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/native_window_features.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -107,7 +108,8 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 #if defined(USE_OZONE)
   // Ozone X11 likes to prefer custom frames, but we don't need them unless
   // on Wayland.
-  if (!ui::OzonePlatform::GetInstance()
+  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
+      !ui::OzonePlatform::GetInstance()
            ->GetPlatformRuntimeProperties()
            .supports_server_side_window_decorations) {
     has_client_frame_ = true;
