@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Pescheloche <cpescheloche@fb.com>
+Date: Tue, 14 Dec 2021 12:01:36 +0100
+Subject: Fix destructor for EmbedderStateScope
+
+EmbedderState is forward declared in public header for
+EmbedderStateScope. Default std::unique_ptr's destructor needs a fully
+defined class. Defining default destructor in implementation file fixes
+this.
+
+Bug: chromium:1263871
+Change-Id: I8ccc58f56a758927dc5d7a39387188185e7d3827
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3338697
+Auto-Submit: Corentin Pescheloche <cpescheloche@fb.com>
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Commit-Queue: Camillo Bruni <cbruni@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#78363}
+
+diff --git a/include/v8-embedder-state-scope.h b/include/v8-embedder-state-scope.h
+index 6ae9b3b4779bf706996915bc7a48829372c74a82..37e1f2bacb71f8f3009d6c94f29ccea16a3030ea 100644
+--- a/include/v8-embedder-state-scope.h
++++ b/include/v8-embedder-state-scope.h
+@@ -32,6 +32,8 @@ class V8_EXPORT EmbedderStateScope {
+   EmbedderStateScope(Isolate* isolate, Local<v8::Context> context,
+                      EmbedderStateTag tag);
+ 
++  ~EmbedderStateScope();
++
+  private:
+   // Declaring operator new and delete as deleted is not spec compliant.
+   // Therefore declare them private instead to disable dynamic alloc
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 1c6b0dd6d234f51046beddc73d6c01febe0c35cb..83656d60809b3f4edf65922c81bc7b647578bec1 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -10361,6 +10361,11 @@ EmbedderStateScope::EmbedderStateScope(Isolate* isolate,
+                                        EmbedderStateTag tag)
+     : embedder_state_(new internal::EmbedderState(isolate, context, tag)) {}
+ 
++// std::unique_ptr's destructor is not compatible with Forward declared
++// EmbedderState class.
++// Default destructor must be defined in implementation file.
++EmbedderStateScope::~EmbedderStateScope() = default;
++
+ void TracedReferenceBase::CheckValue() const {
+ #ifdef V8_HOST_ARCH_64_BIT
+   if (!val_) return;
