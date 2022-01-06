@@ -1,13 +1,14 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Kleinschmidt <jkleinsc@electronjs.org>
 Date: Wed, 5 Jan 2022 15:01:31 -0500
-Subject: disable serial device enumerator sequence DCHECK
+Subject: fix: dont delete SerialPortManager on the main thread
 
 This patch is neccessary because of the changes made in
 https://chromium-review.googlesource.com/c/chromium/src/+/3283743.
 
-The disabled DCHECK was firing because AddObserver runs in the WorkerThread but
-RemoveObserver runs in the UI thread.
+Several DCHECKs was firing because AddObserver runs in the WorkerThread but
+RemoveObserver runs in the UI thread. Ceasing to delete the
+`SerialPortManagerImpl` class on the main thread prevents this problem.
 
 A bit more of explanation from @deepak1556 as to why:
 
@@ -48,17 +49,16 @@ this service, it just came to light because of the above CL. I am pretty sure
 upstream would also hit this DCHECK, so give it a try with content_shell or
 chrome and that would help reporting upstream crbug.
 
-diff --git a/services/device/serial/serial_device_enumerator.cc b/services/device/serial/serial_device_enumerator.cc
-index 9c56d8a3ec37a3d209cf54bb30c9720c314b37a5..fae58ee08e766b43eea42b8add53f1010fae7025 100644
---- a/services/device/serial/serial_device_enumerator.cc
-+++ b/services/device/serial/serial_device_enumerator.cc
-@@ -54,7 +54,9 @@ void SerialDeviceEnumerator::AddObserver(Observer* observer) {
+diff --git a/services/device/device_service.cc b/services/device/device_service.cc
+index 1081fb518f896b1ca862f900866e271bb4cc31ad..b68e5bbb276204a4db752f5646c8256497ead18d 100644
+--- a/services/device/device_service.cc
++++ b/services/device/device_service.cc
+@@ -159,7 +159,7 @@ DeviceService::~DeviceService() {
+     // naturally sequenced after the last task on
+     // |serial_port_manager_task_runner_| per ThreadPool shutdown semantics).
+     // See crbug.com/1263149#c20 for details.
+-    delete serial_port_manager;
++    // delete serial_port_manager;
+   }
+ #endif  // defined(IS_SERIAL_ENABLED_PLATFORM)
  }
- 
- void SerialDeviceEnumerator::RemoveObserver(Observer* observer) {
-+#if 0
-   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-+#endif
-   observer_list_.RemoveObserver(observer);
- }
- 
