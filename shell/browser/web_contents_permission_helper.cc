@@ -43,17 +43,6 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
     controller.Deny(blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED);
 }
 
-void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
-  if (web_contents) {
-    if (allowed)
-      web_contents->GotResponseToLockMouseRequest(
-          blink::mojom::PointerLockResult::kSuccess);
-    else
-      web_contents->GotResponseToLockMouseRequest(
-          blink::mojom::PointerLockResult::kPermissionDenied);
-  }
-}
-
 void OnPermissionResponse(base::OnceCallback<void(bool)> callback,
                           blink::mojom::PermissionStatus status) {
   if (status == blink::mojom::PermissionStatus::GRANTED)
@@ -154,13 +143,6 @@ void WebContentsPermissionHelper::RequestWebNotificationPermission(
     base::OnceCallback<void(bool)> callback) {
   RequestPermission(content::PermissionType::NOTIFICATIONS,
                     std::move(callback));
-}
-
-void WebContentsPermissionHelper::RequestPointerLockPermission(
-    bool user_gesture) {
-  RequestPermission(
-      static_cast<content::PermissionType>(PermissionType::POINTER_LOCK),
-      base::BindOnce(&OnPointerLockResponse, web_contents_), user_gesture);
 }
 
 void WebContentsPermissionHelper::RequestOpenExternalPermission(
