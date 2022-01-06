@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_MESSAGE_FILTER_H_
-#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_MESSAGE_FILTER_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_MESSAGE_FILTER_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_MESSAGE_FILTER_H_
 
 #include <string>
 #include <vector>
 
-#include "base/sequenced_task_runner_helpers.h"
+#include "base/task/sequenced_task_runner_helpers.h"
 #include "content/public/browser/browser_message_filter.h"
 #include "content/public/browser/browser_thread.h"
 #include "extensions/common/extension_l10n_util.h"
@@ -68,4 +68,4 @@ class ElectronExtensionMessageFilter : public content::BrowserMessageFilter {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_MESSAGE_FILTER_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_MESSAGE_FILTER_H_

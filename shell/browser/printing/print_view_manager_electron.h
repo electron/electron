@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
-#define SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
+#ifndef ELECTRON_SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
+#define ELECTRON_SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
 
 #include "build/build_config.h"
 #include "chrome/browser/printing/print_view_manager_base.h"
@@ -44,4 +44,4 @@ class PrintViewManagerElectron
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
+#endif  // ELECTRON_SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_

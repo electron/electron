@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
-#define SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
 
 #include <map>
 #include <memory>
@@ -548,7 +548,7 @@ class WebContents : public ExclusiveAccessContext,
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
-  bool HandleContextMenu(content::RenderFrameHost* render_frame_host,
+  bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
                          const content::ContextMenuParams& params) override;
   bool OnGoToEntryOffset(int offset) override;
   void FindReply(content::WebContents* web_contents,
@@ -585,7 +585,8 @@ class WebContents : public ExclusiveAccessContext,
                               content::RenderFrameHost* new_host) override;
   void FrameDeleted(int frame_tree_node_id) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
-  void RenderProcessGone(base::TerminationStatus status) override;
+  void PrimaryMainFrameRenderProcessGone(
+      base::TerminationStatus status) override;
   void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
@@ -677,9 +678,6 @@ class WebContents : public ExclusiveAccessContext,
   bool IsExclusiveAccessBubbleDisplayed() const override;
 
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
-  blink::SecurityStyle GetSecurityStyle(
-      content::WebContents* web_contents,
-      content::SecurityStyleExplanations* explanations) override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* web_contents,
@@ -830,4 +828,4 @@ class WebContents : public ExclusiveAccessContext,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_

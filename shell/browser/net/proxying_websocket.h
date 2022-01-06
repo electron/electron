@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
-#define SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
+#define ELECTRON_SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
 
 #include <set>
 #include <string>
@@ -178,4 +178,4 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_

@@ -12,10 +12,6 @@ useful for app sub-windows that act as preference panels, or similar, as the
 parent can render to the sub-window directly, as if it were a `div` in the
 parent. This is the same behavior as in the browser.
 
-When `nativeWindowOpen` is set to false, `window.open` instead results in the
-creation of a [`BrowserWindowProxy`](browser-window-proxy.md), a light wrapper
-around `BrowserWindow`.
-
 Electron pairs this native Chrome `Window` with a BrowserWindow under the hood.
 You can take advantage of all the customization available when creating a
 BrowserWindow in the main process by using `webContents.setWindowOpenHandler()`
@@ -34,7 +30,7 @@ because it is invoked in the main process.
 * `frameName` string (optional)
 * `features` string (optional)
 
-Returns [`BrowserWindowProxy`](browser-window-proxy.md) | [`Window`](https://developer.mozilla.org/en-US/docs/Web/API/Window)
+Returns [`Window`](https://developer.mozilla.org/en-US/docs/Web/API/Window) | null
 
 `features` is a comma-separated key-value list, following the standard format of
 the browser. Electron will parse `BrowserWindowConstructorOptions` out of this
@@ -64,6 +60,9 @@ window.open('https://github.com', '_blank', 'top=500,left=200,frame=false,nodeIn
   `features` will be passed to any registered `webContents`'s
   `did-create-window` event handler in the `options` argument.
 * `frameName` follows the specification of `windowName` located in the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters).
+* When opening `about:blank`, the child window's `WebPreferences` will be copied
+  from the parent window, and there is no way to override it because Chromium
+  skips browser side navigation in this case.
 
 To customize or cancel the creation of the window, you can optionally set an
 override handler with `webContents.setWindowOpenHandler()` from the main
@@ -104,34 +103,4 @@ mainWindow.webContents.setWindowOpenHandler(({ url }) => {
 // renderer process (mainWindow)
 const childWindow = window.open('', 'modal')
 childWindow.document.write('<h1>Hello</h1>')
-```
-
-### `BrowserWindowProxy` example
-
-```javascript
-
-// main.js
-const mainWindow = new BrowserWindow({
-  webPreferences: { nativeWindowOpen: false }
-})
-
-mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-  if (url.startsWith('https://github.com/')) {
-    return { action: 'allow' }
-  }
-  return { action: 'deny' }
-})
-
-mainWindow.webContents.on('did-create-window', (childWindow) => {
-  // For example...
-  childWindow.webContents.on('will-navigate', (e) => {
-    e.preventDefault()
-  })
-})
-```
-
-```javascript
-// renderer.js
-const windowProxy = window.open('https://github.com/', null, 'minimizable=false')
-windowProxy.postMessage('hi', '*')
 ```

@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_APP_UV_TASK_RUNNER_H_
-#define SHELL_APP_UV_TASK_RUNNER_H_
+#ifndef ELECTRON_SHELL_APP_UV_TASK_RUNNER_H_
+#define ELECTRON_SHELL_APP_UV_TASK_RUNNER_H_
 
 #include <map>
 
 #include "base/callback.h"
-#include "base/single_thread_task_runner.h"
+#include "base/task/single_thread_task_runner.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 
 namespace base {
@@ -47,4 +47,4 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
 
 }  // namespace electron
 
-#endif  // SHELL_APP_UV_TASK_RUNNER_H_
+#endif  // ELECTRON_SHELL_APP_UV_TASK_RUNNER_H_

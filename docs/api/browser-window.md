@@ -341,9 +341,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       [Chrome Content Scripts][chrome-content-scripts].  You can access this
       context in the dev tools by selecting the 'Electron Isolated Context'
       entry in the combo box at the top of the Console tab.
-    * `nativeWindowOpen` boolean (optional) - Whether to use native
-      `window.open()`. Defaults to `true`. Child windows will always have node
-      integration disabled unless `nodeIntegrationInSubFrames` is true.
     * `webviewTag` boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to `false`. **Note:** The
       `preload` script configured for the `<webview>` will have node integration

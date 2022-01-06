@@ -9,27 +9,31 @@ we're running with contextIsolation enabled, we should be falling back
 to Blink's logic. This will be upstreamed in some form.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 1b86dcca8af204416796134938f2c9a448cca8d7..f6ea363c33a0586d427cae208690d6e3b4259fd5 100644
+index 5add377ff9db79829387d875d13ddc3c7668e8e5..d8ba2aff2c930d7aa8124d83ed73fe32e7a8a210 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -448,7 +448,7 @@ CodeGenerationCheckCallbackInMainThread(v8::Local<v8::Context> context,
+@@ -454,8 +454,9 @@ CodeGenerationCheckCallbackInMainThread(v8::Local<v8::Context> context,
    return {true, std::move(stringified_source)};
  }
  
--static bool WasmCodeGenerationCheckCallbackInMainThread(
+-bool V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(v8::Local<v8::Context> context,
+-                                                 v8::Local<v8::String> source) {
 +bool V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
-     v8::Local<v8::Context> context,
-     v8::Local<v8::String> source) {
++    v8::Local<v8::Context> context,
++    v8::Local<v8::String> source) {
    if (ExecutionContext* execution_context = ToExecutionContext(context)) {
+     if (ContentSecurityPolicy* policy =
+             execution_context->GetContentSecurityPolicy()) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-index e7cbc5db7d15aa0fcfb37ba261673b973827296a..6b93aa449a005e06862a99ea0c9b751ffff2d6ec 100644
+index 932c6aad3df51dd6790e55bf708703767843dc5e..6865fd33e62f766c5a162ded8627c332bf2ed173 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-@@ -67,6 +67,9 @@ class CORE_EXPORT V8Initializer {
-                                          v8::Local<v8::Value>);
+@@ -69,8 +69,8 @@ class CORE_EXPORT V8Initializer {
    static void MessageHandlerInWorker(v8::Local<v8::Message>,
                                       v8::Local<v8::Value>);
-+  static bool WasmCodeGenerationCheckCallbackInMainThread(
+   static bool WasmCodeGenerationCheckCallbackInMainThread(
+-      v8::Local<v8::Context> context,
+-      v8::Local<v8::String> source);
 +    v8::Local<v8::Context> context,
 +    v8::Local<v8::String> source);
  };

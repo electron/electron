@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
-#define SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
 
 #include <map>
 #include <memory>
@@ -180,7 +180,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<content::DevToolsManagerDelegate>
   CreateDevToolsManagerDelegate() override;
   std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
-      const content::MainFunctionParams&) override;
+      content::MainFunctionParams params) override;
   base::FilePath GetDefaultDownloadDirectory() override;
   scoped_refptr<network::SharedURLLoaderFactory>
   GetSystemSharedURLLoaderFactory() override;
@@ -232,7 +232,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
 #if defined(OS_WIN)
   bool PreSpawnChild(sandbox::TargetPolicy* policy,
-                     sandbox::policy::SandboxType sandbox_type,
+                     sandbox::mojom::Sandbox sandbox_type,
                      ChildSpawnFlags flags) override;
 #endif
   bool BindAssociatedReceiverFromFrame(
@@ -326,4 +326,4 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_

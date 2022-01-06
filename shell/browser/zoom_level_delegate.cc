@@ -69,7 +69,11 @@ double ZoomLevelDelegate::GetDefaultZoomLevelPref() const {
       pref_service_->GetDictionary(kPartitionDefaultZoomLevel);
   // If no default has been previously set, the default returned is the
   // value used to initialize default_zoom_level in this function.
-  default_zoom_level_dictionary->GetDouble(partition_key_, &default_zoom_level);
+  absl::optional<double> maybe_default_zoom_level =
+      default_zoom_level_dictionary->FindDoubleKey(partition_key_);
+  if (maybe_default_zoom_level.has_value())
+    default_zoom_level = maybe_default_zoom_level.value();
+
   return default_zoom_level;
 }
 

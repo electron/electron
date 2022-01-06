@@ -1245,8 +1245,8 @@ describe('webContents module', () => {
       expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
     });
 
-    it('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
-      const parentWindow = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted', async () => {
+      const parentWindow = new BrowserWindow({ show: false });
       let currentRenderViewDeletedEmitted = false;
       let childWindow: BrowserWindow | null = null;
       const destroyed = emittedOnce(parentWindow.webContents, 'destroyed');
@@ -1804,7 +1804,8 @@ describe('webContents module', () => {
       }
     });
 
-    describe('using a large document', () => {
+    // TODO(codebytere): Re-enable after Chromium fixes upstream v8_scriptormodule_legacy_lifetime crash.
+    xdescribe('using a large document', () => {
       beforeEach(async () => {
         w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
         await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
@@ -2053,7 +2054,7 @@ describe('webContents module', () => {
   describe('page-title-updated event', () => {
     afterEach(closeAllWindows);
     it('is emitted with a full title for pages with no navigation', async () => {
-      const bw = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      const bw = new BrowserWindow({ show: false });
       await bw.loadURL('about:blank');
       bw.webContents.executeJavaScript('child = window.open("", "", "show=no"); null');
       const [, child] = await emittedOnce(app, 'web-contents-created');

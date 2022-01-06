@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 3a023294c980ac89204b14748dc05bfdb1fbd4ad..94d25b52228d40ac685ae32a3fd99816b20a014b 100644
+index ca0630b07722cf3d8b4d31103db7c03bc702ee6b..5f7c5166f3541718f1135b2af8dc6ef3b7bb69ca 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -150,6 +150,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
+@@ -153,6 +153,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
  }
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,10 +26,10 @@ index 3a023294c980ac89204b14748dc05bfdb1fbd4ad..94d25b52228d40ac685ae32a3fd99816
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 01c999166dd30d3f994d2e449c524f9e8676ad0d..b4d46f557d9ea4ef62f6ae1acd2b9b45c79ebea9 100644
+index 61dcb2ace529fe0bb30a885b7ae9120dfc8e0c00..95fd72c8dbcd1f60d177fee8f5e7774a9d9d3ff7 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -398,6 +398,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -403,6 +403,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
    SkColor GetUnprocessedSystemColor(ColorId color_id,
                                      ColorScheme color_scheme) const;
  
@@ -52,7 +52,7 @@ index 01c999166dd30d3f994d2e449c524f9e8676ad0d..b4d46f557d9ea4ef62f6ae1acd2b9b45
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -577,6 +593,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -588,6 +604,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool forced_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;

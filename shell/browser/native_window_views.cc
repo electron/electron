@@ -72,7 +72,7 @@
 
 #elif defined(OS_WIN)
 #include "base/win/win_util.h"
-#include "extensions/common/image_util.h"
+#include "content/public/common/color_parser.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
@@ -190,16 +190,16 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     std::string overlay_color_string;
     if (titlebar_overlay_obj.Get(options::kOverlayButtonColor,
                                  &overlay_color_string)) {
-      bool success = extensions::image_util::ParseCssColorString(
-          overlay_color_string, &overlay_button_color_);
+      bool success = content::ParseCssColorString(overlay_color_string,
+                                                  &overlay_button_color_);
       DCHECK(success);
     }
 
     std::string overlay_symbol_color_string;
     if (titlebar_overlay_obj.Get(options::kOverlaySymbolColor,
                                  &overlay_symbol_color_string)) {
-      bool success = extensions::image_util::ParseCssColorString(
-          overlay_symbol_color_string, &overlay_symbol_color_);
+      bool success = content::ParseCssColorString(overlay_symbol_color_string,
+                                                  &overlay_symbol_color_);
       DCHECK(success);
     }
   }

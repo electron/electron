@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
-#define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
 #include <utility>
 
@@ -329,4 +329,4 @@ struct CallbackTraits<
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_

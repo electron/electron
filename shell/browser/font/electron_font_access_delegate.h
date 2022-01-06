@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_FONT_ELECTRON_FONT_ACCESS_DELEGATE_H_
-#define SHELL_BROWSER_FONT_ELECTRON_FONT_ACCESS_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_FONT_ELECTRON_FONT_ACCESS_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_FONT_ELECTRON_FONT_ACCESS_DELEGATE_H_
 
 #include <memory>
 #include <string>
@@ -28,4 +28,4 @@ class ElectronFontAccessDelegate : public content::FontAccessDelegate {
       content::FontAccessChooser::Callback callback) override;
 };
 
-#endif  // SHELL_BROWSER_FONT_ELECTRON_FONT_ACCESS_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_FONT_ELECTRON_FONT_ACCESS_DELEGATE_H_

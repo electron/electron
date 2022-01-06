@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
-#define SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "shell/browser/web_contents_zoom_controller.h"
@@ -57,4 +57,4 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_

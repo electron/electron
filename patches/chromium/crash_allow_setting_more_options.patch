@@ -9,7 +9,7 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 93d05b949c26c3ff96f62504760dbb96c1054387..b1392d74ca4ff08f6e293a72d1d453baa5f91cbc 100644
+index ec5b5b9b4da3b19e851c414695b2150b6588ecc7..f55fd1c92770de6b8bce1fc46a047c79228d451e 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -112,6 +112,7 @@ void SetUploadURL(const std::string& url) {
@@ -75,10 +75,10 @@ index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c31
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index 99e5ee6eeadb9ff12b7b027ceba4c838a8fedc6d..838ccd82b5828c1c58b3089064b7baeb35982f7e 100644
+index 212bc8359f454132b3cab81449075c1f18d5bd5b..771197daea11b2b7a9f9e845d3fd886913f1539b 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
-@@ -178,6 +178,7 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -179,6 +179,7 @@ bool PlatformCrashpadInitialization(
      // where crash_reporter provides it's own values for lsb-release.
      annotations["lsb-release"] = base::GetLinuxDistro();
  #endif
@@ -86,7 +86,7 @@ index 99e5ee6eeadb9ff12b7b027ceba4c838a8fedc6d..838ccd82b5828c1c58b3089064b7baeb
  
      std::vector<std::string> arguments;
      if (crash_reporter_client->ShouldMonitorCrashHandlerExpensively()) {
-@@ -199,6 +200,13 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -200,6 +201,13 @@ bool PlatformCrashpadInitialization(
      }
  #endif
  
@@ -98,10 +98,10 @@ index 99e5ee6eeadb9ff12b7b027ceba4c838a8fedc6d..838ccd82b5828c1c58b3089064b7baeb
 +    }
 +
      bool result =
-         client.StartHandler(handler_path, database_path, metrics_path, url,
+         client.StartHandler(handler_path, *database_path, metrics_path, url,
                              annotations, arguments, false, false);
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895dba6286e1 100644
+index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a59bf46b96 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
 @@ -85,6 +85,8 @@
@@ -113,7 +113,7 @@ index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895d
    return annotations;
  }
  
-@@ -155,6 +157,13 @@ void DumpProcessWithoutCrashing(task_t task_port) {
+@@ -155,6 +157,13 @@ bool PlatformCrashpadInitialization(
  
        std::vector<std::string> arguments;
  
@@ -128,10 +128,10 @@ index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895d
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index 7dd251b2fdda8c59bb630a5d3ee86e9e858f256e..93f1d5954651ef961c72b97885a708ecff2e9aa7 100644
+index 1a8f42cb4e2ea493642d8b264d0be5c3da358793..e972272de54107aaed6143e3f3569ba56bd3cf3e 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
-@@ -89,6 +89,7 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -89,6 +89,7 @@ bool PlatformCrashpadInitialization(
  
      std::map<std::string, std::string> process_annotations;
      GetPlatformCrashpadAnnotations(&process_annotations);
@@ -139,7 +139,7 @@ index 7dd251b2fdda8c59bb630a5d3ee86e9e858f256e..93f1d5954651ef961c72b97885a708ec
  
      std::string url = crash_reporter_client->GetUploadUrl();
  
-@@ -127,6 +128,13 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -127,6 +128,13 @@ bool PlatformCrashpadInitialization(
  
      std::vector<std::string> arguments(start_arguments);
  

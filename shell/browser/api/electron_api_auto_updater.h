@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
 
 #include <string>
 
@@ -64,4 +64,4 @@ class AutoUpdater : public gin::Wrappable<AutoUpdater>,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_

@@ -130,7 +130,6 @@ void WebContentsPreferences::Clear() {
   disable_html_fullscreen_window_resize_ = false;
   webview_tag_ = false;
   sandbox_ = absl::nullopt;
-  native_window_open_ = true;
   context_isolation_ = true;
   javascript_ = true;
   images_ = true;
@@ -148,7 +147,6 @@ void WebContentsPreferences::Clear() {
   default_monospace_font_size_ = absl::nullopt;
   minimum_font_size_ = absl::nullopt;
   default_encoding_ = absl::nullopt;
-  opener_id_ = 0;
   is_webview_ = false;
   custom_args_.clear();
   custom_switches_.clear();
@@ -194,7 +192,6 @@ void WebContentsPreferences::Merge(
   bool sandbox;
   if (web_preferences.Get(options::kSandbox, &sandbox))
     sandbox_ = sandbox;
-  web_preferences.Get(options::kNativeWindowOpen, &native_window_open_);
   web_preferences.Get(options::kContextIsolation, &context_isolation_);
   web_preferences.Get(options::kJavaScript, &javascript_);
   web_preferences.Get(options::kImages, &images_);
@@ -223,7 +220,6 @@ void WebContentsPreferences::Merge(
   std::string encoding;
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
-  web_preferences.Get(options::kOpenerID, &opener_id_);
   web_preferences.Get(options::kCustomArgs, &custom_args_);
   web_preferences.Get("commandLineSwitches", &custom_switches_);
   web_preferences.Get("disablePopups", &disable_popups_);
@@ -406,13 +402,10 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 void WebContentsPreferences::SaveLastPreferences() {
   last_web_preferences_ = base::Value(base::Value::Type::DICTIONARY);
-  last_web_preferences_.SetKey(options::kOpenerID, base::Value(opener_id_));
   last_web_preferences_.SetKey(options::kNodeIntegration,
                                base::Value(node_integration_));
   last_web_preferences_.SetKey(options::kNodeIntegrationInSubFrames,
                                base::Value(node_integration_in_sub_frames_));
-  last_web_preferences_.SetKey(options::kNativeWindowOpen,
-                               base::Value(native_window_open_));
   last_web_preferences_.SetKey(options::kSandbox, base::Value(IsSandboxed()));
   last_web_preferences_.SetKey(options::kContextIsolation,
                                base::Value(context_isolation_));
@@ -477,9 +470,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (default_encoding_)
     prefs->default_encoding = *default_encoding_;
 
-  // Pass the opener's window id.
-  prefs->opener_id = opener_id_;
-
   // Run Electron APIs and preload script in isolated world
   prefs->context_isolation = context_isolation_;
   prefs->is_webview = is_webview_;
@@ -507,7 +497,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (preload_path_)
     prefs->preload = *preload_path_;
 
-  prefs->native_window_open = native_window_open_;
   prefs->node_integration = node_integration_;
   prefs->node_integration_in_worker = node_integration_in_worker_;
   prefs->node_integration_in_sub_frames = node_integration_in_sub_frames_;

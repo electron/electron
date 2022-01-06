@@ -152,12 +152,12 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   extensions::SizeConstraints size_constraints(
       use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
   int min_height = 0, min_width = 0;
-  if (options.Get(options::kMinHeight, &min_height) |
+  if (options.Get(options::kMinHeight, &min_height) ||
       options.Get(options::kMinWidth, &min_width)) {
     size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
   }
   int max_height = INT_MAX, max_width = INT_MAX;
-  if (options.Get(options::kMaxHeight, &max_height) |
+  if (options.Get(options::kMaxHeight, &max_height) ||
       options.Get(options::kMaxWidth, &max_width)) {
     size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
   }

@@ -78,8 +78,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kEnableBlinkFeatures, enabled_features);
   }
 
-  // Copy the webContents option to webPreferences. This is only used internally
-  // to implement nativeWindowOpen option.
+  // Copy the webContents option to webPreferences.
   if (options.Get("webContents", &value)) {
     web_preferences.SetHidden("webContents", value);
   }
@@ -471,7 +470,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
       &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
   base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
       FROM_HERE, window_unresponsive_closure_.callback(),
-      base::TimeDelta::FromMilliseconds(ms));
+      base::Milliseconds(ms));
 }
 
 void BrowserWindow::NotifyWindowUnresponsive() {

@@ -186,7 +186,7 @@ int NodeMain(int argc, char* argv[]) {
       exit(result.exit_code);
 
     gin::V8Initializer::LoadV8Snapshot(
-        gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
+        gin::V8SnapshotFileType::kWithAdditionalContext);
 
     // V8 requires a task scheduler.
     base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
@@ -210,8 +210,11 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      env = node::CreateEnvironment(isolate_data, gin_env.context(),
-                                    result.args, result.exec_args);
+      uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                       node::EnvironmentFlags::kHideConsoleWindows;
+      env = node::CreateEnvironment(
+          isolate_data, gin_env.context(), result.args, result.exec_args,
+          static_cast<node::EnvironmentFlags::Flags>(flags));
       CHECK_NE(nullptr, env);
 
       node::IsolateSettings is;

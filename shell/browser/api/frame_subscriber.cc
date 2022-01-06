@@ -51,8 +51,7 @@ void FrameSubscriber::AttachToHost(content::RenderWidgetHost* host) {
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
   video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB,
                              gfx::ColorSpace::CreateREC709());
-  video_capturer_->SetMinCapturePeriod(base::TimeDelta::FromSeconds(1) /
-                                       kMaxFrameRate);
+  video_capturer_->SetMinCapturePeriod(base::Seconds(1) / kMaxFrameRate);
   video_capturer_->Start(this);
 }
 

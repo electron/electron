@@ -1,4 +1,4 @@
-import { app, ipcMain, session, webFrameMain } from 'electron/main';
+import { app, ipcMain, session, deprecate, webFrameMain } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
@@ -680,16 +680,6 @@ WebContents.prototype._init = function () {
         postBody
       };
       windowOpenOverriddenOptions = this._callWindowOpenHandler(event, details);
-      // if attempting to use this API with the deprecated new-window event,
-      // windowOpenOverriddenOptions will always return null. This ensures
-      // short-term backwards compatibility until new-window is removed.
-      const parsedFeatures = parseFeatures(rawFeatures);
-      const overriddenFeatures: BrowserWindowConstructorOptions = {
-        ...parsedFeatures.options,
-        webPreferences: parsedFeatures.webPreferences
-      };
-      windowOpenOverriddenOptions = windowOpenOverriddenOptions || overriddenFeatures;
-
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
           // Allow setting of backgroundColor as a webPreference even though
@@ -699,14 +689,23 @@ WebContents.prototype._init = function () {
           transparent: windowOpenOverriddenOptions.transparent,
           ...windowOpenOverriddenOptions.webPreferences
         } : undefined;
-        this._setNextChildWebPreferences(
-          makeWebPreferences({ embedder: event.sender, secureOverrideWebPreferences })
-        );
+        // TODO(zcbenz): The features string is parsed twice: here where it is
+        // passed to C++, and in |makeBrowserWindowOptions| later where it is
+        // not actually used since the WebContents is created here.
+        // We should be able to remove the latter once the |new-window| event
+        // is removed.
+        const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
+        // Parameters should keep same with |makeBrowserWindowOptions|.
+        const webPreferences = makeWebPreferences({
+          embedder: event.sender,
+          insecureParsedWebPreferences: parsedWebPreferences,
+          secureOverrideWebPreferences
+        });
+        this._setNextChildWebPreferences(webPreferences);
       }
     });
 
-    // Create a new browser window for the native implementation of
-    // "window.open", used in sandbox and nativeWindowOpen mode.
+    // Create a new browser window for "window.open"
     this.on('-add-new-contents' as any, (event: ElectronInternal.Event, webContents: Electron.WebContents, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
@@ -734,6 +733,11 @@ WebContents.prototype._init = function () {
         }
       });
     });
+
+    const prefs = this.getLastWebPreferences() || {};
+    if (prefs.nativeWindowOpen === false) {
+      deprecate.log('Deprecation Warning: Disabling nativeWindowOpen is deprecated. The nativeWindowOpen option will be removed in Electron 18.');
+    }
   }
 
   this.on('login', (event, ...args) => {
@@ -746,6 +750,14 @@ WebContents.prototype._init = function () {
       process.nextTick(() => {
         owner.emit('ready-to-show');
       });
+    }
+  });
+
+  this.on('select-bluetooth-device', (event, devices, callback) => {
+    if (this.listenerCount('select-bluetooth-device') === 1) {
+      // Cancel it if there are no handlers
+      event.preventDefault();
+      callback('');
     }
   });
 

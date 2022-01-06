@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_LIB_POWER_OBSERVER_LINUX_H_
-#define SHELL_BROWSER_LIB_POWER_OBSERVER_LINUX_H_
+#ifndef ELECTRON_SHELL_BROWSER_LIB_POWER_OBSERVER_LINUX_H_
+#define ELECTRON_SHELL_BROWSER_LIB_POWER_OBSERVER_LINUX_H_
 
 #include <string>
 
@@ -53,4 +53,4 @@ class PowerObserverLinux {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_LIB_POWER_OBSERVER_LINUX_H_
+#endif  // ELECTRON_SHELL_BROWSER_LIB_POWER_OBSERVER_LINUX_H_

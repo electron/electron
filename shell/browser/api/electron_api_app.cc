@@ -477,7 +477,7 @@ int GetPathConstant(const std::string& name) {
 #if defined(OS_POSIX)
     return base::DIR_CACHE;
 #else
-    return base::DIR_APP_DATA;
+    return base::DIR_ROAMING_APP_DATA;
 #endif
   else if (name == "userCache")
     return DIR_USER_CACHE;
@@ -1054,11 +1054,14 @@ std::string App::GetLocaleCountryCode() {
   CFLocaleRef locale = CFLocaleCopyCurrent();
   CFStringRef value = CFStringRef(
       static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
-  const CFIndex kCStringSize = 128;
-  char temporaryCString[kCStringSize] = {0};
-  CFStringGetCString(value, temporaryCString, kCStringSize,
-                     kCFStringEncodingUTF8);
-  region = temporaryCString;
+  if (value != nil) {
+    char temporaryCString[3];
+    const CFIndex kCStringSize = sizeof(temporaryCString);
+    if (CFStringGetCString(value, temporaryCString, kCStringSize,
+                           kCFStringEncodingUTF8)) {
+      region = temporaryCString;
+    }
+  }
 #else
   const char* locale_ptr = setlocale(LC_TIME, nullptr);
   if (!locale_ptr)
@@ -1146,7 +1149,7 @@ bool App::Relaunch(gin::Arguments* js_args) {
 
   gin_helper::Dictionary options;
   if (js_args->GetNext(&options)) {
-    if (options.Get("execPath", &exec_path) | options.Get("args", &args))
+    if (options.Get("execPath", &exec_path) || options.Get("args", &args))
       override_argv = true;
   }
 

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
-#define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
 
 #include <utility>
 
@@ -57,4 +57,4 @@ v8::Local<v8::FunctionTemplate> CreateConstructorFunctionTemplate(
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_

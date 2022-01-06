@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_
-#define SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_
+#define ELECTRON_SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_
 
 #include "components/download/public/common/download_item.h"
 #include "content/public/browser/download_manager.h"
@@ -52,4 +52,4 @@ class SavePageHandler : public content::DownloadManager::Observer,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_

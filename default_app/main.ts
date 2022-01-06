@@ -1,4 +1,4 @@
-import * as electron from 'electron';
+import * as electron from 'electron/main';
 
 import * as fs from 'fs';
 import * as path from 'path';

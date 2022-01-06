@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_EVENT_H_
-#define SHELL_BROWSER_API_EVENT_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_EVENT_H_
+#define ELECTRON_SHELL_BROWSER_API_EVENT_H_
 
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
@@ -49,4 +49,4 @@ class Event : public gin::Wrappable<Event> {
 
 }  // namespace gin_helper
 
-#endif  // SHELL_BROWSER_API_EVENT_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_EVENT_H_

@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "18.0.0-nightly.20211119",
+  "version": "18.0.0-nightly.20220106",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -31,7 +31,7 @@
     "@typescript-eslint/eslint-plugin": "^4.4.1",
     "@typescript-eslint/parser": "^4.4.1",
     "asar": "^3.1.0",
-    "aws-sdk": "^2.727.1",
+    "aws-sdk": "^2.814.0",
     "check-for-leaks": "^1.2.1",
     "colors": "^1.4.0",
     "dotenv-safe": "^4.0.4",

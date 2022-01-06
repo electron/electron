@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
-#define SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
+#ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
+#define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
 
 #import <Cocoa/Cocoa.h>
 
@@ -286,4 +286,4 @@ class NativeWindowMac : public NativeWindow,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
+#endif  // ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_H_

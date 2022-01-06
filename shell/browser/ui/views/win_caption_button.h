@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
-#define SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
 
 #include "chrome/browser/ui/view_ids.h"
 #include "ui/base/metadata/metadata_header_macros.h"
@@ -51,4 +51,4 @@ class WinCaptionButton : public views::Button {
 };
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
