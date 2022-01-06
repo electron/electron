@@ -6,8 +6,8 @@
 // Copyright (c) 2019 The Chromium Authors,
 // which is governed by a BSD-style license
 
-#ifndef SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
-#define SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
+#define ELECTRON_SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
 
 #include "base/scoped_observation.h"
 #include "shell/browser/native_window_views.h"
@@ -68,4 +68,4 @@ class ElectronDesktopWindowTreeHostLinux
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
