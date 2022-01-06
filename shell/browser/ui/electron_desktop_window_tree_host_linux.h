@@ -20,8 +20,8 @@ namespace electron {
 
 class ElectronDesktopWindowTreeHostLinux
     : public views::DesktopWindowTreeHostLinux,
-      ui::NativeThemeObserver,
-      views::DeviceScaleFactorObserver {
+      public ui::NativeThemeObserver,
+      public views::DeviceScaleFactorObserver {
  public:
   ElectronDesktopWindowTreeHostLinux(
       NativeWindowViews* native_window_view,

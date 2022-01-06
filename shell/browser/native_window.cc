@@ -169,7 +169,6 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 #if defined(OS_WIN) || defined(OS_LINUX)
   bool resizable;
   if (options.Get(options::kResizable, &resizable)) {
-    printf("%d\n", resizable);
     SetResizable(resizable);
   }
   bool closable;
