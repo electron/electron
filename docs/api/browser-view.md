@@ -15,14 +15,16 @@ Process: [Main](../glossary.md#main-process)
 
 ```javascript
 // In the main process.
-const { BrowserView, BrowserWindow } = require('electron')
+const { app, BrowserView, BrowserWindow } = require('electron')
 
-const win = new BrowserWindow({ width: 800, height: 600 })
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
 
-const view = new BrowserView()
-win.setBrowserView(view)
-view.setBounds({ x: 0, y: 0, width: 300, height: 300 })
-view.webContents.loadURL('https://electronjs.org')
+  const view = new BrowserView()
+  win.setBrowserView(view)
+  view.setBounds({ x: 0, y: 0, width: 300, height: 300 })
+  view.webContents.loadURL('https://electronjs.org')
+})
 ```
 
 ### `new BrowserView([options])` _Experimental_
