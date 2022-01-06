@@ -107,7 +107,7 @@ fix_media_key_usage_with_globalshortcuts.patch
 cherry-pick-ec42dfd3545f.patch
 cherry-pick-39090918efac.patch
 add_ui_scopedcliboardwriter_writeunsaferawdata.patch
-mas_gate_private_enterprise_APIs
+mas_gate_private_enterprise_APIs.patch
 cherry-pick-8af66de55aad.patch
 cherry-pick-c69dddfe1cde.patch
 cherry-pick-2e7c9b33453b.patch
