@@ -39,7 +39,7 @@ Returns:
 * `messageDetails` Object - Information about the console message
   * `message` string - The actual console message
   * `versionId` number - The version ID of the service worker that sent the log message
-  * `source` string - The type of source for this message.  Can be `javascript`, `xml`, `network`, `console-api`, `storage`, `app-cache`, `rendering`, `security`, `deprecation`, `worker`, `violation`, `intervention`, `recommendation` or `other`.
+  * `source` string - The type of source for this message.  Can be `javascript`, `xml`, `network`, `console-api`, `storage`, `rendering`, `security`, `deprecation`, `worker`, `violation`, `intervention`, `recommendation` or `other`.
   * `level` number - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
   * `sourceUrl` string - The URL the message came from
   * `lineNumber` number - The line number of the source that triggered this console message
