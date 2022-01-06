@@ -736,6 +736,8 @@ first available device will be selected. `callback` should be called with
 `deviceId` to be selected, passing empty string to `callback` will
 cancel the request.
 
+If no event listener is added for this event, all bluetooth requests will be cancelled.
+
 ```javascript
 const { app, BrowserWindow } = require('electron')
 
