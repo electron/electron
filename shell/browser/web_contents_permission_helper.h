@@ -38,7 +38,6 @@ class WebContentsPermissionHelper
                                     content::MediaResponseCallback callback);
   void RequestWebNotificationPermission(
       base::OnceCallback<void(bool)> callback);
-  void RequestPointerLockPermission(bool user_gesture);
   void RequestOpenExternalPermission(base::OnceCallback<void(bool)> callback,
                                      bool user_gesture,
                                      const GURL& url);
