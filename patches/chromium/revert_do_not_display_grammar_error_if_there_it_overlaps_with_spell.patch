@@ -1,0 +1,233 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chris Harrelson <chrishtr@chromium.org>
+Date: Wed, 1 Dec 2021 04:29:48 +0000
+Subject: Revert "Do not display grammar error if there it overlaps with spell
+ check error"
+
+This reverts commit 4f6e94d8d4e491c1119b447fe530450684ea701e.
+
+Reason for revert: Caused performance issue 1271918.
+
+Bug: 1271918
+
+Original change's description:
+> Do not display grammar error if there it overlaps with spell check error
+>
+> Bug: 1249351
+> Change-Id: I8022f095e0d4e3dcc446205269faf87d0a8e8793
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3159841
+> Reviewed-by: Sadrul Chowdhury <sadrul@chromium.org>
+> Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+> Commit-Queue: Jing Wang <jiwan@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#923692}
+
+Bug: 1249351
+Change-Id: Ib348bcd087b39d933d4b00eb123cbc7ae8bb3507
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3309944
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Sadrul Chowdhury <sadrul@chromium.org>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Jing Wang <jiwan@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#946860}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 7955f2cb725ef4c011bbbce74820d98783d56a0c..fc2c236b8bb9c29cd720225bf14a014f61b01181 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -1627,18 +1627,10 @@ bool RenderWidgetHostViewAura::AddGrammarFragments(
+   if (!input_handler || fragments.empty())
+     return false;
+ 
+-  if (!text_input_manager_ || !text_input_manager_->GetActiveWidget())
+-    return false;
+-
+   unsigned max_fragment_end = 0;
+   std::vector<::ui::ImeTextSpan> ime_text_spans;
+   ime_text_spans.reserve(fragments.size());
+-  bool conflict_with_spellcheck = false;
+   for (auto& fragment : fragments) {
+-    if (text_input_manager_->OverlapsWithSpellCheckMarker(fragment.range)) {
+-      conflict_with_spellcheck = true;
+-      break;
+-    }
+     ui::ImeTextSpan ui_ime_text_span;
+     ui_ime_text_span.type = ui::ImeTextSpan::Type::kGrammarSuggestion;
+     ui_ime_text_span.start_offset = fragment.range.start();
+@@ -1653,10 +1645,6 @@ bool RenderWidgetHostViewAura::AddGrammarFragments(
+       max_fragment_end = fragment.range.end();
+     }
+   }
+-
+-  if (conflict_with_spellcheck)
+-    return false;
+-
+   input_handler->AddImeTextSpansToExistingText(0, max_fragment_end,
+                                                ime_text_spans);
+ 
+diff --git a/content/browser/renderer_host/text_input_manager.cc b/content/browser/renderer_host/text_input_manager.cc
+index 9ad91a5388016e8c61e33fa6e411bf81193c363f..48b3b030604e93fa398ae0a076dd3ca817867172 100644
+--- a/content/browser/renderer_host/text_input_manager.cc
++++ b/content/browser/renderer_host/text_input_manager.cc
+@@ -110,25 +110,6 @@ absl::optional<ui::GrammarFragment> TextInputManager::GetGrammarFragment(
+   return absl::nullopt;
+ }
+ 
+-bool TextInputManager::OverlapsWithSpellCheckMarker(
+-    const gfx::Range range) const {
+-  if (!active_view_)
+-    return false;
+-
+-  for (const auto& ime_text_span_info :
+-       text_input_state_map_.at(active_view_)->ime_text_spans_info) {
+-    if (ime_text_span_info->span.type ==
+-        ui::ImeTextSpan::Type::kMisspellingSuggestion) {
+-      auto span_range = gfx::Range(ime_text_span_info->span.start_offset,
+-                                   ime_text_span_info->span.end_offset);
+-      if (span_range.Intersects(range)) {
+-        return true;
+-      }
+-    }
+-  }
+-  return false;
+-}
+-
+ const TextInputManager::SelectionRegion* TextInputManager::GetSelectionRegion(
+     RenderWidgetHostViewBase* view) const {
+   DCHECK(!view || IsRegistered(view));
+diff --git a/content/browser/renderer_host/text_input_manager.h b/content/browser/renderer_host/text_input_manager.h
+index 3897bfb1fcddb3fc654cad6908b2b71f996742f9..7ae1cca25a32277596e525750db3e0ede324ca85 100644
+--- a/content/browser/renderer_host/text_input_manager.h
++++ b/content/browser/renderer_host/text_input_manager.h
+@@ -164,10 +164,6 @@ class CONTENT_EXPORT TextInputManager {
+   absl::optional<ui::GrammarFragment> GetGrammarFragment(
+       gfx::Range range) const;
+ 
+-  // Returns if the given |range| is overlapping with any existing spellcheck
+-  // markers.
+-  bool OverlapsWithSpellCheckMarker(const gfx::Range range) const;
+-
+   // Returns the selection bounds information for |view|. If |view| == nullptr,
+   // it will return the corresponding information for |active_view_| or nullptr
+   // if there are no active views.
+diff --git a/third_party/blink/renderer/core/editing/ime/input_method_controller.cc b/third_party/blink/renderer/core/editing/ime/input_method_controller.cc
+index dff8822003328b8d2b0579c6558547e27a847ff3..42e47ac1c4e96ac24f9820dc719bf88b6f83cf71 100644
+--- a/third_party/blink/renderer/core/editing/ime/input_method_controller.cc
++++ b/third_party/blink/renderer/core/editing/ime/input_method_controller.cc
+@@ -1848,44 +1848,30 @@ WebVector<ui::ImeTextSpan> InputMethodController::GetImeTextSpans() const {
+   const HeapVector<std::pair<Member<const Text>, Member<DocumentMarker>>>&
+       node_marker_pairs = GetDocument().Markers().MarkersIntersectingRange(
+           ToEphemeralRangeInFlatTree(range),
+-          DocumentMarker::MarkerTypes::Suggestion().Add(
+-              DocumentMarker::MarkerTypes::Spelling()));
++          DocumentMarker::MarkerTypes::Suggestion());
+ 
+   for (const std::pair<Member<const Text>, Member<DocumentMarker>>&
+            node_marker_pair : node_marker_pairs) {
+-    DocumentMarker* marker = node_marker_pair.second.Get();
+-    const Text* node = node_marker_pair.first;
+-    const EphemeralRange& marker_ephemeral_range =
+-        EphemeralRange(Position(node, marker->StartOffset()),
+-                       Position(node, marker->EndOffset()));
+-    const PlainTextRange& marker_plain_text_range =
+-        cached_text_input_info_.GetPlainTextRange(marker_ephemeral_range);
+-
+-    if (DocumentMarker::MarkerTypes::Spelling().Contains(
+-            node_marker_pair.second.Get()->GetType())) {
++    SuggestionMarker* marker =
++        To<SuggestionMarker>(node_marker_pair.second.Get());
++    ImeTextSpan::Type type =
++        ConvertSuggestionMarkerType(marker->GetSuggestionType());
++    if (ShouldGetImeTextSpans(type)) {
++      const Text* node = node_marker_pair.first;
++      const EphemeralRange& marker_ephemeral_range =
++          EphemeralRange(Position(node, marker->StartOffset()),
++                         Position(node, marker->EndOffset()));
++      const PlainTextRange& marker_plain_text_range =
++          cached_text_input_info_.GetPlainTextRange(marker_ephemeral_range);
++
+       ime_text_spans.emplace_back(
+-          ImeTextSpan(ImeTextSpan::Type::kMisspellingSuggestion,
+-                      marker_plain_text_range.Start(),
++          ImeTextSpan(type, marker_plain_text_range.Start(),
+                       marker_plain_text_range.End(), Color::kTransparent,
+                       ImeTextSpanThickness::kNone,
+                       ImeTextSpanUnderlineStyle::kNone, Color::kTransparent,
+-                      Color::kTransparent)
++                      Color::kTransparent, Color::kTransparent, false, false,
++                      marker->Suggestions())
+               .ToUiImeTextSpan());
+-    } else {
+-      SuggestionMarker* suggestion_marker =
+-          To<SuggestionMarker>(node_marker_pair.second.Get());
+-      ImeTextSpan::Type type =
+-          ConvertSuggestionMarkerType(suggestion_marker->GetSuggestionType());
+-      if (ShouldGetImeTextSpans(type)) {
+-        ime_text_spans.emplace_back(
+-            ImeTextSpan(type, marker_plain_text_range.Start(),
+-                        marker_plain_text_range.End(), Color::kTransparent,
+-                        ImeTextSpanThickness::kNone,
+-                        ImeTextSpanUnderlineStyle::kNone, Color::kTransparent,
+-                        Color::kTransparent, Color::kTransparent, false, false,
+-                        suggestion_marker->Suggestions())
+-                .ToUiImeTextSpan());
+-      }
+     }
+   }
+ 
+diff --git a/third_party/blink/renderer/core/editing/ime/input_method_controller_test.cc b/third_party/blink/renderer/core/editing/ime/input_method_controller_test.cc
+index e15e2c2cb61f110cfd68e593a87e8b3024e45de7..a86b50fce11f06466a13d62696050b456d9f2c81 100644
+--- a/third_party/blink/renderer/core/editing/ime/input_method_controller_test.cc
++++ b/third_party/blink/renderer/core/editing/ime/input_method_controller_test.cc
+@@ -208,8 +208,8 @@ TEST_F(InputMethodControllerTest, AddImeTextSpansToExistingText) {
+ }
+ 
+ TEST_F(InputMethodControllerTest, GetImeTextSpans) {
+-  Element* div = InsertHTMLElement(
+-      "<div id='sample' contenteditable>hello world</div>", "sample");
++  InsertHTMLElement("<div id='sample' contenteditable>hello world</div>",
++                    "sample");
+   ImeTextSpan span1 = ImeTextSpan(ImeTextSpan::Type::kAutocorrect, 0, 5,
+                                   Color(255, 0, 0), ImeTextSpanThickness::kThin,
+                                   ImeTextSpanUnderlineStyle::kSolid, 0, 0);
+@@ -226,31 +226,22 @@ TEST_F(InputMethodControllerTest, GetImeTextSpans) {
+ 
+   Controller().AddImeTextSpansToExistingText({span1, span2, span3, span4}, 0,
+                                              10);
+-  GetFrame().GetDocument()->Markers().AddSpellingMarker(
+-      PlainTextRange(4, 6).CreateRange(*div));
+   Controller().SetEditableSelectionOffsets(PlainTextRange(1, 1));
+ 
+   const WebVector<ui::ImeTextSpan>& ime_text_spans =
+       Controller().TextInputInfo().ime_text_spans;
+ 
+-  EXPECT_EQ(3u, ime_text_spans.size());
+-
+-  EXPECT_EQ(4u, ime_text_spans[0].start_offset);
+-  EXPECT_EQ(6u, ime_text_spans[0].end_offset);
+-  EXPECT_EQ(ui::ImeTextSpan::Type::kMisspellingSuggestion,
+-            ime_text_spans[0].type);
++  EXPECT_EQ(2u, ime_text_spans.size());
++  EXPECT_EQ(0u, ime_text_spans[0].start_offset);
++  EXPECT_EQ(5u, ime_text_spans[0].end_offset);
++  EXPECT_EQ(ui::ImeTextSpan::Type::kAutocorrect, ime_text_spans[0].type);
+   EXPECT_EQ(0u, ime_text_spans[0].suggestions.size());
+ 
+-  EXPECT_EQ(0u, ime_text_spans[1].start_offset);
+-  EXPECT_EQ(5u, ime_text_spans[1].end_offset);
+-  EXPECT_EQ(ui::ImeTextSpan::Type::kAutocorrect, ime_text_spans[1].type);
+-  EXPECT_EQ(0u, ime_text_spans[1].suggestions.size());
+-
+-  EXPECT_EQ(6u, ime_text_spans[2].start_offset);
+-  EXPECT_EQ(8u, ime_text_spans[2].end_offset);
+-  EXPECT_EQ(ui::ImeTextSpan::Type::kGrammarSuggestion, ime_text_spans[2].type);
+-  EXPECT_EQ(1u, ime_text_spans[2].suggestions.size());
+-  EXPECT_EQ("fake_suggestion", ime_text_spans[2].suggestions[0]);
++  EXPECT_EQ(6u, ime_text_spans[1].start_offset);
++  EXPECT_EQ(8u, ime_text_spans[1].end_offset);
++  EXPECT_EQ(ui::ImeTextSpan::Type::kGrammarSuggestion, ime_text_spans[1].type);
++  EXPECT_EQ(1u, ime_text_spans[1].suggestions.size());
++  EXPECT_EQ("fake_suggestion", ime_text_spans[1].suggestions[0]);
+ }
+ 
+ TEST_F(InputMethodControllerTest, SetCompositionAfterEmoji) {
