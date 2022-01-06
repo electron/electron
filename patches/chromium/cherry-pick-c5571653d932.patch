@@ -1,7 +1,7 @@
-From c5571653d9323402e7ab316f97e675b8e7f2c6e1 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jarryd <jarrydg@chromium.org>
 Date: Wed, 29 Dec 2021 19:49:22 +0000
-Subject: [PATCH] Quota: Use Threadsafe Pressure Callback.
+Subject: Quota: Use Threadsafe Pressure Callback.
 
 Fixes UAF by removing use of raw ptr to StorageNotificationService.
 Instead, the service's interface exposes a method to create a
@@ -26,10 +26,9 @@ Owners-Override: Krishna Govind <govind@chromium.org>
 Commit-Queue: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4664@{#1352}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/chrome/browser/storage/storage_notification_service_impl.cc b/chrome/browser/storage/storage_notification_service_impl.cc
-index 62c1950..f37e0e7 100644
+index f8b38745827b25e46bfd1b4225bb3c55f2836d02..ceeafe0ad40e69574ccf885e4230ce042ecbaaaa 100644
 --- a/chrome/browser/storage/storage_notification_service_impl.cc
 +++ b/chrome/browser/storage/storage_notification_service_impl.cc
 @@ -10,6 +10,8 @@
@@ -41,7 +40,7 @@ index 62c1950..f37e0e7 100644
  
  #if !defined(OS_ANDROID)
  #include "chrome/browser/ui/storage_pressure_bubble.h"
-@@ -35,8 +37,26 @@
+@@ -36,8 +38,26 @@ const base::TimeDelta GetThrottlingInterval() {
  
  }  // namespace
  
@@ -70,7 +69,7 @@ index 62c1950..f37e0e7 100644
        base::TimeTicks::Now() - disk_pressure_notification_last_sent_at_ <
            GetThrottlingInterval()) {
 diff --git a/chrome/browser/storage/storage_notification_service_impl.h b/chrome/browser/storage/storage_notification_service_impl.h
-index 497a306..44fe169b 100644
+index 497a3063c835a37fe9141052263cf70c863235fa..44fe169b82ced5e328060f191d608aaa57d3af71 100644
 --- a/chrome/browser/storage/storage_notification_service_impl.h
 +++ b/chrome/browser/storage/storage_notification_service_impl.h
 @@ -5,10 +5,12 @@
@@ -86,7 +85,7 @@ index 497a306..44fe169b 100644
  
  class StorageNotificationServiceImpl
      : public content::StorageNotificationService,
-@@ -16,13 +18,20 @@
+@@ -16,13 +18,20 @@ class StorageNotificationServiceImpl
   public:
    StorageNotificationServiceImpl();
    ~StorageNotificationServiceImpl() override;
@@ -109,10 +108,10 @@ index 497a306..44fe169b 100644
  
  #endif  // CHROME_BROWSER_STORAGE_STORAGE_NOTIFICATION_SERVICE_IMPL_H_
 diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
-index 95e5475..fece856 100644
+index 86c6de60739a0c5aa49ed63f1546b478d7f58054..263fe6195ac6d48cd7a985ca844d1a6e421a9b1d 100644
 --- a/content/browser/storage_partition_impl.cc
 +++ b/content/browser/storage_partition_impl.cc
-@@ -1161,23 +1161,14 @@
+@@ -1169,23 +1169,14 @@ void StoragePartitionImpl::Initialize(
    StorageNotificationService* storage_notification_service =
        browser_context_->GetStorageNotificationService();
    if (storage_notification_service) {
@@ -145,7 +144,7 @@ index 95e5475..fece856 100644
  
    // Each consumer is responsible for registering its QuotaClient during
 diff --git a/content/public/browser/storage_notification_service.h b/content/public/browser/storage_notification_service.h
-index 9a2009c..31dfea6b 100644
+index 3eec5ef29051008041695bcf7ebbf63787f5bd89..98c533cf3f8be530f2b4a08a528502d070f17006 100644
 --- a/content/public/browser/storage_notification_service.h
 +++ b/content/public/browser/storage_notification_service.h
 @@ -8,6 +8,15 @@
@@ -164,8 +163,8 @@ index 9a2009c..31dfea6b 100644
  namespace content {
  
  // This interface is used to create a connection between the storage layer and
-@@ -24,12 +33,15 @@
- 
+@@ -19,15 +28,18 @@ class StorageNotificationService {
+   StorageNotificationService() = default;
    ~StorageNotificationService() = default;
  
 -  // This pure virtual function should be implemented in the embedder layer
@@ -177,6 +176,9 @@ index 9a2009c..31dfea6b 100644
 -  virtual void MaybeShowStoragePressureNotification(const url::Origin) = 0;
 +  virtual void MaybeShowStoragePressureNotification(
 +      const blink::StorageKey) = 0;
+ 
+  private:
+   DISALLOW_COPY_AND_ASSIGN(StorageNotificationService);
 +  virtual StoragePressureNotificationCallback
 +  CreateThreadSafePressureNotificationCallback() = 0;
  };
