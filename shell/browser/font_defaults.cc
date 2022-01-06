@@ -40,6 +40,7 @@ const FontDefault kFontDefaults[] = {
     {prefs::kWebKitSerifFontFamily, IDS_SERIF_FONT_FAMILY},
     {prefs::kWebKitSansSerifFontFamily, IDS_SANS_SERIF_FONT_FAMILY},
     {prefs::kWebKitCursiveFontFamily, IDS_CURSIVE_FONT_FAMILY},
+    {prefs::kWebKitFantasyFontFamily, IDS_FANTASY_FONT_FAMILY},
 #if defined(OS_CHROMEOS) || defined(OS_MAC) || defined(OS_WIN)
     {prefs::kWebKitStandardFontFamilyJapanese,
      IDS_STANDARD_FONT_FAMILY_JAPANESE},
