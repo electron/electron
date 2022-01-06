@@ -503,7 +503,7 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('nativeWindowOpen option', () => {
+  describe('child windows', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
@@ -516,7 +516,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
+        webpreferences: 'contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-blank.html')}`
       });
 
@@ -529,7 +529,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
+        webpreferences: 'contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-file.html')}`
       });
 
@@ -541,7 +541,7 @@ describe('<webview> tag', function () {
       // Don't wait for loading to finish.
       loadWebView(w.webContents, {
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
+        webpreferences: 'contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-no-allowpopups.html')}`
       });
 
@@ -554,7 +554,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
+        webpreferences: 'contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-cross-origin.html')}`
       });
 
@@ -570,7 +570,7 @@ describe('<webview> tag', function () {
       const attributes = {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       };
       const { url, frameName } = await w.webContents.executeJavaScript(`
@@ -594,7 +594,7 @@ describe('<webview> tag', function () {
       // Don't wait for loading to finish.
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       });
 
@@ -607,7 +607,7 @@ describe('<webview> tag', function () {
 
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       });
 
@@ -617,7 +617,6 @@ describe('<webview> tag', function () {
     it('does not crash when creating window with noopener', async () => {
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        webpreferences: 'nativeWindowOpen=1',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-noopener.html')}`
       });
       await emittedOnce(app, 'browser-window-created');

@@ -12,9 +12,7 @@ const v8Util = process._linkedBinding('electron_common_v8_util');
 const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
-const nativeWindowOpen = mainFrame.getWebPreference('nativeWindowOpen') || process.sandboxed;
 const isWebView = mainFrame.getWebPreference('isWebView');
-const openerId = mainFrame.getWebPreference('openerId');
 
 // ElectronApiServiceImpl will look for the "ipcNative" hidden object when
 // invoking the 'onMessage' callback.
@@ -44,7 +42,7 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(isWebView, openerId, isHiddenPage, nativeWindowOpen);
+    windowSetup(isWebView, isHiddenPage);
   }
 }
 

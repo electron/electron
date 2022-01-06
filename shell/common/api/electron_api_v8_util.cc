@@ -102,10 +102,6 @@ void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
       v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
 }
 
-bool IsSameOrigin(const GURL& l, const GURL& r) {
-  return url::Origin::Create(l).IsSameOriginWith(url::Origin::Create(r));
-}
-
 // This causes a fatal error by creating a circular extension dependency.
 void TriggerFatalErrorForTesting(v8::Isolate* isolate) {
   static const char* aDeps[] = {"B"};
@@ -132,7 +128,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
-  dict.SetMethod("isSameOrigin", &IsSameOrigin);
   dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
   dict.SetMethod("runUntilIdle", &RunUntilIdle);
 }

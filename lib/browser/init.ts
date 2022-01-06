@@ -78,7 +78,6 @@ require('@electron/internal/browser/rpc-server');
 
 // Load the guest view manager.
 require('@electron/internal/browser/guest-view-manager');
-require('@electron/internal/browser/guest-window-proxy');
 
 // Now we try to load app's package.json.
 const v8Util = process._linkedBinding('electron_common_v8_util');

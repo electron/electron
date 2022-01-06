@@ -56,7 +56,6 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
   const inheritedWebPreferences = new Map([
     ['contextIsolation', true],
     ['javascript', false],
-    ['nativeWindowOpen', true],
     ['nodeIntegration', false],
     ['sandbox', true],
     ['nodeIntegrationInSubFrames', false],
