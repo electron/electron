@@ -73,6 +73,17 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
   return webPreferences;
 }
 
+function makeLoadURLOptions (params: Record<string, any>) {
+  const opts: Electron.LoadURLOptions = {};
+  if (params.httpreferrer) {
+    opts.httpReferrer = params.httpreferrer;
+  }
+  if (params.useragent) {
+    opts.userAgent = params.useragent;
+  }
+  return opts;
+}
+
 // Create a new guest instance.
 const createGuest = function (embedder: Electron.WebContents, embedderFrameId: number, elementInstanceId: number, params: Record<string, any>) {
   // eslint-disable-next-line no-undef
@@ -96,7 +107,7 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
 
   // Init guest web view after attached.
   guest.once('did-attach' as any, function (this: Electron.WebContents, event: Electron.Event) {
-    params = this.attachParams!;
+    const params = this.attachParams!;
     delete this.attachParams;
 
     const previouslyAttached = this.viewInstanceId != null;
@@ -108,14 +119,7 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     }
 
     if (params.src) {
-      const opts: Electron.LoadURLOptions = {};
-      if (params.httpreferrer) {
-        opts.httpReferrer = params.httpreferrer;
-      }
-      if (params.useragent) {
-        opts.userAgent = params.useragent;
-      }
-      this.loadURL(params.src, opts);
+      this.loadURL(params.src, params.opts);
     }
     embedder.emit('did-attach-webview', event, guest);
   });
@@ -204,13 +208,15 @@ const attachGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     return false;
   }
 
+  const { instanceId } = params;
+
   // If this guest is already attached to an element then remove it
   if (guestInstance.elementInstanceId) {
     const oldKey = `${guestInstance.embedder.id}-${guestInstance.elementInstanceId}`;
     embedderElementsMap.delete(oldKey);
 
     // Remove guest from embedder if moving across web views
-    if (guest.viewInstanceId !== params.instanceId) {
+    if (guest.viewInstanceId !== instanceId) {
       webViewManager.removeGuest(guestInstance.embedder, guestInstanceId);
       guestInstance.embedder._sendInternal(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${guest.viewInstanceId}`);
     }
@@ -221,12 +227,12 @@ const attachGuest = function (embedder: Electron.WebContents, embedderFrameId: n
   const event = eventBinding.createWithSender(embedder);
   embedder.emit('will-attach-webview', event, webPreferences, params);
   if (event.defaultPrevented) {
-    if (guest.viewInstanceId == null) guest.viewInstanceId = params.instanceId;
+    if (guest.viewInstanceId == null) guest.viewInstanceId = instanceId;
     guest.destroy();
     return false;
   }
 
-  guest.attachParams = params;
+  guest.attachParams = { instanceId, src: params.src, opts: makeLoadURLOptions(params) };
   embedderElementsMap.set(key, guestInstanceId);
 
   guest.setEmbedder(embedder);
