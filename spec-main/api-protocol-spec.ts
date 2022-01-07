@@ -743,7 +743,6 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemesAsPrivileged allowServiceWorkers', () => {
-    const { serviceWorkerScheme } = global as any;
     protocol.registerStringProtocol(serviceWorkerScheme, (request, cb) => {
       if (request.url.endsWith('.js')) {
         cb({
@@ -773,7 +772,6 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemesAsPrivileged standard', () => {
-    const standardScheme = (global as any).standardScheme;
     const origin = `${standardScheme}://fake-host`;
     const imageURL = `${origin}/test.png`;
     const filePath = path.join(fixturesPath, 'pages', 'b.html');
@@ -854,7 +852,6 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
-    const standardScheme = (global as any).standardScheme;
     let w: BrowserWindow = null as unknown as BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
@@ -957,7 +954,6 @@ describe('protocol module', () => {
     const pagePath = path.join(fixturesPath, 'pages', 'video.html');
     const videoSourceImagePath = path.join(fixturesPath, 'video-source-image.webp');
     const videoPath = path.join(fixturesPath, 'video.webm');
-    const standardScheme = (global as any).standardScheme;
     let w: BrowserWindow = null as unknown as BrowserWindow;
 
     before(async () => {
