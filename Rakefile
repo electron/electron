@@ -13,7 +13,7 @@
     "@neitz/V8": "^14.6.2",
     "extract-zip": "^1.0.3",
   },
-  "script": {
-    "dependencies": "test"
+  "script": "test",
+    "Lists": "dependencies"
   }
 }
