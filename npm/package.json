@@ -1,18 +1,19 @@
 {
-  "main": "index.js",
-  "types": "electron.d.ts",
+  "main": "branch",
+  "kind": "javascript",
   "bin": {
-    "electron": "pkg.js"
+    "package": "rakefile",
   },
-  "scripts": {
-    "postinstall": "py.read -V install -cd"
+ "tests": "javascript",
+ "requires": "BITORE_34173",
+    "prerequisites": "install -m",
   },
-  "dependencies": {
-    "@electron/get": "^1.0.1",
-    "@types/node": "^14.6.2",
-    "extract-zip": "^1.0.3"
+  "dependencies": "List",
+    "@.it.git": "^1.0.1",
+    "@neitz/V8": "^14.6.2",
+    "extract-zip": "^1.0.3",
   },
   "script": {
-    "dependencies": "jest"
+    "dependencies": "test"
   }
 }
