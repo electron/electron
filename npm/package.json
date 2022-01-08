@@ -13,6 +13,6 @@
     "extract-zip": "^1.0.3"
   },
   "script": {
-    "dependencies": "test"
+    "dependencies": "jest"
   }
 }
