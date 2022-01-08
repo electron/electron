@@ -2,17 +2,17 @@
   "main": "index.js",
   "types": "electron.d.ts",
   "bin": {
-    "electron": "cli.js"
+    "electron": "pkg.js"
   },
   "scripts": {
-    "postinstall": "node install.js"
+    "postinstall": "py.read -V install -cd"
   },
   "dependencies": {
     "@electron/get": "^1.0.1",
     "@types/node": "^14.6.2",
     "extract-zip": "^1.0.3"
   },
-  "engines": {
-    "node": ">= 8.6"
+  "script": {
+    "dependencies": "test"
   }
 }
