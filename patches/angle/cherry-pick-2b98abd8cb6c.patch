@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 30 Nov 2021 23:48:30 -0500
+Subject: M96: Vulkan: Fix image respecify's usage tracking
+
+When respecifying an image due to mip level count changes, the previous
+image is staged as an update to the new image.  The resource usage info
+was not being transferred to the image being staged as an update,
+causing it to be prematurely deleted.
+
+Test based on one authored by sugoi@google.com.
+
+Bug: chromium:1270658
+Bug: angleproject:4835
+Change-Id: I9810f8940e0107bc8a04fa3fb9c26a045c0d689c
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3318257
+Reviewed-by: Lingfeng Yang <lfy@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/ResourceVk.cpp b/src/libANGLE/renderer/vulkan/ResourceVk.cpp
+index efb04acf0fe5dc7c2d860ac8cc33dbe30691c4a3..e2cd1e3a96b1fa4e034efe6ed78ea1a787af6af6 100644
+--- a/src/libANGLE/renderer/vulkan/ResourceVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ResourceVk.cpp
+@@ -26,6 +26,12 @@ Resource::Resource(Resource &&other) : Resource()
+     mUse = std::move(other.mUse);
+ }
+ 
++Resource &Resource::operator=(Resource &&rhs)
++{
++    std::swap(mUse, rhs.mUse);
++    return *this;
++}
++
+ Resource::~Resource()
+ {
+     mUse.release();
+diff --git a/src/libANGLE/renderer/vulkan/ResourceVk.h b/src/libANGLE/renderer/vulkan/ResourceVk.h
+index 67440122bf7fa0f72b5412816853b2eddd770fd4..abab9900b7361c8564cb1ad30e0841eaf873ee2e 100644
+--- a/src/libANGLE/renderer/vulkan/ResourceVk.h
++++ b/src/libANGLE/renderer/vulkan/ResourceVk.h
+@@ -192,6 +192,7 @@ class Resource : angle::NonCopyable
+   protected:
+     Resource();
+     Resource(Resource &&other);
++    Resource &operator=(Resource &&rhs);
+ 
+     // Current resource lifetime.
+     SharedResourceUse mUse;
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index a06b60d9c2c91280b925b12825e104bdbb757c05..893144ff07760dc1608a4b2d3af565e23ef27ba4 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -6140,6 +6140,9 @@ void ImageHelper::stageSelfAsSubresourceUpdates(ContextVk *contextVk,
+     // Move the necessary information for staged update to work, and keep the rest as part of this
+     // object.
+ 
++    // Usage info
++    prevImage->get().Resource::operator=(std::move(*this));
++
+     // Vulkan objects
+     prevImage->get().mImage        = std::move(mImage);
+     prevImage->get().mDeviceMemory = std::move(mDeviceMemory);
+diff --git a/src/tests/gl_tests/MipmapTest.cpp b/src/tests/gl_tests/MipmapTest.cpp
+index 4db00e78a7d2f7375fdcb9228fbdc83395973125..8a6d01ca36a84a9e294de3f6f0114ee7a54e1d9a 100644
+--- a/src/tests/gl_tests/MipmapTest.cpp
++++ b/src/tests/gl_tests/MipmapTest.cpp
+@@ -2106,6 +2106,30 @@ TEST_P(MipmapTestES3, GenerateMipmapZeroSize)
+     glGenerateMipmap(GL_TEXTURE_3D);
+ }
+ 
++// Test that reducing the size of the mipchain by resizing the base image then deleting it doesn't
++// cause a crash. Issue found by fuzzer.
++TEST_P(MipmapTestES3, ResizeBaseMipTo1x1ThenDelete)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++
++    std::vector<GLColor> data(2, GLColor::blue);
++
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
++
++    clearAndDrawQuad(m2DProgram, getWindowWidth(), getWindowHeight());
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++
++    data[0] = GLColor::green;
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
++
++    clearAndDrawQuad(m2DProgram, getWindowWidth(), getWindowHeight());
++
++    tex.reset();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(MipmapTest);
