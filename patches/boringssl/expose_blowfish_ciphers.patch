@@ -8,7 +8,7 @@ bf-ecb through the EVP interface. This adds references to decrepit code
 from non-decrepit code, so upstream is unlikely to take the patch.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
-index cfdb69e3c556fea11aa7c2d28d4b7da524df15c3..0fff20a131cc383ac7e403bd19009adcc047fee8 100644
+index cfdb69e3c556fea11aa7c2d28d4b7da524df15c3..95bd172c99874610ec9157c52df4fe0232e78c7f 100644
 --- a/crypto/cipher_extra/cipher_extra.c
 +++ b/crypto/cipher_extra/cipher_extra.c
 @@ -89,6 +89,9 @@ static const struct {
