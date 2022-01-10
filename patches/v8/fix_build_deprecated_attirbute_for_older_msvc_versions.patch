@@ -9,7 +9,7 @@ higher versions, but native module compiling with this version
 will have an issue.
 
 diff --git a/include/v8config.h b/include/v8config.h
-index c4d0894e0f96493d55aed8761b1153628e3d651e..75f7db588a6ed674f5799c812b712e3aa4fd2f39 100644
+index 1242d4289ceb937e2679408ca7ee734c0c342bf0..50f59293e3fc617ac7b6f964ae091e92391c8a38 100644
 --- a/include/v8config.h
 +++ b/include/v8config.h
 @@ -452,10 +452,13 @@ path. Add it with -I<path> to the command line

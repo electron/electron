@@ -8,10 +8,10 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index dc7c1ed1dc7697919dfcf500fe86804fbc63b65a..5fe865e5010a9bbee45447bb987c20cb6f4b2c1b 100644
+index e8a5b04582da86f6ec0004c32f3b622c7599510e..1f9cd4e4c1d7be6d51b490c4b909e86b0bd2c057 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -878,10 +878,7 @@ bool WebContentsViewAura::IsValidDragTarget(
+@@ -880,10 +880,7 @@ bool WebContentsViewAura::IsValidDragTarget(
    // TODO(https://crbug.com/1266953): There are some known gaps caused by
    // comparing `RenderViewHost` IDs, as `RenderViewHost` ID is not really a
    // strong signal for page identity.
@@ -24,7 +24,7 @@ index dc7c1ed1dc7697919dfcf500fe86804fbc63b65a..5fe865e5010a9bbee45447bb987c20cb
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index 9d2f771327838ff9b63a34e89573a1843eedd77d..a4c3d1951a6def856437cc589c4d20da7d9b39a3 100644
+index 6455404fdccab1fffceef4b8d291c137d3a448c4..483b0b5b689da03f0d7e43576fa73275197f5a95 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
 @@ -385,9 +385,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {

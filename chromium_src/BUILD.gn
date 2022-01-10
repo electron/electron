@@ -199,12 +199,16 @@ static_library("chrome") {
 
   if (enable_basic_printing) {
     sources += [
+      "//chrome/browser/bad_message.cc",
+      "//chrome/browser/bad_message.h",
       "//chrome/browser/printing/print_job.cc",
       "//chrome/browser/printing/print_job.h",
       "//chrome/browser/printing/print_job_manager.cc",
       "//chrome/browser/printing/print_job_manager.h",
       "//chrome/browser/printing/print_job_worker.cc",
       "//chrome/browser/printing/print_job_worker.h",
+      "//chrome/browser/printing/print_job_worker_oop.cc",
+      "//chrome/browser/printing/print_job_worker_oop.h",
       "//chrome/browser/printing/print_view_manager_base.cc",
       "//chrome/browser/printing/print_view_manager_base.h",
       "//chrome/browser/printing/printer_query.cc",

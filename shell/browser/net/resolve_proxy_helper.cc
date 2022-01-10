@@ -90,7 +90,7 @@ ResolveProxyHelper::PendingRequest::PendingRequest(
     : url(url), callback(std::move(callback)) {}
 
 ResolveProxyHelper::PendingRequest::PendingRequest(
-    ResolveProxyHelper::PendingRequest&& pending_request) = default;
+    ResolveProxyHelper::PendingRequest&& pending_request) noexcept = default;
 
 ResolveProxyHelper::PendingRequest::~PendingRequest() noexcept = default;
 

@@ -215,13 +215,13 @@ index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a61
    return nullptr;
  }
 diff --git a/chrome/renderer/pepper/pepper_helper.h b/chrome/renderer/pepper/pepper_helper.h
-index 7572241033d2fa74604a45702aac22631680a01c..6416917aa000e93109da1dfacf9c47bf0bdbaa80 100644
+index 5794ac83e62c7f966920a2692246e7677b297695..01d5a609ad34bb2829bd5714e70930b90c549661 100644
 --- a/chrome/renderer/pepper/pepper_helper.h
 +++ b/chrome/renderer/pepper/pepper_helper.h
-@@ -6,11 +6,13 @@
+@@ -5,11 +5,13 @@
+ #ifndef CHROME_RENDERER_PEPPER_PEPPER_HELPER_H_
  #define CHROME_RENDERER_PEPPER_PEPPER_HELPER_H_
  
- #include "base/compiler_specific.h"
 +#include "base/component_export.h"
  #include "content/public/renderer/render_frame_observer.h"
  

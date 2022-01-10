@@ -113,7 +113,9 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   // Read options.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   use_cache_ = !command_line->HasSwitch(switches::kDisableHttpCache);
-  options.GetBoolean("cache", &use_cache_);
+  if (auto use_cache_opt = options.FindBoolKey("cache")) {
+    use_cache_ = use_cache_opt.value();
+  }
 
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);

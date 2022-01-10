@@ -47,7 +47,7 @@ index 746dffb1defec9d776f681d41325a65b02cbdd0f..05a7f20f10e3ff514aa3b3b5386980dd
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index a53a4f29aaa9090b1948c8d44830f17087644a3c..cad1b66ea66f1d1f27520766cc067839a41812f3 100644
+index bd2ebaf9f84946c708eba13c18869afadd2fdbb0..880d6f12ad188c5f8abf037b3b8d27fcf1fc2cb6 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
 @@ -49,6 +49,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
