@@ -1,7 +1,7 @@
-From c9f0bd6dab7ec93c8b14f179917a12b51eb662c1 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tomasz Malinowski <tomasz@openfin.co>
 Date: Thu, 11 Nov 2021 22:20:00 +0000
-Subject: [PATCH] [win] fix problem with black flash just before content window is shown
+Subject: fix problem with black flash just before content window is shown
 
 LegacyRenderWidgetHostHWND is shown together with RenderWidgetHostViewAura
 window and because it has default style it causing black flash for the
@@ -17,10 +17,9 @@ Reviewed-by: Rafael Cintron <rafael.cintron@microsoft.com>
 Reviewed-by: Ken Buchanan <kenrb@chromium.org>
 Commit-Queue: Rafael Cintron <rafael.cintron@microsoft.com>
 Cr-Commit-Position: refs/heads/main@{#940943}
----
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index 4a894ef..881c407 100644
+index 4a894ef70eeb1d8489049aef552c9bae4f24ae62..881c4075c4ff3d6a8bf5957b78ce17b32d10343c 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
 @@ -11,6 +11,7 @@
@@ -31,7 +30,7 @@ index 4a894ef..881c407 100644
  #include "content/browser/accessibility/browser_accessibility_manager_win.h"
  #include "content/browser/accessibility/browser_accessibility_state_impl.h"
  #include "content/browser/accessibility/browser_accessibility_win.h"
-@@ -133,9 +134,18 @@
+@@ -133,9 +134,18 @@ bool LegacyRenderWidgetHostHWND::InitOrDeleteSelf(HWND parent) {
    // heap-use-after-free crash (https://crbug.com/1194694).
    auto weak_ptr = weak_factory_.GetWeakPtr();
    RECT rect = {0};
