@@ -169,4 +169,5 @@ allow_null_skbitmap_to_be_transferred_across_threads.patch
 use_weakptrs_for_the_threadediconloader_s_background_tasks.patch
 cachestorage_store_partial_opaque_responses.patch
 cherry-pick-a5f54612590d.patch
+cherry-pick-6bb320d134b1.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
