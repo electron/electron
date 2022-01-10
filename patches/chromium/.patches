@@ -113,3 +113,4 @@ fix_aspect_ratio_with_max_size.patch
 build_disable_partitionalloc_on_mac.patch
 revert_stop_using_nsrunloop_in_renderer_process.patch
 fix_dont_delete_SerialPortManager_on_main_thread.patch
+cherry-pick-c9f0bd6dab7e.patch

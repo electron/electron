@@ -1,0 +1,53 @@
+From c9f0bd6dab7ec93c8b14f179917a12b51eb662c1 Mon Sep 17 00:00:00 2001
+From: Tomasz Malinowski <tomasz@openfin.co>
+Date: Thu, 11 Nov 2021 22:20:00 +0000
+Subject: [PATCH] [win] fix problem with black flash just before content window is shown
+
+LegacyRenderWidgetHostHWND is shown together with RenderWidgetHostViewAura
+window and because it has default style it causing black flash for the
+first paint. Set WS_EX_LAYERED window style in order to
+LegacyRenderWidgetHostHWND window be blend with windows under it.
+Set also WS_EX_NOREDIRECTIONBITMAP flag to avoid additional bitmap in
+layered window.
+
+Bug: 1257540
+Change-Id: Ia9807e694ccb686e0610980bae2febc9f596e8aa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3212029
+Reviewed-by: Rafael Cintron <rafael.cintron@microsoft.com>
+Reviewed-by: Ken Buchanan <kenrb@chromium.org>
+Commit-Queue: Rafael Cintron <rafael.cintron@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#940943}
+---
+
+diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+index 4a894ef..881c407 100644
+--- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
++++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+@@ -11,6 +11,7 @@
+ 
+ #include "base/command_line.h"
+ #include "base/win/win_util.h"
++#include "base/win/windows_version.h"
+ #include "content/browser/accessibility/browser_accessibility_manager_win.h"
+ #include "content/browser/accessibility/browser_accessibility_state_impl.h"
+ #include "content/browser/accessibility/browser_accessibility_win.h"
+@@ -133,9 +134,18 @@
+   // heap-use-after-free crash (https://crbug.com/1194694).
+   auto weak_ptr = weak_factory_.GetWeakPtr();
+   RECT rect = {0};
++  DWORD window_ex_style = WS_EX_TRANSPARENT;
++  if (base::win::GetVersion() >= base::win::Version::WIN8) {
++    // For Windows 8 or greater set layered window (WS_EX_LAYERED) style to
++    // avoid black flash on first paint of LegacyRenderWidgetHostHWND.
++    // Also set WS_EX_NOREDIRECTIONBITMAP flag to avoid additional bitmap in
++    // layered window. Issue 1257540 (https://crbug.com/1257540).
++    window_ex_style |= WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP;
++  }
++
+   Base::Create(parent, rect, L"Chrome Legacy Window",
+                WS_CHILDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+-               WS_EX_TRANSPARENT);
++               window_ex_style);
+   if (!weak_ptr) {
+     // Base::Create() runs nested windows message loops that could end up
+     // deleting `this`. Therefore, upon returning false here, `this` is already
