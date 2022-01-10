@@ -8,7 +8,7 @@ bf-ecb through the EVP interface. This adds references to decrepit code
 from non-decrepit code, so upstream is unlikely to take the patch.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
-index cfdb69e3c556fea11aa7c2d28d4b7da524df15c3..a040bee3de5187c9009a2d5bf3cb59d7f10d797a 100644
+index cfdb69e3c556fea11aa7c2d28d4b7da524df15c3..0fff20a131cc383ac7e403bd19009adcc047fee8 100644
 --- a/crypto/cipher_extra/cipher_extra.c
 +++ b/crypto/cipher_extra/cipher_extra.c
 @@ -89,6 +89,9 @@ static const struct {
@@ -16,8 +16,8 @@ index cfdb69e3c556fea11aa7c2d28d4b7da524df15c3..a040bee3de5187c9009a2d5bf3cb59d7
      {NID_aes_256_gcm, "aes-256-gcm", EVP_aes_256_gcm},
      {NID_aes_256_ofb128, "aes-256-ofb", EVP_aes_256_ofb},
 +    {NID_bf_cbc, "bf-cbc", EVP_bf_cbc},
-+    {NID_bf_cbc, "bf-cfb", EVP_bf_cfb},
-+    {NID_bf_cbc, "bf-ecb", EVP_bf_ecb},
++    {NID_bf_cfb, "bf-cfb", EVP_bf_cfb},
++    {NID_bf_ecb, "bf-ecb", EVP_bf_ecb},
      {NID_des_cbc, "des-cbc", EVP_des_cbc},
      {NID_des_ecb, "des-ecb", EVP_des_ecb},
      {NID_des_ede_cbc, "des-ede-cbc", EVP_des_ede_cbc},
