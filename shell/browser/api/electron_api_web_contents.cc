@@ -1284,10 +1284,6 @@ bool WebContents::CanUserExitFullscreen() const {
   return true;
 }
 
-bool WebContents::IsExclusiveAccessBubbleDisplayed() const {
-  return false;
-}
-
 void WebContents::EnterFullscreenModeForTab(
     content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options) {

@@ -674,7 +674,6 @@ class WebContents : public ExclusiveAccessContext,
   void OnExclusiveAccessUserInput() override;
   content::WebContents* GetActiveWebContents() override;
   bool CanUserExitFullscreen() const override;
-  bool IsExclusiveAccessBubbleDisplayed() const override;
 
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
   blink::SecurityStyle GetSecurityStyle(
