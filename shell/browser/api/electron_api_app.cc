@@ -517,21 +517,24 @@ bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
         void(const base::CommandLine& command_line,
              const base::FilePath& current_directory,
-             const std::vector<const uint8_t> additional_data)>& callback,
+             const std::vector<const uint8_t> additional_data,
+             const ProcessSingleton::NotificationAckCallback& ack_callback)>&
+        callback,
     const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const std::vector<const uint8_t> additional_data) {
+    const std::vector<const uint8_t> additional_data,
+    const ProcessSingleton::NotificationAckCallback& ack_callback) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(cmd, cwd, std::move(additional_data));
+    callback.Run(cmd, cwd, std::move(additional_data), ack_callback);
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
 
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(FROM_HERE,
-                          base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
-                                         std::move(additional_data)));
+    task_runner->PostTask(
+        FROM_HERE, base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
+                                  std::move(additional_data), ack_callback));
   }
   // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();
@@ -1079,15 +1082,54 @@ std::string App::GetLocaleCountryCode() {
   return region.size() == 2 ? region : std::string();
 }
 
-void App::OnSecondInstance(const base::CommandLine& cmd,
-                           const base::FilePath& cwd,
-                           const std::vector<const uint8_t> additional_data) {
+void App::OnFirstInstanceAck(
+    const base::span<const uint8_t>* first_instance_data) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  base::Value data_to_send;
+  if (first_instance_data) {
+    // Don't send back the local directly, because it might be empty.
+    v8::Local<v8::Value> data_local;
+    data_local = DeserializeV8Value(isolate, *first_instance_data);
+    if (!data_local.IsEmpty()) {
+      gin::ConvertFromV8(isolate, data_local, &data_to_send);
+    }
+  }
+  Emit("first-instance-ack", data_to_send);
+}
+
+// This function handles the user calling
+// the callback parameter sent out by the second-instance event.
+static void AckCallbackWrapper(
+    const ProcessSingleton::NotificationAckCallback& ack_callback,
+    gin::Arguments* args) {
+  blink::CloneableMessage ack_message;
+  args->GetNext(&ack_message);
+  if (!ack_message.encoded_message.empty()) {
+    ack_callback.Run(&ack_message.encoded_message);
+  } else {
+    ack_callback.Run(nullptr);
+  }
+}
+
+void App::OnSecondInstance(
+    const base::CommandLine& cmd,
+    const base::FilePath& cwd,
+    const std::vector<const uint8_t> additional_data,
+    const ProcessSingleton::NotificationAckCallback& ack_callback) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> data_value =
       DeserializeV8Value(isolate, std::move(additional_data));
-  Emit("second-instance", cmd.argv(), cwd, data_value);
+  auto cb = base::BindRepeating(&AckCallbackWrapper, ack_callback);
+  bool prevent_default =
+      Emit("second-instance", cmd.argv(), cwd, data_value, cb);
+  if (!prevent_default) {
+    // Call the callback ourselves, and send back nothing.
+    ack_callback.Run(nullptr);
+  }
 }
 
 bool App::HasSingleInstanceLock() const {
@@ -1106,6 +1148,9 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
+  auto wrapped_cb = base::BindRepeating(NotificationCallbackWrapper, cb);
+  auto ack_cb =
+      base::BindRepeating(&App::OnFirstInstanceAck, base::Unretained(this));
 
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
@@ -1114,11 +1159,10 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(
       program_name, user_dir, additional_data_message.encoded_message,
-      app_is_sandboxed, base::BindRepeating(NotificationCallbackWrapper, cb));
+      app_is_sandboxed, wrapped_cb, ack_cb);
 #else
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, additional_data_message.encoded_message,
-      base::BindRepeating(NotificationCallbackWrapper, cb));
+      user_dir, additional_data_message.encoded_message, wrapped_cb, ack_cb);
 #endif
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
