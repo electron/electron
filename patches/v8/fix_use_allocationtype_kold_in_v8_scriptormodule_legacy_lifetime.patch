@@ -15,10 +15,10 @@ This patch can be removed when the upsteam fix is merged, or
 when support is added in Node.js
 
 diff --git a/src/heap/factory-base.cc b/src/heap/factory-base.cc
-index 89eb0defc2c1f1d2f6f59c3fb107d844e0c7f986..509cc193f339fc2d44ee493c6fe6c17c024b55fb 100644
+index ff1056ee57d1fade0e851c08010a81cde64d48b3..1fbf8ecbec0458106afea1b5ba4273ccfb5d80f4 100644
 --- a/src/heap/factory-base.cc
 +++ b/src/heap/factory-base.cc
-@@ -247,7 +247,7 @@ Handle<Script> FactoryBase<Impl>::NewScriptWithId(
+@@ -250,7 +250,7 @@ Handle<Script> FactoryBase<Impl>::NewScriptWithId(
    // Create and initialize script object.
    ReadOnlyRoots roots = read_only_roots();
  #ifdef V8_SCRIPTORMODULE_LEGACY_LIFETIME
@@ -27,7 +27,7 @@ index 89eb0defc2c1f1d2f6f59c3fb107d844e0c7f986..509cc193f339fc2d44ee493c6fe6c17c
  #endif
    Handle<Script> script = handle(
        NewStructInternal<Script>(SCRIPT_TYPE, AllocationType::kOld), isolate());
-@@ -283,8 +283,10 @@ Handle<Script> FactoryBase<Impl>::NewScriptWithId(
+@@ -286,8 +286,10 @@ Handle<Script> FactoryBase<Impl>::NewScriptWithId(
  }
  
  template <typename Impl>
@@ -41,7 +41,7 @@ index 89eb0defc2c1f1d2f6f59c3fb107d844e0c7f986..509cc193f339fc2d44ee493c6fe6c17c
    Handle<ArrayList> result = Handle<ArrayList>::cast(fixed_array);
    result->SetLength(0);
 diff --git a/src/heap/factory-base.h b/src/heap/factory-base.h
-index 9e45c00a6c7d3dbc44d8f13383a22a40f757d5a7..23bd405d5d660556e23bff23986013fe3b0c627d 100644
+index c3aa816d0ba3079889201dee17d10283fbcaa8fc..2a8eae50c947fb5db8585ddc504e9b83dae09a44 100644
 --- a/src/heap/factory-base.h
 +++ b/src/heap/factory-base.h
 @@ -157,7 +157,8 @@ class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE) FactoryBase
