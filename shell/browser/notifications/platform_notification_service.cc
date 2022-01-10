@@ -30,6 +30,7 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
                               const SkBitmap& icon,
                               const blink::PlatformNotificationData& data,
                               bool is_persistent,
+                              bool is_replacing,
                               bool audio_muted,
                               bool allowed) {
   if (!notification)
@@ -47,6 +48,8 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     // feat: configuration toast show time according to
     // Notification.requireInteraction property
     options.require_interaction = data.require_interaction;
+    // feat: display toast according to Notification.renotify
+    options.should_be_presented = data.renotify ? true : !is_replacing;
     // feat: support Notification.data property
     // header calculation bellow is caused by presence some not described hader
     // into data received see ReadData in
@@ -185,7 +188,9 @@ void PlatformNotificationService::DisplayNotification(
   // the same tag is already extant.
   //
   // See: https://notifications.spec.whatwg.org/#showing-a-notification
+  const size_t prev_notif_count = presenter->notifications().size();
   presenter->CloseNotificationWithId(notification_id);
+  const size_t curr_notif_count = presenter->notifications().size();
 
   auto* delegate = new NotificationDelegateImpl(notification_id, origin);
 
@@ -194,11 +199,12 @@ void PlatformNotificationService::DisplayNotification(
     // feat: correct processing for the persistent notification without
     // actions
     const bool is_persistent(false);
+    const bool is_replacing(prev_notif_count > curr_notif_count);
     browser_client_->WebNotificationAllowed(
         content::WebContents::FromRenderFrameHost(render_frame_host),
         base::BindRepeating(&OnWebNotificationAllowed, notification,
                             notification_resources.notification_icon,
-                            notification_data, is_persistent));
+                            notification_data, is_persistent, is_replacing));
   }
 }
 
@@ -216,7 +222,9 @@ void PlatformNotificationService::DisplayPersistentNotification(
   if (!presenter)
     return;
 
+  const size_t prev_notif_count = presenter->notifications().size();
   presenter->CloseNotificationWithId(notification_id);
+  const size_t curr_notif_count = presenter->notifications().size();
 
   auto* delegate = new NotificationDelegateImpl(notification_id, origin);
 
@@ -229,10 +237,12 @@ void PlatformNotificationService::DisplayPersistentNotification(
     // feat: correct processing for the persistent notification without
     // actions
     const bool is_persistent(true);
+    const bool is_replacing(prev_notif_count > curr_notif_count);
     browser_client_->WebNotificationAllowed(
-        web_ctx, base::BindRepeating(&OnWebNotificationAllowed, notification,
-                                     notification_resources.notification_icon,
-                                     notification_data, is_persistent));
+        web_ctx,
+        base::BindRepeating(&OnWebNotificationAllowed, notification,
+                            notification_resources.notification_icon,
+                            notification_data, is_persistent, is_replacing));
     // OnWebNotificationAllowed( notification,
     //     notification_resources.notification_icon,
     //     notification_data, is_persistent, false, true);

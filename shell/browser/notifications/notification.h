@@ -60,6 +60,8 @@ struct NotificationOptions {
   bool require_interaction;  // SAP-17772: configuration toast show time
                              // according to
                              // Notification.requireInteraction property
+  bool should_be_presented;  // 16-SAP-18595: display toast according to
+                             // Notification.renotify
 
   NotificationOptions();
   ~NotificationOptions();
