@@ -1,0 +1,163 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonah Ryan-Davis <jonahr@google.com>
+Date: Mon, 22 Nov 2021 14:30:52 -0500
+Subject: Ignore the pixel unpack state for compressed textures.
+
+From OpenGL ES 3 spec: All pixel storage modes are ignored when decoding
+a compressed texture image
+This was causing a bad access when calling compressedTexImage3D
+with GL_UNPACK_IMAGE_HEIGHT greater than the image height.
+
+Bug: chromium:1267496
+Change-Id: I9b1f4c645548af64f2695fd23262225a1ad07cd7
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3296622
+Commit-Queue: Jonah Ryan-Davis <jonahr@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit 870f458f507ff7ba0f67b28a30a27955ce79dd3e)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3309097
+Reviewed-by: Jonah Ryan-Davis <jonahr@google.com>
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
+index 1e989ebaffb25da1a1a281afa0610a9088232119..67356b5bd47e96e98e2a5e4880a71f5042ca918d 100644
+--- a/src/libANGLE/Context.cpp
++++ b/src/libANGLE/Context.cpp
+@@ -4923,7 +4923,9 @@ void Context::compressedTexImage2D(TextureTarget target,
+ 
+     Extents size(width, height, 1);
+     Texture *texture = getTextureByTarget(target);
+-    ANGLE_CONTEXT_TRY(texture->setCompressedImage(this, mState.getUnpackState(), target, level,
++    // From OpenGL ES 3 spec: All pixel storage modes are ignored when decoding a compressed texture
++    // image. So we use an empty PixelUnpackState.
++    ANGLE_CONTEXT_TRY(texture->setCompressedImage(this, PixelUnpackState(), target, level,
+                                                   internalformat, size, imageSize,
+                                                   static_cast<const uint8_t *>(data)));
+ }
+@@ -4955,7 +4957,9 @@ void Context::compressedTexImage3D(TextureTarget target,
+ 
+     Extents size(width, height, depth);
+     Texture *texture = getTextureByTarget(target);
+-    ANGLE_CONTEXT_TRY(texture->setCompressedImage(this, mState.getUnpackState(), target, level,
++    // From OpenGL ES 3 spec: All pixel storage modes are ignored when decoding a compressed texture
++    // image. So we use an empty PixelUnpackState.
++    ANGLE_CONTEXT_TRY(texture->setCompressedImage(this, PixelUnpackState(), target, level,
+                                                   internalformat, size, imageSize,
+                                                   static_cast<const uint8_t *>(data)));
+ }
+@@ -4989,8 +4993,10 @@ void Context::compressedTexSubImage2D(TextureTarget target,
+ 
+     Box area(xoffset, yoffset, 0, width, height, 1);
+     Texture *texture = getTextureByTarget(target);
+-    ANGLE_CONTEXT_TRY(texture->setCompressedSubImage(this, mState.getUnpackState(), target, level,
+-                                                     area, format, imageSize,
++    // From OpenGL ES 3 spec: All pixel storage modes are ignored when decoding a compressed texture
++    // image. So we use an empty PixelUnpackState.
++    ANGLE_CONTEXT_TRY(texture->setCompressedSubImage(this, PixelUnpackState(), target, level, area,
++                                                     format, imageSize,
+                                                      static_cast<const uint8_t *>(data)));
+ }
+ 
+@@ -5031,8 +5037,10 @@ void Context::compressedTexSubImage3D(TextureTarget target,
+ 
+     Box area(xoffset, yoffset, zoffset, width, height, depth);
+     Texture *texture = getTextureByTarget(target);
+-    ANGLE_CONTEXT_TRY(texture->setCompressedSubImage(this, mState.getUnpackState(), target, level,
+-                                                     area, format, imageSize,
++    // From OpenGL ES 3 spec: All pixel storage modes are ignored when decoding a compressed texture
++    // image. So we use an empty PixelUnpackState.
++    ANGLE_CONTEXT_TRY(texture->setCompressedSubImage(this, PixelUnpackState(), target, level, area,
++                                                     format, imageSize,
+                                                      static_cast<const uint8_t *>(data)));
+ }
+ 
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index f0b48cb803981d1fdc7c30093c7bf7c0d170dece..e65dd0e6ec6fab4483e6415a93f60628c2d53e77 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -5011,6 +5011,43 @@ TEST_P(Texture2DTestES3, TextureCompletenessChangesWithMaxLevel)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::black);
+ }
+ 
++// Test that compressed textures ignore the pixel unpack state.
++// (https://crbug.org/1267496)
++TEST_P(Texture3DTestES3, PixelUnpackStateTexImage)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_texture_compression_s3tc") &&
++                       !IsGLExtensionEnabled("GL_ANGLE_texture_compression_dxt3"));
++
++    glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, 5);
++    glBindTexture(GL_TEXTURE_2D_ARRAY, mTexture3D);
++
++    uint8_t data[64] = {0};
++    glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 4, 4, 4, 0, 64,
++                           data);
++    EXPECT_GL_NO_ERROR();
++}
++
++// Test that compressed textures ignore the pixel unpack state.
++// (https://crbug.org/1267496)
++TEST_P(Texture3DTestES3, PixelUnpackStateTexSubImage)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_texture_compression_s3tc") &&
++                       !IsGLExtensionEnabled("GL_ANGLE_texture_compression_dxt3"));
++
++    glBindTexture(GL_TEXTURE_2D_ARRAY, mTexture3D);
++
++    uint8_t data[64] = {0};
++    glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 4, 4, 4, 0, 64,
++                           data);
++    EXPECT_GL_NO_ERROR();
++
++    glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, 5);
++
++    glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, 4, 4, 4,
++                              GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 64, data);
++    EXPECT_GL_NO_ERROR();
++}
++
+ // Test that 3D texture completeness is updated if texture max level changes.
+ // GLES 3.0.4 section 3.8.13 Texture completeness
+ TEST_P(Texture3DTestES3, Texture3DCompletenessChangesWithMaxLevel)
+@@ -5690,6 +5727,41 @@ TEST_P(Texture2DTestES3, TextureCOMPRESSEDSRGB8ETC2ImplicitAlpha1)
+     EXPECT_PIXEL_ALPHA_EQ(0, 0, 255);
+ }
+ 
++// Test that compressed textures ignore the pixel unpack state.
++// (https://crbug.org/1267496)
++TEST_P(Texture2DTestES3, PixelUnpackStateTexImage)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_texture_compression_s3tc") &&
++                       !IsGLExtensionEnabled("GL_ANGLE_texture_compression_dxt3"));
++
++    glPixelStorei(GL_UNPACK_ROW_LENGTH, 5);
++    glBindTexture(GL_TEXTURE_2D, mTexture2D);
++
++    uint8_t data[16] = {0};
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 4, 4, 0, 16, data);
++    EXPECT_GL_NO_ERROR();
++}
++
++// Test that compressed textures ignore the pixel unpack state.
++// (https://crbug.org/1267496)
++TEST_P(Texture2DTestES3, PixelUnpackStateTexSubImage)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_texture_compression_s3tc") &&
++                       !IsGLExtensionEnabled("GL_ANGLE_texture_compression_dxt3"));
++
++    glBindTexture(GL_TEXTURE_2D, mTexture2D);
++
++    uint8_t data[16] = {0};
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 4, 4, 0, 16, data);
++    EXPECT_GL_NO_ERROR();
++
++    glPixelStorei(GL_UNPACK_ROW_LENGTH, 5);
++
++    glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 16,
++                              data);
++    EXPECT_GL_NO_ERROR();
++}
++
+ // Copied from Texture2DTest::TexStorage
+ // Test that glTexSubImage2D works properly when glTexStorage2DEXT has initialized the image with a
+ // default color.
