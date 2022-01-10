@@ -142,6 +142,8 @@ class InspectableWebContents
   void RegisterPreference(const std::string& name,
                           const RegisterOptions& options) override;
   void GetPreferences(DispatchCallback callback) override;
+  void GetPreference(DispatchCallback callback,
+                     const std::string& name) override;
   void SetPreference(const std::string& name,
                      const std::string& value) override;
   void RemovePreference(const std::string& name) override;

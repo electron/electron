@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 4 Jan 2022 11:10:27 +0100
+Subject: revert: stop using NSRunLoop in renderer process
+
+https://chromium-review.googlesource.com/c/chromium/src/+/3344749
+
+This can be removed once we update to a DEPS has which
+includes 4787f034924d0b05a2e4815a197a8ecf4a9c623c.
+
+diff --git a/content/renderer/renderer_main.cc b/content/renderer/renderer_main.cc
+index 261e6de9ad03cb017fd2c71e30aef14f51312b60..625c984fc5255fe7ab01f5e38767ada73c21ffec 100644
+--- a/content/renderer/renderer_main.cc
++++ b/content/renderer/renderer_main.cc
+@@ -91,7 +91,12 @@ void HandleRendererErrorTestParameters(const base::CommandLine& command_line) {
+ }
+ 
+ std::unique_ptr<base::MessagePump> CreateMainThreadMessagePump() {
+-#if defined(OS_FUCHSIA)
++#if defined(OS_MAC)
++  // As long as scrollbars on Mac are painted with Cocoa, the message pump
++  // needs to be backed by a Foundation-level loop to process NSTimers. See
++  // http://crbug.com/306348#c24 for details.
++  return base::MessagePump::Create(base::MessagePumpType::NS_RUNLOOP);
++#elif defined(OS_FUCHSIA)
+   // Allow FIDL APIs on renderer main thread.
+   return base::MessagePump::Create(base::MessagePumpType::IO);
+ #else

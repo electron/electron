@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 8f29a8a014fff5aa146fc6d6de02d025184e40df..7427d82d6ad78251aaa7c3e2e0f499f7d19d688c 100644
+index 0399fd10fffc282a3e2752ddc33d53823dd7b3f4..c04b5e11bc5e0c7746372dadfa49e34232f82507 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -649,6 +649,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
@@ -24,10 +24,10 @@ index 8f29a8a014fff5aa146fc6d6de02d025184e40df..7427d82d6ad78251aaa7c3e2e0f499f7
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 95775111f6d5f01c0b27524a04c202ed08a65e2e..f4fe0970813bb2232e7594813cd4cc2e7d555372 100644
+index e15b08a576e27687801e4ef547bbd299ae60444e..f35cbc8be8a9496eaafbf693680746fc96a13144 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -25,8 +25,10 @@
+@@ -26,8 +26,10 @@
  #include "content/browser/renderer_host/display_feature.h"
  #include "content/browser/renderer_host/event_with_latency_info.h"
  #include "content/browser/renderer_host/visible_time_request_trigger.h"
@@ -38,7 +38,7 @@ index 95775111f6d5f01c0b27524a04c202ed08a65e2e..f4fe0970813bb2232e7594813cd4cc2e
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/page_visibility_state.h"
  #include "content/public/common/widget_type.h"
-@@ -66,9 +68,11 @@ class CursorManager;
+@@ -67,9 +69,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -50,7 +50,7 @@ index 95775111f6d5f01c0b27524a04c202ed08a65e2e..f4fe0970813bb2232e7594813cd4cc2e
  class WebCursor;
  class WebContentsAccessibility;
  class DelegatedFrameHost;
-@@ -138,6 +142,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -139,6 +143,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  
@@ -60,7 +60,7 @@ index 95775111f6d5f01c0b27524a04c202ed08a65e2e..f4fe0970813bb2232e7594813cd4cc2e
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -286,6 +293,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -290,6 +297,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

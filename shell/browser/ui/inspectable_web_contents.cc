@@ -918,6 +918,36 @@ void InspectableWebContents::GetPreferences(DispatchCallback callback) {
   std::move(callback).Run(&settings);
 }
 
+void InspectableWebContents::GetPreference(DispatchCallback callback,
+                                           const std::string& name) {
+  // Handle kSyncDevToolsPreferencesFrontendName
+  if (name == kSyncDevToolsPreferencesFrontendName) {
+    base::Value pref =
+        base::Value(pref_service_->GetBoolean(kDevToolsSyncPreferences));
+    std::move(callback).Run(&pref);
+    return;
+  }
+
+  // Check dev tools prefs
+  if (auto* pref =
+          pref_service_->GetDictionary(kDevToolsPreferences)->FindKey(name)) {
+    std::move(callback).Run(pref);
+    return;
+  }
+
+  // Check synced prefs
+  if (auto* pref =
+          pref_service_->GetDictionary(GetDictionaryNameForSyncedPrefs())
+              ->FindKey(name)) {
+    std::move(callback).Run(pref);
+    return;
+  }
+
+  // Pref wasn't found, return an empty value
+  base::Value no_pref;
+  std::move(callback).Run(&no_pref);
+}
+
 void InspectableWebContents::SetPreference(const std::string& name,
                                            const std::string& value) {
   if (name == kSyncDevToolsPreferencesFrontendName) {
@@ -944,13 +974,13 @@ void InspectableWebContents::ClearPreferences() {
   pref_service_->SetBoolean(kDevToolsSyncPreferences,
                             kSyncDevToolsPreferencesDefault);
   DictionaryPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
-  unsynced_update.Get()->Clear();
+  unsynced_update.Get()->DictClear();
   DictionaryPrefUpdate sync_enabled_update(
       pref_service_, kDevToolsSyncedPreferencesSyncEnabled);
-  sync_enabled_update.Get()->Clear();
+  sync_enabled_update.Get()->DictClear();
   DictionaryPrefUpdate sync_disabled_update(
       pref_service_, kDevToolsSyncedPreferencesSyncDisabled);
-  sync_disabled_update.Get()->Clear();
+  sync_disabled_update.Get()->DictClear();
 }
 
 void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {

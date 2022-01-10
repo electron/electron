@@ -13,7 +13,7 @@ other protocols to register their streaming behavior. MultibufferDataSource::Ass
 then refers to the list so that it can correctly determine the data source's settings.
 
 diff --git a/third_party/blink/public/platform/media/multi_buffer_data_source.h b/third_party/blink/public/platform/media/multi_buffer_data_source.h
-index 274308e54f2b5c6311d68daa162c146113ba669e..e450fe31011620d87219ce28ef37fb5eba7cc348 100644
+index 3224b0cc8f4b5196d5e78f031f198cecd0fddf40..b797f446cb876315ff70645564658435445045cd 100644
 --- a/third_party/blink/public/platform/media/multi_buffer_data_source.h
 +++ b/third_party/blink/public/platform/media/multi_buffer_data_source.h
 @@ -34,6 +34,8 @@ namespace blink {

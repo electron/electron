@@ -10,6 +10,7 @@
 
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/media/media_stream_devices_controller.h"
 
@@ -65,7 +66,8 @@ void OnPermissionResponse(base::OnceCallback<void(bool)> callback,
 
 WebContentsPermissionHelper::WebContentsPermissionHelper(
     content::WebContents* web_contents)
-    : web_contents_(web_contents) {}
+    : content::WebContentsUserData<WebContentsPermissionHelper>(*web_contents),
+      web_contents_(web_contents) {}
 
 WebContentsPermissionHelper::~WebContentsPermissionHelper() = default;
 

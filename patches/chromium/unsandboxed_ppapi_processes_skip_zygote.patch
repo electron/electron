@@ -5,17 +5,25 @@ Subject: unsandboxed_ppapi_processes_skip_zygote.patch
 
 Unsandboxed ppapi processes should skip zygote.
 
-diff --git a/content/browser/ppapi_plugin_process_host.cc b/content/browser/ppapi_plugin_process_host.cc
-index 720921b36b65d0332d0a59df4b26c1f32dd49928..eec1a915daaaa9305a49a7bd117186e59b5ae5f9 100644
---- a/content/browser/ppapi_plugin_process_host.cc
-+++ b/content/browser/ppapi_plugin_process_host.cc
-@@ -115,6 +115,9 @@ class PpapiPluginSandboxedProcessLauncherDelegate
-   ZygoteHandle GetZygote() override {
-     const base::CommandLine& browser_command_line =
-         *base::CommandLine::ForCurrentProcess();
-+    if (browser_command_line.HasSwitch(sandbox::policy::switches::kNoSandbox)) {
-+      return nullptr;
-+    }
-     base::CommandLine::StringType plugin_launcher = browser_command_line
-         .GetSwitchValueNative(switches::kPpapiPluginLauncher);
-     if (!plugin_launcher.empty())
+diff --git a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
+index 833c20796bd9404e4f5d7ca738fce97143d33fac..f4bc4f94e7eb5014f7c2844d6486fbc1bc88892f 100644
+--- a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
++++ b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "content/public/common/content_switches.h"
+ #include "sandbox/policy/mojom/sandbox.mojom.h"
++#include "sandbox/policy/switches.h"
+ 
+ #if defined(OS_WIN)
+ #include "base/win/windows_version.h"
+@@ -62,6 +63,9 @@ bool PpapiPluginSandboxedProcessLauncherDelegate::PreSpawnTarget(
+ ZygoteHandle PpapiPluginSandboxedProcessLauncherDelegate::GetZygote() {
+   const base::CommandLine& browser_command_line =
+       *base::CommandLine::ForCurrentProcess();
++  if (browser_command_line.HasSwitch(sandbox::policy::switches::kNoSandbox)) {
++    return nullptr;
++  }
+   base::CommandLine::StringType plugin_launcher =
+       browser_command_line.GetSwitchValueNative(switches::kPpapiPluginLauncher);
+   if (!plugin_launcher.empty())

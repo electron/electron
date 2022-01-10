@@ -16,6 +16,7 @@
 #include "cc/base/switches.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
@@ -98,7 +99,8 @@ std::vector<WebContentsPreferences*>& Instances() {
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
     const gin_helper::Dictionary& web_preferences)
-    : web_contents_(web_contents) {
+    : content::WebContentsUserData<WebContentsPreferences>(*web_contents),
+      web_contents_(web_contents) {
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
   Instances().push_back(this);
   SetFromDictionary(web_preferences);

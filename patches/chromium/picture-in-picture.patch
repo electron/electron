@@ -61,10 +61,10 @@ index 7b711bdbaf4afddd6ccf300af7bab26487942243..987a60b81554b676661d8f1a53facbc9
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 75ff4175b80df26667ed2b4d3ba96c5d23aab597..7fa6a713f64c75360c54039563635c2db707d798 100644
+index d63256af63e93c7aab4ce348b9d27953d5346c6c..0f708806aa0e4555c288da38e0f9ecd4c89b1c3e 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-@@ -15,9 +15,11 @@
+@@ -16,9 +16,11 @@
  #include "base/timer/timer.h"
  #include "build/build_config.h"
  #include "chrome/app/vector_icons/vector_icons.h"
@@ -76,7 +76,7 @@ index 75ff4175b80df26667ed2b4d3ba96c5d23aab597..7fa6a713f64c75360c54039563635c2d
  #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
-@@ -28,7 +30,8 @@
+@@ -29,7 +31,8 @@
  #include "chrome/browser/ui/views/overlay/toggle_camera_button.h"
  #include "chrome/browser/ui/views/overlay/toggle_microphone_button.h"
  #include "chrome/browser/ui/views/overlay/track_image_button.h"
@@ -86,7 +86,7 @@ index 75ff4175b80df26667ed2b4d3ba96c5d23aab597..7fa6a713f64c75360c54039563635c2d
  #include "components/vector_icons/vector_icons.h"
  #include "content/public/browser/picture_in_picture_window_controller.h"
  #include "content/public/browser/web_contents.h"
-@@ -57,7 +60,7 @@
+@@ -58,7 +61,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -95,7 +95,7 @@ index 75ff4175b80df26667ed2b4d3ba96c5d23aab597..7fa6a713f64c75360c54039563635c2d
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -250,7 +253,7 @@ std::unique_ptr<OverlayWindowViews> OverlayWindowViews::Create(
+@@ -251,7 +254,7 @@ std::unique_ptr<OverlayWindowViews> OverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

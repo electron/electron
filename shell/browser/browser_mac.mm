@@ -499,7 +499,7 @@ void Browser::ShowAboutPanel() {
 }
 
 void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
-  about_panel_options_.Clear();
+  about_panel_options_.DictClear();
 
   for (const auto pair : options.DictItems()) {
     std::string key = std::string(pair.first);

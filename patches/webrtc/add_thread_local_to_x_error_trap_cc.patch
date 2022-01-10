@@ -7,10 +7,10 @@ Per https://bugs.chromium.org/p/chromium/issues/detail?id=781618#c6.
 
 To fix this DCHECK firing: https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/modules/desktop_capture/linux/x_error_trap.cc;l=35;drc=25ab3228f3e473f2226f219531ec617d2daa175e
 
-diff --git a/modules/desktop_capture/linux/x_error_trap.cc b/modules/desktop_capture/linux/x_error_trap.cc
-index 13233d827470d9d42be0333c3080e3d107f86fd5..62efb5b5b5194fc8961a27fe2a1efcd77e385d08 100644
---- a/modules/desktop_capture/linux/x_error_trap.cc
-+++ b/modules/desktop_capture/linux/x_error_trap.cc
+diff --git a/modules/desktop_capture/linux/x11/x_error_trap.cc b/modules/desktop_capture/linux/x11/x_error_trap.cc
+index f31565e24bdba8f77925fe89d3794f3438300778..8f11c68a6a56f036cacc5b5eaf5b191600c47f4f 100644
+--- a/modules/desktop_capture/linux/x11/x_error_trap.cc
++++ b/modules/desktop_capture/linux/x11/x_error_trap.cc
 @@ -19,8 +19,8 @@ namespace webrtc {
  namespace {
  

@@ -10,6 +10,7 @@
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
+#include "base/threading/thread_restrictions.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
