@@ -29,3 +29,4 @@ fix_event_with_invalid_timestamp_in_trace_log.patch
 test_fix_test-datetime-change-notify_after_daylight_change.patch
 test_add_fixture_trim_option.patch
 fix_crash_caused_by_gethostnamew_on_windows_7.patch
+fix_don_t_create_console_window_when_creating_process.patch
