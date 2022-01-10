@@ -348,6 +348,11 @@ HRESULT WindowsToastNotification::ShowInternal(
       toast_notification2_->put_Tag(HStringReference(hex_str.c_str()).Get()),
       "WinAPI: put_Tag failed");
 
+  // 16-SAP-18595: display toast according to Notification.renotify
+  REPORT_AND_RETURN_IF_FAILED(
+      toast_notification2_->put_SuppressPopup(!options.should_be_presented),
+      "WinAPI: setup put_Suppress failed");
+
   REPORT_AND_RETURN_IF_FAILED(SetupCallbacks(toast_notification_.Get()),
                               "WinAPI: SetupCallbacks failed");
 
