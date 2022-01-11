@@ -96,7 +96,6 @@ declare namespace Electron {
   }
 
   interface WebPreferences {
-    openerId?: number | null;
     disablePopups?: boolean;
     preloadURL?: string;
     embedder?: Electron.WebContents;

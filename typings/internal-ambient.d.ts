@@ -45,7 +45,6 @@ declare namespace NodeJS {
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
     runUntilIdle(): void;
-    isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
   }
 
@@ -108,9 +107,7 @@ declare namespace NodeJS {
   interface InternalWebPreferences {
     isWebView: boolean;
     hiddenPage: boolean;
-    nativeWindowOpen: boolean;
     nodeIntegration: boolean;
-    openerId: number;
     preload: string
     preloadScripts: string[];
     webviewTag: boolean;

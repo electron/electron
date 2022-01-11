@@ -42,10 +42,10 @@ index 2bed8f7ce21ab052c0c319775875b9cf008b2636..9aa4536d5c8fb38ac58e41c107b946cf
                                                     access_mode_, task_runner);
    if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index cb587f852f230f84db1c50ffd6d41cad447e0949..619982a42c1255c3629da78fd35c82cdcf174b36 100644
+index a965545de342811e468594fab4d792fc5c4daf32..94d1d45eb766ee1e2a2910124e46969edf264ae9 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -81,7 +81,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -82,7 +82,8 @@ class GIN_EXPORT IsolateHolder {
        IsolateType isolate_type,
        IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
        v8::CreateHistogramCallback create_histogram_callback = nullptr,

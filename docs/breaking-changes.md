@@ -12,6 +12,18 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (18.0)
+
+### Removed: `nativeWindowOpen`
+
+Prior to Electron 15, `window.open` was by default shimmed to use
+`BrowserWindowProxy`. This meant that `window.open('about:blank')` did not work
+to open synchronously scriptable child windows, among other incompatibilities.
+Since Electron 15, `nativeWindowOpen` has been enabled by default.
+
+See the documentation for [window.open in Electron](api/window-open.md)
+for more details.
+
 ## Planned Breaking API Changes (17.0)
 
 ### Removed: `desktopCapturer.getSources` in the renderer
@@ -44,6 +56,16 @@ const desktopCapturer = {
 However, you should consider further restricting the information returned to
 the renderer; for instance, displaying a source selector to the user and only
 returning the selected source.
+
+### Deprecated: `nativeWindowOpen`
+
+Prior to Electron 15, `window.open` was by default shimmed to use
+`BrowserWindowProxy`. This meant that `window.open('about:blank')` did not work
+to open synchronously scriptable child windows, among other incompatibilities.
+Since Electron 15, `nativeWindowOpen` has been enabled by default.
+
+See the documentation for [window.open in Electron](api/window-open.md)
+for more details.
 
 ## Planned Breaking API Changes (16.0)
 

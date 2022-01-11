@@ -10,10 +10,10 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 7fde07c789c35d103174020f590e177eefbe6f2b..07f10be994fcf7d7845f6c297e17f86f27cc4fe9 100644
+index 36f2e09d563a610128305cf4890e2af3bf6f4cdd..85363bd922bf0ab2630e3d5f350de0c58792963a 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
-@@ -83,6 +83,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
+@@ -85,6 +85,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
    // Returns true if the orientation was set.
    bool SetOrientationIsLandscape(bool landscape);
  
@@ -25,10 +25,10 @@ index 7fde07c789c35d103174020f590e177eefbe6f2b..07f10be994fcf7d7845f6c297e17f86f
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index dd9bb775164ad483cf7cc26be150da0abba2433f..3704d75b9b25e4b8205736666cb8496225672df5 100644
+index 9e351c7e80a135adf0ebe011763f5164e51981bb..b9fcb4d2a8c7a22ebc7cd8434636454e7fc2aab6 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -192,7 +192,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -199,7 +199,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index dd9bb775164ad483cf7cc26be150da0abba2433f..3704d75b9b25e4b8205736666cb84962
        return OnError();
      }
    }
-@@ -345,6 +346,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -352,6 +353,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
@@ -62,7 +62,7 @@ index dd9bb775164ad483cf7cc26be150da0abba2433f..3704d75b9b25e4b8205736666cb84962
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index acb040f998546b0e01be45c28c505bbafcf2c141..1083db84804e5ed8b420d3e8e3da372ff15ec2cf 100644
+index a964910a3b7e3bd225a3b8dc35ef9dc57c77248d..9f791d9ba5f0b540f5e3a67f5e1abb318ddb7680 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
 @@ -54,14 +54,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(

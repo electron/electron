@@ -13,6 +13,7 @@
 #include "components/viz/host/client_frame_sink_video_capturer.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "media/capture/mojom/video_capture_buffer.mojom-forward.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "v8/include/v8.h"
 
@@ -53,7 +54,7 @@ class FrameSubscriber : public content::WebContentsObserver,
 
   // viz::mojom::FrameSinkVideoConsumer implementation.
   void OnFrameCaptured(
-      base::ReadOnlySharedMemoryRegion data,
+      ::media::mojom::VideoBufferHandlePtr data,
       ::media::mojom::VideoFrameInfoPtr info,
       const gfx::Rect& content_rect,
       mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>

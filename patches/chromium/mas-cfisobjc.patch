@@ -6,7 +6,7 @@ Subject: mas: avoid usage of _CFIsObjC
 Removes usage of the _CFIsObjC private API.
 
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index 89818822c348b8df2d3c8ce25cac50bf9fc15a3b..209cdf0a788b7594bb5f9d58abf1690c846bf374 100644
+index 6e5d76dc70e472f599385d967e8941200730fd9d..73d7f162a465d2e50d3ea3e6d14b6c0ed37775d1 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -31,12 +31,6 @@

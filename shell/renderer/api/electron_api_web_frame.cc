@@ -496,9 +496,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     if (pref_name == options::kPreloadScripts) {
       return gin::ConvertToV8(isolate, prefs.preloads);
-    } else if (pref_name == options::kOpenerID) {
-      // NOTE: openerId is internal-only.
-      return gin::ConvertToV8(isolate, prefs.opener_id);
     } else if (pref_name == "isWebView") {
       // FIXME(zcbenz): For child windows opened with window.open('') from
       // webview, the WebPreferences is inherited from webview and the value
@@ -516,8 +513,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return gin::ConvertToV8(isolate, prefs.offscreen);
     } else if (pref_name == options::kPreloadScript) {
       return gin::ConvertToV8(isolate, prefs.preload.value());
-    } else if (pref_name == options::kNativeWindowOpen) {
-      return gin::ConvertToV8(isolate, prefs.native_window_open);
     } else if (pref_name == options::kNodeIntegration) {
       return gin::ConvertToV8(isolate, prefs.node_integration);
     } else if (pref_name == options::kNodeIntegrationInWorker) {
@@ -728,9 +723,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     for (const auto& script : scripts) {
       std::u16string code;
       std::u16string url;
-      int start_line = 1;
       script.Get("url", &url);
-      script.Get("startLine", &start_line);
 
       if (!script.Get("code", &code)) {
         const char error_message[] = "Invalid 'code'";
@@ -746,7 +739,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       }
 
       sources.emplace_back(blink::WebString::FromUTF16(code),
-                           blink::WebURL(GURL(url)), start_line);
+                           blink::WebURL(GURL(url)));
     }
 
     render_frame->GetWebFrame()->RequestExecuteScript(

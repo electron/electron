@@ -490,7 +490,6 @@ describe('<webview> tag', function () {
 
     generateSpecs('without sandbox');
     generateSpecs('with sandbox', 'sandbox=yes');
-    generateSpecs('with nativeWindowOpen', 'nativeWindowOpen=yes');
   });
 
   describe('webpreferences attribute', () => {

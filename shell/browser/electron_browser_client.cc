@@ -451,7 +451,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   prefs->javascript_can_access_clipboard = true;
   prefs->local_storage_enabled = true;
   prefs->databases_enabled = true;
-  prefs->application_cache_enabled = true;
   prefs->allow_universal_access_from_file_urls = true;
   prefs->allow_file_access_from_file_urls = true;
   prefs->webgl1_enabled = true;
@@ -721,7 +720,7 @@ bool ElectronBrowserClient::CanCreateWindow(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   WebContentsPreferences* prefs = WebContentsPreferences::From(web_contents);
-  if (prefs && prefs->ShouldUseNativeWindowOpen()) {
+  if (prefs) {
     if (prefs->ShouldDisablePopups()) {
       // <webview> without allowpopups attribute should return
       // null from window.open calls

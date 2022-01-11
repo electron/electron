@@ -14,10 +14,10 @@ but it's not strictly necessary for this API to work to spec.
 Profile check has been upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3247196
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 391865de1c6c5765288743178e7fec2c34dde680..271a1cc24d14c187f07cdb56e21fcc2823d1ea70 100644
+index cf2a4efc6e99cd53bf0a3a7ae9222578627d3714..171ebbdc16d0fb47054ccc001cf144bb93355c28 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-@@ -369,13 +369,9 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -382,13 +382,9 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -33,7 +33,7 @@ index 391865de1c6c5765288743178e7fec2c34dde680..271a1cc24d14c187f07cdb56e21fcc28
  #endif
  
    toggled_into_fullscreen_ = true;
-@@ -388,6 +384,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -401,6 +397,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        url = extension_caused_fullscreen_;
    }
  
@@ -41,7 +41,7 @@ index 391865de1c6c5765288743178e7fec2c34dde680..271a1cc24d14c187f07cdb56e21fcc28
    if (display_id != display::kInvalidDisplayId) {
      // Check, but do not prompt, for permission to request a specific screen.
      // Sites generally need permission to get the display id in the first place.
-@@ -401,6 +398,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -414,6 +411,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        display_id = display::kInvalidDisplayId;
      }
    }

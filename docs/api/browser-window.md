@@ -341,9 +341,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       [Chrome Content Scripts][chrome-content-scripts].  You can access this
       context in the dev tools by selecting the 'Electron Isolated Context'
       entry in the combo box at the top of the Console tab.
-    * `nativeWindowOpen` boolean (optional) - Whether to use native
-      `window.open()`. Defaults to `true`. Child windows will always have node
-      integration disabled unless `nodeIntegrationInSubFrames` is true.
     * `webviewTag` boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to `false`. **Note:** The
       `preload` script configured for the `<webview>` will have node integration
@@ -559,7 +556,7 @@ Returns:
 
 Emitted before the window is moved. On Windows, calling `event.preventDefault()` will prevent the window from being moved.
 
-Note that this is only emitted when the window is being resized manually. Resizing the window with `setBounds`/`setSize` will not emit this event.
+Note that this is only emitted when the window is being moved manually. Moving the window with `setPosition`/`setBounds`/`center` will not emit this event.
 
 #### Event: 'move'
 

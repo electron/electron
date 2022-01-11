@@ -433,7 +433,8 @@ class NativeWindowRelay
 
  private:
   friend class content::WebContentsUserData<NativeWindow>;
-  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window);
+  explicit NativeWindowRelay(content::WebContents* web_contents,
+                             base::WeakPtr<NativeWindow> window);
 
   base::WeakPtr<NativeWindow> native_window_;
 };

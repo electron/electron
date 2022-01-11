@@ -11,6 +11,7 @@
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -692,13 +693,16 @@ void NativeWindowRelay::CreateForWebContents(
     base::WeakPtr<NativeWindow> window) {
   DCHECK(web_contents);
   if (!web_contents->GetUserData(UserDataKey())) {
-    web_contents->SetUserData(UserDataKey(),
-                              base::WrapUnique(new NativeWindowRelay(window)));
+    web_contents->SetUserData(
+        UserDataKey(),
+        base::WrapUnique(new NativeWindowRelay(web_contents, window)));
   }
 }
 
-NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
-    : native_window_(window) {}
+NativeWindowRelay::NativeWindowRelay(content::WebContents* web_contents,
+                                     base::WeakPtr<NativeWindow> window)
+    : content::WebContentsUserData<NativeWindowRelay>(*web_contents),
+      native_window_(window) {}
 
 NativeWindowRelay::~NativeWindowRelay() = default;
 

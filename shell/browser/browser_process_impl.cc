@@ -198,10 +198,6 @@ network::NetworkQualityTracker* BrowserProcessImpl::network_quality_tracker() {
   return nullptr;
 }
 
-WatchDogThread* BrowserProcessImpl::watchdog_thread() {
-  return nullptr;
-}
-
 policy::ChromeBrowserPolicyConnector*
 BrowserProcessImpl::browser_policy_connector() {
   return nullptr;

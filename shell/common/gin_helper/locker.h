@@ -23,7 +23,7 @@ class Locker {
 
   // Returns whether current process is browser process, currently we detect it
   // by checking whether current has used V8 Lock, but it might be a bad idea.
-  static inline bool IsBrowserProcess() { return v8::Locker::IsActive(); }
+  static inline bool IsBrowserProcess() { return v8::Locker::WasEverUsed(); }
 
  private:
   void* operator new(size_t size);

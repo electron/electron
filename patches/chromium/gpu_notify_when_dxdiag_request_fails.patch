@@ -28,7 +28,7 @@ index 7821945da13ece57529c1de14d1cbd7f645d19ab..9be940f4ee047279f5969a6c572d6acb
  
  void GpuDataManagerImpl::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index 9b850c01ab110467c3b595f4499d1f39e9f21001..7b0a2d2c2e385d4af5226e448b958181f0bd50ce 100644
+index bb9a976842b869bf31c46c45686f6f5238841eb2..489619f6d3d4accadb811db287a9ff498f35d8bb 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
 @@ -124,6 +124,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
@@ -40,10 +40,10 @@ index 9b850c01ab110467c3b595f4499d1f39e9f21001..7b0a2d2c2e385d4af5226e448b958181
    void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
  
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 16b1653c8e7dbcd042c17bb4f2c308b7dfd6968b..17fdd083f387d557bff81fc0b0b73b91627ac9e0 100644
+index cddf8dfa73ba64b89e37b3ca375d5872d23b995f..06fbfe2b0a9a74a785ba54d495f7813286e81b6b 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1171,6 +1171,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1212,6 +1212,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }
@@ -57,10 +57,10 @@ index 16b1653c8e7dbcd042c17bb4f2c308b7dfd6968b..17fdd083f387d557bff81fc0b0b73b91
  
  void GpuDataManagerImplPrivate::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index ce7af71283ad613e18ce05789396c0b74e937798..f4bf867b3a995d58164085b14ef01e0e8d55a37b 100644
+index 8ae871aaf3da7b08da79490a87104ce62ca30b4e..ca6405c728187c10b19e86e7848b6f5fe558e601 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
-@@ -88,6 +88,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+@@ -89,6 +89,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
    bool VulkanRequested() const;
    void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();

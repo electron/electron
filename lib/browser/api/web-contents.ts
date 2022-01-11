@@ -692,8 +692,8 @@ WebContents.prototype._init = function () {
         // TODO(zcbenz): The features string is parsed twice: here where it is
         // passed to C++, and in |makeBrowserWindowOptions| later where it is
         // not actually used since the WebContents is created here.
-        // We should be able to remove the latter once the |nativeWindowOpen|
-        // option is removed.
+        // We should be able to remove the latter once the |new-window| event
+        // is removed.
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
         // Parameters should keep same with |makeBrowserWindowOptions|.
         const webPreferences = makeWebPreferences({
@@ -705,8 +705,7 @@ WebContents.prototype._init = function () {
       }
     });
 
-    // Create a new browser window for the native implementation of
-    // "window.open", used in sandbox and nativeWindowOpen mode.
+    // Create a new browser window for "window.open"
     this.on('-add-new-contents' as any, (event: ElectronInternal.Event, webContents: Electron.WebContents, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {

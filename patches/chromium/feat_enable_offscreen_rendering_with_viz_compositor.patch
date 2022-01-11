@@ -81,10 +81,10 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 972d8fcc61b6a4ea972d8faf7dda8d9017f7cb71..7b00ef49451b0666567073f942bdb6fc2166aaf0 100644
+index fae4aae8ed31b10fba14c009bb6bf86128747b14..a672c74893f0c9a2774beec98734faf58a17cbf3 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -137,6 +137,8 @@ viz_component("service") {
+@@ -139,6 +139,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
@@ -171,10 +171,10 @@ index e0afde4b0cb45cb6cf2cae6f001875973898bb64..c41e9566b9a4d32cb1d0cb3e8c199191
    return CreateSoftwareOutputDeviceWin(surface_handle, &output_device_backing_,
                                         display_client);
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
-index bdb6bf1815551737fb93ae65880dfe186840c7e6..e08d9224cfd13185c59bd7055aa9b7e9c5792aff 100644
+index 07f266d8a379c7047f43c824c9062cbb162112f0..c756e1c5b4bda1978d27fd55fba1e4531dbeed8a 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.h
-@@ -65,12 +65,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
+@@ -66,12 +66,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
        mojom::DisplayClient* display_client,
        DisplayCompositorMemoryAndTaskController* gpu_dependency,
        const RendererSettings& renderer_settings,
@@ -189,8 +189,8 @@ index bdb6bf1815551737fb93ae65880dfe186840c7e6..e08d9224cfd13185c59bd7055aa9b7e9
 +      mojom::DisplayClient* display_client,
 +      bool offscreen);
  
-   GpuServiceImpl* const gpu_service_impl_;
-   gpu::CommandBufferTaskExecutor* const task_executor_;
+   const raw_ptr<GpuServiceImpl> gpu_service_impl_;
+   const raw_ptr<gpu::CommandBufferTaskExecutor> task_executor_;
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
 index 33e12349a951ef533b964d1158f8fa124623e946..fc04bcaffefc277dd1d0cdd766168de017fedca8 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
@@ -499,10 +499,10 @@ index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef2
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index d23ae68f306d6d76beec9784133bd22e2d4dee7a..370460868e7b121a3bb033668927659a2ffe75c9 100644
+index 94a087b4beb3b683e90e89282c9fd6bb36825608..6efcb84af529a78e9ebc1234ef4d0c8834270c29 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -47,7 +47,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -49,7 +49,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget, params->renderer_settings);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -513,10 +513,10 @@ index d23ae68f306d6d76beec9784133bd22e2d4dee7a..370460868e7b121a3bb033668927659a
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index bb929cb9ff381b1186f8df68e952d8f13a24a5d9..33f34eb372a4ab9c81d16dbf14485a63922f958e 100644
+index ba0d6ca4e9004a0c8cfc2b99f3e3aaff4c8a756b..3f1c77e14ab6164ee9bb7d4cc3e454125e0d700e 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -382,8 +382,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -383,8 +383,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    compositor_data.display_private.reset();
    root_params->display_private =
        compositor_data.display_private.BindNewEndpointAndPassReceiver();
@@ -569,10 +569,10 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index c966042cf947ef291241a5a2dddce29e48c7e6c3..4b0ae728e29738e1309ee6c1bdd9408d80074c8f 100644
+index 7e3a624f99fea87cd53ce6f399e5768058d3c305..384ec6d9b8a8c0e121fc2e875ce65ddb639c241b 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -80,6 +80,7 @@ class DisplayPrivate;
+@@ -81,6 +81,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
  class ContextProvider;
@@ -580,7 +580,7 @@ index c966042cf947ef291241a5a2dddce29e48c7e6c3..4b0ae728e29738e1309ee6c1bdd9408d
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -136,6 +137,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -137,6 +138,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -597,7 +597,7 @@ index c966042cf947ef291241a5a2dddce29e48c7e6c3..4b0ae728e29738e1309ee6c1bdd9408d
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -176,6 +187,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -177,6 +188,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -607,17 +607,17 @@ index c966042cf947ef291241a5a2dddce29e48c7e6c3..4b0ae728e29738e1309ee6c1bdd9408d
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -452,6 +466,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -453,6 +467,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
 +  CompositorDelegate* delegate_ = nullptr;
 +
    // The root of the Layer tree drawn by this compositor.
-   Layer* root_layer_ = nullptr;
+   raw_ptr<Layer> root_layer_ = nullptr;
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
-index 64af450ed36a982124c6fcce7056b4058140747a..dcee2ec9de0e759b868b0de2c7106b2cf084c41c 100644
+index 232751b32f6d6dee6c913c7020b53ae4b604a552..ba5767a80d13e848b7281f55307f6569a1524ce3 100644
 --- a/ui/gfx/ca_layer_params.h
 +++ b/ui/gfx/ca_layer_params.h
 @@ -6,6 +6,7 @@
@@ -628,7 +628,7 @@ index 64af450ed36a982124c6fcce7056b4058140747a..dcee2ec9de0e759b868b0de2c7106b2c
  #include "ui/gfx/geometry/size.h"
  #include "ui/gfx/gfx_export.h"
  
-@@ -41,6 +42,8 @@ struct GFX_EXPORT CALayerParams {
+@@ -51,6 +52,8 @@ struct GFX_EXPORT CALayerParams {
    gfx::ScopedRefCountedIOSurfaceMachPort io_surface_mach_port;
  #endif
  
