@@ -78,13 +78,13 @@ index 14bd8c3436602689e44e3c718388406a7de6b211..46551fcbb671ae7f6f5528afa7ea62bb
    virtual bool AllowScriptExtensionForServiceWorker(
        const WebSecurityOrigin& script_origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index 1efbaf0adb1fd6c0ef332f015d8b09d130e4bd3f..033438ccc8db0ef396922ac23b7f3bd80fcc5cde 100644
+index 03288c7b1897ee2c18b80677ee5837246d36568a..fc10bbf3d92c7f88c734d8ecfb20dbc4b72ae200 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 @@ -257,6 +257,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
    V8PerContextData* per_context_data = script_state_->PerContextData();
-   ignore_result(per_context_data->ConstructorForType(
-       global_scope_->GetWrapperTypeInfo()));
+   std::ignore =
+       per_context_data->ConstructorForType(global_scope_->GetWrapperTypeInfo());
 +  Platform::Current()->WorkerScriptReadyForEvaluation(script_state_->GetContext());
    // Inform V8 that origin trial information is now connected with the context,
    // and V8 can extend the context with origin trial features.

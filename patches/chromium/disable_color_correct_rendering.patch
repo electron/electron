@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index c13c06406ec4abd012082c5bfef02f2692a9bba1..0e82b376f740fcd51a608e4f99fcd7a016eefe5f 100644
+index 814e6fab76b7f3a4cccdcdff9a9b6cd1c0da0f27..f91eab46a8a80dcaf2937413df804cdd61d3faa0 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1893,6 +1893,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1891,6 +1891,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -48,7 +48,7 @@ index 86180d4f001a7f849553a4bd5401d69fe4f1bec2..953b1f4f24e55e127af5fcb5fb3c4e1e
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index e58b4023652785fa8ea47236a5ad7237c7ea6ed2..4ec673ea93410ee00b1af4330fdc8b5267ed6dfa 100644
+index 01e524ba93c29f34858e4bd5a5cc8757f055f238..421f90d62f47133b841eddcaf37a44371c990db5 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -24,6 +24,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -60,7 +60,7 @@ index e58b4023652785fa8ea47236a5ad7237c7ea6ed2..4ec673ea93410ee00b1af4330fdc8b52
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index d79f3beb58085672e0a67825a0b60de2a3aeb499..5f7ca2ea0d012be5518dd07ade8cf2820b4fd7a9 100644
+index d0a0ca74e12af5d0e8daa077ebe992984c7ecdf2..ecbd5554d2d181799c700e299bb24030c8ae7abe 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -17,6 +17,7 @@
@@ -69,9 +69,9 @@ index d79f3beb58085672e0a67825a0b60de2a3aeb499..5f7ca2ea0d012be5518dd07ade8cf282
  #include "ui/base/ui_base_switches.h"
 +#include "ui/gfx/switches.h"
  
- #if defined(OS_APPLE)
- #include "ui/base/cocoa/remote_layer_api.h"
-@@ -53,6 +54,8 @@ bool GetSwitchValueAsInt(const base::CommandLine* command_line,
+ #if defined(USE_OZONE)
+ #include "ui/ozone/public/ozone_platform.h"
+@@ -49,6 +50,8 @@ bool GetSwitchValueAsInt(const base::CommandLine* command_line,
  RendererSettings CreateRendererSettings() {
    RendererSettings renderer_settings;
    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -229,10 +229,10 @@ index e768356b9b7ebead39aedfcaf5aeba001bd667be..06de4adb9edaad6c65bc90114f89b304
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index ec1ba57d8b0fc42c3c1dc85542f70c595e1eb464..c88cdac173ec22ea5df27a166f9e87ebe0100be4 100644
+index bfcc7683c9d17b1fb3877f217987bfb0b6972e94..531ab7af26a6ea871066b1df97f23ae4fa3503dd 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -229,6 +229,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -241,7 +241,7 @@ index ec1ba57d8b0fc42c3c1dc85542f70c595e1eb464..c88cdac173ec22ea5df27a166f9e87eb
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index e044bc3739ad21c3d9704ddfa56116fae944e57a..8dfdd81a04c77e3c2ffc4317a859a689ca8ed66e 100644
+index b97367a718efea9e5e008d0fe4ad2ed765121239..3228f4f651db2a3fe828213584d31e1d0ee74dc4 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -192,6 +192,7 @@
@@ -252,7 +252,7 @@ index e044bc3739ad21c3d9704ddfa56116fae944e57a..8dfdd81a04c77e3c2ffc4317a859a689
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3288,6 +3289,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3282,6 +3283,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -261,7 +261,7 @@ index e044bc3739ad21c3d9704ddfa56116fae944e57a..8dfdd81a04c77e3c2ffc4317a859a689
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
      sandbox::policy::switches::kNoSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index f4d66861abb000e98fa613ec0bdd7096f891b6da..972efa2b1462d91ec7f6f28da0296138ef2c9656 100644
+index dc1175944e0346c52d39e444bcbc14ac8e462195..10c422693e87f97ec44a256d0b508c7659242921 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -280,7 +280,7 @@ index f4d66861abb000e98fa613ec0bdd7096f891b6da..972efa2b1462d91ec7f6f28da0296138
  
  namespace blink {
  
-@@ -129,6 +131,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -118,6 +120,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {

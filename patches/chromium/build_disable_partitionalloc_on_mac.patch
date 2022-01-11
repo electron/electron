@@ -8,15 +8,15 @@ PartitionAlloc on mac requires some restructuring in Electron as well as conside
 This patch can be removed once the mac app runs safely with PartitionAlloc on (i.e. removing dependency to //base in the main app) & the situation with mas is figured out.
 
 diff --git a/base/allocator/allocator.gni b/base/allocator/allocator.gni
-index 7d579d6e2297c047415eeeb641c70871b5c3f80d..e6edb52dd15af0f369160696fb2a34b0f80680a4 100644
+index 5bbe7c965e6c77b3e3de8bb6807ed47d373f5a14..19ad80e417ad82b2ba58034f7997c6b186ee322c 100644
 --- a/base/allocator/allocator.gni
 +++ b/base/allocator/allocator.gni
 @@ -18,7 +18,7 @@ _is_using_sanitizers = is_asan || is_hwasan || is_lsan || is_tsan || is_msan
  # - Windows: debug CRT is not compatible, see below.
  _disable_partition_alloc = is_component_build || (is_win && is_debug)
  _is_partition_alloc_platform =
--    is_android || is_win || is_mac || is_linux || is_chromeos
-+    is_android || is_win || is_linux || is_chromeos
+-    is_android || is_win || is_mac || is_linux || is_chromeos ||
++    is_android || is_win || is_linux || is_chromeos ||
+     # TODO(crbug.com/1278780): Allow x64 once compatible with safe-stack.
+     (is_fuchsia && target_cpu == "arm64")
  
- # The debug CRT on Windows has some debug features that are incompatible with
- # the shim. NaCl in particular does seem to link some binaries statically

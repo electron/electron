@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 6305d03e2315e8b9925071c018a81c102dda2a55..2bed8f7ce21ab052c0c319775875b9cf008b2636 100644
+index 0cd4077a0b534f089318e1ebffb9eb25214c3a42..f1ea1dfd740f4b9cf5f7cb7fd6bd445fb06e0100 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -115,9 +115,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -117,9 +117,10 @@ IsolateHolder::~IsolateHolder() {
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
                                 const intptr_t* reference_table,
@@ -38,7 +38,7 @@ index 78133f9b34327c311c69620af621eba3d7f2cbf9..a965545de342811e468594fab4d792fc
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index f576fc909eed4168130571590e3a80d19ccc3dd8..ff91f59446275d027ac7100c1eb0dcd1051993da 100644
+index 8ae0f4388433c71c7a1720d52dff30da38227355..db2e7c767149e85dc06767a375934a446e8be01b 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -341,12 +341,14 @@ void SetFlags(IsolateHolder::ScriptMode mode,
@@ -59,7 +59,7 @@ index f576fc909eed4168130571590e3a80d19ccc3dd8..ff91f59446275d027ac7100c1eb0dcd1
    // Set this early on as some initialization steps, such as the initialization
    // of the virtual memory cage, already use V8's random number generator.
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index de650aa85dd083ec8c99d72b1f6cc447bb277f09..da97190ca86f5e04dd74dbff2282901fb4713f5b 100644
+index beeedc5737f6e60dde123200fbb6430a40366577..17ee4c894e89b7d2d12377475a5dd01910b61312 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -29,7 +29,8 @@ class GIN_EXPORT V8Initializer {

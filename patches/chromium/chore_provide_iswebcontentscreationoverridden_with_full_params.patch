@@ -108,10 +108,10 @@ index 6688ba8ba2fb7d930773144cdbc43f1f6fa2b685..22015c7b9b50e1264551ce226757f90e
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index da521ddb3d244d264f11f42a86dce97ba84fac55..8f12ce6257f72786c96428fbbd6040fdf0b87025 100644
+index 81b1178f937e4a817af9c1ff3837d98fb85a4d4f..b4a25835080eb12de398d26ad9474a656593e5b9 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1762,12 +1762,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1760,12 +1760,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -183,7 +183,7 @@ index 2c560d379ee6c08465455ea1dc2c5a59ddb65487..4fd703722db5d679b08acdb8fc080b08
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 1aec422b4c83b823c92d76847366fe0d4d04cd00..ea8354f49b14631cf8671decc1ee96beb18d9561 100644
+index 1911b0558fad1d5834befa98e57a978e6e0b72da..cb85515f79617a32e2809ad6eb7f55e4ecc36b3f 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -170,14 +170,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -246,10 +246,10 @@ index c1926fc79e9982739d17f4b971f5e7296afd0cf8..31f036c9d224f7e03d7fe38861db45b8
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3bc6a0207a5273e7a7b64ab59d4e3499482e4bd8..676c77b2ac7be7445d92db3fcfc94b5ec4915696 100644
+index dc22e6fc96644294ad768d2cbddf1f46ea6850f5..3497eeb53bb7f02a7f27d690c498a4851c919d5e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3812,8 +3812,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3829,8 +3829,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -316,7 +316,7 @@ index 0d6ab312e2bdfac8f1d75ecb5df990d3d158b288..edcdae5183d5a2bcca31b440870f40ed
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index ded1894a7d1d7cc7929af3435978a0eb4a1ac781..3312dc397c96f9c5edc40feb8760ac08aac6dc45 100644
+index 4fad18c07ce7d3d9768e1af2c510259fc351eb75..bbc80c106a36a38f2c6857e852e947a223f92046 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -388,8 +388,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -330,7 +330,7 @@ index ded1894a7d1d7cc7929af3435978a0eb4a1ac781..3312dc397c96f9c5edc40feb8760ac08
  }
  
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index 4c0820c60e7654657bdb46efbbf072d8bfe149d0..c1c0e744a81c0dee8a3fd3e12d56d7f1bd5e7f1c 100644
+index 1b388778aac1420769de8c411489e026abbc75a4..b21d262c7014097e35ee83289fab400ab9d3bdc5 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 @@ -171,8 +171,7 @@ class MimeHandlerViewGuest
@@ -344,10 +344,10 @@ index 4c0820c60e7654657bdb46efbbf072d8bfe149d0..c1c0e744a81c0dee8a3fd3e12d56d7f1
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index 7d9e445c8b2c727787854aa6e296f2e3784942fb..c82b0b86ab93aceb0d8c0bd5562e72d823166010 100644
+index ff682e28f07c751d346f7934967007807960e8e4..617bd10ca054d89e28c1746167ab833f8804fcd6 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
-@@ -401,8 +401,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -403,8 +403,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -358,10 +358,10 @@ index 7d9e445c8b2c727787854aa6e296f2e3784942fb..c82b0b86ab93aceb0d8c0bd5562e72d8
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index 38b5f8871464fc59c26e619dc2cdcc00711e2ce5..1ba0ac9d291a06f8a23e814742c38fdf382a05ec 100644
+index ea50835c2f8631851659db6abb3ba779a5fcb6e0..14207edb850689c126b2d09eff8d8feb1246ebb7 100644
 --- a/fuchsia/engine/browser/frame_impl.h
 +++ b/fuchsia/engine/browser/frame_impl.h
-@@ -290,8 +290,7 @@ class FrameImpl : public fuchsia::web::Frame,
+@@ -292,8 +292,7 @@ class FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -372,7 +372,7 @@ index 38b5f8871464fc59c26e619dc2cdcc00711e2ce5..1ba0ac9d291a06f8a23e814742c38fdf
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 6fa4fa667839531f3ca6ca80f8bf17e135739688..bf56fbe1b7aee1a41a18d1cd98641034ba97a903 100644
+index 4cb2c255877182406158258c0fb3e88e50f612c7..0f314be5d9d88b60b925a1e25db30408f0b26dff 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -177,8 +177,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

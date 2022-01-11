@@ -10,7 +10,7 @@ breakpad independently, as a "browser" process. This patches
 crash annotation.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index f55fd1c92770de6b8bce1fc46a047c79228d451e..5b308900ae8e9d49d711a1638e40c22d1d45af80 100644
+index e9385fa663c2b1f6052e5423c28041d83895c4c3..72fbb84ac6c5728c33c9518ebdc9ad1969177bae 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -718,8 +718,13 @@ bool CrashDone(const MinidumpDescriptor& minidump,
