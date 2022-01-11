@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rich Trott <rtrott@gmail.com>
+Date: Wed, 10 Mar 2021 19:17:44 -0800
+Subject: test: fix test-fs-utimes on non-Y2K38 file systems
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Move Y2K38-specific parts of test-fs-utimes to test-fs-utimes-y2K38.js.
+On non-Windows, check for Y2K38 support and skip if it is unsupported.
+
+Fixes: https://github.com/nodejs/node/issues/36591
+
+PR-URL: https://github.com/nodejs/node/pull/37707
+Reviewed-By: Michaël Zasso <targos@protonmail.com>
+Reviewed-By: Richard Lau <rlau@redhat.com>
+(cherry picked from commit ab6c7dd01cfc5c00be965b3bde8b7a96bd6ef885)
+
+diff --git a/test/parallel/test-fs-utimes-y2K38.js b/test/parallel/test-fs-utimes-y2K38.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..06c5060c65d2fcc950a152721409df07d9e1f446
+--- /dev/null
++++ b/test/parallel/test-fs-utimes-y2K38.js
+@@ -0,0 +1,63 @@
++'use strict';
++const common = require('../common');
++
++if (common.isIBMi) {
++  common.skip('fs.utimesSync() currently fails on IBM i with Y2K38 values');
++}
++
++const tmpdir = require('../common/tmpdir');
++tmpdir.refresh();
++
++const assert = require('assert');
++const fs = require('fs');
++
++// Check for Y2K38 support. For Windows and AIX, assume it's there. Windows
++// doesn't have `touch` and `date -r` which are used in the check for support.
++// AIX lacks `date -r`.
++if (!common.isWindows && !common.isAIX) {
++  const testFilePath = `${tmpdir.path}/y2k38-test`;
++  const testFileDate = '204001020304';
++  const { spawnSync } = require('child_process');
++  const touchResult = spawnSync('touch',
++                                ['-t', testFileDate, testFilePath],
++                                { encoding: 'utf8' });
++  if (touchResult.status !== 0) {
++    common.skip('File system appears to lack Y2K38 support (touch failed)');
++  }
++
++  const dateResult = spawnSync('date',
++                               ['-r', testFilePath, '+%Y%m%d%H%M'],
++                               { encoding: 'utf8' });
++
++  assert.strictEqual(dateResult.status, 0);
++  if (dateResult.stdout.trim() !== testFileDate) {
++    common.skip('File system appears to lack Y2k38 support (date failed)');
++  }
++}
++
++// Ref: https://github.com/nodejs/node/issues/13255
++const path = `${tmpdir.path}/test-utimes-precision`;
++fs.writeFileSync(path, '');
++
++const Y2K38_mtime = 2 ** 31;
++fs.utimesSync(path, Y2K38_mtime, Y2K38_mtime);
++const Y2K38_stats = fs.statSync(path);
++assert.strictEqual(Y2K38_stats.mtime.getTime() / 1000, Y2K38_mtime);
++
++if (common.isWindows) {
++  // This value would get converted to (double)1713037251359.9998
++  const truncate_mtime = 1713037251360;
++  fs.utimesSync(path, truncate_mtime / 1000, truncate_mtime / 1000);
++  const truncate_stats = fs.statSync(path);
++  assert.strictEqual(truncate_stats.mtime.getTime(), truncate_mtime);
++
++  // test Y2K38 for windows
++  // This value if treaded as a `signed long` gets converted to -2135622133469.
++  // POSIX systems stores timestamps in {long t_sec, long t_usec}.
++  // NTFS stores times in nanoseconds in a single `uint64_t`, so when libuv
++  // calculates (long)`uv_timespec_t.tv_sec` we get 2's complement.
++  const overflow_mtime = 2159345162531;
++  fs.utimesSync(path, overflow_mtime / 1000, overflow_mtime / 1000);
++  const overflow_stats = fs.statSync(path);
++  assert.strictEqual(overflow_stats.mtime.getTime(), overflow_mtime);
++}
+diff --git a/test/parallel/test-fs-utimes.js b/test/parallel/test-fs-utimes.js
+index b81c5b6bf62940ba93df19b4421e5436929a6a85..8f8286f8a3343f437b7ba966125ff8e8eb8982e4 100644
+--- a/test/parallel/test-fs-utimes.js
++++ b/test/parallel/test-fs-utimes.js
+@@ -156,37 +156,6 @@ function runTests(iter) {
+   }
+ }
+ 
+-// Ref: https://github.com/nodejs/node/issues/13255
+-const path = `${tmpdir.path}/test-utimes-precision`;
+-fs.writeFileSync(path, '');
+-
+-// Test Y2K38 for all platforms [except 'arm', 'OpenBSD', 'SunOS' and 'IBMi']
+-if (!process.arch.includes('arm') &&
+-  !common.isOpenBSD && !common.isSunOS && !common.isIBMi) {
+-  const Y2K38_mtime = 2 ** 31;
+-  fs.utimesSync(path, Y2K38_mtime, Y2K38_mtime);
+-  const Y2K38_stats = fs.statSync(path);
+-  assert.strictEqual(Y2K38_stats.mtime.getTime() / 1000, Y2K38_mtime);
+-}
+-
+-if (common.isWindows) {
+-  // This value would get converted to (double)1713037251359.9998
+-  const truncate_mtime = 1713037251360;
+-  fs.utimesSync(path, truncate_mtime / 1000, truncate_mtime / 1000);
+-  const truncate_stats = fs.statSync(path);
+-  assert.strictEqual(truncate_stats.mtime.getTime(), truncate_mtime);
+-
+-  // test Y2K38 for windows
+-  // This value if treaded as a `signed long` gets converted to -2135622133469.
+-  // POSIX systems stores timestamps in {long t_sec, long t_usec}.
+-  // NTFS stores times in nanoseconds in a single `uint64_t`, so when libuv
+-  // calculates (long)`uv_timespec_t.tv_sec` we get 2's complement.
+-  const overflow_mtime = 2159345162531;
+-  fs.utimesSync(path, overflow_mtime / 1000, overflow_mtime / 1000);
+-  const overflow_stats = fs.statSync(path);
+-  assert.strictEqual(overflow_stats.mtime.getTime(), overflow_mtime);
+-}
+-
+ const expectTypeError = {
+   code: 'ERR_INVALID_ARG_TYPE',
+   name: 'TypeError'
