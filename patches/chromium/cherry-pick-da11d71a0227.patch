@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Fri, 10 Dec 2021 01:03:53 +0000
+Subject: mojo/ipc: Drop messages targeting invalid task runner
+
+If the endpoint's task runner does not match the current task runner (or
+an equivalent main-thread task runner for the ChannelProxy) when a
+executing a message dispatch task for that endpoint, this ignores the
+message instead of dispatching it on the wrong sequence.
+
+(cherry picked from commit 0747c9405e1098c0bbbc5593183696eafb45b72c)
+
+Fixed: 1263457
+Change-Id: I4f6ba22de3ff8cf3994b748e1ffd0f0aabb17b70
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3318601
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#949140}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3328403
+Auto-Submit: Ken Rockot <rockot@google.com>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#1269}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/ipc/ipc_mojo_bootstrap.cc b/ipc/ipc_mojo_bootstrap.cc
+index 18b4dc9be5bf54e6f5443d53739bc06ba3f98767..07e522337090494e278395ac4e7ead73c472ef72 100644
+--- a/ipc/ipc_mojo_bootstrap.cc
++++ b/ipc/ipc_mojo_bootstrap.cc
+@@ -966,11 +966,14 @@ class ChannelAssociatedGroupController
+     if (!client)
+       return;
+ 
++    if (!endpoint->task_runner()->RunsTasksInCurrentSequence() &&
++        !proxy_task_runner_->RunsTasksInCurrentSequence()) {
++      return;
++    }
++
+     // Using client->interface_name() is safe here because this is a static
+     // string defined for each mojo interface.
+     TRACE_EVENT0("mojom", client->interface_name());
+-    DCHECK(endpoint->task_runner()->RunsTasksInCurrentSequence() ||
+-           proxy_task_runner_->RunsTasksInCurrentSequence());
+ 
+     // Sync messages should never make their way to this method.
+     DCHECK(!message.has_flag(mojo::Message::kFlagIsSync));
+@@ -1000,11 +1003,14 @@ class ChannelAssociatedGroupController
+     if (!client)
+       return;
+ 
++    if (!endpoint->task_runner()->RunsTasksInCurrentSequence() &&
++        !proxy_task_runner_->RunsTasksInCurrentSequence()) {
++      return;
++    }
++
+     // Using client->interface_name() is safe here because this is a static
+     // string defined for each mojo interface.
+     TRACE_EVENT0("mojom", client->interface_name());
+-    DCHECK(endpoint->task_runner()->RunsTasksInCurrentSequence() ||
+-           proxy_task_runner_->RunsTasksInCurrentSequence());
+     MessageWrapper message_wrapper = endpoint->PopSyncMessage(message_id);
+ 
+     // The message must have already been dequeued by the endpoint waking up
