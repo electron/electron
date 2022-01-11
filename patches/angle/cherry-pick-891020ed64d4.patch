@@ -72,7 +72,7 @@ index c4ce77d612d88a898f8a8164466d25b210e2144b..eb60719ac38543b608c122daebd71b10
  }
  
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index e79bc700d4991752289ff3d7c76f2ccbb3ba932a..f5b82b03324f7d2b4c6c7f2bd05de568300a6fbe 100644
+index a3dec629c9ea96b276ff8bf344d4a4628ff20b3b..ba512a11cb023d9caae666ab2634d1e66057d12c 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
 @@ -5151,6 +5151,43 @@ TEST_P(Texture2DTestES3, TextureCompletenessChangesWithMaxLevel)
