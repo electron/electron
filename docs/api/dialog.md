@@ -285,7 +285,7 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
     include a checkbox with the given label.
   * `checkboxChecked` boolean (optional) - Initial checked state of the
     checkbox. `false` by default.
-  * `icon` [NativeImage](native-image.md) (optional)
+  * `icon` ([NativeImage](native-image.md) | string) (optional)
   * `textWidth` Integer (optional) _macOS_ - Custom width of the text in the message box.
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
