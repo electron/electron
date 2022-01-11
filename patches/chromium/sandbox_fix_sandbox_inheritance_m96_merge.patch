@@ -1,0 +1,153 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Arthur Sonzogni <arthursonzogni@chromium.org>
+Date: Wed, 3 Nov 2021 12:49:50 +0000
+Subject: sandbox: Fix sandbox inheritance [M96 merge]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This is a cherry-pick of the following patch:
+https://chromium-review.googlesource.com/c/chromium/src/+/3231298
+
+Patch description:
+------------------
+When creating a new frame and the initial empty document, blink was only
+sending the frame's sandbox attribute, but without combining with its owner's
+(=document) sandbox flags.
+
+This patch combines frame's attribute with its document sandbox flags.
+
+🎁 Arthur Sonzogni wishes for a better future: 🎁
+-------------------------------------------------
+There are no good reasons sandbox flags inheritance to be complicated.
+See: content/browser/renderer_host/sandbox_flags.md
+
+For legacy reasons, Chrome's developers were confused about what objects
+have frame or document semantic. On the browser process, the
+FrameTreeNode represents the frame and the RenderFrameHost is almost
+(%RenderDocument) the document/execution-context.
+
+Currently, sandbox flags is plumbed inside FramePolicy, and it is not
+clear to me whether FramePolicy is a frame-scoped or document-scoped
+property (or both).
+The current logic speak about "pending" FramePolicy (=frame) and
+"active" FramePolicy (=document) and store both type into the
+FrameTreeNode and RenderFrameHost, which is not ideal.
+
+I believe we should extract SandboxFlags outside of FramePolicy and
+make a very clean implementation, parallel to the PolicyContainer logic.
+In a second step it could also be integrated into PolicyContainer, if we
+resolve the additional property that sandbox flags can also be further
+restricted at the frame level, similar to CSP embedded enforcement.
+
+Bug: 1256822, 1262061
+Change-Id: Id38de6d7eeeb1e4fa7722ab56288666763fae838
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3231298
+Commit-Queue: Antonio Sartori <antoniosartori@chromium.org>
+Auto-Submit: Arthur Sonzogni <arthursonzogni@chromium.org>
+Reviewed-by: Antonio Sartori <antoniosartori@chromium.org>
+Reviewed-by: Mike West <mkwst@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#933845}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3256558
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#695}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
+index d1821c863d998cb010d8f5d12c12d79b18075a9d..79498c6c815bfc08d6d543b7302dc981b71580f3 100644
+--- a/content/browser/bad_message.h
++++ b/content/browser/bad_message.h
+@@ -271,6 +271,9 @@ enum BadMessageReason {
+   WCI_INVALID_DOWNLOAD_IMAGE_RESULT = 243,
+   FARI_LOGOUT_BAD_ENDPOINT = 250,
+   RFH_CHILD_FRAME_UNEXPECTED_OWNER_ELEMENT_TYPE = 251,
++  RFH_POPUP_REQUEST_WHILE_PRERENDERING = 252,
++  RFH_INTERECEPT_DOWNLOAD_WHILE_INACTIVE = 253,  // Unused until 97.0.4674.0
++  RFH_CREATE_CHILD_FRAME_SANDBOX_FLAGS = 254,
+ 
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. RenderFrameHost becomes RFH) plus a unique description of the
+diff --git a/content/browser/renderer_host/frame_tree_node.cc b/content/browser/renderer_host/frame_tree_node.cc
+index a57e16e97f7871c5a4d34a33e87cf372f228b444..155f570b7e011237b4ea505f5d17e19ee502e92a 100644
+--- a/content/browser/renderer_host/frame_tree_node.cc
++++ b/content/browser/renderer_host/frame_tree_node.cc
+@@ -469,6 +469,12 @@ bool FrameTreeNode::HasPendingCrossDocumentNavigation() const {
+ 
+ bool FrameTreeNode::CommitFramePolicy(
+     const blink::FramePolicy& new_frame_policy) {
++  // Documents create iframes, iframes host new documents. Both are associated
++  // with sandbox flags. They are required to be stricter or equal to their
++  // owner when they change, as we go down.
++  // TODO(https://crbug.com/1262061). Enforce the invariant mentioned above,
++  // once the interactions with FencedIframe has been tested and clarified.
++
+   bool did_change_flags = new_frame_policy.sandbox_flags !=
+                           replication_state_->frame_policy.sandbox_flags;
+   bool did_change_container_policy =
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index db01f3ea0423d780763ba82e50725bb0a12e5018..d3dfaaed9157bfbe7ffcb146774bd7323d56ae06 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -2836,6 +2836,16 @@ void RenderFrameHostImpl::CreateChildFrame(
+     return;
+   }
+ 
++  // Documents create iframes, iframes host new documents. Both are associated
++  // with sandbox flags. They are required to be stricter or equal to their
++  // owner when they are created, as we go down.
++  if (frame_policy.sandbox_flags !=
++      (frame_policy.sandbox_flags | active_sandbox_flags())) {
++    bad_message::ReceivedBadMessage(
++        GetProcess(), bad_message::RFH_CREATE_CHILD_FRAME_SANDBOX_FLAGS);
++    return;
++  }
++
+   // TODO(crbug.com/1145708). The interface exposed to tests should
+   // match the mojo interface.
+   OnCreateChildFrame(new_routing_id, std::move(frame_remote),
+diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
+index 8660df6074865b845f1b8341cb1348adb28c2339..7a420c241491a9780fdd5466973ff70a97800744 100644
+--- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
+@@ -2069,6 +2069,16 @@ LocalFrame* WebLocalFrameImpl::CreateChildFrame(
+       policy_container_receiver =
+           policy_container_remote.InitWithNewEndpointAndPassReceiver();
+ 
++  FramePolicy frame_policy = owner_element->GetFramePolicy();
++  // Documents create iframes, iframes host new documents. Both are associated
++  // with sandbox flags. They are required to be stricter or equal as we go
++  // down. The iframe owner element only returns the additional restrictions
++  // defined in the HTMLIFrameElement's sanbox attribute. It needs to be
++  // combined with the document's sandbox flags to get the frame's sandbox
++  // policy right.
++  frame_policy.sandbox_flags |=
++      GetFrame()->GetDocument()->GetExecutionContext()->GetSandboxFlags();
++
+   // FIXME: Using subResourceAttributeName as fallback is not a perfect
+   // solution. subResourceAttributeName returns just one attribute name. The
+   // element might not have the attribute, and there might be other attributes
+@@ -2078,8 +2088,7 @@ LocalFrame* WebLocalFrameImpl::CreateChildFrame(
+           scope, name,
+           owner_element->getAttribute(
+               owner_element->SubResourceAttributeName()),
+-          owner_element->GetFramePolicy(), owner_properties,
+-          owner_element->OwnerType(),
++          std::move(frame_policy), owner_properties, owner_element->OwnerType(),
+           WebPolicyContainerBindParams{std::move(policy_container_receiver)}));
+   if (!webframe_child)
+     return nullptr;
+diff --git a/tools/metrics/histograms/enums.xml b/tools/metrics/histograms/enums.xml
+index d6dd81a4af0fb71b0ab6b410bfb20737dfdbdbf9..275892d5cb3a9af8fdbe1ed81169398367fa30b1 100644
+--- a/tools/metrics/histograms/enums.xml
++++ b/tools/metrics/histograms/enums.xml
+@@ -7226,6 +7226,9 @@ Called by update_bad_message_reasons.py.-->
+   <int value="243" label="WCI_INVALID_DOWNLOAD_IMAGE_RESULT"/>
+   <int value="250" label="FARI_LOGOUT_BAD_ENDPOINT"/>
+   <int value="251" label="RFH_CHILD_FRAME_UNEXPECTED_OWNER_ELEMENT_TYPE"/>
++  <int value="252" label="RFH_POPUP_REQUEST_WHILE_PRERENDERING"/>
++  <int value="253" label="RFH_INTERECEPT_DOWNLOAD_WHILE_INACTIVE"/>
++  <int value="254" label="RFH_CREATE_CHILD_FRAME_SANDBOX_FLAGS"/>
+ </enum>
+ 
+ <enum name="BadMessageReasonExtensions">
