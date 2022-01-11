@@ -128,6 +128,7 @@ cherry-pick-a5f54612590d.patch
 mas_gate_private_enterprise_APIs.patch
 fix_aspect_ratio_with_max_size.patch
 cherry-pick-f0a63e1f361f.patch
+sandbox_fix_sandbox_inheritance_m96_merge.patch
 cherry-pick-dbde8795233a.patch
 cherry-pick-da11d71a0227.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
