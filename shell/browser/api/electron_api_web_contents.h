@@ -556,6 +556,10 @@ class WebContents : public ExclusiveAccessContext,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
+  void RequestExclusivePointerAccess(content::WebContents* web_contents,
+                                     bool user_gesture,
+                                     bool last_unlocked_by_target,
+                                     bool allowed);
   void RequestToLockMouse(content::WebContents* web_contents,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
