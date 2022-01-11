@@ -36,6 +36,8 @@ WebWorkerObserver::WebWorkerObserver()
 
 WebWorkerObserver::~WebWorkerObserver() {
   lazy_tls.Pointer()->Set(nullptr);
+  gin_helper::MicrotasksScope microtasks_scope(
+      node_bindings_->uv_env()->isolate());
   node::FreeEnvironment(node_bindings_->uv_env());
   node::FreeIsolateData(node_bindings_->isolate_data());
 }
