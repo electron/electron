@@ -168,6 +168,20 @@ index b6833e34c5840a4d3a545d1c4a44b2b08d7fc9ea..5ebc16a3545a73e58516cb0fbdddca43
  
    // The profile used for the presentation.
    raw_ptr<Profile> otr_profile_;
+diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
+index 2c560d379ee6c08465455ea1dc2c5a59ddb65487..4fd703722db5d679b08acdb8fc080b089dd8c433 100644
+--- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
++++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
+@@ -70,8 +70,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+       content::SiteInstance* source_site_instance,
+       content::mojom::WindowContainerType window_container_type,
+       const GURL& opener_url,
+-      const std::string& frame_name,
+-      const GURL& target_url) override {
++      const content::mojom::CreateNewWindowParams& params) override {
+     return true;
+   }
+   content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 index 1aec422b4c83b823c92d76847366fe0d4d04cd00..ea8354f49b14631cf8671decc1ee96beb18d9561 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
@@ -358,7 +372,7 @@ index 38b5f8871464fc59c26e619dc2cdcc00711e2ce5..1ba0ac9d291a06f8a23e814742c38fdf
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 6fa4fa667839531f3ca6ca80f8bf17e135739688..65ad95abf4459a342194ea0d970d6b268024d87f 100644
+index 6fa4fa667839531f3ca6ca80f8bf17e135739688..bf56fbe1b7aee1a41a18d1cd98641034ba97a903 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -177,8 +177,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
@@ -367,7 +381,7 @@ index 6fa4fa667839531f3ca6ca80f8bf17e135739688..65ad95abf4459a342194ea0d970d6b26
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override {
-+      const mojom::CreateNewWindowParams& params) override {
++      const content::mojom::CreateNewWindowParams& params) override {
      return headless_web_contents_->browser_context()
          ->options()
          ->block_new_web_contents();
