@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@google.com>
+Date: Fri, 19 Nov 2021 12:12:03 +0100
+Subject: Version 9.6.180.13 (cherry-pick)
+
+Merged 85ab0ad7789a7188b4c0b2be3cd3d758134c7de6
+
+Reland "[runtime] Reset clobbered argument in DefineClass"
+
+R=ishell@chromium.org
+
+Change-Id: I892729eafe841e57b853f0d0a885e05847efe547
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3289176
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.6@{#24}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+
+diff --git a/include/v8-version.h b/include/v8-version.h
+index 9ea2e925361ef2c967d6cc243657908e544655a8..f3a1b645be1ba731e39f0e0a846ea9be22508875 100644
+--- a/include/v8-version.h
++++ b/include/v8-version.h
+@@ -11,7 +11,7 @@
+ #define V8_MAJOR_VERSION 9
+ #define V8_MINOR_VERSION 1
+ #define V8_BUILD_NUMBER 269
+-#define V8_PATCH_LEVEL 39
++#define V8_PATCH_LEVEL 40
+ 
+ // Use 1 for candidates and 0 otherwise.
+ // (Boolean macro values are not supported by all preprocessors.)
+diff --git a/src/execution/arguments-inl.h b/src/execution/arguments-inl.h
+index 0be2325837189d48e3aae36fb611f7fa67041a31..2f69cd7adc4107e3dcc0dc012a3cffb55b9fa05e 100644
+--- a/src/execution/arguments-inl.h
++++ b/src/execution/arguments-inl.h
+@@ -14,6 +14,15 @@
+ namespace v8 {
+ namespace internal {
+ 
++template <ArgumentsType T>
++Arguments<T>::ChangeValueScope::ChangeValueScope(Isolate* isolate,
++                                                 Arguments* args, int index,
++                                                 Object value)
++    : location_(args->address_of_arg_at(index)) {
++  old_value_ = handle(Object(*location_), isolate);
++  *location_ = value.ptr();
++}
++
+ template <ArgumentsType T>
+ int Arguments<T>::smi_at(int index) const {
+   return Smi::ToInt(Object(*address_of_arg_at(index)));
+diff --git a/src/execution/arguments.h b/src/execution/arguments.h
+index 39877cf4d293ae0c1364bd1a03fa5e2550ff442c..de70619d69eefcd6f476ea17806328a018aabf19 100644
+--- a/src/execution/arguments.h
++++ b/src/execution/arguments.h
+@@ -33,6 +33,18 @@ namespace internal {
+ template <ArgumentsType arguments_type>
+ class Arguments {
+  public:
++  // Scope to temporarily change the value of an argument.
++  class ChangeValueScope {
++   public:
++    inline ChangeValueScope(Isolate* isolate, Arguments* args, int index,
++                            Object value);
++    ~ChangeValueScope() { *location_ = old_value_->ptr(); }
++
++   private:
++    Address* location_;
++    Handle<Object> old_value_;
++  };
++
+   Arguments(int length, Address* arguments)
+       : length_(length), arguments_(arguments) {
+     DCHECK_GE(length_, 0);
+@@ -51,10 +63,6 @@ class Arguments {
+ 
+   inline double number_at(int index) const;
+ 
+-  inline void set_at(int index, Object value) {
+-    *address_of_arg_at(index) = value.ptr();
+-  }
+-
+   inline FullObjectSlot slot_at(int index) const {
+     return FullObjectSlot(address_of_arg_at(index));
+   }
+diff --git a/src/runtime/runtime-classes.cc b/src/runtime/runtime-classes.cc
+index 120f2441a79414e1b9508cfbf15b00547db5790a..c6362e294c7b34a49f9cfa4f7b9d9cdd77b980ae 100644
+--- a/src/runtime/runtime-classes.cc
++++ b/src/runtime/runtime-classes.cc
+@@ -650,7 +650,12 @@ MaybeHandle<Object> DefineClass(
+ 
+   Handle<JSObject> prototype = CreateClassPrototype(isolate);
+   DCHECK_EQ(*constructor, args[ClassBoilerplate::kConstructorArgumentIndex]);
+-  args.set_at(ClassBoilerplate::kPrototypeArgumentIndex, *prototype);
++  // Temporarily change ClassBoilerplate::kPrototypeArgumentIndex for the
++  // subsequent calls, but use a scope to make sure to change it back before
++  // returning, to not corrupt the caller's argument frame (in particular, for
++  // the interpreter, to not clobber the register frame).
++  RuntimeArguments::ChangeValueScope set_prototype_value_scope(
++      isolate, &args, ClassBoilerplate::kPrototypeArgumentIndex, *prototype);
+ 
+   if (!InitClassConstructor(isolate, class_boilerplate, constructor_parent,
+                             constructor, args) ||

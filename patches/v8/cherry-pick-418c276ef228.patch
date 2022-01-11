@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Fri, 10 Dec 2021 15:56:05 +0100
+Subject: Merged: [compiler] Don't elide
+ ChangeTaggedToInt32->ChangeInt31ToTaggedSigned
+
+(cherry picked from commit 4fae8b16802a416fe3aab0e7792fabe96cf1ecd8)
+
+(cherry picked from commit f4f11c23ae2eaf9bb4525d0fac7ab842de9b0fe2)
+
+Bug: chromium:1278387
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I9b89834c094510e064988aa534ec230309996034
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3329665
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/9.6@{#40}
+Cr-Original-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Original-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3335759
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Owners-Override: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.4@{#56}
+Cr-Branched-From: 3b51863bc25492549a8bf96ff67ce481b1a3337b-refs/heads/9.4.146@{#1}
+Cr-Branched-From: 2890419fc8fb9bdb507fdd801d76fa7dd9f022b5-refs/heads/master@{#76233}
+
+diff --git a/src/compiler/simplified-operator-reducer.cc b/src/compiler/simplified-operator-reducer.cc
+index b1d3f8b2f3a544dbff02b493f3025ac525233ef1..f31a6c9a0321dfbf3d9926961a39b977fc3be5a7 100644
+--- a/src/compiler/simplified-operator-reducer.cc
++++ b/src/compiler/simplified-operator-reducer.cc
+@@ -75,7 +75,7 @@ Reduction SimplifiedOperatorReducer::Reduce(Node* node) {
+     case IrOpcode::kChangeInt32ToTagged: {
+       Int32Matcher m(node->InputAt(0));
+       if (m.HasResolvedValue()) return ReplaceNumber(m.ResolvedValue());
+-      if (m.IsChangeTaggedToInt32() || m.IsChangeTaggedSignedToInt32()) {
++      if (m.IsChangeTaggedSignedToInt32()) {
+         return Replace(m.InputAt(0));
+       }
+       break;
