@@ -36,6 +36,11 @@ class WebContentsPermissionHelper
   void RequestFullscreenPermission(base::OnceCallback<void(bool)> callback);
   void RequestMediaAccessPermission(const content::MediaStreamRequest& request,
                                     content::MediaResponseCallback callback);
+  void RequestPointerLockPermission(
+      bool user_gesture,
+      bool last_unlocked_by_target,
+      base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
+          callback);
   void RequestWebNotificationPermission(
       base::OnceCallback<void(bool)> callback);
   void RequestOpenExternalPermission(base::OnceCallback<void(bool)> callback,

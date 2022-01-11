@@ -1401,11 +1401,26 @@ void WebContents::FindReply(content::WebContents* web_contents,
   Emit("found-in-page", result.GetHandle());
 }
 
+void WebContents::RequestExclusivePointerAccess(
+    content::WebContents* web_contents,
+    bool user_gesture,
+    bool last_unlocked_by_target,
+    bool allowed) {
+  if (allowed) {
+    exclusive_access_manager_->mouse_lock_controller()->RequestToLockMouse(
+        web_contents, user_gesture, last_unlocked_by_target);
+  }
+}
+
 void WebContents::RequestToLockMouse(content::WebContents* web_contents,
                                      bool user_gesture,
                                      bool last_unlocked_by_target) {
-  exclusive_access_manager_->mouse_lock_controller()->RequestToLockMouse(
-      web_contents, user_gesture, last_unlocked_by_target);
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RequestPointerLockPermission(
+      user_gesture, last_unlocked_by_target,
+      base::BindOnce(&WebContents::RequestExclusivePointerAccess,
+                     base::Unretained(this)));
 }
 
 void WebContents::LostMouseLock() {
