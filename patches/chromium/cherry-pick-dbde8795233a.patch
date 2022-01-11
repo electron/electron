@@ -1,0 +1,308 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Patrick Meenan <pmeenan@chromium.org>
+Date: Fri, 3 Dec 2021 18:15:17 +0000
+Subject: Prevent opaque range request responses from entering the preload
+ cache
+
+ResourceLoader cancels range request responses that were not initiated
+with range request headers causing them to error out and be cleared from
+the preload cache. Other responses (200, 416, error, etc) complete
+successfully and would otherwise enter the preload cache, making them
+observable.
+
+This prevents opaque range responses of any kind from persisting in the
+preload cache (which would not naturally have any anyway).
+
+(cherry picked from commit a5f630e5f94da28a926d60da7dde194acd8697f0)
+
+Bug: 1270990
+Change-Id: Ife9922fe0b88e39722f3664ddd091a1516892157
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3294001
+Reviewed-by: Ben Kelly <wanderview@chromium.org>
+Reviewed-by: Yoav Weiss <yoavweiss@chromium.org>
+Commit-Queue: Patrick Meenan <pmeenan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#946055}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3313416
+Auto-Submit: Patrick Meenan <pmeenan@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1222}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+index 870dbd1e7a981fdbe8dc192cab34a4ba0b3ebce4..3a202b00581316d9ca35c3881a72424140d17582 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
+@@ -1883,6 +1883,19 @@ void ResourceFetcher::HandleLoaderFinish(Resource* resource,
+   }
+ 
+   resource->VirtualTimePauser().UnpauseVirtualTime();
++
++  // A response should not serve partial content if it was not requested via a
++  // Range header: https://fetch.spec.whatwg.org/#main-fetch so keep it out
++  // of the preload cache in case of a non-206 response (which generates an
++  // error).
++  if (resource->GetResponse().GetType() ==
++          network::mojom::FetchResponseType::kOpaque &&
++      resource->GetResponse().HasRangeRequested() &&
++      !resource->GetResourceRequest().HttpHeaderFields().Contains(
++          net::HttpRequestHeaders::kRange)) {
++    RemovePreload(resource);
++  }
++
+   if (type == kDidFinishLoading) {
+     resource->Finish(response_end, freezable_task_runner_.get());
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/resources/partial-text.py b/third_party/blink/web_tests/external/wpt/fetch/range/resources/partial-text.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a0058551d52d45b3c16882014be740d75e51ddd1
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/fetch/range/resources/partial-text.py
+@@ -0,0 +1,47 @@
++"""
++This generates a partial response for a 100-byte text file.
++"""
++import re
++
++from wptserve.utils import isomorphic_decode
++
++def main(request, response):
++    total_length = int(request.GET.first(b'length', b'100'))
++    partial_code = int(request.GET.first(b'partial', b'206'))
++    range_header = request.headers.get(b'Range', b'')
++
++    # Send a 200 if there is no range request
++    if not range_header:
++        to_send = ''.zfill(total_length)
++        response.headers.set(b"Content-Type", b"text/plain")
++        response.headers.set(b"Cache-Control", b"no-cache")
++        response.headers.set(b"Content-Length", total_length)
++        response.content = to_send
++        return
++
++    # Simple range parsing, requires specifically "bytes=xxx-xxxx"
++    range_header_match = re.search(r'^bytes=(\d*)-(\d*)$', isomorphic_decode(range_header))
++    start, end = range_header_match.groups()
++    start = int(start)
++    end = int(end) if end else total_length
++    length = end - start
++
++    # Error the request if the range goes beyond the length
++    if length <= 0 or end > total_length:
++        response.set_error(416, u"Range Not Satisfiable")
++        response.write()
++        return
++
++    # Generate a partial response of the requested length
++    to_send = ''.zfill(length)
++    response.headers.set(b"Content-Type", b"text/plain")
++    response.headers.set(b"Accept-Ranges", b"bytes")
++    response.headers.set(b"Cache-Control", b"no-cache")
++    response.status = partial_code
++
++    content_range = b"bytes %d-%d/%d" % (start, end, total_length)
++
++    response.headers.set(b"Content-Range", content_range)
++    response.headers.set(b"Content-Length", length)
++
++    response.content = to_send
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js b/third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js
+index 3680c0c471d3d5f36c4aba4cc58dcd52c38a08df..b47823f03b4ef3749e622fbf7dd3b515a216b5be 100644
+--- a/third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js
++++ b/third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js
+@@ -12,7 +12,7 @@ async function broadcast(msg) {
+   }
+ }
+ 
+-addEventListener('fetch', event => {
++addEventListener('fetch', async event => {
+   /** @type Request */
+   const request = event.request;
+   const url = new URL(request.url);
+@@ -34,6 +34,11 @@ addEventListener('fetch', event => {
+     case 'broadcast-accept-encoding':
+       broadcastAcceptEncoding(event);
+       return;
++    case 'record-media-range-request':
++      return recordMediaRangeRequest(event);
++    case 'use-media-range-request':
++      useMediaRangeRequest(event);
++      return;
+   }
+ });
+ 
+@@ -157,3 +162,57 @@ function broadcastAcceptEncoding(event) {
+   // Just send back any response, it isn't important for the test.
+   event.respondWith(new Response(''));
+ }
++
++let rangeResponse = {};
++
++async function recordMediaRangeRequest(event) {
++  /** @type Request */
++  const request = event.request;
++  const url = new URL(request.url);
++  const urlParams = new URLSearchParams(url.search);
++  const size = urlParams.get("size");
++  const id = urlParams.get('id');
++  const key = 'size' + size;
++
++  if (key in rangeResponse) {
++    // Don't re-fetch ranges we already have.
++    const clonedResponse = rangeResponse[key].clone();
++    event.respondWith(clonedResponse);
++  } else if (event.request.headers.get("range") === "bytes=0-") {
++    // Generate a bogus 206 response to trigger subsequent range requests
++    // of the desired size.
++    const length = urlParams.get("length") + 100;
++    const body = "A".repeat(Number(size));
++    event.respondWith(new Response(body, {status: 206, headers: {
++      "Content-Type": "audio/mp4",
++      "Content-Range": `bytes 0-1/${length}`
++    }}));
++  } else if (event.request.headers.get("range") === `bytes=${Number(size)}-`) {
++    // Pass through actual range requests which will attempt to fetch up to the
++    // length in the original response which is bigger than the actual resource
++    // to make sure 206 and 416 responses are treated the same.
++    rangeResponse[key] = await fetch(event.request);
++
++    // Let the client know we have the range response for the given ID
++    broadcast({id});
++  } else {
++    event.respondWith(Promise.reject(Error("Invalid Request")));
++  }
++}
++
++function useMediaRangeRequest(event) {
++  /** @type Request */
++  const request = event.request;
++  const url = new URL(request.url);
++  const urlParams = new URLSearchParams(url.search);
++  const size = urlParams.get("size");
++  const key = 'size' + size;
++
++  // Send a clone of the range response to preload.
++  if (key in rangeResponse) {
++    const clonedResponse = rangeResponse[key].clone();
++    event.respondWith(clonedResponse);
++  } else {
++    event.respondWith(Promise.reject(Error("Invalid Request")));
++  }
++}
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/resources/utils.js b/third_party/blink/web_tests/external/wpt/fetch/range/resources/utils.js
+index 16ed737f63e8eee26a306c70acb0589e424db35d..ad2853b33dc7474293df1423dd8af459571736b9 100644
+--- a/third_party/blink/web_tests/external/wpt/fetch/range/resources/utils.js
++++ b/third_party/blink/web_tests/external/wpt/fetch/range/resources/utils.js
+@@ -8,6 +8,18 @@ function loadScript(url, { doc = document }={}) {
+   })
+ }
+ 
++function preloadImage(url, { doc = document }={}) {
++  return new Promise((resolve, reject) => {
++    const preload = doc.createElement('link');
++    preload.rel = 'preload';
++    preload.as = 'image';
++    preload.onload = () => resolve();
++    preload.onerror = () => resolve();
++    preload.href = url;
++    doc.body.appendChild(preload);
++  })
++}
++
+ /**
+  *
+  * @param {Document} document
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window-expected.txt b/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window-expected.txt
+index 134b0a7abd817599921d4fb430e8247a2cb40f82..a9577f01727678cd7a76bcc65e132fd6fcb230ac 100644
+--- a/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window-expected.txt
+@@ -4,6 +4,7 @@ PASS Defer range header passthrough tests to service worker
+ PASS Ranged response not allowed following no-cors ranged request
+ PASS Non-opaque ranged response executed
+ FAIL Accept-Encoding should not appear in a service worker assert_equals: Accept-Encoding should not be set for media expected (object) null but got (string) "identity;q=1, *;q=0"
++PASS Opaque range preload successes and failures should be indistinguishable
+ PASS Range headers correctly preserved
+ PASS Range headers correctly removed
+ PASS Headers correctly filtered
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js b/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js
+index 76f80e9416c615417ad2a9fbaa565641ff5b8a12..42e4ac6d75afdcbb2ad1e9d3e4069d9cbfd10dbd 100644
+--- a/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js
++++ b/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js
+@@ -149,3 +149,78 @@ promise_test(async t => {
+ 
+   assert_equals((await audioBroadcast).acceptEncoding, null, "Accept-Encoding should not be set for media");
+ }, `Accept-Encoding should not appear in a service worker`);
++
++promise_test(async t => {
++  const scope = BASE_SCOPE + Math.random();
++  await setupRegistration(t, scope);
++  const iframe = await with_iframe(scope);
++  const w = iframe.contentWindow;
++  const length = 100;
++  const count = 3;
++  const counts = {};
++
++  // test a single range request size
++  async function testSizedRange(size, partialResponseCode) {
++    const rangeId = Math.random() + '';
++    const rangeBroadcast = awaitMessage(w.navigator.serviceWorker, rangeId);
++
++    // Create a bogus audo element to trick the browser into sending
++    // cross-origin range requests that can be manipulated by the service worker.
++    const sound_url = new URL('partial-text.py', w.location);
++    sound_url.hostname = REMOTE_HOST;
++    sound_url.searchParams.set('action', 'record-media-range-request');
++    sound_url.searchParams.set('length', length);
++    sound_url.searchParams.set('size', size);
++    sound_url.searchParams.set('partial', partialResponseCode);
++    sound_url.searchParams.set('id', rangeId);
++    appendAudio(w.document, sound_url);
++
++    // wait for the range requests to happen
++    await rangeBroadcast;
++
++    // Create multiple preload requests and count the number of resource timing
++    // entries that get created to make sure 206 and 416 range responses are treated
++    // the same.
++    const url = new URL('partial-text.py', w.location);
++    url.searchParams.set('action', 'use-media-range-request');
++    url.searchParams.set('size', size);
++    counts['size' + size] = 0;
++    for (let i = 0; i < count; i++) {
++      await preloadImage(url, { doc: w.document });
++    }
++  }
++
++  // Test range requests from 1 smaller than the correct size to 1 larger than
++  // the correct size to exercise the various permutations using the default 206
++  // response code for successful range requests.
++  for (let size = length - 1; size <= length + 1; size++) {
++    await testSizedRange(size, '206');
++  }
++
++  // Test a successful range request using a 200 response.
++  await testSizedRange(length - 2, '200');
++
++  // Check the resource timing entries and count the reported number of fetches of each type
++  const resources = w.performance.getEntriesByType("resource");
++  for (const entry of resources) {
++    const url = new URL(entry.name);
++    if (url.searchParams.has('action') &&
++        url.searchParams.get('action') == 'use-media-range-request' &&
++        url.searchParams.has('size')) {
++      counts['size' + url.searchParams.get('size')]++;
++    }
++  }
++
++  // Make sure there are a non-zero number of preload requests and they are all the same
++  let counts_valid = true;
++  const first = 'size' + (length - 2);
++  for (let size = length - 2; size <= length + 1; size++) {
++    let key = 'size' + size;
++    if (!(key in counts) || counts[key] <= 0 || counts[key] != counts[first]) {
++      counts_valid = false;
++      break;
++    }
++  }
++
++  assert_true(counts_valid, `Opaque range request preloads were different for error and success`);
++}, `Opaque range preload successes and failures should be indistinguishable`);
