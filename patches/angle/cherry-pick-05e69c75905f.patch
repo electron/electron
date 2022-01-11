@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lingfeng Yang <lfy@google.com>
+Date: Wed, 1 Dec 2021 18:16:14 -0800
+Subject: M96: Vulkan: remove staged updates on storage set
+
+Previously we would allow staged updates to bigger versions of a texture
+to go through even if the texture was redefined via glTexStorage*.
+
+Bug: chromium:1262080
+Change-Id: I9d861fed68d4a1fdcd0777b97caf729cc74c595e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3312718
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Lingfeng Yang <lfy@google.com>
+(cherry picked from commit 929c8ed4e8c3912cf027d843e7a2af47b21e5612)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3328001
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index e0be9676912e49d70473ffdcd4d7b1549210be25..b43f41dbae29356f1ffe4f961ed83e0f0e9cdcd2 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -1236,6 +1236,10 @@ angle::Result TextureVk::setStorageMultisample(const gl::Context *context,
+     {
+         releaseAndDeleteImageAndViews(contextVk);
+     }
++    else if (mImage)
++    {
++        mImage->releaseStagingBuffer(contextVk->getRenderer());
++    }
+ 
+     const vk::Format &format = renderer->getFormat(internalformat);
+     ANGLE_TRY(ensureImageAllocated(contextVk, format));
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index e79bc700d4991752289ff3d7c76f2ccbb3ba932a..a3dec629c9ea96b276ff8bf344d4a4628ff20b3b 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -9703,6 +9703,73 @@ void main()
+     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+ }
+ 
++class TextureChangeStorageUploadTest : public ANGLETest
++{
++  protected:
++    TextureChangeStorageUploadTest()
++    {
++        setWindowWidth(256);
++        setWindowHeight(256);
++        setConfigRedBits(8);
++        setConfigGreenBits(8);
++        setConfigBlueBits(8);
++        setConfigAlphaBits(8);
++    }
++
++    void testSetUp() override
++    {
++        mProgram = CompileProgram(essl1_shaders::vs::Simple(), essl1_shaders::fs::UniformColor());
++        if (mProgram == 0)
++        {
++            FAIL() << "shader compilation failed.";
++        }
++
++        mColorLocation = glGetUniformLocation(mProgram, essl1_shaders::ColorUniform());
++
++        glUseProgram(mProgram);
++
++        glClearColor(0, 0, 0, 0);
++        glClearDepthf(0.0);
++        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
++
++        glEnable(GL_BLEND);
++        glDisable(GL_DEPTH_TEST);
++
++        glGenTextures(1, &mTexture);
++        ASSERT_GL_NO_ERROR();
++    }
++
++    void testTearDown() override
++    {
++        glDeleteTextures(1, &mTexture);
++        glDeleteProgram(mProgram);
++    }
++
++    GLuint mProgram;
++    GLint mColorLocation;
++    GLuint mTexture;
++};
++
++// Verify that respecifying storage and re-uploading doesn't crash.
++TEST_P(TextureChangeStorageUploadTest, Basic)
++{
++    constexpr int kImageSize        = 8;  // 4 doesn't trip ASAN
++    constexpr int kSmallerImageSize = kImageSize / 2;
++    EXPECT_GT(kImageSize, kSmallerImageSize);
++    EXPECT_GT(kSmallerImageSize / 2, 0);
++
++    std::array<GLColor, kImageSize * kImageSize> kColor;
++
++    glBindTexture(GL_TEXTURE_2D, mTexture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kImageSize, kImageSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kColor.data());
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kSmallerImageSize, kSmallerImageSize);
++    // need partial update to sidestep optimizations that remove the full upload
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kSmallerImageSize / 2, kSmallerImageSize / 2, GL_RGBA,
++                    GL_UNSIGNED_BYTE, kColor.data());
++    EXPECT_GL_NO_ERROR();
++}
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ #define ES2_EMULATE_COPY_TEX_IMAGE()                          \
+@@ -9816,4 +9883,6 @@ ANGLE_INSTANTIATE_TEST_ES31_AND(TextureBufferTestES31, WithDirectSPIRVGeneration
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(CopyImageTestES31);
+ ANGLE_INSTANTIATE_TEST_ES31_AND(CopyImageTestES31, WithDirectSPIRVGeneration(ES31_VULKAN()));
+ 
++ANGLE_INSTANTIATE_TEST_ES3(TextureChangeStorageUploadTest);
++
+ }  // anonymous namespace

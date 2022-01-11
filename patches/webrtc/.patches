@@ -1,1 +1,2 @@
 add_thread_local_to_x_error_trap_cc.patch
+merge_to_m96_sdp_reject_large_number_of_channels.patch
