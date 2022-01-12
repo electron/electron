@@ -53,7 +53,7 @@ index c56bc6dcc73cf0e0d5e0e64d45436ccac833cd66..69aaecca38ede55ee71310698710e3f1
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 04dbc1f44944abd3333e83b603dcdf755c0cb09d..ab2dcc4d5fa19790114cae9611aa815e48386bb7 100644
+index 04dbc1f44944abd3333e83b603dcdf755c0cb09d..d3a722f60c67d6177c3ca0bfc1329b87acf0b622 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -17,7 +17,7 @@
@@ -76,7 +76,17 @@ index 04dbc1f44944abd3333e83b603dcdf755c0cb09d..ab2dcc4d5fa19790114cae9611aa815e
  #endif
  
  }  // namespace
-@@ -435,6 +436,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -274,6 +275,9 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
+       FROM_HERE,
+       base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
+                      media_list_));
++
++  // This call is necessary to release underlying OS screen capture mechanisms.
++  capturer_.reset();
+ }
+ 
+ void NativeDesktopMediaList::Worker::OnCaptureResult(
+@@ -435,6 +439,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));
