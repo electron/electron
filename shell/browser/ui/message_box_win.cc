@@ -171,8 +171,9 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
 
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
+  std::wstring app_name;
   if (title.empty()) {
-    std::wstring app_name = base::UTF8ToWide(Browser::Get()->GetName());
+    app_name = base::UTF8ToWide(Browser::Get()->GetName());
     config.pszWindowTitle = app_name.c_str();
   } else {
     config.pszWindowTitle = base::as_wcstr(title);
