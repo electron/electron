@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 2 Dec 2021 14:30:42 -0500
+Subject: M96: Fix changing attached renderbuffer from MSRTT to non-MSRTT
+
+FramebufferAttachment::mRenderToTextureSamples was never updated if the
+renderbuffer storage was changed after attaching to framebuffer.
+
+Bug: chromium:1272068
+Change-Id: Icddbb5650354ea16d06c49532d6a8d0ae962ab5f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3320923
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/FramebufferAttachment.cpp b/src/libANGLE/FramebufferAttachment.cpp
+index 00714d0a0303050893abcd9564e760b22d9b2de5..720d3000d42e6c8c23214e66eee4aa6982216a60 100644
+--- a/src/libANGLE/FramebufferAttachment.cpp
++++ b/src/libANGLE/FramebufferAttachment.cpp
+@@ -129,7 +129,7 @@ void FramebufferAttachment::attach(const Context *context,
+     mNumViews               = numViews;
+     mBaseViewIndex          = baseViewIndex;
+     mIsMultiview            = isMultiview;
+-    mRenderToTextureSamples = samples;
++    mRenderToTextureSamples = type == GL_RENDERBUFFER ? kDefaultRenderToTextureSamples : samples;
+     resource->onAttach(context, framebufferSerial);
+ 
+     if (mResource != nullptr)
+@@ -222,6 +222,29 @@ GLint FramebufferAttachment::getBaseViewIndex() const
+     return mBaseViewIndex;
+ }
+ 
++bool FramebufferAttachment::isRenderToTexture() const
++{
++    ASSERT(mRenderToTextureSamples == kDefaultRenderToTextureSamples || mType == GL_TEXTURE);
++
++    if (mType == GL_RENDERBUFFER)
++    {
++        return getRenderbuffer()->getMultisamplingMode() ==
++               MultisamplingMode::MultisampledRenderToTexture;
++    }
++    return mRenderToTextureSamples != kDefaultRenderToTextureSamples;
++}
++
++GLsizei FramebufferAttachment::getRenderToTextureSamples() const
++{
++    ASSERT(mRenderToTextureSamples == kDefaultRenderToTextureSamples || mType == GL_TEXTURE);
++
++    if (mType == GL_RENDERBUFFER)
++    {
++        return getRenderbuffer()->getState().getSamples();
++    }
++    return mRenderToTextureSamples;
++}
++
+ Texture *FramebufferAttachment::getTexture() const
+ {
+     return rx::GetAs<Texture>(mResource);
+diff --git a/src/libANGLE/FramebufferAttachment.h b/src/libANGLE/FramebufferAttachment.h
+index 013a1e02874e4df3680e9b4a56f74aaf94d188a9..6235b42cf2fdfcb0e9fa33242b458934f1afa5b0 100644
+--- a/src/libANGLE/FramebufferAttachment.h
++++ b/src/libANGLE/FramebufferAttachment.h
+@@ -117,11 +117,8 @@ class FramebufferAttachment final
+     bool isMultiview() const;
+     GLint getBaseViewIndex() const;
+ 
+-    bool isRenderToTexture() const
+-    {
+-        return mRenderToTextureSamples != kDefaultRenderToTextureSamples;
+-    }
+-    GLsizei getRenderToTextureSamples() const { return mRenderToTextureSamples; }
++    bool isRenderToTexture() const;
++    GLsizei getRenderToTextureSamples() const;
+ 
+     // The size of the underlying resource the attachment points to. The 'depth' value will
+     // correspond to a 3D texture depth or the layer count of a 2D array texture. For Surfaces and
+@@ -195,6 +192,14 @@ class FramebufferAttachment final
+     GLsizei mNumViews;
+     bool mIsMultiview;
+     GLint mBaseViewIndex;
++    // A single-sampled texture can be attached to a framebuffer either as single-sampled or as
++    // multisampled-render-to-texture.  In the latter case, |mRenderToTextureSamples| will contain
++    // the number of samples.  For renderbuffers, the number of samples is inherited from the
++    // renderbuffer itself.
++    //
++    // Note that textures cannot change storage between single and multisample once attached to a
++    // framebuffer.  Renderbuffers instead can, and caching the number of renderbuffer samples here
++    // can lead to stale data.
+     GLsizei mRenderToTextureSamples;
+ };
+ 
+@@ -253,8 +258,7 @@ inline Format FramebufferAttachment::getFormat() const
+ 
+ inline GLsizei FramebufferAttachment::getSamples() const
+ {
+-    return (mRenderToTextureSamples != kDefaultRenderToTextureSamples) ? getRenderToTextureSamples()
+-                                                                       : getResourceSamples();
++    return isRenderToTexture() ? getRenderToTextureSamples() : getResourceSamples();
+ }
+ 
+ inline GLsizei FramebufferAttachment::getResourceSamples() const
+diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
+index 29b3544bf31ad462e3f5f201c8836a6b18899111..a90448af279e4172eabf53d6391b9f0c53b5d220 100644
+--- a/src/tests/gl_tests/FramebufferTest.cpp
++++ b/src/tests/gl_tests/FramebufferTest.cpp
+@@ -3098,6 +3098,64 @@ TEST_P(FramebufferTest, BindAndDrawDifferentSizedFBOs)
+     EXPECT_PIXEL_RECT_EQ(0, 0, kLargeWidth, kLargeHeight, GLColor::blue);
+ }
+ 
++// Modify renderbuffer attachment samples after bind
++TEST_P(FramebufferTest_ES3, BindRenderbufferThenModifySamples)
++{
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::UniformColor());
++    glUseProgram(program);
++    GLint colorUniformLocation =
++        glGetUniformLocation(program, angle::essl1_shaders::ColorUniform());
++    ASSERT_NE(colorUniformLocation, -1);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    GLsizei size = 16;
++    glViewport(0, 0, size, size);
++
++    GLRenderbuffer color;
++    glBindRenderbuffer(GL_RENDERBUFFER, color);
++
++    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, size, size);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, size, size);
++
++    glUniform4f(colorUniformLocation, 1, 0, 0, 1);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Modify renderbuffer attachment size after bind
++TEST_P(FramebufferTest_ES3, BindRenderbufferThenModifySize)
++{
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::UniformColor());
++    glUseProgram(program);
++    GLint colorUniformLocation =
++        glGetUniformLocation(program, angle::essl1_shaders::ColorUniform());
++    ASSERT_NE(colorUniformLocation, -1);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    GLsizei size = 16;
++    glViewport(0, 0, size, size);
++
++    GLRenderbuffer color;
++    glBindRenderbuffer(GL_RENDERBUFFER, color);
++
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, size, size);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, size / 2, size * 2);
++
++    glUniform4f(colorUniformLocation, 1, 0, 0, 1);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    ASSERT_GL_NO_ERROR();
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2(AddMockTextureNoRenderTargetTest);
+ ANGLE_INSTANTIATE_TEST_ES2(FramebufferTest);
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(FramebufferFormatsTest);

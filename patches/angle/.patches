@@ -3,4 +3,5 @@ cherry-pick-1fb846c.patch
 cherry-pick-72473550f6ff.patch
 webgl_make_unsuccessful_links_fail_subsequent_draw_calls.patch
 fix_integer_overflow_in_blocklayoutencoder.patch
+m96_fix_changing_attached_renderbuffer_from_msrtt_to_non-msrtt.patch
 cherry-pick-891020ed64d4.patch
