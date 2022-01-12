@@ -3417,6 +3417,29 @@ describe('BrowserWindow module', () => {
       w.unmaximize();
       expectBoundsEqual(w.getPosition(), initialPosition);
     });
+
+    // TODO(dsanders11): Enable once minimize event works on Linux again.
+    //                   See https://github.com/electron/electron/issues/28699
+    ifit(process.platform !== 'linux')('should not restore a minimized window', async () => {
+      const w = new BrowserWindow();
+      const minimize = emittedOnce(w, 'minimize');
+      w.minimize();
+      await minimize;
+      w.unmaximize();
+      await delay(1000);
+      expect(w.isMinimized()).to.be.true();
+    });
+
+    it('should not change the size or position of a normal window', async () => {
+      const w = new BrowserWindow();
+
+      const initialSize = w.getSize();
+      const initialPosition = w.getPosition();
+      w.unmaximize();
+      await delay(1000);
+      expectBoundsEqual(w.getSize(), initialSize);
+      expectBoundsEqual(w.getPosition(), initialPosition);
+    });
   });
 
   describe('setFullScreen(false)', () => {
