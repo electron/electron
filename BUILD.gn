@@ -902,6 +902,8 @@ if (is_mac) {
       defines = [ "HELPER_EXECUTABLE" ]
       sources = [
         "shell/app/electron_main_mac.cc",
+        "shell/app/uv_stdio_fix.cc",
+        "shell/app/uv_stdio_fix.h",
         "shell/common/electron_constants.cc",
       ]
       include_dirs = [ "." ]
@@ -1044,6 +1046,8 @@ if (is_mac) {
     output_name = electron_product_name
     sources = [
       "shell/app/electron_main_mac.cc",
+      "shell/app/uv_stdio_fix.cc",
+      "shell/app/uv_stdio_fix.h",
       "shell/common/electron_constants.cc",
     ]
     include_dirs = [ "." ]
@@ -1156,7 +1160,11 @@ if (is_mac) {
     if (is_win) {
       sources = [ "shell/app/electron_main_win.cc" ]
     } else if (is_linux) {
-      sources = [ "shell/app/electron_main_linux.cc" ]
+      sources = [
+        "shell/app/electron_main_linux.cc",
+        "shell/app/uv_stdio_fix.cc",
+        "shell/app/uv_stdio_fix.h",
+      ]
     }
     include_dirs = [ "." ]
     deps = [

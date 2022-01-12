@@ -2,49 +2,27 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <mach-o/dyld.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <cstdio>
 #include <cstdlib>
 #include <memory>
 
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_library_main.h"
+#include "shell/app/uv_stdio_fix.h"
 #include "shell/common/electron_constants.h"
 
 #if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
+#include <mach-o/dyld.h>
+#include <cstdio>
+
 #include "sandbox/mac/seatbelt_exec.h"  // nogncheck
 #endif
-
-// Copied from //base/ignore_result.h, to avoid taking a dependency on //base
-// on Mac.
-template <typename T>
-inline void ignore_result(const T&) {}
 
 namespace {
 
 ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
   char* indicator = getenv(name);
   return indicator && indicator[0] != '\0';
-}
-
-void FixStdioStreams() {
-  // libuv may mark stdin/stdout/stderr as close-on-exec, which interferes
-  // with chromium's subprocess spawning. As a workaround, we detect if these
-  // streams are closed on startup, and reopen them as /dev/null if necessary.
-  // Otherwise, an unrelated file descriptor will be assigned as stdout/stderr
-  // which may cause various errors when attempting to write to them.
-  //
-  // For details see https://github.com/libuv/libuv/issues/2062
-  struct stat st;
-  if (fstat(STDIN_FILENO, &st) < 0 && errno == EBADF)
-    ignore_result(freopen("/dev/null", "r", stdin));
-  if (fstat(STDOUT_FILENO, &st) < 0 && errno == EBADF)
-    ignore_result(freopen("/dev/null", "w", stdout));
-  if (fstat(STDERR_FILENO, &st) < 0 && errno == EBADF)
-    ignore_result(freopen("/dev/null", "w", stderr));
 }
 
 }  // namespace
