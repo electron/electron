@@ -1,0 +1,195 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ravjit <ravjit@chromium.org>
+Date: Thu, 16 Sep 2021 12:29:55 +0000
+Subject: Show the origin of the last redirecting server in external protocol
+ handler dialogs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+External protocol handlers always show the initiating url's origin. This can be misleading if there are server side redirects.
+Now we will show the origin of the last redirecting server (falling back to the request_initiator if there were no redirects / if the request goes straight to an external protocol).
+
+Bug: 1197889
+Change-Id: I3cf7ccf3a8bd79d161364680a1871d1c88bec813
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3113931
+Commit-Queue: Ravjit Singh Uppal <ravjit@chromium.org>
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Reviewed-by: Collin Baker <collinbaker@chromium.org>
+Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
+Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#922096}
+
+diff --git a/chrome/browser/ui/views/external_protocol_dialog_browsertest.cc b/chrome/browser/ui/views/external_protocol_dialog_browsertest.cc
+index 7e953fe89ff8dadf4da9578c0fdc6c3aada11aca..5c7e331ea4fbbcf36ac6463b37884cc9c6ca7e41 100644
+--- a/chrome/browser/ui/views/external_protocol_dialog_browsertest.cc
++++ b/chrome/browser/ui/views/external_protocol_dialog_browsertest.cc
+@@ -14,11 +14,15 @@
+ #include "chrome/browser/ui/test/test_browser_dialog.h"
+ #include "chrome/browser/ui/views/external_protocol_dialog.h"
+ #include "chrome/test/base/in_process_browser_test.h"
++#include "chrome/test/base/ui_test_utils.h"
+ #include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/render_process_host.h"
+ #include "content/public/browser/render_view_host.h"
+ #include "content/public/browser/web_contents.h"
+ #include "content/public/test/browser_test.h"
++#include "net/dns/mock_host_resolver.h"
++#include "net/test/embedded_test_server/http_request.h"
++#include "net/test/embedded_test_server/http_response.h"
+ #include "ui/views/controls/button/checkbox.h"
+ #include "url/gurl.h"
+ 
+@@ -41,6 +45,33 @@ class ExternalProtocolDialogTestApi {
+ 
+ }  // namespace test
+ 
++namespace {
++constexpr char kInitiatingOrigin[] = "a.test";
++constexpr char kRedirectingOrigin[] = "b.test";
++
++class FakeDefaultProtocolClientWorker
++    : public shell_integration::DefaultProtocolClientWorker {
++ public:
++  explicit FakeDefaultProtocolClientWorker(const std::string& protocol)
++      : DefaultProtocolClientWorker(protocol) {}
++  FakeDefaultProtocolClientWorker(const FakeDefaultProtocolClientWorker&) =
++      delete;
++  FakeDefaultProtocolClientWorker& operator=(
++      const FakeDefaultProtocolClientWorker&) = delete;
++
++ private:
++  ~FakeDefaultProtocolClientWorker() override = default;
++  shell_integration::DefaultWebClientState CheckIsDefaultImpl() override {
++    return shell_integration::DefaultWebClientState::NOT_DEFAULT;
++  }
++
++  void SetAsDefaultImpl(base::OnceClosure on_finished_callback) override {
++    base::SequencedTaskRunnerHandle::Get()->PostTask(
++        FROM_HERE, std::move(on_finished_callback));
++  }
++};
++}  // namespace
++
+ class ExternalProtocolDialogBrowserTest
+     : public DialogBrowserTest,
+       public ExternalProtocolHandler::Delegate {
+@@ -71,11 +102,11 @@ class ExternalProtocolDialogBrowserTest
+   // ExternalProtocolHander::Delegate:
+   scoped_refptr<shell_integration::DefaultProtocolClientWorker>
+   CreateShellWorker(const std::string& protocol) override {
+-    return nullptr;
++    return base::MakeRefCounted<FakeDefaultProtocolClientWorker>(protocol);
+   }
+   ExternalProtocolHandler::BlockState GetBlockState(const std::string& scheme,
+                                                     Profile* profile) override {
+-    return ExternalProtocolHandler::DONT_BLOCK;
++    return ExternalProtocolHandler::UNKNOWN;
+   }
+   void BlockRequest() override {}
+   void RunExternalProtocolDialog(
+@@ -83,7 +114,10 @@ class ExternalProtocolDialogBrowserTest
+       content::WebContents* web_contents,
+       ui::PageTransition page_transition,
+       bool has_user_gesture,
+-      const absl::optional<url::Origin>& initiating_origin) override {}
++      const absl::optional<url::Origin>& initiating_origin) override {
++    url_did_launch_ = true;
++    launch_url_ = initiating_origin->host();
++  }
+   void LaunchUrlWithoutSecurityCheck(
+       const GURL& url,
+       content::WebContents* web_contents) override {
+@@ -98,6 +132,12 @@ class ExternalProtocolDialogBrowserTest
+     blocked_state_ = state;
+   }
+ 
++  void SetUpOnMainThread() override {
++    DialogBrowserTest::SetUpOnMainThread();
++    host_resolver()->AddRule(kInitiatingOrigin, "127.0.0.1");
++    host_resolver()->AddRule(kRedirectingOrigin, "127.0.0.1");
++  }
++
+   base::HistogramTester histogram_tester_;
+ 
+  protected:
+@@ -106,6 +146,7 @@ class ExternalProtocolDialogBrowserTest
+   url::Origin blocked_origin_;
+   BlockState blocked_state_ = BlockState::UNKNOWN;
+   bool url_did_launch_ = false;
++  std::string launch_url_;
+ 
+  private:
+   DISALLOW_COPY_AND_ASSIGN(ExternalProtocolDialogBrowserTest);
+@@ -231,3 +272,21 @@ IN_PROC_BROWSER_TEST_F(ExternalProtocolDialogBrowserTest, TestFocus) {
+   const views::View* focused_view = focus_manager->GetFocusedView();
+   EXPECT_TRUE(focused_view);
+ }
++
++IN_PROC_BROWSER_TEST_F(ExternalProtocolDialogBrowserTest, OriginNameTest) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  content::WebContents* web_contents =
++      browser()->tab_strip_model()->GetActiveWebContents();
++  EXPECT_TRUE(ui_test_utils::NavigateToURL(
++      browser(), embedded_test_server()->GetURL("a.test", "/empty.html")));
++  EXPECT_TRUE(content::ExecJs(
++      web_contents,
++      content::JsReplace("location.href = $1",
++                         embedded_test_server()->GetURL(
++                             "b.test", "/server-redirect?ms-calc:"))));
++  content::WaitForLoadStop(web_contents);
++  EXPECT_TRUE(url_did_launch_);
++  // The url should be the url of the last redirecting server and not of the
++  // request initiator
++  EXPECT_EQ(launch_url_, "b.test");
++}
+diff --git a/content/browser/loader/navigation_url_loader_impl.cc b/content/browser/loader/navigation_url_loader_impl.cc
+index 4d0c1a27449d5f88a4a88c915a3d741df42d4613..8174e746f76337716cdcbf6eba4fd54cacb12a0a 100644
+--- a/content/browser/loader/navigation_url_loader_impl.cc
++++ b/content/browser/loader/navigation_url_loader_impl.cc
+@@ -621,6 +621,13 @@ NavigationURLLoaderImpl::PrepareForNonInterceptedRequest(
+     if (known_schemes_.find(resource_request_->url.scheme()) ==
+         known_schemes_.end()) {
+       mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_factory;
++      absl::optional<url::Origin> initiating_origin;
++      if (url_chain_.size() > 1) {
++        initiating_origin =
++            url::Origin::Create(url_chain_[url_chain_.size() - 2]);
++      } else {
++        initiating_origin = resource_request_->request_initiator;
++      }
+       bool handled = GetContentClient()->browser()->HandleExternalProtocol(
+           resource_request_->url, web_contents_getter_,
+           ChildProcessHost::kInvalidUniqueID, frame_tree_node_id_,
+@@ -628,8 +635,8 @@ NavigationURLLoaderImpl::PrepareForNonInterceptedRequest(
+           resource_request_->resource_type ==
+               static_cast<int>(blink::mojom::ResourceType::kMainFrame),
+           static_cast<ui::PageTransition>(resource_request_->transition_type),
+-          resource_request_->has_user_gesture,
+-          resource_request_->request_initiator, &loader_factory);
++          resource_request_->has_user_gesture, initiating_origin,
++          &loader_factory);
+ 
+       if (loader_factory) {
+         factory = base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index e07f51020fc2139a9757b8d52bd5f5a002e1c561..db802c5a3354e10567f3ab559168965add3cd59a 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -1754,10 +1754,12 @@ class CONTENT_EXPORT ContentBrowserClient {
+   // Otherwise child_id will be the process id and |navigation_ui_data| will be
+   // nullptr.
+   //
+-  // |initiating_origin| is the origin that initiated the navigation to the
+-  // external protocol, and may be null, e.g. in the case of browser-initiated
+-  // navigations. The initiating origin is intended to help users make security
+-  // decisions about whether to allow an external application to launch.
++  // |initiating_origin| is the origin of the last redirecting server (falling
++  // back to the request initiator if there were no redirects / if the request
++  // goes straight to an external protocol, or null, e.g. in the case of
++  // browser-initiated navigations. The initiating origin is intended to help
++  // users make security decisions about whether to allow an external
++  // application to launch.
+   virtual bool HandleExternalProtocol(
+       const GURL& url,
+       base::RepeatingCallback<WebContents*()> web_contents_getter,
