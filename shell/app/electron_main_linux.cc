@@ -11,14 +11,10 @@
 #include "base/at_exit.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/ignore_result.h"
 #include "content/public/app/content_main.h"
 #include "shell/app/electron_main_delegate.h"  // NOLINT
 #include "shell/common/electron_command_line.h"
-
-// Copied from //base/ignore_result.h, to avoid taking a dependency on //base
-// on Mac.
-template <typename T>
-inline void ignore_result(const T&) {}
 
 namespace {
 
