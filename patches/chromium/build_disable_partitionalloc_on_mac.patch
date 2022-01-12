@@ -8,7 +8,7 @@ PartitionAlloc on mac requires some restructuring in Electron as well as conside
 This patch can be removed once the mac app runs safely with PartitionAlloc on (i.e. removing dependency to //base in the main app) & the situation with mas is figured out.
 
 diff --git a/base/allocator/allocator.gni b/base/allocator/allocator.gni
-index 5bbe7c965e6c77b3e3de8bb6807ed47d373f5a14..19ad80e417ad82b2ba58034f7997c6b186ee322c 100644
+index 1a570331f8b5383437b1ff9ab069f5069dffe0a1..58c0f52d5cff2ec27e75095376cc68d968db69f2 100644
 --- a/base/allocator/allocator.gni
 +++ b/base/allocator/allocator.gni
 @@ -18,7 +18,7 @@ _is_using_sanitizers = is_asan || is_hwasan || is_lsan || is_tsan || is_msan

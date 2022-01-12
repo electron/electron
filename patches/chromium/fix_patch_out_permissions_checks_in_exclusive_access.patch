@@ -14,7 +14,7 @@ but it's not strictly necessary for this API to work to spec.
 Profile check has been upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3247196
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index cf2a4efc6e99cd53bf0a3a7ae9222578627d3714..171ebbdc16d0fb47054ccc001cf144bb93355c28 100644
+index f1453c88f6300da5d610a18888e5952f5d44e78b..f39f12df3b0a5263e6dde63b1fd58417148cbe2c 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -382,13 +382,9 @@ void FullscreenController::EnterFullscreenModeInternal(
@@ -41,7 +41,7 @@ index cf2a4efc6e99cd53bf0a3a7ae9222578627d3714..171ebbdc16d0fb47054ccc001cf144bb
    if (display_id != display::kInvalidDisplayId) {
      // Check, but do not prompt, for permission to request a specific screen.
      // Sites generally need permission to get the display id in the first place.
-@@ -414,6 +411,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -413,6 +410,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        display_id = display::kInvalidDisplayId;
      }
    }

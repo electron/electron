@@ -81,7 +81,7 @@ index 27477d595fd22dc49329631a0b52ebdaafe1edb1..a4fd22381738648040cd72dce747285f
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 9e4ea015dcca9d945a79d43c28f5acee32f7b256..5ad046917469743d22484e697118f2da7f389ee4 100644
+index 80f26b62b25bd6aa46886e3112b2ffd2698693fe..e72cab84db36eec86309160d4f7416ee431f5e34 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -7,6 +7,7 @@ module network.mojom;
@@ -103,7 +103,7 @@ index 9e4ea015dcca9d945a79d43c28f5acee32f7b256..5ad046917469743d22484e697118f2da
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 2ca649beb3d6d2d50a3713a0e4f175e57a7b3370..1b0984163ed949bff735888a991d11452ea9e801 100644
+index f7260ed1dfa325452de520c2f427fecaf01341f3..143651a65b680a70a55f3b199b6c352bf5ab911d 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -535,6 +535,7 @@ URLLoader::URLLoader(

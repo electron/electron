@@ -499,7 +499,7 @@ index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef2
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 94a087b4beb3b683e90e89282c9fd6bb36825608..6efcb84af529a78e9ebc1234ef4d0c8834270c29 100644
+index a9be8eaf7c8ea5629285a3608a7b39883184aa49..139b8acb478ba132570f7dc662aa7c4e6a913920 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -49,7 +49,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -546,7 +546,7 @@ index 9f7583e42405760bbe5994c87c4347a7d5a36fbe..c383f93ee22388cb4524119d0bead319
  
    // Notifies that a swap has occurred and provides information about the pixel
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 83e7682b14367571a2d52bb3a6f2f63918d8efe9..3b6f2627196170e3a17992ad36534ac9bc178e4a 100644
+index a9a0e5a1167b2018e6dc206ecb7d37aad94042aa..3997ecb0228914144d6b04595c47376679fca3ef 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -32,6 +32,7 @@ struct RootCompositorFrameSinkParams {
