@@ -108,7 +108,7 @@ index 6688ba8ba2fb7d930773144cdbc43f1f6fa2b685..22015c7b9b50e1264551ce226757f90e
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index da521ddb3d244d264f11f42a86dce97ba84fac55..bc4b2a73fe790fb59eac87d4487a831ccea6f6a2 100644
+index da521ddb3d244d264f11f42a86dce97ba84fac55..8f12ce6257f72786c96428fbbd6040fdf0b87025 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1762,12 +1762,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -122,7 +122,7 @@ index da521ddb3d244d264f11f42a86dce97ba84fac55..bc4b2a73fe790fb59eac87d4487a831c
               content::mojom::WindowContainerType::BACKGROUND &&
           ShouldCreateBackgroundContents(source_site_instance, opener_url,
 -                                        frame_name);
-+                                        params->frame_name);
++                                        params.frame_name);
  }
  
  WebContents* Browser::CreateCustomWebContents(
