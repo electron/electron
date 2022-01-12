@@ -146,7 +146,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     }
 
     std::vector<v8::Local<v8::Object>> transferables;
-    if (transfer) {
+    if (transfer && !transfer.value()->IsUndefined()) {
       if (!gin::ConvertFromV8(isolate, *transfer, &transferables)) {
         thrower.ThrowTypeError("Invalid value for transfer");
         return;
