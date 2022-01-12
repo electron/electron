@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "15.3.4",
+  "version": "15.3.5",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -33,7 +33,7 @@
     "asar": "^3.1.0",
     "aws-sdk": "^2.727.1",
     "check-for-leaks": "^1.2.1",
-    "colors": "^1.4.0",
+    "colors": "1.4.0",
     "dotenv-safe": "^4.0.4",
     "dugite": "^1.103.0",
     "eslint": "^7.4.0",
