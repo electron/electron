@@ -9,6 +9,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "content/public/app/content_main.h"
+#include "electron/buildflags/buildflags.h"
 #include "shell/app/electron_main_delegate.h"  // NOLINT
 #include "shell/app/uv_stdio_fix.h"
 #include "shell/common/electron_command_line.h"
