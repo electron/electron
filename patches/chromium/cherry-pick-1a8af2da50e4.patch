@@ -1,0 +1,354 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lukasz Anforowicz <lukasza@chromium.org>
+Date: Mon, 8 Nov 2021 15:05:30 +0000
+Subject: Deleting unused field: `FetchEventPreloadHandle::url_loader`.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The `FetchEventPreloadHandle::url_loader` field is not really used - it
+is only needed to keep the URLLoader alive (and this can be accomplished
+in a simpler way, by keeping the mojo::PendingRemote in the Browser
+process).
+
+This CL removes the `FetchEventPreloadHandle::url_loader` field and the
+FetchEventPreloadHandle and WebFetchEventPreloadHandle types (collapsing
+these handle types into their only other remaining field:
+mojo::PendingReceiver<network::mojom::URLLoaderClient>).
+
+(cherry picked from commit dbe67ccde52e30acf6a66b1b9cc83768a067fa6a)
+
+Fixed: 1264477
+Change-Id: I9c9c54900d79e92ac08eeb43536c938fa84a58f8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3252914
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Ben Kelly <wanderview@chromium.org>
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#937895}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3262600
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Ben Kelly <wanderview@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#853}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/content/browser/service_worker/service_worker_fetch_dispatcher.cc b/content/browser/service_worker/service_worker_fetch_dispatcher.cc
+index 99753b0b4ba8039818da8732ffc4f03bf0690f81..c0c6f1ecafeaa3dfc211c09e52c9792fe343aadf 100644
+--- a/content/browser/service_worker/service_worker_fetch_dispatcher.cc
++++ b/content/browser/service_worker/service_worker_fetch_dispatcher.cc
+@@ -449,8 +449,10 @@ class ServiceWorkerFetchDispatcher::URLLoaderAssets
+   // NetworkService.
+   URLLoaderAssets(
+       scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory,
++      mojo::PendingRemote<network::mojom::URLLoader> url_loader,
+       std::unique_ptr<DelegatingURLLoaderClient> url_loader_client)
+       : shared_url_loader_factory_(std::move(shared_url_loader_factory)),
++        url_loader_(std::move(url_loader)),
+         url_loader_client_(std::move(url_loader_client)) {}
+ 
+   void MaybeReportToDevTools(std::pair<int, int> worker_id,
+@@ -467,6 +469,7 @@ class ServiceWorkerFetchDispatcher::URLLoaderAssets
+ 
+   // NetworkService:
+   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory_;
++  mojo::PendingRemote<network::mojom::URLLoader> url_loader_;
+ 
+   // Both:
+   std::unique_ptr<DelegatingURLLoaderClient> url_loader_client_;
+@@ -625,7 +628,8 @@ void ServiceWorkerFetchDispatcher::DispatchFetchEvent() {
+   auto params = blink::mojom::DispatchFetchEventParams::New();
+   params->request = std::move(request_);
+   params->client_id = client_id_;
+-  params->preload_handle = std::move(preload_handle_);
++  params->preload_url_loader_client_receiver =
++      std::move(preload_url_loader_client_receiver_);
+   params->is_offline_capability_check = is_offline_capability_check_;
+ 
+   // TODO(https://crbug.com/900700): Make the remote connected to a receiver
+@@ -710,13 +714,9 @@ bool ServiceWorkerFetchDispatcher::MaybeStartNavigationPreload(
+   // When the fetch event is for an offline capability check, respond to the
+   // navigation preload with a network disconnected error, to simulate offline.
+   if (is_offline_capability_check_) {
+-    mojo::PendingRemote<network::mojom::URLLoader> url_loader_to_pass;
+     mojo::Remote<network::mojom::URLLoaderClient> url_loader_client;
+-    auto dummy_receiver = url_loader_to_pass.InitWithNewPipeAndPassReceiver();
+ 
+-    preload_handle_ = blink::mojom::FetchEventPreloadHandle::New();
+-    preload_handle_->url_loader = std::move(url_loader_to_pass);
+-    preload_handle_->url_loader_client_receiver =
++    preload_url_loader_client_receiver_ =
+         url_loader_client.BindNewPipeAndPassReceiver();
+ 
+     url_loader_client->OnComplete(
+@@ -755,12 +755,10 @@ bool ServiceWorkerFetchDispatcher::MaybeStartNavigationPreload(
+   factory = base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
+       std::move(network_factory));
+ 
+-  preload_handle_ = blink::mojom::FetchEventPreloadHandle::New();
+-
+   // Create the DelegatingURLLoaderClient, which becomes the
+   // URLLoaderClient for the navigation preload network request.
+   mojo::PendingRemote<network::mojom::URLLoaderClient> inner_url_loader_client;
+-  preload_handle_->url_loader_client_receiver =
++  preload_url_loader_client_receiver_ =
+       inner_url_loader_client.InitWithNewPipeAndPassReceiver();
+   auto url_loader_client = std::make_unique<DelegatingURLLoaderClient>(
+       std::move(inner_url_loader_client), resource_request);
+@@ -795,11 +793,9 @@ bool ServiceWorkerFetchDispatcher::MaybeStartNavigationPreload(
+       net::MutableNetworkTrafficAnnotationTag(
+           kNavigationPreloadTrafficAnnotation));
+ 
+-  preload_handle_->url_loader = std::move(url_loader);
+-
+   DCHECK(!url_loader_assets_);
+   url_loader_assets_ = base::MakeRefCounted<URLLoaderAssets>(
+-      std::move(factory), std::move(url_loader_client));
++      std::move(factory), std::move(url_loader), std::move(url_loader_client));
+   return true;
+ }
+ 
+diff --git a/content/browser/service_worker/service_worker_fetch_dispatcher.h b/content/browser/service_worker/service_worker_fetch_dispatcher.h
+index d436dbfba3504a1ab3878def051ca12b73affbe4..056b1ec4394189e0b6b1a9ad0fd87cfffb4de374 100644
+--- a/content/browser/service_worker/service_worker_fetch_dispatcher.h
++++ b/content/browser/service_worker/service_worker_fetch_dispatcher.h
+@@ -123,10 +123,11 @@ class CONTENT_EXPORT ServiceWorkerFetchDispatcher {
+ 
+   scoped_refptr<URLLoaderAssets> url_loader_assets_;
+ 
+-  // |preload_handle_| holds the URLLoader and URLLoaderClient for the service
+-  // worker to receive the navigation preload response. It's passed to the
+-  // service worker along with the fetch event.
+-  blink::mojom::FetchEventPreloadHandlePtr preload_handle_;
++  // Holds the URLLoaderClient for the service worker to receive the navigation
++  // preload response. It's passed to the service worker along with the fetch
++  // event.
++  mojo::PendingReceiver<network::mojom::URLLoaderClient>
++      preload_url_loader_client_receiver_;
+ 
+   // Whether to dispatch an offline-capability-check fetch event.
+   const bool is_offline_capability_check_ = false;
+diff --git a/content/renderer/service_worker/navigation_preload_request.cc b/content/renderer/service_worker/navigation_preload_request.cc
+index 231e947e1592e85d41fa243cdff143065e604199..0e8d77666ede84b94b1a2cbb5eb15dac1a5bb96f 100644
+--- a/content/renderer/service_worker/navigation_preload_request.cc
++++ b/content/renderer/service_worker/navigation_preload_request.cc
+@@ -17,12 +17,12 @@ NavigationPreloadRequest::NavigationPreloadRequest(
+     ServiceWorkerContextClient* owner,
+     int fetch_event_id,
+     const GURL& url,
+-    blink::mojom::FetchEventPreloadHandlePtr preload_handle)
++    mojo::PendingReceiver<network::mojom::URLLoaderClient>
++        preload_url_loader_client_receiver)
+     : owner_(owner),
+       fetch_event_id_(fetch_event_id),
+       url_(url),
+-      url_loader_(std::move(preload_handle->url_loader)),
+-      receiver_(this, std::move(preload_handle->url_loader_client_receiver)) {}
++      receiver_(this, std::move(preload_url_loader_client_receiver)) {}
+ 
+ NavigationPreloadRequest::~NavigationPreloadRequest() = default;
+ 
+diff --git a/content/renderer/service_worker/navigation_preload_request.h b/content/renderer/service_worker/navigation_preload_request.h
+index 639cc6f086d36cab3081c1b7621f1cf20a3379d0..fc9c5c66b4111cffd918974f538b6a7f3699c192 100644
+--- a/content/renderer/service_worker/navigation_preload_request.h
++++ b/content/renderer/service_worker/navigation_preload_request.h
+@@ -34,7 +34,8 @@ class NavigationPreloadRequest final : public network::mojom::URLLoaderClient {
+       ServiceWorkerContextClient* owner,
+       int fetch_event_id,
+       const GURL& url,
+-      blink::mojom::FetchEventPreloadHandlePtr preload_handle);
++      mojo::PendingReceiver<network::mojom::URLLoaderClient>
++          preload_url_loader_client_receiver);
+   ~NavigationPreloadRequest() override;
+ 
+   // network::mojom::URLLoaderClient:
+@@ -58,11 +59,10 @@ class NavigationPreloadRequest final : public network::mojom::URLLoaderClient {
+   void ReportErrorToOwner(const std::string& message,
+                           blink::WebServiceWorkerError::Mode error_mode);
+ 
+-  ServiceWorkerContextClient* owner_;
++  ServiceWorkerContextClient* owner_ = nullptr;
+ 
+-  const int fetch_event_id_;
++  const int fetch_event_id_ = -1;
+   const GURL url_;
+-  mojo::Remote<network::mojom::URLLoader> url_loader_;
+   mojo::Receiver<network::mojom::URLLoaderClient> receiver_;
+ 
+   std::unique_ptr<blink::WebURLResponse> response_;
+diff --git a/content/renderer/service_worker/service_worker_context_client.cc b/content/renderer/service_worker/service_worker_context_client.cc
+index 79334c2ebf7fd0000d98a2c73504b48ca1e8673c..9a1e9a6594ef35deee1aec354ccb8eec7b3308e2 100644
+--- a/content/renderer/service_worker/service_worker_context_client.cc
++++ b/content/renderer/service_worker/service_worker_context_client.cc
+@@ -475,14 +475,14 @@ void ServiceWorkerContextClient::SendWorkerStarted(
+ void ServiceWorkerContextClient::SetupNavigationPreload(
+     int fetch_event_id,
+     const blink::WebURL& url,
+-    std::unique_ptr<blink::WebFetchEventPreloadHandle> preload_handle) {
++    blink::CrossVariantMojoReceiver<
++        network::mojom::URLLoaderClientInterfaceBase>
++        preload_url_loader_client_receiver) {
+   DCHECK(worker_task_runner_->RunsTasksInCurrentSequence());
+   DCHECK(context_);
+   auto preload_request = std::make_unique<NavigationPreloadRequest>(
+       this, fetch_event_id, GURL(url),
+-      blink::mojom::FetchEventPreloadHandle::New(
+-          std::move(preload_handle->url_loader),
+-          std::move(preload_handle->url_loader_client_receiver)));
++      std::move(preload_url_loader_client_receiver));
+   context_->preload_requests.AddWithID(std::move(preload_request),
+                                        fetch_event_id);
+ }
+diff --git a/content/renderer/service_worker/service_worker_context_client.h b/content/renderer/service_worker/service_worker_context_client.h
+index 8191aaec6ed37c6a64bcbd9beac720777de3075e..5abd533c6c3b1926efa6b8fc158562468cc96e19 100644
+--- a/content/renderer/service_worker/service_worker_context_client.h
++++ b/content/renderer/service_worker/service_worker_context_client.h
+@@ -159,8 +159,9 @@ class CONTENT_EXPORT ServiceWorkerContextClient
+                             const blink::WebString& source_url) override;
+   void SetupNavigationPreload(int fetch_event_id,
+                               const blink::WebURL& url,
+-                              std::unique_ptr<blink::WebFetchEventPreloadHandle>
+-                                  preload_handle) override;
++                              blink::CrossVariantMojoReceiver<
++                                  network::mojom::URLLoaderClientInterfaceBase>
++                                  preload_url_loader_client_receiver) override;
+   void RequestTermination(RequestTerminationCallback callback) override;
+   scoped_refptr<blink::WebServiceWorkerFetchContext>
+   CreateWorkerFetchContextOnInitiatorThread() override;
+diff --git a/mojo/public/cpp/bindings/README.md b/mojo/public/cpp/bindings/README.md
+index 05581aa626490e6c8b4c9b1b38da2d833312ee87..d3ecb7e55a8618b0976e5a3bcffa8b13ec3c2f4f 100644
+--- a/mojo/public/cpp/bindings/README.md
++++ b/mojo/public/cpp/bindings/README.md
+@@ -1709,6 +1709,9 @@ C++ sources can depend on shared sources only, by referencing the
+ `"${target_name}_shared"` target, e.g. `"//foo/mojom:mojom_shared"` in the
+ example above.
+ 
++For converting between Blink and non-Blink variants, please see
++`//third_party/blink/public/platform/cross_variant_mojo_util.h`.
++
+ ## Versioning Considerations
+ 
+ For general documentation of versioning in the Mojom IDL see
+diff --git a/third_party/blink/public/mojom/service_worker/dispatch_fetch_event_params.mojom b/third_party/blink/public/mojom/service_worker/dispatch_fetch_event_params.mojom
+index 382be0b3dd042ceadb73e4d514f93ac7c8624b43..c95a2e255166871ff45b6a4c3a8b206e1dace776 100644
+--- a/third_party/blink/public/mojom/service_worker/dispatch_fetch_event_params.mojom
++++ b/third_party/blink/public/mojom/service_worker/dispatch_fetch_event_params.mojom
+@@ -9,13 +9,6 @@ import "third_party/blink/public/mojom/blob/blob.mojom";
+ import "third_party/blink/public/mojom/fetch/fetch_api_request.mojom";
+ import "third_party/blink/public/mojom/timing/worker_timing_container.mojom";
+ 
+-// Used for service worker navigation preload, to create
+-// FetchEvent#preloadResponse.
+-struct FetchEventPreloadHandle {
+-  pending_remote<network.mojom.URLLoader> url_loader;
+-  pending_receiver<network.mojom.URLLoaderClient> url_loader_client_receiver;
+-};
+-
+ // Parameters used for dispatching a FetchEvent.
+ struct DispatchFetchEventParams {
+   // FetchEvent#request.
+@@ -23,8 +16,9 @@ struct DispatchFetchEventParams {
+ 
+   // FetchEvent#clientId.
+   string client_id;
++
+   // FetchEvent#preloadResponse.
+-  FetchEventPreloadHandle? preload_handle;
++  pending_receiver<network.mojom.URLLoaderClient>? preload_url_loader_client_receiver;
+ 
+   // This is currently null for navigation because it's still being implemented.
+   // TODO(https://crbug.com/900700): Make this non-nullable when implementation
+diff --git a/third_party/blink/public/web/modules/service_worker/web_service_worker_context_client.h b/third_party/blink/public/web/modules/service_worker/web_service_worker_context_client.h
+index 48e3e7ecec672b9993dd504a3ac2a681db6284d5..ad64e9ba7fe05a457de6a79c59b4a6fe6bba711d 100644
+--- a/third_party/blink/public/web/modules/service_worker/web_service_worker_context_client.h
++++ b/third_party/blink/public/web/modules/service_worker/web_service_worker_context_client.h
+@@ -31,8 +31,6 @@
+ #ifndef THIRD_PARTY_BLINK_PUBLIC_WEB_MODULES_SERVICE_WORKER_WEB_SERVICE_WORKER_CONTEXT_CLIENT_H_
+ #define THIRD_PARTY_BLINK_PUBLIC_WEB_MODULES_SERVICE_WORKER_WEB_SERVICE_WORKER_CONTEXT_CLIENT_H_
+ 
+-#include <memory>
+-
+ #include "base/memory/scoped_refptr.h"
+ #include "base/time/time.h"
+ #include "services/network/public/mojom/url_loader.mojom-shared.h"
+@@ -54,14 +52,6 @@ namespace blink {
+ class WebServiceWorkerContextProxy;
+ class WebString;
+ 
+-// Used to pass the mojom struct blink.mojom.FetchEventPreloadHandle across the
+-// boundary between //content and Blink.
+-struct WebFetchEventPreloadHandle {
+-  CrossVariantMojoRemote<network::mojom::URLLoaderInterfaceBase> url_loader;
+-  CrossVariantMojoReceiver<network::mojom::URLLoaderClientInterfaceBase>
+-      url_loader_client_receiver;
+-};
+-
+ // WebServiceWorkerContextClient is a "client" of a service worker execution
+ // context. This interface is implemented by the embedder and allows the
+ // embedder to communicate with the service worker execution context.  It is
+@@ -167,7 +157,8 @@ class WebServiceWorkerContextClient {
+   virtual void SetupNavigationPreload(
+       int fetch_event_id,
+       const WebURL& url,
+-      std::unique_ptr<WebFetchEventPreloadHandle> preload_handle) {}
++      CrossVariantMojoReceiver<network::mojom::URLLoaderClientInterfaceBase>
++          preload_url_loader_client_receiver) {}
+ 
+   // Called when we need to request to terminate this worker due to idle
+   // timeout.
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+index db4dcc7ad467e0012e08f8d81753f48ff29b27e8..6efa02fad3e7ba78404a92bea25d41a955ed7d80 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+@@ -1508,11 +1508,12 @@ void ServiceWorkerGlobalScope::StartFetchEvent(
+       params->request->url.ElidedString().Utf8());
+ 
+   // Set up for navigation preload (FetchEvent#preloadResponse) if needed.
+-  const bool navigation_preload_sent = !!params->preload_handle;
++  bool navigation_preload_sent = !!params->preload_url_loader_client_receiver;
+   if (navigation_preload_sent) {
+     To<ServiceWorkerGlobalScopeProxy>(ReportingProxy())
+-        .SetupNavigationPreload(event_id, params->request->url,
+-                                std::move(params->preload_handle));
++        .SetupNavigationPreload(
++            event_id, params->request->url,
++            std::move(params->preload_url_loader_client_receiver));
+   }
+ 
+   ScriptState::Scope scope(ScriptController()->GetScriptState());
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
+index 397d579ed76c72612e5e5ec2877ccea18fe5ea12..bae1f3ac2ae68d8d818adaeee71b642a37c32228 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
+@@ -258,14 +258,11 @@ bool ServiceWorkerGlobalScopeProxy::IsServiceWorkerGlobalScopeProxy() const {
+ void ServiceWorkerGlobalScopeProxy::SetupNavigationPreload(
+     int fetch_event_id,
+     const KURL& url,
+-    mojom::blink::FetchEventPreloadHandlePtr preload_handle) {
++    mojo::PendingReceiver<network::mojom::blink::URLLoaderClient>
++        preload_url_loader_client_receiver) {
+   DCHECK_CALLED_ON_VALID_THREAD(worker_thread_checker_);
+-  auto web_preload_handle = std::make_unique<WebFetchEventPreloadHandle>();
+-  web_preload_handle->url_loader = std::move(preload_handle->url_loader);
+-  web_preload_handle->url_loader_client_receiver =
+-      std::move(preload_handle->url_loader_client_receiver);
+-  Client().SetupNavigationPreload(fetch_event_id, url,
+-                                  std::move(web_preload_handle));
++  Client().SetupNavigationPreload(
++      fetch_event_id, url, std::move(preload_url_loader_client_receiver));
+ }
+ 
+ void ServiceWorkerGlobalScopeProxy::RequestTermination(
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
+index 783dbe1919d1282f40117aea22b75a8e54e82d89..d54a2449da63f67930cb3d85cfbb27c35c45a8d3 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
+@@ -129,7 +129,8 @@ class ServiceWorkerGlobalScopeProxy final : public WebServiceWorkerContextProxy,
+   void SetupNavigationPreload(
+       int fetch_event_id,
+       const KURL& url,
+-      mojom::blink::FetchEventPreloadHandlePtr preload_handle);
++      mojo::PendingReceiver<network::mojom::blink::URLLoaderClient>
++          preload_url_loader_client_receiver);
+   void RequestTermination(WTF::CrossThreadOnceFunction<void(bool)> callback);
+ 
+   // Detaches this proxy object entirely from the outside world, clearing out
