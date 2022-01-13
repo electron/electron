@@ -152,7 +152,8 @@
   if (@available(macOS 10.14.4, *)) {
     productDiscountStruct.type = (int)productDiscount.type;
     if (productDiscount.identifier != nil) {
-      productDiscountStruct.identifier = [productDiscount.identifier UTF8String];
+      productDiscountStruct.identifier =
+          [productDiscount.identifier UTF8String];
     }
     productDiscountStruct.price = [productDiscount.price doubleValue];
   }
@@ -222,7 +223,7 @@
   }
   if (@available(macOS 10.14, *)) {
     if (product.subscriptionGroupIdentifier != nil) {
-        productStruct.subscriptionGroupIdentifier =
+      productStruct.subscriptionGroupIdentifier =
           [product.subscriptionGroupIdentifier UTF8String];
     }
   }
