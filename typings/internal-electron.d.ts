@@ -80,7 +80,7 @@ declare namespace Electron {
     attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
     detachFromOuterFrame(): void;
     setEmbedder(embedder: Electron.WebContents): void;
-    attachParams?: Record<string, any>;
+    attachParams?: { instanceId: number; src: string, opts: LoadURLOptions };
     viewInstanceId: number;
   }
 
