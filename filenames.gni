@@ -676,8 +676,6 @@ filenames = {
   ]
 
   lib_sources_extensions = [
-    "shell/browser/extensions/api/i18n/i18n_api.cc",
-    "shell/browser/extensions/api/i18n/i18n_api.h",
     "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.cc",
     "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.h",
     "shell/browser/extensions/api/management/electron_management_api_delegate.cc",
