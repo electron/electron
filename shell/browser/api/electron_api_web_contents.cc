@@ -579,15 +579,17 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
 std::map<std::string, std::string> GetAddedFileSystemPaths(
     content::WebContents* web_contents) {
   auto* pref_service = GetPrefService(web_contents);
-  const base::DictionaryValue* file_system_paths_value =
+  const base::Value* file_system_paths_value =
       pref_service->GetDictionary(prefs::kDevToolsFileSystemPaths);
   std::map<std::string, std::string> result;
   if (file_system_paths_value) {
-    base::DictionaryValue::Iterator it(*file_system_paths_value);
-    for (; !it.IsAtEnd(); it.Advance()) {
+    const base::DictionaryValue* file_system_paths_dict;
+    file_system_paths_value->GetAsDictionary(&file_system_paths_dict);
+
+    for (auto it : file_system_paths_dict->DictItems()) {
       std::string type =
-          it.value().is_string() ? it.value().GetString() : std::string();
-      result[it.key()] = type;
+          it.second.is_string() ? it.second.GetString() : std::string();
+      result[it.first] = type;
     }
   }
   return result;
@@ -3590,8 +3592,7 @@ void WebContents::DevToolsAddFileSystem(
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->SetWithoutPathExpansion(path.AsUTF8Unsafe(),
-                                        std::make_unique<base::Value>(type));
+  update.Get()->SetKey(path.AsUTF8Unsafe(), base::Value(type));
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI.fileSystemAdded", nullptr, file_system_value.get(), nullptr);
 }
