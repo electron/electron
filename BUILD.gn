@@ -472,8 +472,8 @@ source_set("electron_lib") {
 
   if (is_linux) {
     deps += [
-      "//build/config/linux/gtk:gtkprint",
       "//components/crash/content/browser",
+      "//ui/gtk:gtk_config",
     ]
   }
 
