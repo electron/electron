@@ -216,6 +216,18 @@ describe('ipc module', () => {
       expect(port).to.be.an.instanceOf(EventEmitter);
     });
 
+    it('can sent a message without a transfer', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      const p = emittedOnce(ipcMain, 'port');
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.postMessage('port', 'hi');
+      }})()`);
+      const [ev, msg] = await p;
+      expect(msg).to.equal('hi');
+      expect(ev.ports).to.deep.equal([]);
+    });
+
     it('can communicate between main and renderer', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
