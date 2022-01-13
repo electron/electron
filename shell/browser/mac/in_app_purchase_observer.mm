@@ -103,23 +103,11 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
     (SKPaymentDiscount*)paymentDiscount API_AVAILABLE(macosx(10.14.4)) {
   in_app_purchase::PaymentDiscount paymentDiscountStruct;
 
-  if (paymentDiscount.identifier != nil) {
-    paymentDiscountStruct.identifier = [paymentDiscount.identifier UTF8String];
-  }
-
-  if (paymentDiscount.keyIdentifier != nil) {
-    paymentDiscountStruct.keyIdentifier =
-        [paymentDiscount.keyIdentifier UTF8String];
-  }
-
-  // if (paymentDiscount.nonce != nil) {
-  //   paymentDiscountStruct.nonce = [paymentDiscount.nonce uuidString];
-  // }
-
-  if (paymentDiscount.signature != nil) {
-    paymentDiscountStruct.signature = [paymentDiscount.signature UTF8String];
-  }
-
+  paymentDiscountStruct.identifier = [paymentDiscount.identifier UTF8String];
+  paymentDiscountStruct.keyIdentifier =
+      [paymentDiscount.keyIdentifier UTF8String];
+  // paymentDiscountStruct.nonce = [paymentDiscount.nonce uuidString];
+  paymentDiscountStruct.signature = [paymentDiscount.signature UTF8String];
   paymentDiscountStruct.timestamp = [paymentDiscount.timestamp intValue];
 
   return paymentDiscountStruct;
@@ -141,10 +129,7 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
     paymentStruct.quantity = (int)payment.quantity;
   }
 
-  if (payment.applicationUsername != nil) {
-    paymentStruct.applicationUsername =
-        [payment.applicationUsername UTF8String];
-  }
+  paymentStruct.applicationUsername = [payment.applicationUsername UTF8String];
 
   if (@available(macOS 10.14.4, *)) {
     if (payment.paymentDiscount != nil) {

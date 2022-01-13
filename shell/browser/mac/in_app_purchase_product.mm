@@ -136,7 +136,6 @@
   in_app_purchase::ProductDiscount productDiscountStruct;
 
   productDiscountStruct.paymentMode = (int)productDiscount.paymentMode;
-
   productDiscountStruct.numberOfPeriods = (int)productDiscount.numberOfPeriods;
 
   if (productDiscount.priceLocale != nil) {
@@ -152,15 +151,8 @@
 
   if (@available(macOS 10.14.4, *)) {
     productDiscountStruct.type = (int)productDiscount.type;
-
-    if (productDiscount.identifier != nil) {
-      productDiscountStruct.identifier =
-          [productDiscount.identifier UTF8String];
-    }
-
-    if (productDiscount.price != nil) {
-      productDiscountStruct.price = [productDiscount.price doubleValue];
-    }
+    productDiscountStruct.identifier = [productDiscount.identifier UTF8String];
+    productDiscountStruct.price = [productDiscount.price doubleValue];
   }
 
   return productDiscountStruct;
@@ -227,10 +219,8 @@
     }
   }
   if (@available(macOS 10.14, *)) {
-    if (product.subscriptionGroupIdentifier != nil) {
-      productStruct.subscriptionGroupIdentifier =
-          [product.subscriptionGroupIdentifier UTF8String];
-    }
+    productStruct.subscriptionGroupIdentifier =
+        [product.subscriptionGroupIdentifier UTF8String];
   }
   if (@available(macOS 10.14.4, *)) {
     if (product.discounts != nil) {
@@ -246,10 +236,8 @@
   // Downloadable Content Information
   productStruct.isDownloadable = [product downloadable];
   if (@available(macOS 10.14, *)) {
-    if (product.downloadContentVersion != nil) {
-      productStruct.downloadContentVersion =
-          [product.downloadContentVersion UTF8String];
-    }
+    productStruct.downloadContentVersion =
+        [product.downloadContentVersion UTF8String];
     if (product.downloadContentLengths != nil) {
       productStruct.downloadContentLengths.reserve(
           [product.downloadContentLengths count]);
@@ -260,10 +248,7 @@
       }
     }
   } else {
-    if (product.contentVersion != nil) {
-      productStruct.downloadContentVersion =
-          [product.contentVersion UTF8String];
-    }
+    productStruct.downloadContentVersion = [product.contentVersion UTF8String];
     if (product.contentLengths != nil) {
       productStruct.downloadContentLengths.reserve(
           [product.contentLengths count]);
