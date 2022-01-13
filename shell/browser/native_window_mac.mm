@@ -1603,10 +1603,15 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
   NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
 
   // Reset the behaviour to default if aspect_ratio is set to 0 or less.
-  if (aspect_ratio > 0.0)
-    [window_ setContentAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
-  else
+  if (aspect_ratio > 0.0) {
+    NSSize aspect_ratio_size = NSMakeSize(aspect_ratio, 1.0);
+    if (has_frame())
+      [window_ setContentAspectRatio:aspect_ratio_size];
+    else
+      [window_ setAspectRatio:aspect_ratio_size];
+  } else {
     [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
+  }
 }
 
 void NativeWindowMac::PreviewFile(const std::string& path,
