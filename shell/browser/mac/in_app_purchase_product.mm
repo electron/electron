@@ -241,8 +241,10 @@
   // Downloadable Content Information
   productStruct.isDownloadable = [product downloadable];
   if (@available(macOS 10.14, *)) {
-    productStruct.downloadContentVersion =
-        [product.downloadContentVersion UTF8String];
+    if (product.downloadContentVersion != nil) {
+      productStruct.downloadContentVersion =
+          [product.downloadContentVersion UTF8String];
+    }
     if (product.downloadContentLengths != nil) {
       productStruct.downloadContentLengths.reserve(
           [product.downloadContentLengths count]);
@@ -253,7 +255,9 @@
       }
     }
   } else {
-    productStruct.downloadContentVersion = [product.contentVersion UTF8String];
+    if (product.contentVersion != nil) {
+      productStruct.downloadContentVersion = [product.contentVersion UTF8String];
+    }
     if (product.contentLengths != nil) {
       productStruct.downloadContentLengths.reserve(
           [product.contentLengths count]);
