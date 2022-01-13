@@ -3369,6 +3369,48 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('BrowserWindow.minimize()', () => {
+    // TODO(dsanders11): Enable once minimize event works on Linux again.
+    //                   See https://github.com/electron/electron/issues/28699
+    ifit(process.platform !== 'linux')('should have behavior which matches isMinimizable()', async () => {
+      async function tryToMinimize (w: BrowserWindow) {
+        const minimize = emittedOnce(w, 'minimize');
+        const isMinimized = w.isMinimized();
+        const minimizable = w.isMinimizable();
+        w.minimize();
+        if (minimizable && !isMinimized) {
+          await minimize;
+        } else {
+          await delay(1000);
+        }
+        return w.isMinimized() === minimizable;
+      }
+
+      // Normal window
+      let w = new BrowserWindow({ width: 400, height: 400 });
+      await expect(tryToMinimize(w)).to.eventually.be.true;
+
+      // Maximized window
+      const maximize = emittedOnce(w, 'maximize');
+      w.maximize();
+      await maximize;
+      await expect(tryToMinimize(w)).to.eventually.be.true;
+
+      // Minimized window
+      w.destroy();
+      w = new BrowserWindow({ width: 400, height: 400 });
+      const minimize = emittedOnce(w, 'minimize');
+      w.minimize();
+      await minimize;
+      await expect(tryToMinimize(w)).to.eventually.be.true;
+
+      // Fullscreen window
+      w.destroy();
+      w = new BrowserWindow({ fullscreen: true });
+      await expect(tryToMinimize(w)).to.eventually.be.true;
+    });
+  });
+
   describe('BrowserWindow.unmaximize()', () => {
     afterEach(closeAllWindows);
     it('should restore the previous window position', () => {
@@ -3914,6 +3956,13 @@ describe('BrowserWindow module', () => {
           w.minimizable = true;
           expect(w.minimizable).to.be.true('minimizable');
         });
+
+        ifit(process.platform === 'darwin')('is always false when window is fullscreen', () => {
+          const w = new BrowserWindow({ fullscreen: true });
+          expect(w.minimizable).to.be.false('minimizable');
+          w.minimizable = true;
+          expect(w.minimizable).to.be.false('minimizable');
+        });
       });
 
       it('with functions', () => {
@@ -3929,6 +3978,13 @@ describe('BrowserWindow module', () => {
           expect(w.isMinimizable()).to.be.false('isMinimizable');
           w.setMinimizable(true);
           expect(w.isMinimizable()).to.be.true('isMinimizable');
+        });
+
+        ifit(process.platform === 'darwin')('is always false when window is fullscreen', () => {
+          const w = new BrowserWindow({ fullscreen: true });
+          expect(w.isMinimizable()).to.be.false('isMinimizable');
+          w.setMinimizable(true);
+          expect(w.isMinimizable()).to.be.false('isMinimizable');
         });
       });
     });
