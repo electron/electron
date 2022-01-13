@@ -121,6 +121,7 @@ cherry-pick-1a8af2da50e4.patch
 cherry-pick-a5f54612590d.patch
 cachestorage_store_partial_opaque_responses.patch
 fix_aspect_ratio_with_max_size.patch
+cherry-pick-f0a63e1f361f.patch
 cherry-pick-27eb11a28555.patch
 sandbox_fix_sandbox_inheritance_m96_merge.patch
 cherry-pick-da11d71a0227.patch
