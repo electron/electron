@@ -1450,46 +1450,48 @@ bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
 }
 #endif  // defined(OS_WIN)
 
-bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
-    content::RenderFrameHost* render_frame_host,
-    const std::string& interface_name,
-    mojo::ScopedInterfaceEndpointHandle* handle) {
-  if (interface_name == mojom::ElectronAutofillDriver::Name_) {
-    AutofillDriverFactory::BindAutofillDriver(
-        mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
+void ElectronBrowserClient::
+    RegisterAssociatedInterfaceBindersForRenderFrameHost(
+        content::RenderFrameHost& render_frame_host,
+        blink::AssociatedInterfaceRegistry& associated_registry) {
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+             receiver) {
+        AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
+                                                  render_frame_host);
+      },
+      &render_frame_host));
+
 #if BUILDFLAG(ENABLE_PRINTING)
-  if (interface_name == printing::mojom::PrintManagerHost::Name_) {
-    mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost> receiver(
-        std::move(*handle));
-    PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
-                                                   render_frame_host);
-    return true;
-  }
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost>
+             receiver) {
+        PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
+                                                       render_frame_host);
+      },
+      &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_EXTENSIONS)
-  if (interface_name == extensions::mojom::LocalFrameHost::Name_) {
-    extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
-        mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>
+             receiver) {
+        extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
+            std::move(receiver), render_frame_host);
+      },
+      &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  if (interface_name == pdf::mojom::PdfService::Name_) {
-    pdf::PDFWebContentsHelper::BindPdfService(
-        mojo::PendingAssociatedReceiver<pdf::mojom::PdfService>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<pdf::mojom::PdfService> receiver) {
+        pdf::PDFWebContentsHelper::BindPdfService(std::move(receiver),
+                                                  render_frame_host);
+      },
+      &render_frame_host));
 #endif
-
-  return false;
 }
 
 std::string ElectronBrowserClient::GetApplicationLocale() {
