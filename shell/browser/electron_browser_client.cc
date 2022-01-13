@@ -1454,8 +1454,10 @@ bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
 
 void ElectronBrowserClient::
     RegisterAssociatedInterfaceBindersForRenderFrameHost(
-        content::RenderFrameHost& render_frame_host,
-        blink::AssociatedInterfaceRegistry& associated_registry) {
+        content::RenderFrameHost&
+            render_frame_host,  // NOLINT(runtime/references)
+        blink::AssociatedInterfaceRegistry&
+            associated_registry) {  // NOLINT(runtime/references)
   associated_registry.AddInterface(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
          mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
