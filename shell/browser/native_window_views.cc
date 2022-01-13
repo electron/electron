@@ -1005,7 +1005,7 @@ bool NativeWindowViews::IsKiosk() {
 
 bool NativeWindowViews::IsTabletMode() const {
 #if defined(OS_WIN)
-  return base::win::IsWindows10TabletMode(GetAcceleratedWidget());
+  return base::win::IsWindows10OrGreaterTabletMode(GetAcceleratedWidget());
 #else
   return false;
 #endif
