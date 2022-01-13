@@ -1,6 +1,6 @@
 # ProductDiscount Object
 
-* `identifier` string (optional) - A string used to uniquely identify a discount offer for a product.
+* `identifier` string - A string used to uniquely identify a discount offer for a product.
 * `type` number - The type of discount offer.
 * `price` number - The discount price of the product in the local currency.
 * `priceLocale` string - The locale used to format the discount price of the product.

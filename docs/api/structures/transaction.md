@@ -9,5 +9,5 @@
 * `payment` Object
   * `productIdentifier` string - The identifier of the purchased product.
   * `quantity` Integer  - The quantity purchased.
-  * `applicationUsername` string (optional) - An opaque identifier for the user’s account on your system.
-  * `paymentDiscount` [PaymentDiscount](payment-discount.md) (optional) - The details of the discount offer to apply to the payment.
+  * `applicationUsername` string - An opaque identifier for the user’s account on your system.
+  * `paymentDiscount` [PaymentDiscount](payment-discount.md) - The details of the discount offer to apply to the payment.
