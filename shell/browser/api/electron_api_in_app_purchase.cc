@@ -39,12 +39,8 @@ struct Converter<in_app_purchase::Payment> {
     dict.SetHidden("simple", true);
     dict.Set("productIdentifier", payment.productIdentifier);
     dict.Set("quantity", payment.quantity);
-    if (!payment.applicationUsername.empty()) {
-      dict.Set("applicationUsername", payment.applicationUsername);
-    }
-    if (!payment.paymentDiscount.identifier.empty()) {
-      dict.Set("paymentDiscount", payment.paymentDiscount);
-    }
+    dict.Set("applicationUsername", payment.applicationUsername);
+    dict.Set("paymentDiscount", payment.paymentDiscount);
     return dict.GetHandle();
   }
 };
@@ -115,15 +111,10 @@ struct Converter<in_app_purchase::Product> {
     dict.Set("price", val.price);
     dict.Set("formattedPrice", val.formattedPrice);
     dict.Set("currencyCode", val.currencyCode);
-    if (val.introductoryPrice.type >= 0) {
-      dict.Set("introductoryPrice", val.introductoryPrice);
-    }
+    dict.Set("introductoryPrice", val.introductoryPrice);
     dict.Set("discounts", val.discounts);
     dict.Set("subscriptionGroupIdentifier", val.subscriptionGroupIdentifier);
-    if (val.subscriptionPeriod.numberOfUnits >= 0) {
-      dict.Set("subscriptionPeriod", val.subscriptionPeriod);
-    }
-
+    dict.Set("subscriptionPeriod", val.subscriptionPeriod);
     // Downloadable Content Information
     dict.Set("isDownloadable", val.isDownloadable);
     dict.Set("downloadContentVersion", val.downloadContentVersion);
