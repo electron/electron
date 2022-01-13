@@ -805,6 +805,9 @@ void NativeWindowMac::SetMinimizable(bool minimizable) {
 }
 
 bool NativeWindowMac::IsMinimizable() {
+  if (IsFullscreen())
+    return false;
+
   return [window_ styleMask] & NSMiniaturizableWindowMask;
 }
 
