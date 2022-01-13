@@ -51,7 +51,7 @@ class ElectronExtensionsClient : public extensions::ExtensionsClient {
   bool IsScriptableURL(const GURL& url, std::string* error) const override;
   const GURL& GetWebstoreBaseURL() const override;
   const GURL& GetWebstoreUpdateURL() const override;
-  bool IsBlacklistUpdateURL(const GURL& url) const override;
+  bool IsBlocklistUpdateURL(const GURL& url) const override;
 
  private:
   ScriptingAllowlist scripting_allowlist_;
