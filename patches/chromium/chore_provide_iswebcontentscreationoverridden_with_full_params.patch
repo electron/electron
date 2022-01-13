@@ -246,10 +246,10 @@ index c1926fc79e9982739d17f4b971f5e7296afd0cf8..31f036c9d224f7e03d7fe38861db45b8
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d6c26bbc7fb8d6ff606311807d44a4e5ff9bfb0a..a12d7b6097c8497a63db45caa9fb8bc1f20e4b92 100644
+index d3bbb08ea7fe64c9e969954ec9ef264940e47d28..836f53e73ecf8843f93b88ed8acd818be67eda1a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3829,8 +3829,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3826,8 +3826,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -344,7 +344,7 @@ index 1b388778aac1420769de8c411489e026abbc75a4..b21d262c7014097e35ee83289fab400a
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index ff682e28f07c751d346f7934967007807960e8e4..617bd10ca054d89e28c1746167ab833f8804fcd6 100644
+index 95d85e19703d830f9974afcfd7f67b7494a50b76..224d0a033e32c416cfd8355a4eb91623af02ad8b 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
 @@ -403,8 +403,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(

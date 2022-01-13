@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 8d6c612cc4914904b64b74202e70eae886f17a40..f5c04d2113044f945e0119461f51b5368e98fb6b 100644
+index cd2da1af996a5d8117f43626f860e7cf7eb5bbb5..6bbaf4c1393c2fd936d21cf31a35fc9b22e06334 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1891,6 +1891,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -81,7 +81,7 @@ index d0a0ca74e12af5d0e8daa077ebe992984c7ecdf2..ecbd5554d2d181799c700e299bb24030
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index e768356b9b7ebead39aedfcaf5aeba001bd667be..06de4adb9edaad6c65bc90114f89b30436703aab 100644
+index 16906552e5ead237c173c2958303bf2b9b86ad43..6368d2d1826bad732bbfd153472fd2d61c378d1f 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -87,6 +87,9 @@
@@ -197,7 +197,7 @@ index e768356b9b7ebead39aedfcaf5aeba001bd667be..06de4adb9edaad6c65bc90114f89b304
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level && src_color_space.IsHDR()) {
      // TODO(b/183236148): consider using the destination's HDR static metadata
-@@ -4076,9 +4088,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4074,9 +4086,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -210,7 +210,7 @@ index e768356b9b7ebead39aedfcaf5aeba001bd667be..06de4adb9edaad6c65bc90114f89b304
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4298,8 +4310,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4296,8 +4308,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,7 +222,7 @@ index e768356b9b7ebead39aedfcaf5aeba001bd667be..06de4adb9edaad6c65bc90114f89b304
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4488,3 +4501,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4486,3 +4499,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz

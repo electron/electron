@@ -8,10 +8,10 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 6356025f24855b789b0fdb492ca61232bc6d8000..7eab027f4af2a10c77a8754f6faf06a67b2edce0 100644
+index 9250d08f67edff8fd7d51ec8270362f27582629c..4cd6583e3a0abe9a1e9c927bee103712849c0fe7 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -144,6 +144,20 @@ WebPreferences::WebPreferences()
+@@ -145,6 +145,20 @@ WebPreferences::WebPreferences()
        fake_no_alloc_direct_call_for_testing_enabled(false),
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
