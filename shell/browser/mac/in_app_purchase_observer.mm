@@ -129,7 +129,9 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
     paymentStruct.quantity = (int)payment.quantity;
   }
 
-  paymentStruct.applicationUsername = [payment.applicationUsername UTF8String];
+  if (payment.applicationUsername != nil) {
+    paymentStruct.applicationUsername = [payment.applicationUsername UTF8String];
+  }
 
   if (@available(macOS 10.14.4, *)) {
     if (payment.paymentDiscount != nil) {
