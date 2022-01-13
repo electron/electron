@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yutaka Hirano <yhirano@chromium.org>
+Date: Wed, 29 Sep 2021 07:58:26 +0000
+Subject: Run CORS check for manual redirects
+
+...to prevent status code leak.
+
+Bug: 1251179
+Change-Id: I7fcab0daf49e16305ed53702f42d1d1eacc933e5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3193481
+Reviewed-by: Yoav Weiss <yoavweiss@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#926166}
+
+diff --git a/services/network/cors/cors_url_loader.cc b/services/network/cors/cors_url_loader.cc
+index bc60ad917243aae143c9de16670f10358ff98689..2eaa10e4763745ff434ac249b92d353d0dd82a69 100644
+--- a/services/network/cors/cors_url_loader.cc
++++ b/services/network/cors/cors_url_loader.cc
+@@ -300,13 +300,6 @@ void CorsURLLoader::OnReceiveRedirect(const net::RedirectInfo& redirect_info,
+   DCHECK(forwarding_client_);
+   DCHECK(!deferred_redirect_url_);
+ 
+-  if (request_.redirect_mode == mojom::RedirectMode::kManual) {
+-    deferred_redirect_url_ = std::make_unique<GURL>(redirect_info.new_url);
+-    forwarding_client_->OnReceiveRedirect(redirect_info,
+-                                          std::move(response_head));
+-    return;
+-  }
+-
+   // If |CORS flag| is set and a CORS check for |request| and |response| returns
+   // failure, then return a network error.
+   if (fetch_cors_flag_ && IsCorsEnabledRequestMode(request_.mode)) {
+@@ -324,6 +317,13 @@ void CorsURLLoader::OnReceiveRedirect(const net::RedirectInfo& redirect_info,
+     }
+   }
+ 
++  if (request_.redirect_mode == mojom::RedirectMode::kManual) {
++    deferred_redirect_url_ = std::make_unique<GURL>(redirect_info.new_url);
++    forwarding_client_->OnReceiveRedirect(redirect_info,
++                                          std::move(response_head));
++    return;
++  }
++
+   timing_allow_failed_flag_ = !PassesTimingAllowOriginCheck(*response_head);
+ 
+   // Because we initiate a new request on redirect in some cases, we cannot
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/api/redirect/redirect-mode.any.js b/third_party/blink/web_tests/external/wpt/fetch/api/redirect/redirect-mode.any.js
+index eed44e0414cb8947c9b7c21df6ef288f733f8994..9f1ff98c65af97bcf185867ac6c6e128dbd77715 100644
+--- a/third_party/blink/web_tests/external/wpt/fetch/api/redirect/redirect-mode.any.js
++++ b/third_party/blink/web_tests/external/wpt/fetch/api/redirect/redirect-mode.any.js
+@@ -1,6 +1,7 @@
+ // META: script=/common/get-host-info.sub.js
+ 
+ var redirectLocation = "cors-top.txt";
++const { ORIGIN, REMOTE_ORIGIN } = get_host_info();
+ 
+ function testRedirect(origin, redirectStatus, redirectMode, corsMode) {
+   var url = new URL("../resources/redirect.py", self.location);
+@@ -47,4 +48,12 @@ for (var origin of ["same-origin", "cross-origin"]) {
+   }
+ }
+ 
++promise_test(async (t) => {
++  const destination = `${ORIGIN}/common/blank.html`;
++  // We use /common/redirect.py intentionally, as we want a CORS error.
++  const url =
++    `${REMOTE_ORIGIN}/common/redirect.py?location=${destination}`;
++  await promise_rejects_js(t, TypeError,  fetch(url, { redirect: "manual" }));
++}, "manual redirect with a CORS error should be rejected");
++
+ done();
