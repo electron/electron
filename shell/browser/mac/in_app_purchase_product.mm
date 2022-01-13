@@ -256,7 +256,8 @@
     }
   } else {
     if (product.contentVersion != nil) {
-      productStruct.downloadContentVersion = [product.contentVersion UTF8String];
+      productStruct.downloadContentVersion =
+          [product.contentVersion UTF8String];
     }
     if (product.contentLengths != nil) {
       productStruct.downloadContentLengths.reserve(
