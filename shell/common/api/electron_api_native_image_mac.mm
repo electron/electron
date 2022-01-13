@@ -10,6 +10,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <QuickLook/QuickLook.h>
+#import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
@@ -53,32 +54,69 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   }
 
   CGSize cg_size = size.ToCGSize();
-  base::ScopedCFTypeRef<CFURLRef> cfurl = base::mac::FilePathToCFURL(path);
-  base::ScopedCFTypeRef<QLThumbnailRef> ql_thumbnail(
-      QLThumbnailCreate(kCFAllocatorDefault, cfurl, cg_size, NULL));
-  __block gin_helper::Promise<gfx::Image> p = std::move(promise);
-  // we do not want to blocking the main thread while waiting for quicklook to
-  // generate the thumbnail
-  QLThumbnailDispatchAsync(
-      ql_thumbnail,
-      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, /*flags*/ 0), ^{
-        base::ScopedCFTypeRef<CGImageRef> cg_thumbnail(
-            QLThumbnailCopyImage(ql_thumbnail));
-        if (cg_thumbnail) {
-          NSImage* result =
-              [[[NSImage alloc] initWithCGImage:cg_thumbnail
-                                           size:cg_size] autorelease];
-          gfx::Image thumbnail(result);
-          dispatch_async(dispatch_get_main_queue(), ^{
-            p.Resolve(thumbnail);
-          });
-        } else {
-          dispatch_async(dispatch_get_main_queue(), ^{
-            p.RejectWithErrorMessage("unable to retrieve thumbnail preview "
-                                     "image for the given path");
-          });
-        }
-      });
+
+  if (@available(macOS 10.15, *)) {
+    NSURL* nsurl = base::mac::FilePathToNSURL(path);
+    QLThumbnailGenerationRequest* request = [[QLThumbnailGenerationRequest
+        alloc]
+          initWithFileAtURL:nsurl
+                       size:cg_size
+                      scale:1
+        representationTypes:QLThumbnailGenerationRequestRepresentationTypeAll];
+    __block gin_helper::Promise<gfx::Image> p = std::move(promise);
+    [[QLThumbnailGenerator sharedGenerator]
+        generateBestRepresentationForRequest:request
+                           completionHandler:^(
+                               QLThumbnailRepresentation* thumbnail,
+                               NSError* error) {
+                             if (error) {
+                               std::string err_msg = std::string(
+                                   [error.localizedDescription UTF8String]);
+                               dispatch_async(dispatch_get_main_queue(), ^{
+                                 p.RejectWithErrorMessage(
+                                     "unable to retrieve thumbnail preview "
+                                     "image for the given path: " +
+                                     err_msg);
+                               });
+                             } else {
+                               NSImage* result = [[[NSImage alloc]
+                                   initWithCGImage:[thumbnail CGImage]
+                                              size:cg_size] autorelease];
+                               gfx::Image image(result);
+                               dispatch_async(dispatch_get_main_queue(), ^{
+                                 p.Resolve(image);
+                               });
+                             }
+                           }];
+  } else {
+    base::ScopedCFTypeRef<CFURLRef> cfurl = base::mac::FilePathToCFURL(path);
+    base::ScopedCFTypeRef<QLThumbnailRef> ql_thumbnail(
+        QLThumbnailCreate(kCFAllocatorDefault, cfurl, cg_size, NULL));
+    __block gin_helper::Promise<gfx::Image> p = std::move(promise);
+    // Do not block the main thread waiting for quicklook to generate the
+    // thumbnail.
+    QLThumbnailDispatchAsync(
+        ql_thumbnail,
+        dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, /*flags*/ 0), ^{
+          base::ScopedCFTypeRef<CGImageRef> cg_thumbnail(
+              QLThumbnailCopyImage(ql_thumbnail));
+          if (cg_thumbnail) {
+            NSImage* result =
+                [[[NSImage alloc] initWithCGImage:cg_thumbnail
+                                             size:cg_size] autorelease];
+            gfx::Image thumbnail(result);
+            dispatch_async(dispatch_get_main_queue(), ^{
+              p.Resolve(thumbnail);
+            });
+          } else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+              p.RejectWithErrorMessage("unable to retrieve thumbnail preview "
+                                       "image for the given path");
+            });
+          }
+        });
+  }
+
   return handle;
 }
 
