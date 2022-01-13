@@ -361,10 +361,12 @@ void SimpleURLLoaderWrapper::OnSSLCertificateError(
   std::move(response).Run(net_error);
 }
 
-void SimpleURLLoaderWrapper::OnClearSiteData(const GURL& url,
-                                             const std::string& header_value,
-                                             int32_t load_flags,
-                                             OnClearSiteDataCallback callback) {
+void SimpleURLLoaderWrapper::OnClearSiteData(
+    const GURL& url,
+    const std::string& header_value,
+    int32_t load_flags,
+    const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+    OnClearSiteDataCallback callback) {
   std::move(callback).Run();
 }
 void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
