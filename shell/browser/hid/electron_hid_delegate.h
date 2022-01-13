@@ -45,7 +45,8 @@ class ElectronHidDelegate : public content::HidDelegate,
   const device::mojom::HidDeviceInfo* GetDeviceInfo(
       content::RenderFrameHost* render_frame_host,
       const std::string& guid) override;
-  bool IsFidoAllowedForOrigin(const url::Origin& origin) override;
+  bool IsFidoAllowedForOrigin(content::RenderFrameHost* render_frame_host,
+                              const url::Origin& origin) override;
 
   // HidChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::HidDeviceInfo&) override;

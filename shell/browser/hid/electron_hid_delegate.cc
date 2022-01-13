@@ -104,7 +104,9 @@ const device::mojom::HidDeviceInfo* ElectronHidDelegate::GetDeviceInfo(
   return chooser_context->GetDeviceInfo(guid);
 }
 
-bool ElectronHidDelegate::IsFidoAllowedForOrigin(const url::Origin& origin) {
+bool ElectronHidDelegate::IsFidoAllowedForOrigin(
+    content::RenderFrameHost* render_frame_host,
+    const url::Origin& origin) {
   return base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kDisableHidBlocklist);
 }
