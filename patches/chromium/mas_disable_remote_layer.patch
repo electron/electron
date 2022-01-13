@@ -114,18 +114,28 @@ index d684614589c9e55965450d712ee6dc0deef6aade..e0446753a3d972215423c079160fe8bf
  
  // This function will check if all of the interfaces listed above are supported
 diff --git a/ui/base/cocoa/remote_layer_api.mm b/ui/base/cocoa/remote_layer_api.mm
-index e6baf74c966791ed5326fea23e7d23259a781313..c2bdfe2869c4e87409b48e9b86638e63a107cb65 100644
+index e6baf74c966791ed5326fea23e7d23259a781313..7fab070b8b06dfc5c9940c3b800735d187a72cf9 100644
 --- a/ui/base/cocoa/remote_layer_api.mm
 +++ b/ui/base/cocoa/remote_layer_api.mm
-@@ -18,6 +18,7 @@
+@@ -10,14 +10,17 @@
+ 
+ namespace ui {
+ 
++#ifndef MAS_BUILD
+ namespace {
+ // Control use of cross-process CALayers to display content directly from the
+ // GPU process on Mac.
+ base::Feature kRemoteCoreAnimationAPI{"RemoteCoreAnimationAPI",
+                                       base::FEATURE_ENABLED_BY_DEFAULT};
  }  // namespace
++#endif
  
  bool RemoteLayerAPISupported() {
 +#ifndef MAS_BUILD
    if (!base::FeatureList::IsEnabled(kRemoteCoreAnimationAPI))
      return false;
  
-@@ -49,6 +50,9 @@ bool RemoteLayerAPISupported() {
+@@ -49,6 +52,9 @@ bool RemoteLayerAPISupported() {
  
    // If everything is there, we should be able to use the API.
    return true;
