@@ -106,7 +106,7 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
   paymentDiscountStruct.identifier = [paymentDiscount.identifier UTF8String];
   paymentDiscountStruct.keyIdentifier =
       [paymentDiscount.keyIdentifier UTF8String];
-  paymentDiscountStruct.nonce = [paymentDiscount.nonce UUIDString];
+  paymentDiscountStruct.nonce = [[paymentDiscount.nonce UUIDString] UTF8String];
   paymentDiscountStruct.signature = [paymentDiscount.signature UTF8String];
   paymentDiscountStruct.timestamp = [paymentDiscount.timestamp intValue];
 
