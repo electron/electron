@@ -24,6 +24,7 @@ namespace in_app_purchase {
 struct PaymentDiscount {
   std::string identifier;
   std::string keyIdentifier;
+  std::string nonce;
   std::string signature;
   int timestamp;
 
