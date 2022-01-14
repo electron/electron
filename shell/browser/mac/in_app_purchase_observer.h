@@ -37,7 +37,7 @@ struct Payment {
   std::string productIdentifier = "";
   int quantity = 1;
   std::string applicationUsername;
-  PaymentDiscount paymentDiscount;
+  absl::optional<PaymentDiscount> paymentDiscount;
 
   Payment();
   Payment(const Payment&);

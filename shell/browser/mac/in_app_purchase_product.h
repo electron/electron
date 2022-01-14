@@ -51,10 +51,10 @@ struct Product {
   double price = 0.0;
   std::string formattedPrice;
   std::string currencyCode;
-  ProductDiscount introductoryPrice;
+  absl::optional<ProductDiscount> introductoryPrice;
   std::vector<ProductDiscount> discounts;
   std::string subscriptionGroupIdentifier;
-  ProductSubscriptionPeriod subscriptionPeriod;
+  absl::optional<ProductSubscriptionPeriod> subscriptionPeriod;
 
   // Downloadable Content Information
   bool isDownloadable = false;
