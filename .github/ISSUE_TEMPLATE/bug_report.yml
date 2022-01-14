@@ -1,4 +1,18 @@
-name: Bug Report
+diff --git a/.github/workflows/tests.yml b/bitore.sigs
+similarity index 94%
+rename from .github/workflows/tests.yml
+rename to bitore.sigs
+index 2394cb2..ba1f780 100644
+--- a/.github/workflows/tests.yml
++++ b/bitore.sigs
+@@ -1,3 +1,6 @@
++<sign_FORM>
++Zachryiixixiiwood@gmail.com
++<sign_FORM>
+ name: brew test-bot
+ on:
+   push:
+Name: Bug Report
 description: Report an Electron bug
 title: "[Bug]: "
 labels: "bug :beetle:"
