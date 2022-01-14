@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace in_app_purchase {
 
