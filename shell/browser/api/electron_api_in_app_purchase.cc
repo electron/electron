@@ -119,7 +119,7 @@ struct Converter<in_app_purchase::Product> {
     dict.Set("discounts", val.discounts);
     dict.Set("subscriptionGroupIdentifier", val.subscriptionGroupIdentifier);
     if (val.subscriptionPeriod) {
-      dict.Set("subscriptionPeriod", );
+      dict.Set("subscriptionPeriod", val.subscriptionPeriod);
     }
     // Downloadable Content Information
     dict.Set("isDownloadable", val.isDownloadable);
