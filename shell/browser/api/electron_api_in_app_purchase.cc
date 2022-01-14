@@ -40,7 +40,9 @@ struct Converter<in_app_purchase::Payment> {
     dict.Set("productIdentifier", payment.productIdentifier);
     dict.Set("quantity", payment.quantity);
     dict.Set("applicationUsername", payment.applicationUsername);
-    dict.Set("paymentDiscount", payment.paymentDiscount);
+    if (payment.paymentDiscount) {
+      dict.Set("paymentDiscount", payment.paymentDiscount);
+    }
     return dict.GetHandle();
   }
 };
@@ -111,10 +113,14 @@ struct Converter<in_app_purchase::Product> {
     dict.Set("price", val.price);
     dict.Set("formattedPrice", val.formattedPrice);
     dict.Set("currencyCode", val.currencyCode);
-    dict.Set("introductoryPrice", val.introductoryPrice);
+    if (val.introductoryPrice) {
+      dict.Set("introductoryPrice", val.introductoryPrice);
+    }
     dict.Set("discounts", val.discounts);
     dict.Set("subscriptionGroupIdentifier", val.subscriptionGroupIdentifier);
-    dict.Set("subscriptionPeriod", val.subscriptionPeriod);
+    if (val.subscriptionPeriod) {
+      dict.Set("subscriptionPeriod", );
+    }
     // Downloadable Content Information
     dict.Set("isDownloadable", val.isDownloadable);
     dict.Set("downloadContentVersion", val.downloadContentVersion);
