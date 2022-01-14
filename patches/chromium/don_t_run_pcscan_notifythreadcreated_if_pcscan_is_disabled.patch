@@ -19,10 +19,10 @@ index 741e969656ca2ae5da84e31a457b4c5b54119661..152af083218ee8560cc024fad6f43c60
      using PCScan = internal::PCScan;
      const auto invocation_mode = flags & PartitionPurgeAggressiveReclaim
 diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
-index dfdd94db5d929b89671b93c991037dac957690c5..02543e37003dd0524f5321d4aa75f9f2f6899f57 100644
+index e8177f214e02a173d82e8999bfcbdf0996f7a2ac..564faeef7d2e79ef9505d4b3fd9faf7d80be3814 100644
 --- a/base/threading/platform_thread_posix.cc
 +++ b/base/threading/platform_thread_posix.cc
-@@ -42,6 +42,7 @@
+@@ -43,6 +43,7 @@
  #endif
  
  #if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
@@ -30,7 +30,7 @@ index dfdd94db5d929b89671b93c991037dac957690c5..02543e37003dd0524f5321d4aa75f9f2
  #include "base/allocator/partition_allocator/starscan/pcscan.h"
  #include "base/allocator/partition_allocator/starscan/stack/stack.h"
  #endif
-@@ -75,7 +76,7 @@ void* ThreadFunc(void* params) {
+@@ -76,7 +77,7 @@ void* ThreadFunc(void* params) {
        base::DisallowSingleton();
  
  #if !defined(OS_NACL)
@@ -39,7 +39,7 @@ index dfdd94db5d929b89671b93c991037dac957690c5..02543e37003dd0524f5321d4aa75f9f2
      internal::PCScan::NotifyThreadCreated(internal::GetStackPointer());
  #endif
  
-@@ -101,7 +102,7 @@ void* ThreadFunc(void* params) {
+@@ -102,7 +103,7 @@ void* ThreadFunc(void* params) {
        PlatformThread::CurrentHandle().platform_handle(),
        PlatformThread::CurrentId());
  
