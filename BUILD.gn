@@ -900,8 +900,12 @@ if (is_mac) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
       defines = [ "HELPER_EXECUTABLE" ]
-      sources = filenames.app_sources
-      sources += [ "shell/common/electron_constants.cc" ]
+      sources = [
+        "shell/app/electron_main_mac.cc",
+        "shell/app/uv_stdio_fix.cc",
+        "shell/app/uv_stdio_fix.h",
+        "shell/common/electron_constants.cc",
+      ]
       include_dirs = [ "." ]
       info_plist = "shell/renderer/resources/mac/Info.plist"
       extra_substitutions =
@@ -1040,15 +1044,18 @@ if (is_mac) {
 
   mac_app_bundle("electron_app") {
     output_name = electron_product_name
-    sources = filenames.app_sources
-    sources += [ "shell/common/electron_constants.cc" ]
+    sources = [
+      "shell/app/electron_main_mac.cc",
+      "shell/app/uv_stdio_fix.cc",
+      "shell/app/uv_stdio_fix.h",
+      "shell/common/electron_constants.cc",
+    ]
     include_dirs = [ "." ]
     deps = [
       ":electron_app_framework_bundle_data",
       ":electron_app_plist",
       ":electron_app_resources",
       ":electron_fuses",
-      "//base",
       "//electron/buildflags",
     ]
     if (is_mas_build) {
@@ -1150,7 +1157,15 @@ if (is_mac) {
 
   executable("electron_app") {
     output_name = electron_project_name
-    sources = filenames.app_sources
+    if (is_win) {
+      sources = [ "shell/app/electron_main_win.cc" ]
+    } else if (is_linux) {
+      sources = [
+        "shell/app/electron_main_linux.cc",
+        "shell/app/uv_stdio_fix.cc",
+        "shell/app/uv_stdio_fix.h",
+      ]
+    }
     include_dirs = [ "." ]
     deps = [
       ":default_app_asar",
