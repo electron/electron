@@ -130,3 +130,7 @@ cherry-pick-6bb320d134b1.patch
 cherry-pick-109fde1088be.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
 cherry-pick-f781748dcb3c.patch
+revert_stop_using_nsrunloop_in_renderer_process.patch
+fix_dont_delete_SerialPortManager_on_main_thread.patch
+feat_add_data_transfer_to_requestsingleinstancelock.patch
+fix_crash_when_saving_edited_pdf_files.patch
