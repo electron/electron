@@ -21,7 +21,9 @@ WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
           x11::GetAtom("_NET_WM_STATE_MAXIMIZED_VERT")),
       net_wm_state_maximized_horz_atom_(
           x11::GetAtom("_NET_WM_STATE_MAXIMIZED_HORZ")),
-      net_wm_state_fullscreen_atom_(x11::GetAtom("_NET_WM_STATE_FULLSCREEN")) {
+      net_wm_state_fullscreen_atom_(x11::GetAtom("_NET_WM_STATE_FULLSCREEN")),
+      was_minimized_(window_->IsMinimized()),
+      was_maximized_(window_->IsMaximized()) {
   ui::X11EventSource::GetInstance()->connection()->AddEventObserver(this);
 }
 
@@ -31,9 +33,6 @@ WindowStateWatcher::~WindowStateWatcher() {
 
 void WindowStateWatcher::OnEvent(const x11::Event& x11_event) {
   if (IsWindowStateEvent(x11_event)) {
-    const bool was_minimized_ = window_->IsMinimized();
-    const bool was_maximized_ = window_->IsMaximized();
-
     std::vector<x11::Atom> wm_states;
     if (GetArrayProperty(
             static_cast<x11::Window>(window_->GetAcceleratedWidget()),
@@ -67,6 +66,9 @@ void WindowStateWatcher::OnEvent(const x11::Event& x11_event) {
         else
           window_->NotifyWindowLeaveFullScreen();
       }
+
+      was_minimized_ = is_minimized;
+      was_maximized_ = is_maximized;
     }
   }
 }
