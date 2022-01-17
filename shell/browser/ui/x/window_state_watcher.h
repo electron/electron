@@ -32,6 +32,9 @@ class WindowStateWatcher : public x11::EventObserver {
   const x11::Atom net_wm_state_maximized_horz_atom_;
   const x11::Atom net_wm_state_fullscreen_atom_;
 
+  bool was_minimized_ = false;
+  bool was_maximized_ = false;
+
   DISALLOW_COPY_AND_ASSIGN(WindowStateWatcher);
 };
 
