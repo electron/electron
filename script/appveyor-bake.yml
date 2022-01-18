@@ -1,0 +1,58 @@
+# The config is used to bake appveyor images, not for running CI jobs
+
+# Uncomment these lines to enable RDP
+#on_finish:
+#  - ps: >-
+#      if ($env:TARGET_ARCH -eq 'x64') {
+#        echo "SETTING BAKE IMAGE"
+#        $env:APPVEYOR_RDP_PASSWORD = "electron"
+#        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#      }
+version: 1.0.{build}
+build_cloud: electron-16-core2
+image: base-electron
+environment:
+  GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
+  ELECTRON_OUT_DIR: Default
+  ELECTRON_ENABLE_STACK_DUMPING: 1
+  MOCHA_REPORTER: mocha-multi-reporters
+  MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
+  GOMA_FALLBACK_ON_AUTH_FAILURE: true
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+  PYTHONIOENCODING: UTF-8
+build_script:
+  - echo "Building $env:GN_CONFIG build"
+  - git config --global core.longpaths true
+  - cd ..
+  - mkdir src
+  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
+  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
+  - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
+  - src\electron\script\setup-win-for-dev.bat
+  - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
+  - ps: >-
+      if ($env:GN_CONFIG -ne 'release') {
+        $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
+      }
+  - >-
+      gclient config
+      --name "src\electron"
+      --unmanaged
+      %GCLIENT_EXTRA_ARGS%
+      "https://github.com/electron/electron"
+  - gclient sync --with_branch_heads --with_tags
+after_build:
+- ps: |
+    if ($env:TARGET_ARCH -eq 'x64') {
+      echo "SETTING BAKE IMAGE"
+      # Rewrite the bake image name here
+      $env:APPVEYOR_BAKE_IMAGE = 'electron-test-bake-image-jk'
+    } else {
+      echo "SKIPPING BAKE IMAGE for $env:TARGET_ARCH"
+    }
+
+on_image_bake:
+- ps: >-
+    echo "Baking image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
+    Remove-Item $pwd\depot_tools
+    Remove-Item $pwd\src\electron
