@@ -79,11 +79,6 @@ steps-lint: &steps-lint
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git src/third_party/depot_tools
           echo 'export PATH="$PATH:'"$PWD"'/src/third_party/depot_tools"' >> $BASH_ENV
     - run:
-        name: Prepare or Bake AppVeyor Image
-        command: |
-          cd src/electron
-          node script/prepare-appveyor
-    - run:
         name: Download GN Binary
         command: |
           chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
@@ -118,6 +113,12 @@ steps-lint: &steps-lint
           node script/yarn install --frozen-lockfile
           node script/yarn lint
     - run:
+        name: Prepare or Bake AppVeyor Image
+        command: |
+          cd src/electron
+          node script/yarn install --frozen-lockfile
+          node script/prepare-appveyor
+    - run:
         name: Run Script Typechecker
         command: |
           cd src/electron
@@ -131,7 +132,6 @@ jobs:
       size: medium
     environment:
       <<: *env-linux-medium
-    <<: *steps-prepare-appveyor
     <<: *steps-lint
 
 # Initial setup workflow
