@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philipp Hancke <phancke@nvidia.com>
+Date: Thu, 25 Nov 2021 08:57:54 +0100
+Subject: sdp: reject large number of channels
+
+the maximum used in practice is multiopus with
+6 or 8 channels. 24 is the maximum number of channels
+supported in the audio decoder.
+
+BUG=chromium:1265806
+(cherry picked from commit d58ac5adf887a2bc96d75b1c0fb6fef17889ac80)
+
+No-Try: True
+Change-Id: Iba8e3185a1f235b846fed9c154e66fb3983664ed
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/238980
+Reviewed-by: Harald Alvestrand <hta@webrtc.org>
+Commit-Queue: Philipp Hancke <phancke@nvidia.com>
+Cr-Original-Commit-Position: refs/heads/main@{#35440}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/239740
+Commit-Queue: Mirko Bonadei <mbonadei@webrtc.org>
+Reviewed-by: Taylor Brandstetter <deadbeef@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#3}
+Cr-Branched-From: 40abb7d8ff6ebdb8095d372c18949940c5fcecb5-refs/heads/main@{#35164}
+
+diff --git a/pc/webrtc_sdp.cc b/pc/webrtc_sdp.cc
+index 26eb4f30fd1aa323fd723f9d0ca73ea1ca0a4522..8318ed651297e5a96df06b509afb2f5bd90a2c51 100644
+--- a/pc/webrtc_sdp.cc
++++ b/pc/webrtc_sdp.cc
+@@ -257,6 +257,9 @@ static const char kDefaultSctpmapProtocol[] = "webrtc-datachannel";
+ // types.
+ const int kWildcardPayloadType = -1;
+ 
++// Maximum number of channels allowed.
++static const size_t kMaxNumberOfChannels = 24;
++
+ struct SsrcInfo {
+   uint32_t ssrc_id;
+   std::string cname;
+@@ -3668,6 +3671,10 @@ bool ParseRtpmapAttribute(const std::string& line,
+         return false;
+       }
+     }
++    if (channels > kMaxNumberOfChannels) {
++      return ParseFailed(line, "At most 24 channels are supported.", error);
++    }
++
+     AudioContentDescription* audio_desc = media_desc->as_audio();
+     UpdateCodec(payload_type, encoding_name, clock_rate, 0, channels,
+                 audio_desc);
+diff --git a/pc/webrtc_sdp_unittest.cc b/pc/webrtc_sdp_unittest.cc
+index 5e7c225aa1f4b694d2df09ef4c504a23e8634fe1..eaed759daa18d3e4afa98920938acc3b73f8d3b6 100644
+--- a/pc/webrtc_sdp_unittest.cc
++++ b/pc/webrtc_sdp_unittest.cc
+@@ -4783,3 +4783,15 @@ TEST_F(WebRtcSdpTest, IllegalMidCharacterValue) {
+   Replace("a=mid:", "a=mid:[]", &sdp);
+   ExpectParseFailure(std::string(sdp), "a=mid:[]");
+ }
++
++TEST_F(WebRtcSdpTest, MaxChannels) {
++  std::string sdp =
++      "v=0\r\n"
++      "o=- 11 22 IN IP4 127.0.0.1\r\n"
++      "s=-\r\n"
++      "t=0 0\r\n"
++      "m=audio 49232 RTP/AVP 108\r\n"
++      "a=rtpmap:108 ISAC/16000/512\r\n";
++
++  ExpectParseFailure(sdp, "a=rtpmap:108 ISAC/16000/512");
++}
