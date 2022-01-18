@@ -579,14 +579,16 @@ void NativeWindowViews::Maximize() {
 #endif
 
 void NativeWindowViews::Unmaximize() {
+  if (IsMaximized()) {
 #if defined(OS_WIN)
-  if (transparent()) {
-    SetBounds(restore_bounds_, false);
-    return;
-  }
+    if (transparent()) {
+      SetBounds(restore_bounds_, false);
+      return;
+    }
 #endif
 
-  widget()->Restore();
+    widget()->Restore();
+  }
 }
 
 bool NativeWindowViews::IsMaximized() {
