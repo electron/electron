@@ -30,6 +30,10 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 
+#include "base/i18n/rtl.h"
+#include "ui/base/l10n/l10n_util.h"
+#include "ui/base/ui_base_switches.h"
+
 #if defined(OS_LINUX)
 #include "components/crash/core/app/breakpad_linux.h"
 #endif
@@ -137,6 +141,13 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
   return gin::ConvertToV8(isolate, keys);
 }
 
+#if defined(OS_MAC)
+ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
+  char* indicator = getenv(name);
+  return indicator && indicator[0] != '\0';
+}
+#endif
+
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
@@ -177,6 +188,20 @@ int NodeMain(int argc, char* argv[]) {
     int flags_exit_code = SetNodeCliFlags();
     if (flags_exit_code != 0)
       exit(flags_exit_code);
+
+#if defined(OS_MAC)
+    // We want to set the locale here to the system locale,
+    // unless LANG or LC_ALL was passed in.
+    // Node itself doesn't support --lang, so
+    // we ignore that flag, and only check for the environment variables.
+    // Also see ElectronBrowserMainParts::PreCreateThreads
+    // for another example of where OverrideLocaleWithCocoaLocale is called.
+    if (!IsEnvSet("LANG") && !IsEnvSet("LC_ALL")) {
+      l10n_util::OverrideLocaleWithCocoaLocale();
+      std::string locale = l10n_util::GetLocaleOverride();
+      base::i18n::SetICUDefaultLocale(locale);
+    }
+#endif
 
     node::InitializationSettingsFlags flags = node::kRunPlatformInit;
     node::InitializationResult result =
