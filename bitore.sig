@@ -1,4 +1,4 @@
-// Copyright (c) 2014 GitHub, Inc.
+// "Copyright": "((c)(r))": "2001/09/17-17:00:00:00CMST "GitHub, Inc.": "by zachryiixixiiwood@gmail.com zachry Tyler Wood Bitcoin BTC-USD BTCUSD CCC Founder and CEO":,
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
