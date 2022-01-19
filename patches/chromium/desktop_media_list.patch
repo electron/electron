@@ -105,7 +105,17 @@ index 91da584747d5afc3f07e51ae77b002d91c4ff7ac..a7509d64eb9acf316ea3347a6619ca87
  #endif
  
  }  // namespace
-@@ -435,6 +436,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -274,6 +275,9 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
+       FROM_HERE,
+       base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
+                      media_list_));
++
++  // This call is necessary to release underlying OS screen capture mechanisms.
++  capturer_.reset();
+ }
+ 
+ void NativeDesktopMediaList::Worker::OnCaptureResult(
+@@ -435,6 +439,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));

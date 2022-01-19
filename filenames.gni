@@ -732,11 +732,6 @@ filenames = {
     "shell/renderer/extensions/electron_extensions_renderer_client.h",
   ]
 
-  app_sources = [
-    "shell/app/electron_main.cc",
-    "shell/app/electron_main.h",
-  ]
-
   framework_sources = [
     "shell/app/electron_library_main.h",
     "shell/app/electron_library_main.mm",
