@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 4cf696e5850c5a6a8819295bfbb50343c1635275..526060569a08a55db11d534de0f99c4096675f69 100644
+index ee68a36ca8a9ea758c57b5398a7619070a872e42..1e398aff33d3072eb964f7511ac44375ada1a067 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1835,9 +1835,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1836,9 +1836,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              cmd_line.get(), IsJitDisabled());
@@ -42,7 +42,7 @@ index 4cf696e5850c5a6a8819295bfbb50343c1635275..526060569a08a55db11d534de0f99c40
      auto snapshot_files = GetV8SnapshotFilesToPreload(*cmd_line);
      // Spawn the child process asynchronously to avoid blocking the UI thread.
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 9c0e928067d86121ee3732440c80e84dcbbe0dd9..b5c84dc74cf71bc226787c9609dd2c99915710fb 100644
+index e8d6ef94664bb37996871c0cc0db7c815783b786..0d56fa0aebee80883019a100900119972bf02edd 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -25,6 +25,9 @@ namespace content {
@@ -66,7 +66,7 @@ index 9c0e928067d86121ee3732440c80e84dcbbe0dd9..b5c84dc74cf71bc226787c9609dd2c99
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index 29d99ad59af67a9ac1206c059c8236da93c582a1..b4d09173d836bc9f666d7e3733e8b515cef8eb87 100644
+index 463df70c55df932427c761a67dbc89d7657f9703..d6d8094e31129eb7ca1f0bf36523d48204281795 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
@@ -82,7 +82,7 @@ index 29d99ad59af67a9ac1206c059c8236da93c582a1..b4d09173d836bc9f666d7e3733e8b515
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
 @@ -29,6 +34,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
- #endif  // defined(OS_MAC)
+ #endif  // BUILDFLAG(IS_MAC)
  
    sandbox::mojom::Sandbox GetSandboxType() override;
 +
@@ -92,4 +92,4 @@ index 29d99ad59af67a9ac1206c059c8236da93c582a1..b4d09173d836bc9f666d7e3733e8b515
 +#endif
  };
  
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)

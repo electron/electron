@@ -103,7 +103,7 @@ index 80f26b62b25bd6aa46886e3112b2ffd2698693fe..e72cab84db36eec86309160d4f7416ee
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 8112ae2572fbc9f8713ecd196827eb8688c72d6d..b6aa0ebbfeccdb9cfcd78392db45d8a4ccf9357b 100644
+index efe549c57621e4c0a8ed5f1daed7067fa1f88c51..02e68845b3edfbca2891c555649f94d3e337386c 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -535,6 +535,7 @@ URLLoader::URLLoader(

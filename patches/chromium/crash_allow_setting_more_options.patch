@@ -9,7 +9,7 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 6950ea182ea55b3fd35d8f7e2c5e0dda24328274..e9385fa663c2b1f6052e5423c28041d83895c4c3 100644
+index 823e49a234e3dd31bf6527c2e4efa96f3d23f1f2..43f6d476f3ee2759cf41c492f932522994e7ddec 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -112,6 +112,7 @@ void SetUploadURL(const std::string& url) {
@@ -21,7 +21,7 @@ index 6950ea182ea55b3fd35d8f7e2c5e0dda24328274..e9385fa663c2b1f6052e5423c28041d8
  uint64_t g_process_start_time = 0;
  pid_t g_pid = 0;
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 89b4bfccd5d3278231726184547378805fb30ed5..9f0cb9d52e2f7fc0c1808500b775bc28b4514d00 100644
+index 0bd07dcc7219e9dbfc24822f17fff1f0d37accab..4965d49da48cebd7bf55e36efa5f66201641ad1d 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
 @@ -139,6 +139,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
@@ -39,11 +39,11 @@ index 89b4bfccd5d3278231726184547378805fb30ed5..9f0cb9d52e2f7fc0c1808500b775bc28
 +void CrashReporterClient::GetProcessSimpleAnnotations(std::map<std::string, std::string>* annotations) {
 +}
 +
- #if defined(OS_ANDROID)
+ #if BUILDFLAG(IS_ANDROID)
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c318334080b 100644
+index ef518842c4af9528e13fdabf85adfe4c78cc3f40..4b67edbf7728e407130fdf418748ed5d7073580e 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@
@@ -71,7 +71,7 @@ index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c31
 +  virtual void GetProcessSimpleAnnotations(
 +      std::map<std::string, std::string>* annotations);
 +
- #if defined(OS_ANDROID)
+ #if BUILDFLAG(IS_ANDROID)
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc

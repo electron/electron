@@ -48,7 +48,7 @@ index 86180d4f001a7f849553a4bd5401d69fe4f1bec2..953b1f4f24e55e127af5fcb5fb3c4e1e
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 01e524ba93c29f34858e4bd5a5cc8757f055f238..421f90d62f47133b841eddcaf37a44371c990db5 100644
+index d8e2bd1e55a52e86dda5c1b69c425b49e16538bd..80e2c77066f24e99a1894faadbf1d030a188ffa9 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -24,6 +24,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -60,7 +60,7 @@ index 01e524ba93c29f34858e4bd5a5cc8757f055f238..421f90d62f47133b841eddcaf37a4437
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index d0a0ca74e12af5d0e8daa077ebe992984c7ecdf2..ecbd5554d2d181799c700e299bb24030c8ae7abe 100644
+index 6a830ec9f29b9764cd425f0681dafbb18d90b457..a7a095ceb9e626c79db21e0d16c8ef47da860679 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -17,6 +17,7 @@
@@ -81,7 +81,7 @@ index d0a0ca74e12af5d0e8daa077ebe992984c7ecdf2..ecbd5554d2d181799c700e299bb24030
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 16906552e5ead237c173c2958303bf2b9b86ad43..6368d2d1826bad732bbfd153472fd2d61c378d1f 100644
+index ab0fb39c4b1891db3595f98e71a0dba158262a2a..ebec53f358d9c41d818f00c948e59cadc7b9c039 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -87,6 +87,9 @@
@@ -163,7 +163,7 @@ index 16906552e5ead237c173c2958303bf2b9b86ad43..6368d2d1826bad732bbfd153472fd2d6
 +  gfx::ColorSpace dst_color_space =
 +      PATCH_CS(CurrentRenderPassColorSpace());
  
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)
    // Force sRGB output on Windows for overlay candidate video quads to match
 @@ -2768,7 +2777,8 @@ void GLRenderer::DrawStreamVideoQuad(const StreamVideoDrawQuad* quad,
  
@@ -186,7 +186,7 @@ index 16906552e5ead237c173c2958303bf2b9b86ad43..6368d2d1826bad732bbfd153472fd2d6
                  /*adjust_src_white_level=*/draw_cache_.is_video_frame,
                  locked_quad.hdr_metadata());
  
-@@ -3693,7 +3703,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
+@@ -3697,7 +3707,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& dst_color_space,
                                 bool adjust_src_white_level,
                                 absl::optional<gfx::HDRMetadata> hdr_metadata) {
@@ -197,7 +197,7 @@ index 16906552e5ead237c173c2958303bf2b9b86ad43..6368d2d1826bad732bbfd153472fd2d6
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level && src_color_space.IsHDR()) {
      // TODO(b/183236148): consider using the destination's HDR static metadata
-@@ -4074,9 +4086,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4084,9 +4096,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -210,7 +210,7 @@ index 16906552e5ead237c173c2958303bf2b9b86ad43..6368d2d1826bad732bbfd153472fd2d6
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4296,8 +4308,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4306,8 +4318,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,14 +222,14 @@ index 16906552e5ead237c173c2958303bf2b9b86ad43..6368d2d1826bad732bbfd153472fd2d6
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4486,3 +4499,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
- GLRenderer::OverlayTexture::~OverlayTexture() = default;
+@@ -4513,3 +4526,5 @@ bool GLRenderer::ColorTransformKey::operator<(
+ }
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index bfcc7683c9d17b1fb3877f217987bfb0b6972e94..531ab7af26a6ea871066b1df97f23ae4fa3503dd 100644
+index 926ea905b775c0706fd1b882f37b88b646b8b154..691eb2c5f7a26ea2b213b6378ab600b6b047531d 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,10 +241,10 @@ index bfcc7683c9d17b1fb3877f217987bfb0b6972e94..531ab7af26a6ea871066b1df97f23ae4
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 526060569a08a55db11d534de0f99c4096675f69..a46b0086df6461c6936513bad51213925bdcd2e2 100644
+index 1e398aff33d3072eb964f7511ac44375ada1a067..bcff2b74e3f90768648a23c29be9b42668418008 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -192,6 +192,7 @@
+@@ -193,6 +193,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +252,7 @@ index 526060569a08a55db11d534de0f99c4096675f69..a46b0086df6461c6936513bad5121392
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3282,6 +3283,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3283,6 +3284,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

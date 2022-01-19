@@ -10,7 +10,7 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index f6d262f1bf7aa77c2a63f4a4c3351be0fe2ab3fd..52db2e1948fd7752b88d5a692748053491594c2d 100644
+index 496b15e0955d27e2e362c20c89bdc5b3a11ef526..c08c93eba8eac37083abbd9845e02a78eca2c56c 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
 @@ -129,6 +129,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
@@ -23,10 +23,10 @@ index f6d262f1bf7aa77c2a63f4a4c3351be0fe2ab3fd..52db2e1948fd7752b88d5a6927480534
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 487cba773a1c53755f6ff3e65a7ec1e16509e8f5..53b6af815bf3d1daf05eabf0b1b0702153334fb5 100644
+index f23e6ab53994dc99d28644117c5549c6f82a482f..818d16f16a2478d859757305333a9b9e51617604 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4505,6 +4505,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4499,6 +4499,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index 487cba773a1c53755f6ff3e65a7ec1e16509e8f5..53b6af815bf3d1daf05eabf0b1b07021
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 1b582c1736db20dab712ee7875f37c2140bd7d45..efab4f51e56e6e179fb832b1cf47d7f4a348e6c7 100644
+index 89c39e1486f1d3c0251f7bccf50c80804412c9b9..ff9b19bb213b82b4d2ba318c7196fa4823d85740 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -602,6 +602,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -599,6 +599,8 @@ class CONTENT_EXPORT RenderFrameImpl
        blink::WebLocalFrameClient::LazyLoadBehavior lazy_load_behavior) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;

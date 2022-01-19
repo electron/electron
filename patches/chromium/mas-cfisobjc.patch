@@ -6,11 +6,11 @@ Subject: mas: avoid usage of _CFIsObjC
 Removes usage of the _CFIsObjC private API.
 
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index 2a42798b8fdf624f26341640d0778537719e1447..0b300cf356e908cbaa5f55543ca49a7467f6c6a2 100644
+index 11fa4bb6714518b98321d5e10919de3e01403efd..c9232593c08be04cb62fe7163a240cbed4f6e464 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -31,12 +31,6 @@
- #if !defined(OS_IOS)
+ #if !BUILDFLAG(IS_IOS)
  CFTypeID SecACLGetTypeID();
  CFTypeID SecTrustedApplicationGetTypeID();
 -// The NSFont/CTFont toll-free bridging is broken before 10.15.

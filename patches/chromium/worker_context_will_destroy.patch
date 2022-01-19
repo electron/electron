@@ -10,7 +10,7 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 4352aada84d7fe5abbc2f3320a3a643e838774dc..b6d5fe0a21e9343d82323a9f7c06f9b5891316cc 100644
+index b914cb91a2b49f3d7795979d4f1085e95e83bd31..8bcad5979c2fb599ac028aefd23eb8d71209519d 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -356,6 +356,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -26,7 +26,7 @@ index 4352aada84d7fe5abbc2f3320a3a643e838774dc..b6d5fe0a21e9343d82323a9f7c06f9b5
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index df9f357a597c7d5990058e7c3ab26b32cc4e7252..f72f927bfcd9fe42e49682b12b361ae8a877ace8 100644
+index a183090356b3c0e6806a2d7a9b3b0abdad8d1bbd..01f8d6bc38cc6bafb274baa6bad8bbae03de4a68 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -925,6 +925,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
@@ -43,7 +43,7 @@ index df9f357a597c7d5990058e7c3ab26b32cc4e7252..f72f927bfcd9fe42e49682b12b361ae8
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index cba574c571ded199c70374ffe01bad5f88b5902f..7801b60329802c92e6b6103ccc74d6871584c9b2 100644
+index 2191ab72dcaccf50ddbc700ded63f66b95de856d..b4f6e7a468661c272a4cef338e1c171f7247191f 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -207,6 +207,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {

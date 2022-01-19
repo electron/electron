@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 2d17ddf94871a028af1b3470568a50d2b1fd7294..e994a0cd005890a9f0a4a41a1a8a5ba135a2d885 100644
+index 7a8ca6523bfd1ce237da9dce7fce03a6acb8b75e..c485572aa06e4b750468b8e23816fbcbf0515757 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -20,7 +20,10 @@
@@ -24,7 +24,7 @@ index 2d17ddf94871a028af1b3470568a50d2b1fd7294..e994a0cd005890a9f0a4a41a1a8a5ba1
 @@ -49,9 +52,11 @@
  #include "ui/views/accessibility/view_accessibility.h"
  
- #if !defined(OS_ANDROID)
+ #if !BUILDFLAG(IS_ANDROID)
 +#if 0
  #include "chrome/browser/ui/browser.h"
  #include "chrome/browser/ui/browser_list.h"
@@ -37,7 +37,7 @@ index 2d17ddf94871a028af1b3470568a50d2b1fd7294..e994a0cd005890a9f0a4a41a1a8a5ba1
                                 accessibility_mode);
  }
  
--#if !defined(OS_ANDROID)
+-#if !BUILDFLAG(IS_ANDROID)
 +#if 0
  std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(Browser* browser) {
    std::unique_ptr<base::DictionaryValue> target_data(
@@ -65,13 +65,13 @@ index 2d17ddf94871a028af1b3470568a50d2b1fd7294..e994a0cd005890a9f0a4a41a1a8a5ba1
    data.Set(kPagesField, std::move(rvh_list));
  
    std::unique_ptr<base::ListValue> browser_list(new base::ListValue());
--#if !defined(OS_ANDROID)
+-#if !BUILDFLAG(IS_ANDROID)
 +#if 0
    for (Browser* browser : *BrowserList::GetInstance()) {
      browser_list->Append(BuildTargetDescriptor(browser));
    }
--#endif  // !defined(OS_ANDROID)
-+#endif // !defined(OS_ANDROID)
+-#endif  // !BUILDFLAG(IS_ANDROID)
++#endif // !BUILDFLAG(IS_ANDROID)
    data.Set(kBrowsersField, std::move(browser_list));
  
    std::unique_ptr<base::ListValue> widgets_list(new base::ListValue());
@@ -113,7 +113,7 @@ index 2d17ddf94871a028af1b3470568a50d2b1fd7294..e994a0cd005890a9f0a4a41a1a8a5ba1
      }
    }
 +#endif
- #endif  // !defined(OS_ANDROID)
+ #endif  // !BUILDFLAG(IS_ANDROID)
    // No browser with the specified |session_id| was found.
    std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
 @@ -757,5 +770,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
