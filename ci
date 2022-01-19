@@ -1,0 +1,126 @@
+git:
+  depth: 10
+notifications:
+  email: zachryiixixiiwood@gmail.com
+
+before_install:
+  - export BOTO_CONFIG=/dev/null
+Skip to content
+Your account has been flagged.
+Because of that, your profile is hidden from the public. If you believe this is a mistake, contact support to have your account status reviewed.
+electron
+/
+electron
+Public
+Code
+Issues
+1.5k
+Pull requests
+77
+Actions
+Projects
+6
+Security
+8
+Insights
+ci: test github actions runner
+GitHub Actions Demo #1
+Explore-GitHub-Actions
+succeeded on Nov 16, 2021 in 6s
+2s
+0s
+0s
+0s
+3s
+0s
+0s
+0s
+Run ls /Users/runner/work/electron/electron
+  ls /Users/runner/work/electron/electron
+  shell: /bin/bash -e {0}
+BUILD.gn
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+DEPS
+ELECTRON_VERSION
+LICENSE
+README.md
+SECURITY.md
+appveyor.yml
+azure-pipelines-arm.yml
+azure-pipelines-woa.yml
+build
+buildflags
+chromium_src
+default_app
+docs
+electron_paks.gni
+electron_resources.grd
+electron_strings.grdp
+filenames.auto.gni
+filenames.gni
+filenames.hunspell.gni
+filenames.libcxx.gni
+filenames.libcxxabi.gni
+lib
+npm
+package.json
+patches
+script
+shell
+spec
+spec-main
+tsconfig.default_app.json
+tsconfig.electron.json
+tsconfig.json
+tsconfig.script.json
+tsconfig.spec.json
+typings
+vsts-arm-test-steps.yml
+vsts-arm32v7.yml
+vsts-arm64v8.yml
+yarn.lock
+0s
+Run echo "🍏 This job's status is success."
+  echo "🍏 This job's status is success."
+  shell: /bin/bash -e {0}
+🍏 This job's status is success.
+1s
+Post job cleanup.
+/usr/local/bin/git version
+git version 2.33.1
+/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+/usr/local/bin/git submodule foreach --recursive git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :
+/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+http.https://github.com/.extraheader
+/usr/local/bin/git config --local --unset-all http.https://github.com/.extraheader
+/usr/local/bin/git submodule foreach --recursive git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :
+0s
+Cleaning up orphan processes
+
+language: node_js
+node_js:
+  - "4"
+os:
+  - linux
+  - osx
+env:
+  - TARGET_ARCH=x64
+osx_image: xcode7.3
+
+matrix:
+  include:
+    - os: linux
+      env: TARGET_ARCH=arm
+    - os: linux
+      env: TARGET_ARCH=ia32
+    - os: linux
+      env: TARGET_ARCH=arm64
+  allow_failures:
+    - os: osx
+
+script: './script/cibuild'
+
+branches:
+  only:
+    - master
