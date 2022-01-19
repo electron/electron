@@ -210,108 +210,108 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
 
     case ')':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '0':
       return ui::VKEY_0;
     case '!':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '1':
       return ui::VKEY_1;
     case '@':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '2':
       return ui::VKEY_2;
     case '#':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '3':
       return ui::VKEY_3;
     case '$':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '4':
       return ui::VKEY_4;
     case '%':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '5':
       return ui::VKEY_5;
     case '^':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '6':
       return ui::VKEY_6;
     case '&':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '7':
       return ui::VKEY_7;
     case '*':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '8':
       return ui::VKEY_8;
     case '(':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '9':
       return ui::VKEY_9;
 
     case ':':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case ';':
       return ui::VKEY_OEM_1;
     case '+':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '=':
       return ui::VKEY_OEM_PLUS;
     case '<':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case ',':
       return ui::VKEY_OEM_COMMA;
     case '_':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '-':
       return ui::VKEY_OEM_MINUS;
     case '>':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '.':
       return ui::VKEY_OEM_PERIOD;
     case '?':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '/':
       return ui::VKEY_OEM_2;
     case '~':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '`':
       return ui::VKEY_OEM_3;
     case '{':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '[':
       return ui::VKEY_OEM_4;
     case '|':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '\\':
       return ui::VKEY_OEM_5;
     case '}':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case ']':
       return ui::VKEY_OEM_6;
     case '"':
       *shifted = true;
-      FALLTHROUGH;
+      [[fallthrough]];
     case '\'':
       return ui::VKEY_OEM_7;
 
