@@ -43,6 +43,8 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
   // views::View:
   void Layout() override;
+  bool GetNeedsNotificationWhenVisibleBoundsChange() const override;
+  void OnVisibleBoundsChanged() override;
 
   InspectableWebContents* inspectable_web_contents() {
     return inspectable_web_contents_;
@@ -60,6 +62,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   views::WebView* devtools_web_view_ = nullptr;
 
   DevToolsContentsResizingStrategy strategy_;
+  gfx::Rect visible_bounds_;
   bool devtools_visible_ = false;
   views::WidgetDelegate* devtools_window_delegate_ = nullptr;
   std::u16string title_;

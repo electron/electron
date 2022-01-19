@@ -170,6 +170,18 @@ bool InspectableWebContentsViewViews::IsDevToolsViewFocused() {
     return false;
 }
 
+bool InspectableWebContentsViewViews::
+    GetNeedsNotificationWhenVisibleBoundsChange() const {
+  return true;
+}
+
+void InspectableWebContentsViewViews::OnVisibleBoundsChanged() {
+  if (visible_bounds_.ApproximatelyEqual(GetVisibleBounds(), 0))
+    return;
+  visible_bounds_ = GetVisibleBounds();
+  Layout();
+}
+
 void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
   CloseDevTools();
 
