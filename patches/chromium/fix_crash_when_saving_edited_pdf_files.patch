@@ -13,10 +13,10 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.js b/chrome/browser/resources/pdf/pdf_viewer.js
-index 42407ef7c214bed1eb44165a87c6d0dc44f0ad7f..64225caf3738549520b35259628559ec6c15d901 100644
+index 7b1e50624df15f4d77cbe5d014e4f57c7499a999..f3b8dcd32369e9f954a0791588ba4955c6cdae7e 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.js
 +++ b/chrome/browser/resources/pdf/pdf_viewer.js
-@@ -967,25 +967,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
+@@ -974,25 +974,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
@@ -47,15 +47,10 @@ index 42407ef7c214bed1eb44165a87c6d0dc44f0ad7f..64225caf3738549520b35259628559ec
    }
  
    /**
-@@ -1112,30 +1099,13 @@ export class PDFViewerElement extends PDFViewerBaseElement {
-     if (!fileName.toLowerCase().endsWith('.pdf')) {
+@@ -1120,29 +1107,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
        fileName = fileName + '.pdf';
      }
--    // Create blob before callback to avoid race condition.
-+
-+    const a = document.createElement('a');
-+    a.download = fileName;
-     const blob = new Blob([result.dataToSave], {type: 'application/pdf'});
+ 
 -    chrome.fileSystem.chooseEntry(
 -        {
 -          type: 'saveFile',
@@ -72,12 +67,16 @@ index 42407ef7c214bed1eb44165a87c6d0dc44f0ad7f..64225caf3738549520b35259628559ec
 -            return;
 -          }
 -          entry.createWriter(writer => {
--            writer.write(blob);
+-            writer.write(
+-                new Blob([result.dataToSave], {type: 'application/pdf'}));
 -            // Unblock closing the window now that the user has saved
 -            // successfully.
 -            chrome.mimeHandlerPrivate.setShowBeforeUnloadDialog(false);
 -          });
 -        });
++    const a = document.createElement('a');
++    a.download = fileName;
++    const blob = new Blob([result.dataToSave], {type: 'application/pdf'});
 +    a.href = URL.createObjectURL(blob);
 +    a.click();
 +    URL.revokeObjectURL(a.href);
