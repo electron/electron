@@ -6,10 +6,10 @@ Subject: ui_gtk_public_header.patch
 Allow electron to depend on //ui/gtk/gtk_util.h
 
 diff --git a/ui/gtk/BUILD.gn b/ui/gtk/BUILD.gn
-index 6cf6871d3748177d247ee10d5689b97b7dcf0a17..d6a5598004c7ae46542e47953551847a6995c8d3 100644
+index 6ff955727e13551f59ca06f7acf2a4d3a5ab0dc3..98113800c75d2a0dfc86b5ee21040dfef3fd7c05 100644
 --- a/ui/gtk/BUILD.gn
 +++ b/ui/gtk/BUILD.gn
-@@ -68,7 +68,7 @@ generate_stubs("gtk_stubs") {
+@@ -69,7 +69,7 @@ generate_stubs("gtk_stubs") {
  }
  
  component("gtk") {
@@ -18,7 +18,7 @@ index 6cf6871d3748177d247ee10d5689b97b7dcf0a17..d6a5598004c7ae46542e47953551847a
  
    sources = [
      "gtk_color_mixers.cc",
-@@ -82,7 +82,6 @@ component("gtk") {
+@@ -83,7 +83,6 @@ component("gtk") {
      "gtk_ui_factory.cc",
      "gtk_ui_platform.h",
      "gtk_util.cc",

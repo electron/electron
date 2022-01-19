@@ -108,7 +108,7 @@ index 6688ba8ba2fb7d930773144cdbc43f1f6fa2b685..22015c7b9b50e1264551ce226757f90e
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 81b1178f937e4a817af9c1ff3837d98fb85a4d4f..b4a25835080eb12de398d26ad9474a656593e5b9 100644
+index a7a64effed043a75371e5dde0837ce7fbfa631ad..8f190e6d33497f52b536aef82505025b74602337 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1760,12 +1760,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -127,7 +127,7 @@ index 81b1178f937e4a817af9c1ff3837d98fb85a4d4f..b4a25835080eb12de398d26ad9474a65
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index e3858ca3e925582102ee1bed6df93772e82ecdc4..939f8cae4672524c0a2a635bb0d2e3a8fba0d4ff 100644
+index 1cda4516162907a047b67edbc2d020e36cceb8f0..2d222d43c0c55d976eceb189a2d955793a6824ce 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -810,8 +810,7 @@ class Browser : public TabStripModelObserver,
@@ -218,7 +218,7 @@ index 2930898b03d7b7ef86d13733cec3cbe84105c166..76625339f42a867c8b68840253e91648
    void SetContentsBounds(content::WebContents* source,
                           const gfx::Rect& bounds) override;
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index 24b6b04c8855ad136cf78d450dfd581f8f531dfd..535428cb4eb69b90e62595d009688cc56fd58bc5 100644
+index 2834e3ee5778185741779a473cf5157788a76cc5..64fcddc952065e574a84edd99e5b1b80febd3d26 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
 @@ -81,8 +81,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
@@ -232,7 +232,7 @@ index 24b6b04c8855ad136cf78d450dfd581f8f531dfd..535428cb4eb69b90e62595d009688cc5
    return true;
  }
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.h b/components/offline_pages/content/background_loader/background_loader_contents.h
-index 06014c6912eb77a4697a2b974d27b971bfa13b50..60daaf2fc44f55b32197d9d52444bc507bceb050 100644
+index c6bd5c19f8a7ceec17c9e32af5296a9617f3a619..02199b439fba7fdc617b7f7980d958b76d09c4e8 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.h
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.h
 @@ -66,8 +66,7 @@ class BackgroundLoaderContents : public content::WebContentsDelegate {
@@ -274,10 +274,10 @@ index 5647a94ace369de0c7e0096c885865b7b5b04c61..bf3e958a5f883c2408846f4954e58a30
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 4b8e5a927dd3d6a5e66e169b2108552322051246..fc66c665873ed2ccc2a1a33de00c4f08e16956be 100644
+index 5092190243d3eb95a4180cb44937e3d25c4a3ad9..23a11de7c25b81e72c81db20caaa799191b70e45 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -323,8 +323,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -322,8 +322,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

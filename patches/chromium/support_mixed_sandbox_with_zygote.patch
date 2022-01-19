@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ee68a36ca8a9ea758c57b5398a7619070a872e42..1e398aff33d3072eb964f7511ac44375ada1a067 100644
+index a4bd82fc6cba209a1bc857671d2f9a510100e364..c1a85669c5fcb4fb15c1600d347686ac7348cf9b 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -1836,9 +1836,15 @@ bool RenderProcessHostImpl::Init() {
@@ -39,8 +39,8 @@ index ee68a36ca8a9ea758c57b5398a7619070a872e42..1e398aff33d3072eb964f7511ac44375
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 +#endif
  #endif
-     auto snapshot_files = GetV8SnapshotFilesToPreload(*cmd_line);
      // Spawn the child process asynchronously to avoid blocking the UI thread.
+     // As long as there's no renderer prefix, we can use the zygote process
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 index e8d6ef94664bb37996871c0cc0db7c815783b786..0d56fa0aebee80883019a100900119972bf02edd 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
