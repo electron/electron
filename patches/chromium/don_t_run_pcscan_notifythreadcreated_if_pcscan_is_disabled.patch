@@ -19,7 +19,7 @@ index 741e969656ca2ae5da84e31a457b4c5b54119661..152af083218ee8560cc024fad6f43c60
      using PCScan = internal::PCScan;
      const auto invocation_mode = flags & PartitionPurgeAggressiveReclaim
 diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
-index c68a7743659d052f5140f49f02ee9a2fc4a68965..cbae994c0e6181073518ac9e5b0c42cd7f15ec28 100644
+index c68a7743659d052f5140f49f02ee9a2fc4a68965..a458d07892057dbe59155b4ddfc86afc6d00b085 100644
 --- a/base/threading/platform_thread_posix.cc
 +++ b/base/threading/platform_thread_posix.cc
 @@ -43,6 +43,7 @@
@@ -39,20 +39,15 @@ index c68a7743659d052f5140f49f02ee9a2fc4a68965..cbae994c0e6181073518ac9e5b0c42cd
      internal::PCScan::NotifyThreadCreated(internal::GetStackPointer());
  #endif
  
-@@ -102,12 +103,8 @@ void* ThreadFunc(void* params) {
+@@ -102,7 +103,7 @@ void* ThreadFunc(void* params) {
        PlatformThread::CurrentHandle().platform_handle(),
        PlatformThread::CurrentId());
  
 -#if !BUILDFLAG(IS_NACL) && BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
--  internal::PCScan::NotifyThreadDestroyed();
--#endif
--
 +#if !BUILDFLAG(IS_NACL) && BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && defined(PA_ALLOW_PCSCAN)
-   base::TerminateOnThread();
--  return nullptr;
- }
+   internal::PCScan::NotifyThreadDestroyed();
+ #endif
  
- bool CreateThread(size_t stack_size,
 diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thread_win.cc
 index 5aee160aec0160f37d61005ec3b71accb58b2eaa..bc73591dd8b66c304fa42b3349bbbf6f82ed13ad 100644
 --- a/base/threading/platform_thread_win.cc
