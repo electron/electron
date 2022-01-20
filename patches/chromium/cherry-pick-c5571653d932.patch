@@ -144,7 +144,7 @@ index 86c6de60739a0c5aa49ed63f1546b478d7f58054..263fe6195ac6d48cd7a985ca844d1a6e
  
    // Each consumer is responsible for registering its QuotaClient during
 diff --git a/content/public/browser/storage_notification_service.h b/content/public/browser/storage_notification_service.h
-index 3eec5ef29051008041695bcf7ebbf63787f5bd89..98c533cf3f8be530f2b4a08a528502d070f17006 100644
+index 3eec5ef29051008041695bcf7ebbf63787f5bd89..e72adada318f1cb998e2a9e7468a6f2e54742760 100644
 --- a/content/public/browser/storage_notification_service.h
 +++ b/content/public/browser/storage_notification_service.h
 @@ -8,6 +8,15 @@
@@ -163,7 +163,7 @@ index 3eec5ef29051008041695bcf7ebbf63787f5bd89..98c533cf3f8be530f2b4a08a528502d0
  namespace content {
  
  // This interface is used to create a connection between the storage layer and
-@@ -19,15 +28,18 @@ class StorageNotificationService {
+@@ -19,12 +28,15 @@ class StorageNotificationService {
    StorageNotificationService() = default;
    ~StorageNotificationService() = default;
  
@@ -181,6 +181,3 @@ index 3eec5ef29051008041695bcf7ebbf63787f5bd89..98c533cf3f8be530f2b4a08a528502d0
  
   private:
    DISALLOW_COPY_AND_ASSIGN(StorageNotificationService);
- };
- 
- }  // namespace content
