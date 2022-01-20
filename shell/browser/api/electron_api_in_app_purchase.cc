@@ -13,6 +13,8 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 
+#import <StoreKit/StoreKit.h>
+
 namespace gin {
 
 template <>
@@ -74,7 +76,15 @@ struct Converter<in_app_purchase::ProductSubscriptionPeriod> {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.SetHidden("simple", true);
     dict.Set("numberOfUnits", productSubscriptionPeriod.numberOfUnits);
-    dict.Set("unit", productSubscriptionPeriod.unit);
+    if (productSubscriptionPeriod.unit == SKProductPeriodUnitDay) {
+      dict.Set("unit", "day");
+    } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitWeek) {
+      dict.Set("unit", "week")
+    } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitMonth) {
+      dict.Set("unit", "month")
+    } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitYear) {
+      dict.Set("unit", "year")
+    }
     return dict.GetHandle();
   }
 };
@@ -90,7 +100,15 @@ struct Converter<in_app_purchase::ProductDiscount> {
     dict.Set("type", productDiscount.type);
     dict.Set("price", productDiscount.price);
     dict.Set("priceLocale", productDiscount.priceLocale);
-    dict.Set("paymentMode", productDiscount.paymentMode);
+    if (productDiscount.paymentMode == SKProductDiscountPaymentModePayAsYouGo) {
+      dict.Set("paymentMode", "payAsYouGo");
+    } else if (productDiscount.paymentMode ==
+               SKProductDiscountPaymentModePayUpFront) {
+      dict.Set("paymentMode", "payUpFront");
+    } else if (productDiscount.paymentMode ==
+               SKProductDiscountPaymentModeFreeTrial) {
+      dict.Set("paymentMode", "freeTrial");
+    }
     dict.Set("numberOfPeriods", productDiscount.numberOfPeriods);
     dict.Set("subscriptionPeriod", productDiscount.subscriptionPeriod);
     return dict.GetHandle();
