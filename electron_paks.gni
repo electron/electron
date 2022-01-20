@@ -179,6 +179,7 @@ template("electron_paks") {
       "${root_gen_dir}/device/bluetooth/strings/bluetooth_strings_",
       "${root_gen_dir}/services/strings/services_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
+      "${root_gen_dir}/ui/strings/ax_strings_",
       "${root_gen_dir}/ui/strings/ui_strings_",
     ]
     deps = [
@@ -188,6 +189,7 @@ template("electron_paks") {
       "//services/strings",
       "//third_party/blink/public/strings",
       "//ui/strings:app_locale_settings",
+      "//ui/strings:ax_strings",
       "//ui/strings:ui_strings",
     ]
 
