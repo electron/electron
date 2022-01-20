@@ -1,7 +1,7 @@
-From cc44ae61f37b54fd6ad1115f06c3cc9bddeb6162 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
-Date: Tue, 04 Jan 2022 12:28:55 -0500
-Subject: [PATCH] M96: D3D11: Fix OOB access in vertex conversion code.
+Date: Tue, 4 Jan 2022 12:28:55 -0500
+Subject: M96: D3D11: Fix OOB access in vertex conversion code.
 
 This could happen when using certain combinations of stride and
 offset. Fix the issue by using checked math.
@@ -10,13 +10,12 @@ Bug: chromium:1274499
 Change-Id: I3e286a30fe128ab4684ee5e172dc9e3345e3b2f4
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3365657
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/d3d/VertexDataManager.cpp b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
-index 43fcdc8..031a12e 100644
+index 43fcdc8de5a0d15aacf4b06e0e32df008d78f886..031a12e2b8b0e0dee91087c02cbd2f8b17435a2b 100644
 --- a/src/libANGLE/renderer/d3d/VertexDataManager.cpp
 +++ b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
-@@ -58,17 +58,15 @@
+@@ -58,17 +58,15 @@ int ElementsInBuffer(const gl::VertexAttribute &attrib,
                       const gl::VertexBinding &binding,
                       unsigned int size)
  {
@@ -29,15 +28,15 @@ index 43fcdc8..031a12e 100644
 +    angle::CheckedNumeric<size_t> stride      = ComputeVertexAttributeStride(attrib, binding);
 +    angle::CheckedNumeric<size_t> offset      = ComputeVertexAttributeOffset(attrib, binding);
 +    angle::CheckedNumeric<size_t> elementSize = ComputeVertexAttributeTypeSize(attrib);
++
++    auto elementsInBuffer    = (bufferSize - (offset % stride) + (stride - elementSize)) / stride;
++    auto elementsInBufferInt = angle::CheckedNumeric<int>::cast(elementsInBuffer);
  
 -    GLsizei stride = static_cast<GLsizei>(ComputeVertexAttributeStride(attrib, binding));
 -    GLsizei offset = static_cast<GLsizei>(ComputeVertexAttributeOffset(attrib, binding));
 -    return (size - offset % stride +
 -            (stride - static_cast<GLsizei>(ComputeVertexAttributeTypeSize(attrib)))) /
 -           stride;
-+    auto elementsInBuffer    = (bufferSize - (offset % stride) + (stride - elementSize)) / stride;
-+    auto elementsInBufferInt = angle::CheckedNumeric<int>::cast(elementsInBuffer);
-+
 +    return elementsInBufferInt.ValueOrDefault(0);
  }
  
