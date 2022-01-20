@@ -11,15 +11,13 @@
 #include "base/callback.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
-#import <StoreKit/StoreKit.h>
-
 namespace in_app_purchase {
 
 // --------------------------- Structures ---------------------------
 
 struct ProductSubscriptionPeriod {
   int numberOfUnits;
-  SKProductPeriodUnit unit;
+  std::string unit;
 
   ProductSubscriptionPeriod(const ProductSubscriptionPeriod&);
   ProductSubscriptionPeriod();
@@ -31,7 +29,7 @@ struct ProductDiscount {
   int type;
   double price = 0.0;
   std::string priceLocale;
-  SKProductDiscountPaymentMode paymentMode;
+  std::string paymentMode;
   int numberOfPeriods;
   ProductSubscriptionPeriod subscriptionPeriod;
 
