@@ -1,0 +1,629 @@
+From 31376b855469ad66592e0c04a3c54942b907145c Mon Sep 17 00:00:00 2001
+From: Alexander Dunaev <adunaev@igalia.com>
+Date: Thu, 20 Jan 2022 10:32:45 +0000
+Subject: [PATCH] Merge to M98: [linux/wayland] Fixed terminate caused by binding to...
+
+...wrong version.
+
+The Ozone/Wayland implementation had a few places where the Wayland
+objects were bound without proper checking for their versions.  That was
+part of the technical debt not addressed before, and ended up causing
+the issue explained in the linked crbug: the compositor terminates the
+client that binds to the protocol that it does not actually support.
+
+This patch fixes the issue by adding the necessary checks in all places
+where they were missing.  Also a convenience macro for validating the
+version is proposed.
+
+(cherry picked from commit dd4c3ddadbb9869f59cee201a38e9ca3b9154f4d)
+
+Bug: 1279574
+Change-Id: I74efa97f64b480bed47372d8d559593ae84eeb18
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3337037
+Reviewed-by: Maksim Sisov <msisov@igalia.com>
+Commit-Queue: Alexander Dunaev <adunaev@igalia.com>
+Cr-Original-Commit-Position: refs/heads/main@{#951428}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3402123
+Cr-Commit-Position: refs/branch-heads/4758@{#772}
+Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
+---
+
+diff --git a/ui/ozone/platform/wayland/common/wayland_object.cc b/ui/ozone/platform/wayland/common/wayland_object.cc
+index e2b62ca..9a7c613 100644
+--- a/ui/ozone/platform/wayland/common/wayland_object.cc
++++ b/ui/ozone/platform/wayland/common/wayland_object.cc
+@@ -35,6 +35,8 @@
+ #include <xdg-shell-client-protocol.h>
+ #include <xdg-shell-unstable-v6-client-protocol.h>
+ 
++#include "base/logging.h"
++
+ namespace wl {
+ namespace {
+ 
+@@ -77,6 +79,25 @@
+ 
+ }  // namespace
+ 
++bool CanBind(const std::string& interface,
++             uint32_t available_version,
++             uint32_t min_version,
++             uint32_t max_version) {
++  if (available_version < min_version) {
++    LOG(WARNING) << "Unable to bind to " << interface << " version "
++                 << available_version << ".  The minimum supported version is "
++                 << min_version << ".";
++    return false;
++  }
++
++  if (available_version > max_version) {
++    LOG(WARNING) << "Binding to " << interface << " version " << max_version
++                 << " but version " << available_version << " is available.";
++  }
++
++  return true;
++}
++
+ void (*ObjectTraits<wl_cursor_theme>::deleter)(wl_cursor_theme*) =
+     &wl_cursor_theme_destroy;
+ 
+diff --git a/ui/ozone/platform/wayland/common/wayland_object.h b/ui/ozone/platform/wayland/common/wayland_object.h
+index 2ebfa51d..da91ffb 100644
+--- a/ui/ozone/platform/wayland/common/wayland_object.h
++++ b/ui/ozone/platform/wayland/common/wayland_object.h
+@@ -79,6 +79,17 @@
+   static void (*deleter)(void*);
+ };
+ 
++// Checks the given |available_version| exposed by the server against
++// |min_version| and |max_version| supported by the client.
++// Returns false (with rendering a warning) if |available_version| is less than
++// the minimum supported version.
++// Returns true otherwise, renders an info message if |available_version| is
++// greater than the maximum supported one.
++bool CanBind(const std::string& interface,
++             uint32_t available_version,
++             uint32_t min_version,
++             uint32_t max_version);
++
+ }  // namespace wl
+ 
+ // Puts the forward declaration for struct TYPE and declares the template
+diff --git a/ui/ozone/platform/wayland/host/gtk_primary_selection_device_manager.cc b/ui/ozone/platform/wayland/host/gtk_primary_selection_device_manager.cc
+index af3087d..2991233 100644
+--- a/ui/ozone/platform/wayland/host/gtk_primary_selection_device_manager.cc
++++ b/ui/ozone/platform/wayland/host/gtk_primary_selection_device_manager.cc
+@@ -16,7 +16,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxGtkPrimarySelectionDeviceManagerVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ }
+ 
+ // static
+@@ -31,12 +31,13 @@
+     uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->gtk_primary_selection_device_manager())
++  if (connection->gtk_primary_selection_device_manager() ||
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+-  auto manager = wl::Bind<gtk_primary_selection_device_manager>(
+-      registry, name,
+-      std::min(version, kMaxGtkPrimarySelectionDeviceManagerVersion));
++  auto manager = wl::Bind<gtk_primary_selection_device_manager>(registry, name,
++                                                                kMinVersion);
+   if (!manager) {
+     LOG(ERROR) << "Failed to bind gtk_primary_selection_device_manager";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/gtk_shell1.cc b/ui/ozone/platform/wayland/host/gtk_shell1.cc
+index cb3b0c8..26dfd7fb 100644
+--- a/ui/ozone/platform/wayland/host/gtk_shell1.cc
++++ b/ui/ozone/platform/wayland/host/gtk_shell1.cc
+@@ -17,8 +17,8 @@
+ // gtk_shell1 exposes request_focus() since version 3.  Below that, it is not
+ // interesting for us, although it provides some shell integration that might be
+ // useful.
+-constexpr uint32_t kMinGtkShell1Version = 3;
+-constexpr uint32_t kMaxGtkShell1Version = 4;
++constexpr uint32_t kMinVersion = 3;
++constexpr uint32_t kMaxVersion = 4;
+ }  // namespace
+ 
+ // static
+@@ -32,11 +32,13 @@
+                             uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->gtk_shell1_ || version < kMinGtkShell1Version)
++  if (connection->gtk_shell1_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMaxVersion)) {
+     return;
++  }
+ 
+-  auto gtk_shell1 = wl::Bind<::gtk_shell1>(
+-      registry, name, std::min(version, kMaxGtkShell1Version));
++  auto gtk_shell1 =
++      wl::Bind<::gtk_shell1>(registry, name, std::min(version, kMaxVersion));
+   if (!gtk_shell1) {
+     LOG(ERROR) << "Failed to bind gtk_shell1";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/org_kde_kwin_idle.cc b/ui/ozone/platform/wayland/host/org_kde_kwin_idle.cc
+index 4746aa7..8b7a7416 100644
+--- a/ui/ozone/platform/wayland/host/org_kde_kwin_idle.cc
++++ b/ui/ozone/platform/wayland/host/org_kde_kwin_idle.cc
+@@ -13,7 +13,7 @@
+ 
+ namespace {
+ 
+-constexpr uint32_t kMaxOrgKdeKwinIdleVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ 
+ // After the system has gone idle, it will wait for this time before notifying
+ // us.  This reduces "jitter" of the idle/active state, but also adds some lag
+@@ -58,11 +58,12 @@
+                                  uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->org_kde_kwin_idle_)
++  if (connection->org_kde_kwin_idle_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+-  auto idle = wl::Bind<struct org_kde_kwin_idle>(
+-      registry, name, std::min(version, kMaxOrgKdeKwinIdleVersion));
++  auto idle = wl::Bind<struct org_kde_kwin_idle>(registry, name, kMinVersion);
+   if (!idle) {
+     LOG(ERROR) << "Failed to bind to org_kde_kwin_idle global";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/overlay_prioritizer.cc b/ui/ozone/platform/wayland/host/overlay_prioritizer.cc
+index e8aaf39..11496b52 100644
+--- a/ui/ozone/platform/wayland/host/overlay_prioritizer.cc
++++ b/ui/ozone/platform/wayland/host/overlay_prioritizer.cc
+@@ -12,7 +12,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxOverlayPrioritizerVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ }
+ 
+ // static
+@@ -26,11 +26,12 @@
+                                      uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->overlay_prioritizer_)
++  if (connection->overlay_prioritizer_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+-  auto prioritizer = wl::Bind<overlay_prioritizer>(
+-      registry, name, std::min(version, kMaxOverlayPrioritizerVersion));
++  auto prioritizer = wl::Bind<overlay_prioritizer>(registry, name, kMinVersion);
+   if (!prioritizer) {
+     LOG(ERROR) << "Failed to bind overlay_prioritizer";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/surface_augmenter.cc b/ui/ozone/platform/wayland/host/surface_augmenter.cc
+index d971d15e..6e54083 100644
+--- a/ui/ozone/platform/wayland/host/surface_augmenter.cc
++++ b/ui/ozone/platform/wayland/host/surface_augmenter.cc
+@@ -13,7 +13,8 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxSurfaceAugmenterVersion = 2;
++constexpr uint32_t kMinVersion = 1;
++constexpr uint32_t kMaxVersion = 2;
+ }
+ 
+ // static
+@@ -27,11 +28,13 @@
+                                    uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->surface_augmenter_)
++  if (connection->surface_augmenter_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMaxVersion)) {
+     return;
++  }
+ 
+-  auto augmenter = wl::Bind<surface_augmenter>(
+-      registry, name, std::min(version, kMaxSurfaceAugmenterVersion));
++  auto augmenter = wl::Bind<surface_augmenter>(registry, name,
++                                               std::min(version, kMaxVersion));
+   if (!augmenter) {
+     LOG(ERROR) << "Failed to bind surface_augmenter";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_device_manager.cc b/ui/ozone/platform/wayland/host/wayland_data_device_manager.cc
+index 408cb1c7..0f03942 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_device_manager.cc
++++ b/ui/ozone/platform/wayland/host/wayland_data_device_manager.cc
+@@ -14,7 +14,8 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxDeviceManagerVersion = 3;
++constexpr uint32_t kMinVersion = 1;
++constexpr uint32_t kMaxVersion = 3;
+ }
+ 
+ // static
+@@ -28,11 +29,13 @@
+                                            uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->data_device_manager_)
++  if (connection->data_device_manager_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMaxVersion)) {
+     return;
++  }
+ 
+   auto data_device_manager = wl::Bind<wl_data_device_manager>(
+-      registry, name, std::min(version, kMaxDeviceManagerVersion));
++      registry, name, std::min(version, kMaxVersion));
+   if (!data_device_manager) {
+     LOG(ERROR) << "Failed to bind to wl_data_device_manager global";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_drm.cc b/ui/ozone/platform/wayland/host/wayland_drm.cc
+index d806e8e..a7ed2e2 100644
+--- a/ui/ozone/platform/wayland/host/wayland_drm.cc
++++ b/ui/ozone/platform/wayland/host/wayland_drm.cc
+@@ -17,7 +17,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMinWlDrmVersion = 2;
++constexpr uint32_t kMinVersion = 2;
+ }
+ 
+ // static
+@@ -31,8 +31,10 @@
+                              uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->drm_ || version < kMinWlDrmVersion)
++  if (connection->drm_ ||
++      !!wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+   auto wl_drm = wl::Bind<struct wl_drm>(registry, name, version);
+   if (!wl_drm) {
+diff --git a/ui/ozone/platform/wayland/host/wayland_output.cc b/ui/ozone/platform/wayland/host/wayland_output.cc
+index 585568f..2186d6a 100644
+--- a/ui/ozone/platform/wayland/host/wayland_output.cc
++++ b/ui/ozone/platform/wayland/host/wayland_output.cc
+@@ -16,7 +16,8 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMinWlOutputVersion = 2;
++// TODO(crbug.com/1279681): support newer versions.
++constexpr uint32_t kMinVersion = 2;
+ }
+ 
+ // static
+@@ -30,14 +31,11 @@
+                                 uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (version < kMinWlOutputVersion) {
+-    LOG(ERROR)
+-        << "Unable to bind to the unsupported wl_output object with version= "
+-        << version << ". Minimum supported version is " << kMinWlOutputVersion;
++  if (!wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
+   }
+ 
+-  auto output = wl::Bind<wl_output>(registry, name, version);
++  auto output = wl::Bind<wl_output>(registry, name, kMinVersion);
+   if (!output) {
+     LOG(ERROR) << "Failed to bind to wl_output global";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_shm.cc b/ui/ozone/platform/wayland/host/wayland_shm.cc
+index 7c6cd40..de97ad1 100644
+--- a/ui/ozone/platform/wayland/host/wayland_shm.cc
++++ b/ui/ozone/platform/wayland/host/wayland_shm.cc
+@@ -10,7 +10,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxShmVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ constexpr uint32_t kShmFormat = WL_SHM_FORMAT_ARGB8888;
+ }  // namespace
+ 
+@@ -25,11 +25,12 @@
+                              uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->shm_)
++  if (connection->shm_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+-  auto shm =
+-      wl::Bind<wl_shm>(registry, name, std::min(version, kMaxShmVersion));
++  auto shm = wl::Bind<wl_shm>(registry, name, kMinVersion);
+   if (!shm) {
+     LOG(ERROR) << "Failed to bind to wl_shm global";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_zaura_shell.cc b/ui/ozone/platform/wayland/host/wayland_zaura_shell.cc
+index b1ae436d..1b5585f 100644
+--- a/ui/ozone/platform/wayland/host/wayland_zaura_shell.cc
++++ b/ui/ozone/platform/wayland/host/wayland_zaura_shell.cc
+@@ -19,7 +19,8 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxAuraShellVersion = 28;
++constexpr uint32_t kMinVersion = 1;
++constexpr uint32_t kMaxVersion = 28;
+ }
+ 
+ // static
+@@ -33,11 +34,13 @@
+                                     uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->zaura_shell_)
++  if (connection->zaura_shell_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMaxVersion)) {
+     return;
++  }
+ 
+   auto zaura_shell = wl::Bind<struct zaura_shell>(
+-      registry, name, std::min(version, kMaxAuraShellVersion));
++      registry, name, std::min(version, kMaxVersion));
+   if (!zaura_shell) {
+     LOG(ERROR) << "Failed to bind zaura_shell";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_zcr_cursor_shapes.cc b/ui/ozone/platform/wayland/host/wayland_zcr_cursor_shapes.cc
+index 094a2f9..84d847e 100644
+--- a/ui/ozone/platform/wayland/host/wayland_zcr_cursor_shapes.cc
++++ b/ui/ozone/platform/wayland/host/wayland_zcr_cursor_shapes.cc
+@@ -16,7 +16,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxCursorShapesVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ }
+ 
+ using mojom::CursorType;
+@@ -32,11 +32,13 @@
+                                          uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->zcr_cursor_shapes_)
++  if (connection->zcr_cursor_shapes_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+-  auto zcr_cursor_shapes = wl::Bind<zcr_cursor_shapes_v1>(
+-      registry, name, std::min(version, kMaxCursorShapesVersion));
++  auto zcr_cursor_shapes =
++      wl::Bind<zcr_cursor_shapes_v1>(registry, name, kMinVersion);
+   if (!zcr_cursor_shapes) {
+     LOG(ERROR) << "Failed to bind zcr_cursor_shapes_v1";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_zwp_linux_dmabuf.cc b/ui/ozone/platform/wayland/host/wayland_zwp_linux_dmabuf.cc
+index 45177f2..6b4ec38 100644
+--- a/ui/ozone/platform/wayland/host/wayland_zwp_linux_dmabuf.cc
++++ b/ui/ozone/platform/wayland/host/wayland_zwp_linux_dmabuf.cc
+@@ -14,7 +14,8 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxLinuxDmabufVersion = 3;
++constexpr uint32_t kMinVersion = 1;
++constexpr uint32_t kMaxVersion = 3;
+ }
+ 
+ // static
+@@ -28,11 +29,13 @@
+                                         uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->zwp_dmabuf())
++  if (connection->zwp_dmabuf() ||
++      !wl::CanBind(interface, version, kMinVersion, kMaxVersion)) {
+     return;
++  }
+ 
+   auto zwp_linux_dmabuf = wl::Bind<zwp_linux_dmabuf_v1>(
+-      registry, name, std::min(version, kMaxLinuxDmabufVersion));
++      registry, name, std::min(version, kMaxVersion));
+   if (!zwp_linux_dmabuf) {
+     LOG(ERROR) << "Failed to bind zwp_linux_dmabuf_v1";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_zwp_pointer_constraints.cc b/ui/ozone/platform/wayland/host/wayland_zwp_pointer_constraints.cc
+index 24e4dac..c1aca77 100644
+--- a/ui/ozone/platform/wayland/host/wayland_zwp_pointer_constraints.cc
++++ b/ui/ozone/platform/wayland/host/wayland_zwp_pointer_constraints.cc
+@@ -15,7 +15,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMinZwpPointerConstraintsVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ }
+ 
+ // static
+@@ -30,12 +30,12 @@
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+   if (connection->wayland_zwp_pointer_constraints_ ||
+-      version < kMinZwpPointerConstraintsVersion) {
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
+   }
+ 
+   auto zwp_pointer_constraints_v1 =
+-      wl::Bind<struct zwp_pointer_constraints_v1>(registry, name, version);
++      wl::Bind<struct zwp_pointer_constraints_v1>(registry, name, kMinVersion);
+   if (!zwp_pointer_constraints_v1) {
+     LOG(ERROR) << "Failed to bind wp_pointer_constraints_v1";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_zwp_pointer_gestures.cc b/ui/ozone/platform/wayland/host/wayland_zwp_pointer_gestures.cc
+index 5d96c89..31bffb7 100644
+--- a/ui/ozone/platform/wayland/host/wayland_zwp_pointer_gestures.cc
++++ b/ui/ozone/platform/wayland/host/wayland_zwp_pointer_gestures.cc
+@@ -19,7 +19,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMinZwpPointerGesturesVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ }
+ 
+ // static
+@@ -34,11 +34,12 @@
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+   if (connection->wayland_zwp_pointer_gestures_ ||
+-      version < kMinZwpPointerGesturesVersion)
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+   auto zwp_pointer_gestures_v1 =
+-      wl::Bind<struct zwp_pointer_gestures_v1>(registry, name, version);
++      wl::Bind<struct zwp_pointer_gestures_v1>(registry, name, kMinVersion);
+   if (!zwp_pointer_gestures_v1) {
+     LOG(ERROR) << "Failed to bind wp_pointer_gestures_v1";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/wayland_zwp_relative_pointer_manager.cc b/ui/ozone/platform/wayland/host/wayland_zwp_relative_pointer_manager.cc
+index 3a8ef4c..c84a891 100644
+--- a/ui/ozone/platform/wayland/host/wayland_zwp_relative_pointer_manager.cc
++++ b/ui/ozone/platform/wayland/host/wayland_zwp_relative_pointer_manager.cc
+@@ -14,7 +14,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMinZwpRelativePointerManagerVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ }
+ 
+ // static
+@@ -30,11 +30,13 @@
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+   if (connection->wayland_zwp_relative_pointer_manager_ ||
+-      version < kMinZwpRelativePointerManagerVersion)
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+   auto zwp_relative_pointer_manager_v1 =
+-      wl::Bind<struct zwp_relative_pointer_manager_v1>(registry, name, version);
++      wl::Bind<struct zwp_relative_pointer_manager_v1>(registry, name,
++                                                       kMinVersion);
+   if (!zwp_relative_pointer_manager_v1) {
+     LOG(ERROR) << "Failed to bind zwp_relative_pointer_manager_v1";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/xdg_foreign_wrapper.cc b/ui/ozone/platform/wayland/host/xdg_foreign_wrapper.cc
+index a34b684..2586adf 100644
+--- a/ui/ozone/platform/wayland/host/xdg_foreign_wrapper.cc
++++ b/ui/ozone/platform/wayland/host/xdg_foreign_wrapper.cc
+@@ -19,6 +19,8 @@
+ // static
+ constexpr char XdgForeignWrapper::kInterfaceNameV2[];
+ 
++constexpr uint32_t kMinVersion = 1;
++
+ using OnHandleExported = XdgForeignWrapper::OnHandleExported;
+ 
+ namespace {
+@@ -185,15 +187,17 @@
+                                     uint32_t name,
+                                     const std::string& interface,
+                                     uint32_t version) {
+-  if (connection->xdg_foreign_)
++  if (connection->xdg_foreign_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+   if (interface == kInterfaceNameV1) {
+-    connection->xdg_foreign_ =
+-        CreateWrapper<zxdg_exporter_v1>(connection, registry, name, version);
++    connection->xdg_foreign_ = CreateWrapper<zxdg_exporter_v1>(
++        connection, registry, name, kMinVersion);
+   } else if (interface == kInterfaceNameV2) {
+-    connection->xdg_foreign_ =
+-        CreateWrapper<zxdg_exporter_v2>(connection, registry, name, version);
++    connection->xdg_foreign_ = CreateWrapper<zxdg_exporter_v2>(
++        connection, registry, name, kMinVersion);
+   } else {
+     NOTREACHED() << " unexpected interface name: " << interface;
+   }
+diff --git a/ui/ozone/platform/wayland/host/zwp_idle_inhibit_manager.cc b/ui/ozone/platform/wayland/host/zwp_idle_inhibit_manager.cc
+index 4712129..fc05de6 100644
+--- a/ui/ozone/platform/wayland/host/zwp_idle_inhibit_manager.cc
++++ b/ui/ozone/platform/wayland/host/zwp_idle_inhibit_manager.cc
+@@ -12,7 +12,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxZwpIdleInhibitManagerVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ }
+ 
+ // static
+@@ -26,11 +26,13 @@
+                                         uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->zwp_idle_inhibit_manager_)
++  if (connection->zwp_idle_inhibit_manager_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+-  auto manager = wl::Bind<zwp_idle_inhibit_manager_v1>(
+-      registry, name, std::min(version, kMaxZwpIdleInhibitManagerVersion));
++  auto manager =
++      wl::Bind<zwp_idle_inhibit_manager_v1>(registry, name, kMinVersion);
+   if (!manager) {
+     LOG(ERROR) << "Failed to bind zwp_idle_inhibit_manager_v1";
+     return;
+diff --git a/ui/ozone/platform/wayland/host/zwp_primary_selection_device_manager.cc b/ui/ozone/platform/wayland/host/zwp_primary_selection_device_manager.cc
+index f6f9fd2..795a09c 100644
+--- a/ui/ozone/platform/wayland/host/zwp_primary_selection_device_manager.cc
++++ b/ui/ozone/platform/wayland/host/zwp_primary_selection_device_manager.cc
+@@ -16,7 +16,7 @@
+ namespace ui {
+ 
+ namespace {
+-constexpr uint32_t kMaxGtkPrimarySelectionDeviceManagerVersion = 1;
++constexpr uint32_t kMinVersion = 1;
+ }  // namespace
+ 
+ // static
+@@ -31,12 +31,13 @@
+     uint32_t version) {
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+-  if (connection->zwp_primary_selection_device_manager_)
++  if (connection->zwp_primary_selection_device_manager_ ||
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
++  }
+ 
+   auto manager = wl::Bind<zwp_primary_selection_device_manager_v1>(
+-      registry, name,
+-      std::min(version, kMaxGtkPrimarySelectionDeviceManagerVersion));
++      registry, name, kMinVersion);
+   if (!manager) {
+     LOG(ERROR) << "Failed to bind zwp_primary_selection_device_manager_v1";
+     return;

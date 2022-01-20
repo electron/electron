@@ -113,3 +113,4 @@ load_v8_snapshot_in_browser_process.patch
 fix_patch_out_permissions_checks_in_exclusive_access.patch
 fix_aspect_ratio_with_max_size.patch
 revert_do_not_display_grammar_error_if_there_it_overlaps_with_spell.patch
+cherry-pick-31376b855469.patch
