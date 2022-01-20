@@ -121,7 +121,7 @@
 
   productSubscriptionPeriodStruct.numberOfUnits =
       (int)productSubscriptionPeriod.numberOfUnits;
-  productSubscriptionPeriodStruct.unit = (int)productSubscriptionPeriod.unit;
+  productSubscriptionPeriodStruct.unit = productSubscriptionPeriod.unit;
 
   return productSubscriptionPeriodStruct;
 }
@@ -135,7 +135,7 @@
     (SKProductDiscount*)productDiscount API_AVAILABLE(macosx(10.13.2)) {
   in_app_purchase::ProductDiscount productDiscountStruct;
 
-  productDiscountStruct.paymentMode = (int)productDiscount.paymentMode;
+  productDiscountStruct.paymentMode = productDiscount.paymentMode;
   productDiscountStruct.numberOfPeriods = (int)productDiscount.numberOfPeriods;
 
   if (productDiscount.priceLocale != nil) {
