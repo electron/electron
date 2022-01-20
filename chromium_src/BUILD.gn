@@ -10,21 +10,6 @@ import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 
-copy("shaded_resources_copy") {
-  deps = [ "//electron:resources" ]
-  sources = [ "$root_gen_dir/electron/grit/electron_resources.h" ]
-  outputs = [ "$target_gen_dir/chrome/grit/generated_resources.h" ]
-}
-
-config("shaded_resources_config") {
-  include_dirs = [ "$target_gen_dir" ]
-}
-
-group("shaded_resources") {
-  deps = [ ":shaded_resources_copy" ]
-  public_configs = [ ":shaded_resources_config" ]
-}
-
 # Builds some of the chrome sources that Electron depends on.
 static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
@@ -220,7 +205,6 @@ static_library("chrome") {
   ]
 
   deps = [
-    ":shaded_resources",
     "//chrome/browser:buildflags",
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//components/optimization_guide/proto:optimization_guide_proto",
