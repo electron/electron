@@ -121,7 +121,16 @@
 
   productSubscriptionPeriodStruct.numberOfUnits =
       (int)productSubscriptionPeriod.numberOfUnits;
-  productSubscriptionPeriodStruct.unit = productSubscriptionPeriod.unit;
+
+  if (productSubscriptionPeriod.unit == SKProductPeriodUnitDay) {
+    productSubscriptionPeriodStruct.unit = "day";
+  } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitWeek) {
+    productSubscriptionPeriodStruct.unit = "week";
+  } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitMonth) {
+    productSubscriptionPeriodStruct.unit = "month";
+  } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitYear) {
+    productSubscriptionPeriodStruct.unit = "year";
+  }
 
   return productSubscriptionPeriodStruct;
 }
@@ -135,7 +144,16 @@
     (SKProductDiscount*)productDiscount API_AVAILABLE(macosx(10.13.2)) {
   in_app_purchase::ProductDiscount productDiscountStruct;
 
-  productDiscountStruct.paymentMode = productDiscount.paymentMode;
+  if (productDiscount.paymentMode == SKProductDiscountPaymentModePayAsYouGo) {
+    productDiscountStruct.paymentMode = "payAsYouGo";
+  } else if (productDiscount.paymentMode ==
+             SKProductDiscountPaymentModePayUpFront) {
+    productDiscountStruct.paymentMode = "payUpFront";
+  } else if (productDiscount.paymentMode ==
+             SKProductDiscountPaymentModeFreeTrial) {
+    productDiscountStruct.paymentMode = "freeTrial";
+  }
+
   productDiscountStruct.numberOfPeriods = (int)productDiscount.numberOfPeriods;
 
   if (productDiscount.priceLocale != nil) {
