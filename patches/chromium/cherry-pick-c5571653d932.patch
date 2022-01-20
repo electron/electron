@@ -176,11 +176,11 @@ index 3eec5ef29051008041695bcf7ebbf63787f5bd89..98c533cf3f8be530f2b4a08a528502d0
 -  virtual void MaybeShowStoragePressureNotification(const url::Origin) = 0;
 +  virtual void MaybeShowStoragePressureNotification(
 +      const blink::StorageKey) = 0;
++  virtual StoragePressureNotificationCallback
++  CreateThreadSafePressureNotificationCallback() = 0;
  
   private:
    DISALLOW_COPY_AND_ASSIGN(StorageNotificationService);
-+  virtual StoragePressureNotificationCallback
-+  CreateThreadSafePressureNotificationCallback() = 0;
  };
  
  }  // namespace content
