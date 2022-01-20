@@ -31,7 +31,7 @@ struct ProductDiscount {
   std::string priceLocale;
   std::string paymentMode;
   int numberOfPeriods;
-  ProductSubscriptionPeriod subscriptionPeriod;
+  absl::optional<ProductSubscriptionPeriod> subscriptionPeriod;
 
   ProductDiscount(const ProductDiscount&);
   ProductDiscount();

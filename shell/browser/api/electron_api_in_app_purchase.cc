@@ -92,7 +92,10 @@ struct Converter<in_app_purchase::ProductDiscount> {
     dict.Set("priceLocale", productDiscount.priceLocale);
     dict.Set("paymentMode", productDiscount.paymentMode);
     dict.Set("numberOfPeriods", productDiscount.numberOfPeriods);
-    dict.Set("subscriptionPeriod", productDiscount.subscriptionPeriod);
+    if (productDiscount.subscriptionPeriod.has_value()) {
+      dict.Set("subscriptionPeriod",
+               productDiscount.subscriptionPeriod.value());
+    }
     return dict.GetHandle();
   }
 };
