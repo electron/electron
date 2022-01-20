@@ -70,18 +70,29 @@ The `bounds` of this BrowserView instance as `Object`.
 
 #### `view.setBackgroundColor(color)` _Experimental_
 
-* `color` string - Color in hex, RBG, HSL, or named CSS color format. The alpha channel is
+* `color` string - Color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. The alpha channel is
   optional for the hex type.
 
 Examples of valid `color` values:
 
-* [Hexadecimal Value Colors](https://www.w3schools.com/colors/colors_names.asp)
-  * `#ff00a3`
-  * `#80FFFFFF`
-* [HSL Colors](https://www.w3schools.com/colors/colors_hsl.asp)
-  * `hsl(230, 100%, 50%)`
-* [CSS Color Names](https://www.w3schools.com/colors/colors_names.asp)
-  * `blueviolet`
-  * `red`
-* [RGB Colors](https://www.w3schools.com/colors/colors_rgb.asp)
-  * `rgb(255, 145, 145)`
+* Hex
+  * #fff (shorthand RGB)
+  * #ffff (shorthand RGBA)
+  * #ffffff (RGB)
+  * #ffffffff (RGBA)
+* RGB
+  * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
+    * e.g. rgb(255, 255, 255)
+* RGBA
+  * rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)
+    * e.g. rgba(255, 255, 255, 1.0)
+* HSL
+  * hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)
+    * e.g. hsl(200, 20%, 50%)
+* HSLA
+  * hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)
+    * e.g. hsla(200, 20%, 50%, 0.5)
+* Color name
+  * Options are listed in [SkParseColor.cpp](https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/src/utils/SkParseColor.cpp;l=11-152;drc=eea4bf52cb0d55e2a39c828b017c80a5ee054148)
+  * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
+    * e.g. `blueviolet` or `red`

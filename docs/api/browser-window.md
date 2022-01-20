@@ -76,12 +76,7 @@ win.setBackgroundColor('#ff00a3')
 win.setBackgroundColor('blueviolet')
 ```
 
-For more information about these color types:
-
-* [Color Names](https://www.w3schools.com/colors/colors_names.asp)
-* [Colors Hex](https://www.w3schools.com/colors/colors_hexadecimal.asp)
-* [Colors RGB](https://www.w3schools.com/colors/colors_rgb.asp)
-* [Colors HSL](https://www.w3schools.com/colors/colors_hsl.asp)
+For more information about these color types see valid options in [win.setBackgroundColor](browser-window.md#winsetbackgroundcolorbackgroundcolor).
 
 ## Parent and child windows
 
@@ -216,7 +211,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` boolean (optional) - Enable the window to be resized larger
     than screen. Only relevant for macOS, as other OSes allow
     larger-than-screen windows by default. Default is `false`.
-  * `backgroundColor` string (optional) - Window's background color as a hexadecimal value (`#ff00a3` or `#80FFFFFF`), HSL color value (`hsl(230, 100%, 50%)`), CSS color string (`blueviolet`), or RGB color value (`rgb(255, 145, 145)`). Alpha in #AARRGGBB format is supported if `transparent` is set to `true`). Default is `#FFF` (white).
+  * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #RRGGBBAA format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](browser-window.md#winsetbackgroundcolorbackgroundcolor) for more information.
   * `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
   * `opacity` number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
@@ -1007,7 +1002,31 @@ APIs like `win.setSize`.
 
 #### `win.setBackgroundColor(backgroundColor)`
 
-* `backgroundColor` string - Window's background color as a hexadecimal value (`#ff00a3` or `#80FFFFFF`), HSL color value (`hsl(230, 100%, 50%)`), CSS color string (`blueviolet`), or RGB color value (`rgb(255, 145, 145)`). Alpha in #AARRGGBB format is supported if `transparent` is set to `true`). Default is `#FFF` (white).
+* `backgroundColor` string - Color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. The alpha channel is optional for the hex type.
+
+Examples of valid `backgroundColor` values:
+
+* Hex
+  * #fff (shorthand RGB)
+  * #ffff (shorthand RGBA)
+  * #ffffff (RGB)
+  * #ffffffff (RGBA)
+* RGB
+  * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
+    * e.g. rgb(255, 255, 255)
+* RGBA
+  * rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)
+    * e.g. rgba(255, 255, 255, 1.0)
+* HSL
+  * hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)
+    * e.g. hsl(200, 20%, 50%)
+* HSLA
+  * hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)
+    * e.g. hsla(200, 20%, 50%, 0.5)
+* Color name
+  * Options are listed in [SkParseColor.cpp](https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/src/utils/SkParseColor.cpp;l=11-152;drc=eea4bf52cb0d55e2a39c828b017c80a5ee054148)
+  * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
+    * e.g. `blueviolet` or `red`
 
 Sets the background color of the window. See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 
@@ -1053,9 +1072,10 @@ Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `
 
 #### `win.getBackgroundColor([format])`
 
-* `format` string (optional) - One of either `hex`, `rgb`, or `hsl`.
+* `format` string (optional) - One of either `hex`, `rgb`, `rgba`, `hsl` or `hsla`.
 
-Returns `string` - Gets the background color of the window as a [Hexadecimal value](https://www.w3schools.com/colors/colors_hexadecimal.asp), an [HSL value](https://www.w3schools.com/colors/colors_hsl.asp) or an [RGB value](https://www.w3schools.com/colors/colors_rgb.asp). Default is `hex` if `format` is not passed.
+Returns `string` - Gets the background color in Hex, RBG, RBGA, HSL, or HSLA format. The alpha channel is
+optional for the hex type. Default is `hex` if `format` is not passed.
 
 See [Setting `backgroundColor`](#setting-the-backgroundcolor-property) for more information.
 

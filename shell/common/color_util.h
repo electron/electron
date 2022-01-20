@@ -11,16 +11,17 @@
 
 namespace electron {
 
-// Converts an SKColor to either Hex, HSL, or RGB color string.
+// Converts an SKColor to either Hex, HSL, HSLA, RBG, or RGBA color string.
 std::string SkColorToColorString(SkColor color, const std::string& format);
 
-// Parses a CSS-style color string from hex (3- or 6-digit), rgb(), rgba(),
-// hsl() or hsla() formats.
+// Parses a CSS-style color string from hex, rgb(), rgba(),
+// hsl(), hsla(), or color name formats.
 SkColor ParseCSSColor(const std::string& color_string);
 
-// Convert color to RGB hex value like "#ABCDEF"
+// Convert color to RGB hex value like "#RRGGBB".
 std::string ToRGBHex(SkColor color);
 
+// Convert color to RGBA hex value like "#RRGGBBAA".
 std::string ToRGBAHex(SkColor color, bool include_hash = true);
 
 }  // namespace electron
