@@ -119,6 +119,9 @@ class ElectronBrowserContext : public content::BrowserContext {
     return cookie_change_notifier_.get();
   }
   PrefService* prefs() const { return prefs_.get(); }
+  // Alias for `prefs()` to reduce code churn in Chromium patches that swap out
+  // `Profile` for `ElectronBrowserContext`.
+  PrefService* GetPrefs() const { return prefs(); }
   void set_in_memory_pref_store(ValueMapPrefStore* pref_store) {
     in_memory_pref_store_ = pref_store;
   }

@@ -107,7 +107,7 @@ index 60c4c6abefd4ffcbb30374dd8d455c5dea3a75ae..2bb3aec2abc0488c814d443681806ca6
  #include "ui/gfx/text_elider.h"
  
 diff --git a/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc b/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
-index 2becd355dbd04d80ce9effe0ae21778e7d181a42..4c1a10abb684dfc855ed554ae49d45ed6a4098aa 100644
+index 2becd355dbd04d80ce9effe0ae21778e7d181a42..61fef1c6fb444254ec23e8518a5d4007d1700a35 100644
 --- a/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
 +++ b/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
 @@ -21,7 +21,6 @@
@@ -144,18 +144,16 @@ index 2becd355dbd04d80ce9effe0ae21778e7d181a42..4c1a10abb684dfc855ed554ae49d45ed
  namespace {
  
  ChromeAuthenticatorRequestDelegate::TestObserver* g_observer = nullptr;
-@@ -75,8 +77,8 @@ ChromeAuthenticatorRequestDelegate::TestObserver* g_observer = nullptr;
+@@ -75,7 +77,7 @@ ChromeAuthenticatorRequestDelegate::TestObserver* g_observer = nullptr;
  bool IsWebauthnRPIDListedInEnterprisePolicy(
      content::BrowserContext* browser_context,
      const std::string& relying_party_id) {
 -  const Profile* profile = Profile::FromBrowserContext(browser_context);
--  const PrefService* prefs = profile->GetPrefs();
 +  const auto* profile = static_cast<ElectronBrowserContext*>(browser_context);
-+  const PrefService* prefs = profile->prefs();
+   const PrefService* prefs = profile->GetPrefs();
    const base::ListValue* permit_attestation =
        prefs->GetList(prefs::kSecurityKeyPermitAttestation);
-   return std::any_of(permit_attestation->GetList().begin(),
-@@ -236,16 +238,16 @@ bool ChromeWebAuthenticationDelegate::IsFocused(
+@@ -236,7 +238,7 @@ bool ChromeWebAuthenticationDelegate::IsFocused(
  // static
  ChromeWebAuthenticationDelegate::TouchIdAuthenticatorConfig
  ChromeWebAuthenticationDelegate::TouchIdAuthenticatorConfigForProfile(
@@ -164,17 +162,6 @@ index 2becd355dbd04d80ce9effe0ae21778e7d181a42..4c1a10abb684dfc855ed554ae49d45ed
    constexpr char kKeychainAccessGroup[] =
        MAC_TEAM_IDENTIFIER_STRING "." MAC_BUNDLE_IDENTIFIER_STRING ".webauthn";
  
-   std::string metadata_secret =
--      profile->GetPrefs()->GetString(kWebAuthnTouchIdMetadataSecretPrefName);
-+      profile->prefs()->GetString(kWebAuthnTouchIdMetadataSecretPrefName);
-   if (metadata_secret.empty() ||
-       !base::Base64Decode(metadata_secret, &metadata_secret)) {
-     metadata_secret = device::fido::mac::GenerateCredentialMetadataSecret();
--    profile->GetPrefs()->SetString(
-+    profile->prefs()->SetString(
-         kWebAuthnTouchIdMetadataSecretPrefName,
-         base::Base64Encode(base::as_bytes(base::make_span(metadata_secret))));
-   }
 @@ -259,7 +261,7 @@ absl::optional<ChromeWebAuthenticationDelegate::TouchIdAuthenticatorConfig>
  ChromeWebAuthenticationDelegate::GetTouchIdAuthenticatorConfig(
      content::BrowserContext* browser_context) {
@@ -239,7 +226,7 @@ index 2becd355dbd04d80ce9effe0ae21778e7d181a42..4c1a10abb684dfc855ed554ae49d45ed
    syncer::DeviceInfoSyncService* const sync_service =
        DeviceInfoSyncServiceFactory::GetForProfile(profile);
    if (!sync_service) {
-@@ -887,26 +896,29 @@ GetCablePairingsFromSyncedDevices(Profile* profile) {
+@@ -887,19 +896,22 @@ GetCablePairingsFromSyncedDevices(Profile* profile) {
      }
      ret.emplace_back(std::move(pairing));
    }
@@ -263,20 +250,12 @@ index 2becd355dbd04d80ce9effe0ae21778e7d181a42..4c1a10abb684dfc855ed554ae49d45ed
  
    std::vector<std::unique_ptr<device::cablev2::Pairing>> ret =
        GetCablePairingsFromSyncedDevices(profile);
-   std::sort(ret.begin(), ret.end(),
-             device::cablev2::Pairing::CompareByMostRecentFirst);
- 
--  PrefService* const prefs = profile->GetPrefs();
-+  PrefService* const prefs = profile->prefs();
-   const base::ListValue* pref_pairings =
-       prefs->GetList(kWebAuthnCablePairingsPrefName);
- 
 @@ -972,7 +984,7 @@ void ChromeAuthenticatorRequestDelegate::HandleCablePairingEvent(
      // A pairing was reported to be invalid. Delete it unless it came from Sync,
      // in which case there's nothing to be done.
      ListPrefUpdate update(
 -        Profile::FromBrowserContext(GetBrowserContext())->GetPrefs(),
-+        static_cast<ElectronBrowserContext*>(GetBrowserContext())->prefs(),
++        static_cast<ElectronBrowserContext*>(GetBrowserContext())->GetPrefs(),
          kWebAuthnCablePairingsPrefName);
      DeleteCablePairingByPublicKey(
          update.Get(), Base64(phone_public_keys_[*failed_contact_index]));
@@ -285,7 +264,7 @@ index 2becd355dbd04d80ce9effe0ae21778e7d181a42..4c1a10abb684dfc855ed554ae49d45ed
    // such pairing for longer, this seems like the safe option initially.
    ListPrefUpdate update(
 -      Profile::FromBrowserContext(GetBrowserContext())->GetPrefs(),
-+      static_cast<ElectronBrowserContext*>(GetBrowserContext())->prefs(),
++      static_cast<ElectronBrowserContext*>(GetBrowserContext())->GetPrefs(),
        kWebAuthnCablePairingsPrefName);
  
    // Otherwise the event is a new pairing.
