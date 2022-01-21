@@ -513,10 +513,10 @@ index 5362650a4f9bfa038f38f3490c50a7ddbd8d0e0e..106d98decdbb2cbb768388017dae5b4c
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index ba0d6ca4e9004a0c8cfc2b99f3e3aaff4c8a756b..3f1c77e14ab6164ee9bb7d4cc3e454125e0d700e 100644
+index 0e3af0f9280abe8560393325b400ad2543ed0556..7fe490e55a4bb8a183d0d241188ea15a44347245 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -383,8 +383,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -381,8 +381,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    compositor_data.display_private.reset();
    root_params->display_private =
        compositor_data.display_private.BindNewEndpointAndPassReceiver();
@@ -569,7 +569,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 7e3a624f99fea87cd53ce6f399e5768058d3c305..384ec6d9b8a8c0e121fc2e875ce65ddb639c241b 100644
+index 383aff3755d4b086759099de8b81808de8d4bf0e..ecba52d0e92d6f8989b1b2c2e851645940dcc2af 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -81,6 +81,7 @@ class DisplayPrivate;
@@ -617,7 +617,7 @@ index 7e3a624f99fea87cd53ce6f399e5768058d3c305..384ec6d9b8a8c0e121fc2e875ce65ddb
    raw_ptr<Layer> root_layer_ = nullptr;
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
-index 232751b32f6d6dee6c913c7020b53ae4b604a552..ba5767a80d13e848b7281f55307f6569a1524ce3 100644
+index 12e115cd6a128d8d150abc786d4d38b1d5119d91..b6320de28750333bee7ee83393849f4eb0a956ac 100644
 --- a/ui/gfx/ca_layer_params.h
 +++ b/ui/gfx/ca_layer_params.h
 @@ -6,6 +6,7 @@
@@ -649,7 +649,7 @@ index de00e766ba17532e10dcf5d0fd31fa344920a9f7..7aaedf83ad22dcc1d2dd39a31cf7e08b
    float scale_factor;
  };
 diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-index c1f21d7f4348df96f7be5c0adb1b9650304048e0..760c849aebba70e575e59883655d707f36c5424a 100644
+index c7035798bd867f51b39f36f1be79293bf2b5cc12..131446361de812f9b915483bca2b6d2165b65e3d 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 @@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(

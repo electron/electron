@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 6446219a8d66e4d3e8392b6b14a82ad20899c4a1..e4fc5ea4bf6e78d9af49cca2e264043588a5786a 100644
+index 4bc3c13d7ff53c493d01f04a7b66cd84e454bd20..8c9483cfaf70f4c0d259b1d13af5ae047ceded68 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -31,6 +31,7 @@ absl::optional<SkColor> GetHighContrastColor(
+@@ -32,6 +32,7 @@ absl::optional<SkColor> GetHighContrastColor(
      NativeTheme::ColorScheme color_scheme) {
    switch (color_id) {
      case NativeTheme::kColorId_MenuSeparatorColor:
@@ -19,7 +19,7 @@ index 6446219a8d66e4d3e8392b6b14a82ad20899c4a1..e4fc5ea4bf6e78d9af49cca2e2640435
        return color_scheme == NativeTheme::ColorScheme::kDark ? SK_ColorWHITE
                                                               : SK_ColorBLACK;
      case NativeTheme::kColorId_FocusedBorderColor:
-@@ -52,6 +53,15 @@ absl::optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
+@@ -53,6 +54,15 @@ absl::optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
        return gfx::kGoogleBlue400;
      case NativeTheme::kColorId_MenuSeparatorColor:
        return gfx::kGoogleGrey800;
@@ -35,7 +35,7 @@ index 6446219a8d66e4d3e8392b6b14a82ad20899c4a1..e4fc5ea4bf6e78d9af49cca2e2640435
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
      case NativeTheme::kColorId_WindowBackground:
-@@ -66,6 +76,8 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -67,6 +77,8 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
                          NativeTheme::ColorScheme color_scheme) {
    switch (color_id) {
      // Border
@@ -44,7 +44,7 @@ index 6446219a8d66e4d3e8392b6b14a82ad20899c4a1..e4fc5ea4bf6e78d9af49cca2e2640435
      case NativeTheme::kColorId_FocusedBorderColor:
        return gfx::kGoogleBlue500;
  
-@@ -135,6 +147,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -136,6 +148,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -88,10 +88,10 @@ index a1b39a03776c287bc2b1f9a0a6ce11d0d9efde79..9132ff83b672b51c5f2f7ed95da877be
    OP(kColorId_ThrobberWaitingColor),                                           \
    OP(kColorId_WindowBackground)
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index ed2509da17cdd512f117ff1f2b97cca30a4208b9..b028f94c3b1e7ea242e1e0c7680de1d5bde2bae7 100644
+index e30e7a26e5c2d8a109c837e683d4f108537043f3..5f809b71c635abd3679ee593850e521a14cb62f5 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -624,10 +624,23 @@ absl::optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -627,10 +627,23 @@ absl::optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

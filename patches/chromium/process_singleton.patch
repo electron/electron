@@ -25,7 +25,7 @@ This patch adds a few changes to the Chromium code:
    before the browser thread is ready.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index fd88cc5122ad5e02a6694b2dec9fd0d16a300cc0..13b325ecad9ba48398173e89680287c63efd4fa6 100644
+index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..8f94cc300b58e8a94b6ca155aa3cf370bcb948d8 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -102,12 +102,19 @@ class ProcessSingleton {
@@ -58,7 +58,7 @@ index fd88cc5122ad5e02a6694b2dec9fd0d16a300cc0..13b325ecad9ba48398173e89680287c6
    // Sets ourself up as the singleton instance.  Returns true on success.  If
    // false is returned, we are not the singleton instance and the caller must
 @@ -173,6 +182,8 @@ class ProcessSingleton {
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
  
 +  std::string program_name_; // Used for mutexName.
@@ -74,9 +74,9 @@ index fd88cc5122ad5e02a6694b2dec9fd0d16a300cc0..13b325ecad9ba48398173e89680287c6
 +  bool listen_on_ready_ = false;
  #endif
  
- #if defined(OS_MAC)
+ #if BUILDFLAG(IS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5b87acdf2 100644
+index c546c80e8d1d8e88a2d32a390eb8dbef32bf4b72..f8bffebc0d5b92046e8940109714fd68a9bbc2e2 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -65,6 +65,7 @@
@@ -100,13 +100,13 @@ index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5
  #include "ui/base/l10n/l10n_util.h"
  
 +#if 0
- #if defined(OS_LINUX) || defined(OS_CHROMEOS)
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
  #include "chrome/browser/ui/process_singleton_dialog_linux.h"
  #endif
 +#endif
  
  #if defined(TOOLKIT_VIEWS) && \
-     (defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
+     (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
 @@ -348,6 +352,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,

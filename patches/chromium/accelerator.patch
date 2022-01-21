@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= and Ctrl-Plus show up as such
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index be0df3662e3a1528fb88d5c723da49e5a29ac2b9..64a5eda05be16b3b6e1a0ceaa2b3a6884ca37268 100644
+index 2468b2c5881821d6f8e24a0e7c42243427b384ad..7e44c97edabf5ae012ff4f84d1404d8f223a13fe 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -30,7 +30,7 @@ index be0df3662e3a1528fb88d5c723da49e5a29ac2b9..64a5eda05be16b3b6e1a0ceaa2b3a688
 +    if (shifted_char) {
 +      shortcut += *shifted_char;
 +    } else {
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
 @@ -261,6 +267,10 @@ std::u16string Accelerator::GetShortcutText() const {
@@ -43,7 +43,7 @@ index be0df3662e3a1528fb88d5c723da49e5a29ac2b9..64a5eda05be16b3b6e1a0ceaa2b3a688
 +          base::StringPrintf("F%d", key_code_ - VKEY_F1 + 1));
    }
  
- #if defined(OS_MAC)
+ #if BUILDFLAG(IS_MAC)
 @@ -451,7 +461,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
      const std::u16string& shortcut) const {
    std::u16string result = shortcut;
@@ -63,7 +63,7 @@ index be0df3662e3a1528fb88d5c723da49e5a29ac2b9..64a5eda05be16b3b6e1a0ceaa2b3a688
  
    if (IsCmdDown()) {
 diff --git a/ui/base/accelerators/accelerator.h b/ui/base/accelerators/accelerator.h
-index 5cdb2f160beae4d7787eb84d5013280ee9464446..76bd4369faa5d43d8a99ea51ed012857d6bff293 100644
+index e0d9df439d120c0a47f55666b3818c7ba6796e70..283c6283f5aeaae1a5436e5fbb17ce2db4a9034e 100644
 --- a/ui/base/accelerators/accelerator.h
 +++ b/ui/base/accelerators/accelerator.h
 @@ -16,6 +16,7 @@

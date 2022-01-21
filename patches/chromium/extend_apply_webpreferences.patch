@@ -12,7 +12,7 @@ Ideally we could add an embedder observer pattern here but that can be
 done in future work.
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 5d92c6d9e190abb7e3298e13c6ad2bf94caf7a77..9dbb111b45c263a10907fb97e6c004546507adef 100644
+index 6f67476f7e77d055076a61c75a3102129d2e6c89..03e4923dba397fa90fda8842ca279577be030fc0 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -158,6 +158,7 @@
@@ -24,10 +24,10 @@ index 5d92c6d9e190abb7e3298e13c6ad2bf94caf7a77..9dbb111b45c263a10907fb97e6c00454
  #include "third_party/blink/renderer/platform/graphics/paint/cull_rect.h"
  #include "third_party/blink/renderer/platform/graphics/paint/paint_record_builder.h"
 @@ -1797,6 +1798,7 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
- #if defined(OS_MAC)
+ #if BUILDFLAG(IS_MAC)
    web_view_impl->SetMaximumLegibleScale(
        prefs.default_maximum_page_scale_factor);
 +  SetUseExternalPopupMenus(!prefs.offscreen);
  #endif
  
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)
