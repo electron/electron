@@ -16,7 +16,7 @@ const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
-  ['spec', 'static', 'jquery-2.0.3.min.js'],
+  ['spec-main', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
   ['spec', 'ts-smoke', 'electron', 'main.ts'],
   ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
   ['spec', 'ts-smoke', 'runner.js']
