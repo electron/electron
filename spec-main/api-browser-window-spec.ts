@@ -1238,8 +1238,10 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      ifdescribe(process.platform !== 'linux')('Maximized state', () => {
-        it('checks normal bounds when maximized', async () => {
+      describe('Maximized state', () => {
+        // TODO(dsanders11): Enable these once BrowserWindow.getBounds() is accurate on Linux.
+        //                   See https://github.com/electron/electron/issues/10388
+        ifit(process.platform !== 'linux')('checks normal bounds when maximized', async () => {
           const bounds = w.getBounds();
           const maximize = emittedOnce(w, 'maximize');
           w.show();
@@ -1292,7 +1294,7 @@ describe('BrowserWindow module', () => {
           await close;
         });
 
-        it('checks normal bounds when unmaximized', async () => {
+        ifit(process.platform !== 'linux')('checks normal bounds when unmaximized', async () => {
           const bounds = w.getBounds();
           w.once('maximize', () => {
             w.unmaximize();
@@ -1354,7 +1356,7 @@ describe('BrowserWindow module', () => {
 
           w.setAspectRatio(16 / 11);
 
-          const maximize = emittedOnce(w, 'resize');
+          const maximize = emittedOnce(w, 'maximize');
           w.show();
           w.maximize();
           await maximize;
@@ -1365,8 +1367,10 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      ifdescribe(process.platform !== 'linux')('Minimized state', () => {
-        it('checks normal bounds when minimized', async () => {
+      describe('Minimized state', () => {
+        // TODO(dsanders11): Enable these once BrowserWindow.getBounds() is accurate on Linux.
+        //                   See https://github.com/electron/electron/issues/10388
+        ifit(process.platform !== 'linux')('checks normal bounds when minimized', async () => {
           const bounds = w.getBounds();
           const minimize = emittedOnce(w, 'minimize');
           w.show();
@@ -1409,7 +1413,7 @@ describe('BrowserWindow module', () => {
           expectBoundsEqual(normal, w.getBounds());
         });
 
-        it('checks normal bounds when restored', async () => {
+        ifit(process.platform !== 'linux')('checks normal bounds when restored', async () => {
           const bounds = w.getBounds();
           w.once('minimize', () => {
             w.restore();
@@ -3773,7 +3777,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('max/minimize events', () => {
+  describe('max/minimize events', () => {
     afterEach(closeAllWindows);
     it('emits an event when window is maximized', async () => {
       const w = new BrowserWindow({ show: false });
@@ -3796,20 +3800,23 @@ describe('BrowserWindow module', () => {
       await maximize;
     });
 
-    it('emits only one event when frameless window is maximized', () => {
+    it('emits only one event when frameless window is maximized', async () => {
       const w = new BrowserWindow({ show: false, frame: false });
       let emitted = 0;
       w.on('maximize', () => emitted++);
       w.show();
       w.maximize();
+      await delay(1000);
       expect(emitted).to.equal(1);
     });
 
     it('emits an event when window is unmaximized', async () => {
       const w = new BrowserWindow({ show: false });
+      const maximize = emittedOnce(w, 'maximize');
       const unmaximize = emittedOnce(w, 'unmaximize');
       w.show();
       w.maximize();
+      await maximize;
       w.unmaximize();
       await unmaximize;
     });
@@ -4067,9 +4074,7 @@ describe('BrowserWindow module', () => {
       expectBoundsEqual(w.getPosition(), initialPosition);
     });
 
-    // TODO(dsanders11): Enable once minimize event works on Linux again.
-    //                   See https://github.com/electron/electron/issues/28699
-    ifit(process.platform !== 'linux')('should not restore a minimized window', async () => {
+    it('should not restore a minimized window', async () => {
       const w = new BrowserWindow();
       const minimize = emittedOnce(w, 'minimize');
       w.minimize();
@@ -4081,7 +4086,7 @@ describe('BrowserWindow module', () => {
 
     it('should not change the size or position of a normal window', async () => {
       const w = new BrowserWindow();
-
+      await delay(1000);
       const initialSize = w.getSize();
       const initialPosition = w.getPosition();
       w.unmaximize();
