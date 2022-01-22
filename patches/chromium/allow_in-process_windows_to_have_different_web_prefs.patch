@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 9250d08f67edff8fd7d51ec8270362f27582629c..4cd6583e3a0abe9a1e9c927bee103712849c0fe7 100644
+index 30e237f886b41bdf528b2a0e81054d15fb323f1f..43f7920cf6ff12d8a48ddef5440814a42266e8c5 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
 @@ -145,6 +145,20 @@ WebPreferences::WebPreferences()
@@ -33,7 +33,7 @@ index 9250d08f67edff8fd7d51ec8270362f27582629c..4cd6583e3a0abe9a1e9c927bee103712
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index b1f4625abf3ab5e77ea4e34ce5d36a875f4da393..7ec3e4588cb0da47635a5532bdc93e7a757c0a69 100644
+index b9a65b0aa8771602f6659f5ffe79b6cdfd04f6e4..f1aab825f8aabc023f6405e6f4b5c843374d43a0 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -22,6 +22,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -68,7 +68,7 @@ index b1f4625abf3ab5e77ea4e34ce5d36a875f4da393..7ec3e4588cb0da47635a5532bdc93e7a
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 0924c76de743a9d92aef3c1df3d92181bcad59d2..ad4f55339716b656b543faa38d12738423b6e5db 100644
+index a8d4f1905dc3f48dbbde440e4ec50fe95744e365..4ec23ebc2b09b00c849eb762fa371a8cf2925869 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -103,7 +103,7 @@ index 0924c76de743a9d92aef3c1df3d92181bcad59d2..ad4f55339716b656b543faa38d127384
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 871c4f64bfd09b9718f408722bf7e84bb3af61f4..2a296fa6c5ce60f9669e8a0e512b6c7a4906f809 100644
+index dc84e6f516492b72cf513c9786f17b472961dddb..72eb72cde86f0ef9c94123a104e8f30d12952391 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@

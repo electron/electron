@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index cd2da1af996a5d8117f43626f860e7cf7eb5bbb5..6bbaf4c1393c2fd936d21cf31a35fc9b22e06334 100644
+index 55c05cbe41b658e042d0f9cc320157937ee16562..1fdafe0007435c7b3840428921c2133cc1a0e2f3 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1891,6 +1891,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -293,7 +293,7 @@ index dc1175944e0346c52d39e444bcbc14ac8e462195..10c422693e87f97ec44a256d0b508c76
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index d8976665cc201e379b0a9ecd8d953eb63e10b74b..461e26d275886f3690255ab17f374aaeda7dd017 100644
+index 2f4fbbdd8059b2915b4848f95db925f1dbb1fb08..3fc675e4e56b3e658d70475800a938a7ce283567 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@
