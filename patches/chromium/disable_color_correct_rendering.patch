@@ -81,7 +81,7 @@ index 6a830ec9f29b9764cd425f0681dafbb18d90b457..a7a095ceb9e626c79db21e0d16c8ef47
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index ab0fb39c4b1891db3595f98e71a0dba158262a2a..ebec53f358d9c41d818f00c948e59cadc7b9c039 100644
+index 963154eeda506350b71e3243ef172061efc8d4fb..daaea93f536759b67b4fffbca7c26479ceb04fcd 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -87,6 +87,9 @@
@@ -197,7 +197,7 @@ index ab0fb39c4b1891db3595f98e71a0dba158262a2a..ebec53f358d9c41d818f00c948e59cad
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level && src_color_space.IsHDR()) {
      // TODO(b/183236148): consider using the destination's HDR static metadata
-@@ -4084,9 +4096,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4085,9 +4097,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -210,7 +210,7 @@ index ab0fb39c4b1891db3595f98e71a0dba158262a2a..ebec53f358d9c41d818f00c948e59cad
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4306,8 +4318,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4307,8 +4319,9 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,7 +222,7 @@ index ab0fb39c4b1891db3595f98e71a0dba158262a2a..ebec53f358d9c41d818f00c948e59cad
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4513,3 +4526,5 @@ bool GLRenderer::ColorTransformKey::operator<(
+@@ -4514,3 +4527,5 @@ bool GLRenderer::ColorTransformKey::operator<(
  }
  
  }  // namespace viz

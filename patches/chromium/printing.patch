@@ -76,7 +76,7 @@ index fb0418a0c5337345c67b3692d16871047e0d1b11..9690b718d1833e40161d4accbdf0f27d
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
  
 diff --git a/chrome/browser/printing/print_job.h b/chrome/browser/printing/print_job.h
-index 811f0ac08e2bffaa70f0899b6f07ac81ecf3d37a..54fe82728efb1d2036169cfda47292296bed1db3 100644
+index f922dc5c61ec85e6102a8e92b1b7096382dec6f0..e26a9dd3afb580244b04d190cda19a69cb4e9333 100644
 --- a/chrome/browser/printing/print_job.h
 +++ b/chrome/browser/printing/print_job.h
 @@ -53,6 +53,7 @@ class PrintJob : public base::RefCountedThreadSafe<PrintJob> {
@@ -108,7 +108,7 @@ index 811f0ac08e2bffaa70f0899b6f07ac81ecf3d37a..54fe82728efb1d2036169cfda4729229
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index c7a7f857a28d0652b29f0f7e41ca42442ec546a9..0ecd56b9fef772b332553491af61498e660bd349 100644
+index fc26fd8f32e4c1edd3ca41baf0e9cdd482b25c03..b3c4c75e15673771093c4194c023168d8142efab 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,13 +20,13 @@
@@ -433,7 +433,7 @@ index c759b7a7c9d197f4760a2d86f976a965a44abf9a..3e1fbf49c3f3e98ea261bccefda523c3
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index aa7915ac042fe3cafb449811715e8f56d10ee0d3..7821abd4728e9ac1d92610a3d34869b9cb5b98ea 100644
+index 2661776307f773ac8f2c62529ec86349b045ee8f..a8ffff68005e714ad477d9af4bc6db7c5422aa35 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -37,6 +37,8 @@ namespace printing {
@@ -456,7 +456,7 @@ index aa7915ac042fe3cafb449811715e8f56d10ee0d3..7821abd4728e9ac1d92610a3d34869b9
 +                        CompletionCallback callback);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-   // Prints the document in |print_data| with settings specified in
+   // Prints the document in `print_data` with settings specified in
 @@ -139,6 +144,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // PrintJob::Observer overrides:
    void OnDocDone(int job_id, PrintedDocument* document) override;
