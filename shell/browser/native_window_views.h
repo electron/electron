@@ -49,6 +49,7 @@ class NativeWindowViews : public NativeWindow,
 
   // NativeWindow:
   void SetContentView(views::View* view) override;
+  void SetContentViewImpl(NativeView* view) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -121,6 +122,9 @@ class NativeWindowViews : public NativeWindow,
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
   void SetTopBrowserView(NativeBrowserView* browser_view) override;
+  void AddChildView(NativeView* view) override;
+  bool RemoveChildView(NativeView* view) override;
+  void SetTopChildView(NativeView* view) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;

@@ -436,6 +436,10 @@ void NativeWindowViews::SetContentView(views::View* view) {
   root_view_->Layout();
 }
 
+void NativeWindowViews::SetContentViewImpl(NativeView* view) {
+  SetContentView(view->GetNative());
+}
+
 void NativeWindowViews::Close() {
   if (!IsClosable()) {
     WindowList::WindowCloseCancelled(this);
@@ -1249,6 +1253,44 @@ void NativeWindowViews::SetTopBrowserView(NativeBrowserView* view) {
   if (view->GetInspectableWebContentsView())
     content_view()->ReorderChildView(
         view->GetInspectableWebContentsView()->GetView(), -1);
+}
+
+void NativeWindowViews::AddChildView(NativeView* view) {
+  if (!content_view())
+    return;
+
+  if (!view)
+    return;
+
+  add_base_view(view);
+  content_view()->AddChildView(view->GetNative());
+  view->SetWindow(this);
+}
+
+bool NativeWindowViews::RemoveChildView(NativeView* view) {
+  if (!content_view())
+    return false;
+
+  if (!view)
+    return false;
+
+  view->SetWindow(nullptr);
+  content_view()->RemoveChildView(view->GetNative());
+  remove_base_view(view);
+  return true;
+}
+
+void NativeWindowViews::SetTopChildView(NativeView* view) {
+  if (!content_view())
+    return;
+
+  if (!view)
+    return;
+
+  remove_base_view(view);
+  add_base_view(view);
+  content_view()->ReorderChildView(view->GetNative(), -1);
+  view->SetWindow(this);
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {

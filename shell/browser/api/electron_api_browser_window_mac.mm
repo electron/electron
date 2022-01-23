@@ -83,6 +83,11 @@ void BrowserWindow::UpdateDraggableRegions(
   for (NativeBrowserView* view : window_->browser_views()) {
     view->UpdateDraggableRegions(view->GetDraggableRegions());
   }
+  if (window_->GetContentView())
+    window_->GetContentView()->UpdateDraggableRegions();
+  for (NativeView* view : window_->base_views()) {
+    view->UpdateDraggableRegions();
+  }
 
   // Create and add a ControlRegionView for each region that needs to be
   // excluded from the dragging.

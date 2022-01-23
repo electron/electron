@@ -1797,7 +1797,8 @@ Replacement API for setBrowserView supporting work with multi browser views.
 
 * `browserView` [BrowserView](browser-view.md)
 
-Raises `browserView` above other `BrowserView`s attached to `win`.
+Raises `browserView` above other `BrowserView`s and `BaseView`s attached
+to `win`.
 Throws an error if `browserView` is not attached to `win`.
 
 #### `win.getBrowserViews()` _Experimental_
@@ -1807,6 +1808,29 @@ with `addBrowserView` or `setBrowserView`.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
+
+#### `win.addChildView(view)` _Experimental_
+
+* `view` [BaseView](base-view.md)
+
+Supporting work with multi views.
+
+#### `win.removeChildView(view)` _Experimental_
+
+* `view` [BaseView](base-view.md)
+
+#### `win.setTopChildView(view)` _Experimental_
+
+* `view` [BaseView](base-view.md)
+
+Raises `view` above other `BaseView`s and `BrowserView`s attached
+to `win`.
+Throws an error if `view` is not attached to `win`.
+
+#### `win.getViews()` _Experimental_
+
+Returns `BaseView[]` - an array of all BaseViews that have been attached
+with `addChildView`.
 
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
