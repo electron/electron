@@ -60,6 +60,7 @@ extern const char kRoundedCorners[];
 extern const char ktitleBarOverlay[];
 extern const char kOverlayButtonColor[];
 extern const char kOverlaySymbolColor[];
+extern const char kOverlayHeight[];
 
 // WebPreferences.
 extern const char kZoomFactor[];
