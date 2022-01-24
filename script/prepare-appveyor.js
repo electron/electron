@@ -52,75 +52,28 @@ async function checkAppVeyorImage (options) {
 }
 
 async function bakeAppVeyorImage (options) {
-  console.log(`Baking a new AppVeyor image for: ${options.version}, on build cloud ${options.buildCloudId}...`);
+  const filepath = path.resolve(__dirname, '../appveyor.yml');
+  const bakeConfigPath = path.resolve(__dirname, '../.circleci/configs/appveyor-bake.yml');
 
-  const environmentVariables = {
-    ELECTRON_RELEASE: 0,
-    APPVEYOR_BUILD_WORKER_CLOUD: options.buildCloudId,
-    APPVEYOR_BUILD_WORKER_IMAGE: options.version,
-    APPVEYOR_BAKE_IMAGE: options.version
-  };
-
-  const requestOpts = {
-    url: BAKE_APPVEYOR_IMAGE_URL,
-    auth: {
-      bearer: process.env.APPVEYOR_CLOUD_TOKEN
-    },
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      accountName: 'electron-bot',
-      commitId: options.commit || undefined,
-      environmentVariables
-    }),
-    method: 'POST'
-  };
-
-  try {
-    const res = await makeRequest(requestOpts, true);
-    // const bakeUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
-    // console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
-  } catch (err) {
-    console.log('Could not call AppVeyor: ', err);
-  }
+  const bakeConfig = fs.readFileSync(bakeConfigPath, 'utf8').replace('electron-DEPS-VERSION', `electron-${options.version}`);
+  fs.writeFileSync(filepath, bakeConfig, (error) => {
+    if (error) console.log(`Could not write new .yml file for AppVeyor: ${error}`);
+    else console.log('AppVeyor configuration updated. Kicking off jobs...');
+  });
 }
 
-// TODO: Right now, this makes a manual API call to AppVeyor
-// Change that to rewrite and return the AppVeyor .yaml
 async function useAppVeyorImage (options) {
-  console.log(`Using AppVeyor image ${options.version} on build cloud ${options.buildCloudId}...`);
-  const environmentVariables = {
-    ELECTRON_RELEASE: 1,
-    APPVEYOR_BUILD_WORKER_CLOUD: options.buildCloudId,
-    APPVEYOR_BUILD_WORKER_IMAGE: options.version
-  };
+  const filepath = path.resolve(__dirname, '../appveyor.yml');
 
-  const requestOpts = {
-    url: BAKE_APPVEYOR_IMAGE_URL,
-    auth: {
-      bearer: process.env.APPVEYOR_CLOUD_TOKEN
-    },
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      accountName: 'electron-bot',
-      // projectSlug: appVeyorJobs[job],
-      // branch: targetBranch,
-      commitId: options.commit || undefined,
-      environmentVariables
-    }),
-    method: 'POST'
-  };
+  // const IMAGE = /'image': '(.+?)'/.exec(fs.readFileSync(filepath, 'utf8'));
+  // console.log('IMAGE: ', IMAGE);
+  // const contents = fs.readFileSync(filepath, 'utf8');
 
-  try {
-    const { version } = await makeRequest(requestOpts, true);
-    // const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
-    // console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
-  } catch (err) {
-    console.log('Could not call AppVeyor: ', err);
-  }
+  const config = fs.readFileSync(filepath, 'utf8').replace('vs2019bt-16.6.2', options.version);
+  fs.writeFileSync(filepath, config, (error) => {
+    if (error) console.log(`Could not write new .yml file for AppVeyor: ${error}`);
+    else console.log('AppVeyor configuration updated. Kicking off jobs...');
+  });
 }
 
 async function prepareAppVeyorImage (opts) {
@@ -130,7 +83,7 @@ async function prepareAppVeyorImage (opts) {
   const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
   const buildCloudId = opts.buildCloudId || '1424'; // BC: electron-16-core2
-  const imageVersion = opts.imageVersion || CHROMIUM_VERSION;
+  const imageVersion = opts.imageVersion || `electron-${CHROMIUM_VERSION}`;
   const image = await checkAppVeyorImage({ buildCloudId, imageVersion });
 
   if (image) {
@@ -138,11 +91,10 @@ async function prepareAppVeyorImage (opts) {
     await useAppVeyorImage({ ...opts, version: image });
   } else {
     console.log(`No AppVeyor image found for ${imageVersion} in ${buildCloudId}.
-                 Creating new image for ${imageVersion} - job will run after image is baked.`);
+                 Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
     await bakeAppVeyorImage({ ...opts, version: CHROMIUM_VERSION });
     // TODO: Wait for image to fully bake before continuing
-    // See if we can do this with an after-bake option in AppVeyor
-    await useAppVeyorImage({ ...opts, version: CHROMIUM_VERSION });
+    // await useAppVeyorImage({ ...opts, version: imageVersion });
   }
 }
 
@@ -163,3 +115,75 @@ if (require.main === module) {
       process.exit(1);
     });
 }
+
+// async function bakeAppVeyorImage (options) {
+//   console.log(`Baking a new AppVeyor image for: ${options.version}, on build cloud ${options.buildCloudId}...`);
+
+//   const environmentVariables = {
+//     ELECTRON_RELEASE: 0,
+//     APPVEYOR_BUILD_WORKER_CLOUD: options.buildCloudId,
+//     APPVEYOR_BUILD_WORKER_IMAGE: options.version,
+//     APPVEYOR_BAKE_IMAGE: options.version
+//   };
+
+//   const requestOpts = {
+//     url: BAKE_APPVEYOR_IMAGE_URL,
+//     auth: {
+//       bearer: process.env.APPVEYOR_CLOUD_TOKEN
+//     },
+//     headers: {
+//       'Content-Type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       accountName: 'electron-bot',
+//       commitId: options.commit || undefined,
+//       environmentVariables
+//     }),
+//     method: 'POST'
+//   };
+
+//   try {
+//     const res = await makeRequest(requestOpts, true);
+//     // const bakeUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
+//     // console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
+//   } catch (err) {
+//     console.log('Could not call AppVeyor: ', err);
+//   }
+// }
+
+// TODO: Right now, this makes a manual API call to AppVeyor
+// Change that to rewrite and return the AppVeyor .yaml
+// async function useAppVeyorImage (options) {
+//   console.log(`Using AppVeyor image ${options.version} on build cloud ${options.buildCloudId}...`);
+//   const environmentVariables = {
+//     ELECTRON_RELEASE: 1,
+//     APPVEYOR_BUILD_WORKER_CLOUD: options.buildCloudId,
+//     APPVEYOR_BUILD_WORKER_IMAGE: options.version
+//   };
+
+//   const requestOpts = {
+//     url: BAKE_APPVEYOR_IMAGE_URL,
+//     auth: {
+//       bearer: process.env.APPVEYOR_CLOUD_TOKEN
+//     },
+//     headers: {
+//       'Content-Type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       accountName: 'electron-bot',
+//       // projectSlug: appVeyorJobs[job],
+//       // branch: targetBranch,
+//       commitId: options.commit || undefined,
+//       environmentVariables
+//     }),
+//     method: 'POST'
+//   };
+
+//   try {
+//     const { version } = await makeRequest(requestOpts, true);
+//     // const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
+//     // console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
+//   } catch (err) {
+//     console.log('Could not call AppVeyor: ', err);
+//   }
+// }

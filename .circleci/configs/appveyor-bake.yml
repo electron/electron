@@ -46,7 +46,7 @@ after_build:
     if ($env:TARGET_ARCH -eq 'x64') {
       echo "SETTING BAKE IMAGE"
       # Rewrite the bake image name here
-      $env:APPVEYOR_BAKE_IMAGE = 'electron-test-bake-image-jk'
+      $env:APPVEYOR_BAKE_IMAGE = 'electron-DEPS-VERSION'
     } else {
       echo "SKIPPING BAKE IMAGE for $env:TARGET_ARCH"
     }
