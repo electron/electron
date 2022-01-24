@@ -67,7 +67,7 @@ class WinFrameView : public FramelessView {
 
   // Returns the height of the titlebar for popups or other browser types that
   // don't have tabs.
-  int TitlebarHeight(bool restored) const;
+  int TitlebarHeight(int custom_height) const;
 
   // Returns the y coordinate for the top of the frame, which in maximized mode
   // is the top of the screen and in restored mode is 1 pixel below the top of
