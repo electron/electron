@@ -1565,6 +1565,11 @@ describe('net module', () => {
       const headerValue = headers[customHeaderName.toLowerCase()];
       expect(headerValue).to.equal(customHeaderValue);
 
+      const rawHeaders = response.rawHeaders;
+      expect(rawHeaders).to.be.an('array');
+      expect(rawHeaders[0]).to.equal(customHeaderName);
+      expect(rawHeaders[1]).to.equal(customHeaderValue);
+
       const httpVersion = response.httpVersion;
       expect(httpVersion).to.be.a('string').and.to.have.lengthOf.at.least(1);
 
@@ -1606,7 +1611,7 @@ describe('net module', () => {
       await collectStreamBody(response);
     });
 
-    it('should join repeated non-discardable value with ,', async () => {
+    it('should join repeated non-discardable header values with ,', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200;
         response.statusMessage = 'OK';
@@ -1622,6 +1627,137 @@ describe('net module', () => {
       expect(headers).to.be.an('object');
       expect(headers).to.have.property('referrer-policy');
       expect(headers['referrer-policy']).to.equal('first-text, second-text');
+
+      await collectStreamBody(response);
+    });
+
+    it('should not join repeated discardable header values with ,', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('last-modified', ['yesterday', 'today']);
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      expect(response.statusMessage).to.equal('OK');
+
+      const headers = response.headers;
+      expect(headers).to.be.an('object');
+      expect(headers).to.have.property('last-modified');
+      expect(headers['last-modified']).to.equal('yesterday');
+
+      await collectStreamBody(response);
+    });
+
+    it('should make set-cookie header an array even if single value', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('set-cookie', 'chocolate-chip');
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      expect(response.statusMessage).to.equal('OK');
+
+      const headers = response.headers;
+      expect(headers).to.be.an('object');
+      expect(headers).to.have.property('set-cookie');
+      expect(headers['set-cookie']).to.be.an('array');
+      expect(headers['set-cookie'][0]).to.equal('chocolate-chip');
+
+      await collectStreamBody(response);
+    });
+
+    it('should keep set-cookie header an array when an array', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('set-cookie', ['chocolate-chip', 'oatmeal']);
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      expect(response.statusMessage).to.equal('OK');
+
+      const headers = response.headers;
+      expect(headers).to.be.an('object');
+      expect(headers).to.have.property('set-cookie');
+      expect(headers['set-cookie']).to.be.an('array');
+      expect(headers['set-cookie'][0]).to.equal('chocolate-chip');
+      expect(headers['set-cookie'][1]).to.equal('oatmeal');
+
+      await collectStreamBody(response);
+    });
+
+    it('should lowercase header keys', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('HEADER-KEY', ['header-value']);
+        response.setHeader('SeT-CookiE', ['chocolate-chip', 'oatmeal']);
+        response.setHeader('rEFERREr-pOLICy', ['first-text', 'second-text']);
+        response.setHeader('LAST-modified', 'yesterday');
+
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      expect(response.statusMessage).to.equal('OK');
+
+      const headers = response.headers;
+      expect(headers).to.be.an('object');
+
+      expect(headers).to.have.property('header-key');
+      expect(headers).to.have.property('set-cookie');
+      expect(headers).to.have.property('referrer-policy');
+      expect(headers).to.have.property('last-modified');
+
+      await collectStreamBody(response);
+    });
+
+    it('should return correct raw headers', async () => {
+      const customHeaders: [string, string|string[]][] = [
+        ['HEADER-KEY-ONE', 'header-value-one'],
+        ['set-cookie', 'chocolate-chip'],
+        ['header-key-two', 'header-value-two'],
+        ['referrer-policy', ['first-text', 'second-text']],
+        ['HEADER-KEY-THREE', 'header-value-three'],
+        ['last-modified', ['first-text', 'second-text']],
+        ['header-key-four', 'header-value-four']
+      ];
+
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        customHeaders.forEach((headerTuple) => {
+          response.setHeader(headerTuple[0], headerTuple[1]);
+        });
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      expect(response.statusMessage).to.equal('OK');
+
+      const rawHeaders = response.rawHeaders;
+      expect(rawHeaders).to.be.an('array');
+
+      let rawHeadersIdx = 0;
+      customHeaders.forEach((headerTuple) => {
+        const headerKey = headerTuple[0];
+        const headerValues = Array.isArray(headerTuple[1]) ? headerTuple[1] : [headerTuple[1]];
+        headerValues.forEach((headerValue) => {
+          expect(rawHeaders[rawHeadersIdx]).to.equal(headerKey);
+          expect(rawHeaders[rawHeadersIdx + 1]).to.equal(headerValue);
+          rawHeadersIdx += 2;
+        });
+      });
 
       await collectStreamBody(response);
     });
