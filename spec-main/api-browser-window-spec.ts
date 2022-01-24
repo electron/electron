@@ -110,6 +110,14 @@ describe('BrowserWindow module', () => {
       await closed;
     });
 
+    it('closes window without rounded corners', async () => {
+      await closeWindow(w);
+      w = new BrowserWindow({ show: false, frame: false, roundedCorners: false });
+      const closed = emittedOnce(w, 'closed');
+      w.close();
+      await closed;
+    });
+
     it('should not crash if called after webContents is destroyed', () => {
       w.webContents.destroy();
       w.webContents.on('destroyed', () => w.close());
