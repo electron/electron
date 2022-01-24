@@ -2,8 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
-#define SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
+// Modified from
+// chrome/browser/ui/views/frame/glass_browser_caption_button_container.h
+
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
 
 #include "base/scoped_observation.h"
 #include "ui/base/metadata/metadata_header_macros.h"
@@ -34,6 +37,9 @@ class WinCaptionButtonContainer : public views::View,
   // drag handle, and HTNOWHERE otherwise.
   // See also ClientView::NonClientHitTest.
   int NonClientHitTest(const gfx::Point& point) const;
+
+  gfx::Size GetButtonSize() const;
+  void SetButtonSize(gfx::Size size);
 
  private:
   // views::View:

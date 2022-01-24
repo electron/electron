@@ -2,9 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
-#define SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+// Modified from chrome/browser/ui/views/frame/windows_10_caption_button.h
 
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+
+#include "chrome/browser/ui/frame/window_frame_util.h"
 #include "chrome/browser/ui/view_ids.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/gfx/canvas.h"
@@ -28,7 +31,10 @@ class WinCaptionButton : public views::Button {
   void OnPaintBackground(gfx::Canvas* canvas) override;
   void PaintButtonContents(gfx::Canvas* canvas) override;
 
-  //  private:
+  gfx::Size GetSize() const;
+  void SetSize(gfx::Size size);
+
+ private:
   // Returns the amount we should visually reserve on the left (right in RTL)
   // for spacing between buttons. We do this instead of repositioning the
   // buttons to avoid the sliver of deadspace that would result.
@@ -48,6 +54,9 @@ class WinCaptionButton : public views::Button {
 
   WinFrameView* frame_view_;
   ViewID button_type_;
+
+  int base_width_ = WindowFrameUtil::kWindows10GlassCaptionButtonWidth;
+  int height_ = WindowFrameUtil::kWindows10GlassCaptionButtonHeightRestored;
 };
 }  // namespace electron
 
