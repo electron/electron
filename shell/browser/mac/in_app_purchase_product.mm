@@ -107,6 +107,79 @@
 }
 
 /**
+ * Convert a SKProductSubscriptionPeriod object to a ProductSubscriptionPeriod
+ * structure.
+ *
+ * @param productProductSubscriptionPeriod - The SKProductSubscriptionPeriod
+ * object to convert.
+ */
+- (in_app_purchase::ProductSubscriptionPeriod)
+    skProductSubscriptionPeriodToStruct:
+        (SKProductSubscriptionPeriod*)productSubscriptionPeriod
+    API_AVAILABLE(macosx(10.13.2)) {
+  in_app_purchase::ProductSubscriptionPeriod productSubscriptionPeriodStruct;
+
+  productSubscriptionPeriodStruct.numberOfUnits =
+      (int)productSubscriptionPeriod.numberOfUnits;
+
+  if (productSubscriptionPeriod.unit == SKProductPeriodUnitDay) {
+    productSubscriptionPeriodStruct.unit = "day";
+  } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitWeek) {
+    productSubscriptionPeriodStruct.unit = "week";
+  } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitMonth) {
+    productSubscriptionPeriodStruct.unit = "month";
+  } else if (productSubscriptionPeriod.unit == SKProductPeriodUnitYear) {
+    productSubscriptionPeriodStruct.unit = "year";
+  }
+
+  return productSubscriptionPeriodStruct;
+}
+
+/**
+ * Convert a SKProductDiscount object to a ProductDiscount structure.
+ *
+ * @param productDiscount - The SKProductDiscount object to convert.
+ */
+- (in_app_purchase::ProductDiscount)skProductDiscountToStruct:
+    (SKProductDiscount*)productDiscount API_AVAILABLE(macosx(10.13.2)) {
+  in_app_purchase::ProductDiscount productDiscountStruct;
+
+  if (productDiscount.paymentMode == SKProductDiscountPaymentModePayAsYouGo) {
+    productDiscountStruct.paymentMode = "payAsYouGo";
+  } else if (productDiscount.paymentMode ==
+             SKProductDiscountPaymentModePayUpFront) {
+    productDiscountStruct.paymentMode = "payUpFront";
+  } else if (productDiscount.paymentMode ==
+             SKProductDiscountPaymentModeFreeTrial) {
+    productDiscountStruct.paymentMode = "freeTrial";
+  }
+
+  productDiscountStruct.numberOfPeriods = (int)productDiscount.numberOfPeriods;
+
+  if (productDiscount.priceLocale != nil) {
+    productDiscountStruct.priceLocale =
+        [[self formatPrice:productDiscount.price
+                 withLocal:productDiscount.priceLocale] UTF8String];
+  }
+
+  if (productDiscount.subscriptionPeriod != nil) {
+    productDiscountStruct.subscriptionPeriod = [self
+        skProductSubscriptionPeriodToStruct:productDiscount.subscriptionPeriod];
+  }
+
+  if (@available(macOS 10.14.4, *)) {
+    productDiscountStruct.type = (int)productDiscount.type;
+    if (productDiscount.identifier != nil) {
+      productDiscountStruct.identifier =
+          [productDiscount.identifier UTF8String];
+    }
+    productDiscountStruct.price = [productDiscount.price doubleValue];
+  }
+
+  return productDiscountStruct;
+}
+
+/**
  * Convert a skProduct object to Product structure.
  *
  * @param product - The SKProduct object to convert.
@@ -156,9 +229,64 @@
       }
     }
   }
+  if (@available(macOS 10.13.2, *)) {
+    if (product.introductoryPrice != nil) {
+      productStruct.introductoryPrice =
+          [self skProductDiscountToStruct:product.introductoryPrice];
+    }
+    if (product.subscriptionPeriod != nil) {
+      productStruct.subscriptionPeriod =
+          [self skProductSubscriptionPeriodToStruct:product.subscriptionPeriod];
+    }
+  }
+  if (@available(macOS 10.14, *)) {
+    if (product.subscriptionGroupIdentifier != nil) {
+      productStruct.subscriptionGroupIdentifier =
+          [product.subscriptionGroupIdentifier UTF8String];
+    }
+  }
+  if (@available(macOS 10.14.4, *)) {
+    if (product.discounts != nil) {
+      productStruct.discounts.reserve([product.discounts count]);
+
+      for (SKProductDiscount* discount in product.discounts) {
+        productStruct.discounts.push_back(
+            [self skProductDiscountToStruct:discount]);
+      }
+    }
+  }
 
   // Downloadable Content Information
   productStruct.isDownloadable = [product downloadable];
+  if (@available(macOS 10.14, *)) {
+    if (product.downloadContentVersion != nil) {
+      productStruct.downloadContentVersion =
+          [product.downloadContentVersion UTF8String];
+    }
+    if (product.downloadContentLengths != nil) {
+      productStruct.downloadContentLengths.reserve(
+          [product.downloadContentLengths count]);
+
+      for (NSNumber* contentLength in product.downloadContentLengths) {
+        productStruct.downloadContentLengths.push_back(
+            [contentLength longLongValue]);
+      }
+    }
+  } else {
+    if (product.contentVersion != nil) {
+      productStruct.downloadContentVersion =
+          [product.contentVersion UTF8String];
+    }
+    if (product.contentLengths != nil) {
+      productStruct.downloadContentLengths.reserve(
+          [product.contentLengths count]);
+
+      for (NSNumber* contentLength in product.contentLengths) {
+        productStruct.downloadContentLengths.push_back(
+            [contentLength longLongValue]);
+      }
+    }
+  }
 
   return productStruct;
 }
@@ -170,6 +298,15 @@
 // ============================================================================
 
 namespace in_app_purchase {
+
+ProductSubscriptionPeriod::ProductSubscriptionPeriod(
+    const ProductSubscriptionPeriod&) = default;
+ProductSubscriptionPeriod::ProductSubscriptionPeriod() = default;
+ProductSubscriptionPeriod::~ProductSubscriptionPeriod() = default;
+
+ProductDiscount::ProductDiscount(const ProductDiscount&) = default;
+ProductDiscount::ProductDiscount() = default;
+ProductDiscount::~ProductDiscount() = default;
 
 Product::Product() = default;
 Product::Product(const Product&) = default;
