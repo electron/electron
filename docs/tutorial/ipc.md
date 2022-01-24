@@ -532,7 +532,7 @@ between renderers after the initial setup.
 
 For performance reasons, Electron's IPC implementation uses the HTML standard
 [Structured Clone Algorithm][sca] to serialize objects passed between processes, meaning that
-only certain types of files can be passed through IPC channels.
+only certain types of objects can be passed through IPC channels.
 
 In particular, DOM objects (e.g. `Element`, `Location` and `DOMMatrix`), Node.js objects
 backed by C++ classes (e.g. `process.env`, some members of `Stream`), and Electron objects
