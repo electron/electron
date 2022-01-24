@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexander Dunaev <adunaev@igalia.com>
+Date: Tue, 28 Dec 2021 14:02:05 +0000
+Subject: Fixed terminate caused by binding to wrong version.
+
+This is a fixup to [1] where a typo creeped in.
+
+[1] https://chromium-review.googlesource.com/c/chromium/src/+/3337037
+
+Bug: 1279574
+Change-Id: If8f1a308ce8d27b51a9cd4d52ad8eec2e29edf95
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3358254
+Reviewed-by: Antonio Gomes <tonikitoo@igalia.com>
+Commit-Queue: Alexander Dunaev <adunaev@igalia.com>
+Auto-Submit: Alexander Dunaev <adunaev@igalia.com>
+Cr-Commit-Position: refs/heads/main@{#954286}
+(cherry picked from commit a84b79daa8897b822336b8f348ef4daaae07af37)
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_drm.cc b/ui/ozone/platform/wayland/host/wayland_drm.cc
+index a7ed2e20ffe0a1aba0de1505e8ffbc4e64b83cc5..b10b79412e5692ea2e2b6c254561d2c8ddb37a41 100644
+--- a/ui/ozone/platform/wayland/host/wayland_drm.cc
++++ b/ui/ozone/platform/wayland/host/wayland_drm.cc
+@@ -32,7 +32,7 @@ void WaylandDrm::Instantiate(WaylandConnection* connection,
+   DCHECK_EQ(interface, kInterfaceName);
+ 
+   if (connection->drm_ ||
+-      !!wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
++      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+     return;
+   }
+ 
