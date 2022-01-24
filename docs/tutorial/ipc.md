@@ -530,7 +530,7 @@ between renderers after the initial setup.
 
 ## Object serialization
 
-For performance reasons, Electron's IPC implementation uses the HTML standard
+Electron's IPC implementation uses the HTML standard
 [Structured Clone Algorithm][sca] to serialize objects passed between processes, meaning that
 only certain types of objects can be passed through IPC channels.
 
