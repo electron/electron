@@ -1,4 +1,14 @@
-# The config is used to bake appveyor images, not for running CI jobs
+# The config is used to bake appveyor images, not for running CI jobs.
+# The config expects the following environment variables to be set:
+#  - "GN_CONFIG" Build type. One of {'testing', 'release'}.
+#  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
+#      e.g. 'target_cpu="x86"' to build for a 32bit platform.
+#      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
+#      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordningly
+#      if you pass a custom value for 'target_cpu'.
+#  - "APPVEYOR_BAKE_IMAGE" e.g. 'electron-99.0.4767.0'. Name of the image to be baked.
+#      Typically named after the Chromium version on which the image is built.
+#      This can be set dynamically in the prepare-appveyor script.
 
 # Uncomment these lines to enable RDP
 #on_finish:
@@ -41,15 +51,6 @@ build_script:
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
-after_build:
-- ps: |
-    if ($env:TARGET_ARCH -eq 'x64') {
-      echo "SETTING BAKE IMAGE"
-      # Rewrite the bake image name here
-      $env:APPVEYOR_BAKE_IMAGE = 'electron-DEPS-VERSION'
-    } else {
-      echo "SKIPPING BAKE IMAGE for $env:TARGET_ARCH"
-    }
 
 on_image_bake:
 - ps: >-
