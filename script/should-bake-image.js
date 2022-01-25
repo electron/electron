@@ -62,11 +62,12 @@ async function prepareAppVeyorImage (opts) {
   const image = await checkAppVeyorImage({ buildCloudId, imageVersion });
 
   if (image) {
-    console.log(`Image not found! Baking new image for ${CHROMIUM_VERSION} on cloud: ${buildCloudId}`);
-    return 0;
+    // console.log(`Image found for ${imageVersion} on cloud: ${buildCloudId}`);
+    // console.log(`Image found for ${imageVersion} on cloud: ${buildCloudId}`);
+    return `0, ${imageVersion}`;
   } else {
-    console.log(`Image found for ${CHROMIUM_VERSION} on cloud: ${buildCloudId}`);
-    return 1;
+    // console.log(`Image not found! Baking new image for ${imageVersion} on cloud: ${buildCloudId}`);
+    return `1, ${imageVersion}`;
   }
 }
 
@@ -74,13 +75,6 @@ module.exports = prepareAppVeyorImage;
 
 if (require.main === module) {
   const args = require('minimist')(process.argv.slice(2));
-  console.log('ARGS: ', args);
-  const targetBranch = args._[0];
-  // if (args._.length < 1) {
-  //   console.log(`Load or bake AppVeyor images for Windows CI.
-  //   Usage: prepare-appveyor.js [--buildCloudId=CLOUD_ID] [--imageVersion=xxx] [--commit=sha] TARGET_BRANCH`);
-  //   process.exit(0);
-  // }
   prepareAppVeyorImage(args)
     .catch((err) => {
       console.error(err);

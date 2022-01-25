@@ -31,42 +31,46 @@ version: 1.0.{build}
 build_cloud: electron-16-core2
 image: base-electron
 
-init:
-  - appveyor init
-  - ps: $env:SHOULD_BAKE_NEW_IMAGE = node script/prepare-appveyor.js
-  - ps: $env:IMAGE_VERSION = "$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
-
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
-  GOMA_FALLBACK_ON_AUTH_FAILURE: true  
+  GOMA_FALLBACK_ON_AUTH_FAILURE: true
+  SHOULD_BAKE_IMAGES: false
+  IMAGE_NAME: base-electron  
   matrix:
 
 # Bake New Image
 # =======
-  - job_name: VS 2019 Bake Image - Part I
+  - job_name: Review Image
+    bake_phase: 0
+    APPVEYOR_BUILD_WORKER_IMAGE: base-electron
+
+# Bake New Image
+# =======
+  - job_name: Maybe Bake New Image - Create Image
     bake_phase: 1
     bake_new_image: 1
+    job_depends_on: Review Image
     APPVEYOR_BUILD_WORKER_IMAGE: base-electron
     APPVEYOR_BAKE_IMAGE: $env:IMAGE_VERSION
 
-  - job_name: VS 2019 Bake Image - Wait for Part I image to be ready
+  - job_name: Maybe Bake New Image - Bake Image
     bake_phase: wait-50-min
-    job_depends_on: VS 2019 Bake Image - Part I
+    job_depends_on: Maybe Bake New Image - Create Image
 
-  - job_name: VS 2019 Bake Image - Part II
+  - job_name: Maybe Bake New Image - Run Image
     bake_phase: 3
-    job_depends_on: VS 2019 Bake Image - Wait for Part I image to be ready
+    job_depends_on: Maybe Bake New Image - Bake Image
     APPVEYOR_BUILD_WORKER_IMAGE: $env:IMAGE_VERSION
 
 # Run Regular Jobs
 # =======
   - job_name: VS 2019 Run Jobs
-    bake_phase: 3
     bake_new_image: 0
+    job_depends_on: Review Image
     APPVEYOR_BUILD_WORKER_IMAGE: $env:IMAGE_VERSION
 
 notifications:
@@ -81,6 +85,46 @@ notifications:
     on_build_status_changed: false
 
 for:
+
+# Review Image
+  -
+    matrix:
+      only:
+        - bake_phase: 0
+
+    build_script:
+    - echo "Building $env:GN_CONFIG build"
+    - git config --global core.longpaths true
+    - cd ..
+    - mkdir src
+    - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
+    - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
+    - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
+    - src\electron\script\setup-win-for-dev.bat
+    - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
+    - ps: >-
+        if ($env:GN_CONFIG -ne 'release') {
+          $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
+        }
+    - cd src\electron
+        # $env:IMAGE_VERSION = "$(grep -A1 chromium_version src\electron\DEPS | tr -d '\n' | cut -d\' -f4)"
+    - node script\yarn.js install --frozen-lockfile
+    - ps: $result = node script\should-bake-image.js
+    - ps: echo "Result $result"
+    # - ps: >-
+    #     node script/yarn.js install --frozen-lockfile
+
+    #     $result = node script\should-bake-image.js
+    #     Write-Output $result
+    #     if ($result.ExitCode -eq 1) {
+    #       Write-warning "Image found on build cloud - running build tests";
+    #     } else {
+    #       Write-warning "Preparing next job with should bake $env:SHOULD_BAKE_IMAGES and image name $env:IMAGE_VERSION";
+    #     }
+    - ps: $env:SHOULD_BAKE_IMAGES=$result[0]
+    - ps: $env:IMAGE_VERSION=$result[1]
+    - ps: echo "Preparing next job with should bake $env:SHOULD_BAKE_IMAGES and image name $env:IMAGE_VERSION"
+    - ps: echo "Preparing next job with should bake %SHOULD_BAKE_IMAGES% and image name %IMAGE_VERSION%"
 
 # Bake Image: Part 1
   -
