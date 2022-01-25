@@ -159,6 +159,15 @@ bool ScopedDisableResize::disable_resize_ = false;
   return [[self contentView] superview];
 }
 
+- (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item {
+  // By default "Close Window" is always disabled when window has no title, to
+  // support closing a window without title we need to manually do menu item
+  // validation. This code path is used by the "roundedCorners" option.
+  if ([item action] == @selector(performClose:))
+    return shell_->IsClosable();
+  return [super validateUserInterfaceItem:item];
+}
+
 // By overriding this built-in method the corners of the vibrant view (if set)
 // will be smooth.
 - (NSImage*)_cornerMask {
@@ -195,7 +204,10 @@ bool ScopedDisableResize::disable_resize_ = false;
   if (shell_->title_bar_style() ==
       electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover) {
     [[self delegate] windowShouldClose:self];
-  } else if (shell_->IsSimpleFullScreen()) {
+  } else if (!([self styleMask] & NSWindowStyleMaskTitled)) {
+    // performClose does not work for windows without title, so we have to
+    // emulate its behavior. This code path is used by "simpleFullscreen" and
+    // "roundedCorners" options.
     if ([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
       if (![[self delegate] windowShouldClose:self])
         return;
