@@ -29,7 +29,17 @@ Follow the guidelines below for building **Electron itself** on Linux, for the p
 * [clang](https://clang.llvm.org/get_started.html) 3.4 or later.
 * Development headers of GTK 3 and libnotify.
 
-On Ubuntu, install the following libraries:
+On Ubuntu >= 20.04, install the following libraries:
+
+```sh
+$ sudo apt-get install build-essential clang libdbus-1-dev libgtk-3-dev \
+                       libnotify-dev libasound2-dev libcap-dev \
+                       libcups2-dev libxtst-dev \
+                       libxss1 libnss3-dev gcc-multilib g++-multilib curl \
+                       gperf bison python3-dbusmock openjdk-8-jre
+```
+
+On Ubuntu < 20.04, install the following libraries:
 
 ```sh
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk-3-dev \
