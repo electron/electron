@@ -1547,6 +1547,7 @@ jobs:
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.
