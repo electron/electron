@@ -4,10 +4,20 @@ const assert = require('assert');
 const fs = require('fs');
 const got = require('got');
 const path = require('path');
+const { handleGitCall, ELECTRON_DIR } = require('./lib/utils.js');
 
 // Appveyor image constants | https://ci.appveyor.com/api/build-clouds/{buildCloudId}
-const APPREVYOR_IMAGES_URL = 'https://ci.appveyor.com/api/build-clouds'; // GET
-const BAKE_APPVEYOR_IMAGE_URL = 'https://ci.appveyor.com/api/builds'; // POST
+const APPVEYOR_IMAGES_URL = 'https://ci.appveyor.com/api/build-clouds';
+const APPVEYOR_JOB_URL = 'https://ci.appveyor.com/api/builds';
+const DEFAULT_IMAGE = 'base-electron';
+
+const appVeyorJobs = {
+  'electron-x64': 'electron-x64-testing'
+  // TODO: Disabling so I don't blast this across three jobs while testing
+  // 'electron-ia32': 'electron-ia32-testing',
+  // 'electron-woa': 'electron-woa-testing'
+};
+const appveyorBakeJob = 'electron-bake-image';
 
 async function makeRequest ({ auth, url, headers, body, method }) {
   const clonedHeaders = {
@@ -30,7 +40,7 @@ async function makeRequest ({ auth, url, headers, body, method }) {
 }
 
 async function checkAppVeyorImage (options) {
-  const IMAGE_URL = `${APPREVYOR_IMAGES_URL}/${options.buildCloudId}`;
+  const IMAGE_URL = `${APPVEYOR_IMAGES_URL}/${options.buildCloudId}`;
   const requestOpts = {
     url: IMAGE_URL,
     auth: {
@@ -51,50 +61,112 @@ async function checkAppVeyorImage (options) {
   }
 }
 
-async function bakeAppVeyorImage (options) {
-  const filepath = path.resolve(__dirname, '../appveyor.yml');
-  const bakeConfigPath = path.resolve(__dirname, '../.circleci/configs/appveyor-bake.yml');
-
-  const bakeConfig = fs.readFileSync(bakeConfigPath, 'utf8').replace('electron-DEPS-VERSION', `electron-${options.version}`);
-  fs.writeFileSync(filepath, bakeConfig, (error) => {
-    if (error) console.log(`Could not write new .yml file for AppVeyor: ${error}`);
-    else console.log('AppVeyor configuration updated. Kicking off jobs...');
-  });
+function useAppVeyorImage (targetBranch, options) {
+  const validJobs = Object.keys(appVeyorJobs);
+  if (options.job) {
+    assert(validJobs.includes(options.job), `Unknown AppVeyor CI job name: ${options.job}.  Valid values are: ${validJobs}.`);
+    callAppVeyorBuildJobs(targetBranch, options.job, options);
+  } else {
+    validJobs.forEach((job) => callAppVeyorBuildJobs(targetBranch, job, options));
+  }
 }
 
-async function useAppVeyorImage (options) {
-  const filepath = path.resolve(__dirname, '../appveyor.yml');
+async function callAppVeyorBuildJobs (targetBranch, job, options) {
+  console.log('Options: ', options);
+  console.log(`Using AppVeyor image ${options.version} for ${job}...`);
+  const environmentVariables = {
+    APPVEYOR_BUILD_WORKER_CLOUD: options.buildCloudId,
+    APPVEYOR_BUILD_WORKER_IMAGE: options.version
+  };
 
-  // const IMAGE = /'image': '(.+?)'/.exec(fs.readFileSync(filepath, 'utf8'));
-  // console.log('IMAGE: ', IMAGE);
-  // const contents = fs.readFileSync(filepath, 'utf8');
+  const requestOpts = {
+    url: APPVEYOR_JOB_URL,
+    auth: {
+      bearer: process.env.APPVEYOR_CLOUD_TOKEN
+    },
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      accountName: 'electron-bot',
+      projectSlug: appVeyorJobs[job],
+      branch: targetBranch,
+      commitId: options.commit || undefined,
+      environmentVariables
+    }),
+    method: 'POST'
+  };
 
-  const config = fs.readFileSync(filepath, 'utf8').replace('vs2019bt-16.6.2', options.version);
-  fs.writeFileSync(filepath, config, (error) => {
-    if (error) console.log(`Could not write new .yml file for AppVeyor: ${error}`);
-    else console.log('AppVeyor configuration updated. Kicking off jobs...');
-  });
+  try {
+    const res = await makeRequest(requestOpts, true);
+    console.log('Res: ', res);
+    const version = res.version;
+    const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
+    console.log(`AppVeyor CI request for ${job} successful.  Check status at ${buildUrl}`);
+  } catch (err) {
+    console.log('Could not call AppVeyor: ', err);
+  }
+}
+
+async function bakeAppVeyorImage (targetBranch, options) {
+  console.log(`Baking a new AppVeyor image for: ${options.version}, on build cloud ${options.buildCloudId}...`);
+
+  const environmentVariables = {
+    APPVEYOR_BUILD_WORKER_CLOUD: options.buildCloudId,
+    APPVEYOR_BUILD_WORKER_IMAGE: DEFAULT_IMAGE,
+    APPVEYOR_BAKE_IMAGE: options.version
+  };
+
+  const requestOpts = {
+    url: APPVEYOR_JOB_URL,
+    auth: {
+      bearer: process.env.APPVEYOR_CLOUD_TOKEN
+    },
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      accountName: 'electron-bot',
+      projectSlug: appveyorBakeJob,
+      branch: targetBranch,
+      commitId: options.commit || undefined,
+      environmentVariables
+    }),
+    method: 'POST'
+  };
+
+  try {
+    const res = await makeRequest(requestOpts, true);
+    console.log('Res: ', res);
+    const version = res.version;
+    const bakeUrl = `https://ci.appveyor.com/project/electron-bot/${appveyorBakeJob}/build/${version}`;
+    console.log(`AppVeyor image bake request for ${options.version} successful.  Check build status at ${bakeUrl}`);
+  } catch (err) {
+    console.log('Could not call AppVeyor: ', err);
+  }
 }
 
 async function prepareAppVeyorImage (opts) {
   // eslint-disable-next-line no-control-regex
   const versionRegex = new RegExp('chromium_version\':\n +\'(.+?)\',', 'm');
+  const currentBranch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR);
   const deps = fs.readFileSync(path.resolve(__dirname, '../DEPS'), 'utf8');
   const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
   const buildCloudId = opts.buildCloudId || '1424'; // BC: electron-16-core2
   const imageVersion = opts.imageVersion || `electron-${CHROMIUM_VERSION}`;
   const image = await checkAppVeyorImage({ buildCloudId, imageVersion });
+  console.log('Branch: ', currentBranch);
 
-  if (image) {
-    console.log(`Image exists for ${image}. Continuing AppVeyor jobs using ${buildCloudId}`);
-    await useAppVeyorImage({ ...opts, version: image });
+  if (image && image.name) {
+    console.log(`Image exists for ${image.name}. Continuing AppVeyor jobs using ${buildCloudId}`);
+    useAppVeyorImage(currentBranch, { ...opts, version: image.name, buildCloudId });
   } else {
     console.log(`No AppVeyor image found for ${imageVersion} in ${buildCloudId}.
                  Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
-    await bakeAppVeyorImage({ ...opts, version: CHROMIUM_VERSION });
-    // TODO: Wait for image to fully bake before continuing
-    // await useAppVeyorImage({ ...opts, version: imageVersion });
+    // Bake new image, continue running jobs in parallel using the default image
+    // await bakeAppVeyorImage(currentBranch, { ...opts, version: imageVersion, buildCloudId });
+    // useAppVeyorImage(currentBranch, { ...opts, version: DEFAULT_IMAGE, buildCloudId });
   }
 }
 
@@ -103,87 +175,12 @@ module.exports = prepareAppVeyorImage;
 if (require.main === module) {
   const args = require('minimist')(process.argv.slice(2));
   console.log('ARGS: ', args);
-  const targetBranch = args._[0];
-  // if (args._.length < 1) {
-  //   console.log(`Load or bake AppVeyor images for Windows CI.
-  //   Usage: prepare-appveyor.js [--buildCloudId=CLOUD_ID] [--appveyorJobId=xxx] [--imageVersion=xxx] [--commit=sha] TARGET_BRANCH`);
-  //   process.exit(0);
-  // }
+  //   Load or bake AppVeyor images for Windows CI.
+  //   Usage: prepare-appveyor.js [--buildCloudId=CLOUD_ID] [--appveyorJobId=xxx] [--imageVersion=xxx]
+  //   [--commit=sha] [--branch=branch_name]
   prepareAppVeyorImage(args)
     .catch((err) => {
       console.error(err);
       process.exit(1);
     });
 }
-
-// async function bakeAppVeyorImage (options) {
-//   console.log(`Baking a new AppVeyor image for: ${options.version}, on build cloud ${options.buildCloudId}...`);
-
-//   const environmentVariables = {
-//     ELECTRON_RELEASE: 0,
-//     APPVEYOR_BUILD_WORKER_CLOUD: options.buildCloudId,
-//     APPVEYOR_BUILD_WORKER_IMAGE: options.version,
-//     APPVEYOR_BAKE_IMAGE: options.version
-//   };
-
-//   const requestOpts = {
-//     url: BAKE_APPVEYOR_IMAGE_URL,
-//     auth: {
-//       bearer: process.env.APPVEYOR_CLOUD_TOKEN
-//     },
-//     headers: {
-//       'Content-Type': 'application/json'
-//     },
-//     body: JSON.stringify({
-//       accountName: 'electron-bot',
-//       commitId: options.commit || undefined,
-//       environmentVariables
-//     }),
-//     method: 'POST'
-//   };
-
-//   try {
-//     const res = await makeRequest(requestOpts, true);
-//     // const bakeUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
-//     // console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
-//   } catch (err) {
-//     console.log('Could not call AppVeyor: ', err);
-//   }
-// }
-
-// TODO: Right now, this makes a manual API call to AppVeyor
-// Change that to rewrite and return the AppVeyor .yaml
-// async function useAppVeyorImage (options) {
-//   console.log(`Using AppVeyor image ${options.version} on build cloud ${options.buildCloudId}...`);
-//   const environmentVariables = {
-//     ELECTRON_RELEASE: 1,
-//     APPVEYOR_BUILD_WORKER_CLOUD: options.buildCloudId,
-//     APPVEYOR_BUILD_WORKER_IMAGE: options.version
-//   };
-
-//   const requestOpts = {
-//     url: BAKE_APPVEYOR_IMAGE_URL,
-//     auth: {
-//       bearer: process.env.APPVEYOR_CLOUD_TOKEN
-//     },
-//     headers: {
-//       'Content-Type': 'application/json'
-//     },
-//     body: JSON.stringify({
-//       accountName: 'electron-bot',
-//       // projectSlug: appVeyorJobs[job],
-//       // branch: targetBranch,
-//       commitId: options.commit || undefined,
-//       environmentVariables
-//     }),
-//     method: 'POST'
-//   };
-
-//   try {
-//     const { version } = await makeRequest(requestOpts, true);
-//     // const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
-//     // console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
-//   } catch (err) {
-//     console.log('Could not call AppVeyor: ', err);
-//   }
-// }
