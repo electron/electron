@@ -1,0 +1,39 @@
+From f5101995acd21bd1d1bd8447087112e09bacfcbb Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <jeremya@chromium.org>
+Date: Wed, 26 Jan 2022 23:39:50 +0000
+Subject: [PATCH] fix draggable regions not updating without layout
+
+This fixes draggable regions not being updated when styles change, but there is
+no layout as a result of the style change. Some changes to styles can cause a
+change in draggable regions without causing a layout (e.g. applying the
+`-webkit-app-region: drag` style to an element without changing its size).
+
+Bug: 1051562
+Change-Id: Ifdf835be9e6c762131529b4309c6579366b80d6d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3416279
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Jeremy Apthorp <jeremya@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#963777}
+---
+
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index 2741019..50bbe52 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -1841,8 +1841,6 @@
+     }
+   }
+ 
+-  UpdateDocumentAnnotatedRegions();
+-
+   GetLayoutView()->EnclosingLayer()->UpdateLayerPositionsAfterLayout();
+   frame_->Selection().DidLayout();
+ 
+@@ -3172,6 +3170,7 @@
+     PerformPostLayoutTasks(visual_viewport_size_changed);
+     GetFrame().GetDocument()->LayoutUpdated();
+   }
++  UpdateDocumentAnnotatedRegions();
+   UpdateGeometriesIfNeeded();
+ }
+ 
