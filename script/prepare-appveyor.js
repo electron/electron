@@ -9,7 +9,13 @@ const { handleGitCall, ELECTRON_DIR } = require('./lib/utils.js');
 const APPVEYOR_IMAGES_URL = 'https://ci.appveyor.com/api/build-clouds';
 const APPVEYOR_JOB_URL = 'https://ci.appveyor.com/api/builds';
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium$/;
+
+const DEFAULT_BUILD_CLOUD_ID = '1424';
+// const DEFAULT_BUILD_CLOUD_ID = '861';
+const DEFAULT_BUILD_CLOUD = 'electron-16-core2';
+// const DEFAULT_BUILD_CLOUD = 'electron-16-core';
 const DEFAULT_IMAGE = 'base-electron';
+// const DEFAULT_IMAGE = 'vs2019bt-16.6.2';
 
 const appVeyorJobs = {
   'electron-x64': 'electron-ljo26' // 'electron-x64-testing'
@@ -74,7 +80,7 @@ function useAppVeyorImage (targetBranch, options) {
 async function callAppVeyorBuildJobs (targetBranch, job, options) {
   console.log(`Using AppVeyor image ${options.version} for ${job}`);
   const environmentVariables = {
-    APPVEYOR_BUILD_WORKER_CLOUD: 'electron-16-core2',
+    APPVEYOR_BUILD_WORKER_CLOUD: DEFAULT_BUILD_CLOUD,
     APPVEYOR_BUILD_WORKER_IMAGE: options.version
   };
 
@@ -109,7 +115,7 @@ async function bakeAppVeyorImage (targetBranch, options) {
   console.log(`Baking a new AppVeyor image for ${options.version}, on build cloud ${options.cloudId}`);
 
   const environmentVariables = {
-    APPVEYOR_BUILD_WORKER_CLOUD: 'electron-16-core2',
+    APPVEYOR_BUILD_WORKER_CLOUD: DEFAULT_BUILD_CLOUD,
     APPVEYOR_BUILD_WORKER_IMAGE: DEFAULT_IMAGE,
     APPVEYOR_BAKE_IMAGE: options.version
   };
@@ -144,27 +150,27 @@ async function bakeAppVeyorImage (targetBranch, options) {
 async function prepareAppVeyorImage (opts) {
   // filter out roller/chromium branches from baking
   const branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR);
-  if (ROLLER_BRANCH_PATTERN.test(branch) || branch.startsWith('origin/')) {
-    return;
-  }
-
-  // eslint-disable-next-line no-control-regex
-  const versionRegex = new RegExp('chromium_version\':\n +\'(.+?)\',', 'm');
-  const deps = fs.readFileSync(path.resolve(__dirname, '../DEPS'), 'utf8');
-  const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
-
-  const cloudId = opts.cloudId || '1424'; // BC: electron-16-core2
-  const imageVersion = opts.imageVersion || `electron-testing-${CHROMIUM_VERSION}`;
-  const image = await checkAppVeyorImage({ cloudId, imageVersion });
-
-  if (image && image.name) {
-    console.log(`Image exists for ${image.name}. Continuing AppVeyor jobs using ${cloudId}`);
-    useAppVeyorImage(branch, { ...opts, version: image.name, cloudId });
+  if (ROLLER_BRANCH_PATTERN.test(branch)) {
+    useAppVeyorImage(branch, { ...opts, version: DEFAULT_IMAGE, cloudId: DEFAULT_BUILD_CLOUD_ID });
   } else {
-    console.log(`No AppVeyor image found for ${imageVersion} in ${cloudId}.
-                 Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
-    await bakeAppVeyorImage(branch, { ...opts, version: imageVersion, cloudId });
-    useAppVeyorImage(branch, { ...opts, version: DEFAULT_IMAGE, cloudId });
+    // eslint-disable-next-line no-control-regex
+    const versionRegex = new RegExp('chromium_version\':\n +\'(.+?)\',', 'm');
+    const deps = fs.readFileSync(path.resolve(__dirname, '../DEPS'), 'utf8');
+    const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
+
+    const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
+    const imageVersion = opts.imageVersion || `electron-testing-${CHROMIUM_VERSION}`;
+    const image = await checkAppVeyorImage({ cloudId, imageVersion });
+
+    if (image && image.name) {
+      console.log(`Image exists for ${image.name}. Continuing AppVeyor jobs using ${cloudId}`);
+      useAppVeyorImage(branch, { ...opts, version: image.name, cloudId });
+    } else {
+      console.log(`No AppVeyor image found for ${imageVersion} in ${cloudId}.
+                   Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
+      await bakeAppVeyorImage(branch, { ...opts, version: imageVersion, cloudId });
+      useAppVeyorImage(branch, { ...opts, version: DEFAULT_IMAGE, cloudId });
+    }
   }
 }
 
