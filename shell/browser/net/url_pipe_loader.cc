@@ -70,7 +70,8 @@ void URLPipeLoader::OnResponseStarted(
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
 
-  client_->OnReceiveResponse(response_head.Clone());
+  client_->OnReceiveResponse(response_head.Clone(),
+                             mojo::ScopedDataPipeConsumerHandle());
   client_->OnStartLoadingResponseBody(std::move(consumer));
 }
 
