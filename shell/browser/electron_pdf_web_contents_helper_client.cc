@@ -9,6 +9,11 @@ ElectronPDFWebContentsHelperClient::ElectronPDFWebContentsHelperClient() =
 ElectronPDFWebContentsHelperClient::~ElectronPDFWebContentsHelperClient() =
     default;
 
+content::RenderFrameHost* ElectronPDFWebContentsHelperClient::FindPdfFrame(
+    content::WebContents* contents) {
+  return nullptr;
+}
+
 void ElectronPDFWebContentsHelperClient::UpdateContentRestrictions(
     content::WebContents* contents,
     int content_restrictions) {}
