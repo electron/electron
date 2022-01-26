@@ -13,6 +13,7 @@
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/native_window_features.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -23,6 +24,11 @@
 #if defined(OS_WIN)
 #include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
+#endif
+
+#if defined(USE_OZONE) || defined(USE_X11)
+#include "ui/base/ui_base_features.h"
+#include "ui/ozone/public/ozone_platform.h"
 #endif
 
 namespace gin {
@@ -107,6 +113,17 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 
   if (parent)
     options.Get("modal", &is_modal_);
+
+#if defined(USE_OZONE)
+  // Ozone X11 likes to prefer custom frames, but we don't need them unless
+  // on Wayland.
+  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
+      !ui::OzonePlatform::GetInstance()
+           ->GetPlatformRuntimeProperties()
+           .supports_server_side_window_decorations) {
+    has_client_frame_ = true;
+  }
+#endif
 
   WindowList::AddWindow(this);
 }
