@@ -57,9 +57,8 @@ void ZoomLevelDelegate::SetDefaultZoomLevelPref(double level) {
   if (blink::PageZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))
     return;
 
-  DictionaryPrefUpdateDeprecated update(pref_service_,
-                                        kPartitionDefaultZoomLevel);
-  update->SetDouble(partition_key_, level);
+  DictionaryPrefUpdate update(pref_service_, kPartitionDefaultZoomLevel);
+  update->SetDoubleKey(partition_key_, level);
   host_zoom_map_->SetDefaultZoomLevel(level);
 }
 
@@ -84,21 +83,19 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
     return;
 
   double level = change.zoom_level;
-  DictionaryPrefUpdateDeprecated update(pref_service_,
-                                        kPartitionPerHostZoomLevels);
-  base::DictionaryValue* host_zoom_dictionaries = update.Get();
+  DictionaryPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
+  base::Value* host_zoom_dictionaries = update.Get();
   DCHECK(host_zoom_dictionaries);
 
   bool modification_is_removal =
       blink::PageZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel());
 
-  base::DictionaryValue* host_zoom_dictionary = nullptr;
-  if (!host_zoom_dictionaries->GetDictionary(partition_key_,
-                                             &host_zoom_dictionary)) {
-    host_zoom_dictionaries->SetPath(partition_key_,
-                                    base::Value(base::Value::Type::DICTIONARY));
-    host_zoom_dictionaries->GetDictionary(partition_key_,
-                                          &host_zoom_dictionary);
+  base::Value* host_zoom_dictionary =
+      host_zoom_dictionaries->FindDictKey(partition_key_);
+  if (!host_zoom_dictionary) {
+    host_zoom_dictionaries->SetKey(partition_key_,
+                                   base::Value(base::Value::Type::DICTIONARY));
+    host_zoom_dictionary = host_zoom_dictionaries->FindDictKey(partition_key_);
   }
 
   if (modification_is_removal)
@@ -136,14 +133,14 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
   // Sanitize prefs to remove entries that match the default zoom level and/or
   // have an empty host.
   {
-    DictionaryPrefUpdateDeprecated update(pref_service_,
-                                          kPartitionPerHostZoomLevels);
-    base::DictionaryValue* host_zoom_dictionaries = update.Get();
-    base::DictionaryValue* sanitized_host_zoom_dictionary = nullptr;
-    host_zoom_dictionaries->GetDictionary(partition_key_,
-                                          &sanitized_host_zoom_dictionary);
-    for (const std::string& s : keys_to_remove)
-      sanitized_host_zoom_dictionary->RemoveKey(s);
+    DictionaryPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
+    base::Value* host_zoom_dictionaries = update.Get();
+    base::Value* sanitized_host_zoom_dictionary =
+        host_zoom_dictionaries->FindDictKey(partition_key_);
+    if (sanitized_host_zoom_dictionary) {
+      for (const std::string& s : keys_to_remove)
+        sanitized_host_zoom_dictionary->RemoveKey(s);
+    }
   }
 }
 
