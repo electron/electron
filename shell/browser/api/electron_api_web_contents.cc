@@ -1481,7 +1481,7 @@ void WebContents::HandleNewRenderFrame(
 
 void WebContents::OnBackgroundColorChanged() {
   absl::optional<SkColor> color = web_contents()->GetBackgroundColor();
-  if (color.has_value() && color.value() == SK_ColorTRANSPARENT) {
+  if (color.has_value()) {
     auto* const view = web_contents()->GetRenderWidgetHostView();
     static_cast<content::RenderWidgetHostViewBase*>(view)
         ->SetContentBackgroundColor(color.value());
