@@ -181,6 +181,19 @@ index fc26fd8f32e4c1edd3ca41baf0e9cdd482b25c03..b3c4c75e15673771093c4194c023168d
    std::move(callback).Run(printing_context_->TakeAndResetSettings(), result);
  }
  
+diff --git a/chrome/browser/printing/print_job_worker_oop.cc b/chrome/browser/printing/print_job_worker_oop.cc
+index f8e48861a2964da636afd767c0034d782ee52d6e..174d51d3b6d9f0131be36cf80199b27875d23960 100644
+--- a/chrome/browser/printing/print_job_worker_oop.cc
++++ b/chrome/browser/printing/print_job_worker_oop.cc
+@@ -209,7 +209,7 @@ void PrintJobWorkerOop::OnFailure() {
+ }
+ 
+ void PrintJobWorkerOop::ShowErrorDialog() {
+-  ShowPrintErrorDialog();
++  // [electron]: removed.
+ }
+ 
+ void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
 index c759b7a7c9d197f4760a2d86f976a965a44abf9a..3e1fbf49c3f3e98ea261bccefda523c329383835 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc

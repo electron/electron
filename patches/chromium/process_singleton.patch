@@ -1,11 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Raymond Zhao <raymondzhao@microsoft.com>
 Date: Wed, 18 Aug 2021 08:24:10 -0700
-Subject: Convert Electron ProcessSingleton changes to patch
+Subject: extend ProcessSingleton
 
-This patch applies Electron ProcessSingleton changes
-onto the Chromium files, so that Electron doesn't need to maintain
-separate copies of those files.
+This patch applies Electron ProcessSingleton changes onto the Chromium
+files.
 
 This patch adds a few changes to the Chromium code:
 1. It adds a parameter `program_name` to the Windows constructor, making
@@ -76,17 +75,17 @@ index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..8f94cc300b58e8a94b6ca155aa3cf370
  
  #if BUILDFLAG(IS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index c546c80e8d1d8e88a2d32a390eb8dbef32bf4b72..f8bffebc0d5b92046e8940109714fd68a9bbc2e2 100644
+index c546c80e8d1d8e88a2d32a390eb8dbef32bf4b72..81fb8994c53fb16d7c96de008c96127d0b85b8f9 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -65,6 +65,7 @@
- #include "base/files/file_descriptor_watcher_posix.h"
- #include "base/files/file_path.h"
- #include "base/files/file_util.h"
-+#include "base/ignore_result.h"
- #include "base/location.h"
- #include "base/logging.h"
- #include "base/memory/ref_counted.h"
+@@ -53,6 +53,7 @@
+ #include <memory>
+ #include <set>
+ #include <string>
++#include <tuple>
+ #include <type_traits>
+ 
+ #include <stddef.h>
 @@ -82,6 +83,7 @@
  #include "base/strings/utf_string_conversions.h"
  #include "base/task/sequenced_task_runner_helpers.h"
@@ -154,7 +153,7 @@ index c546c80e8d1d8e88a2d32a390eb8dbef32bf4b72..f8bffebc0d5b92046e8940109714fd68
 +  // Manually free resources with IO explicitly allowed.
 +  base::ThreadRestrictions::ScopedAllowIO allow_io;
 +  watcher_ = nullptr;
-+  ignore_result(socket_dir_.Delete());
++  std::ignore = socket_dir_.Delete();
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
