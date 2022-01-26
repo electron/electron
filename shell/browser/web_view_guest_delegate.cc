@@ -81,7 +81,7 @@ void WebViewGuestDelegate::OnZoomLevelChanged(
       api_web_contents_->GetZoomController()->SetZoomLevel(level);
     }
     // Change the default zoom factor to match the embedders' new zoom level.
-    double zoom_factor = blink::PageZoomFactorToZoomLevel(level);
+    double zoom_factor = blink::PageZoomLevelToZoomFactor(level);
     api_web_contents_->GetZoomController()->SetDefaultZoomFactor(zoom_factor);
   }
 }
