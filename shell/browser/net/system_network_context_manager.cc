@@ -67,9 +67,6 @@ network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
   network::mojom::HttpAuthStaticParamsPtr auth_static_params =
       network::mojom::HttpAuthStaticParams::New();
 
-  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
-                                           "negotiate"};
-
   return auth_static_params;
 }
 
@@ -86,6 +83,8 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
       command_line->HasSwitch(electron::switches::kEnableAuthNegotiatePort);
   auth_dynamic_params->ntlm_v2_enabled =
       !command_line->HasSwitch(electron::switches::kDisableNTLMv2);
+  auth_dynamic_params->allowed_schemes = {"basic", "digest", "ntlm",
+                                          "negotiate"};
 
   return auth_dynamic_params;
 }
