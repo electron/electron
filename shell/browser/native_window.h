@@ -331,6 +331,7 @@ class NativeWindow : public base::SupportsUserData,
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
+  bool has_client_frame() const { return has_client_frame_; }
   bool transparent() const { return transparent_; }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
@@ -375,6 +376,11 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window has standard frame.
   bool has_frame_ = true;
+
+  // Whether window has standard frame, but it's drawn by Electron (the client
+  // application) instead of the OS. Currently only has meaning on Linux for
+  // Wayland hosts.
+  bool has_client_frame_ = false;
 
   // Whether window is transparent.
   bool transparent_ = false;
