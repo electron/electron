@@ -30,16 +30,16 @@ async function createWindow () {
 
   // Get initial green background color.
   const window = await getWindow();
-  const buf = window.thumbnail.toJPEG(100);
-  const result = await getColors(buf, { count: 1, type: 'image/jpg' });
+  const buf = window.thumbnail.toPNG();
+  const result = await getColors(buf, { count: 1, type: 'image/png' });
   colors.green = result[0].hex();
 }
 
 ipcMain.on('set-transparent', async () => {
   // Get updated background color.
   const window = await getWindow();
-  const buf = window.thumbnail.toJPEG(100);
-  const result = await getColors(buf, { count: 1, type: 'image/jpg' });
+  const buf = window.thumbnail.toPNG();
+  const result = await getColors(buf, { count: 1, type: 'image/png' });
   colors.transparent = result[0].hex();
 
   const { green, transparent } = colors;
