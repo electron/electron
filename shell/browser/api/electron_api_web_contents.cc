@@ -14,7 +14,6 @@
 
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
-#include "base/ignore_result.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
@@ -3069,8 +3068,8 @@ void WebContents::IncrementCapturerCount(gin::Arguments* args) {
   // get stayAwake arguments if they exist
   args->GetNext(&stay_awake);
 
-  ignore_result(
-      web_contents()->IncrementCapturerCount(size, stay_hidden, stay_awake));
+  std::ignore =
+      web_contents()->IncrementCapturerCount(size, stay_hidden, stay_awake);
 }
 
 void WebContents::DecrementCapturerCount(gin::Arguments* args) {

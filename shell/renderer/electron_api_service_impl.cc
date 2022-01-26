@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/environment.h"
-#include "base/ignore_result.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
 #include "gin/data_object_builder.h"
@@ -75,7 +74,7 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
   auto callback_value = ipcNative->Get(context, callback_key).ToLocalChecked();
   DCHECK(callback_value->IsFunction());  // set by init.ts
   auto callback = callback_value.As<v8::Function>();
-  ignore_result(callback->Call(context, ipcNative, args.size(), args.data()));
+  std::ignore = callback->Call(context, ipcNative, args.size(), args.data());
 }
 
 void EmitIPCEvent(v8::Local<v8::Context> context,
