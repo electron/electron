@@ -413,12 +413,11 @@ bool ElectronBrowserClient::IsRendererSubFrame(int process_id) const {
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   // When a render process is crashed, it might be reused.
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   int process_id = host->GetID();
 
   auto* browser_context = host->GetBrowserContext();
-  ALLOW_UNUSED_LOCAL(browser_context);
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   host->AddFilter(
       new extensions::ExtensionMessageFilter(process_id, browser_context));
   host->AddFilter(new extensions::ExtensionsGuestViewMessageFilter(
