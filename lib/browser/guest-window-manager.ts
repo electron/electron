@@ -104,10 +104,8 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName, clos
 
   const closedByUser = function () {
     // Embedder might have been closed
-    if (!embedder.isDestroyed()) {
-      if (closeWithOpener) {
-        embedder.removeListener('current-render-view-deleted' as any, closedByEmbedder);
-      }
+    if (!embedder.isDestroyed() && closeWithOpener) {
+      embedder.removeListener('current-render-view-deleted' as any, closedByEmbedder);
     }
   };
   if (closeWithOpener) {
