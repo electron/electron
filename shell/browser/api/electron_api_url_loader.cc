@@ -40,7 +40,7 @@ struct Converter<network::mojom::HttpRawHeaderPairPtr> {
       v8::Isolate* isolate,
       const network::mojom::HttpRawHeaderPairPtr& pair) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-    dict.Set("key", base::ToLowerASCII(pair->key));
+    dict.Set("key", pair->key);
     dict.Set("value", pair->value);
     return dict.GetHandle();
   }

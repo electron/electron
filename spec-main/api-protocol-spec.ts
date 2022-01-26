@@ -29,7 +29,7 @@ const unregisterProtocol = protocol.unregisterProtocol;
 const uninterceptProtocol = protocol.uninterceptProtocol;
 
 const text = 'valar morghulis';
-const protocolName = 'sp';
+const protocolName = 'no-cors';
 const postData = {
   name: 'post test',
   type: 'string'
@@ -80,7 +80,7 @@ describe('protocol module', () => {
     // Note that we need to do navigation every time after a protocol is
     // registered or unregistered, otherwise the new protocol won't be
     // recognized by current page when NetworkService is used.
-    await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
+    await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
   }
 
@@ -110,7 +110,7 @@ describe('protocol module', () => {
 
     it('sends error when callback is called with nothing', async () => {
       registerBufferProtocol(protocolName, (req, cb: any) => cb());
-      await expect(ajax(protocolName + '://fake-host')).to.eventually.be.rejectedWith(Error, '404');
+      await expect(ajax(protocolName + '://fake-host')).to.eventually.be.rejected();
     });
 
     it('does not crash when callback is called in next tick', async () => {
@@ -157,7 +157,7 @@ describe('protocol module', () => {
       registerStringProtocol(protocolName, (request, callback) => callback(text));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
-      expect(r.headers).to.include('access-control-allow-origin: *');
+      expect(r.headers).to.have.property('access-control-allow-origin', '*');
     });
 
     it('sends object as response', async () => {
@@ -174,7 +174,7 @@ describe('protocol module', () => {
     it('fails when sending object other than string', async () => {
       const notAString = () => {};
       registerStringProtocol(protocolName, (request, callback) => callback(notAString as any));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
     });
   });
 
@@ -190,7 +190,7 @@ describe('protocol module', () => {
       registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
-      expect(r.headers).to.include('access-control-allow-origin: *');
+      expect(r.headers).to.have.property('access-control-allow-origin', '*');
     });
 
     it('sends object as response', async () => {
@@ -206,7 +206,7 @@ describe('protocol module', () => {
 
     it('fails when sending string', async () => {
       registerBufferProtocol(protocolName, (request, callback) => callback(text as any));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
     });
   });
 
@@ -226,7 +226,7 @@ describe('protocol module', () => {
       registerFileProtocol(protocolName, (request, callback) => callback(filePath));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(String(fileContent));
-      expect(r.headers).to.include('access-control-allow-origin: *');
+      expect(r.headers).to.have.property('access-control-allow-origin', '*');
     });
 
     it('sets custom headers', async () => {
@@ -236,7 +236,7 @@ describe('protocol module', () => {
       }));
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(String(fileContent));
-      expect(r.headers).to.include('x-great-header: sogreat');
+      expect(r.headers).to.have.property('x-great-header', 'sogreat');
     });
 
     it.skip('throws an error when custom headers are invalid', (done) => {
@@ -247,7 +247,7 @@ describe('protocol module', () => {
         })).to.throw(Error, 'Value of \'X-Great-Header\' header has to be a string');
         done();
       });
-      ajax(protocolName + '://fake-host');
+      ajax(protocolName + '://fake-host').catch(() => {});
     });
 
     it('sends object as response', async () => {
@@ -265,12 +265,12 @@ describe('protocol module', () => {
     it('fails when sending unexist-file', async () => {
       const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist');
       registerFileProtocol(protocolName, (request, callback) => callback(fakeFilePath));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
     });
 
     it('fails when sending unsupported content', async () => {
       registerFileProtocol(protocolName, (request, callback) => callback(new Date() as any));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
     });
   });
 
@@ -292,12 +292,12 @@ describe('protocol module', () => {
 
     it('fails when sending invalid url', async () => {
       registerHttpProtocol(protocolName, (request, callback) => callback({ url: 'url' }));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
     });
 
     it('fails when sending unsupported content', async () => {
       registerHttpProtocol(protocolName, (request, callback) => callback(new Date() as any));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404');
+      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
     });
 
     it('works when target URL redirects', async () => {
@@ -331,7 +331,7 @@ describe('protocol module', () => {
           done(e);
         }
       });
-      ajax(protocolName + '://fake-host');
+      ajax(protocolName + '://fake-host').catch(() => {});
     });
   });
 
@@ -359,7 +359,7 @@ describe('protocol module', () => {
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
       expect(r.status).to.equal(200);
-      expect(r.headers).to.include('x-electron: a, b');
+      expect(r.headers).to.have.property('x-electron', 'a, b');
     });
 
     it('sends custom status code', async () => {
@@ -368,7 +368,7 @@ describe('protocol module', () => {
         data: null as any
       }));
       const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.be.undefined('data');
+      expect(r.data).to.be.empty('data');
       expect(r.status).to.equal(204);
     });
 
@@ -382,7 +382,7 @@ describe('protocol module', () => {
         });
       });
       const r = await ajax(protocolName + '://fake-host', { headers: { 'x-return-headers': 'yes' } });
-      expect(r.data['x-return-headers']).to.equal('yes');
+      expect(JSON.parse(r.data)['x-return-headers']).to.equal('yes');
     });
 
     it('returns response multiple response headers with the same name', async () => {
@@ -399,7 +399,8 @@ describe('protocol module', () => {
       // SUBTLE: when the response headers have multiple values it
       // separates values by ", ". When the response headers are incorrectly
       // converting an array to a string it separates values by ",".
-      expect(r.headers).to.equal('header1: value1, value2\r\nheader2: value3\r\n');
+      expect(r.headers).to.have.property('header1', 'value1, value2');
+      expect(r.headers).to.have.property('header2', 'value3');
     });
 
     it('can handle large responses', async () => {
@@ -456,7 +457,7 @@ describe('protocol module', () => {
         });
       });
       const hasEndedPromise = emittedOnce(events, 'end');
-      ajax(protocolName + '://fake-host');
+      ajax(protocolName + '://fake-host').catch(() => {});
       await hasEndedPromise;
     });
 
@@ -478,9 +479,9 @@ describe('protocol module', () => {
 
       const hasRespondedPromise = emittedOnce(events, 'respond');
       const hasClosedPromise = emittedOnce(events, 'close');
-      ajax(protocolName + '://fake-host');
+      ajax(protocolName + '://fake-host').catch(() => {});
       await hasRespondedPromise;
-      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
+      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
       await hasClosedPromise;
     });
   });
@@ -527,7 +528,7 @@ describe('protocol module', () => {
 
     it('sends error when callback is called with nothing', async () => {
       interceptStringProtocol('http', (request, callback: any) => callback());
-      await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(Error, '404');
+      await expect(ajax('http://fake-host')).to.be.eventually.rejected();
     });
   });
 
@@ -546,8 +547,7 @@ describe('protocol module', () => {
         });
       });
       const r = await ajax('http://fake-host');
-      expect(r.data).to.be.an('object');
-      expect(r.data).to.have.property('value').that.is.equal(1);
+      expect(JSON.parse(r.data)).to.have.property('value').that.is.equal(1);
     });
 
     it('can set content-type with charset', async () => {
@@ -558,8 +558,7 @@ describe('protocol module', () => {
         });
       });
       const r = await ajax('http://fake-host');
-      expect(r.data).to.be.an('object');
-      expect(r.data).to.have.property('value').that.is.equal(1);
+      expect(JSON.parse(r.data)).to.have.property('value').that.is.equal(1);
     });
 
     it('can receive post data', async () => {
@@ -567,7 +566,7 @@ describe('protocol module', () => {
         const uploadData = request.uploadData![0].bytes.toString();
         callback({ data: uploadData });
       });
-      const r = await ajax('http://fake-host', { type: 'POST', data: postData });
+      const r = await ajax('http://fake-host', { method: 'POST', body: qs.stringify(postData) });
       expect({ ...qs.parse(r.data) }).to.deep.equal(postData);
     });
   });
@@ -584,8 +583,8 @@ describe('protocol module', () => {
         const uploadData = request.uploadData![0].bytes;
         callback(uploadData);
       });
-      const r = await ajax('http://fake-host', { type: 'POST', data: postData });
-      expect(r.data).to.equal('name=post+test&type=string');
+      const r = await ajax('http://fake-host', { method: 'POST', body: qs.stringify(postData) });
+      expect(qs.parse(r.data)).to.deep.equal({ name: 'post test', type: 'string' });
     });
   });
 
@@ -651,7 +650,7 @@ describe('protocol module', () => {
           done(e);
         }
       });
-      ajax('http://fake-host');
+      ajax('http://fake-host').catch(() => {});
     });
   });
 
@@ -666,7 +665,7 @@ describe('protocol module', () => {
       interceptStreamProtocol('http', (request, callback) => {
         callback(getStream(3, request.uploadData![0].bytes.toString()));
       });
-      const r = await ajax('http://fake-host', { type: 'POST', data: postData });
+      const r = await ajax('http://fake-host', { method: 'POST', body: qs.stringify(postData) });
       expect({ ...qs.parse(r.data) }).to.deep.equal(postData);
     });
 

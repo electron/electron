@@ -36,6 +36,8 @@
 
   // Remember the default margin.
   margin_ = default_margin_ = [self getCurrentMargin];
+  // Custom height will be used if set larger than default
+  height_ = 0;
 
   return self;
 }
@@ -86,6 +88,17 @@
   [self redraw];
 }
 
+- (void)setHeight:(const float)height {
+  height_ = height;
+  [self redraw];
+}
+
+- (BOOL)useCustomHeight {
+  NSView* left = [self leftButton];
+  float button_height = NSHeight(left.frame);
+  return height_ > button_height + 2 * default_margin_.y();
+}
+
 - (NSRect)getButtonsContainerBounds {
   return NSInsetRect([self getButtonsBounds], -margin_.x(), -margin_.y());
 }
@@ -111,14 +124,18 @@
 
   NSRect cbounds = titleBarContainer.frame;
   cbounds.size.height = button_height + 2 * margin_.y();
+  // Custom height must be larger than the button height to use
+  if ([self useCustomHeight]) {
+    cbounds.size.height = height_;
+  }
   cbounds.origin.y = NSHeight(window_.frame) - NSHeight(cbounds);
   [titleBarContainer setFrame:cbounds];
 
-  [left setFrameOrigin:NSMakePoint(start, margin_.y())];
+  [left setFrameOrigin:NSMakePoint(start, [self getCurrentMargin].y())];
   start += button_width + padding;
-  [middle setFrameOrigin:NSMakePoint(start, margin_.y())];
+  [middle setFrameOrigin:NSMakePoint(start, [self getCurrentMargin].y())];
   start += button_width + padding;
-  [right setFrameOrigin:NSMakePoint(start, margin_.y())];
+  [right setFrameOrigin:NSMakePoint(start, [self getCurrentMargin].y())];
 
   if (hover_view_)
     [hover_view_ setFrame:[self getButtonsBounds]];
@@ -167,6 +184,7 @@
 - (NSRect)getButtonsBounds {
   NSView* left = [self leftButton];
   NSView* right = [self rightButton];
+
   return NSMakeRect(NSMinX(left.frame), NSMinY(left.frame),
                     NSMaxX(right.frame) - NSMinX(left.frame),
                     NSHeight(left.frame));
@@ -182,7 +200,17 @@
   NSView* left = [self leftButton];
   NSView* right = [self rightButton];
 
-  result.set_y((NSHeight(titleBarContainer.frame) - NSHeight(left.frame)) / 2);
+  if (height_ != 0) {
+    result.set_y((height_ - NSHeight(left.frame)) / 2);
+
+    // Do not center buttons if height and button position specified
+    if (margin_.y() != default_margin_.y())
+      result.set_y(height_ - NSHeight(left.frame) - margin_.y());
+
+  } else {
+    result.set_y((NSHeight(titleBarContainer.frame) - NSHeight(left.frame)) /
+                 2);
+  }
 
   if (base::i18n::IsRTL())
     result.set_x(NSWidth(window_.frame) - NSMaxX(right.frame));

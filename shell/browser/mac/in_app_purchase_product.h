@@ -9,10 +9,34 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace in_app_purchase {
 
 // --------------------------- Structures ---------------------------
+
+struct ProductSubscriptionPeriod {
+  int numberOfUnits;
+  std::string unit;
+
+  ProductSubscriptionPeriod(const ProductSubscriptionPeriod&);
+  ProductSubscriptionPeriod();
+  ~ProductSubscriptionPeriod();
+};
+
+struct ProductDiscount {
+  std::string identifier;
+  int type;
+  double price = 0.0;
+  std::string priceLocale;
+  std::string paymentMode;
+  int numberOfPeriods;
+  absl::optional<ProductSubscriptionPeriod> subscriptionPeriod;
+
+  ProductDiscount(const ProductDiscount&);
+  ProductDiscount();
+  ~ProductDiscount();
+};
 
 struct Product {
   // Product Identifier
@@ -27,12 +51,16 @@ struct Product {
   // Pricing Information
   double price = 0.0;
   std::string formattedPrice;
-
-  // Currency Information
   std::string currencyCode;
+  absl::optional<ProductDiscount> introductoryPrice;
+  std::vector<ProductDiscount> discounts;
+  std::string subscriptionGroupIdentifier;
+  absl::optional<ProductSubscriptionPeriod> subscriptionPeriod;
 
   // Downloadable Content Information
   bool isDownloadable = false;
+  std::string downloadContentVersion;
+  std::vector<uint32_t> downloadContentLengths;
 
   Product(const Product&);
   Product();

@@ -91,7 +91,15 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
     } else if (titlebar_overlay->IsObject()) {
       titlebar_overlay_ = true;
-#if !defined(OS_WIN)
+
+      gin_helper::Dictionary titlebar_overlay =
+          gin::Dictionary::CreateEmpty(options.isolate());
+      options.Get(options::ktitleBarOverlay, &titlebar_overlay);
+      int height;
+      if (titlebar_overlay.Get(options::kOverlayHeight, &height))
+        titlebar_overlay_height_ = height;
+
+#if !(defined(OS_WIN) || defined(OS_MAC))
       DCHECK(false);
 #endif
     }

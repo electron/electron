@@ -61,29 +61,39 @@ class IncomingMessage extends Readable {
     const filteredHeaders: Record<string, string | string[]> = {};
     const { rawHeaders } = this._responseHead;
     rawHeaders.forEach(header => {
-      if (Object.prototype.hasOwnProperty.call(filteredHeaders, header.key) &&
-          discardableDuplicateHeaders.has(header.key)) {
+      const keyLowerCase = header.key.toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase) &&
+          discardableDuplicateHeaders.has(keyLowerCase)) {
         // do nothing with discardable duplicate headers
       } else {
-        if (header.key === 'set-cookie') {
+        if (keyLowerCase === 'set-cookie') {
           // keep set-cookie as an array per Node.js rules
           // see https://nodejs.org/api/http.html#http_message_headers
-          if (Object.prototype.hasOwnProperty.call(filteredHeaders, header.key)) {
-            (filteredHeaders[header.key] as string[]).push(header.value);
+          if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase)) {
+            (filteredHeaders[keyLowerCase] as string[]).push(header.value);
           } else {
-            filteredHeaders[header.key] = [header.value];
+            filteredHeaders[keyLowerCase] = [header.value];
           }
         } else {
           // for non-cookie headers, the values are joined together with ', '
-          if (Object.prototype.hasOwnProperty.call(filteredHeaders, header.key)) {
-            filteredHeaders[header.key] += `, ${header.value}`;
+          if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase)) {
+            filteredHeaders[keyLowerCase] += `, ${header.value}`;
           } else {
-            filteredHeaders[header.key] = header.value;
+            filteredHeaders[keyLowerCase] = header.value;
           }
         }
       }
     });
     return filteredHeaders;
+  }
+
+  get rawHeaders () {
+    const rawHeadersArr: string[] = [];
+    const { rawHeaders } = this._responseHead;
+    rawHeaders.forEach(header => {
+      rawHeadersArr.push(header.key, header.value);
+    });
+    return rawHeadersArr;
   }
 
   get httpVersion () {

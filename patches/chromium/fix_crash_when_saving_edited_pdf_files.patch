@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 17 Jan 2022 23:47:54 +0100
+Subject: fix: crash when saving edited PDF files
+
+This commit fixes a crash that persists any time a user attempts to
+download an edited PDF. This was happening because the logic flow for
+downloading of any edited PDF triggers a call to
+chrome.fileSystem.chooseEntry, which we do not support and which
+therefore causes unmapped page access crashes.
+
+This patch can be removed should we choose to support chrome.fileSystem
+or support it enough to fix the crash.
+
+diff --git a/chrome/browser/resources/pdf/pdf_viewer.js b/chrome/browser/resources/pdf/pdf_viewer.js
+index 42407ef7c214bed1eb44165a87c6d0dc44f0ad7f..64225caf3738549520b35259628559ec6c15d901 100644
+--- a/chrome/browser/resources/pdf/pdf_viewer.js
++++ b/chrome/browser/resources/pdf/pdf_viewer.js
+@@ -967,25 +967,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
+       dataArray = [result.dataToSave];
+     }
+ 
++    const a = document.createElement('a');
++    a.download = this.attachments_[index].name;
+     const blob = new Blob(dataArray);
+-    const fileName = this.attachments_[index].name;
+-    chrome.fileSystem.chooseEntry(
+-        {type: 'saveFile', suggestedName: fileName}, entry => {
+-          if (chrome.runtime.lastError) {
+-            if (chrome.runtime.lastError.message !== 'User cancelled') {
+-              console.error(
+-                  'chrome.fileSystem.chooseEntry failed: ' +
+-                  chrome.runtime.lastError.message);
+-            }
+-            return;
+-          }
+-          entry.createWriter(writer => {
+-            writer.write(blob);
+-            // Unblock closing the window now that the user has saved
+-            // successfully.
+-            chrome.mimeHandlerPrivate.setShowBeforeUnloadDialog(false);
+-          });
+-        });
++    a.href = URL.createObjectURL(blob);
++    a.click();
++    URL.revokeObjectURL(a.href);
+   }
+ 
+   /**
+@@ -1112,30 +1099,13 @@ export class PDFViewerElement extends PDFViewerBaseElement {
+     if (!fileName.toLowerCase().endsWith('.pdf')) {
+       fileName = fileName + '.pdf';
+     }
+-    // Create blob before callback to avoid race condition.
++
++    const a = document.createElement('a');
++    a.download = fileName;
+     const blob = new Blob([result.dataToSave], {type: 'application/pdf'});
+-    chrome.fileSystem.chooseEntry(
+-        {
+-          type: 'saveFile',
+-          accepts: [{description: '*.pdf', extensions: ['pdf']}],
+-          suggestedName: fileName
+-        },
+-        entry => {
+-          if (chrome.runtime.lastError) {
+-            if (chrome.runtime.lastError.message !== 'User cancelled') {
+-              console.error(
+-                  'chrome.fileSystem.chooseEntry failed: ' +
+-                  chrome.runtime.lastError.message);
+-            }
+-            return;
+-          }
+-          entry.createWriter(writer => {
+-            writer.write(blob);
+-            // Unblock closing the window now that the user has saved
+-            // successfully.
+-            chrome.mimeHandlerPrivate.setShowBeforeUnloadDialog(false);
+-          });
+-        });
++    a.href = URL.createObjectURL(blob);
++    a.click();
++    URL.revokeObjectURL(a.href);
+ 
+     // <if expr="enable_ink">
+     // Saving in Annotation mode is destructive: crbug.com/919364

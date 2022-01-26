@@ -98,6 +98,7 @@ Some examples of valid `urls`:
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
+    * `uploadData` [UploadData[]](structures/upload-data.md) (optional)
     * `requestHeaders` Record<string, string>
   * `callback` Function
     * `beforeSendResponse` Object

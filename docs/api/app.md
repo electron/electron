@@ -954,9 +954,9 @@ app.setJumpList([
 ])
 ```
 
-### `app.requestSingleInstanceLock()`
+### `app.requestSingleInstanceLock([additionalData])`
 
-* `additionalData` unknown (optional) - A JSON object containing additional data to send to the first instance.
+* `additionalData` Record<any, any> (optional) - A JSON object containing additional data to send to the first instance.
 
 Returns `boolean`
 

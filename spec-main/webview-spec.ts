@@ -227,7 +227,8 @@ describe('<webview> tag', function () {
     });
   });
 
-  it('loads devtools extensions registered on the parent window', async () => {
+  // This test is flaky on WOA, so skip it there.
+  ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads devtools extensions registered on the parent window', async () => {
     const w = new BrowserWindow({
       show: false,
       webPreferences: {
