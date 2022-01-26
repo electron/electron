@@ -1684,12 +1684,6 @@ content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
   return bluetooth_delegate_.get();
 }
 
-content::FontAccessDelegate* ElectronBrowserClient::GetFontAccessDelegate() {
-  if (!font_access_delegate_)
-    font_access_delegate_ = std::make_unique<ElectronFontAccessDelegate>();
-  return font_access_delegate_.get();
-}
-
 void BindBadgeServiceForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& info,
     mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {

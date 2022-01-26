@@ -383,8 +383,6 @@ filenames = {
     "shell/browser/file_select_helper.cc",
     "shell/browser/file_select_helper.h",
     "shell/browser/file_select_helper_mac.mm",
-    "shell/browser/font/electron_font_access_delegate.cc",
-    "shell/browser/font/electron_font_access_delegate.h",
     "shell/browser/font_defaults.cc",
     "shell/browser/font_defaults.h",
     "shell/browser/hid/electron_hid_delegate.cc",
