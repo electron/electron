@@ -103,7 +103,7 @@ index 80f26b62b25bd6aa46886e3112b2ffd2698693fe..e72cab84db36eec86309160d4f7416ee
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index efe549c57621e4c0a8ed5f1daed7067fa1f88c51..02e68845b3edfbca2891c555649f94d3e337386c 100644
+index c39a4dd0e1659215a29ef0a168c16bdf989f41a4..1f45b1fee59e14384bdc45074277ca94abb40cce 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -535,6 +535,7 @@ URLLoader::URLLoader(
@@ -144,7 +144,7 @@ index efe549c57621e4c0a8ed5f1daed7067fa1f88c51..02e68845b3edfbca2891c555649f94d3
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index fcc47a2389c5172e3c674e413baa857183e0f2f8..af952b03ca87c4022400ba93d2e1fb8d3759960a 100644
+index a2df260b031fa3d93721839aabfa93afc8b3ca52..b7bf263b2ab54a97e2015b684c7ec2405c518812 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -503,6 +503,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

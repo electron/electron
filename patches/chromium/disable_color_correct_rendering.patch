@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 55c05cbe41b658e042d0f9cc320157937ee16562..1fdafe0007435c7b3840428921c2133cc1a0e2f3 100644
+index 2c6e923952c7d8c1e411e3dedb149712a0e64025..0034d9998133920a2cd074b1f5562b58976d6d49 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1891,6 +1891,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -241,7 +241,7 @@ index 926ea905b775c0706fd1b882f37b88b646b8b154..691eb2c5f7a26ea2b213b6378ab600b6
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 1b830b11c90865288284ef5a7763bd07dc96d9cf..2a3882b8da86a3dd5fe2fb020298d6fbe0c25773 100644
+index 6ef917a06db06c16a624c4b667ef4d901161eb11..9c3e56722c57dd8c5b1dbbfa3fc0fcacb71e5210 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -193,6 +193,7 @@
@@ -252,7 +252,7 @@ index 1b830b11c90865288284ef5a7763bd07dc96d9cf..2a3882b8da86a3dd5fe2fb020298d6fb
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3282,6 +3283,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3283,6 +3284,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -261,7 +261,7 @@ index 1b830b11c90865288284ef5a7763bd07dc96d9cf..2a3882b8da86a3dd5fe2fb020298d6fb
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
      sandbox::policy::switches::kNoSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index dc1175944e0346c52d39e444bcbc14ac8e462195..10c422693e87f97ec44a256d0b508c7659242921 100644
+index 6260d73068636f4a8d4c73c161a4ffe165b267d0..2686ef0dfb7d8b667647d11fece5aa8e1be76fe5 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -315,7 +315,7 @@ index 2f4fbbdd8059b2915b4848f95db925f1dbb1fb08..3fc675e4e56b3e658d70475800a938a7
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 7f5b6cc73cde4312720f4a6f54cb54ceb8709e15..1b76e0388d972b40619082f57019478754060068 100644
+index 298321f1aabcf4328fd39b856694a8a6459bfa24..4be245d082cd9d833db72b29e3d652120ecb913e 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -21,6 +21,7 @@
