@@ -3241,6 +3241,21 @@ describe('BrowserWindow module', () => {
       await maximize;
     });
 
+    // Transparent window max/unmax uses different logic and does not go through
+    // NativeWindowViews::HandleSizeEvent, so we need to test it separately.
+    ifit(process.platform === 'win32')('emits an event when a transparent window is maximized', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        frame: false,
+        transparent: true
+      });
+
+      const maximize = emittedOnce(w, 'maximize');
+      w.show();
+      w.maximize();
+      await maximize;
+    });
+
     it('emits only one event when frameless window is maximized', () => {
       const w = new BrowserWindow({ show: false, frame: false });
       let emitted = 0;
@@ -3252,6 +3267,22 @@ describe('BrowserWindow module', () => {
 
     it('emits an event when window is unmaximized', async () => {
       const w = new BrowserWindow({ show: false });
+      const unmaximize = emittedOnce(w, 'unmaximize');
+      w.show();
+      w.maximize();
+      w.unmaximize();
+      await unmaximize;
+    });
+
+    // Transparent window max/unmax uses different logic and does not go through
+    // NativeWindowViews::HandleSizeEvent, so we need to test it separately.
+    ifit(process.platform === 'win32')('emits an event when a transparent window is unmaximized', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        frame: false,
+        transparent: true
+      });
+
       const unmaximize = emittedOnce(w, 'unmaximize');
       w.show();
       w.maximize();
