@@ -3287,9 +3287,11 @@ describe('BrowserWindow module', () => {
         transparent: true
       });
 
+      const maximize = emittedOnce(w, 'maximize');
       const unmaximize = emittedOnce(w, 'unmaximize');
       w.show();
       w.maximize();
+      await maximize;
       w.unmaximize();
       await unmaximize;
     });
