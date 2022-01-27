@@ -31,10 +31,6 @@
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW) && defined(OS_WIN)
-#include "chrome/utility/printing_handler.h"
-#endif
-
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) || \
     (BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN))
 #include "chrome/services/printing/printing_service.h"
@@ -78,11 +74,7 @@ auto RunProxyResolver(
 
 }  // namespace
 
-ElectronContentUtilityClient::ElectronContentUtilityClient() {
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW) && defined(OS_WIN)
-  printing_handler_ = std::make_unique<printing::PrintingHandler>();
-#endif
-}
+ElectronContentUtilityClient::ElectronContentUtilityClient() = default;
 
 ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 

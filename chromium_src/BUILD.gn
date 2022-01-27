@@ -239,8 +239,6 @@ static_library("chrome") {
       sources += [
         "//chrome/browser/printing/pdf_to_emf_converter.cc",
         "//chrome/browser/printing/pdf_to_emf_converter.h",
-        "//chrome/utility/printing_handler.cc",
-        "//chrome/utility/printing_handler.h",
       ]
     }
   }
