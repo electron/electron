@@ -140,10 +140,6 @@ static_library("chrome") {
     "//components/optimization_guide/proto:optimization_guide_proto",
   ]
 
-  if (enable_basic_printing && is_win) {
-    deps += [ "//chrome/common:cloud_print_utility_mojom" ]
-  }
-
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
     if (use_ozone) {
