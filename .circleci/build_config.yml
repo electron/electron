@@ -240,6 +240,12 @@ step-depot-tools-get: &step-depot-tools-get
     name: Get depot tools
     command: |
       git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+      if [ "`uname`" == "Darwin" ]; then
+        sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+      else
+        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+      fi
 
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
   run:
@@ -1537,6 +1543,7 @@ jobs:
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.

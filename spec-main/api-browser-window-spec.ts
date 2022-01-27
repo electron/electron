@@ -110,6 +110,14 @@ describe('BrowserWindow module', () => {
       await closed;
     });
 
+    it('closes window without rounded corners', async () => {
+      await closeWindow(w);
+      w = new BrowserWindow({ show: false, frame: false, roundedCorners: false });
+      const closed = emittedOnce(w, 'closed');
+      w.close();
+      await closed;
+    });
+
     it('should not crash if called after webContents is destroyed', () => {
       w.webContents.destroy();
       w.webContents.on('destroyed', () => w.close());
@@ -1640,7 +1648,15 @@ describe('BrowserWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
-    afterEach(closeAllWindows);
+    let appProcess: childProcess.ChildProcessWithoutNullStreams | undefined;
+
+    afterEach(() => {
+      if (appProcess && !appProcess.killed) {
+        appProcess.kill();
+        appProcess = undefined;
+      }
+      closeAllWindows();
+    });
 
     it('allows setting, changing, and removing the vibrancy', () => {
       const w = new BrowserWindow({ show: false });
@@ -1658,6 +1674,15 @@ describe('BrowserWindow module', () => {
       expect(() => {
         w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
       }).to.not.throw();
+    });
+
+    it('Allows setting a transparent window via CSS', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'background-color-transparent');
+
+      appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+      const [code] = await emittedOnce(appProcess, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
