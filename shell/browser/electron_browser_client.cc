@@ -53,6 +53,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -424,6 +425,8 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
       process_id, browser_context));
   host->AddFilter(
       new ElectronExtensionMessageFilter(process_id, browser_context));
+  host->AddFilter(
+      new extensions::MessagingAPIMessageFilter(process_id, browser_context));
 #endif
 
   // ensure the ProcessPreferences is removed later
