@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robin Ebert <ebertrobin2002@gmail.com>
+Date: Thu, 27 Jan 2022 23:41:41 +0100
+Subject: Fix wayland bugs related to bad versioning
+
+Chromium tries to bind to the newest version of some wayland interfaces (output, drm, xdg-exporter). This causes issues when it doesn't actually support the version.
+To mitigate this this patch introduces some constants specifing the max supported version and ensures that this value is enforced.
+Chromium also tries to map the keymap file descriptor as read-write but new versions of at least wlroots now passes it as read-only.
+This is fixed by mapping the file read-only.
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_connection.cc b/ui/ozone/platform/wayland/host/wayland_connection.cc
+index 6c0501b0f95fa50ff4fe677cff7354401fb05268..a9a366b54a7490e005357224351b2ae2b40d052e 100644
+--- a/ui/ozone/platform/wayland/host/wayland_connection.cc
++++ b/ui/ozone/platform/wayland/host/wayland_connection.cc
+@@ -69,10 +69,13 @@ constexpr uint32_t kMaxLinuxDmabufVersion = 3;
+ constexpr uint32_t kMaxSeatVersion = 5;
+ constexpr uint32_t kMaxShmVersion = 1;
+ constexpr uint32_t kMaxXdgShellVersion = 1;
++constexpr uint32_t kMaxWlOutputVersion = 3;
+ constexpr uint32_t kMaxDeviceManagerVersion = 3;
+ constexpr uint32_t kMaxWpPresentationVersion = 1;
+ constexpr uint32_t kMaxWpViewporterVersion = 1;
+ constexpr uint32_t kMaxTextInputManagerVersion = 1;
++constexpr uint32_t kMaxXdgExporterVersion = 1;
++constexpr uint32_t kMaxWlDrmVersion = 2;
+ constexpr uint32_t kMaxExplicitSyncVersion = 2;
+ constexpr uint32_t kMaxXdgDecorationVersion = 1;
+ constexpr uint32_t kMaxExtendedDragVersion = 1;
+@@ -405,7 +408,7 @@ void WaylandConnection::Global(void* data,
+       return;
+     }
+ 
+-    wl::Object<wl_output> output = wl::Bind<wl_output>(registry, name, version);
++    wl::Object<wl_output> output = wl::Bind<wl_output>(registry, name, std::min(version, kMaxWlOutputVersion));
+     if (!output) {
+       LOG(ERROR) << "Failed to bind to wl_output global";
+       return;
+@@ -502,10 +505,10 @@ void WaylandConnection::Global(void* data,
+   } else if (!connection->xdg_foreign_ &&
+              strcmp(interface, "zxdg_exporter_v1") == 0) {
+     connection->xdg_foreign_ = std::make_unique<XdgForeignWrapper>(
+-        connection, wl::Bind<zxdg_exporter_v1>(registry, name, version));
++        connection, wl::Bind<zxdg_exporter_v1>(registry, name, std::min(version, kMaxXdgExporterVersion)));
+   } else if (!connection->drm_ && (strcmp(interface, "wl_drm") == 0) &&
+              version >= kMinWlDrmVersion) {
+-    auto wayland_drm = wl::Bind<struct wl_drm>(registry, name, version);
++    auto wayland_drm = wl::Bind<struct wl_drm>(registry, name, std::min(version, kMaxWlDrmVersion));
+     connection->drm_ =
+         std::make_unique<WaylandDrm>(wayland_drm.release(), connection);
+   } else if (!connection->zaura_shell_ &&
+diff --git a/ui/ozone/platform/wayland/host/wayland_keyboard.cc b/ui/ozone/platform/wayland/host/wayland_keyboard.cc
+index 85fcd6a423b5af29a1bbd910468778afd28b8c27..462bb1f39b1194a01fd398d8c63f032f8b9d4a0b 100644
+--- a/ui/ozone/platform/wayland/host/wayland_keyboard.cc
++++ b/ui/ozone/platform/wayland/host/wayland_keyboard.cc
+@@ -7,7 +7,7 @@
+ #include <utility>
+ 
+ #include "base/files/scoped_file.h"
+-#include "base/memory/unsafe_shared_memory_region.h"
++#include "base/memory/read_only_shared_memory_region.h"
+ #include "base/unguessable_token.h"
+ #include "ui/base/buildflags.h"
+ #include "ui/events/base_event_utils.h"
+@@ -119,10 +119,10 @@ void WaylandKeyboard::Keymap(void* data,
+   base::ScopedFD fd(keymap_fd);
+   auto length = size - 1;
+   auto shmen = base::subtle::PlatformSharedMemoryRegion::Take(
+-      std::move(fd), base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,
++      std::move(fd), base::subtle::PlatformSharedMemoryRegion::Mode::kReadOnly,
+       length, base::UnguessableToken::Create());
+   auto mapped_memory =
+-      base::UnsafeSharedMemoryRegion::Deserialize(std::move(shmen)).Map();
++      base::ReadOnlySharedMemoryRegion::Deserialize(std::move(shmen)).Map();
+   const char* keymap = mapped_memory.GetMemoryAs<char>();
+ 
+   if (!keymap || format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1)
