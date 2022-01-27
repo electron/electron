@@ -1119,7 +1119,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
-        it('can check transparent window maximization', async () => {
+        it('correctly checks transparent window maximization state', async () => {
           w.destroy();
           w = new BrowserWindow({
             show: false,
@@ -1128,12 +1128,12 @@ describe('BrowserWindow module', () => {
             transparent: true
           });
 
-          const maximize = emittedOnce(w, 'resize');
+          const maximize = emittedOnce(w, 'maximize');
           w.show();
           w.maximize();
           await maximize;
           expect(w.isMaximized()).to.equal(true);
-          const unmaximize = emittedOnce(w, 'resize');
+          const unmaximize = emittedOnce(w, 'unmaximize');
           w.unmaximize();
           await unmaximize;
           expect(w.isMaximized()).to.equal(false);
@@ -3249,9 +3249,7 @@ describe('BrowserWindow module', () => {
       await maximize;
     });
 
-    // Transparent window max/unmax uses different logic and does not go through
-    // NativeWindowViews::HandleSizeEvent, so we need to test it separately.
-    ifit(process.platform === 'win32')('emits an event when a transparent window is maximized', async () => {
+    it('emits an event when a transparent window is maximized', async () => {
       const w = new BrowserWindow({
         show: false,
         frame: false,
@@ -3282,9 +3280,7 @@ describe('BrowserWindow module', () => {
       await unmaximize;
     });
 
-    // Transparent window max/unmax uses different logic and does not go through
-    // NativeWindowViews::HandleSizeEvent, so we need to test it separately.
-    ifit(process.platform === 'win32')('emits an event when a transparent window is unmaximized', async () => {
+    it('emits an event when a transparent window is unmaximized', async () => {
       const w = new BrowserWindow({
         show: false,
         frame: false,
