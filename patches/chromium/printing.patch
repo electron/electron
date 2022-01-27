@@ -108,7 +108,7 @@ index f922dc5c61ec85e6102a8e92b1b7096382dec6f0..e26a9dd3afb580244b04d190cda19a69
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index fc26fd8f32e4c1edd3ca41baf0e9cdd482b25c03..b3c4c75e15673771093c4194c023168d8142efab 100644
+index fc26fd8f32e4c1edd3ca41baf0e9cdd482b25c03..5596008647fa471cf8b284be64618d3db86c7041 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,13 +20,13 @@
@@ -126,7 +126,7 @@ index fc26fd8f32e4c1edd3ca41baf0e9cdd482b25c03..b3c4c75e15673771093c4194c023168d
  #include "printing/backend/print_backend.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/mojom/print.mojom.h"
-@@ -125,6 +125,16 @@ void FailedNotificationCallback(PrintJob* print_job) {
+@@ -125,6 +125,10 @@ void FailedNotificationCallback(PrintJob* print_job) {
    print_job->OnFailed();
  }
  
@@ -134,16 +134,10 @@ index fc26fd8f32e4c1edd3ca41baf0e9cdd482b25c03..b3c4c75e15673771093c4194c023168d
 +  print_job->OnUserInitCancelled();
 +}
 +
-+#if defined(OS_WIN)
-+void PageNotificationCallback(PrintJob* print_job, PrintedPage* page) {
-+  print_job->OnPageDone(page);
-+}
-+#endif
-+
  }  // namespace
  
  PrintJobWorker::PrintJobWorker(int render_process_id, int render_frame_id)
-@@ -239,16 +249,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+@@ -239,16 +243,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && defined(USE_CUPS)
    }
  
@@ -168,7 +162,7 @@ index fc26fd8f32e4c1edd3ca41baf0e9cdd482b25c03..b3c4c75e15673771093c4194c023168d
  }
  
  #if BUILDFLAG(IS_CHROMEOS)
-@@ -264,6 +279,12 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -264,6 +273,12 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       mojom::ResultCode result) {
