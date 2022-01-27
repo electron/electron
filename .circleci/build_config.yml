@@ -890,12 +890,12 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v8-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v12-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v1-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v5-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -904,10 +904,10 @@ step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
 step-maybe-restore-git-cache: &step-maybe-restore-git-cache
   restore_cache:
     paths:
-      - ~/.gclient-cache
+      - gclient-cache
     keys:
-      - v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
-      - v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}
+      - v5-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+      - v5-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
 
 step-restore-out-cache: &step-restore-out-cache
@@ -924,15 +924,15 @@ step-set-git-cache-path: &step-set-git-cache-path
     command: |
       # CircleCI does not support interpolation when setting environment variables.
       # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
-      echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+      echo 'export GIT_CACHE_PATH="$PWD/gclient-cache"' >> $BASH_ENV
 
 # Persist the git cache based on the hash of DEPS and .circle-sync-done
 # If the src cache was restored above then this will persist an empty cache
 step-save-git-cache: &step-save-git-cache
   save_cache:
     paths:
-      - ~/.gclient-cache
-    key: v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+      - gclient-cache
+    key: v5-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
 
 step-save-out-cache: &step-save-out-cache
@@ -977,7 +977,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v8-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v12-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -987,7 +987,7 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v1-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v5-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
   run:
@@ -1352,10 +1352,6 @@ commands:
             - *step-gclient-sync
             - store_artifacts:
                 path: patches
-            - when:
-                condition: << parameters.save-git-cache >>
-                steps:
-                  - *step-save-git-cache
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
             - run:
                 name: Wipe Electron
@@ -1364,6 +1360,11 @@ commands:
             - *step-run-electron-only-hooks
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
+            # Save git cache AFTER sync marked done because other jobs expect that to be the case
+            - when:
+                condition: << parameters.save-git-cache >>
+                steps:
+                  - *step-save-git-cache            
             - *step-minimize-workspace-size-from-checkout
             - *step-delete-git-directories
             - when:
