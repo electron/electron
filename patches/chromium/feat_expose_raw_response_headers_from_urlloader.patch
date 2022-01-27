@@ -103,10 +103,10 @@ index 80f26b62b25bd6aa46886e3112b2ffd2698693fe..e72cab84db36eec86309160d4f7416ee
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index c39a4dd0e1659215a29ef0a168c16bdf989f41a4..1f45b1fee59e14384bdc45074277ca94abb40cce 100644
+index 59a89d471326069e183cdcc42af862fe19d7448e..39cd96d5e5785879bd3d82fb4c71fdf80c48e5ee 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -535,6 +535,7 @@ URLLoader::URLLoader(
+@@ -541,6 +541,7 @@ URLLoader::URLLoader(
        peer_closed_handle_watcher_(FROM_HERE,
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
@@ -114,7 +114,7 @@ index c39a4dd0e1659215a29ef0a168c16bdf989f41a4..1f45b1fee59e14384bdc45074277ca94
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -693,7 +694,7 @@ URLLoader::URLLoader(
+@@ -699,7 +700,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index c39a4dd0e1659215a29ef0a168c16bdf989f41a4..1f45b1fee59e14384bdc45074277ca94
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1343,6 +1344,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1349,6 +1350,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    response_ = network::mojom::URLResponseHead::New();
    PopulateResourceResponse(url_request_.get(), is_load_timing_enabled_,
                             options_, response_.get());
@@ -144,7 +144,7 @@ index c39a4dd0e1659215a29ef0a168c16bdf989f41a4..1f45b1fee59e14384bdc45074277ca94
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index a2df260b031fa3d93721839aabfa93afc8b3ca52..b7bf263b2ab54a97e2015b684c7ec2405c518812 100644
+index fcc47a2389c5172e3c674e413baa857183e0f2f8..af952b03ca87c4022400ba93d2e1fb8d3759960a 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -503,6 +503,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

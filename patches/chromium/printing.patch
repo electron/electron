@@ -508,7 +508,7 @@ index 51ebcb4ae399018d3fd8566656596a7ef1f148af..5f2b807fc364131f4c3e6a1646ec522d
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index ae23ffe05ba132b3d5137fbf4d66df3318ef0bc1..bb93387ba6d4c81e5fcf5d6c429c0492ca0e4605 100644
+index eca58f84556152ef813283332f47b08f721693ac..b8e04560f208a6474eba6c4d98e987adc74d55e7 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -39,6 +39,7 @@
@@ -677,7 +677,7 @@ index ae23ffe05ba132b3d5137fbf4d66df3318ef0bc1..bb93387ba6d4c81e5fcf5d6c429c0492
      notify_browser_of_print_failure_ = false;
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
-@@ -2630,18 +2660,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type,
+@@ -2623,18 +2653,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type,
  }
  
  bool PrintRenderFrameHelper::CheckForCancel() {

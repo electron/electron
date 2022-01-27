@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8e449eb471f74d315656418de923d5893e3e7d8c..b06fc32bb979307ed03da96daeb421f4cce14910 100644
+index 74e6928041145fd6f37ec4ce7acc6be0649b944d..3eaf29f3ab74de6159bba1578ba0810bd9467922 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2983,6 +2983,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
@@ -35,10 +35,10 @@ index 8e449eb471f74d315656418de923d5893e3e7d8c..b06fc32bb979307ed03da96daeb421f4
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 7e433cf872a428a1a52b7ee8d4e2b5bdbaf75b5b..ba575899082e1425c720f14885cb5cd393e023f4 100644
+index 1b21d5241ea671e4ead260f170e6a0512efea89a..ac9bce453ff812679d8c77d661729ea681977061 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -92,10 +92,13 @@ class BrowserContext;
+@@ -93,10 +93,13 @@ class BrowserContext;
  class BrowserPluginGuestDelegate;
  class RenderFrameHost;
  class RenderViewHost;
@@ -52,7 +52,7 @@ index 7e433cf872a428a1a52b7ee8d4e2b5bdbaf75b5b..ba575899082e1425c720f14885cb5cd3
  class WebUI;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -233,6 +236,10 @@ class WebContents : public PageNavigator,
+@@ -234,6 +237,10 @@ class WebContents : public PageNavigator,
      network::mojom::WebSandboxFlags starting_sandbox_flags =
          network::mojom::WebSandboxFlags::kNone;
  

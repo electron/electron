@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f23406b4308bbe4f5298bc0565184db8b0c2b805..433e568d5fe76ef9b9a6c6c9213ec2249b5f9338 100644
+index 9930040d9e6802d851c7216b314791bae5534bd7..365b6eb2efc2f09725a9a53b79e83a50bded1c75 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6634,6 +6634,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6640,6 +6640,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index f23406b4308bbe4f5298bc0565184db8b0c2b805..433e568d5fe76ef9b9a6c6c9213ec224
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b315357678ecc761563266bd25fa343ec745565d..2c84b5c42d7970f1a0a5c9e3e514ad25ad95f61f 100644
+index d89e1c2369d7218d62fd759c3877b1d502a8276e..f3e21a7cacb9d192bf3b6cf4d2bfc8d372cd8307 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3867,6 +3867,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -150,7 +150,7 @@ index 58e977220a5d98c68a20cbf22ad7ce3da39a38a1..5092190243d3eb95a4180cb44937e3d2
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 39786e7e1dbddd46b1c9970056d604e651a58d81..b085055a979021e17ca104c22a8aee4338cc532c 100644
+index 7809d32d777a2c7249b77e68468bc19625716662..7eec2fea69298d92e694471862b4427b69e9687f 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -32,6 +32,7 @@

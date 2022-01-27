@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 950fbd61f3a956a178d090631ef39d3a3fe09c19..af9bb5268b6c1f6c5512e78c9b67c094f816815c 100644
+index 5cf4fd6559dd7183ed74e44001d7e53ca9b055b1..ca6a293882fe2af1e2bf58b8353e1c5c9de827d1 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -646,6 +646,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
