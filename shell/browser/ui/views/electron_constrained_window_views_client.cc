@@ -18,6 +18,12 @@ class ElectronConstrainedWindowViewsClient
   ElectronConstrainedWindowViewsClient() {}
   ~ElectronConstrainedWindowViewsClient() override {}
 
+  // disable copy
+  ElectronConstrainedWindowViewsClient(
+      const ElectronConstrainedWindowViewsClient&) = delete;
+  ElectronConstrainedWindowViewsClient& operator=(
+      const ElectronConstrainedWindowViewsClient&) = delete;
+
  private:
   // ConstrainedWindowViewsClient:
   web_modal::ModalDialogHost* GetModalDialogHost(
@@ -34,8 +40,6 @@ class ElectronConstrainedWindowViewsClient
   gfx::NativeView GetDialogHostView(gfx::NativeWindow parent) override {
     return platform_util::GetViewForWindow(parent);
   }
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronConstrainedWindowViewsClient);
 };
 
 }  // namespace
