@@ -93,6 +93,12 @@ class WebContentsModalDialogHostViews : public WebContentsModalDialogHost {
       observer.OnHostDestroying();
   }
 
+  // disable copy
+  WebContentsModalDialogHostViews(const WebContentsModalDialogHostViews&) =
+      delete;
+  WebContentsModalDialogHostViews& operator=(
+      const WebContentsModalDialogHostViews&) = delete;
+
   void NotifyPositionRequiresUpdate() {
     for (ModalDialogHostObserver& observer : observer_list_)
       observer.OnPositionRequiresUpdate();
@@ -139,8 +145,6 @@ class WebContentsModalDialogHostViews : public WebContentsModalDialogHost {
   int margin_top_ = 0;
 
   base::ObserverList<ModalDialogHostObserver>::Unchecked observer_list_;
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsModalDialogHostViews);
 };
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,

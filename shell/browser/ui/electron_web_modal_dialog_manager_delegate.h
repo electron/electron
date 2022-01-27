@@ -15,12 +15,15 @@ class ElectronWebModalDialogManagerDelegate
   ElectronWebModalDialogManagerDelegate();
   ~ElectronWebModalDialogManagerDelegate() override;
 
+  // disable copy
+  ElectronWebModalDialogManagerDelegate(
+      const ElectronWebModalDialogManagerDelegate&) = delete;
+  ElectronWebModalDialogManagerDelegate& operator=(
+      const ElectronWebModalDialogManagerDelegate&) = delete;
+
  protected:
   // Overridden from web_modal::WebContentsModalDialogManagerDelegate:
   bool IsWebContentsVisible(content::WebContents* web_contents) override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronWebModalDialogManagerDelegate);
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_ELECTRON_WEB_MODAL_DIALOG_MANAGER_DELEGATE_H_
