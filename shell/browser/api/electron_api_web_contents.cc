@@ -599,6 +599,12 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
   return file_system_paths.find(file_system_path) != file_system_paths.end();
 }
 
+void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
+  rwhv->SetBackgroundColor(color);
+  static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+      ->SetContentBackgroundColor(color);
+}
+
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1457,7 +1463,7 @@ void WebContents::HandleNewRenderFrame(
     absl::optional<SkColor> color =
         guest ? SK_ColorTRANSPARENT : web_preferences->GetBackgroundColor();
     web_contents()->SetPageBaseBackgroundColor(color);
-    rwhv->SetBackgroundColor(color.value_or(SK_ColorWHITE));
+    SetBackgroundColor(rwhv, color.value_or(SK_ColorWHITE));
   }
 
   if (!background_throttling_)
@@ -1471,6 +1477,15 @@ void WebContents::HandleNewRenderFrame(
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
     web_frame->Connect();
+}
+
+void WebContents::OnBackgroundColorChanged() {
+  absl::optional<SkColor> color = web_contents()->GetBackgroundColor();
+  if (color.has_value()) {
+    auto* const view = web_contents()->GetRenderWidgetHostView();
+    static_cast<content::RenderWidgetHostViewBase*>(view)
+        ->SetContentBackgroundColor(color.value());
+  }
 }
 
 void WebContents::RenderFrameCreated(
@@ -4053,7 +4068,7 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
       // only set rwhv background color if a color exists
       auto* rwhv = web_contents->web_contents()->GetRenderWidgetHostView();
       if (rwhv && color.has_value())
-        rwhv->SetBackgroundColor(color.value());
+        SetBackgroundColor(rwhv, color.value());
     }
   } else {
     // Create one if not.
