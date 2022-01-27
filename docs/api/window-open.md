@@ -74,9 +74,9 @@ through the feature string, as the renderer has more limited privileges in
 deciding security preferences than the main process.
 
 In addition to passing in `action` and `overrideBrowserWindowOptions`,
-`closeWithOpener` can be passed like: `{ action: 'allow', closeWithOpener: false,
-overrideBrowserWindowOptions: { ... } }`. If set to `false`, child windows will not
-be closed when the opener window closes. The default value is `true`.
+`outlivesOpener` can be passed like: `{ action: 'allow', outlivesOpener: true,
+overrideBrowserWindowOptions: { ... } }`. If set to `true`, the newly created
+window will not close when the opener window closes. The default value is `false`.
 
 ### Native `Window` example
 

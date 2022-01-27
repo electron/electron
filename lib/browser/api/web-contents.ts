@@ -492,14 +492,14 @@ WebContents.prototype.loadURL = function (url, options) {
   return p;
 };
 
-WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions, closeWithOpener?: boolean})) {
+WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions, outlivesOpener?: boolean})) {
   this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, closeWithOpener: boolean} {
+WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean} {
   const defaultResponse = {
     browserWindowConstructorOptions: null,
-    closeWithOpener: true
+    outlivesOpener: false
   };
   if (!this._windowOpenHandler) {
     return defaultResponse;
@@ -525,12 +525,12 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
     if (typeof response.overrideBrowserWindowOptions === 'object' && response.overrideBrowserWindowOptions !== null) {
       return {
         browserWindowConstructorOptions: response.overrideBrowserWindowOptions,
-        closeWithOpener: typeof response.closeWithOpener === 'boolean' ? response.closeWithOpener : true
+        outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
       };
     } else {
       return {
         browserWindowConstructorOptions: {},
-        closeWithOpener: typeof response.closeWithOpener === 'boolean' ? response.closeWithOpener : true
+        outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
       };
     }
   } else {
@@ -672,13 +672,13 @@ WebContents.prototype._init = function () {
           postData,
           overrideBrowserWindowOptions: options || {},
           windowOpenArgs: details,
-          closeWithOpener: result.closeWithOpener
+          outlivesOpener: result.outlivesOpener
         });
       }
     });
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
-    let windowOpenCloseWithOpenerOption: boolean = true;
+    let windowOpenOutlivesOpenerOption: boolean = false;
     this.on('-will-add-new-contents' as any, (event: ElectronInternal.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
       const postBody = postData ? {
         data: postData,
@@ -693,7 +693,7 @@ WebContents.prototype._init = function () {
         postBody
       };
       const result = this._callWindowOpenHandler(event, details);
-      windowOpenCloseWithOpenerOption = result.closeWithOpener;
+      windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
@@ -725,10 +725,10 @@ WebContents.prototype._init = function () {
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;
-      const closeWithOpener = windowOpenCloseWithOpenerOption;
+      const outlivesOpener = windowOpenOutlivesOpenerOption;
       windowOpenOverriddenOptions = null;
-      // true is the default
-      windowOpenCloseWithOpenerOption = true;
+      // false is the default
+      windowOpenOutlivesOpenerOption = false;
 
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
            disposition !== 'background-tab')) {
@@ -749,7 +749,7 @@ WebContents.prototype._init = function () {
           frameName,
           features: rawFeatures
         },
-        closeWithOpener
+        outlivesOpener
       });
     });
   }
