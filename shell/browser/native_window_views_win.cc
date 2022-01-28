@@ -5,6 +5,7 @@
 #include <dwmapi.h>
 #include <shellapi.h>
 
+#include "base/win/atl.h"  // Must be before UIAutomationCore.h
 #include "content/public/browser/browser_accessibility_state.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
