@@ -17,3 +17,16 @@ index 349043f8a3cfc9f91cbae951e74258799a4fd126..0f7e3e544f524a7ad6660b54912cb119
      # These are allow-listed for WebRTC builds.  Nothing in else should depend
      # on GTK.
      "//examples:peerconnection_client",
+diff --git a/ui/ozone/platform/x11/BUILD.gn b/ui/ozone/platform/x11/BUILD.gn
+index 54a3e170f5131ee03892410a0c883d4da4dd885a..1653e392630913dab5db84a7aafff0dfe36d1f71 100644
+--- a/ui/ozone/platform/x11/BUILD.gn
++++ b/ui/ozone/platform/x11/BUILD.gn
+@@ -6,7 +6,7 @@ import("//build/config/chromeos/ui_mode.gni")
+ import("//gpu/vulkan/features.gni")
+ import("//ui/base/ui_features.gni")
+ 
+-visibility = [ "//ui/ozone/*" ]
++visibility = [ "//ui/ozone/*", "//electron:*" ]
+ 
+ assert(is_linux || is_chromeos)
+ 
