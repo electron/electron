@@ -20,7 +20,7 @@
 
 namespace {
 
-ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
+bool IsEnvSet(const char* name) {
   char* indicator = getenv(name);
   return indicator && indicator[0] != '\0';
 }
