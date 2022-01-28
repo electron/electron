@@ -29,11 +29,11 @@ struct Converter<base::win::ShortcutOperation> {
     if (!ConvertFromV8(isolate, val, &operation))
       return false;
     if (operation.empty() || operation == "create")
-      *out = base::win::SHORTCUT_CREATE_ALWAYS;
+      *out = base::win::ShortcutOperation::kCreateAlways;
     else if (operation == "update")
-      *out = base::win::SHORTCUT_UPDATE_EXISTING;
+      *out = base::win::ShortcutOperation::kUpdateExisting;
     else if (operation == "replace")
-      *out = base::win::SHORTCUT_REPLACE_EXISTING;
+      *out = base::win::ShortcutOperation::kReplaceExisting;
     else
       return false;
     return true;
@@ -107,7 +107,8 @@ v8::Local<v8::Promise> TrashItem(v8::Isolate* isolate,
 #if defined(OS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
                        gin_helper::Arguments* args) {
-  base::win::ShortcutOperation operation = base::win::SHORTCUT_CREATE_ALWAYS;
+  base::win::ShortcutOperation operation =
+      base::win::ShortcutOperation::kCreateAlways;
   args->GetNext(&operation);
   gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
   if (!args->GetNext(&options)) {
