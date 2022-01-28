@@ -4,6 +4,7 @@
 
 #include <dwmapi.h>
 #include <shellapi.h>
+#include <wrl/client.h>
 
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
 #include "content/public/browser/browser_accessibility_state.h"
@@ -18,6 +19,7 @@
 #include "ui/views/widget/native_widget_private.h"
 
 // Must be included after other Windows headers.
+#include <UIAutomationClient.h>
 #include <UIAutomationCoreApi.h>
 
 namespace electron {
