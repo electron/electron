@@ -136,7 +136,7 @@ $ gn gen out/Release --args="import(\"//electron/build/args/release.gn\") $GN_EX
 ```
 
 **To build, run `ninja` with the `electron` target:**
-Nota Bene: This will also take a while and probably heat up your lap.
+Note: This will also take a while and probably heat up your lap.
 
 For the testing configuration:
 
