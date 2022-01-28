@@ -32,6 +32,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
+#include "crypto/crypto_buildflags.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_server_config.h"
 #include "net/dns/public/util.h"
@@ -597,7 +598,7 @@ void OnClientCertificateSelected(
   }
 }
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   std::string file_data, cert_path;
   std::u16string password;
@@ -1278,7 +1279,7 @@ Browser::LoginItemSettings App::GetLoginItemSettings(gin::Arguments* args) {
   return Browser::Get()->GetLoginItemSettings(options);
 }
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
 void App::ImportCertificate(gin_helper::ErrorThrower thrower,
                             base::Value options,
                             net::CompletionOnceCallback callback) {
@@ -1815,7 +1816,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
       .SetMethod("hasSingleInstanceLock", &App::HasSingleInstanceLock)

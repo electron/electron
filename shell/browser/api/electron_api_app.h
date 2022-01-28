@@ -16,6 +16,7 @@
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/render_process_host.h"
+#include "crypto/crypto_buildflags.h"
 #include "gin/handle.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
@@ -29,7 +30,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
 #include "shell/browser/certificate_manager_model.h"
 #endif
 
@@ -64,7 +65,7 @@ class App : public ElectronBrowserClient::Delegate,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
       base::Value options,
       net::CompletionOnceCallback callback,
@@ -208,7 +209,7 @@ class App : public ElectronBrowserClient::Delegate,
   void SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                       bool enabled);
   Browser::LoginItemSettings GetLoginItemSettings(gin::Arguments* args);
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
   void ImportCertificate(gin_helper::ErrorThrower thrower,
                          base::Value options,
                          net::CompletionOnceCallback callback);
@@ -253,7 +254,7 @@ class App : public ElectronBrowserClient::Delegate,
 
   std::unique_ptr<ProcessSingleton> process_singleton_;
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
   std::unique_ptr<CertificateManagerModel> certificate_manager_model_;
 #endif
 

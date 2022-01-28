@@ -50,6 +50,7 @@
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
+#include "crypto/crypto_buildflags.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -117,7 +118,7 @@
 #include "sandbox/win/src/sandbox_policy.h"
 #endif
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
 #include "net/ssl/client_cert_store_nss.h"
 #elif defined(OS_WIN)
 #include "net/ssl/client_cert_store_win.h"
@@ -876,7 +877,7 @@ void ElectronBrowserClient::SiteInstanceDeleting(
 std::unique_ptr<net::ClientCertStore>
 ElectronBrowserClient::CreateClientCertStore(
     content::BrowserContext* browser_context) {
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
   return std::make_unique<net::ClientCertStoreNSS>(
       net::ClientCertStoreNSS::PasswordDelegateFactory());
 #elif defined(OS_WIN)
