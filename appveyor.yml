@@ -31,30 +31,32 @@ version: 1.0.{build}
 build_cloud: electron-16-core2
 image: base-electron
 environment:
-  GIT_CACHE_PATH: C:\Users\electron\libcc_cache
+  GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
   GOMA_FALLBACK_ON_AUTH_FAILURE: true
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+  PYTHONIOENCODING: UTF-8
 build_script:
-  - ps: >-
-      if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-        Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-      } else {
-        node script/yarn.js install --frozen-lockfile
+  # - ps: >-
+  #     if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+  #       Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+  #     } else {
+  #       node script/yarn.js install --frozen-lockfile
 
-        $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-        Write-Output $result
-        if ($result.ExitCode -eq 0) {
-          Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
-        }
-      }
+  #       $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+  #       Write-Output $result
+  #       if ($result.ExitCode -eq 0) {
+  #         Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+  #       }
+  #     }
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
-  - mkdir src
-  - update_depot_tools.bat
+  # - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
+  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: >-
@@ -67,58 +69,7 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  - ps: >-
-      if ($env:GN_CONFIG -eq 'release') {
-        $env:RUN_GCLIENT_SYNC="true"
-      } else {
-        cd src\electron
-        node script\generate-deps-hash.js
-        $depshash = Get-Content .\.depshash -Raw 
-        $zipfile = "Z:\$depshash.7z"
-        cd ..\..
-        if (Test-Path -Path $zipfile) {
-          # file exists, unzip and then gclient sync
-          7z x -y $zipfile -mmt=30 -aoa
-          if (-not (Test-Path -Path "src\buildtools")) {
-            # the zip file must be corrupt - resync
-            $env:RUN_GCLIENT_SYNC="true"
-            if ($env:TARGET_ARCH -ne 'ia32') {
-              # only save on x64/woa to avoid contention saving
-              $env:SAVE_GCLIENT_SRC="true"
-            }
-          } else {
-            # update angle
-            cd src\third_party\angle
-            git remote set-url origin  https://chromium.googlesource.com/angle/angle.git
-            git fetch
-            cd ..\..\..
-          }
-        } else {    
-          # file does not exist, gclient sync, then zip
-          $env:RUN_GCLIENT_SYNC="true"
-          if ($env:TARGET_ARCH -ne 'ia32') {
-            # only save on x64/woa to avoid contention saving
-            $env:SAVE_GCLIENT_SRC="true"
-          }
-        }
-      }
-  - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync )
-  - ps: >-
-      if ($env:SAVE_GCLIENT_SRC -eq 'true') {
-        # archive current source for future use 
-        # only run on x64/woa to avoid contention saving
-        $(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30)
-        if ($LASTEXITCODE -ne 0) {
-          Write-warning "Could not save source to shared drive; continuing anyway"
-        }
-        # build time generation of file gen/angle/angle_commit.h depends on
-        # third_party/angle/.git
-        # https://chromium-review.googlesource.com/c/angle/angle/+/2074924       
-        $(7z a $zipfile src\third_party\angle\.git)
-        if ($LASTEXITCODE -ne 0) {
-          Write-warning "Failed to add third_party\angle\.git; continuing anyway"
-        }
-      }
+  - gclient sync --with_branch_heads --with_tags
   - ps: >-
       if (Test-Path 'env:RAW_GOMA_AUTH') {
         $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
@@ -132,9 +83,8 @@ build_script:
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
   - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
   - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
-  - cd ..
-  - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
-  - cd src
+  - ps: node -e "console.log(require('./src/utils/goma.js').ensure())"
+  - cd ..\src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
   - gn check out/Default //electron:electron_lib
@@ -195,7 +145,7 @@ test_script:
         New-Item .\out\Default\gen\node_headers\Release -Type directory
         Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
       } else {
-        echo "Skipping tests for $env:GN_CONFIG build"
+        Write-Host "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
   # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022

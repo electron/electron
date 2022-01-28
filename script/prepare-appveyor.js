@@ -11,10 +11,10 @@ const APPVEYOR_JOB_URL = 'https://ci.appveyor.com/api/builds';
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium$/;
 
 const DEFAULT_BUILD_CLOUD_ID = '1424';
-// const DEFAULT_BUILD_CLOUD_ID = '861';
 const DEFAULT_BUILD_CLOUD = 'electron-16-core2';
-// const DEFAULT_BUILD_CLOUD = 'electron-16-core';
 const DEFAULT_IMAGE = 'base-electron';
+// const DEFAULT_BUILD_CLOUD_ID = '861';
+// const DEFAULT_BUILD_CLOUD = 'electron-16-core';
 // const DEFAULT_IMAGE = 'vs2019bt-16.6.2';
 
 const appVeyorJobs = {
@@ -159,6 +159,7 @@ async function prepareAppVeyorImage (opts) {
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
+    // TODO: Remove testing from string
     const imageVersion = opts.imageVersion || `electron-testing-${CHROMIUM_VERSION}`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
