@@ -32,12 +32,12 @@
 #include "shell/browser/native_window_views.h"
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 namespace gin {
 
 template <>
@@ -305,7 +305,7 @@ void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
   }
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -875,7 +875,7 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 std::string BaseWindow::GetAlwaysOnTopLevel() {
   return window_->GetAlwaysOnTopLevel();
 }
@@ -1028,7 +1028,7 @@ bool BaseWindow::IsModal() const {
 }
 
 bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   std::vector<TaskbarHost::ThumbarButton> buttons;
   if (!args->GetNext(&buttons)) {
     args->ThrowError();
@@ -1055,18 +1055,18 @@ void BaseWindow::SetIconImpl(v8::Isolate* isolate,
                                           on_error))
     return;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(native_image->GetHICON(GetSystemMetrics(SM_CXSMICON)),
                 native_image->GetHICON(GetSystemMetrics(SM_CXICON)));
-#elif defined(OS_LINUX)
+#elif BUILDFLAG(IS_LINUX)
   static_cast<NativeWindowViews*>(window_.get())
       ->SetIcon(native_image->image().AsImageSkia());
 #endif
 }
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 bool BaseWindow::HookWindowMessage(UINT message,
                                    const MessageCallback& callback) {
   messages_callback_map_[message] = callback;
@@ -1266,12 +1266,12 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
       .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
       .SetMethod("setTrafficLightPosition",
                  &BaseWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
@@ -1280,7 +1280,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)
@@ -1312,7 +1312,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &BaseWindow::SetIcon)
 #endif
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       .SetMethod("hookWindowMessage", &BaseWindow::HookWindowMessage)
       .SetMethod("isWindowMessageHooked", &BaseWindow::IsWindowMessageHooked)
       .SetMethod("unhookWindowMessage", &BaseWindow::UnhookWindowMessage)

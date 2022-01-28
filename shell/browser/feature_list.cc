@@ -36,7 +36,7 @@ void InitializeFeatureList() {
   disable_features += std::string(",") + media::kPictureInPicture.name;
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Disable async spellchecker suggestions for Windows, which causes
   // an empty suggestions list to be returned
   disable_features +=

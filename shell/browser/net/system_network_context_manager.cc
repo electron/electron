@@ -42,23 +42,23 @@
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "components/os_crypt/keychain_password_mac.h"
 #endif
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include "components/os_crypt/key_storage_config_linux.h"
 #endif
 
 namespace {
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 namespace {
 
 const char kNetworkServiceSandboxEnabled[] = "net.network_service_sandbox";
 
 }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 // The global instance of the SystemNetworkContextmanager.
 SystemNetworkContextManager* g_system_network_context_manager = nullptr;
@@ -232,12 +232,12 @@ void SystemNetworkContextManager::DeleteInstance() {
 // c.f.
 // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/net/system_network_context_manager.cc;l=730-740;drc=15a616c8043551a7cb22c4f73a88e83afb94631c;bpv=1;bpt=1
 bool SystemNetworkContextManager::IsNetworkSandboxEnabled() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   auto* local_state = g_browser_process->local_state();
   if (local_state && local_state->HasPrefPath(kNetworkServiceSandboxEnabled)) {
     return local_state->GetBoolean(kNetworkServiceSandboxEnabled);
   }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
   // If no policy is specified, then delegate to global sandbox configuration.
   return sandbox::policy::features::IsNetworkSandboxEnabled();
 }
@@ -297,7 +297,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       additional_dns_query_types_enabled);
 
   std::string app_name = electron::Browser::Get()->GetName();
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   KeychainPassword::GetServiceName() = app_name + " Safe Storage";
   KeychainPassword::GetAccountName() = app_name;
 #endif

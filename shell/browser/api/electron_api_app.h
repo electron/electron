@@ -40,7 +40,7 @@ class FilePath;
 
 namespace electron {
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 enum class JumpListResult : int;
 #endif
 
@@ -100,7 +100,7 @@ class App : public ElectronBrowserClient::Delegate,
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
   void OnPreCreateThreads() override;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void OnWillContinueUserActivity(bool* prevent_default,
                                   const std::string& type) override;
   void OnDidFailToContinueUserActivity(const std::string& type,
@@ -225,7 +225,7 @@ class App : public ElectronBrowserClient::Delegate,
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
                            const std::string& policy);
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
@@ -235,7 +235,7 @@ class App : public ElectronBrowserClient::Delegate,
   v8::Global<v8::Value> dock_;
 #endif
 
-#if defined(OS_MAC) || defined(OS_WIN)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   bool IsRunningUnderARM64Translation() const;
 #endif
 
@@ -244,13 +244,13 @@ class App : public ElectronBrowserClient::Delegate,
       gin::Arguments* args);
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Get the current Jump List settings.
   v8::Local<v8::Value> GetJumpListSettings();
 
   // Set or remove a custom Jump List for the application.
   JumpListResult SetJumpList(v8::Local<v8::Value> val, gin::Arguments* args);
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
   std::unique_ptr<ProcessSingleton> process_singleton_;
 

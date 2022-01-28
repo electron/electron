@@ -8,7 +8,7 @@
 #include "build/build_config.h"
 #include "electron/buildflags/buildflags.h"
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 extern "C" {
 __attribute__((visibility("default"))) int ElectronMain(int argc, char* argv[]);
 
@@ -18,6 +18,6 @@ __attribute__((visibility("default"))) int ElectronInitializeICUandStartNode(
     char* argv[]);
 #endif
 }
-#endif  // OS_MAC
+#endif
 
 #endif  // ELECTRON_SHELL_APP_ELECTRON_LIBRARY_MAIN_H_

@@ -88,9 +88,9 @@ bool IsWidevineAvailable(
     // TODO(crbug.com/767941): Push persistent-license support info here once
     // we check in a new CDM that supports it on Linux.
     session_types_supported->insert(media::CdmSessionType::kTemporary);
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS)
     session_types_supported->insert(media::CdmSessionType::kPersistentLicense);
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS)
 
     modes_supported->insert(media::EncryptionMode::kCenc);
 

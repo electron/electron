@@ -17,22 +17,22 @@
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "services/service_manager/public/cpp/service.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "chrome/services/util_win/public/mojom/util_read_icon.mojom.h"
 #include "chrome/services/util_win/util_read_icon.h"
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/services/print_compositor/print_compositor_impl.h"
 #include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"  // nogncheck
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+#if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) || \
-    (BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN))
+    (BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN))
 #include "chrome/services/printing/printing_service.h"
 #include "chrome/services/printing/public/mojom/printing_service.mojom.h"
 #endif
@@ -42,14 +42,14 @@ namespace electron {
 namespace {
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) || \
-    (BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN))
+    (BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN))
 auto RunPrintingService(
     mojo::PendingReceiver<printing::mojom::PrintingService> receiver) {
   return std::make_unique<printing::PrintingService>(std::move(receiver));
 }
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 auto RunWindowsIconReader(
     mojo::PendingReceiver<chrome::mojom::UtilReadIcon> receiver) {
   return std::make_unique<UtilReadIcon>(std::move(receiver));
@@ -83,7 +83,7 @@ ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 // chrome_content_utility_client.cc?sq=package:chromium&dr=CSs&g=0&l=142
 void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
     mojo::BinderMap* binders) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   auto& cmd_line = *base::CommandLine::ForCurrentProcess();
   auto sandbox_type = sandbox::policy::SandboxTypeFromCommandLine(cmd_line);
   utility_process_running_elevated_ =
@@ -93,7 +93,7 @@ void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
   // If our process runs with elevated privileges, only add elevated Mojo
   // interfaces to the BinderMap.
   if (!utility_process_running_elevated_) {
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+#if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
     binders->Add(
         base::BindRepeating(printing::PdfToEmfConverterFactory::Create),
         base::ThreadTaskRunnerHandle::Get());
@@ -103,7 +103,7 @@ void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
 
 void ElectronContentUtilityClient::RegisterMainThreadServices(
     mojo::ServiceFactory& services) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   services.Add(RunWindowsIconReader);
 #endif
 
@@ -112,7 +112,7 @@ void ElectronContentUtilityClient::RegisterMainThreadServices(
 #endif
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) || \
-    (BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN))
+    (BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN))
   services.Add(RunPrintingService);
 #endif
 }

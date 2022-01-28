@@ -82,7 +82,7 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
     return gin::Handle<Tray>();
   }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   if (!guid.has_value() && args->Length() > 1) {
     thrower.ThrowError("Invalid GUID format");
     return gin::Handle<Tray>();
@@ -196,7 +196,7 @@ void Tray::SetImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
   if (!NativeImage::TryConvertNativeImage(isolate, image, &native_image))
     return;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   tray_icon_->SetImage(native_image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
   tray_icon_->SetImage(native_image->image());
@@ -211,7 +211,7 @@ void Tray::SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
   if (!NativeImage::TryConvertNativeImage(isolate, image, &native_image))
     return;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   tray_icon_->SetPressedImage(
       native_image->GetHICON(GetSystemMetrics(SM_CXSMICON)));
 #else
@@ -230,7 +230,7 @@ void Tray::SetTitle(const std::string& title,
                     gin::Arguments* args) {
   if (!CheckAlive())
     return;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   TrayIcon::TitleOptions title_options;
   if (options) {
     if (options->Get("fontType", &title_options.font_type)) {
@@ -258,7 +258,7 @@ void Tray::SetTitle(const std::string& title,
 std::string Tray::GetTitle() {
   if (!CheckAlive())
     return std::string();
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   return tray_icon_->GetTitle();
 #else
   return "";
@@ -268,7 +268,7 @@ std::string Tray::GetTitle() {
 void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
   if (!CheckAlive())
     return;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   tray_icon_->SetIgnoreDoubleClickEvents(ignore);
 #endif
 }
@@ -276,7 +276,7 @@ void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
 bool Tray::GetIgnoreDoubleClickEvents() {
   if (!CheckAlive())
     return false;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   return tray_icon_->GetIgnoreDoubleClickEvents();
 #else
   return false;
@@ -309,7 +309,7 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
   options.Get("respectQuietTime", &balloon_options.respect_quiet_time);
 
   if (icon) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     balloon_options.icon = icon->GetHICON(
         GetSystemMetrics(balloon_options.large_icon ? SM_CXICON : SM_CXSMICON));
 #else

@@ -133,7 +133,7 @@ class WebContentsPreferences
   absl::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)

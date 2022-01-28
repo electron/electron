@@ -14,7 +14,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/shortcut.h"
 
@@ -104,7 +104,7 @@ v8::Local<v8::Promise> TrashItem(v8::Isolate* isolate,
   return handle;
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
                        gin_helper::Arguments* args) {
   base::win::ShortcutOperation operation =
@@ -174,7 +174,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("trashItem", &TrashItem);
   dict.SetMethod("beep", &platform_util::Beep);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   dict.SetMethod("writeShortcutLink", &WriteShortcutLink);
   dict.SetMethod("readShortcutLink", &ReadShortcutLink);
 #endif

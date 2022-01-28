@@ -25,7 +25,7 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(
              str == "meta") {
     return ui::VKEY_COMMAND;
   } else if (str == "commandorcontrol" || str == "cmdorctrl") {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     return ui::VKEY_COMMAND;
 #else
     return ui::VKEY_CONTROL;

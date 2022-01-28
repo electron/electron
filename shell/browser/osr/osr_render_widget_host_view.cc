@@ -651,7 +651,7 @@ bool OffScreenRenderWidgetHostView::InstallTransparency() {
   return false;
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 void OffScreenRenderWidgetHostView::SetActive(bool active) {}
 
 void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}

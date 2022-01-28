@@ -5,7 +5,9 @@
 #ifndef ELECTRON_SHELL_COMMON_APPLICATION_INFO_H_
 #define ELECTRON_SHELL_COMMON_APPLICATION_INFO_H_
 
-#if defined(OS_WIN)
+#include "build/build_config.h"
+
+#if BUILDFLAG(IS_WIN)
 #include "shell/browser/win/scoped_hstring.h"
 #endif
 
@@ -23,7 +25,7 @@ std::string GetApplicationVersion();
 // Returns the user agent of Electron.
 std::string GetApplicationUserAgent();
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 PCWSTR GetRawAppUserModelID();
 bool GetAppUserModelID(ScopedHString* app_id);
 void SetAppUserModelID(const std::wstring& name);

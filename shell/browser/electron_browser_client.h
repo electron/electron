@@ -84,7 +84,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterBrowserInterfaceBindersForServiceWorker(
       mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
           map) override;
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   void GetAdditionalMappedFilesForChildProcess(
       const base::CommandLine& command_line,
       int child_process_id,
@@ -228,7 +228,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const url::Origin& origin,
       bool is_for_isolated_world,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   bool PreSpawnChild(sandbox::TargetPolicy* policy,
                      sandbox::mojom::Sandbox sandbox_type,
                      ChildSpawnFlags flags) override;
@@ -316,7 +316,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
   std::unique_ptr<ElectronHidDelegate> hid_delegate_;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   ElectronBrowserMainParts* browser_main_parts_ = nullptr;
 #endif
 };

@@ -15,7 +15,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "ui/gfx/image/image.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/files/file_path.h"
 #include "base/win/scoped_gdi_object.h"
 #endif
@@ -46,7 +46,7 @@ namespace api {
 class NativeImage : public gin::Wrappable<NativeImage> {
  public:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path);
 #endif
   ~NativeImage() override;
@@ -78,7 +78,7 @@ class NativeImage : public gin::Wrappable<NativeImage> {
                                                     const GURL& url);
   static gin::Handle<NativeImage> CreateFromNamedImage(gin::Arguments* args,
                                                        std::string name);
-#if !defined(OS_LINUX)
+#if !BUILDFLAG(IS_LINUX)
   static v8::Local<v8::Promise> CreateThumbnailFromPath(
       v8::Isolate* isolate,
       const base::FilePath& path,
@@ -99,7 +99,7 @@ class NativeImage : public gin::Wrappable<NativeImage> {
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   HICON GetHICON(int size);
 #endif
 
@@ -128,7 +128,7 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   // Determine if the image is a template image.
   bool IsTemplateImage();
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   base::FilePath hicon_path_;
   std::map<int, base::win::ScopedHICON> hicons_;
 #endif

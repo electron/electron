@@ -4,7 +4,7 @@
 
 #include "shell/browser/electron_browser_client.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <shlobj.h>
 #endif
 
@@ -114,15 +114,15 @@
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "sandbox/win/src/sandbox_policy.h"
 #endif
 
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "net/ssl/client_cert_store_nss.h"
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
 #include "net/ssl/client_cert_store_win.h"
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
 #include "net/ssl/client_cert_store_mac.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
@@ -175,12 +175,12 @@
 #include "shell/browser/plugins/plugin_utils.h"
 #endif
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "content/common/mac_helpers.h"
 #include "content/public/common/child_process_host.h"
 #endif
 
-#if defined(OS_LINUX) && !defined(MAS_BUILD)
+#if BUILDFLAG(IS_LINUX) && !defined(MAS_BUILD)
 #include "base/debug/leak_annotations.h"
 #include "components/crash/content/browser/crash_handler_host_linux.h"
 #include "components/crash/core/app/breakpad_linux.h"  // nogncheck
@@ -188,7 +188,7 @@
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #endif
 
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && defined(OS_WIN)
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && BUILDFLAG(IS_WIN)
 #include "chrome/browser/ui/views/overlay/overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
@@ -295,7 +295,7 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
     const std::string& process_type) {
   base::FilePath dumps_path;
@@ -358,7 +358,7 @@ int GetCrashSignalFD(const base::CommandLine& command_line) {
 
   return -1;
 }
-#endif  // defined(OS_LINUX)
+#endif  // BUILDFLAG(IS_LINUX)
 
 }  // namespace
 
@@ -509,7 +509,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     auto renderer_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
@@ -543,7 +543,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   bool enable_crash_reporter = false;
   if (crash_reporter::IsCrashpadEnabled()) {
     command_line->AppendSwitch(::switches::kEnableCrashpad);
@@ -606,7 +606,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   }
 
   if (process_type == ::switches::kRendererProcess) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     // Append --app-user-model-id.
     PWSTR current_app_id;
     if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
@@ -750,7 +750,7 @@ std::unique_ptr<content::OverlayWindow>
 ElectronBrowserClient::CreateWindowForPictureInPicture(
     content::PictureInPictureWindowController* controller) {
   auto overlay_window = content::OverlayWindow::Create(controller);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
@@ -880,9 +880,9 @@ ElectronBrowserClient::CreateClientCertStore(
 #if BUILDFLAG(USE_NSS_CERTS)
   return std::make_unique<net::ClientCertStoreNSS>(
       net::ClientCertStoreNSS::PasswordDelegateFactory());
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   return std::make_unique<net::ClientCertStoreWin>();
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
   return std::unique_ptr<net::ClientCertStore>();
@@ -924,7 +924,7 @@ ElectronBrowserClient::CreateBrowserMainParts(
   auto browser_main_parts =
       std::make_unique<ElectronBrowserMainParts>(std::move(params));
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   browser_main_parts_ = browser_main_parts.get();
 #endif
 
@@ -1441,7 +1441,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       browser_context, origin, is_for_isolated_world, factory_params);
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
                                           sandbox::mojom::Sandbox sandbox_type,
                                           ChildSpawnFlags flags) {
@@ -1453,7 +1453,7 @@ bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
     return false;
   return true;
 }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 void ElectronBrowserClient::
     RegisterAssociatedInterfaceBindersForRenderFrameHost(
@@ -1617,7 +1617,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
 #endif
 }
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 void ElectronBrowserClient::GetAdditionalMappedFilesForChildProcess(
     const base::CommandLine& command_line,
     int child_process_id,
@@ -1709,7 +1709,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   return browser_main_parts_->GetGeolocationManager();
 #else
   return nullptr;

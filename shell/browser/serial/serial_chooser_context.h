@@ -32,16 +32,16 @@ namespace electron {
 extern const char kHidVendorIdKey[];
 extern const char kHidProductIdKey[];
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 extern const char kDeviceInstanceIdKey[];
 #else
 extern const char kVendorIdKey[];
 extern const char kProductIdKey[];
 extern const char kSerialNumberKey[];
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 extern const char kUsbDriverKey[];
-#endif  // defined(OS_MAC)
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_MAC)
+#endif  // BUILDFLAG(IS_WIN)
 
 class SerialChooserContext : public KeyedService,
                              public device::mojom::SerialPortManagerClient {
