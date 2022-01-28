@@ -373,8 +373,11 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   SkColor color = ParseHexColor(color_name);
   web_contents()->SetPageBaseBackgroundColor(color);
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
-  if (rwhv)
+  if (rwhv) {
     rwhv->SetBackgroundColor(color);
+    static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+        ->SetContentBackgroundColor(color);
+  }
   // Also update the web preferences object otherwise the view will be reset on
   // the next load URL call
   if (api_web_contents_) {

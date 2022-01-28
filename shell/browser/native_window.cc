@@ -13,6 +13,7 @@
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/native_window_features.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -23,6 +24,11 @@
 #if defined(OS_WIN)
 #include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
+#endif
+
+#if defined(USE_OZONE) || defined(USE_X11)
+#include "ui/base/ui_base_features.h"
+#include "ui/ozone/public/ozone_platform.h"
 #endif
 
 namespace gin {
@@ -108,6 +114,17 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   if (parent)
     options.Get("modal", &is_modal_);
 
+#if defined(USE_OZONE)
+  // Ozone X11 likes to prefer custom frames, but we don't need them unless
+  // on Wayland.
+  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
+      !ui::OzonePlatform::GetInstance()
+           ->GetPlatformRuntimeProperties()
+           .supports_server_side_window_decorations) {
+    has_client_frame_ = true;
+  }
+#endif
+
   WindowList::AddWindow(this);
 }
 
@@ -144,16 +161,16 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // On Linux and Window we may already have maximum size defined.
   extensions::SizeConstraints size_constraints(
       use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
-  int min_height = 0, min_width = 0;
-  if (options.Get(options::kMinHeight, &min_height) ||
-      options.Get(options::kMinWidth, &min_width)) {
-    size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
-  }
-  int max_height = INT_MAX, max_width = INT_MAX;
-  if (options.Get(options::kMaxHeight, &max_height) ||
-      options.Get(options::kMaxWidth, &max_width)) {
-    size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
-  }
+  int min_width = size_constraints.GetMinimumSize().width();
+  int min_height = size_constraints.GetMinimumSize().height();
+  options.Get(options::kMinWidth, &min_width);
+  options.Get(options::kMinHeight, &min_height);
+  size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
+  int max_width = size_constraints.GetMaximumSize().width();
+  int max_height = size_constraints.GetMaximumSize().height();
+  options.Get(options::kMaxWidth, &max_width);
+  options.Get(options::kMaxHeight, &max_height);
+  size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
   if (use_content_size) {
     SetContentSizeConstraints(size_constraints);
   } else {
