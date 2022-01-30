@@ -495,12 +495,13 @@ source_set("electron_lib") {
       "LocalAuthentication.framework",
       "QuartzCore.framework",
       "Quartz.framework",
-      "QuickLookThumbnailing.framework",
       "Security.framework",
       "SecurityInterface.framework",
       "ServiceManagement.framework",
       "StoreKit.framework",
     ]
+
+    weak_frameworks = [ "QuickLookThumbnailing.framework" ]
 
     sources += [
       "shell/browser/ui/views/autofill_popup_view.cc",
