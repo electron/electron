@@ -98,42 +98,37 @@ $ gclient sync -f
 
 ## Building
 
+**Set the environment variable for chromium build tools**
+
+On Linux & MacOS
+
 ```sh
 $ cd src
 $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-$ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS"
 ```
 
-Or on Windows (without the optional argument):
+On Windows:
 
 ```sh
 $ cd src
 $ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
+```
+
+**To generate Testing build config of Electron:**
+
+```sh
 $ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\")"
 ```
 
-This will generate a build directory `out/Testing` under `src/` with
-the testing build configuration. You can replace `Testing` with another name,
-but it should be a subdirectory of `out`.
-Also you shouldn't have to run `gn gen` again—if you want to change the
-build arguments, you can run `gn args out/Testing` to bring up an editor.
-
-To see the list of available build configuration options, run `gn args
-out/Testing --list`.
-
-**For generating Testing build config of
-Electron:**
+**To generate Release build config of Electron:**
 
 ```sh
-$ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS"
+$ gn gen out/Release --args="import(\"//electron/build/args/release.gn\")"
 ```
 
-**For generating Release (aka "non-component" or "static") build config of
-Electron:**
+**Note:** This will generate a `out/Testing` or `out/Release` build directory under `src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
 
-```sh
-$ gn gen out/Release --args="import(\"//electron/build/args/release.gn\") $GN_EXTRA_ARGS"
-```
+Also you shouldn't have to run `gn gen` again—if you want to change the build arguments, you can run `gn args out/Testing` to bring up an editor. To see the list of available build configuration options, run `gn args out/Testing --list`.
 
 **To build, run `ninja` with the `electron` target:**
 Nota Bene: This will also take a while and probably heat up your lap.
@@ -169,13 +164,13 @@ $ ./out/Testing/electron
 On linux, first strip the debugging and symbol information:
 
 ```sh
-electron/script/strip-binaries.py -d out/Release
+$ electron/script/strip-binaries.py -d out/Release
 ```
 
 To package the electron build as a distributable zip file:
 
 ```sh
-ninja -C out/Release electron:electron_dist_zip
+$ ninja -C out/Release electron:electron_dist_zip
 ```
 
 ### Cross-compiling
