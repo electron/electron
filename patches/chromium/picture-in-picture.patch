@@ -61,7 +61,7 @@ index 7b711bdbaf4afddd6ccf300af7bab26487942243..987a60b81554b676661d8f1a53facbc9
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index d63256af63e93c7aab4ce348b9d27953d5346c6c..0f708806aa0e4555c288da38e0f9ecd4c89b1c3e 100644
+index 3f445de452d608500885351194c471cb821f9a04..1420255c5143745de5e43c2803906a11a21df6d0 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -16,9 +16,11 @@

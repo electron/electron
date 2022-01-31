@@ -9,10 +9,10 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b13209969b5a01abcdf35e93fe130a1fe756ca41..a54e7c0d45dc2d345e9ac803bb934c41cdd2e5da 100644
+index f126c82f3f3f9faf3bfbff4c2d4a673cc41decaf..00a701c92c6b3ab7aa00e6f7bfc40febc7d0439e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2971,6 +2971,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2975,6 +2975,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
                             params.renderer_initiated_creation,
                             params.main_frame_name, GetOriginalOpener());
  
@@ -26,7 +26,7 @@ index b13209969b5a01abcdf35e93fe130a1fe756ca41..a54e7c0d45dc2d345e9ac803bb934c41
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2981,6 +2988,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2985,6 +2992,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
      view_.reset(CreateWebContentsView(this, delegate,
                                        &render_view_host_delegate_view_));
    }
