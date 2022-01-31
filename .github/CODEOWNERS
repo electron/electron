@@ -1,4 +1,6 @@
-# Order is important. The LAST matching pattern has the MOST precedence.
+# bitore.sig
+
+# ZachryTylerWood/vscodeOrder is important. The LAST matching pattern has the MOST precedence.
 # gitignore style patterns are used, not globs.
 # https://help.github.com/articles/about-codeowners
 # https://git-scm.com/docs/gitignore
