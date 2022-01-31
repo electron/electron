@@ -20,7 +20,7 @@ LINUX_BINARIES = [
   'libEGL.so',
   'libGLESv2.so',
   'libffmpeg.so',
-  'libvk_swiftshader.so'
+  'libvk_swiftshader.so',
   'swiftshader/libEGL.so',
   'swiftshader/libGLESv2.so',
 ]
