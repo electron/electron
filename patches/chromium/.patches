@@ -178,3 +178,4 @@ sandbox_fix_sandbox_inheritance_m96_merge.patch
 cherry-pick-dbde8795233a.patch
 cherry-pick-6bb320d134b1.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
+fix_wayland_bugs_related_to_bad_versioning.patch
