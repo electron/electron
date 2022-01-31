@@ -37,7 +37,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
       gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
-  v8::Local<v8::Value> value;
   bool transparent = false;
   options.Get(options::kTransparent, &transparent);
 
@@ -47,8 +46,9 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 #endif
 
   // Copy the backgroundColor to webContents.
-  if (options.Get(options::kBackgroundColor, &value)) {
-    web_preferences.SetHidden(options::kBackgroundColor, value);
+  std::string color;
+  if (options.Get(options::kBackgroundColor, &color)) {
+    web_preferences.SetHidden(options::kBackgroundColor, color);
   } else if (!vibrancy_type.empty() || transparent) {
     // If the BrowserWindow is transparent or a vibrancy type has been set,
     // also propagate transparency to the WebContents unless a separate
@@ -80,6 +80,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 
   // Copy the webContents option to webPreferences. This is only used internally
   // to implement nativeWindowOpen option.
+  v8::Local<v8::Value> value;
   if (options.Get("webContents", &value)) {
     web_preferences.SetHidden("webContents", value);
   }
