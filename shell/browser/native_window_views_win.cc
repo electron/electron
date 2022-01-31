@@ -187,6 +187,7 @@ void NativeWindowViews::Maximize() {
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
         GetNativeWindow());
     SetBounds(display.work_area(), false);
+    NotifyWindowMaximize();
   }
 }
 
