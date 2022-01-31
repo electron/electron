@@ -16,10 +16,10 @@ Commit-Queue: Jeremy Apthorp <jeremya@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#963777}
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
-index 5f2a765668b093bb600678967470b6371db77c01..e4b244fddc673840e8d47c781964d0146b108d47 100644
+index d09106d45ec411bc1cbb89aef8617f2bcd7bdb09..b5b47226898f962c751c9a79fe6741f81d891396 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_view.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
-@@ -1915,8 +1915,6 @@ void LocalFrameView::PerformPostLayoutTasks(bool visual_viewport_size_changed) {
+@@ -1914,8 +1914,6 @@ void LocalFrameView::PerformPostLayoutTasks(bool visual_viewport_size_changed) {
      }
    }
  
@@ -28,7 +28,7 @@ index 5f2a765668b093bb600678967470b6371db77c01..e4b244fddc673840e8d47c781964d014
    GetLayoutView()->EnclosingLayer()->UpdateLayerPositionsAfterLayout();
    frame_->Selection().DidLayout();
  
-@@ -3307,6 +3305,7 @@ void LocalFrameView::UpdateStyleAndLayout() {
+@@ -3306,6 +3304,7 @@ void LocalFrameView::UpdateStyleAndLayout() {
      PerformPostLayoutTasks(visual_viewport_size_changed);
      GetFrame().GetDocument()->LayoutUpdated();
    }
