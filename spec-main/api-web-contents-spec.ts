@@ -357,7 +357,7 @@ describe('webContents module', () => {
     });
 
     it('sets appropriate error information on rejection', async () => {
-      let err;
+      let err: any;
       try {
         await w.loadURL('file:non-existent');
       } catch (e) {

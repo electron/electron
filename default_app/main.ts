@@ -92,7 +92,7 @@ function loadApplicationPackage (packagePath: string) {
       try {
         packageJson = require(packageJsonPath);
       } catch (e) {
-        showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${e.message}`);
+        showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${(e as Error).message}`);
         return;
       }
 
@@ -111,7 +111,7 @@ function loadApplicationPackage (packagePath: string) {
       const filePath = Module._resolveFilename(packagePath, module, true);
       app.setAppPath(appPath || path.dirname(filePath));
     } catch (e) {
-      showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${e.message}`);
+      showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${(e as Error).message}`);
       return;
     }
 
@@ -119,7 +119,7 @@ function loadApplicationPackage (packagePath: string) {
     Module._load(packagePath, module, true);
   } catch (e) {
     console.error('App threw an error during load');
-    console.error(e.stack || e);
+    console.error((e as Error).stack || e);
     throw e;
   }
 }

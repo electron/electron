@@ -24,7 +24,7 @@ describe('ipc module', () => {
         const result = await ipcRenderer.invoke('test', ...args);
         ipcRenderer.send('result', { result });
       } catch (e) {
-        ipcRenderer.send('result', { error: e.message });
+        ipcRenderer.send('result', { error: (e as Error).message });
       }
     }
 

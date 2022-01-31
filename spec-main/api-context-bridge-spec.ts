@@ -372,7 +372,7 @@ describe('contextBridge', () => {
           try {
             root.example();
           } catch (e) {
-            return e.message;
+            return (e as Error).message;
           }
         });
         expect(result).equal('oh no');
