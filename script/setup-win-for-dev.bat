@@ -1,9 +1,8 @@
 REM Parameters vs_buildtools.exe download link and wsdk version
 @ECHO OFF
 
-SET buildtools_link=https://download.visualstudio.microsoft.com/download/pr/d7691cc1-82e6-434f-8e9f-a612f85b4b76/c62179f8cbbb58d4af22c21e8d4e122165f21615f529c94fad5cc7e012f1ef08/vs_BuildTools.exe
-SET wsdk10_link=https://go.microsoft.com/fwlink/p/?LinkId=845298
-SET wsdk=10SDK.18362
+SET wsdk10_link=https://go.microsoft.com/fwlink/?linkid=2120843
+SET wsdk=10SDK.19041
 
 REM Check for disk space
 Rem        543210987654321
@@ -44,24 +43,6 @@ IF NOT "%1"=="" (
 
 if not exist "C:\TEMP\" mkdir C:\TEMP
 
-REM Download vs_buildtools.exe to C:\TEMP\vs_buildtools.exe
-powershell -command "& { iwr %buildtools_link% -OutFile C:\TEMP\vs_buildtools.exe }"
-
-REM Install Visual Studio Toolchain
-C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache ^
-    --installPath "%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community" ^
-    --add Microsoft.VisualStudio.Workload.VCTools ^
-    --add Microsoft.VisualStudio.Component.VC.140 ^
-    --add Microsoft.VisualStudio.Component.VC.ATLMFC ^
-    --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 ^
-    --add Microsoft.VisualStudio.Component.VC.MFC.ARM64 ^
-    --add Microsoft.VisualStudio.Component.Windows%wsdk% ^
-    --includeRecommended
-
-REM Install Windows SDK
-powershell -command "& { iwr %wsdk10_link% -OutFile C:\TEMP\wsdk10.exe }"
-C:\TEMP\wsdk10.exe /features /quiet
-
 REM Install chocolatey to further install dependencies
 set chocolateyUseWindowsCompression='true'
 @"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" ^
@@ -69,8 +50,15 @@ set chocolateyUseWindowsCompression='true'
     -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
 SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 
+REM Install Visual Studio Toolchain
+choco install visualstudio2019buildtools --package-parameters "--quiet --wait --norestart --nocache  --installPath ""%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community"" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.VC.ATLMFC --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.VC.MFC.ARM64 --add Microsoft.VisualStudio.Component.Windows%wsdk% --includeRecommended"
+
+REM Install Windows SDK
+powershell -command "& { iwr %wsdk10_link% -OutFile C:\TEMP\wsdk10.exe }"
+C:\TEMP\wsdk10.exe /features /quiet
+
 REM Install nodejs python git and yarn needed dependencies
-choco install -y nodejs python2 git yarn windows-sdk-10-version-1903-windbg
+choco install -y nodejs python2 git yarn choco install windows-sdk-10-version-2004-windbg
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;%PATH%
 

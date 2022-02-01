@@ -55,7 +55,7 @@ build_script:
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
-  # - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
+  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
   - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
@@ -91,7 +91,7 @@ build_script:
   - gn check out/Default //electron:electron_app
   - gn check out/Default //electron/shell/common/api:mojo
   - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
-  - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
+  - if "%GN_CONFIG%"=="testing" ( python ..\depot_tools\post_build_ninja_summary.py -C out\Default )
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
   - ninja -C out/Default electron:electron_dist_zip
