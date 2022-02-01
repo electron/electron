@@ -508,6 +508,14 @@ Returns:
 
 Emitted when the user is requesting to change the zoom level using the mouse wheel.
 
+#### Event: 'blur'
+
+Emitted when the `WebContents` loses focus.
+
+#### Event: 'focus'
+
+Emitted when the `WebContents` gains focus.
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
