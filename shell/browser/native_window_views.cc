@@ -594,6 +594,7 @@ void NativeWindowViews::Unmaximize() {
 #if BUILDFLAG(IS_WIN)
     if (transparent()) {
       SetBounds(restore_bounds_, false);
+      NotifyWindowUnmaximize();
       return;
     }
 #endif

@@ -357,7 +357,7 @@ describe('webContents module', () => {
     });
 
     it('sets appropriate error information on rejection', async () => {
-      let err;
+      let err: any;
       try {
         await w.loadURL('file:non-existent');
       } catch (e) {
@@ -807,10 +807,10 @@ describe('webContents module', () => {
     });
   });
 
-  describe('focus()', () => {
-    describe('when the web contents is hidden', () => {
+  describe('focus APIs', () => {
+    describe('focus()', () => {
       afterEach(closeAllWindows);
-      it('does not blur the focused window', async () => {
+      it('does not blur the focused window when the web contents is hidden', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
         w.show();
         await w.loadURL('about:blank');
@@ -823,6 +823,56 @@ describe('webContents module', () => {
         child.close();
         expect(currentFocused).to.be.true();
         expect(childFocused).to.be.false();
+      });
+    });
+
+    describe('focus event', () => {
+      afterEach(closeAllWindows);
+      it('is triggered when web contents is focused', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+        const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
+        w.webContents.openDevTools();
+        await devToolsOpened;
+        w.webContents.devToolsWebContents!.focus();
+        const focusPromise = emittedOnce(w.webContents, 'focus');
+        w.webContents.focus();
+        await expect(focusPromise).to.eventually.be.fulfilled();
+      });
+
+      it('is triggered when BrowserWindow is focused', async () => {
+        const window1 = new BrowserWindow({ show: false });
+        const window2 = new BrowserWindow({ show: false });
+
+        await Promise.all([
+          window1.loadURL('about:blank'),
+          window2.loadURL('about:blank')
+        ]);
+
+        window1.showInactive();
+        window2.showInactive();
+
+        let focusPromise = emittedOnce(window1.webContents, 'focus');
+        window1.focus();
+        await expect(focusPromise).to.eventually.be.fulfilled();
+
+        focusPromise = emittedOnce(window2.webContents, 'focus');
+        window2.focus();
+        await expect(focusPromise).to.eventually.be.fulfilled();
+      });
+    });
+
+    describe('blur event', () => {
+      afterEach(closeAllWindows);
+      it('is triggered when web contents is blurred', async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadURL('about:blank');
+        const blurPromise = emittedOnce(w.webContents, 'blur');
+        const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
+        w.webContents.openDevTools({ mode: 'detach' });
+        await devToolsOpened;
+        w.webContents.devToolsWebContents!.focus();
+        await expect(blurPromise).to.eventually.be.fulfilled();
       });
     });
   });

@@ -1630,6 +1630,16 @@ void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
   set_fullscreen_frame(rfh);
 }
 
+void WebContents::OnWebContentsFocused(
+    content::RenderWidgetHost* render_widget_host) {
+  Emit("focus");
+}
+
+void WebContents::OnWebContentsLostFocus(
+    content::RenderWidgetHost* render_widget_host) {
+  Emit("blur");
+}
+
 void WebContents::DOMContentLoaded(
     content::RenderFrameHost* render_frame_host) {
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);

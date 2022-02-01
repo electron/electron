@@ -213,7 +213,7 @@ describe('node feature', () => {
 
   ifdescribe(features.isRunAsNodeEnabled())('inspector', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
-    let exitPromise: Promise<any[]>;
+    let exitPromise: Promise<any[]> | null;
 
     afterEach(async () => {
       if (child && exitPromise) {

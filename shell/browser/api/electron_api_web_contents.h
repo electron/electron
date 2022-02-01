@@ -621,6 +621,10 @@ class WebContents : public ExclusiveAccessContext,
   void DidChangeThemeColor() override;
   void OnCursorChanged(const content::WebCursor& cursor) override;
   void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
+  void OnWebContentsFocused(
+      content::RenderWidgetHost* render_widget_host) override;
+  void OnWebContentsLostFocus(
+      content::RenderWidgetHost* render_widget_host) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;

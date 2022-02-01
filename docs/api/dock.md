@@ -28,7 +28,7 @@ When `informational` is passed, the dock icon will bounce for one second.
 However, the request remains active until either the application becomes active
 or the request is canceled.
 
-**Nota Bene:** This method can only be used while the app is not focused; when the app is focused it will return -1.
+**Note:** This method can only be used while the app is not focused; when the app is focused it will return -1.
 
 #### `dock.cancelBounce(id)` _macOS_
 
