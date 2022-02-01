@@ -1118,7 +1118,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
-        it('can check transparent window maximization', async () => {
+        it('correctly checks transparent window maximization state', async () => {
           w.destroy();
           w = new BrowserWindow({
             show: false,
@@ -1127,12 +1127,12 @@ describe('BrowserWindow module', () => {
             transparent: true
           });
 
-          const maximize = emittedOnce(w, 'resize');
+          const maximize = emittedOnce(w, 'maximize');
           w.show();
           w.maximize();
           await maximize;
           expect(w.isMaximized()).to.equal(true);
-          const unmaximize = emittedOnce(w, 'resize');
+          const unmaximize = emittedOnce(w, 'unmaximize');
           w.unmaximize();
           await unmaximize;
           expect(w.isMaximized()).to.equal(false);
@@ -3224,6 +3224,19 @@ describe('BrowserWindow module', () => {
       await maximize;
     });
 
+    it('emits an event when a transparent window is maximized', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        frame: false,
+        transparent: true
+      });
+
+      const maximize = emittedOnce(w, 'maximize');
+      w.show();
+      w.maximize();
+      await maximize;
+    });
+
     it('emits only one event when frameless window is maximized', () => {
       const w = new BrowserWindow({ show: false, frame: false });
       let emitted = 0;
@@ -3238,6 +3251,22 @@ describe('BrowserWindow module', () => {
       const unmaximize = emittedOnce(w, 'unmaximize');
       w.show();
       w.maximize();
+      w.unmaximize();
+      await unmaximize;
+    });
+
+    it('emits an event when a transparent window is unmaximized', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        frame: false,
+        transparent: true
+      });
+
+      const maximize = emittedOnce(w, 'maximize');
+      const unmaximize = emittedOnce(w, 'unmaximize');
+      w.show();
+      w.maximize();
+      await maximize;
       w.unmaximize();
       await unmaximize;
     });
