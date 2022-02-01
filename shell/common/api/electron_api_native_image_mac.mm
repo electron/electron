@@ -73,7 +73,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
                            completionHandler:^(
                                QLThumbnailRepresentation* thumbnail,
                                NSError* error) {
-                             if (error) {
+                             if (error || !thumbnail) {
                                std::string err_msg(
                                    [error.localizedDescription UTF8String]);
                                dispatch_async(dispatch_get_main_queue(), ^{
