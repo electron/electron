@@ -12,7 +12,9 @@ const ROLLER_BRANCH_PATTERN = /^roller\/chromium$/;
 
 const DEFAULT_BUILD_CLOUD_ID = '1424';
 const DEFAULT_BUILD_CLOUD = 'electron-16-core2';
-const DEFAULT_IMAGE = 'base-electron';
+const DEFAULT_BAKE_BASE_IMAGE = 'base-electron';
+const DEFAULT_BUILD_IMAGE = 'base-electron';
+// const DEFAULT_BUILD_IMAGE = 'electron-99.0.4767.0';
 
 const appVeyorJobs = {
   'electron-x64': 'electron-ljo26' // 'electron-x64-testing'
@@ -113,7 +115,7 @@ async function bakeAppVeyorImage (targetBranch, options) {
 
   const environmentVariables = {
     APPVEYOR_BUILD_WORKER_CLOUD: DEFAULT_BUILD_CLOUD,
-    APPVEYOR_BUILD_WORKER_IMAGE: DEFAULT_IMAGE,
+    APPVEYOR_BUILD_WORKER_IMAGE: DEFAULT_BAKE_BASE_IMAGE,
     APPVEYOR_BAKE_IMAGE: options.version
   };
 
@@ -148,7 +150,7 @@ async function prepareAppVeyorImage (opts) {
   // filter out roller/chromium branches from baking
   const branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR);
   if (ROLLER_BRANCH_PATTERN.test(branch)) {
-    useAppVeyorImage(branch, { ...opts, version: DEFAULT_IMAGE, cloudId: DEFAULT_BUILD_CLOUD_ID });
+    useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId: DEFAULT_BUILD_CLOUD_ID });
   } else {
     // eslint-disable-next-line no-control-regex
     const versionRegex = new RegExp('chromium_version\':\n +\'(.+?)\',', 'm');
@@ -156,7 +158,6 @@ async function prepareAppVeyorImage (opts) {
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    // TODO: Remove testing from string
     const imageVersion = opts.imageVersion || `electron-${CHROMIUM_VERSION}`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
@@ -167,7 +168,7 @@ async function prepareAppVeyorImage (opts) {
       console.log(`No AppVeyor image found for ${imageVersion} in ${cloudId}.
                    Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
       await bakeAppVeyorImage(branch, { ...opts, version: imageVersion, cloudId });
-      useAppVeyorImage(branch, { ...opts, version: DEFAULT_IMAGE, cloudId });
+      useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId });
     }
   }
 }

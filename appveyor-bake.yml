@@ -53,9 +53,9 @@ build_script:
   - gclient sync --with_branch_heads --with_tags
   - ps: >-
       echo "Finishing sync for image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
-      Remove-Item $pwd\depot_tools
-      Remove-Item $pwd\src\electron
 
 on_image_bake:
 - ps: >-
     echo "Baking image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
+    Remove-Item -Recurse -Force $pwd\depot_tools
+    Remove-Item -Recurse -Force $pwd\src\electron
