@@ -32,10 +32,10 @@ Reviewed-by: Jing Wang <jiwan@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#946860}
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 7955f2cb725ef4c011bbbce74820d98783d56a0c..fc2c236b8bb9c29cd720225bf14a014f61b01181 100644
+index 9505a5bfc0c88762bc00ba26774a906c9115282e..6736446f085f6854ae704f9edeccd1ec5219993d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -1627,18 +1627,10 @@ bool RenderWidgetHostViewAura::AddGrammarFragments(
+@@ -1631,18 +1631,10 @@ bool RenderWidgetHostViewAura::AddGrammarFragments(
    if (!input_handler || fragments.empty())
      return false;
  
@@ -54,7 +54,7 @@ index 7955f2cb725ef4c011bbbce74820d98783d56a0c..fc2c236b8bb9c29cd720225bf14a014f
      ui::ImeTextSpan ui_ime_text_span;
      ui_ime_text_span.type = ui::ImeTextSpan::Type::kGrammarSuggestion;
      ui_ime_text_span.start_offset = fragment.range.start();
-@@ -1653,10 +1645,6 @@ bool RenderWidgetHostViewAura::AddGrammarFragments(
+@@ -1657,10 +1649,6 @@ bool RenderWidgetHostViewAura::AddGrammarFragments(
        max_fragment_end = fragment.range.end();
      }
    }
