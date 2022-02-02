@@ -58,8 +58,17 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
 
   if (@available(macOS 10.15, *)) {
     NSURL* nsurl = base::mac::FilePathToNSURL(path);
-    NSScreen* screen = [[NSScreen screens] firstObject];
 
+    // We need to explicitly check if the user has passed an invalid path
+    // because QLThumbnailGenerationRequest will generate a stock file icon
+    // and pass silently if we do not.
+    if (![[NSFileManager defaultManager] fileExistsAtPath:[nsurl path]]) {
+      promise.RejectWithErrorMessage(
+          "unable to retrieve thumbnail preview image for the given path");
+      return handle;
+    }
+
+    NSScreen* screen = [[NSScreen screens] firstObject];
     base::scoped_nsobject<QLThumbnailGenerationRequest> request(
         [[QLThumbnailGenerationRequest alloc]
               initWithFileAtURL:nsurl
