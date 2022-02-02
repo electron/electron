@@ -102,7 +102,7 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
 bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
   // Call the default implementation of this method to get the event to its
   // proper handler.
-  bool handled = this->views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+  bool handled = views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
 
   // On WCO-enabled windows, we need to mark non-client mouse moved events as
   // handled so they don't incorrectly propogate back to the OS.
