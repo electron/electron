@@ -147,7 +147,7 @@ index 288b9f89129de88ea078b2e6d3b2d255dd527a95..e9979d5c9707e94580d4a10b4c48c32c
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9a42767aa 100644
+index 5491e04e7eba8ad7a29f1cb3aa51ee13716e0d9d..2f2348f3d2e35bfcf419b654032a799f34d13884 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -28,10 +28,10 @@
@@ -223,10 +223,10 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
 +                                    bool silent,
 +                                    base::Value settings,
 +                                    CompletionCallback callback)  {
-   auto weak_this = weak_ptr_factory_.GetWeakPtr();
-   DisconnectFromCurrentPrintJob();
-   if (!weak_this)
-@@ -369,7 +380,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
+   // Remember the ID for `rfh`, to enable checking that the `RenderFrameHost`
+   // is still valid after a possible inner message loop runs in
+   // `DisconnectFromCurrentPrintJob()`.
+@@ -377,7 +388,14 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
    // go in `ReleasePrintJob()`.
  
    SetPrintingRFH(rfh);
@@ -242,7 +242,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
  
    for (auto& observer : GetObservers())
      observer.OnPrintNow(rfh);
-@@ -528,9 +546,9 @@ void PrintViewManagerBase::ScriptedPrintReply(
+@@ -536,9 +554,9 @@ void PrintViewManagerBase::ScriptedPrintReply(
  void PrintViewManagerBase::UpdatePrintingEnabled() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    // The Unretained() is safe because ForEachFrame() is synchronous.
@@ -255,7 +255,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
  }
  
  void PrintViewManagerBase::NavigationStopped() {
-@@ -644,12 +662,13 @@ void PrintViewManagerBase::DidPrintDocument(
+@@ -652,12 +670,13 @@ void PrintViewManagerBase::DidPrintDocument(
  void PrintViewManagerBase::GetDefaultPrintSettings(
      GetDefaultPrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -270,7 +270,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    content::RenderFrameHost* render_frame_host = GetCurrentTargetFrame();
    auto callback_wrapper =
        base::BindOnce(&PrintViewManagerBase::GetDefaultPrintSettingsReply,
-@@ -667,18 +686,20 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -675,18 +694,20 @@ void PrintViewManagerBase::UpdatePrintSettings(
      base::Value job_settings,
      UpdatePrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -292,7 +292,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    content::BrowserContext* context =
        web_contents() ? web_contents()->GetBrowserContext() : nullptr;
    PrefService* prefs =
-@@ -688,6 +709,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -696,6 +717,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
      if (value > 0)
        job_settings.SetIntKey(kSettingRasterizePdfDpi, value);
    }
@@ -300,7 +300,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
  
    content::RenderFrameHost* render_frame_host = GetCurrentTargetFrame();
    auto callback_wrapper =
-@@ -727,7 +749,6 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
+@@ -735,7 +757,6 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
    PrintManager::PrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -308,7 +308,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
  #endif
  
    ReleasePrinterQuery();
-@@ -742,6 +763,11 @@ void PrintViewManagerBase::RemoveObserver(Observer& observer) {
+@@ -750,6 +771,11 @@ void PrintViewManagerBase::RemoveObserver(Observer& observer) {
  }
  
  void PrintViewManagerBase::ShowInvalidPrinterSettingsError() {
@@ -320,7 +320,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -820,6 +846,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -828,6 +854,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
  #endif
        break;
      }
@@ -332,7 +332,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
      case JobEventDetails::JOB_DONE:
        // Printing is done, we don't need it anymore.
        // print_job_->is_job_pending() may still be true, depending on the order
-@@ -889,7 +920,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -897,7 +928,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
    // Disconnect the current |print_job_|.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
@@ -344,7 +344,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    if (!weak_this)
      return false;
  
-@@ -912,8 +946,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -920,8 +954,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
                          /*source_id=*/"");
  #endif
  
@@ -353,7 +353,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    printing_succeeded_ = false;
    return true;
  }
-@@ -965,14 +997,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -973,6 +1005,16 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -370,15 +370,16 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    if (!print_job_)
      return;
  
-   if (rfh)
+@@ -983,8 +1025,6 @@ void PrintViewManagerBase::ReleasePrintJob() {
      GetPrintRenderFrame(rfh)->PrintingDone(printing_succeeded_);
+   }
  
 -  registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
 -                    content::Source<PrintJob>(print_job_.get()));
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -1010,7 +1050,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -1022,7 +1062,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
