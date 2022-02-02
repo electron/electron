@@ -77,12 +77,6 @@ class SerialChooserContext : public KeyedService,
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
   void OnPortManagerConnectionError();
 
-  // Tracks the set of ports to which an origin has access to.
-  std::map<url::Origin, std::set<base::UnguessableToken>> ephemeral_ports_;
-
-  // Holds information about ports in |ephemeral_ports_|.
-  std::map<base::UnguessableToken, base::Value> port_info_;
-
   mojo::Remote<device::mojom::SerialPortManager> port_manager_;
   mojo::Receiver<device::mojom::SerialPortManagerClient> client_receiver_{this};
   base::ObserverList<PortObserver> port_observer_list_;
