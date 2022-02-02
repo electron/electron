@@ -826,15 +826,20 @@ describe('webContents module', () => {
       });
     });
 
+    const moveFocusToDevTools = async (win: BrowserWindow) => {
+      const devToolsOpened = emittedOnce(win.webContents, 'devtools-opened');
+      win.webContents.openDevTools({ mode: 'right' });
+      await devToolsOpened;
+      win.webContents.devToolsWebContents!.focus();
+    };
+
     describe('focus event', () => {
       afterEach(closeAllWindows);
+
       it('is triggered when web contents is focused', async () => {
         const w = new BrowserWindow({ show: false });
         await w.loadURL('about:blank');
-        const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
-        w.webContents.openDevTools();
-        await devToolsOpened;
-        w.webContents.devToolsWebContents!.focus();
+        await moveFocusToDevTools(w);
         const focusPromise = emittedOnce(w.webContents, 'focus');
         w.webContents.focus();
         await expect(focusPromise).to.eventually.be.fulfilled();
@@ -849,16 +854,17 @@ describe('webContents module', () => {
           window2.loadURL('about:blank')
         ]);
 
+        const focusPromise1 = emittedOnce(window1.webContents, 'focus');
+        const focusPromise2 = emittedOnce(window2.webContents, 'focus');
+
         window1.showInactive();
         window2.showInactive();
 
-        let focusPromise = emittedOnce(window1.webContents, 'focus');
         window1.focus();
-        await expect(focusPromise).to.eventually.be.fulfilled();
+        await expect(focusPromise1).to.eventually.be.fulfilled();
 
-        focusPromise = emittedOnce(window2.webContents, 'focus');
         window2.focus();
-        await expect(focusPromise).to.eventually.be.fulfilled();
+        await expect(focusPromise2).to.eventually.be.fulfilled();
       });
     });
 
@@ -867,11 +873,9 @@ describe('webContents module', () => {
       it('is triggered when web contents is blurred', async () => {
         const w = new BrowserWindow({ show: true });
         await w.loadURL('about:blank');
+        w.webContents.focus();
         const blurPromise = emittedOnce(w.webContents, 'blur');
-        const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
-        w.webContents.openDevTools({ mode: 'detach' });
-        await devToolsOpened;
-        w.webContents.devToolsWebContents!.focus();
+        await moveFocusToDevTools(w);
         await expect(blurPromise).to.eventually.be.fulfilled();
       });
     });
