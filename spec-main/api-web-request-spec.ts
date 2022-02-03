@@ -1,11 +1,12 @@
 import { expect } from 'chai';
+import { Socket, AddressInfo } from 'net';
 import * as http from 'http';
 import * as qs from 'querystring';
 import * as path from 'path';
 import * as url from 'url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
-import { AddressInfo } from 'net';
+
 import { emittedOnce } from './events-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -478,10 +479,10 @@ describe('webRequest module', () => {
           }
         });
       });
-      server.on('upgrade', function upgrade (request, socket, head) {
+      server.on('upgrade', function upgrade (request, socket: Socket, head) {
         const pathname = require('url').parse(request.url).pathname;
         if (pathname === '/websocket') {
-          reqHeaders[request.url] = request.headers;
+          reqHeaders[request.url!] = request.headers;
           wss.handleUpgrade(request, socket, head, function done (ws) {
             wss.emit('connection', ws, request);
           });
