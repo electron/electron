@@ -1,7 +1,7 @@
-From 22f27676515e8e6ce1946ec7a1ccd371c0734382 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Christopher Cameron <ccameron@chromium.org>
-Date: Tue, 09 Nov 2021 00:23:45 +0000
-Subject: [PATCH] WebContentsVideoCaptureDevice: Fix use-after-free
+Date: Tue, 9 Nov 2021 00:23:45 +0000
+Subject: WebContentsVideoCaptureDevice: Fix use-after-free
 
 The classes WebContentsVideoCaptureDevice,
 AuraWindowVideoCaptureDevice::WindowTracker, and
@@ -22,14 +22,13 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3260842
 Commit-Queue: ccameron <ccameron@chromium.org>
 Reviewed-by: mark a. foltz <mfoltz@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#939604}
----
 
 diff --git a/content/browser/media/capture/views_widget_video_capture_device_mac.cc b/content/browser/media/capture/views_widget_video_capture_device_mac.cc
-index 3d131b9..5e9f6e9 100644
+index fee27cebfd64ee1cddbcb9873fa4b5e67cb526fc..50da870a417c17b1999b7d98bd8c2cb82e356c06 100644
 --- a/content/browser/media/capture/views_widget_video_capture_device_mac.cc
 +++ b/content/browser/media/capture/views_widget_video_capture_device_mac.cc
-@@ -19,9 +19,10 @@
- class ViewsWidgetVideoCaptureDeviceMac::UIThreadDelegate final
+@@ -19,9 +19,10 @@ namespace content {
+ class ViewsWidgetVideoCaptureDeviceMac::UIThreadDelegate
      : public remote_cocoa::ScopedCGWindowID::Observer {
   public:
 -  UIThreadDelegate(uint32_t cg_window_id,
@@ -42,7 +41,7 @@ index 3d131b9..5e9f6e9 100644
        : cg_window_id_(cg_window_id),
          device_task_runner_(base::ThreadTaskRunnerHandle::Get()),
          device_(device),
-@@ -85,8 +86,11 @@
+@@ -83,8 +84,11 @@ class ViewsWidgetVideoCaptureDeviceMac::UIThreadDelegate
    void OnScopedCGWindowIDMouseMoved(uint32_t cg_window_id,
                                      const gfx::PointF& location_in_window,
                                      const gfx::Size& window_size) override {
@@ -56,7 +55,7 @@ index 3d131b9..5e9f6e9 100644
    }
  
    const uint32_t cg_window_id_;
-@@ -98,20 +102,21 @@
+@@ -96,20 +100,21 @@ class ViewsWidgetVideoCaptureDeviceMac::UIThreadDelegate
  
    // |device_| may only be dereferenced by tasks posted to
    // |device_task_runner_|.
