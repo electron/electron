@@ -64,8 +64,10 @@ call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;%PATH%
 
 pip install pywin32
+python C:\Python27\Scripts\pywin32_postinstall.py -install
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 pip2 install pywin32
+python C:\Python27\Scripts\pywin32_postinstall.py -install
 
 REM Setup Depot Tools (This may not be needed on the bake image )
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git C:\depot_tools

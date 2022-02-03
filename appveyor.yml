@@ -110,7 +110,9 @@ build_script:
   - ninja -C out/Default third_party/electron_node:headers
   - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
   # Debug: No module named win32com.client / pywin32 doesn't seem to get installed?
-  - pip install pywin32
+  # - pip install pywin32
+  # - python C:\Python\Scripts\pywin32_postinstall.py -install
+  - electron\script\setup-win-for-dev.bat
   - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/dist.zip
