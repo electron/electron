@@ -1,0 +1,56 @@
+From a254f5c620cd868e080dafaa793024d4b5666ef8 Mon Sep 17 00:00:00 2001
+From: SeongHwan Park <ggabu423@gmail.com>
+Date: Tue, 18 Jan 2022 04:49:08 +0900
+Subject: [PATCH] M97: Vulkan: Fix incorrect bit test when mipmapping
+
+Fixed an issue where angle::Bit was used instead of
+angle::BitMask when should selecting [0, x) to set bit
+range (x, y] in an n-bit bitmask.
+
+Bug: chromium:1287962
+Change-Id: I3677c4540cdcdc3ad684c7ef0de10558b88da087
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3412882
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+---
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 3a6c29e..cd9ebd7 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -2517,7 +2517,7 @@
+     // Generate bitmask for (baseLevel, maxLevel]. `+1` because bitMask takes `the number of bits`
+     // but levels start counting from 0
+     gl::TexLevelMask levelsMask(angle::BitMask<uint32_t>(maxLevel.get() + 1));
+-    levelsMask &= static_cast<uint32_t>(~angle::Bit<uint32_t>(baseLevel.get()));
++    levelsMask &= static_cast<uint32_t>(~angle::BitMask<uint32_t>(firstGeneratedLevel.get()));
+     // Remove (baseLevel, maxLevel] from mRedefinedLevels. These levels are no longer incompatibly
+     // defined if they previously were.  The corresponding bits in mRedefinedLevels should be
+     // cleared.
+diff --git a/src/tests/gl_tests/MipmapTest.cpp b/src/tests/gl_tests/MipmapTest.cpp
+index 57b5487..a223936 100644
+--- a/src/tests/gl_tests/MipmapTest.cpp
++++ b/src/tests/gl_tests/MipmapTest.cpp
+@@ -2016,6 +2016,23 @@
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+ }
+ 
++// Test the calling generateMipmap with redefining texture and modifying baselevel.
++TEST_P(MipmapTestES3, GenerateMipmapWithRedefineLevelAndTexture)
++{
++    std::vector<GLColor> pixels(1000000, GLColor::black);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
++    glGenerateMipmap(GL_TEXTURE_2D);
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2);
++    glGenerateMipmap(GL_TEXTURE_2D);
++
++    clearAndDrawQuad(m2DProgram, getWindowWidth(), getWindowHeight());
++    EXPECT_PIXEL_COLOR_EQ(getWindowWidth() / 2, getWindowHeight() / 2, GLColor::black);
++}
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(MipmapTest);
