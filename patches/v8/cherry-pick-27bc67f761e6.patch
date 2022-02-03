@@ -1,7 +1,8 @@
-From 27bc67f761e613adf5143cb2de3d86685b1f2519 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jakob Gruber <jgruber@chromium.org>
 Date: Thu, 13 Jan 2022 08:01:37 +0100
-Subject: [PATCH] Merged: [maps] Lock map_updater_access in CompleteInobjectSlackTracking
+Subject: Merged: [maps] Lock map_updater_access in
+ CompleteInobjectSlackTracking
 
 CompleteInobjectSlackTracking potentially shrinks multiple maps, and
 the relation between these maps should be preserved in a concurrent
@@ -28,13 +29,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3406537
 Cr-Commit-Position: refs/branch-heads/9.8@{#16}
 Cr-Branched-From: e218afa8473132b56a9e1532be7920dd130aeb7e-refs/heads/9.8.177@{#1}
 Cr-Branched-From: 86ebfc969cde382122a4d429f2380f06175ea2a8-refs/heads/main@{#78312}
----
 
 diff --git a/src/objects/js-function-inl.h b/src/objects/js-function-inl.h
-index dc371ec..27916a1 100644
+index 15634b8f024705481e5f0da5008231c1e6ca2f0d..eddedfeabfb48f39418342c8d0044c941f449a5b 100644
 --- a/src/objects/js-function-inl.h
 +++ b/src/objects/js-function-inl.h
-@@ -14,6 +14,7 @@
+@@ -15,6 +15,7 @@
  #include "src/ic/ic.h"
  #include "src/init/bootstrapper.h"
  #include "src/objects/feedback-cell-inl.h"
@@ -42,7 +42,7 @@ index dc371ec..27916a1 100644
  #include "src/objects/shared-function-info-inl.h"
  
  // Has to be the last include (doesn't have include guards):
-@@ -123,7 +124,7 @@
+@@ -124,7 +125,7 @@ bool JSFunction::IsInOptimizationQueue() {
  void JSFunction::CompleteInobjectSlackTrackingIfActive() {
    if (!has_prototype_slot()) return;
    if (has_initial_map() && initial_map().IsInobjectSlackTrackingInProgress()) {
@@ -52,7 +52,7 @@ index dc371ec..27916a1 100644
  }
  
 diff --git a/src/objects/map-inl.h b/src/objects/map-inl.h
-index f586540..37d189b 100644
+index c8eb40042410a684306ddb7fde69cff57ab146ce..5156cd9d9f4a5fed832466b16589c08ddd4c4faf 100644
 --- a/src/objects/map-inl.h
 +++ b/src/objects/map-inl.h
 @@ -12,6 +12,7 @@
@@ -63,7 +63,7 @@ index f586540..37d189b 100644
  #include "src/objects/map.h"
  #include "src/objects/objects-inl.h"
  #include "src/objects/property.h"
-@@ -857,7 +858,7 @@
+@@ -856,7 +857,7 @@ void Map::InobjectSlackTrackingStep(Isolate* isolate) {
    int counter = construction_counter();
    set_construction_counter(counter - 1);
    if (counter == kSlackTrackingCounterEnd) {
@@ -73,10 +73,10 @@ index f586540..37d189b 100644
  }
  
 diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
-index 8655ee9..6d8b1cf 100644
+index 3bfd3922a3dc2119250c20b97ac1d5061cae74db..21f2665454ae121ac448ad0df9c7d5459c72650d 100644
 --- a/src/objects/map-updater.cc
 +++ b/src/objects/map-updater.cc
-@@ -420,21 +420,50 @@
+@@ -420,21 +420,50 @@ MapUpdater::State MapUpdater::Normalize(const char* reason) {
    return state_;  // Done.
  }
  
@@ -137,10 +137,10 @@ index 8655ee9..6d8b1cf 100644
  
  MapUpdater::State MapUpdater::TryReconfigureToDataFieldInplace() {
 diff --git a/src/objects/map-updater.h b/src/objects/map-updater.h
-index f7242d9..6b241a8 100644
+index 6f022e1d39f7222904143eb93b24a98d68ca9286..7136532bbe1c8ad97a86232110ea563ee281c3af 100644
 --- a/src/objects/map-updater.h
 +++ b/src/objects/map-updater.h
-@@ -86,8 +86,9 @@
+@@ -86,8 +86,9 @@ class V8_EXPORT_PRIVATE MapUpdater {
                                Representation new_representation,
                                Handle<FieldType> new_field_type);
  
@@ -153,10 +153,10 @@ index f7242d9..6b241a8 100644
   private:
    enum State {
 diff --git a/src/objects/map.cc b/src/objects/map.cc
-index 776d66b..47a0e36 100644
+index 0610e5968802753438b6e812a09a85400742892d..f1c52d69ad800d7345b64cf722e894f583da6517 100644
 --- a/src/objects/map.cc
 +++ b/src/objects/map.cc
-@@ -2156,28 +2156,6 @@
+@@ -2133,28 +2133,6 @@ int Map::ComputeMinObjectSlack(Isolate* isolate) {
    return slack;
  }
  
@@ -186,10 +186,10 @@ index 776d66b..47a0e36 100644
                                   int number_of_own_descriptors) {
    set_instance_descriptors(descriptors, kReleaseStore);
 diff --git a/src/objects/map.h b/src/objects/map.h
-index f357622..fe2cdf1 100644
+index d60890d9103e352215d8afda9c1c8f952b5ad2be..a8655262155ce897f3f2c36211336ae190c7e334 100644
 --- a/src/objects/map.h
 +++ b/src/objects/map.h
-@@ -356,10 +356,6 @@
+@@ -352,10 +352,6 @@ class Map : public TorqueGeneratedMap<Map, HeapObject> {
    int ComputeMinObjectSlack(Isolate* isolate);
    inline int InstanceSizeFromSlack(int slack) const;
  
@@ -201,10 +201,10 @@ index f357622..fe2cdf1 100644
    // for instances created from this function.  If the prototype
    // property is set to a value that is not a JSObject, the prototype
 diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
-index 00d065c..47bb8f0 100644
+index 3da21358d80fafbd8a7cc5f0d485bf417a26e27c..3c29f13814b4442dd11bbed711047f911be2015b 100644
 --- a/src/runtime/runtime-object.cc
 +++ b/src/runtime/runtime-object.cc
-@@ -1035,7 +1035,7 @@
+@@ -990,7 +990,7 @@ RUNTIME_FUNCTION(Runtime_CompleteInobjectSlackTrackingForMap) {
    DCHECK_EQ(1, args.length());
  
    CONVERT_ARG_HANDLE_CHECKED(Map, initial_map, 0);
@@ -214,10 +214,10 @@ index 00d065c..47bb8f0 100644
    return ReadOnlyRoots(isolate).undefined_value();
  }
 diff --git a/src/runtime/runtime-test.cc b/src/runtime/runtime-test.cc
-index a410791..54b53b7 100644
+index 38cdf5767145df2df4f00f73729ced4d3b916923..b008965901de4d4a5274318f6ab124b77ce38fe3 100644
 --- a/src/runtime/runtime-test.cc
 +++ b/src/runtime/runtime-test.cc
-@@ -1390,7 +1390,7 @@
+@@ -1329,7 +1329,7 @@ RUNTIME_FUNCTION(Runtime_CompleteInobjectSlackTracking) {
    DCHECK_EQ(1, args.length());
  
    CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
@@ -227,10 +227,10 @@ index a410791..54b53b7 100644
    return ReadOnlyRoots(isolate).undefined_value();
  }
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index 498e05d..f7d45de 100644
+index 61398f2c5ea6cd4bbc57403eb0ddf97d2fb5f575..4b64d307887d28c844b08e9e0524e03fc2dd4183 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
-@@ -71,6 +71,7 @@
+@@ -70,6 +70,7 @@
  #include "src/objects/js-array-inl.h"
  #include "src/objects/js-promise-inl.h"
  #include "src/objects/lookup.h"
@@ -238,7 +238,7 @@ index 498e05d..f7d45de 100644
  #include "src/objects/module-inl.h"
  #include "src/objects/objects-inl.h"
  #include "src/objects/string-inl.h"
-@@ -2981,9 +2982,9 @@
+@@ -2981,9 +2982,9 @@ TEST(InternalFieldsSubclassing) {
          CHECK_LE(i_value->map().GetInObjectProperties(), kMaxNofProperties);
        }
  
