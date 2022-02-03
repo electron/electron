@@ -206,6 +206,7 @@ def get_buildtools_executable(name):
     'linux': 'linux64',
     'linux2': 'linux64',
     'win32': 'win',
+    'cygwin': 'win',
   }[sys.platform]
   path = os.path.join(buildtools, chromium_platform, name)
   if sys.platform == 'win32':
