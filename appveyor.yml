@@ -233,4 +233,4 @@ deploy_script:
         node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
       }
 on_finish:
-  - appveyor-retry appveyor PushArtifact electron\electron.log
+  - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
