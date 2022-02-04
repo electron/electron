@@ -112,7 +112,6 @@ build_script:
   # Debug: No module named win32com.client / pywin32 doesn't seem to get installed?
   # - pip install pywin32
   # - python C:\Python\Scripts\pywin32_postinstall.py -install
-  - electron\script\setup-win-for-dev.bat
   - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/dist.zip

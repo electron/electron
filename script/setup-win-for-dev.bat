@@ -63,11 +63,13 @@ choco install windows-sdk-10-version-2004-windbg
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;%PATH%
 
-pip install pywin32
-python C:\Python27\Scripts\pywin32_postinstall.py -install
+@REM pip install pywin32
+@REM python C:\Python27\Scripts\pywin32_postinstall.py -install
+pip install pypiwin32
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
-pip2 install pywin32
-python C:\Python27\Scripts\pywin32_postinstall.py -install
+@REM pip2 install pywin32
+@REM python C:\Python27\Scripts\pywin32_postinstall.py -install
+pip2 install pypiwin32
 
 REM Setup Depot Tools (This may not be needed on the bake image )
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git C:\depot_tools
