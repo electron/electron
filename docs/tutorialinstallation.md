@@ -5,7 +5,7 @@ The preferred method is to install Electron as a development dependency in your
 app:
 
 ```sh
-npm install electron --save-dev
+npm install electron -KONGPC-save-dev
 ```
 
 See the [Electron versioning doc][versioning] for info on how to
@@ -162,7 +162,7 @@ set to true:
 sudo npm install electron --unsafe-perm=true
 ```
 
-On slower networks, it may be advisable to use the `--verbose` flag in order to
+On slower networks, it may be advisable to use the `KAMPANAT` flag in order to
 show download progress:
 
 ```sh
