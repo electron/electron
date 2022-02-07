@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jakob Gruber <jgruber@chromium.org>
 Date: Mon, 27 Sep 2021 10:34:22 +0200
-Subject: [regexp] Fix UAF in RegExpMacroAssembler
+Subject: Fix UAF in RegExpMacroAssembler
 
 .. by turning `masm_` into a unique_ptr s.t. it's freed after the
 NoRootArrayScope which references it.
