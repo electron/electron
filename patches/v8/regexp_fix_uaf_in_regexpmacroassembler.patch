@@ -1,0 +1,311 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Gruber <jgruber@chromium.org>
+Date: Mon, 27 Sep 2021 10:34:22 +0200
+Subject: [regexp] Fix UAF in RegExpMacroAssembler
+
+.. by turning `masm_` into a unique_ptr s.t. it's freed after the
+NoRootArrayScope which references it.
+
+Fixed: chromium:1252620
+Change-Id: I24580c5a96d76a973b2b083e7a76b95f93bb6068
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3185459
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Auto-Submit: Jakob Gruber <jgruber@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#77082}
+
+diff --git a/src/regexp/arm/regexp-macro-assembler-arm.cc b/src/regexp/arm/regexp-macro-assembler-arm.cc
+index 6e79ffd8adf8417c356bb36e1dbb2d0bfc290858..88240af32ca87c238eeb1b340071522d4f9f3bd0 100644
+--- a/src/regexp/arm/regexp-macro-assembler-arm.cc
++++ b/src/regexp/arm/regexp-macro-assembler-arm.cc
+@@ -95,9 +95,10 @@ RegExpMacroAssemblerARM::RegExpMacroAssemblerARM(Isolate* isolate, Zone* zone,
+                                                  Mode mode,
+                                                  int registers_to_save)
+     : NativeRegExpMacroAssembler(isolate, zone),
+-      masm_(new MacroAssembler(isolate, CodeObjectRequired::kYes,
+-                               NewAssemblerBuffer(kRegExpCodeSize))),
+-      no_root_array_scope_(masm_),
++      masm_(std::make_unique<MacroAssembler>(
++          isolate, CodeObjectRequired::kYes,
++          NewAssemblerBuffer(kRegExpCodeSize))),
++      no_root_array_scope_(masm_.get()),
+       mode_(mode),
+       num_registers_(registers_to_save),
+       num_saved_registers_(registers_to_save),
+@@ -112,7 +113,6 @@ RegExpMacroAssemblerARM::RegExpMacroAssemblerARM(Isolate* isolate, Zone* zone,
+ }
+ 
+ RegExpMacroAssemblerARM::~RegExpMacroAssemblerARM() {
+-  delete masm_;
+   // Unuse labels in case we throw away the assembler without calling GetCode.
+   entry_label_.Unuse();
+   start_label_.Unuse();
+@@ -332,7 +332,7 @@ void RegExpMacroAssemblerARM::CheckNotBackReferenceIgnoreCase(
+     __ mov(r3, Operand(ExternalReference::isolate_address(isolate())));
+ 
+     {
+-      AllowExternalCallThatCantCauseGC scope(masm_);
++      AllowExternalCallThatCantCauseGC scope(masm_.get());
+       ExternalReference function =
+           unicode ? ExternalReference::re_case_insensitive_compare_unicode(
+                         isolate())
+@@ -660,7 +660,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
+ 
+   // Tell the system that we have a stack frame.  Because the type is MANUAL, no
+   // is generated.
+-  FrameScope scope(masm_, StackFrame::MANUAL);
++  FrameScope scope(masm_.get(), StackFrame::MANUAL);
+ 
+   // Actually emit code to start a new stack frame.
+   // Push arguments
+diff --git a/src/regexp/arm/regexp-macro-assembler-arm.h b/src/regexp/arm/regexp-macro-assembler-arm.h
+index 5aad6c1d85d574f4db307b6edcdda89ed25d5ca8..9121a68aa44b3448ba82aee1d6181a2d02d2515f 100644
+--- a/src/regexp/arm/regexp-macro-assembler-arm.h
++++ b/src/regexp/arm/regexp-macro-assembler-arm.h
+@@ -186,7 +186,7 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
+ 
+   Isolate* isolate() const { return masm_->isolate(); }
+ 
+-  MacroAssembler* const masm_;
++  const std::unique_ptr<MacroAssembler> masm_;
+   const NoRootArrayScope no_root_array_scope_;
+ 
+   // Which mode to generate code for (Latin1 or UC16).
+diff --git a/src/regexp/arm64/regexp-macro-assembler-arm64.cc b/src/regexp/arm64/regexp-macro-assembler-arm64.cc
+index ca21530f99b618e5c46511d06ef93121a7e3c23e..3617272772e619e9092d9a9ff16c7d0df97025e8 100644
+--- a/src/regexp/arm64/regexp-macro-assembler-arm64.cc
++++ b/src/regexp/arm64/regexp-macro-assembler-arm64.cc
+@@ -108,9 +108,10 @@ RegExpMacroAssemblerARM64::RegExpMacroAssemblerARM64(Isolate* isolate,
+                                                      Zone* zone, Mode mode,
+                                                      int registers_to_save)
+     : NativeRegExpMacroAssembler(isolate, zone),
+-      masm_(new MacroAssembler(isolate, CodeObjectRequired::kYes,
+-                               NewAssemblerBuffer(kRegExpCodeSize))),
+-      no_root_array_scope_(masm_),
++      masm_(std::make_unique<MacroAssembler>(
++          isolate, CodeObjectRequired::kYes,
++          NewAssemblerBuffer(kRegExpCodeSize))),
++      no_root_array_scope_(masm_.get()),
+       mode_(mode),
+       num_registers_(registers_to_save),
+       num_saved_registers_(registers_to_save),
+@@ -130,7 +131,6 @@ RegExpMacroAssemblerARM64::RegExpMacroAssemblerARM64(Isolate* isolate,
+ }
+ 
+ RegExpMacroAssemblerARM64::~RegExpMacroAssemblerARM64() {
+-  delete masm_;
+   // Unuse labels in case we throw away the assembler without calling GetCode.
+   entry_label_.Unuse();
+   start_label_.Unuse();
+@@ -191,7 +191,7 @@ void RegExpMacroAssemblerARM64::Backtrack() {
+   CheckPreemption();
+   if (has_backtrack_limit()) {
+     Label next;
+-    UseScratchRegisterScope temps(masm_);
++    UseScratchRegisterScope temps(masm_.get());
+     Register scratch = temps.AcquireW();
+     __ Ldr(scratch, MemOperand(frame_pointer(), kBacktrackCount));
+     __ Add(scratch, scratch, 1);
+@@ -422,7 +422,7 @@ void RegExpMacroAssemblerARM64::CheckNotBackReferenceIgnoreCase(
+     __ Mov(x3, ExternalReference::isolate_address(isolate()));
+ 
+     {
+-      AllowExternalCallThatCantCauseGC scope(masm_);
++      AllowExternalCallThatCantCauseGC scope(masm_.get());
+       ExternalReference function =
+           unicode ? ExternalReference::re_case_insensitive_compare_unicode(
+                         isolate())
+@@ -755,7 +755,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
+ 
+   // Tell the system that we have a stack frame.  Because the type is MANUAL, no
+   // code is generated.
+-  FrameScope scope(masm_, StackFrame::MANUAL);
++  FrameScope scope(masm_.get(), StackFrame::MANUAL);
+ 
+   // Push registers on the stack, only push the argument registers that we need.
+   CPURegList argument_registers(x0, x5, x6, x7);
+diff --git a/src/regexp/arm64/regexp-macro-assembler-arm64.h b/src/regexp/arm64/regexp-macro-assembler-arm64.h
+index f3869a72b631f9fb42b275d2edd8f3cfe1cfd8bb..00818e6ec897b4363cf265ea447a5a3a80c7d4e7 100644
+--- a/src/regexp/arm64/regexp-macro-assembler-arm64.h
++++ b/src/regexp/arm64/regexp-macro-assembler-arm64.h
+@@ -267,7 +267,7 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
+ 
+   Isolate* isolate() const { return masm_->isolate(); }
+ 
+-  MacroAssembler* const masm_;
++  const std::unique_ptr<MacroAssembler> masm_;
+   const NoRootArrayScope no_root_array_scope_;
+ 
+   // Which mode to generate code for (LATIN1 or UC16).
+diff --git a/src/regexp/ia32/regexp-macro-assembler-ia32.cc b/src/regexp/ia32/regexp-macro-assembler-ia32.cc
+index 8369b88e22c300890fe4ddb1bbba62093e8b23d8..20c27ef7cd712d40d8d015e2c27595e6f78fb281 100644
+--- a/src/regexp/ia32/regexp-macro-assembler-ia32.cc
++++ b/src/regexp/ia32/regexp-macro-assembler-ia32.cc
+@@ -85,9 +85,10 @@ RegExpMacroAssemblerIA32::RegExpMacroAssemblerIA32(Isolate* isolate, Zone* zone,
+                                                    Mode mode,
+                                                    int registers_to_save)
+     : NativeRegExpMacroAssembler(isolate, zone),
+-      masm_(new MacroAssembler(isolate, CodeObjectRequired::kYes,
+-                               NewAssemblerBuffer(kRegExpCodeSize))),
+-      no_root_array_scope_(masm_),
++      masm_(std::make_unique<MacroAssembler>(
++          isolate, CodeObjectRequired::kYes,
++          NewAssemblerBuffer(kRegExpCodeSize))),
++      no_root_array_scope_(masm_.get()),
+       mode_(mode),
+       num_registers_(registers_to_save),
+       num_saved_registers_(registers_to_save),
+@@ -102,7 +103,6 @@ RegExpMacroAssemblerIA32::RegExpMacroAssemblerIA32(Isolate* isolate, Zone* zone,
+ }
+ 
+ RegExpMacroAssemblerIA32::~RegExpMacroAssemblerIA32() {
+-  delete masm_;
+   // Unuse labels in case we throw away the assembler without calling GetCode.
+   entry_label_.Unuse();
+   start_label_.Unuse();
+@@ -334,7 +334,7 @@ void RegExpMacroAssemblerIA32::CheckNotBackReferenceIgnoreCase(
+     __ mov(Operand(esp, 0 * kSystemPointerSize), edx);
+ 
+     {
+-      AllowExternalCallThatCantCauseGC scope(masm_);
++      AllowExternalCallThatCantCauseGC scope(masm_.get());
+       ExternalReference compare =
+           unicode ? ExternalReference::re_case_insensitive_compare_unicode(
+                         isolate())
+@@ -693,7 +693,7 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+ 
+   // Tell the system that we have a stack frame.  Because the type is MANUAL, no
+   // code is generated.
+-  FrameScope scope(masm_, StackFrame::MANUAL);
++  FrameScope scope(masm_.get(), StackFrame::MANUAL);
+ 
+   // Actually emit code to start a new stack frame.
+   __ push(ebp);
+diff --git a/src/regexp/ia32/regexp-macro-assembler-ia32.h b/src/regexp/ia32/regexp-macro-assembler-ia32.h
+index 01914a6b8b5abb96a4eec8d844e2d1aea7cbf231..590e71a006bffb4db5e5d0a9437c2abe052baf69 100644
+--- a/src/regexp/ia32/regexp-macro-assembler-ia32.h
++++ b/src/regexp/ia32/regexp-macro-assembler-ia32.h
+@@ -182,7 +182,7 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerIA32
+ 
+   Isolate* isolate() const { return masm_->isolate(); }
+ 
+-  MacroAssembler* const masm_;
++  const std::unique_ptr<MacroAssembler> masm_;
+   const NoRootArrayScope no_root_array_scope_;
+ 
+   // Which mode to generate code for (LATIN1 or UC16).
+diff --git a/src/regexp/ppc/regexp-macro-assembler-ppc.cc b/src/regexp/ppc/regexp-macro-assembler-ppc.cc
+index bb82c270b752831ba33323c6b5fa9b771c9bf9fd..d12ab9b61cb90ddce66dbb2a77fab0446620734e 100644
+--- a/src/regexp/ppc/regexp-macro-assembler-ppc.cc
++++ b/src/regexp/ppc/regexp-macro-assembler-ppc.cc
+@@ -100,8 +100,10 @@ RegExpMacroAssemblerPPC::RegExpMacroAssemblerPPC(Isolate* isolate, Zone* zone,
+                                                  Mode mode,
+                                                  int registers_to_save)
+     : NativeRegExpMacroAssembler(isolate, zone),
+-      masm_(new MacroAssembler(isolate, CodeObjectRequired::kYes,
+-                               NewAssemblerBuffer(kRegExpCodeSize))),
++      masm_(std::make_unique<MacroAssembler>(
++          isolate, CodeObjectRequired::kYes,
++          NewAssemblerBuffer(kRegExpCodeSize))),
++      no_root_array_scope_(masm_.get()),
+       mode_(mode),
+       num_registers_(registers_to_save),
+       num_saved_registers_(registers_to_save),
+@@ -126,7 +128,6 @@ RegExpMacroAssemblerPPC::RegExpMacroAssemblerPPC(Isolate* isolate, Zone* zone,
+ }
+ 
+ RegExpMacroAssemblerPPC::~RegExpMacroAssemblerPPC() {
+-  delete masm_;
+   // Unuse labels in case we throw away the assembler without calling GetCode.
+   entry_label_.Unuse();
+   start_label_.Unuse();
+@@ -362,7 +363,7 @@ void RegExpMacroAssemblerPPC::CheckNotBackReferenceIgnoreCase(
+     __ mov(r6, Operand(ExternalReference::isolate_address(isolate())));
+ 
+     {
+-      AllowExternalCallThatCantCauseGC scope(masm_);
++      AllowExternalCallThatCantCauseGC scope(masm_.get());
+       ExternalReference function =
+           unicode ? ExternalReference::re_case_insensitive_compare_unicode(
+                         isolate())
+@@ -670,7 +671,7 @@ Handle<HeapObject> RegExpMacroAssemblerPPC::GetCode(Handle<String> source) {
+ 
+     // Tell the system that we have a stack frame.  Because the type
+     // is MANUAL, no is generated.
+-    FrameScope scope(masm_, StackFrame::MANUAL);
++    FrameScope scope(masm_.get(), StackFrame::MANUAL);
+ 
+     // Ensure register assigments are consistent with callee save mask
+     DCHECK(r25.bit() & kRegExpCalleeSaved);
+diff --git a/src/regexp/ppc/regexp-macro-assembler-ppc.h b/src/regexp/ppc/regexp-macro-assembler-ppc.h
+index 430c3a241c3e2e86e3514b755b203e8a2f240d42..3cff03067439c4b0d96be39388fe443773af26a5 100644
+--- a/src/regexp/ppc/regexp-macro-assembler-ppc.h
++++ b/src/regexp/ppc/regexp-macro-assembler-ppc.h
+@@ -179,7 +179,8 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerPPC
+ 
+   Isolate* isolate() const { return masm_->isolate(); }
+ 
+-  MacroAssembler* masm_;
++  const std::unique_ptr<MacroAssembler> masm_;
++  const NoRootArrayScope no_root_array_scope_;
+ 
+   // Which mode to generate code for (Latin1 or UC16).
+   Mode mode_;
+diff --git a/src/regexp/s390/regexp-macro-assembler-s390.cc b/src/regexp/s390/regexp-macro-assembler-s390.cc
+index 83092e53365b31e5f1b0319e852330196b4b4118..e176ed957d4745023e5a4158363c46e5c589a7bf 100644
+--- a/src/regexp/s390/regexp-macro-assembler-s390.cc
++++ b/src/regexp/s390/regexp-macro-assembler-s390.cc
+@@ -102,8 +102,10 @@ RegExpMacroAssemblerS390::RegExpMacroAssemblerS390(Isolate* isolate, Zone* zone,
+                                                    Mode mode,
+                                                    int registers_to_save)
+     : NativeRegExpMacroAssembler(isolate, zone),
+-      masm_(new MacroAssembler(isolate, CodeObjectRequired::kYes,
+-                               NewAssemblerBuffer(kRegExpCodeSize))),
++      masm_(std::make_unique<MacroAssembler>(
++          isolate, CodeObjectRequired::kYes,
++          NewAssemblerBuffer(kRegExpCodeSize))),
++      no_root_array_scope_(masm_.get()),
+       mode_(mode),
+       num_registers_(registers_to_save),
+       num_saved_registers_(registers_to_save),
+@@ -127,7 +129,6 @@ RegExpMacroAssemblerS390::RegExpMacroAssemblerS390(Isolate* isolate, Zone* zone,
+ }
+ 
+ RegExpMacroAssemblerS390::~RegExpMacroAssemblerS390() {
+-  delete masm_;
+   // Unuse labels in case we throw away the assembler without calling GetCode.
+   entry_label_.Unuse();
+   start_label_.Unuse();
+@@ -353,7 +354,7 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
+     __ mov(r5, Operand(ExternalReference::isolate_address(isolate())));
+ 
+     {
+-      AllowExternalCallThatCantCauseGC scope(masm_);
++      AllowExternalCallThatCantCauseGC scope(masm_.get());
+       ExternalReference function =
+           unicode ? ExternalReference::re_case_insensitive_compare_unicode(
+                         isolate())
+@@ -640,7 +641,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
+ 
+   // Tell the system that we have a stack frame.  Because the type
+   // is MANUAL, no is generated.
+-  FrameScope scope(masm_, StackFrame::MANUAL);
++  FrameScope scope(masm_.get(), StackFrame::MANUAL);
+ 
+   // Ensure register assigments are consistent with callee save mask
+   DCHECK(r6.bit() & kRegExpCalleeSaved);
+diff --git a/src/regexp/s390/regexp-macro-assembler-s390.h b/src/regexp/s390/regexp-macro-assembler-s390.h
+index 8e8601fc7c39a5e62c630e4eb58bcbaad64f78df..7ff2e58b61b97e2f42e1f7797576f5906820e7e2 100644
+--- a/src/regexp/s390/regexp-macro-assembler-s390.h
++++ b/src/regexp/s390/regexp-macro-assembler-s390.h
+@@ -179,7 +179,8 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerS390
+ 
+   Isolate* isolate() const { return masm_->isolate(); }
+ 
+-  MacroAssembler* masm_;
++  const std::unique_ptr<MacroAssembler> masm_;
++  const NoRootArrayScope no_root_array_scope_;
+ 
+   // Which mode to generate code for (Latin1 or UC16).
+   Mode mode_;
