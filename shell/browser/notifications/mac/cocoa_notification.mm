@@ -112,6 +112,10 @@ void CocoaNotification::Show(const NotificationOptions& options) {
     [userInfo setObject:replyKey_ forKey:@"_replyKey"];
   }
 
+  // SAP-20223 [N] TECH [MACOS] To support renotify on macOS
+  [userInfo setObject:(options.should_be_presented ? @"YES" : @"NO")
+               forKey:@"_shouldBePresented"];
+
   if (!options.close_button_text.empty()) {
     [notification_ setOtherButtonTitle:base::SysUTF16ToNSString(
                                            options.close_button_text)];
@@ -131,7 +135,9 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   [notification_ setUserInfo:userInfo];
 
   // SAP-14036 upgrade for persistent notifications support
-  is_persistent_ = options.is_persistent;
+  // SAP-17772: configuration toast show time
+  // according to Notification.requireInteraction property
+  is_persistent_ = options.is_persistent && options.require_interaction;
 
   if (is_persistent_) {
     deliverXPCNotification(notification_);
