@@ -444,10 +444,25 @@ We don't directly expose the whole `ipcRenderer.on` API for [security reasons]. 
 limit the renderer's access to Electron APIs as much as possible.
 :::
 
-:::tip
+:::info
 In the case of this minimal example, you can call `ipcRenderer.on` directly in the preload script
-rather than exposing it over the context bridge. However, doing the latter gives you more
-flexibility to pass arguments (e.g. if your IPC depends on the app state in your renderer).
+rather than exposing it over the context bridge.
+
+```javascript title='preload.js (Preload Script)'
+const { ipcRenderer } = require('electron')
+
+window.addEventListener('DOMContentLoaded', () => {
+    const counter = document.getElementById('counter')
+    ipcRenderer.on('update-counter', (_event, value) => {
+        const oldValue = Number(counter.innerText)
+        const newValue = oldValue + value
+        counter.innerText = newValue
+    })
+})
+```
+
+However, this approach has limited flexibility compared to exposing your preload APIs
+over the context bridge, since your listener can't directly interact with your renderer code.
 :::
 
 ### 3. Build the renderer process UI
