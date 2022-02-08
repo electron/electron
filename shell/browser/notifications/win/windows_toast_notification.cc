@@ -15,6 +15,7 @@
 #include <ShObjIdl.h>
 #include <Shlobj.h>
 #include <combaseapi.h>
+#include <mmsystem.h>
 #include <propkey.h>
 #include <propvarutil.h>
 #include <shellapi.h>
@@ -356,6 +357,14 @@ HRESULT WindowsToastNotification::ShowInternal(
   REPORT_AND_RETURN_IF_FAILED(SetupCallbacks(toast_notification_.Get()),
                               "WinAPI: SetupCallbacks failed");
 
+  if (options.require_interaction && !options.silent) {
+    // SAP-17738 - Can not require interaction on Windows
+    // Workaround to silent system IncommingCall sound and play Default sound by
+    // custom PlaySound call
+    // https://docs.microsoft.com/en-us/previous-versions/dd743680(v=vs.85)
+    PlaySound((LPCTSTR)SND_ALIAS_SYSTEMDEFAULT, NULL, SND_ASYNC | SND_ALIAS_ID);
+  }
+
   REPORT_AND_RETURN_IF_FAILED(
       (event_handler_->SetNotificationOptions(options),
        toast_notifier_->Show(toast_notification_.Get())),
@@ -444,6 +453,12 @@ HRESULT WindowsToastNotification::GetToastXml(
             *toast_xml,
             std::wstring(use_reminder ? L"reminder" : L"incomingcall")),
         "XML: Setting \"reminder\" senarion type failed");
+    // SAP-17738 - Can not require interaction on Windows
+    // Workaround to silent system IncommingCall sound and play Default sound by
+    // custom PlaySound call
+    REPORT_AND_RETURN_IF_FAILED(
+        SetXmlAudioSilent(*toast_xml),
+        "XML: Setting \"silent\" option on notification failed");
   }
 
   // Configure the toast's image
