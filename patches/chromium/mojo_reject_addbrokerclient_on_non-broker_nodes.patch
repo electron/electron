@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Tue, 14 Dec 2021 01:21:26 +0000
-Subject: [mojo] reject AddBrokerClient on non-broker nodes
+Subject: reject AddBrokerClient on non-broker nodes
 
 (cherry picked from commit b66b0b1ba61d0f0d4bb745d6a643e3da6128306f)
 
