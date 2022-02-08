@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Hosseinian <dhoss@chromium.org>
+Date: Thu, 30 Dec 2021 05:08:29 +0000
+Subject: [pdf] CHECK page on thumbnail requests
+
+Elevate DCHECK to CHECK.
+
+Fixed: 1283198
+Change-Id: Iacb3da961cfb44f94f7a377e225270a57809ef9c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3361538
+Auto-Submit: Daniel Hosseinian <dhoss@chromium.org>
+Reviewed-by: K. Moon <kmoon@chromium.org>
+Commit-Queue: K. Moon <kmoon@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#954552}
+
+diff --git a/pdf/pdfium/pdfium_engine.cc b/pdf/pdfium/pdfium_engine.cc
+index 341b183948b15f72edca6f8620c5039593d16a90..2b128d8fdde8048c1f8b92ec2e38f485feca2bf4 100644
+--- a/pdf/pdfium/pdfium_engine.cc
++++ b/pdf/pdfium/pdfium_engine.cc
+@@ -4273,7 +4273,7 @@ void PDFiumEngine::SetLinkUnderCursorForAnnotation(FPDF_ANNOTATION annot,
+ void PDFiumEngine::RequestThumbnail(int page_index,
+                                     float device_pixel_ratio,
+                                     SendThumbnailCallback send_callback) {
+-  DCHECK(PageIndexInBounds(page_index));
++  CHECK(PageIndexInBounds(page_index));
+ 
+   // Thumbnails cannot be generated in the middle of a progressive paint of a
+   // page. Generate the thumbnail immediately only if the page is not currently
