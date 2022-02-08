@@ -76,6 +76,9 @@ class HidChooserContext : public KeyedService,
   void GrantDevicePermission(const url::Origin& origin,
                              const device::mojom::HidDeviceInfo& device,
                              content::RenderFrameHost* render_frame_host);
+  void RevokeDevicePermission(const url::Origin& origin,
+                              const device::mojom::HidDeviceInfo& device,
+                              content::RenderFrameHost* render_frame_host);
   bool HasDevicePermission(const url::Origin& origin,
                            const device::mojom::HidDeviceInfo& device,
                            content::RenderFrameHost* render_frame_host);
@@ -110,6 +113,15 @@ class HidChooserContext : public KeyedService,
       device::mojom::HidManager::GetDevicesCallback callback,
       std::vector<device::mojom::HidDeviceInfoPtr> devices);
   void OnHidManagerConnectionError();
+
+  // HID-specific interface for revoking device permissions.
+  void RevokePersistentDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::HidDeviceInfo& device,
+      content::RenderFrameHost* render_frame_host);
+  void RevokeEphemeralDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::HidDeviceInfo& device);
 
   ElectronBrowserContext* browser_context_;
 

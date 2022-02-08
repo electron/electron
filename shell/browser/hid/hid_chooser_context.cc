@@ -17,9 +17,15 @@
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/device_service.h"
+#include "gin/data_object_builder.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
+#include "shell/common/gin_converters/hid_device_info_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace electron {
@@ -96,6 +102,66 @@ void HidChooserContext::GrantDevicePermission(
         origin, DeviceInfoToValue(device), render_frame_host);
   } else {
     ephemeral_devices_[origin].insert(device.guid);
+  }
+}
+
+void HidChooserContext::RevokeDevicePermission(
+    const url::Origin& origin,
+    const device::mojom::HidDeviceInfo& device,
+    content::RenderFrameHost* render_frame_host) {
+  DCHECK(base::Contains(devices_, device.guid));
+  if (CanStorePersistentEntry(device)) {
+    RevokePersistentDevicePermission(origin, device, render_frame_host);
+  } else {
+    RevokeEphemeralDevicePermission(origin, device);
+  }
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+
+  api::Session* session =
+      api::Session::FromBrowserContext(web_contents->GetBrowserContext());
+  if (session) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
+                                        .Set("device", device.Clone())
+                                        .Set("frame", render_frame_host)
+                                        .Build();
+    session->Emit("hid-device-revoked", details);
+  }
+}
+
+void HidChooserContext::RevokePersistentDevicePermission(
+    const url::Origin& origin,
+    const device::mojom::HidDeviceInfo& device,
+    content::RenderFrameHost* render_frame_host) {
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  permission_helper->RevokeHIDDevicePermission(
+      origin, DeviceInfoToValue(device), render_frame_host);
+  RevokeEphemeralDevicePermission(origin, device);
+}
+
+void HidChooserContext::RevokeEphemeralDevicePermission(
+    const url::Origin& origin,
+    const device::mojom::HidDeviceInfo& device) {
+  auto it = ephemeral_devices_.find(origin);
+  if (it != ephemeral_devices_.end()) {
+    std::set<std::string>& devices = it->second;
+    for (auto guid = devices.begin(); guid != devices.end();) {
+      DCHECK(base::Contains(devices_, *guid));
+
+      if (devices_[*guid]->physical_device_id != device.physical_device_id) {
+        ++guid;
+        continue;
+      }
+
+      guid = devices.erase(guid);
+      if (devices.empty())
+        ephemeral_devices_.erase(it);
+    }
   }
 }
 

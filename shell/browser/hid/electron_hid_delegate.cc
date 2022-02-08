@@ -80,8 +80,11 @@ bool ElectronHidDelegate::HasDevicePermission(
 void ElectronHidDelegate::RevokeDevicePermission(
     content::RenderFrameHost* render_frame_host,
     const device::mojom::HidDeviceInfo& device) {
-  // TODO(jkleinsc) implement this for
-  // https://chromium-review.googlesource.com/c/chromium/src/+/3297868
+  auto* chooser_context = GetChooserContext(render_frame_host);
+  const auto& origin =
+      render_frame_host->GetMainFrame()->GetLastCommittedOrigin();
+  return chooser_context->RevokeDevicePermission(origin, device,
+                                                 render_frame_host);
 }
 
 device::mojom::HidManager* ElectronHidDelegate::GetHidManager(

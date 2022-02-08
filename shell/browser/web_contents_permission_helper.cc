@@ -107,6 +107,17 @@ void WebContentsPermissionHelper::GrantDevicePermission(
                                             render_frame_host);
 }
 
+void WebContentsPermissionHelper::RevokeDevicePermission(
+    blink::PermissionType permission,
+    const url::Origin& origin,
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+  permission_manager->RevokeDevicePermission(permission, origin, device,
+                                             render_frame_host);
+}
+
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     base::OnceCallback<void(bool)> callback) {
   RequestPermission(
@@ -228,6 +239,15 @@ void WebContentsPermissionHelper::GrantHIDDevicePermission(
   return GrantDevicePermission(
       static_cast<blink::PermissionType>(PermissionType::HID), origin, &device,
       render_frame_host);
+}
+
+void WebContentsPermissionHelper::RevokeHIDDevicePermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return RevokeDevicePermission(
+      static_cast<blink::PermissionType>(PermissionType::HID), origin,
+      &device, render_frame_host);
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);

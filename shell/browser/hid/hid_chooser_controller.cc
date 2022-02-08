@@ -20,6 +20,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/hid_device_info_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -27,18 +28,6 @@
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {
-
-std::string PhysicalDeviceIdFromDeviceInfo(
-    const device::mojom::HidDeviceInfo& device) {
-  // A single physical device may expose multiple HID interfaces, each
-  // represented by a HidDeviceInfo object. When a device exposes multiple
-  // HID interfaces, the HidDeviceInfo objects will share a common
-  // |physical_device_id|. Group these devices so that a single chooser item
-  // is shown for each physical device. If a device's physical device ID is
-  // empty, use its GUID instead.
-  return device.physical_device_id.empty() ? device.guid
-                                           : device.physical_device_id;
-}
 
 bool FilterMatch(const blink::mojom::HidDeviceFilterPtr& filter,
                  const device::mojom::HidDeviceInfo& device) {
@@ -83,21 +72,6 @@ bool FilterMatch(const blink::mojom::HidDeviceFilterPtr& filter,
 
 }  // namespace
 
-namespace gin {
-
-template <>
-struct Converter<device::mojom::HidDeviceInfoPtr> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const device::mojom::HidDeviceInfoPtr& device) {
-    base::Value value = electron::HidChooserContext::DeviceInfoToValue(*device);
-    value.SetStringKey("deviceId", PhysicalDeviceIdFromDeviceInfo(*device));
-    return gin::ConvertToV8(isolate, value);
-  }
-};
-
-}  // namespace gin
-
 namespace electron {
 
 HidChooserController::HidChooserController(
@@ -129,6 +103,19 @@ HidChooserController::HidChooserController(
 HidChooserController::~HidChooserController() {
   if (callback_)
     std::move(callback_).Run(std::vector<device::mojom::HidDeviceInfoPtr>());
+}
+
+// static
+std::string HidChooserController::PhysicalDeviceIdFromDeviceInfo(
+    const device::mojom::HidDeviceInfo& device) {
+  // A single physical device may expose multiple HID interfaces, each
+  // represented by a HidDeviceInfo object. When a device exposes multiple
+  // HID interfaces, the HidDeviceInfo objects will share a common
+  // |physical_device_id|. Group these devices so that a single chooser item
+  // is shown for each physical device. If a device's physical device ID is
+  // empty, use its GUID instead.
+  return device.physical_device_id.empty() ? device.guid
+                                           : device.physical_device_id;
 }
 
 api::Session* HidChooserController::GetSession() {
