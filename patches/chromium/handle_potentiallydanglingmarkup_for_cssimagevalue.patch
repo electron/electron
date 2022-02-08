@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Fri, 15 Oct 2021 14:33:17 +0000
+Subject: Handle PotentiallyDanglingMarkup() for CSSImageValue
+
+The flag was lost in the KURL -> String -> KURL conversions. Store the
+flag on CSSImageValue and always re-resolve from the original relative
+url before fetching when that flag is set. The blocking happens in
+BaseFetchContext::CanRequestInternal().
+
+Bug: 1039885
+Change-Id: Ia5777739a0ee0bee591163873926d19e0ea014bf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3226142
+Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Mike West <mkwst@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#932004}
+
+diff --git a/third_party/blink/renderer/core/css/build.gni b/third_party/blink/renderer/core/css/build.gni
+index 58b924f732185d95efe6a9438d1f34aebcab377c..3ea66ffca1dd4a0b86c6951ba8e3b2b03139e0c4 100644
+--- a/third_party/blink/renderer/core/css/build.gni
++++ b/third_party/blink/renderer/core/css/build.gni
+@@ -645,6 +645,7 @@ blink_core_tests_css = [
+   "css_font_family_webkit_prefix_test.cc",
+   "css_gradient_value_test.cc",
+   "css_id_selector_value_test.cc",
++  "css_image_value_test.cc",
+   "css_invalid_variable_value_test.cc",
+   "css_light_dark_value_pair_test.cc",
+   "css_math_expression_node_test.cc",
+diff --git a/third_party/blink/renderer/core/css/css_image_value.cc b/third_party/blink/renderer/core/css/css_image_value.cc
+index 81fe3aa1175a31d5c6f3611ec6bd2a27f71e900d..732b48f787d782779e5fea8bf60a55ca3f7fe95d 100644
+--- a/third_party/blink/renderer/core/css/css_image_value.cc
++++ b/third_party/blink/renderer/core/css/css_image_value.cc
+@@ -51,7 +51,8 @@ CSSImageValue::CSSImageValue(const AtomicString& raw_value,
+       absolute_url_(url.GetString()),
+       cached_image_(image),
+       origin_clean_(origin_clean),
+-      is_ad_related_(is_ad_related) {}
++      is_ad_related_(is_ad_related),
++      potentially_dangling_markup_(url.PotentiallyDanglingMarkup()) {}
+ 
+ CSSImageValue::~CSSImageValue() = default;
+ 
+@@ -59,7 +60,17 @@ FetchParameters CSSImageValue::PrepareFetch(
+     const Document& document,
+     FetchParameters::ImageRequestBehavior image_request_behavior,
+     CrossOriginAttributeValue cross_origin) const {
+-  ResourceRequest resource_request(absolute_url_);
++  // The PotentiallyDanglingMarkup() flag is lost when storing the absolute url
++  // as a string from which the KURL is constructed here.
++  // The url passed into the constructor had the PotentiallyDanglingMarkup flag
++  // set. That information needs to be passed on to the fetch code to block such
++  // resources from loading.
++  KURL request_url = potentially_dangling_markup_
++                         ? document.CompleteURL(relative_url_)
++                         : KURL(absolute_url_);
++  SECURITY_CHECK(request_url.PotentiallyDanglingMarkup() ==
++                 potentially_dangling_markup_);
++  ResourceRequest resource_request(request_url);
+   resource_request.SetReferrerPolicy(
+       ReferrerUtils::MojoReferrerPolicyResolveDefault(
+           referrer_.referrer_policy));
+diff --git a/third_party/blink/renderer/core/css/css_image_value.h b/third_party/blink/renderer/core/css/css_image_value.h
+index fca1d73c764412d2014bfd1fe4775937794c9e2d..f414195f4a543fb3f47c1fef3799161d13495507 100644
+--- a/third_party/blink/renderer/core/css/css_image_value.h
++++ b/third_party/blink/renderer/core/css/css_image_value.h
+@@ -102,6 +102,11 @@ class CORE_EXPORT CSSImageValue : public CSSValue {
+ 
+   // Whether this was created by an ad-related CSSParserContext.
+   const bool is_ad_related_;
++
++  // The url passed into the constructor had the PotentiallyDanglingMarkup flag
++  // set. That information needs to be passed on to the fetch code to block such
++  // resources from loading.
++  const bool potentially_dangling_markup_;
+ };
+ 
+ template <>
+diff --git a/third_party/blink/renderer/core/css/css_image_value_test.cc b/third_party/blink/renderer/core/css/css_image_value_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..83415bd586e3187287dcb020ddafe4c7f8671a61
+--- /dev/null
++++ b/third_party/blink/renderer/core/css/css_image_value_test.cc
+@@ -0,0 +1,50 @@
++// Copyright 2021 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/css/css_image_value.h"
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/dom/element.h"
++#include "third_party/blink/renderer/core/dom/node_computed_style.h"
++#include "third_party/blink/renderer/core/loader/resource/image_resource_content.h"
++#include "third_party/blink/renderer/core/style/computed_style.h"
++#include "third_party/blink/renderer/core/testing/sim/sim_request.h"
++#include "third_party/blink/renderer/core/testing/sim/sim_test.h"
++#include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
++
++namespace blink {
++
++class CSSImageValueTest : public SimTest {};
++
++TEST_F(CSSImageValueTest, BlockPotentiallyDanglingMarkup) {
++  SimRequest main_resource("https://example.com", "text/html");
++
++  LoadURL("https://example.com");
++
++  main_resource.Complete(R"HTML(
++    <!doctype html>
++    <table id="t1" background="ht
++    tps://example.com/y<ay?foo"><td>XXX</td></table>
++    <table id="t2" background="ht
++    tps://example.com/y<ay?bar#boo"><td>XXX</td></table>
++  )HTML");
++
++  test::RunPendingTasks();
++  Compositor().BeginFrame();
++
++  auto* t1 = GetDocument().getElementById("t1");
++  ImageResourceContent* content1 =
++      t1->ComputedStyleRef().BackgroundLayers().GetImage()->CachedImage();
++  ASSERT_TRUE(content1);
++  EXPECT_TRUE(content1->ErrorOccurred());
++
++  auto* t2 = GetDocument().getElementById("t2");
++  ImageResourceContent* content2 =
++      t2->ComputedStyleRef().BackgroundLayers().GetImage()->CachedImage();
++  ASSERT_TRUE(content2);
++  EXPECT_TRUE(content2->ErrorOccurred());
++}
++
++}  // namespace blink
