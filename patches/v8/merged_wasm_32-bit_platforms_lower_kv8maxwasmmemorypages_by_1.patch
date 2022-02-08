@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Thu, 9 Dec 2021 22:13:39 +0100
+Subject: Merged: "[wasm] 32-bit platforms: lower kV8MaxWasmMemoryPages by 1"
+
+To make sure that Wasm memories don't exceed JSArrayBuffer size.
+This change shouldn't affect real-world modules, because finding
+enough contiguous address space to allocate that much memory is
+virtually impossible anyway.
+
+(cherry picked from commit 6d7ed2e8707cb865408da6a04d645c65553cd0b1)
+
+Fixed: chromium:1242339
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I6dfae2fbf7a5c4c038c2d32bfeb1c1420b5559b2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3338698
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.6@{#42}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+
+diff --git a/src/builtins/typed-array-createtypedarray.tq b/src/builtins/typed-array-createtypedarray.tq
+index 2f94f6205f751de63325142d4db74cba0ab9d6d4..e8c49badffe7f990676f82a738da665bf4abed8d 100644
+--- a/src/builtins/typed-array-createtypedarray.tq
++++ b/src/builtins/typed-array-createtypedarray.tq
+@@ -293,7 +293,7 @@ transitioning macro ConstructByArrayBuffer(implicit context: Context)(
+       // in the step 12 branch.
+       newByteLength = bufferByteLength - offset;
+       newLength = elementsInfo.CalculateLength(newByteLength)
+-          otherwise IfInvalidOffset;
++          otherwise IfInvalidLength;
+ 
+       // 12. Else,
+     } else {
+diff --git a/src/objects/js-array-buffer.cc b/src/objects/js-array-buffer.cc
+index 06e3b3045d58c28d999c47c3fbf87115f8f856f5..678927b30f60973ccb89d98167c371aacece1244 100644
+--- a/src/objects/js-array-buffer.cc
++++ b/src/objects/js-array-buffer.cc
+@@ -84,6 +84,7 @@ void JSArrayBuffer::Attach(std::shared_ptr<BackingStore> backing_store) {
+     // invariant that their byte_length field is always 0.
+     set_byte_length(0);
+   } else {
++    CHECK_LE(backing_store->byte_length(), kMaxByteLength);
+     set_byte_length(backing_store->byte_length());
+   }
+   set_max_byte_length(backing_store->max_byte_length());
+diff --git a/src/wasm/wasm-engine.cc b/src/wasm/wasm-engine.cc
+index 6da33f1ab29d4c6077f97d59bc7bd0eeca814d4f..a9b6d517cd30c7099cabc2a119989695a89b983c 100644
+--- a/src/wasm/wasm-engine.cc
++++ b/src/wasm/wasm-engine.cc
+@@ -1617,6 +1617,9 @@ WasmCodeManager* GetWasmCodeManager() {
+ 
+ // {max_mem_pages} is declared in wasm-limits.h.
+ uint32_t max_mem_pages() {
++  static_assert(
++      kV8MaxWasmMemoryPages * kWasmPageSize <= JSArrayBuffer::kMaxByteLength,
++      "Wasm memories must not be bigger than JSArrayBuffers");
+   STATIC_ASSERT(kV8MaxWasmMemoryPages <= kMaxUInt32);
+   return std::min(uint32_t{kV8MaxWasmMemoryPages}, FLAG_wasm_max_mem_pages);
+ }
+diff --git a/src/wasm/wasm-limits.h b/src/wasm/wasm-limits.h
+index b7806af797f09c42906df3ff1b2966ea52b83550..1d489feb7f0d152a29cc534fd041bfe6a9a3018d 100644
+--- a/src/wasm/wasm-limits.h
++++ b/src/wasm/wasm-limits.h
+@@ -40,7 +40,7 @@ constexpr size_t kV8MaxWasmDataSegments = 100000;
+ // Also, do not use this limit to validate declared memory, use
+ // kSpecMaxMemoryPages for that.
+ constexpr size_t kV8MaxWasmMemoryPages = kSystemPointerSize == 4
+-                                             ? 32768   // = 2 GiB
++                                             ? 32767   // = 2 GiB
+                                              : 65536;  // = 4 GiB
+ constexpr size_t kV8MaxWasmStringSize = 100000;
+ constexpr size_t kV8MaxWasmModuleSize = 1024 * 1024 * 1024;  // = 1 GiB
