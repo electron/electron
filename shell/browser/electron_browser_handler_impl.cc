@@ -15,7 +15,7 @@
 namespace electron {
 ElectronBrowserHandlerImpl::ElectronBrowserHandlerImpl(
     content::RenderFrameHost* frame_host,
-    mojo::PendingReceiver<mojom::ElectronBrowser> receiver)
+    mojo::PendingAssociatedReceiver<mojom::ElectronBrowser> receiver)
     : render_process_id_(frame_host->GetProcess()->GetID()),
       render_frame_id_(frame_host->GetRoutingID()) {
   content::WebContents* web_contents =
@@ -135,7 +135,7 @@ content::RenderFrameHost* ElectronBrowserHandlerImpl::GetRenderFrameHost() {
 // static
 void ElectronBrowserHandlerImpl::Create(
     content::RenderFrameHost* frame_host,
-    mojo::PendingReceiver<mojom::ElectronBrowser> receiver) {
+    mojo::PendingAssociatedReceiver<mojom::ElectronBrowser> receiver) {
   new ElectronBrowserHandlerImpl(frame_host, std::move(receiver));
 }
 }  // namespace electron
