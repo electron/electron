@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniel Hosseinian <dhoss@chromium.org>
 Date: Wed, 8 Dec 2021 00:32:35 +0000
-Subject: [M97][unseasoned-pdf] Call PdfViewWebPlugin a11y methods asyncly
+Subject: Call PdfViewWebPlugin a11y methods asyncly
 
 Calling a11y methods asyncly protects against the self-deletions they
 may cause. The a11y methods call
