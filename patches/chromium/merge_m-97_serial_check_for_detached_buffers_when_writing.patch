@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Reilly Grant <reillyg@chromium.org>
 Date: Fri, 12 Nov 2021 20:09:12 +0000
-Subject: [Merge M-97] serial: Check for detached buffers when writing
+Subject: serial: Check for detached buffers when writing
 
 This change adds check in SerialPortUnderlyingSink::WriteData() to
 ensure that the V8BufferSource being written to the Mojo data pipe has
