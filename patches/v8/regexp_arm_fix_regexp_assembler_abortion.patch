@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clemens Backes <clemensb@chromium.org>
 Date: Tue, 5 Oct 2021 13:37:34 +0200
-Subject: [regexp][arm] Fix regexp assembler abortion
+Subject: Fix regexp assembler abortion
 
 When aborting code generation, we need to call {AbortedCodeGeneration}
 on the {MacroAssembler} contained in the {RegExpMacroAssemblerARM}.

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jakob Gruber <jgruber@chromium.org>
 Date: Wed, 6 Oct 2021 13:01:34 +0200
-Subject: [regexp] Ensure regress-1255368 runs only with irregexp
+Subject: Ensure regress-1255368 runs only with irregexp
 
 The expected assertion is specific to irregexp codegen.
 
