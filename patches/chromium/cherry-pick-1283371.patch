@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clark DuVall <cduvall@chromium.org>
+Date: Thu, 6 Jan 2022 01:21:21 +0000
+Subject: Fix lifetime bug in PrefetchURLLoader
+
+PrefetchURLLoader is now owned by PrefetchURLLoaderService, which is no
+longer refcounted. This makes the lifetime much easier to reason about.
+
+Bug: 1283371
+Change-Id: Iaa58c1f44cc9f066459ce344012f57faca533197
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3361198
+Reviewed-by: John Abd-El-Malek <jam@chromium.org>
+Reviewed-by: Kunihiko Sakamoto <ksakamoto@chromium.org>
+Commit-Queue: Clark DuVall <cduvall@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#955986}
+
+diff --git a/content/browser/loader/prefetch_url_loader_service.cc b/content/browser/loader/prefetch_url_loader_service.cc
+index 5211d5552d6b2e1c1967d7dd6c6079001fef6895..345bf021541a121ea183ba16fa7ed76373f0dfd1 100644
+--- a/content/browser/loader/prefetch_url_loader_service.cc
++++ b/content/browser/loader/prefetch_url_loader_service.cc
+@@ -202,29 +202,25 @@ void PrefetchURLLoaderService::CreateLoaderAndStart(
+             ->prefetched_signed_exchange_cache;
+   }
+ 
+-  // For now we make self owned receiver for the loader to the request, while we
+-  // can also possibly make the new loader owned by the factory so that they can
+-  // live longer than the client (i.e. run in detached mode).
+-  // TODO(kinuko): Revisit this.
+-  mojo::MakeSelfOwnedReceiver(
+-      std::make_unique<PrefetchURLLoader>(
+-          request_id, options, current_context.frame_tree_node_id,
+-          resource_request,
+-          resource_request.trusted_params
+-              ? resource_request.trusted_params->isolation_info
+-                    .network_isolation_key()
+-              : current_context.render_frame_host->GetNetworkIsolationKey(),
+-          std::move(client), traffic_annotation,
+-          std::move(network_loader_factory_to_use),
+-          base::BindRepeating(
+-              &PrefetchURLLoaderService::CreateURLLoaderThrottles, this,
+-              resource_request, current_context.frame_tree_node_id),
+-          browser_context_, signed_exchange_prefetch_metric_recorder_,
+-          std::move(prefetched_signed_exchange_cache), accept_langs_,
+-          base::BindOnce(
+-              &PrefetchURLLoaderService::GenerateRecursivePrefetchToken, this,
+-              current_context.weak_ptr_factory.GetWeakPtr())),
+-      std::move(receiver));
++  // base::Unretained is safe here since |this| owns the loader.
++  auto loader = std::make_unique<PrefetchURLLoader>(
++      request_id, options, current_context.frame_tree_node_id, resource_request,
++      resource_request.trusted_params
++          ? resource_request.trusted_params->isolation_info
++                .network_isolation_key()
++          : current_context.render_frame_host->GetNetworkIsolationKey(),
++      std::move(client), traffic_annotation,
++      std::move(network_loader_factory_to_use),
++      base::BindRepeating(&PrefetchURLLoaderService::CreateURLLoaderThrottles,
++                          base::Unretained(this), resource_request,
++                          current_context.frame_tree_node_id),
++      browser_context_, signed_exchange_prefetch_metric_recorder_,
++      std::move(prefetched_signed_exchange_cache), accept_langs_,
++      base::BindOnce(&PrefetchURLLoaderService::GenerateRecursivePrefetchToken,
++                     base::Unretained(this),
++                     current_context.weak_ptr_factory.GetWeakPtr()));
++  auto* raw_loader = loader.get();
++  prefetch_receivers_.Add(raw_loader, std::move(receiver), std::move(loader));
+ }
+ 
+ PrefetchURLLoaderService::~PrefetchURLLoaderService() = default;
+diff --git a/content/browser/loader/prefetch_url_loader_service.h b/content/browser/loader/prefetch_url_loader_service.h
+index 210794966c8d25947f3e6b490538c1f851d80d52..c5fff844f73deaf2912716de9cf97547c498e4e5 100644
+--- a/content/browser/loader/prefetch_url_loader_service.h
++++ b/content/browser/loader/prefetch_url_loader_service.h
+@@ -35,13 +35,11 @@ class URLLoaderFactoryGetter;
+ // prefetches. The renderer uses it for prefetch requests including <link
+ // rel="prefetch">.
+ class CONTENT_EXPORT PrefetchURLLoaderService final
+-    : public base::RefCountedThreadSafe<
+-          PrefetchURLLoaderService,
+-          content::BrowserThread::DeleteOnUIThread>,
+-      public blink::mojom::RendererPreferenceWatcher,
++    : public blink::mojom::RendererPreferenceWatcher,
+       public network::mojom::URLLoaderFactory {
+  public:
+   explicit PrefetchURLLoaderService(BrowserContext* browser_context);
++  ~PrefetchURLLoaderService() override;
+ 
+   void GetFactory(
+       mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
+@@ -67,12 +65,8 @@ class CONTENT_EXPORT PrefetchURLLoaderService final
+   }
+ 
+  private:
+-  friend class base::DeleteHelper<content::PrefetchURLLoaderService>;
+-  friend struct BrowserThread::DeleteOnThread<BrowserThread::UI>;
+   struct BindContext;
+ 
+-  ~PrefetchURLLoaderService() override;
+-
+   // network::mojom::URLLoaderFactory:
+   void CreateLoaderAndStart(
+       mojo::PendingReceiver<network::mojom::URLLoader> receiver,
+@@ -114,6 +108,9 @@ class CONTENT_EXPORT PrefetchURLLoaderService final
+   mojo::ReceiverSet<network::mojom::URLLoaderFactory,
+                     std::unique_ptr<BindContext>>
+       loader_factory_receivers_;
++  mojo::ReceiverSet<network::mojom::URLLoader,
++                    std::unique_ptr<network::mojom::URLLoader>>
++      prefetch_receivers_;
+   // Used in the IO thread.
+   mojo::Receiver<blink::mojom::RendererPreferenceWatcher>
+       preference_watcher_receiver_{this};
+diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
+index 263fe6195ac6d48cd7a985ca844d1a6e421a9b1d..ac0bba6a7b41e497eb28c820476f36de5c63bc34 100644
+--- a/content/browser/storage_partition_impl.cc
++++ b/content/browser/storage_partition_impl.cc
+@@ -1285,7 +1285,7 @@ void StoragePartitionImpl::Initialize(
+       blob_context, filesystem_context_, fallback_blob_registry);
+ 
+   prefetch_url_loader_service_ =
+-      base::MakeRefCounted<PrefetchURLLoaderService>(browser_context_);
++      std::make_unique<PrefetchURLLoaderService>(browser_context_);
+ 
+   cookie_store_context_ = base::MakeRefCounted<CookieStoreContext>();
+   // Unit tests use the Initialize() callback to crash early if restoring the
+diff --git a/content/browser/storage_partition_impl.h b/content/browser/storage_partition_impl.h
+index 6d1c4031c340e0a16943b1f0c0efdf9f5dc5f99b..ba0ae57aae69a5edf4ce23c202a93c8cdb003051 100644
+--- a/content/browser/storage_partition_impl.h
++++ b/content/browser/storage_partition_impl.h
+@@ -561,7 +561,7 @@ class CONTENT_EXPORT StoragePartitionImpl
+   std::unique_ptr<BroadcastChannelProvider> broadcast_channel_provider_;
+   std::unique_ptr<BluetoothAllowedDevicesMap> bluetooth_allowed_devices_map_;
+   scoped_refptr<BlobRegistryWrapper> blob_registry_;
+-  scoped_refptr<PrefetchURLLoaderService> prefetch_url_loader_service_;
++  std::unique_ptr<PrefetchURLLoaderService> prefetch_url_loader_service_;
+   scoped_refptr<CookieStoreContext> cookie_store_context_;
+   scoped_refptr<BucketContext> bucket_context_;
+   scoped_refptr<GeneratedCodeCacheContext> generated_code_cache_context_;
