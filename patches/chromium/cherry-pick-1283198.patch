@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniel Hosseinian <dhoss@chromium.org>
 Date: Thu, 30 Dec 2021 05:08:29 +0000
-Subject: [pdf] CHECK page on thumbnail requests
+Subject: CHECK page on thumbnail requests
 
 Elevate DCHECK to CHECK.
 
