@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Tue, 14 Dec 2021 01:21:26 +0000
+Subject: [mojo] reject AddBrokerClient on non-broker nodes
+
+(cherry picked from commit b66b0b1ba61d0f0d4bb745d6a643e3da6128306f)
+
+Fixed: 1259557
+Change-Id: Ib8d7639b4c200a92336ff6a9f9a80c0560162dbe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3223127
+Reviewed-by: Alex Gough <ajgo@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Auto-Submit: Ken Rockot <rockot@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#949902}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3335320
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Owners-Override: Nicolas Ouellet-Payeur <nicolaso@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#1296}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/content/browser/launch_as_mojo_client_browsertest.cc b/content/browser/launch_as_mojo_client_browsertest.cc
+index 96038525b80cda3d9c74b2d3f8f32819ad7b9cd1..355096b7b236d10b06975882ab086144fc3e6c6e 100644
+--- a/content/browser/launch_as_mojo_client_browsertest.cc
++++ b/content/browser/launch_as_mojo_client_browsertest.cc
+@@ -165,21 +165,14 @@ IN_PROC_BROWSER_TEST_F(LaunchAsMojoClientBrowserTest, LaunchAndBindInterface) {
+   shell_controller->ShutDown();
+ }
+ 
+-// Running a Content embedder with a dynamically loaded Mojo Core library is
+-// currently only supported on Linux and Chrome OS.
+-//
+-// TODO(crbug.com/1096899): Re-enable on MSan if possible. MSan complains about
+-// spurious uninitialized memory reads inside base::PlatformThread due to what
+-// appears to be poor interaction among MSan, PlatformThread's thread_local
+-// storage, and Mojo's use of dlopen().
+ #if defined(OS_LINUX) || defined(OS_CHROMEOS)
+-#if defined(MEMORY_SANITIZER) || BUILDFLAG(CFI_ICALL_CHECK)
+-#define MAYBE_WithMojoCoreLibrary DISABLED_WithMojoCoreLibrary
+-#else
+-#define MAYBE_WithMojoCoreLibrary WithMojoCoreLibrary
+-#endif
++// TODO(crbug.com/1259557): This test implementation fundamentally conflicts
++// with a fix for the linked bug because it causes a browser process to behave
++// partially as a broker and partially as a non-broker. This can be re-enabled
++// when we migrate away from the current Mojo implementation. It's OK to disable
++// for now because no production code relies on this feature.
+ IN_PROC_BROWSER_TEST_F(LaunchAsMojoClientBrowserTest,
+-                       MAYBE_WithMojoCoreLibrary) {
++                       DISABLED_WithMojoCoreLibrary) {
+   // Instructs a newly launched Content Shell browser to initialize Mojo Core
+   // dynamically from a shared library, rather than using the version linked
+   // into the Content Shell binary.
+diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
+index 21edab39368e69ee6665e490b2c4de13f424edbd..b34753b2dc0c58e5a80e1d0678ee178e2589e8e3 100644
+--- a/mojo/core/node_controller.cc
++++ b/mojo/core/node_controller.cc
+@@ -889,6 +889,11 @@ void NodeController::OnAddBrokerClient(const ports::NodeName& from_node,
+     return;
+   }
+ 
++  if (!GetConfiguration().is_broker_process) {
++    DLOG(ERROR) << "Ignoring AddBrokerClient on non-broker node.";
++    return;
++  }
++
+   if (GetPeerChannel(client_name)) {
+     DLOG(ERROR) << "Ignoring AddBrokerClient for known client.";
+     DropPeer(from_node, nullptr);
