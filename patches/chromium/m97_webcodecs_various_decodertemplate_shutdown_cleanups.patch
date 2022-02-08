@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Chris Cunningham <chcunningham@chromium.org>
 Date: Tue, 30 Nov 2021 20:53:26 +0000
-Subject: [M97][webcodecs] Various DecoderTemplate shutdown cleanups
+Subject: Various DecoderTemplate shutdown cleanups
 
 1. Use DeleteSoon() when destroying the |decoder_| to avoid destructing
    in error conditions where it's callback (OnDecodeDone()) is actively
