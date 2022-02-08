@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tony Herre <toprice@chromium.org>
 Date: Tue, 14 Dec 2021 16:35:05 +0000
-Subject: [96] Take local copy of UMP::local_sources to iterate
+Subject: Take local copy of UMP::local_sources to iterate
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
