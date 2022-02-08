@@ -1478,38 +1478,20 @@ void ElectronBrowserClient::
             associated_registry) {  // NOLINT(runtime/references)
   associated_registry.AddInterface(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>
+             receiver) {
+        ElectronBrowserHandlerImpl::Create(render_frame_host,
+                                           std::move(receiver));
+      },
+      &render_frame_host));
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
          mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
              receiver) {
         AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
                                                   render_frame_host);
       },
       &render_frame_host));
-}
-
-void BindElectronBrowser(
-    mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser> receiver,
-    content::RenderFrameHost* frame_host) {
-  ElectronBrowserHandlerImpl::Create(frame_host, std::move(receiver));
-}
-
-bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
-    content::RenderFrameHost* render_frame_host,
-    const std::string& interface_name,
-    mojo::ScopedInterfaceEndpointHandle* handle) {
-  if (interface_name == mojom::ElectronAutofillDriver::Name_) {
-    AutofillDriverFactory::BindAutofillDriver(
-        mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
-  if (interface_name == electron::mojom::ElectronBrowser::Name_) {
-    BindElectronBrowser(
-        mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
 #if BUILDFLAG(ENABLE_PRINTING)
   associated_registry.AddInterface(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
