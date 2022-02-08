@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tony Herre <toprice@chromium.org>
+Date: Tue, 14 Dec 2021 16:35:05 +0000
+Subject: [96] Take local copy of UMP::local_sources to iterate
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Take a local copy of UserMediaProcessor::local_sources_ when iterating
+over it in UserMediaProcessor::DetermineExistingAudioSessionId, as the
+list can be effectively concurrently modified during destruction of
+MediaStreamTracks triggered by GC during this loop. Without the copy
+this leads to a container overflow.
+
+(cherry picked from commit fb6232ffb1fec14d64ec8815f7dfc2cea0887588)
+
+Bug: 1238209
+Change-Id: I048387a51a58eacff87d220e6b67d2d09f610c1d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3320283
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Commit-Queue: Tony Herre <toprice@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#950499}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3337896
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#1303}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/renderer/modules/mediastream/user_media_processor.cc b/third_party/blink/renderer/modules/mediastream/user_media_processor.cc
+index d42b3d7309ce40e74ebf386f4d38eb8cce008ec0..b0b8b15657210174b000a02f711a76fa16e5948d 100644
+--- a/third_party/blink/renderer/modules/mediastream/user_media_processor.cc
++++ b/third_party/blink/renderer/modules/mediastream/user_media_processor.cc
+@@ -725,6 +725,7 @@ void UserMediaProcessor::SelectAudioSettings(
+ 
+ absl::optional<base::UnguessableToken>
+ UserMediaProcessor::DetermineExistingAudioSessionId() {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   DCHECK(current_request_info_->request()->Audio());
+ 
+   auto settings = current_request_info_->audio_capture_settings();
+@@ -733,7 +734,12 @@ UserMediaProcessor::DetermineExistingAudioSessionId() {
+   // Create a copy of the MediaStreamSource objects that are
+   // associated to the same audio device capture based on its device ID.
+   HeapVector<Member<MediaStreamSource>> matching_sources;
+-  for (const auto& source : local_sources_) {
++
++  // Take a defensive copy, as local_sources_ can be modified during
++  // destructions in GC runs triggered by the push_back allocation in this loop.
++  // crbug.com/1238209
++  HeapVector<Member<MediaStreamSource>> local_sources_copy = local_sources_;
++  for (const auto& source : local_sources_copy) {
+     MediaStreamSource* source_copy = source;
+     if (source_copy->GetType() == MediaStreamSource::kTypeAudio &&
+         source_copy->Id().Utf8() == device_id) {
