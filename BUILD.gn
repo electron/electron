@@ -501,6 +501,8 @@ source_set("electron_lib") {
       "StoreKit.framework",
     ]
 
+    weak_frameworks = [ "QuickLookThumbnailing.framework" ]
+
     sources += [
       "shell/browser/ui/views/autofill_popup_view.cc",
       "shell/browser/ui/views/autofill_popup_view.h",

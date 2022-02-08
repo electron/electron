@@ -329,15 +329,14 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
-    if (resizable_)
+    if (resizable_ && thick_frame_)
       frame_style |= WS_THICKFRAME;
     if (minimizable_)
       frame_style |= WS_MINIMIZEBOX;
     if (maximizable_)
       frame_style |= WS_MAXIMIZEBOX;
-    // We should not show a frame for transparent window.
-    if (!thick_frame_)
-      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
+    if (!thick_frame_ || !has_frame())
+      frame_style &= ~WS_CAPTION;
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
