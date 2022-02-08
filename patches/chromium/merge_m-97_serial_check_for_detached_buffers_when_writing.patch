@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Reilly Grant <reillyg@chromium.org>
+Date: Fri, 12 Nov 2021 20:09:12 +0000
+Subject: [Merge M-97] serial: Check for detached buffers when writing
+
+This change adds check in SerialPortUnderlyingSink::WriteData() to
+ensure that the V8BufferSource being written to the Mojo data pipe has
+not been detached since it was passed to the WritableStream.
+
+(cherry picked from commit 7ce1516b49e86430c9216d0df8e23a325104a8c5)
+
+Bug: 1267627
+Change-Id: I63d48584eb0be1c1d87c27115900aa5c17931fcf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3269348
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Auto-Submit: Reilly Grant <reillyg@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#940631}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3279207
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4692@{#132}
+Cr-Branched-From: 038cd96142d384c0d2238973f1cb277725a62eba-refs/heads/main@{#938553}
+
+diff --git a/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.cc b/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.cc
+index 08ab2c7e05668710b77712f3ffc0d5aeef4dd213..7876baf19a1f547c71e2a115db8a2cc4ccd43a3b 100644
+--- a/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.cc
++++ b/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.cc
+@@ -172,12 +172,25 @@ void SerialPortUnderlyingSink::WriteData() {
+   DCHECK(buffer_source_);
+ 
+   DOMArrayPiece array_piece(buffer_source_);
++  // From https://webidl.spec.whatwg.org/#dfn-get-buffer-source-copy, if the
++  // buffer source is detached then an empty byte sequence is returned, which
++  // means the write is complete.
++  if (array_piece.IsDetached()) {
++    buffer_source_ = nullptr;
++    offset_ = 0;
++    pending_operation_->Resolve();
++    pending_operation_ = nullptr;
++    return;
++  }
++
+   if (array_piece.ByteLength() > std::numeric_limits<uint32_t>::max()) {
+-    pending_exception_ = DOMException::Create(
+-        "Buffer size exceeds maximum heap object size.", "DataError");
++    pending_exception_ = MakeGarbageCollected<DOMException>(
++        DOMExceptionCode::kDataError,
++        "Buffer size exceeds maximum heap object size.");
+     PipeClosed();
+     return;
+   }
++
+   const uint8_t* data = array_piece.Bytes();
+   const uint32_t length = static_cast<uint32_t>(array_piece.ByteLength());
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/serial/serialPort_writable.https.any.js b/third_party/blink/web_tests/external/wpt/serial/serialPort_writable.https.any.js
+index 9728af7de5051dce874e10082e1443a3ca9fa7dc..5e3b8548a91ddc2a0afa9793dea167f8e89defe3 100644
+--- a/third_party/blink/web_tests/external/wpt/serial/serialPort_writable.https.any.js
++++ b/third_party/blink/web_tests/external/wpt/serial/serialPort_writable.https.any.js
+@@ -70,7 +70,7 @@ serial_test(async (t, fake) => {
+   compareArrays(data, value);
+ 
+   await port.close();
+-}, 'Can read a large amount of data');
++}, 'Can write a large amount of data');
+ 
+ serial_test(async (t, fake) => {
+   const {port, fakePort} = await getFakeSerialPort(fake);
+diff --git a/third_party/blink/web_tests/external/wpt/serial/serialPort_writable_detachBuffer.https.any.js b/third_party/blink/web_tests/external/wpt/serial/serialPort_writable_detachBuffer.https.any.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..828e877726b1c63dba14efc36324d9a16aa4e62f
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/serial/serialPort_writable_detachBuffer.https.any.js
+@@ -0,0 +1,48 @@
++// META: script=/resources/test-only-api.js
++// META: script=/serial/resources/common.js
++// META: script=resources/automation.js
++
++function detachBuffer(buffer) {
++  const channel = new MessageChannel();
++  channel.port1.postMessage('', [buffer]);
++}
++
++serial_test(async (t, fake) => {
++  const {port, fakePort} = await getFakeSerialPort(fake);
++  await port.open({baudRate: 9600, bufferSize: 64});
++
++  const writer = port.writable.getWriter();
++  const data = new Uint8Array(64);
++  detachBuffer(data.buffer);
++
++  // Writing a detached buffer is equivalent to writing an empty buffer so this
++  // should trivially succeed.
++  await writer.write(data);
++  writer.releaseLock();
++
++  await port.close();
++}, 'Writing a detached buffer is safe');
++
++serial_test(async (t, fake) => {
++  const {port, fakePort} = await getFakeSerialPort(fake);
++  // Select a buffer size smaller than the amount of data transferred.
++  await port.open({baudRate: 9600, bufferSize: 64});
++
++  // Start writing a buffer much larger than bufferSize above so that it can't
++  // all be transfered in a single operation.
++  const writer = port.writable.getWriter();
++  const data = new Uint8Array(1024);
++  const promise = writer.write(data);
++  writer.releaseLock();
++
++  // Read half of the written data and then detach the buffer.
++  await fakePort.readable();
++  await fakePort.readWithLength(data.byteLength / 2);
++  detachBuffer(data.buffer);
++
++  // When the buffer is detached its length becomes zero and so the write should
++  // succeed but it is undefined how much data was written before that happened.
++  await promise;
++
++  await port.close();
++}, 'Detaching a buffer while writing is safe');
