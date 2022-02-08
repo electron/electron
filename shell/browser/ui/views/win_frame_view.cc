@@ -34,6 +34,13 @@ void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   window_ = window;
   frame_ = frame;
 
+  // Prevent events from trickling down the views hierarchy here, since
+  // when a given window is frameless we only want to use FramelessView's
+  // ResizingBorderHitTest in ShouldDescendIntoChildForEventHandling.
+  // See https://chromium-review.googlesource.com/c/chromium/src/+/3251980.
+  if (!window_->has_frame())
+    frame_->client_view()->SetCanProcessEventsWithinSubtree(false);
+
   if (window->IsWindowControlsOverlayEnabled()) {
     caption_button_container_ =
         AddChildView(std::make_unique<WinCaptionButtonContainer>(this));
