@@ -162,7 +162,8 @@ jobs:
 workflows:
   lint:
     jobs:
-      - prepare-appveyor
+      - prepare-appveyor:
+          context: appveyor
       # Job inherited from path-filtering orb
       - path-filtering/filter:
           base-revision: main

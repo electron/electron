@@ -72,6 +72,6 @@ python -m pip2 install -U pypiwin32
 @REM pip2 install pypiwin32
 python Scripts\pywin32_postinstall.py -install
 
-REM Setup Depot Tools (This may not be needed on the bake image )
+REM Setup Depot Tools
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git C:\depot_tools
 SET PATH=%PATH%;C:\depot_tools\
