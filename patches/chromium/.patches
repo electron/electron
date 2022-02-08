@@ -132,5 +132,6 @@ m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
 cherry-pick-f781748dcb3c.patch
 cherry-pick-c5571653d932.patch
 fix_crash_when_saving_edited_pdf_files.patch
+cherry-pick-1284367.patch
 pin_scrolltop_to_0_during_autofill_preview.patch
 fix_preview_state_detection.patch
