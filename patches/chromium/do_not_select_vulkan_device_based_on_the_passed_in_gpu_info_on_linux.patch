@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peng Huang <penghuang@chromium.org>
+Date: Mon, 25 Oct 2021 21:10:55 +0000
+Subject: Do not select vulkan device based on the passed in gpu_info on Linux
+
+On linux dual GPU setup, we cannot detect the active GPU correctly.
+It causes problems for GL and Vulkan interop. So we would to use
+ANGLE vulkan backend when vulkan is enabled. So we can choose the same
+GPU for both vulkan and GL. So for this CL, we will not create vulkan
+device based on passed in gpu_info anymore, instead GPU device will be
+selected by the order of
+(discrete GPU > integrated GPU > virtual GPU > CPU simulated GPU).
+And we will use the same logic in ANGLE vulkan backend as well.
+
+Bug: 1260869
+Change-Id: I6fb79a4e6ce1710e4809cd63a0f7738955a8e2d2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3242785
+Commit-Queue: Peng Huang <penghuang@chromium.org>
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Auto-Submit: Peng Huang <penghuang@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#934696}
+
+diff --git a/gpu/vulkan/vulkan_device_queue.cc b/gpu/vulkan/vulkan_device_queue.cc
+index e4fe73f613dfe27b2ac6ccd7d31448e0f16ff459..22abed4db134647699d5622c4b92c3a861274f7c 100644
+--- a/gpu/vulkan/vulkan_device_queue.cc
++++ b/gpu/vulkan/vulkan_device_queue.cc
+@@ -11,6 +11,7 @@
+ 
+ #include "base/logging.h"
+ #include "base/strings/stringprintf.h"
++#include "build/build_config.h"
+ #include "gpu/config/gpu_info.h"  // nogncheck
+ #include "gpu/config/vulkan_info.h"
+ #include "gpu/vulkan/vulkan_command_pool.h"
+@@ -77,11 +78,15 @@ bool VulkanDeviceQueue::Initialize(
+     if (device_properties.apiVersion < info.used_api_version)
+       continue;
+ 
++      // In dual-CPU cases, we cannot detect the active GPU correctly on Linux,
++      // so don't select GPU device based on the |gpu_info|.
++#if !defined(OS_LINUX)
+     // If gpu_info is provided, the device should match it.
+     if (gpu_info && (device_properties.vendorID != gpu_info->gpu.vendor_id ||
+                      device_properties.deviceID != gpu_info->gpu.device_id)) {
+       continue;
+     }
++#endif
+ 
+     if (device_properties.deviceType < 0 ||
+         device_properties.deviceType > VK_PHYSICAL_DEVICE_TYPE_CPU) {
+@@ -112,7 +117,7 @@ bool VulkanDeviceQueue::Initialize(
+         break;
+       }
+     }
+-    
++
+     if (!found)
+       continue;
+ 
