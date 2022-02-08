@@ -1,0 +1,42 @@
+From 8869179d963931962ebe1a1326e001e6f50e72c0 Mon Sep 17 00:00:00 2001
+From: Benoit Lize <lizeb@chromium.org>
+Date: Tue, 08 Feb 2022 16:23:16 +0000
+Subject: [PATCH] [PartitionAlloc] Increase the pool size on macOS
+
+Some pages can allocate more than 8GiB in the malloc() partition. This
+was allowed on macOS previously, as there is no sandbox memory limit
+there. The move to PartitionAlloc thus led to some pages crashing due to
+OOM which were not previously.
+
+Increase the GigaCage size on macOS as a consequence. While a more
+general and better change is in
+https://chromium-review.googlesource.com/c/chromium/src/+/3383838, it is
+larger (depends on another change), and as a result harder to
+cherry-pick.
+
+Bug: 1232567
+Change-Id: Ic785f77b896b56682fbd5c5effd28a4462de3b3c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3447347
+Reviewed-by: Bartek Nowierski <bartekn@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Benoit Lize <lizeb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#968357}
+---
+
+diff --git a/base/allocator/partition_allocator/partition_alloc_constants.h b/base/allocator/partition_allocator/partition_alloc_constants.h
+index bc6c07e..cc23613 100644
+--- a/base/allocator/partition_allocator/partition_alloc_constants.h
++++ b/base/allocator/partition_allocator/partition_alloc_constants.h
+@@ -217,6 +217,12 @@
+ // to keep for now only because nothing uses PartitionAlloc on iOS yet.
+ #if BUILDFLAG(IS_IOS)
+ constexpr size_t kPoolMaxSize = kGiB / 4;
++#elif BUILDFLAG(IS_MAC)
++// Special-case macOS. Contrary to other platforms, there is no sandbox limit
++// there, meaning that a single renderer could "happily" consume >8GiB. So the
++// 8GiB pool size is a regression. Make the limit higher on this platform only
++// to be consistent with previous behavior. See crbug.com/1232567 for details.
++constexpr size_t kPoolMaxSize = 16 * kGiB;
+ #else
+ constexpr size_t kPoolMaxSize = 8 * kGiB;
+ #endif
