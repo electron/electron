@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chris Cunningham <chcunningham@chromium.org>
+Date: Tue, 30 Nov 2021 20:53:26 +0000
+Subject: [M97][webcodecs] Various DecoderTemplate shutdown cleanups
+
+1. Use DeleteSoon() when destroying the |decoder_| to avoid destructing
+   in error conditions where it's callback (OnDecodeDone()) is actively
+   executing.
+
+2. Call Shutdown() from ContextDestroyed() to invoke full reset
+   algorithm and tidily clean up all state.
+
+(cherry picked from commit b5e609d4e7a296fa8c2d50f1373e9f3a50003995)
+
+Bug: 1267426
+Change-Id: I927d8a3bd245b3f833e73c74103cbaacf6d73406
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3277273
+Commit-Queue: Chrome Cunningham <chcunningham@chromium.org>
+Auto-Submit: Chrome Cunningham <chcunningham@chromium.org>
+Reviewed-by: Dan Sanders <sandersd@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#941390}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3308537
+Commit-Queue: Dan Sanders <sandersd@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4692@{#599}
+Cr-Branched-From: 038cd96142d384c0d2238973f1cb277725a62eba-refs/heads/main@{#938553}
+
+diff --git a/third_party/blink/renderer/modules/webcodecs/decoder_template.cc b/third_party/blink/renderer/modules/webcodecs/decoder_template.cc
+index 7bc6b575584d4ef0e59508bf6ef170b12ec86534..736799dca31a3c7c71ffc84e60ae24cb3dbb1082 100644
+--- a/third_party/blink/renderer/modules/webcodecs/decoder_template.cc
++++ b/third_party/blink/renderer/modules/webcodecs/decoder_template.cc
+@@ -79,8 +79,10 @@ DecoderTemplate<Traits>::DecoderTemplate(ScriptState* script_state,
+   ExecutionContext* context = GetExecutionContext();
+   DCHECK(context);
+ 
+-  logger_ = std::make_unique<CodecLogger>(
+-      context, context->GetTaskRunner(TaskType::kInternalMedia));
++  main_thread_task_runner_ =
++      context->GetTaskRunner(TaskType::kInternalMediaRealTime);
++
++  logger_ = std::make_unique<CodecLogger>(context, main_thread_task_runner_);
+ 
+   logger_->log()->SetProperty<media::MediaLogProperty::kFrameUrl>(
+       context->Url().GetString().Ascii());
+@@ -506,8 +508,10 @@ void DecoderTemplate<Traits>::Shutdown(DOMException* exception) {
+   // Prevent any further logging from being reported.
+   logger_->Neuter();
+ 
+-  // Clear decoding and JS-visible queue state.
+-  decoder_.reset();
++  // Clear decoding and JS-visible queue state. Use DeleteSoon() to avoid
++  // deleting decoder_ when its callback (e.g. OnDecodeDone()) may be below us
++  // in the stack.
++  main_thread_task_runner_->DeleteSoon(FROM_HERE, std::move(decoder_));
+ 
+   if (pending_request_) {
+     // This request was added as part of calling ResetAlgorithm above. However,
+@@ -724,9 +728,8 @@ void DecoderTemplate<Traits>::TraceQueueSizes() const {
+ 
+ template <typename Traits>
+ void DecoderTemplate<Traits>::ContextDestroyed() {
+-  state_ = V8CodecState(V8CodecState::Enum::kClosed);
+-  logger_->Neuter();
+-  decoder_.reset();
++  // Deallocate resources and supress late callbacks from media thread.
++  Shutdown();
+ }
+ 
+ template <typename Traits>
+diff --git a/third_party/blink/renderer/modules/webcodecs/decoder_template.h b/third_party/blink/renderer/modules/webcodecs/decoder_template.h
+index bc186b60c84e2b4b76468f21a9305c5792796e7e..c16dbeee58048644291fe856e33573068da3c69f 100644
+--- a/third_party/blink/renderer/modules/webcodecs/decoder_template.h
++++ b/third_party/blink/renderer/modules/webcodecs/decoder_template.h
+@@ -29,6 +29,10 @@
+ #include "third_party/blink/renderer/platform/heap/heap_allocator.h"
+ #include "third_party/blink/renderer/platform/heap/member.h"
+ 
++namespace base {
++class SingleThreadTaskRunner;
++}
++
+ namespace media {
+ class GpuVideoAcceleratorFactories;
+ class ScopedDecodeTrace;
+@@ -227,6 +231,9 @@ class MODULES_EXPORT DecoderTemplate
+ 
+   // Keyframes are required after configure(), flush(), and reset().
+   bool require_key_frame_ = true;
++
++  // Task runner for main thread.
++  scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webcodecs/decoder_template_test.cc b/third_party/blink/renderer/modules/webcodecs/decoder_template_test.cc
+index ebc7395606a8a2574d1639db8cc8ae5d3c9cdde9..36cbf25cbc5582f83ff4d9c945a4c514aa520885 100644
+--- a/third_party/blink/renderer/modules/webcodecs/decoder_template_test.cc
++++ b/third_party/blink/renderer/modules/webcodecs/decoder_template_test.cc
+@@ -215,9 +215,6 @@ TYPED_TEST(DecoderTemplateTest, MAYBE_CodecReclamation) {
+   testing::Mock::VerifyAndClearExpectations(error_callback);
+ }
+ 
+-// Note: AudioDecoder and VideoDecoder specific tests should be put in
+-// audio_decoder_test.cc and video_decoder_test.cc respectively.
+-
+ }  // namespace
+ 
+ }  // namespace blink
