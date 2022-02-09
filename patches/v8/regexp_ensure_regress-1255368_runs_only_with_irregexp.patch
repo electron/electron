@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Gruber <jgruber@chromium.org>
+Date: Wed, 6 Oct 2021 13:01:34 +0200
+Subject: Ensure regress-1255368 runs only with irregexp
+
+The expected assertion is specific to irregexp codegen.
+
+Bug: chromium:1255368
+Change-Id: I14d033285014727de2e63582ed798fc82570497d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3207892
+Auto-Submit: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#77254}
+
+diff --git a/test/mjsunit/regress/regress-1255368.js b/test/mjsunit/regress/regress-1255368.js
+index 9284c5893ceb1d99d427870e9f0a287b4c725a65..7b4fb334ac7fa6adc3cb3af04dd3bb0ca72e3302 100644
+--- a/test/mjsunit/regress/regress-1255368.js
++++ b/test/mjsunit/regress/regress-1255368.js
+@@ -2,7 +2,8 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-// Flags: --no-regexp-tier-up
++// Flags: --no-regexp-tier-up --no-enable-experimental-regexp-engine
++// Flags: --no-regexp-interpret-all
+ 
+ const arr = new Array(20000).fill([1]);
+ const regexp = RegExp(JSON.stringify(arr));
+diff --git a/tools/testrunner/local/variants.py b/tools/testrunner/local/variants.py
+index 42bf12d46474335b1ecc3233785d5713bcd8d2cb..a17313dcdf6ec8db209e2e6b09ee23dc4d22745b 100644
+--- a/tools/testrunner/local/variants.py
++++ b/tools/testrunner/local/variants.py
+@@ -54,7 +54,7 @@ ALL_VARIANT_FLAGS = {
+ INCOMPATIBLE_FLAGS_PER_VARIANT = {
+   "jitless": ["--opt", "--always-opt", "--liftoff", "--track-field-types",
+               "--validate-asm", "--sparkplug", "--always-sparkplug",
+-              "--regexp-tier-up"],
++              "--regexp-tier-up", "--no-regexp-interpret-all"],
+   "nooptimization": ["--always-opt"],
+   "slow_path": ["--no-force-slow-path"],
+   "stress_concurrent_allocation": ["--single-threaded-gc", "--predictable"],
