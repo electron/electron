@@ -1,0 +1,253 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Gruber <jgruber@chromium.org>
+Date: Thu, 13 Jan 2022 08:01:37 +0100
+Subject: Merged: [maps] Lock map_updater_access in
+ CompleteInobjectSlackTracking
+
+CompleteInobjectSlackTracking potentially shrinks multiple maps, and
+the relation between these maps should be preserved in a concurrent
+environment. Thus it is not enough to make each modification
+atomically, but all related map modifications must be within a
+critical section.
+
+We do this by locking the map_updater_access mutex
+CompleteInobjectSlackTracking, and hence moving the function to the
+MapUpdater class.
+
+(cherry picked from commit 4b8d04897cba70cac45eea33d78fa2354dfe2bd7)
+
+No-Try: true
+No-Presubmit: true
+No-Treechecks: true
+Bug: chromium:1274445,v8:7990
+Change-Id: If99bb8b55e03180128ee397d845fa4c269c4241e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3379819
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#78597}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3406537
+Cr-Commit-Position: refs/branch-heads/9.8@{#16}
+Cr-Branched-From: e218afa8473132b56a9e1532be7920dd130aeb7e-refs/heads/9.8.177@{#1}
+Cr-Branched-From: 86ebfc969cde382122a4d429f2380f06175ea2a8-refs/heads/main@{#78312}
+
+diff --git a/src/objects/js-function-inl.h b/src/objects/js-function-inl.h
+index 275ffba14d7db1549e9932065020bc06ffd8d653..2e7ac4b624d07eda637a39284004607aada5d4d9 100644
+--- a/src/objects/js-function-inl.h
++++ b/src/objects/js-function-inl.h
+@@ -15,6 +15,7 @@
+ #include "src/ic/ic.h"
+ #include "src/init/bootstrapper.h"
+ #include "src/objects/feedback-cell-inl.h"
++#include "src/objects/map-updater.h"
+ #include "src/objects/shared-function-info-inl.h"
+ 
+ // Has to be the last include (doesn't have include guards):
+@@ -126,7 +127,7 @@ bool JSFunction::IsInOptimizationQueue() {
+ void JSFunction::CompleteInobjectSlackTrackingIfActive() {
+   if (!has_prototype_slot()) return;
+   if (has_initial_map() && initial_map().IsInobjectSlackTrackingInProgress()) {
+-    initial_map().CompleteInobjectSlackTracking(GetIsolate());
++    MapUpdater::CompleteInobjectSlackTracking(GetIsolate(), initial_map());
+   }
+ }
+ 
+diff --git a/src/objects/map-inl.h b/src/objects/map-inl.h
+index 572b3f9299ceb3f3f5c6c071d5fd851a78f9c316..845db8ec49c05dd74fae3a851809b1d9b55147a6 100644
+--- a/src/objects/map-inl.h
++++ b/src/objects/map-inl.h
+@@ -12,6 +12,7 @@
+ #include "src/objects/field-type.h"
+ #include "src/objects/instance-type-inl.h"
+ #include "src/objects/js-function-inl.h"
++#include "src/objects/map-updater.h"
+ #include "src/objects/map.h"
+ #include "src/objects/objects-inl.h"
+ #include "src/objects/property.h"
+@@ -829,7 +830,7 @@ void Map::InobjectSlackTrackingStep(Isolate* isolate) {
+   int counter = construction_counter();
+   set_construction_counter(counter - 1);
+   if (counter == kSlackTrackingCounterEnd) {
+-    CompleteInobjectSlackTracking(isolate);
++    MapUpdater::CompleteInobjectSlackTracking(isolate, *this);
+   }
+ }
+ 
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index ba7961a9ca26e68c82df009abf24c949407f7afe..36e9921783eeb4e1ada3e1c12ea7813cd4795d38 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -420,21 +420,50 @@ MapUpdater::State MapUpdater::Normalize(const char* reason) {
+   return state_;  // Done.
+ }
+ 
+-void MapUpdater::ShrinkInstanceSize(base::SharedMutex* map_updater_access,
+-                                    Map map, int slack) {
++// static
++void MapUpdater::CompleteInobjectSlackTracking(Isolate* isolate,
++                                               Map initial_map) {
++  DisallowGarbageCollection no_gc;
++  // Has to be an initial map.
++  DCHECK(initial_map.GetBackPointer().IsUndefined(isolate));
++
++  const int slack = initial_map.ComputeMinObjectSlack(isolate);
+   DCHECK_GE(slack, 0);
++
++  TransitionsAccessor transitions(isolate, initial_map, &no_gc);
++  TransitionsAccessor::TraverseCallback callback;
++  if (slack != 0) {
++    // Resize the initial map and all maps in its transition tree.
++    callback = [slack](Map map) {
+ #ifdef DEBUG
+-  int old_visitor_id = Map::GetVisitorId(map);
+-  int new_unused = map.UnusedPropertyFields() - slack;
++      int old_visitor_id = Map::GetVisitorId(map);
++      int new_unused = map.UnusedPropertyFields() - slack;
+ #endif
++      map.set_instance_size(map.InstanceSizeFromSlack(slack));
++      map.set_construction_counter(Map::kNoSlackTracking);
++      DCHECK_EQ(old_visitor_id, Map::GetVisitorId(map));
++      DCHECK_EQ(new_unused, map.UnusedPropertyFields());
++    };
++  } else {
++    // Stop slack tracking for this map.
++    callback = [](Map map) {
++      map.set_construction_counter(Map::kNoSlackTracking);
++    };
++  }
+ 
+   {
+-    base::SharedMutexGuard<base::kExclusive> mutex_guard(map_updater_access);
+-    map.set_instance_size(map.InstanceSizeFromSlack(slack));
++    // The map_updater_access lock is taken here to guarantee atomicity of all
++    // related map changes (instead of guaranteeing only atomicity of each
++    // single map change). This is needed e.g. by InstancesNeedsRewriting,
++    // which expects certain relations between maps to hold.
++    //
++    // Note: Avoid locking the full_transition_array_access lock inside this
++    // call to TraverseTransitionTree to prevent dependencies between the two
++    // locks.
++    base::SharedMutexGuard<base::kExclusive> mutex_guard(
++        isolate->map_updater_access());
++    transitions.TraverseTransitionTree(callback);
+   }
+-  map.set_construction_counter(Map::kNoSlackTracking);
+-  DCHECK_EQ(old_visitor_id, Map::GetVisitorId(map));
+-  DCHECK_EQ(new_unused, map.UnusedPropertyFields());
+ }
+ 
+ MapUpdater::State MapUpdater::TryReconfigureToDataFieldInplace() {
+diff --git a/src/objects/map-updater.h b/src/objects/map-updater.h
+index c5b425764a6fbff6646d79d3974d4c0c750d72db..8acb6491ca003ee2f7dfb36a441736e63fa1db88 100644
+--- a/src/objects/map-updater.h
++++ b/src/objects/map-updater.h
+@@ -86,8 +86,9 @@ class V8_EXPORT_PRIVATE MapUpdater {
+                               Representation new_representation,
+                               Handle<FieldType> new_field_type);
+ 
+-  static void ShrinkInstanceSize(base::SharedMutex* map_updater_access, Map map,
+-                                 int slack);
++  // Completes inobject slack tracking for the transition tree starting at the
++  // initial map.
++  static void CompleteInobjectSlackTracking(Isolate* isolate, Map initial_map);
+ 
+  private:
+   enum State {
+diff --git a/src/objects/map.cc b/src/objects/map.cc
+index a8fdce3189f9e4f871e9a0dcca3cfe1387211321..b512f89b4204e9a832e272d1a6e74c2e65fb748a 100644
+--- a/src/objects/map.cc
++++ b/src/objects/map.cc
+@@ -2129,28 +2129,6 @@ int Map::ComputeMinObjectSlack(Isolate* isolate) {
+   return slack;
+ }
+ 
+-void Map::CompleteInobjectSlackTracking(Isolate* isolate) {
+-  DisallowGarbageCollection no_gc;
+-  // Has to be an initial map.
+-  DCHECK(GetBackPointer().IsUndefined(isolate));
+-
+-  int slack = ComputeMinObjectSlack(isolate);
+-  TransitionsAccessor transitions(isolate, *this, &no_gc);
+-  TransitionsAccessor::TraverseCallback callback;
+-  if (slack != 0) {
+-    // Resize the initial map and all maps in its transition tree.
+-    callback = [&](Map map) {
+-      MapUpdater::ShrinkInstanceSize(isolate->map_updater_access(), map, slack);
+-    };
+-  } else {
+-    callback = [](Map map) {
+-      // Stop slack tracking for this map.
+-      map.set_construction_counter(Map::kNoSlackTracking);
+-    };
+-  }
+-  transitions.TraverseTransitionTree(callback);
+-}
+-
+ void Map::SetInstanceDescriptors(Isolate* isolate, DescriptorArray descriptors,
+                                  int number_of_own_descriptors) {
+   set_instance_descriptors(descriptors, kReleaseStore);
+diff --git a/src/objects/map.h b/src/objects/map.h
+index 74d2a859e818d577887b4b45439e87bdd44dcb5a..aeb433ac6068f1129ceebb92dacc74858a31d99f 100644
+--- a/src/objects/map.h
++++ b/src/objects/map.h
+@@ -352,10 +352,6 @@ class Map : public TorqueGeneratedMap<Map, HeapObject> {
+   int ComputeMinObjectSlack(Isolate* isolate);
+   inline int InstanceSizeFromSlack(int slack) const;
+ 
+-  // Completes inobject slack tracking for the transition tree starting at this
+-  // initial map.
+-  V8_EXPORT_PRIVATE void CompleteInobjectSlackTracking(Isolate* isolate);
+-
+   // Tells whether the object in the prototype property will be used
+   // for instances created from this function.  If the prototype
+   // property is set to a value that is not a JSObject, the prototype
+diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
+index 42bbb10d92e90640d2a7f61beba758cb752ae87b..add7cd191064686396de76912c5799d9bb3d487b 100644
+--- a/src/runtime/runtime-object.cc
++++ b/src/runtime/runtime-object.cc
+@@ -1002,7 +1002,7 @@ RUNTIME_FUNCTION(Runtime_CompleteInobjectSlackTrackingForMap) {
+   DCHECK_EQ(1, args.length());
+ 
+   CONVERT_ARG_HANDLE_CHECKED(Map, initial_map, 0);
+-  initial_map->CompleteInobjectSlackTracking(isolate);
++  MapUpdater::CompleteInobjectSlackTracking(isolate, *initial_map);
+ 
+   return ReadOnlyRoots(isolate).undefined_value();
+ }
+diff --git a/src/runtime/runtime-test.cc b/src/runtime/runtime-test.cc
+index 69b0f6241bd006c90b57fd371e01f311d4fee115..8f54f7607bd572933cafae62ca8361e82a9b74df 100644
+--- a/src/runtime/runtime-test.cc
++++ b/src/runtime/runtime-test.cc
+@@ -1346,7 +1346,7 @@ RUNTIME_FUNCTION(Runtime_CompleteInobjectSlackTracking) {
+   DCHECK_EQ(1, args.length());
+ 
+   CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
+-  object->map().CompleteInobjectSlackTracking(isolate);
++  MapUpdater::CompleteInobjectSlackTracking(isolate, object->map());
+ 
+   return ReadOnlyRoots(isolate).undefined_value();
+ }
+diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
+index b21222f14c533cb630946b6066bfe24d1be49f93..9ba0707c33b4e96940d2aeaafe044a6548fa9923 100644
+--- a/test/cctest/test-api.cc
++++ b/test/cctest/test-api.cc
+@@ -62,6 +62,7 @@
+ #include "src/objects/js-array-inl.h"
+ #include "src/objects/js-promise-inl.h"
+ #include "src/objects/lookup.h"
++#include "src/objects/map-updater.h"
+ #include "src/objects/module-inl.h"
+ #include "src/objects/objects-inl.h"
+ #include "src/objects/string-inl.h"
+@@ -2972,9 +2973,9 @@ TEST(InternalFieldsSubclassing) {
+         CHECK_LE(i_value->map().GetInObjectProperties(), kMaxNofProperties);
+       }
+ 
+-      // Make Sure we get the precise property count.
+-      i_value->map().FindRootMap(i_isolate).CompleteInobjectSlackTracking(
+-          i_isolate);
++      // Make sure we get the precise property count.
++      i::MapUpdater::CompleteInobjectSlackTracking(
++          i_isolate, i_value->map().FindRootMap(i_isolate));
+       // TODO(cbruni): fix accounting to make this condition true.
+       // CHECK_EQ(0, i_value->map()->UnusedPropertyFields());
+       if (in_object_only) {
