@@ -26,10 +26,11 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
  public:
   explicit ElectronBrowserHandlerImpl(
       content::RenderFrameHost* render_frame_host,
-      mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
+      mojo::PendingAssociatedReceiver<mojom::ElectronBrowser> receiver);
 
-  static void Create(content::RenderFrameHost* frame_host,
-                     mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
+  static void Create(
+      content::RenderFrameHost* frame_host,
+      mojo::PendingAssociatedReceiver<mojom::ElectronBrowser> receiver);
 
   // mojom::ElectronBrowser:
   void Message(bool internal,
@@ -73,7 +74,7 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
   const int render_process_id_;
   const int render_frame_id_;
 
-  mojo::Receiver<mojom::ElectronBrowser> receiver_{this};
+  mojo::AssociatedReceiver<mojom::ElectronBrowser> receiver_{this};
 
   base::WeakPtrFactory<ElectronBrowserHandlerImpl> weak_factory_{this};
 
