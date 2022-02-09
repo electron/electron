@@ -44,6 +44,8 @@
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
+#include "content/public/browser/media_session.h"
+#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
@@ -79,6 +81,7 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
+#include "shell/browser/api/electron_api_media_session.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/message_port.h"
@@ -3721,6 +3724,17 @@ content::RenderFrameHost* WebContents::Opener() {
   return web_contents()->GetOpener();
 }
 
+v8::Local<v8::Value> WebContents::MediaSession(v8::Isolate* isolate) {
+  if (media_session_.IsEmpty()) {
+    content::MediaSession* media_session =
+        content::MediaSession::Get(web_contents());
+    CHECK(media_session);
+    auto handle = electron::api::MediaSession::Create(isolate, media_session);
+    media_session_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, media_session_);
+}
+
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
   if (frame)
@@ -4356,6 +4370,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .SetProperty("opener", &WebContents::Opener)
+      .SetProperty("mediaSession", &WebContents::MediaSession)
       .Build();
 }
 

@@ -348,6 +348,7 @@ class WebContents : public ExclusiveAccessContext,
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
   content::RenderFrameHost* MainFrame();
   content::RenderFrameHost* Opener();
+  v8::Local<v8::Value> MediaSession(v8::Isolate* isolate);
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 
@@ -758,6 +759,7 @@ class WebContents : public ExclusiveAccessContext,
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
+  v8::Global<v8::Value> media_session_;
 
   std::unique_ptr<ElectronJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;

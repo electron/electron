@@ -2231,6 +2231,10 @@ A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of 
 A [`WebFrameMain`](web-frame-main.md) property that represents the frame that opened this WebContents, either
 with open(), or by navigating a link with a target attribute.
 
+#### `contents.mediaSession` _Readonly_
+
+A [`MediaSession`](media-session.md) instance for this webContents.
+
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm

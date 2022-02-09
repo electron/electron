@@ -277,6 +277,8 @@ filenames = {
     "shell/browser/api/electron_api_global_shortcut.h",
     "shell/browser/api/electron_api_in_app_purchase.cc",
     "shell/browser/api/electron_api_in_app_purchase.h",
+    "shell/browser/api/electron_api_media_session.cc",
+    "shell/browser/api/electron_api_media_session.h",
     "shell/browser/api/electron_api_menu.cc",
     "shell/browser/api/electron_api_menu.h",
     "shell/browser/api/electron_api_native_theme.cc",
