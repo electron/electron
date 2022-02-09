@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nate Chapin <japhet@chromium.org>
+Date: Thu, 14 Oct 2021 20:24:32 +0000
+Subject: Fire iframe onload for cross-origin-initiated same-document
+ navigations
+
+A cross-origin initiator can check whether or not onload fired to
+guess the url of a target frame. Always firing onload makes it
+appear to be a cross-document navigation, even when it wasn't.
+
+Bug: 1248444
+Change-Id: I79249cb441f61ac6cab65ab9e5dd4a44b291bc4a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3193885
+Commit-Queue: Nate Chapin <japhet@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#931681}
+
+diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
+index 5f0be38667a04a3a47f190099b81778cc8b02757..ae8baa6ab44f83e114646247f99bd0b95710f249 100644
+--- a/third_party/blink/renderer/core/loader/document_loader.cc
++++ b/third_party/blink/renderer/core/loader/document_loader.cc
+@@ -1429,7 +1429,25 @@ void DocumentLoader::CommitSameDocumentNavigationInternal(
+ 
+   initial_scroll_state_.was_scrolled_by_user = false;
+ 
+-  frame_->GetDocument()->CheckCompleted();
++  if (frame_->GetDocument()->LoadEventStillNeeded()) {
++    frame_->GetDocument()->CheckCompleted();
++  } else if (frame_->Owner() && initiator_origin &&
++             !initiator_origin->CanAccess(
++                 frame_->DomWindow()->GetSecurityOrigin()) &&
++             frame_->Tree()
++                 .Parent()
++                 ->GetSecurityContext()
++                 ->GetSecurityOrigin()) {
++    // If this same-document navigation was initiated by a cross-origin iframe
++    // and is cross-origin to its parent, fire onload on the owner iframe.
++    // Normally, the owner iframe's onload fires if and only if the window's
++    // onload fires (i.e., when a navigation to a different document completes).
++    // However, a cross-origin initiator can use the presence or absence of a
++    // load event to detect whether the navigation was same- or cross-document,
++    // and can therefore try to guess the url of a cross-origin iframe. Fire the
++    // iframe's onload to prevent this technique. https://crbug.com/1251790
++    frame_->Owner()->DispatchLoad();
++  }
+ 
+   // If the item sequence number didn't change, there's no need to trigger
+   // popstate, restore scroll positions, or scroll to fragments for this
+diff --git a/third_party/blink/web_tests/http/tests/navigation/cross-origin-fragment-navigation-is-async-expected.txt b/third_party/blink/web_tests/http/tests/navigation/cross-origin-fragment-navigation-is-async-expected.txt
+index 850c54970953c62eae282e177949f9082f22a03c..09122d9c3f39f042116d197276420cc1841c5ea8 100644
+--- a/third_party/blink/web_tests/http/tests/navigation/cross-origin-fragment-navigation-is-async-expected.txt
++++ b/third_party/blink/web_tests/http/tests/navigation/cross-origin-fragment-navigation-is-async-expected.txt
+@@ -1,4 +1,6 @@
++ALERT: iframe onload fired
+ ALERT: PASS: url fragment is changing asynchronously
+ ALERT: PASS: scheduled postMessage() before hashchange triggered.
++ALERT: iframe onload fired
+ ALERT: PASS: hashchange triggered after postMessage().
+-This tests that cross-origin fragment navigations are asynchronous. It does so by scheduling a postMessage before scheduling the navigation. If the navigation is synchronous, the internals API will be able to report the presence of an url fragment immediately.
++This tests that cross-origin-initiated fragment navigations are asynchronous and always fire the load event at their embedding iframe element if it's cross-origin. It does so by scheduling a postMessage before scheduling the navigation. If the navigation is synchronous, the internals API will be able to report the presence of an url fragment immediately.
+diff --git a/third_party/blink/web_tests/http/tests/navigation/cross-origin-fragment-navigation-is-async.html b/third_party/blink/web_tests/http/tests/navigation/cross-origin-fragment-navigation-is-async.html
+index 3d74de086c1a7f8a5fedff72d7c6bb970fca57ed..a1fc3bc87ccd2319f2dff3c5d8729a1a62875ec8 100644
+--- a/third_party/blink/web_tests/http/tests/navigation/cross-origin-fragment-navigation-is-async.html
++++ b/third_party/blink/web_tests/http/tests/navigation/cross-origin-fragment-navigation-is-async.html
+@@ -1,48 +1,51 @@
+ <!DOCTYPE html>
+ <html>
+-<head>
+-    <script>
+-        if (window.testRunner) {
+-            testRunner.dumpAsText();
+-            testRunner.waitUntilDone();
+-        }
++<body>
++<script>
++if (window.testRunner) {
++    testRunner.dumpAsText();
++    testRunner.waitUntilDone();
++}
+ 
+-        function testFragmentNavigation() {
+-            window.postMessage("postmessage", "*");
+-            document.querySelector('iframe').src = "http://localhost:8000/navigation/resources/postmessage-on-hashchange.html#anchor1";
+-            if (window.internals) {
+-                if (internals.doesWindowHaveUrlFragment(document.querySelector('iframe').contentWindow))
+-                    alert("FAIL: url fragment should change asynchronously");
+-                else
+-                    alert("PASS: url fragment is changing asynchronously");
+-            }
+-        }
++window.onload = function() {
++    window.postMessage("postmessage", "*");
++    document.querySelector('iframe').src = "http://localhost:8000/navigation/resources/postmessage-on-hashchange.html#anchor1";
++    if (window.internals) {
++        if (internals.doesWindowHaveUrlFragment(document.querySelector('iframe').contentWindow))
++            alert("FAIL: url fragment should change asynchronously");
++        else
++            alert("PASS: url fragment is changing asynchronously");
++    }
++}
+ 
+-        var receivedScheduledPostMessage = false;
+-        var receivedHashchangeMessage = false;
+-        window.addEventListener('message', function (e) {
+-            if (e.data === 'postmessage') {
+-                receivedScheduledPostMessage = true;
+-                if (receivedHashchangeMessage)
+-                    alert('FAIL: hashchange already triggered!');
+-                else
+-                    alert('PASS: scheduled postMessage() before hashchange triggered.');
+-            } else {
+-                receivedHashchangeMessage = true;
+-                if (receivedScheduledPostMessage)
+-                    alert('PASS: hashchange triggered after postMessage().');
+-                else
+-                    alert('FAIL: hashchange triggered before postMessage().');
+-                testRunner.notifyDone();
+-            }
+-        });
+-    </script>
+-</head>
+-<body>
+-    <p>This tests that cross-origin fragment navigations are asynchronous. It does
+-    so by scheduling a postMessage before scheduling the navigation. If the
+-    navigation is synchronous, the internals API will be able to report the presence
+-    of an url fragment immediately.</p>
+-    <iframe src="http://localhost:8000/navigation/resources/postmessage-on-hashchange.html" onload='testFragmentNavigation()'></iframe>
++var receivedScheduledPostMessage = false;
++var receivedHashchangeMessage = false;
++window.addEventListener('message', function (e) {
++    if (e.data === 'postmessage') {
++        receivedScheduledPostMessage = true;
++        if (receivedHashchangeMessage)
++            alert('FAIL: hashchange already triggered!');
++        else
++            alert('PASS: scheduled postMessage() before hashchange triggered.');
++    } else {
++        receivedHashchangeMessage = true;
++        if (receivedScheduledPostMessage)
++            alert('PASS: hashchange triggered after postMessage().');
++        else
++            alert('FAIL: hashchange triggered before postMessage().');
++        testRunner.notifyDone();
++    }
++});
++
++function onloadFired() {
++    alert("iframe onload fired");
++}
++</script>
++<p>This tests that cross-origin-initiated fragment navigations are asynchronous
++and always fire the load event at their embedding iframe element if it's cross-origin. It does
++so by scheduling a postMessage before scheduling the navigation. If the
++navigation is synchronous, the internals API will be able to report the presence
++of an url fragment immediately.</p>
++<iframe src="http://localhost:8000/navigation/resources/postmessage-on-hashchange.html" onload="onloadFired()"></iframe>
+ </body>
+ </html>
+diff --git a/third_party/blink/web_tests/http/tests/navigation/same-origin-fragment-navigation-is-sync-expected.txt b/third_party/blink/web_tests/http/tests/navigation/same-origin-fragment-navigation-is-sync-expected.txt
+index c1c1143026cad5cfe51829a8c34d61c01a63ffbf..5a6ccc855e14417df8039f18dba7aa0474ff552d 100644
+--- a/third_party/blink/web_tests/http/tests/navigation/same-origin-fragment-navigation-is-sync-expected.txt
++++ b/third_party/blink/web_tests/http/tests/navigation/same-origin-fragment-navigation-is-sync-expected.txt
+@@ -1,3 +1,4 @@
++ALERT: iframe onload fired
+ ALERT: PASS: url fragment has changed synchronously
+ ALERT: PASS: scheduled postMessage() before hashchange triggered.
+ ALERT: PASS: hashchange triggered after postMessage().
+diff --git a/third_party/blink/web_tests/http/tests/navigation/same-origin-fragment-navigation-is-sync.html b/third_party/blink/web_tests/http/tests/navigation/same-origin-fragment-navigation-is-sync.html
+index 0ffe3cc8759e8e0ff4df7cad66c93cd5e2cbbe69..2cb9143bfce9a28d8803b49cf6afa7403554cdf4 100644
+--- a/third_party/blink/web_tests/http/tests/navigation/same-origin-fragment-navigation-is-sync.html
++++ b/third_party/blink/web_tests/http/tests/navigation/same-origin-fragment-navigation-is-sync.html
+@@ -36,6 +36,11 @@
+                 testRunner.notifyDone();
+             }
+         });
++
++    function onloadFired() {
++        alert("iframe onload fired");
++        testFragmentNavigation();
++    }
+     </script>
+ </head>
+ <body>
+@@ -43,6 +48,6 @@
+     so by scheduling a postMessage before scheduling the navigation. If the
+     navigation is synchronous, the internals API will be able to report the presence
+     of an url fragment immediately.</p>
+-    <iframe src="http://127.0.0.1:8000/navigation/resources/postmessage-on-hashchange.html" onload='testFragmentNavigation()'></iframe>
++    <iframe src="http://127.0.0.1:8000/navigation/resources/postmessage-on-hashchange.html" onload='onloadFired()'></iframe>
+ </body>
+ </html>
