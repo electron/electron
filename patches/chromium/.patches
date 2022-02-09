@@ -133,4 +133,7 @@ cherry-pick-f781748dcb3c.patch
 cherry-pick-c5571653d932.patch
 fix_crash_when_saving_edited_pdf_files.patch
 cherry-pick-1282354.patch
+cherry-pick-9db9911e1242.patch
 cherry-pick-1284367.patch
+fire_iframe_onload_for_cross-origin-initiated_same-document.patch
+merge_m-97_serial_check_for_detached_buffers_when_writing.patch
