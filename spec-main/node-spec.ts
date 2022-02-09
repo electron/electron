@@ -354,6 +354,16 @@ describe('node feature', () => {
     expect(result.status).to.equal(0);
   });
 
+  it('Runs process.exit() synchronously before the app is ready', () => {
+    const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'process-exit-before-ready', 'app.asar')], { stdio: 'inherit' });
+    expect(result.status).to.equal(1);
+  });
+
+  it('Runs process.exit() synchronously after the app is ready', () => {
+    const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'process-exit-after-ready', 'app.asar')], { stdio: 'inherit' });
+    expect(result.status).to.equal(1);
+  });
+
   ifit(features.isRunAsNodeEnabled())('handles Promise timeouts correctly', async () => {
     const scriptPath = path.join(fixtures, 'module', 'node-promise-timer.js');
     const child = childProcess.spawn(process.execPath, [scriptPath], {

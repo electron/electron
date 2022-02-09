@@ -70,9 +70,6 @@ if (process.platform === 'win32') {
   }
 }
 
-// Map process.exit to app.exit, which quits gracefully.
-process.exit = app.exit as () => never;
-
 // Load the RPC server.
 require('@electron/internal/browser/rpc-server');
 
