@@ -28,6 +28,7 @@ const files = [
   'index.js',
   'install.js',
   'package.json',
+  'versions.json',
   'README.md',
   'LICENSE'
 ];
@@ -160,6 +161,26 @@ new Promise((resolve, reject) => {
         npmTag = `beta-${currentBranch}`;
       }
     }
+  })
+  .then(() => {
+    const DEPSContent = fs.readFileSync(path.resolve(__dirname, '..', '..', 'DEPS'), 'utf8');
+
+    const getVersion = (dep) => {
+      // e.g: /'chromium_version':(\W+)(.+?)'/
+      const re = new RegExp(`'${dep}':(\\W+)(.+?)'`);
+      return re.exec(DEPSContent)[2];
+    };
+
+    const chromiumVersion = getVersion('chromium_version');
+    // v16.0.0 => 16.0.0
+    const nodeVersion = getVersion('node_version').slice(1);
+
+    fs.writeFileSync(path.join(tempDir, 'versions.json'), JSON.stringify({
+      chromium: chromiumVersion,
+      node: nodeVersion,
+      chromiumShort: chromiumVersion.split('.')[0],
+      nodeShort: nodeVersion.split('.')[0]
+    }, null, 2));
   })
   .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
   .then(() => {
