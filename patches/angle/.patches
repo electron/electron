@@ -3,4 +3,5 @@ cherry-pick-05e69c75905f.patch
 cherry-pick-891020ed64d4.patch
 cherry-pick-2b98abd8cb6c.patch
 cherry-pick-cc44ae61f37b.patch
+vangle_change_the_default_vulkan_device_choose_logic.patch
 m96_validate_samplerformat.patch
