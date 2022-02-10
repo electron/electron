@@ -12,10 +12,10 @@ Fixes that issue by trimming the newlines out of the file.
 Upstreamed at https://github.com/nodejs/node/pull/40757.
 
 diff --git a/test/common/fixtures.js b/test/common/fixtures.js
-index e5e1d887df525e493989a4aa8df6952a0e5b6c47..2da8aeb6a694e4b45d76bc3908284783d83f6755 100644
+index 3ee87e8b2d7b592eeb63ebec73ffe802a54056a2..d44e383dee2b9b6511355dac40f274e0291d01e4 100644
 --- a/test/common/fixtures.js
 +++ b/test/common/fixtures.js
-@@ -15,8 +15,13 @@ function readFixtureSync(args, enc) {
+@@ -20,8 +20,13 @@ function readFixtureSync(args, enc) {
    return fs.readFileSync(fixturesPath(args), enc);
  }
  

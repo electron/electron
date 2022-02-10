@@ -6,7 +6,7 @@ Subject: fix: add v8_enable_reverse_jsargs defines in common.gypi
 This can be removed once node upgrades V8 and inevitably has to do this exact same thing.  Also hi node people if you are looking at this.
 
 diff --git a/common.gypi b/common.gypi
-index 9e4064b263819756f17fb712a54bd6f828c5be35..2e59efb38d95231fcbcbb5a7859a6cfad3cf232c 100644
+index 25ce747c5afbb8a8930fd8c86549c61448cebae5..5c32213f4143a24528d93d51f362f9d72cf4b0ba 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@
@@ -25,7 +25,7 @@ index 9e4064b263819756f17fb712a54bd6f828c5be35..2e59efb38d95231fcbcbb5a7859a6cfa
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -390,6 +392,9 @@
+@@ -398,6 +400,9 @@
        ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
          'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
        }],

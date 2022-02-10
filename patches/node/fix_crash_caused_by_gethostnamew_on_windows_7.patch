@@ -6,7 +6,7 @@ Subject: fix: crash caused by GetHostNameW on Windows 7
 Backported from https://github.com/libuv/libuv/pull/3285.
 
 diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
-index 88602c7ee8623f16f87398cf3ffd1f71555fc1a0..5ffde08e1aed041c4da679156ed10f7e54bfc386 100644
+index 33e874ac442f88b58d2b68c8ec9764f6f664552e..2d4cc0aaa02e61bf359e80eca27527efb49fd85e 100644
 --- a/deps/uv/src/win/util.c
 +++ b/deps/uv/src/win/util.c
 @@ -37,6 +37,7 @@

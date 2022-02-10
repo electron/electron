@@ -590,7 +590,7 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 6893f0c0e6d49a8e171ec9f156f74656dab9fd06..4c8ccd10e0dcd64669cccca1e8c2e5279d683595 100644
+index b2c14b1efcd68bd20e9c946106f1ab5fb58627c5..eef0bfe638b641c68fdadd95226a74df044921cb 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,6 +29,7 @@ const keySize = 2048;
@@ -738,7 +738,6 @@ index d1782359277dc52d7a60830a6dd958544d610e6b..4c781f062bc505b860b821773070551f
 -    legacyObjectCheck.serialNumber);
 +  assert.match(legacyObject.serialNumber, legacyObjectCheck.serialNumberPattern);
  }
-
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9cb14f0e1 100644
 --- a/test/parallel/test-crypto.js

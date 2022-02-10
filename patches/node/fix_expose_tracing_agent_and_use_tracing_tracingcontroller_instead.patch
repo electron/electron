@@ -22,7 +22,7 @@ index 0fb750c5abbe00740f2095ec397c823e26666199..523d252e08974a10f9a53fb46d334566
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index 45de72bd94cf669ac2badf89d23164cb7022a5b3..364f789fbcbec8e3234961294698d8e69b04a310 100644
+index 5b1404ff8e290a505a1143b582494e9a3319a183..70518ba49b3bcbfaf2e46ba8ddc3f04236bc27b8 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -118,6 +118,7 @@ namespace node {
@@ -33,7 +33,7 @@ index 45de72bd94cf669ac2badf89d23164cb7022a5b3..364f789fbcbec8e3234961294698d8e6
  class TracingController;
  
  }
-@@ -499,6 +500,8 @@ NODE_EXTERN v8::MaybeLocal<v8::Value> PrepareStackTraceCallback(
+@@ -518,6 +519,8 @@ NODE_EXTERN v8::MaybeLocal<v8::Value> PrepareStackTraceCallback(
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(Environment* env);
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env);
  

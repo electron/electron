@@ -36,10 +36,10 @@ index 523d252e08974a10f9a53fb46d3345669cec3380..5bf19a0dda42849159d954181058897c
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 1e85bc07a4cc29f3b380da3c0e217a85309eb3a5..845e00208af4b12960ed8b3f3926323af7685185 100644
+index e679780900abc9f6b6d1d6baa52576df278be8c7..2da8174fe9e4209f4705af0a1cf8bca5928f088c 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -892,6 +892,10 @@ inline bool Environment::no_global_search_paths() const {
+@@ -882,6 +882,10 @@ inline bool Environment::no_global_search_paths() const {
           !options_->global_search_paths;
  }
  
@@ -51,10 +51,10 @@ index 1e85bc07a4cc29f3b380da3c0e217a85309eb3a5..845e00208af4b12960ed8b3f3926323a
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index 0c3715151488f425a723618252e1277b78fafe5f..e0deca497feb111622b257b952c9ed9161c7d001 100644
+index 17aa6c7222d19ae41c57bf5d71ced81f1c698e30..d86223bb255f2f5d47f26b6714adcb52d5b8ff88 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1204,6 +1204,7 @@ class Environment : public MemoryRetainer {
+@@ -1215,6 +1215,7 @@ class Environment : public MemoryRetainer {
    inline bool tracks_unmanaged_fds() const;
    inline bool hide_console_windows() const;
    inline bool no_global_search_paths() const;
@@ -63,10 +63,10 @@ index 0c3715151488f425a723618252e1277b78fafe5f..e0deca497feb111622b257b952c9ed91
    inline worker::Worker* worker_context() const;
    Environment* worker_parent_env() const;
 diff --git a/src/node.h b/src/node.h
-index 364f789fbcbec8e3234961294698d8e69b04a310..85b5ac6a5a5cb5e4388a92a1d07c9afe17140a8c 100644
+index 70518ba49b3bcbfaf2e46ba8ddc3f04236bc27b8..7ca7502e086190c87ae6a61dca2192253894e906 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -420,7 +420,11 @@ enum Flags : uint64_t {
+@@ -439,7 +439,11 @@ enum Flags : uint64_t {
    // $HOME/.node_modules and $NODE_PATH. This is used by standalone apps that
    // do not expect to have their behaviors changed because of globally
    // installed modules.
