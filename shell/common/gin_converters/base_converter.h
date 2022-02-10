@@ -29,7 +29,7 @@ struct Converter<base::TerminationStatus> {
         return gin::ConvertToV8(isolate, "launch-failed");
       case base::TERMINATION_STATUS_OOM:
         return gin::ConvertToV8(isolate, "oom");
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
         return gin::ConvertToV8(isolate, "integrity-failure");
 #endif

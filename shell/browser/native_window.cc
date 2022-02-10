@@ -21,7 +21,7 @@
 #include "shell/common/options_switches.h"
 #include "ui/views/widget/widget.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
 #endif
@@ -44,7 +44,7 @@ struct Converter<electron::NativeWindow::TitleBarStyle> {
       return false;
     if (title_bar_style == "hidden") {
       *out = TitleBarStyle::kHidden;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     } else if (title_bar_style == "hiddenInset") {
       *out = TitleBarStyle::kHiddenInset;
     } else if (title_bar_style == "customButtonsOnHover") {
@@ -63,7 +63,7 @@ namespace electron {
 
 namespace {
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
   if (!window->transparent() || !ui::win::IsAeroGlassEnabled())
     return size;
@@ -105,7 +105,7 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       if (titlebar_overlay.Get(options::kOverlayHeight, &height))
         titlebar_overlay_height_ = height;
 
-#if !(defined(OS_WIN) || defined(OS_MAC))
+#if !(BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC))
       DCHECK(false);
 #endif
     }
@@ -144,7 +144,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
     SetPosition(gfx::Point(x, y));
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     // FIXME(felixrieseberg): Dirty, dirty workaround for
     // https://github.com/electron/electron/issues/10862
     // Somehow, we need to call `SetBounds` twice to get
@@ -176,7 +176,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   } else {
     SetSizeConstraints(size_constraints);
   }
-#if defined(OS_WIN) || defined(OS_LINUX)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   bool resizable;
   if (options.Get(options::kResizable, &resizable)) {
     SetResizable(resizable);
@@ -206,7 +206,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   bool fullscreen = false;
   if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
     // Disable fullscreen button if 'fullscreen' is specified to false.
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     fullscreenable = false;
 #endif
   }
@@ -224,7 +224,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (options.Get(options::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   std::string type;
   if (options.Get(options::kVibrancyType, &type)) {
     SetVibrancy(type);
@@ -355,7 +355,7 @@ gfx::Size NativeWindow::GetContentMinimumSize() const {
 
 gfx::Size NativeWindow::GetContentMaximumSize() const {
   gfx::Size maximum_size = GetContentSizeConstraints().GetMaximumSize();
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   return GetContentSizeConstraints().HasMaximumSize()
              ? GetExpandedWindowSize(this, maximum_size)
              : maximum_size;
@@ -676,7 +676,7 @@ void NativeWindow::NotifyLayoutWindowControlsOverlay() {
   }
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,
                                        LPARAM l_param) {

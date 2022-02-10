@@ -21,7 +21,7 @@ namespace electron {
 
 class ElectronMenuModel : public ui::SimpleMenuModel {
  public:
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   struct SharingItem {
     SharingItem();
     SharingItem(SharingItem&&);
@@ -48,7 +48,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
     virtual bool ShouldCommandIdWorkWhenHidden(int command_id) const = 0;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     virtual bool GetSharingItemForCommandId(int command_id,
                                             SharingItem* item) const = 0;
 #endif
@@ -92,7 +92,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
                                   ui::Accelerator* accelerator) const;
   bool ShouldRegisterAcceleratorAt(int index) const;
   bool WorksWhenHiddenAt(int index) const;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Return the SharingItem of menu item.
   bool GetSharingItemAt(int index, SharingItem* item) const;
   // Set/Get the SharingItem of this menu.
@@ -114,7 +114,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
  private:
   Delegate* delegate_;  // weak ref.
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   absl::optional<SharingItem> sharing_item_;
 #endif
 

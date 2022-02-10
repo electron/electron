@@ -38,7 +38,7 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
   ~NativeTheme() override;
 
   void SetThemeSource(ui::NativeTheme::ThemeSource override);
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void UpdateMacOSAppearanceForOverrideValue(
       ui::NativeTheme::ThemeSource override);
 #endif

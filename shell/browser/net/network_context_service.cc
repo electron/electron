@@ -23,11 +23,11 @@ namespace electron {
 namespace {
 
 bool ShouldTriggerNetworkDataMigration() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // On Windows, if sandbox enabled means data must be migrated.
   if (SystemNetworkContextManager::IsNetworkSandboxEnabled())
     return true;
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
   if (base::FeatureList::IsEnabled(features::kTriggerNetworkDataMigration))
     return true;
   return false;

@@ -97,7 +97,7 @@ class BrowserProcessImpl : public BrowserProcess {
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(
       std::unique_ptr<BackgroundModeManager> manager) override {}
-#if (defined(OS_WIN) || defined(OS_LINUX))
+#if (BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX))
   void StartAutoupdateTimer() override {}
 #endif
   void SetApplicationLocale(const std::string& locale) override;

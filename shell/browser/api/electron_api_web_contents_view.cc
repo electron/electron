@@ -15,7 +15,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
 #endif
 
@@ -25,7 +25,7 @@ namespace api {
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin::Handle<WebContents> web_contents)
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     : View(new DelayedNativeViewHost(web_contents->inspectable_web_contents()
                                          ->GetView()
                                          ->GetNativeView())),
@@ -34,7 +34,7 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 #endif
       web_contents_(isolate, web_contents.ToV8()),
       api_web_contents_(web_contents.get()) {
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
   // On macOS the View is a newly-created |DelayedNativeViewHost| and it is our
   // responsibility to delete it. On other platforms the View is created and
   // managed by InspectableWebContents.

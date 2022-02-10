@@ -332,7 +332,7 @@ bool ElectronPermissionManager::CheckDevicePermission(
         } else if (permission ==
                    static_cast<content::PermissionType>(
                        WebContentsPermissionHelper::PermissionType::SERIAL)) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
           if (device->FindStringKey(kDeviceInstanceIdKey) ==
               granted_device.FindStringKey(kDeviceInstanceIdKey))
             return true;
@@ -346,14 +346,14 @@ bool ElectronPermissionManager::CheckDevicePermission(
             continue;
           }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
           if (*device->FindStringKey(kUsbDriverKey) !=
               *granted_device.FindStringKey(kUsbDriverKey)) {
             continue;
           }
-#endif  // defined(OS_MAC)
+#endif  // BUILDFLAG(IS_MAC)
           return true;
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
         }
       }
     }

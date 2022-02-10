@@ -24,7 +24,7 @@ class InspectableWebContentsViewDelegate {
   // Returns the icon of devtools window.
   virtual ui::ImageModel GetDevToolsWindowIcon();
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   // Called when creating devtools window.
   virtual void GetDevToolsWindowWMClass(std::string* name,
                                         std::string* class_name) {}

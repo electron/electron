@@ -139,7 +139,7 @@ index 3f7dce0281f7b5a540d7b9377ef14a8a6aa9a2fa..11d8419791f3e45d5242081422d452d4
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 5e1b1f542e98f9257938f909a2d92e3117e298af..4b9825694c8b8d6bbe671ebeef8eb57baf8b05a1 100644
+index b19e09806e1e1863dd07bb9cf70628e951cd68a9..289e869b5efea09af5172f0b1c5cbd80eddd78cd 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -174,6 +174,12 @@ source_set("audio") {
@@ -169,10 +169,10 @@ index ebdc6364312ee710d416318836c03aeec9bfb65c..aa9b50de7efaf0e1b64effea93204984
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 3a541ac224c53b2809e8634286dac91873d46b72..89c9b095a2a96b9cae5e8d4bba85847f9585f985 100644
+index e59fec60e9d593d311b21c12daf2d611a36a2d6e..b812dee59b55edee6efe73ce4b1da0a89b45240e 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -140,8 +140,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -129,8 +129,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
  
    bool Watch() override {
      CheckOnCorrectSequence();
@@ -182,10 +182,10 @@ index 3a541ac224c53b2809e8634286dac91873d46b72..89c9b095a2a96b9cae5e8d4bba85847f
      if (!config_watcher_.Watch(base::BindRepeating(&Watcher::OnConfigChanged,
                                                     base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -158,6 +158,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -147,6 +147,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
        success = false;
      }
- #endif  // !defined(OS_IOS)
+ #endif  // !BUILDFLAG(IS_IOS)
 +#endif
      return success;
    }
@@ -285,3 +285,23 @@ index d59a16112d27e2696437163483c44eca414c225c..1ccd20fe7efa3cbae48f99d0660b0252
      default:
        NOTREACHED();
        return nullptr;
+diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
+index 7cb34e119cd30353fe56e7c71ed5e1d417896888..dbb6cc8e37eff9b30269687f29808ec3ca46b243 100644
+--- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
++++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
+@@ -86,6 +86,7 @@
+     }
+   }
+ 
++#ifndef MAS_BUILD
+   // AXTextMarker
+   if (IsAXTextMarker(value)) {
+     return AXTextMarkerToBaseValue(value, indexer);
+@@ -94,6 +95,7 @@
+   // AXTextMarkerRange
+   if (IsAXTextMarkerRange(value))
+     return AXTextMarkerRangeToBaseValue(value, indexer);
++#endif
+ 
+   // Accessible object
+   if (IsNSAccessibilityElement(value) || IsAXUIElement(value)) {

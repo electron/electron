@@ -20,13 +20,13 @@ namespace api {
 gin::WrapperInfo SystemPreferences::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 SystemPreferences::SystemPreferences() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   InitializeWindow();
 #endif
 }
 
 SystemPreferences::~SystemPreferences() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   Browser::Get()->RemoveObserver(this);
 #endif
 }
@@ -63,16 +63,16 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<
              SystemPreferences>::GetObjectTemplateBuilder(isolate)
-#if defined(OS_WIN) || defined(OS_MAC)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
       .SetMethod("getColor", &SystemPreferences::GetColor)
       .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
       .SetMethod("getMediaAccessStatus",
                  &SystemPreferences::GetMediaAccessStatus)
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
       .SetMethod("postNotification", &SystemPreferences::PostNotification)
       .SetMethod("subscribeNotification",
                  &SystemPreferences::SubscribeNotification)

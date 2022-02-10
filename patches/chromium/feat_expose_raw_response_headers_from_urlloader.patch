@@ -81,7 +81,7 @@ index 27477d595fd22dc49329631a0b52ebdaafe1edb1..a4fd22381738648040cd72dce747285f
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 4a26ea8928e333a9231dad10b03947b3febf9d47..97bc79ff624767c56f215d77a1bcabed378330aa 100644
+index 80f26b62b25bd6aa46886e3112b2ffd2698693fe..e72cab84db36eec86309160d4f7416ee431f5e34 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -7,6 +7,7 @@ module network.mojom;
@@ -103,10 +103,10 @@ index 4a26ea8928e333a9231dad10b03947b3febf9d47..97bc79ff624767c56f215d77a1bcabed
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index e53ff47c6f43d00fd89695c4ef08ef5f455df103..56dce34839df7569361bfe7076f6dd2f7ef307c7 100644
+index 59a89d471326069e183cdcc42af862fe19d7448e..39cd96d5e5785879bd3d82fb4c71fdf80c48e5ee 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -532,6 +532,7 @@ URLLoader::URLLoader(
+@@ -541,6 +541,7 @@ URLLoader::URLLoader(
        peer_closed_handle_watcher_(FROM_HERE,
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
@@ -114,7 +114,7 @@ index e53ff47c6f43d00fd89695c4ef08ef5f455df103..56dce34839df7569361bfe7076f6dd2f
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -690,7 +691,7 @@ URLLoader::URLLoader(
+@@ -699,7 +700,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index e53ff47c6f43d00fd89695c4ef08ef5f455df103..56dce34839df7569361bfe7076f6dd2f
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1340,6 +1341,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1349,6 +1350,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    response_ = network::mojom::URLResponseHead::New();
    PopulateResourceResponse(url_request_.get(), is_load_timing_enabled_,
                             options_, response_.get());

@@ -472,8 +472,8 @@ source_set("electron_lib") {
 
   if (is_linux) {
     deps += [
-      "//build/config/linux/gtk:gtkprint",
       "//components/crash/content/browser",
+      "//ui/gtk:gtk_config",
     ]
   }
 
@@ -549,7 +549,7 @@ source_set("electron_lib") {
       sources += filenames.lib_sources_linux_x11
       public_deps += [
         "//ui/base/x",
-        "//ui/platform_window/x11",
+        "//ui/ozone/platform/x11",
       ]
     }
     configs += [ ":gio_unix" ]

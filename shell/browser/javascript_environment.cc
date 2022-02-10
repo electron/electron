@@ -76,11 +76,6 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
  public:
   enum InitializationPolicy { kZeroInitialize, kDontInitialize };
 
-  base::PartitionOptions::LazyCommit lazy_commit =
-      base::FeatureList::IsEnabled(base::features::kPartitionAllocLazyCommit)
-          ? base::PartitionOptions::LazyCommit::kEnabled
-          : base::PartitionOptions::LazyCommit::kDisabled;
-
   ArrayBufferAllocator() {
     // Ref.
     // https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/wtf/allocator/partitions.cc;l=94;drc=062c315a858a87f834e16a144c2c8e9591af2beb
@@ -89,8 +84,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
                       base::PartitionOptions::Quarantine::kAllowed,
                       base::PartitionOptions::Cookie::kAllowed,
                       base::PartitionOptions::BackupRefPtr::kDisabled,
-                      base::PartitionOptions::UseConfigurablePool::kNo,
-                      lazy_commit});
+                      base::PartitionOptions::UseConfigurablePool::kNo});
   }
 
   // Allocate() methods return null to signal allocation failure to V8, which
