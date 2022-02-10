@@ -134,6 +134,7 @@ cherry-pick-c5571653d932.patch
 fix_crash_when_saving_edited_pdf_files.patch
 cherry-pick-9db9911e1242.patch
 cherry-pick-1284367.patch
+m97_webcodecs_various_decodertemplate_shutdown_cleanups.patch
 96_take_local_copy_of_ump_local_sources_to_iterate.patch
 pin_scrolltop_to_0_during_autofill_preview.patch
 fix_preview_state_detection.patch
