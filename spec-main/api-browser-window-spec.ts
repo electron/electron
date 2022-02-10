@@ -4817,7 +4817,8 @@ describe('BrowserWindow module', () => {
         expect(w.webContents.getFrameRate()).to.equal(30);
       });
 
-      it('sets custom frame rate (property)', async () => {
+      // TODO(jkleinsc) fix this flaky test on macOS
+      ifit(process.platform !== 'darwin')('sets custom frame rate (property)', async () => {
         const domReady = emittedOnce(w.webContents, 'dom-ready');
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
         await domReady;

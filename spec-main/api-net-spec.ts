@@ -4,7 +4,7 @@ import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
-import { defer, delay } from './spec-helpers';
+import { defer, delay, ifit } from './spec-helpers';
 
 const kOneKiloByte = 1024;
 const kOneMegaByte = kOneKiloByte * kOneKiloByte;
@@ -1792,7 +1792,8 @@ describe('net module', () => {
       expect(nodeRequestProcessed).to.equal(true);
     });
 
-    it('should correctly throttle an incoming stream', async () => {
+    // TODO(jkleinsc) fix this flaky test on linux on arm64
+    ifit(process.platform !== 'linux' || process.arch !== 'arm64')('should correctly throttle an incoming stream', async () => {
       let numChunksSent = 0;
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         const data = randomString(kOneMegaByte);

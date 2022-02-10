@@ -143,7 +143,8 @@ describe('<webview> tag', function () {
       expect(hidden).to.be.false();
     });
 
-    it('inherits the parent window visibility state and receives visibilitychange events', async () => {
+    // TODO(jkleinsc) fix this flaky test on arm64 linux
+    ifit(process.platform !== 'linux' || process.arch !== 'arm64')('inherits the parent window visibility state and receives visibilitychange events', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
       const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong');
@@ -475,7 +476,8 @@ describe('<webview> tag', function () {
       expect(w.isFullScreen()).to.be.false();
     });
 
-    it('pressing ESC should emit the leave-html-full-screen event', async () => {
+    // TODO(jkleinsc) fix this flaky test on arm64 macOS
+    ifit(process.platform !== 'darwin' || process.arch !== 'arm64')('pressing ESC should emit the leave-html-full-screen event', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
