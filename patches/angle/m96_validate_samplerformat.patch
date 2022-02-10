@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lingfeng Yang <lfy@google.com>
+Date: Wed, 1 Dec 2021 17:08:01 -0800
+Subject: M96: Validate SamplerFormat
+
+We weren't validating sampler formats in ProgramExecutable validation.
+
+Bug: chromium:1273661
+Change-Id: Ida0c67c0c7169ea3f47ceb2d433bee17012a7e5e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3312717
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Commit-Queue: Lingfeng Yang <lfy@google.com>
+(cherry picked from commit 6d3435fddd7abd67699c3f020d6b4fa21445d9b3)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3335173
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/ProgramExecutable.cpp b/src/libANGLE/ProgramExecutable.cpp
+index baf63ecec6f82fda9dd79a1c398b8e95ec70e321..14e5abdfab36a95f39839fc171e6e0bc3a5dc6e9 100644
+--- a/src/libANGLE/ProgramExecutable.cpp
++++ b/src/libANGLE/ProgramExecutable.cpp
+@@ -1132,6 +1132,19 @@ bool ProgramExecutable::validateSamplersImpl(InfoLog *infoLog, const Caps &caps)
+             mCachedValidateSamplersResult = false;
+             return false;
+         }
++
++        if (mActiveSamplerFormats[textureUnit] == SamplerFormat::InvalidEnum)
++        {
++            if (infoLog)
++            {
++                (*infoLog) << "Samplers of conflicting formats refer to the same texture "
++                              "image unit ("
++                           << textureUnit << ").";
++            }
++
++            mCachedValidateSamplersResult = false;
++            return false;
++        }
+     }
+ 
+     mCachedValidateSamplersResult = true;
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index ba512a11cb023d9caae666ab2634d1e66057d12c..56bef0186234f59d370669c21f588ea9c5c356fc 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -9796,8 +9796,6 @@ class TextureChangeStorageUploadTest : public ANGLETest
+             FAIL() << "shader compilation failed.";
+         }
+ 
+-        mColorLocation = glGetUniformLocation(mProgram, essl1_shaders::ColorUniform());
+-
+         glUseProgram(mProgram);
+ 
+         glClearColor(0, 0, 0, 0);
+@@ -9842,6 +9840,53 @@ TEST_P(TextureChangeStorageUploadTest, Basic)
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++class ExtraSamplerCubeShadowUseTest : public ANGLETest
++{
++  protected:
++    ExtraSamplerCubeShadowUseTest() : ANGLETest() {}
++
++    const char *getVertexShaderSource() { return "#version 300 es\nvoid main() {}"; }
++
++    const char *getFragmentShaderSource()
++    {
++        return R"(#version 300 es
++precision mediump float;
++
++uniform mediump samplerCube var_0002; // this has to be there
++uniform highp samplerCubeShadow var_0004; // this has to be a cube shadow sampler
++out vec4 color;
++void main() {
++
++    vec4 var_0031 = texture(var_0002, vec3(1,1,1));
++    ivec2 size = textureSize(var_0004, 0) ;
++    var_0031.x += float(size.y);
++
++    color = var_0031;
++})";
++    }
++
++    void testSetUp() override
++    {
++        mProgram = CompileProgram(getVertexShaderSource(), getFragmentShaderSource());
++        if (mProgram == 0)
++        {
++            FAIL() << "shader compilation failed.";
++        }
++        glUseProgram(mProgram);
++        ASSERT_GL_NO_ERROR();
++    }
++
++    void testTearDown() override { glDeleteProgram(mProgram); }
++
++    GLuint mProgram;
++};
++
++TEST_P(ExtraSamplerCubeShadowUseTest, Basic)
++{
++    glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++}
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ #define ES2_EMULATE_COPY_TEX_IMAGE()                          \
+@@ -9957,4 +10002,6 @@ ANGLE_INSTANTIATE_TEST_ES31_AND(CopyImageTestES31, WithDirectSPIRVGeneration(ES3
+ 
+ ANGLE_INSTANTIATE_TEST_ES3(TextureChangeStorageUploadTest);
+ 
++ANGLE_INSTANTIATE_TEST_ES3(ExtraSamplerCubeShadowUseTest);
++
+ }  // anonymous namespace

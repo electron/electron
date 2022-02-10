@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peng Huang <penghuang@chromium.org>
+Date: Mon, 25 Oct 2021 15:45:36 -0400
+Subject: VANGLE: change the default vulkan device choose logic
+
+To match the vulkan device choose logic in chrome, ANGLE will choose
+the default device based on the order of (discret GPU > integrated GPU
+> other GPU)
+
+TODO: for long term, ANGLE should provide a way to let chrome specify
+the physical device.
+
+Bug: chromium:1260869
+Change-Id: Id023138485eb65fcc1d2758103d59a4e6cb2a51d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3242963
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Peng Huang <penghuang@chromium.org>
+
+diff --git a/src/common/vulkan/vulkan_icd.cpp b/src/common/vulkan/vulkan_icd.cpp
+index 0ed7ae2aa058792b700503dfdb6fd91b05bf68fb..df14f5f674b37c49332e43ccba8f1782cb13f495 100644
+--- a/src/common/vulkan/vulkan_icd.cpp
++++ b/src/common/vulkan/vulkan_icd.cpp
+@@ -11,6 +11,7 @@
+ #include <functional>
+ #include <vector>
+ 
++#include "common/Optional.h"
+ #include "common/bitset_utils.h"
+ #include "common/debug.h"
+ #include "common/system_utils.h"
+@@ -94,8 +95,7 @@ ICDFilterFunc GetFilterForICD(vk::ICD preferredICD)
+             const std::string anglePreferredDevice =
+                 angle::GetEnvironmentVar(kANGLEPreferredDeviceEnv);
+             return [anglePreferredDevice](const VkPhysicalDeviceProperties &deviceProperties) {
+-                return (anglePreferredDevice.empty() ||
+-                        anglePreferredDevice == deviceProperties.deviceName);
++                return (anglePreferredDevice == deviceProperties.deviceName);
+             };
+     }
+ }
+@@ -262,9 +262,37 @@ void ChoosePhysicalDevice(const std::vector<VkPhysicalDevice> &physicalDevices,
+             return;
+         }
+     }
+-    WARN() << "Preferred device ICD not found. Using default physicalDevice instead.";
+ 
+-    // Fall back to first device.
++    Optional<VkPhysicalDevice> integratedDevice;
++    VkPhysicalDeviceProperties integratedDeviceProperties;
++    for (const VkPhysicalDevice &physicalDevice : physicalDevices)
++    {
++        vkGetPhysicalDeviceProperties(physicalDevice, physicalDevicePropertiesOut);
++        // If discrete GPU exists, uses it by default.
++        if (physicalDevicePropertiesOut->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
++        {
++            *physicalDeviceOut = physicalDevice;
++            return;
++        }
++        if (physicalDevicePropertiesOut->deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
++            !integratedDevice.valid())
++        {
++            integratedDevice           = physicalDevice;
++            integratedDeviceProperties = *physicalDevicePropertiesOut;
++            continue;
++        }
++    }
++
++    // If only integrated GPU exists, use it by default.
++    if (integratedDevice.valid())
++    {
++        *physicalDeviceOut           = integratedDevice.value();
++        *physicalDevicePropertiesOut = integratedDeviceProperties;
++        return;
++    }
++
++    WARN() << "Preferred device ICD not found. Using default physicalDevice instead.";
++    // Fallback to the first device.
+     *physicalDeviceOut = physicalDevices[0];
+     vkGetPhysicalDeviceProperties(*physicalDeviceOut, physicalDevicePropertiesOut);
+ }
