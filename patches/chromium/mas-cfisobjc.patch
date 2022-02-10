@@ -6,7 +6,7 @@ Subject: mas: avoid usage of _CFIsObjC
 Removes usage of the _CFIsObjC private API.
 
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index 11fa4bb6714518b98321d5e10919de3e01403efd..c9232593c08be04cb62fe7163a240cbed4f6e464 100644
+index c6de93c8a034392b9ed75ad38dc27f47570d2857..9f17cad9ab6495b930e520c001f5399d6cb3f0a3 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -31,12 +31,6 @@
@@ -22,7 +22,7 @@ index 11fa4bb6714518b98321d5e10919de3e01403efd..c9232593c08be04cb62fe7163a240cbe
  #endif
  }  // extern "C"
  
-@@ -328,8 +322,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
+@@ -318,8 +312,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -32,7 +32,7 @@ index 11fa4bb6714518b98321d5e10919de3e01403efd..c9232593c08be04cb62fe7163a240cbe
    return ns_val;
  }
  
-@@ -400,9 +393,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+@@ -390,9 +383,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
      return (CTFontRef)(cf_val);
    }
  

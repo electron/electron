@@ -61,32 +61,22 @@ index 8e54570ea4c83483eedee4c781f0498ba07bc3dd..b1eb0b2f1a3dfb71e1f5d3917c67e66a
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 6636961b18c71de0477407e6bebc64b091144afd..674cd9100f6ce4e8811e04b459da9f98fb07af3d 100644
+index 0d077c57ce3b21cc8cb48ad363e61d8cb8aaeca9..367b99c0f4e86aca94cda061bff64aa5fcf73653 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-@@ -16,9 +16,11 @@
+@@ -14,9 +14,11 @@
+ #include "base/time/time.h"
  #include "base/timer/timer.h"
  #include "build/build_config.h"
- #include "chrome/app/vector_icons/vector_icons.h"
 +#if 0
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/ui/browser.h"
  #include "chrome/browser/ui/browser_finder.h"
 +#endif
- #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
- #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
- #include "chrome/browser/ui/views/overlay/close_image_button.h"
-@@ -29,7 +31,8 @@
- #include "chrome/browser/ui/views/overlay/toggle_camera_button.h"
- #include "chrome/browser/ui/views/overlay/toggle_microphone_button.h"
- #include "chrome/browser/ui/views/overlay/track_image_button.h"
--#include "chrome/grit/generated_resources.h"
-+#include "electron/grit/electron_resources.h"
-+#include "components/url_formatter/url_formatter.h"
+ #include "chrome/grit/generated_resources.h"
  #include "components/vector_icons/vector_icons.h"
  #include "content/public/browser/picture_in_picture_window_controller.h"
- #include "content/public/browser/web_contents.h"
-@@ -58,7 +61,7 @@
+@@ -36,7 +38,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -95,17 +85,8 @@ index 6636961b18c71de0477407e6bebc64b091144afd..674cd9100f6ce4e8811e04b459da9f98
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -251,7 +254,7 @@ std::unique_ptr<OverlayWindowViews> OverlayWindowViews::Create(
-   overlay_window->Init(std::move(params));
-   overlay_window->OnRootViewReady();
- 
--#if BUILDFLAG(IS_WIN)
-+#if 0
-   std::wstring app_user_model_id;
-   Browser* browser =
-       chrome::FindBrowserWithWebContents(controller->GetWebContents());
 diff --git a/chrome/browser/ui/views/overlay/playback_image_button.cc b/chrome/browser/ui/views/overlay/playback_image_button.cc
-index 2a1dcf30751d1c22831e4c2eed43e90ea539b535..113bce8bff4984f673c09d4cad5b98c7ce40a311 100644
+index ad413df822af98f4f80a460c6e464cf5237d5ac4..821b75400a7a4921e59a414516739c6de5a66df7 100644
 --- a/chrome/browser/ui/views/overlay/playback_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/playback_image_button.cc
 @@ -6,7 +6,7 @@

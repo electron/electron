@@ -48,7 +48,6 @@ worker_context_will_destroy.patch
 frame_host_manager.patch
 crashpad_pid_check.patch
 network_service_allow_remote_certificate_verification_logic.patch
-put_back_deleted_colors_for_autofill.patch
 disable_color_correct_rendering.patch
 add_contentgpuclient_precreatemessageloop_callback.patch
 picture-in-picture.patch

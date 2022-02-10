@@ -49,7 +49,7 @@ index 4bfe2501309e832dc9962d5f4642c6b7c782f83d..c45f1207be984fae9aee2cc5b9a7c405
  #endif
  
 diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thread_win.cc
-index 5aee160aec0160f37d61005ec3b71accb58b2eaa..bc73591dd8b66c304fa42b3349bbbf6f82ed13ad 100644
+index c965c9764ad38a8b52b727ca98fe41f00ab6707d..7d44c4e63b2b4ccf595b5e2a0212fb6c4eb2b5bd 100644
 --- a/base/threading/platform_thread_win.cc
 +++ b/base/threading/platform_thread_win.cc
 @@ -29,6 +29,7 @@
@@ -69,8 +69,8 @@ index 5aee160aec0160f37d61005ec3b71accb58b2eaa..bc73591dd8b66c304fa42b3349bbbf6f
    internal::PCScan::NotifyThreadCreated(internal::GetStackPointer());
  #endif
  
-@@ -127,7 +128,7 @@ DWORD __stdcall ThreadFunc(void* params) {
-         PlatformThread::CurrentId());
+@@ -125,7 +126,7 @@ DWORD __stdcall ThreadFunc(void* params) {
+                                                    PlatformThread::CurrentId());
    }
  
 -#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
