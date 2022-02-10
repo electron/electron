@@ -349,10 +349,10 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo mkdir -p $TMPDIR/del-target
-        if [ "$TARGET_ARCH" == "arm64" ]; then
-          # Remount the root volume as writable, don't ask questions plz
-          sudo mount -uw /
-        fi
+
+        # Remount the root volume as writable, don't ask questions plz
+        sudo mount -uw /
+
         tmpify() {
           if [ -d "$1" ]; then
             sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
@@ -394,33 +394,32 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         tmpify /usr/local/Homebrew
         sudo rm -rf $TMPDIR/del-target
 
-        if [ "$TARGET_ARCH" == "arm64" ]; then
-          sudo rm -rf "/System/Library/Desktop Pictures"
-          sudo rm -rf /System/Library/Templates/Data
-          sudo rm -rf /System/Library/Speech/Voices
-          sudo rm -rf "/System/Library/Screen Savers"
-          sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
-          sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
-          sudo rm -rf /System/Volumes/Data/Library/Java
-          sudo rm -rf /System/Volumes/Data/Library/Ruby
-          sudo rm -rf /System/Volumes/Data/Library/Printers
-          sudo rm -rf /System/iOSSupport
-          sudo rm -rf /System/Applications/*.app
-          sudo rm -rf /System/Applications/Utilities/*.app
-          sudo rm -rf /System/Library/LinguisticData
-          sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
-          # sudo rm -rf /System/Library/Fonts/*
-          # sudo rm -rf /System/Library/PreferencePanes
-          sudo rm -rf /System/Library/AssetsV2/*
-          sudo rm -rf /Applications/Safari.app
-          sudo rm -rf ~/project/src/build/linux
-          sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
-          sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
+        sudo rm -rf "/System/Library/Desktop Pictures"
+        sudo rm -rf /System/Library/Templates/Data
+        sudo rm -rf /System/Library/Speech/Voices
+        sudo rm -rf "/System/Library/Screen Savers"
+        sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
+        sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
+        sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/
+        sudo rm -rf /System/Volumes/Data/Library/Java
+        sudo rm -rf /System/Volumes/Data/Library/Ruby
+        sudo rm -rf /System/Volumes/Data/Library/Printers
+        sudo rm -rf /System/iOSSupport
+        sudo rm -rf /System/Applications/*.app
+        sudo rm -rf /System/Applications/Utilities/*.app
+        sudo rm -rf /System/Library/LinguisticData
+        sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
+        # sudo rm -rf /System/Library/Fonts/*
+        # sudo rm -rf /System/Library/PreferencePanes
+        sudo rm -rf /System/Library/AssetsV2/*
+        sudo rm -rf /Applications/Safari.app
+        sudo rm -rf ~/project/src/build/linux
+        sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
+        sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
 
-          # lipo off some huge binaries arm64 versions to save space
-          strip_arm_deep $(xcode-select -p)/../SharedFrameworks
-          strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-        fi
+        # lipo off some huge binaries arm64 versions to save space
+        strip_arm_deep $(xcode-select -p)/../SharedFrameworks
+        strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
       fi
     background: true
 
