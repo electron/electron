@@ -462,8 +462,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  isolate_data_ =
-      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
+  isolate_data_ = node::CreateIsolateData(isolate, uv_loop_, platform);
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
@@ -476,24 +475,24 @@ node::Environment* NodeBindings::CreateEnvironment(
     // not to register its handler (overriding blinks) in non-browser processes.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
              node::EnvironmentFlags::kNoInitializeInspector;
-    v8::TryCatch try_catch(context->GetIsolate());
-    env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
-    DCHECK(env);
-
-    // This will only be caught when something has gone terrible wrong as all
-    // electron scripts are wrapped in a try {} catch {} by webpack
-    if (try_catch.HasCaught()) {
-      LOG(ERROR) << "Failed to initialize node environment in process: "
-                 << process_type;
-    }
-  } else {
-    env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
-    DCHECK(env);
   }
+
+  v8::TryCatch try_catch(isolate);
+  env = node::CreateEnvironment(
+      isolate_data_, context, args, exec_args,
+      static_cast<node::EnvironmentFlags::Flags>(flags));
+
+  if (try_catch.HasCaught()) {
+    std::string err_msg =
+        "Failed to initialize node environment in process: " + process_type;
+    v8::Local<v8::Message> message = try_catch.Message();
+    std::string msg;
+    if (!message.IsEmpty() && gin::ConvertFromV8(isolate, message->Get(), &msg))
+      err_msg += " , with error: " + msg;
+    LOG(ERROR) << err_msg;
+  }
+
+  DCHECK(env);
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
