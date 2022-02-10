@@ -386,8 +386,6 @@ filenames = {
     "shell/browser/file_select_helper.cc",
     "shell/browser/file_select_helper.h",
     "shell/browser/file_select_helper_mac.mm",
-    "shell/browser/font/electron_font_access_delegate.cc",
-    "shell/browser/font/electron_font_access_delegate.h",
     "shell/browser/font_defaults.cc",
     "shell/browser/font_defaults.h",
     "shell/browser/hid/electron_hid_delegate.cc",
@@ -681,8 +679,6 @@ filenames = {
   ]
 
   lib_sources_extensions = [
-    "shell/browser/extensions/api/i18n/i18n_api.cc",
-    "shell/browser/extensions/api/i18n/i18n_api.h",
     "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.cc",
     "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.h",
     "shell/browser/extensions/api/management/electron_management_api_delegate.cc",

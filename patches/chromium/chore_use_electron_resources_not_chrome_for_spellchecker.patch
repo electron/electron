@@ -7,10 +7,10 @@ spellchecker uses a few IDS_ resources.  We need to load these from
 Electrons grit header instead of Chromes
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 3210670738694953fdd65b1d0c2ca30d7c29d8c9..8f418d78b7ac7a23d80f44e23d430febe641cf0a 100644
+index f338d61091545f4319b6d5318d10eed5c9b02af3..5f0b1af64911966f9b24a2b5ef063e4473b81a8f 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -7016,6 +7016,7 @@ static_library("browser") {
+@@ -7038,6 +7038,7 @@ static_library("browser") {
      deps += [
        "//components/spellcheck/browser",
        "//components/spellcheck/common",
@@ -19,11 +19,11 @@ index 3210670738694953fdd65b1d0c2ca30d7c29d8c9..8f418d78b7ac7a23d80f44e23d430feb
  
      if (!is_android) {
 diff --git a/chrome/browser/spellchecker/spellcheck_factory.cc b/chrome/browser/spellchecker/spellcheck_factory.cc
-index 2b7aa1add57dccbcbf8202cead5b7d2d5a174270..2ba03fc045f2e4bb12f173aacb6581ccb20bfc5a 100644
+index 7c3b6a69acb16186add5d467dbc22360d90d46d4..703e2ce60f4f35f9c71e8b503ffd62f9ea8f365a 100644
 --- a/chrome/browser/spellchecker/spellcheck_factory.cc
 +++ b/chrome/browser/spellchecker/spellcheck_factory.cc
-@@ -6,7 +6,7 @@
- 
+@@ -7,7 +7,7 @@
+ #include "build/build_config.h"
  #include "chrome/browser/profiles/incognito_helpers.h"
  #include "chrome/browser/spellchecker/spellcheck_service.h"
 -#include "chrome/grit/locale_settings.h"
@@ -32,7 +32,7 @@ index 2b7aa1add57dccbcbf8202cead5b7d2d5a174270..2ba03fc045f2e4bb12f173aacb6581cc
  #include "components/pref_registry/pref_registry_syncable.h"
  #include "components/prefs/pref_service.h"
 diff --git a/components/language/core/browser/BUILD.gn b/components/language/core/browser/BUILD.gn
-index 777634b4f93467051ea9e9e9fe448204a9c28cf1..11454e9e7cd06717033631cc4627c3d061301863 100644
+index fdba4ca90882656d6ba369dae48d5dfc13991cb8..fb3b759362275aafd4ed01a7865a4dd0dfaad727 100644
 --- a/components/language/core/browser/BUILD.gn
 +++ b/components/language/core/browser/BUILD.gn
 @@ -30,6 +30,7 @@ static_library("browser") {
@@ -44,7 +44,7 @@ index 777634b4f93467051ea9e9e9fe448204a9c28cf1..11454e9e7cd06717033631cc4627c3d0
    ]
  }
 diff --git a/components/language/core/browser/language_prefs.cc b/components/language/core/browser/language_prefs.cc
-index 0c34853eba1243519f10bfd5e4dfa5d479a97bcc..99632534a06c11b9e8cb000151fb28e64a5ca0c7 100644
+index 491315f1fd94332a1895c2286618cb0e8ed1544b..303d29d577a87ea07005fb87f562eef79b36cd8f 100644
 --- a/components/language/core/browser/language_prefs.cc
 +++ b/components/language/core/browser/language_prefs.cc
 @@ -22,7 +22,7 @@

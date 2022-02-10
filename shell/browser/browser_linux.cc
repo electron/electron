@@ -15,7 +15,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
 #include "ui/gtk/gtk_util.h"
 #endif

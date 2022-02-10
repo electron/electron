@@ -17,17 +17,18 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-index cb6b39ee5cf75fec6cf015072eb1f5be08dcf7c4..269cde5100ff1380a9429e7aad1018b50cc01957 100644
+index 8a68c53e35dafce5fced1ad2c7ff5dad83ffbf3c..ee615d3eb03232b34f5acbb58490c7de9ad08cfd 100644
 --- a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
 +++ b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-@@ -432,7 +432,7 @@ void MobileFriendlinessChecker::ComputeSmallTextRatio(
+@@ -495,8 +495,7 @@ void MobileFriendlinessChecker::NotifyInvalidatePaint(
                                 ->GetPageScaleConstraintsSet()
                                 .FinalConstraints()
                                 .initial_scale;
 -    DCHECK_GT(initial_scale, 0);
+-
 +    // DCHECK_GT(initial_scale, 0);
      double actual_font_size =
-         style.FontSize() * initial_scale / viewport_scalar_;
+         style.FontSize() * initial_scale / viewport_scalar;
      double area = text->PhysicalAreaSize();
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
 index fe8d191217e24b08d36339dbf047beaeb6bd6538..870db0552544e3e89d9498c22ec3db81b46df741 100644

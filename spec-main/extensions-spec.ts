@@ -210,7 +210,7 @@ describe('chrome extensions', () => {
     });
     it('getAcceptLanguages()', async () => {
       const result = await exec('getAcceptLanguages');
-      expect(result).to.be.an('array').and.deep.equal(['en-US']);
+      expect(result).to.be.an('array').and.deep.equal(['en-US', 'en']);
     });
     it('getMessage()', async () => {
       const result = await exec('getMessage');

@@ -32,17 +32,11 @@ void InitializeFeatureList() {
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
 
-  // PlzServiceWorker breaks fetching service worker scripts for custom
-  // protocols or chrome-extension protocols due to a change in the URL loader
-  // used to fetch the script.
-  // TODO(MarshallOfSound): Re-enable and fix?
-  disable_features += std::string(",") + features::kPlzServiceWorker.name;
-
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Disable async spellchecker suggestions for Windows, which causes
   // an empty suggestions list to be returned
   disable_features +=

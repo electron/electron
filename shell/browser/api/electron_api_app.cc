@@ -32,6 +32,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
+#include "crypto/crypto_buildflags.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_server_config.h"
 #include "net/dns/public/util.h"
@@ -70,12 +71,12 @@
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/win/jump_list.h"
 #endif
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #endif
@@ -84,7 +85,7 @@ using electron::Browser;
 
 namespace gin {
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 template <>
 struct Converter<electron::ProcessIntegrityLevel> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -346,7 +347,7 @@ struct Converter<JumpListResult> {
 };
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 template <>
 struct Converter<Browser::LaunchItem> {
   static bool FromV8(v8::Isolate* isolate,
@@ -390,7 +391,7 @@ struct Converter<Browser::LoginItemSettings> {
     dict.Get("openAsHidden", &(out->open_as_hidden));
     dict.Get("path", &(out->path));
     dict.Get("args", &(out->args));
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     dict.Get("enabled", &(out->enabled));
     dict.Get("name", &(out->name));
 #endif
@@ -405,7 +406,7 @@ struct Converter<Browser::LoginItemSettings> {
     dict.Set("restoreState", val.restore_state);
     dict.Set("wasOpenedAtLogin", val.opened_at_login);
     dict.Set("wasOpenedAsHidden", val.opened_as_hidden);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     dict.Set("launchItems", val.launch_items);
     dict.Set("executableWillLaunchAtLogin",
              val.executable_will_launch_at_login);
@@ -475,7 +476,7 @@ int GetPathConstant(const std::string& name) {
   else if (name == "userData")
     return chrome::DIR_USER_DATA;
   else if (name == "cache")
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
     return base::DIR_CACHE;
 #else
     return base::DIR_ROAMING_APP_DATA;
@@ -506,7 +507,7 @@ int GetPathConstant(const std::string& name) {
     return chrome::DIR_USER_PICTURES;
   else if (name == "videos")
     return chrome::DIR_USER_VIDEOS;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   else if (name == "recent")
     return electron::DIR_RECENT;
 #endif
@@ -597,7 +598,7 @@ void OnClientCertificateSelected(
   }
 }
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   std::string file_data, cert_path;
   std::u16string password;
@@ -706,7 +707,7 @@ void App::OnWillFinishLaunching() {
 }
 
 void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
@@ -740,7 +741,7 @@ void App::OnAccessibilitySupportChanged() {
   Emit("accessibility-support-changed", IsAccessibilitySupportEnabled());
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 void App::OnWillContinueUserActivity(bool* prevent_default,
                                      const std::string& type) {
   if (Emit("will-continue-activity", type)) {
@@ -940,7 +941,7 @@ void App::ChildProcessLaunched(int process_type,
                                base::ProcessHandle handle,
                                const std::string& service_name,
                                const std::string& name) {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(
       handle, content::BrowserChildProcessHost::GetPortProvider());
 #else
@@ -962,7 +963,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          absl::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
@@ -998,7 +999,7 @@ bool App::IsPackaged() {
   base::FilePath::StringType base_name =
       base::ToLowerASCII(exe_path.BaseName().value());
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   return base_name != FILE_PATH_LITERAL("electron.exe");
 #else
   return base_name != FILE_PATH_LITERAL("electron");
@@ -1031,7 +1032,7 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
 }
 
 void App::SetDesktopName(const std::string& desktop_name) {
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   auto env = base::Environment::Create();
   env->SetVar("CHROME_DESKTOP", desktop_name);
 #endif
@@ -1043,7 +1044,7 @@ std::string App::GetLocale() {
 
 std::string App::GetLocaleCountryCode() {
   std::string region;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
 
   if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME,
@@ -1054,7 +1055,7 @@ std::string App::GetLocaleCountryCode() {
                       sizeof(locale_name) / sizeof(WCHAR))) {
     base::WideToUTF8(locale_name, wcslen(locale_name), &region);
   }
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
   CFLocaleRef locale = CFLocaleCopyCurrent();
   CFStringRef value = CFStringRef(
       static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
@@ -1155,7 +1156,7 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   bool app_is_sandboxed =
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(
@@ -1278,7 +1279,7 @@ Browser::LoginItemSettings App::GetLoginItemSettings(gin::Arguments* args) {
   return Browser::Get()->GetLoginItemSettings(options);
 }
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
 void App::ImportCertificate(gin_helper::ErrorThrower thrower,
                             base::Value options,
                             net::CompletionOnceCallback callback) {
@@ -1313,7 +1314,7 @@ void App::OnCertificateManagerModelCreated(
 }
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 v8::Local<v8::Value> App::GetJumpListSettings() {
   JumpList jump_list(Browser::Get()->GetAppUserModelID());
 
@@ -1369,7 +1370,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 
   return result;
 }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         gin::Arguments* args) {
@@ -1418,7 +1419,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
         process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
             processor_count);
 
-#if !defined(OS_WIN)
+#if !BUILDFLAG(IS_WIN)
     cpu_dict.Set("idleWakeupsPerSecond",
                  process_metric.second->metrics->GetIdleWakeupsPerSecond());
 #else
@@ -1443,7 +1444,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
       pid_dict.Set("name", process_metric.second->name);
     }
 
-#if !defined(OS_LINUX)
+#if !BUILDFLAG(IS_LINUX)
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     gin_helper::Dictionary memory_dict = gin::Dictionary::CreateEmpty(isolate);
@@ -1454,7 +1455,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
         "peakWorkingSetSize",
         static_cast<double>(memory_info.peak_working_set_size >> 10));
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     memory_dict.Set("privateBytes",
                     static_cast<double>(memory_info.private_bytes >> 10));
 #endif
@@ -1462,9 +1463,9 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     pid_dict.Set("memory", memory_dict);
 #endif
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     pid_dict.Set("sandboxed", process_metric.second->IsSandboxed());
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
     auto integrity_level = process_metric.second->GetIntegrityLevel();
     auto sandboxed = ProcessMetric::IsSandboxed(integrity_level);
     pid_dict.Set("integrityLevel", integrity_level);
@@ -1499,7 +1500,7 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
 
   auto* const info_mgr = GPUInfoManager::GetInstance();
   if (info_type == "complete") {
-#if defined(OS_WIN) || defined(OS_MAC)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
     info_mgr->FetchCompleteInfo(std::move(promise));
 #else
     info_mgr->FetchBasicInfo(std::move(promise));
@@ -1541,7 +1542,7 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 
 bool App::IsRunningUnderARM64Translation() const {
   USHORT processMachine = 0;
@@ -1566,7 +1567,7 @@ std::string App::GetUserAgentFallback() {
   return ElectronBrowserClient::Get()->GetUserAgent();
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
                                    gin::Arguments* args) {
   return ElectronBundleMover::Move(thrower, args);
@@ -1732,7 +1733,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
 #endif
@@ -1745,7 +1746,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod(
           "removeAsDefaultProtocolClient",
           base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
-#if !defined(OS_LINUX)
+#if !BUILDFLAG(IS_LINUX)
       .SetMethod(
           "getApplicationInfoForProtocol",
           base::BindRepeating(&Browser::GetApplicationInfoForProtocol, browser))
@@ -1762,7 +1763,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetLoginItemSettings, browser))
       .SetMethod("isEmojiPanelSupported",
                  base::BindRepeating(&Browser::IsEmojiPanelSupported, browser))
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
       .SetMethod("show", base::BindRepeating(&Browser::Show, browser))
       .SetMethod("setUserActivity",
@@ -1784,7 +1785,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
       .SetMethod("showAboutPanel",
                  base::BindRepeating(&Browser::ShowAboutPanel, browser))
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
       .SetMethod(
           "isSecureKeyboardEntryEnabled",
           base::BindRepeating(&Browser::IsSecureKeyboardEntryEnabled, browser))
@@ -1792,17 +1793,17 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
           "setSecureKeyboardEntryEnabled",
           base::BindRepeating(&Browser::SetSecureKeyboardEntryEnabled, browser))
 #endif
-#if defined(OS_MAC) || defined(OS_WIN)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
       .SetMethod("showEmojiPanel",
                  base::BindRepeating(&Browser::ShowEmojiPanel, browser))
 #endif
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       .SetMethod("setUserTasks",
                  base::BindRepeating(&Browser::SetUserTasks, browser))
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
 #endif
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
       .SetMethod("isUnityRunning",
                  base::BindRepeating(&Browser::IsUnityRunning, browser))
 #endif
@@ -1815,7 +1816,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
       .SetMethod("hasSingleInstanceLock", &App::HasSingleInstanceLock)
@@ -1838,12 +1839,12 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
       .SetProperty("runningUnderRosettaTranslation",
                    &App::IsRunningUnderRosettaTranslation)
 #endif
-#if defined(OS_MAC) || defined(OS_WIN)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
       .SetProperty("runningUnderARM64Translation",
                    &App::IsRunningUnderARM64Translation)
 #endif

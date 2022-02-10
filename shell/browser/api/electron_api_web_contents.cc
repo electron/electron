@@ -14,7 +14,6 @@
 
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
-#include "base/ignore_result.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
@@ -144,17 +143,17 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 #include "ui/aura/window.h"
 #else
 #include "ui/base/cocoa/defaults_utils.h"
 #endif
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
 
-#if defined(OS_LINUX) || defined(OS_WIN)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
 #include "ui/gfx/font_render_params.h"
 #endif
 
@@ -172,7 +171,7 @@
 #include "shell/browser/printing/print_preview_message_handler.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
 #endif
 #endif
@@ -390,14 +389,14 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
 }
 
 absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   base::TimeDelta interval;
   if (ui::TextInsertionCaretBlinkPeriod(&interval))
     return interval;
-#elif defined(OS_LINUX)
+#elif BUILDFLAG(IS_LINUX)
   if (auto* linux_ui = views::LinuxUI::instance())
     return linux_ui->GetCursorBlinkInterval();
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   const auto system_msec = ::GetCaretBlinkTime();
   if (system_msec != 0) {
     return (system_msec == INFINITE) ? base::TimeDelta()
@@ -412,14 +411,14 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
 // found on the network. We need to check this because Chromium does not do
 // sanity checking of device_name validity and so will crash on invalid names.
 bool IsDeviceNameValid(const std::u16string& device_name) {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   base::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
   PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
   bool printer_exists = new_printer != nullptr;
   PMRelease(new_printer);
   return printer_exists;
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   printing::ScopedPrinterHandle printer;
   return printer.OpenPrinterWithName(base::as_wcstr(device_name));
 #else
@@ -428,7 +427,7 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
 }
 
 std::pair<std::string, std::u16string> GetDefaultPrinterAsync() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Blocking is needed here because Windows printer drivers are oftentimes
   // not thread-safe and have to be accessed on the UI thread.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -463,7 +462,7 @@ std::pair<std::string, std::u16string> GetDefaultPrinterAsync() {
 // chrome/browser/ui/webui/print_preview/local_printer_handler_default.cc:L36-L54
 scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner() {
   // USER_VISIBLE because the result is displayed in the print preview dialog.
-#if !defined(OS_WIN)
+#if !BUILDFLAG(IS_WIN)
   static constexpr base::TaskTraits kTraits = {
       base::MayBlock(), base::TaskPriority::USER_VISIBLE};
 #endif
@@ -471,7 +470,7 @@ scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner() {
 #if defined(USE_CUPS)
   // CUPS is thread safe.
   return base::ThreadPool::CreateTaskRunner(kTraits);
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   // Windows drivers are likely not thread-safe and need to be accessed on the
   // UI thread.
   return content::GetUIThreadTaskRunner(
@@ -579,15 +578,17 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
 std::map<std::string, std::string> GetAddedFileSystemPaths(
     content::WebContents* web_contents) {
   auto* pref_service = GetPrefService(web_contents);
-  const base::DictionaryValue* file_system_paths_value =
+  const base::Value* file_system_paths_value =
       pref_service->GetDictionary(prefs::kDevToolsFileSystemPaths);
   std::map<std::string, std::string> result;
   if (file_system_paths_value) {
-    base::DictionaryValue::Iterator it(*file_system_paths_value);
-    for (; !it.IsAtEnd(); it.Advance()) {
+    const base::DictionaryValue* file_system_paths_dict;
+    file_system_paths_value->GetAsDictionary(&file_system_paths_dict);
+
+    for (auto it : file_system_paths_dict->DictItems()) {
       std::string type =
-          it.value().is_string() ? it.value().GetString() : std::string();
-      result[it.key()] = type;
+          it.second.is_string() ? it.second.GetString() : std::string();
+      result[it.first] = type;
     }
   }
   return result;
@@ -826,7 +827,7 @@ void WebContents::InitWithSessionAndOptions(
   accept_languages.pop_back();
   prefs->accept_languages = accept_languages;
 
-#if defined(OS_LINUX) || defined(OS_WIN)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
   // Update font settings.
   static const gfx::FontRenderParams params(
       gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr));
@@ -1213,7 +1214,7 @@ bool WebContents::HandleKeyboardEvent(
   }
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 // NOTE: The macOS version of this function is found in
 // electron_api_web_contents_mac.mm, as it requires calling into objective-C
 // code.
@@ -1850,7 +1851,7 @@ void WebContents::ReadyToCommitNavigation(
   // Don't focus content in an inactive window.
   if (!owner_window())
     return;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (!owner_window()->IsActive())
     return;
 #else
@@ -2347,7 +2348,7 @@ void WebContents::ForcefullyCrashRenderer() {
 
   content::RenderProcessHost* rph = rwh->GetProcess();
   if (rph) {
-#if defined(OS_LINUX) || defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
     // A generic |CrashDumpHungChildProcess()| is not implemented for Linux.
     // Instead we send an explicit IPC to crash on the renderer's IO thread.
     rph->ForceCrash();
@@ -2907,7 +2908,7 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
 }
 
 void WebContents::ShowDefinitionForSelection() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->ShowDefinitionForSelection();
@@ -2923,14 +2924,14 @@ void WebContents::CopyImageAt(int x, int y) {
 void WebContents::Focus() {
   // Focusing on WebContents does not automatically focus the window on macOS
   // and Linux, do it manually to match the behavior on Windows.
-#if defined(OS_MAC) || defined(OS_LINUX)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
   if (owner_window())
     owner_window()->Focus(true);
 #endif
   web_contents()->Focus();
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (!view)
@@ -3077,7 +3078,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     return handle;
   }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
   // If the view's renderer is suspended this may fail on Windows/Linux -
   // bail if so. See CopyFromSurface in
   // content/public/browser/render_widget_host_view.h.
@@ -3087,7 +3088,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     promise.Resolve(gfx::Image());
     return handle;
   }
-#endif  // defined(OS_MAC)
+#endif  // BUILDFLAG(IS_MAC)
 
   // Capture full page if user doesn't specify a |rect|.
   const gfx::Size view_size =
@@ -3121,8 +3122,8 @@ void WebContents::IncrementCapturerCount(gin::Arguments* args) {
   // get stayAwake arguments if they exist
   args->GetNext(&stay_awake);
 
-  ignore_result(
-      web_contents()->IncrementCapturerCount(size, stay_hidden, stay_awake));
+  std::ignore =
+      web_contents()->IncrementCapturerCount(size, stay_hidden, stay_awake);
 }
 
 void WebContents::DecrementCapturerCount(gin::Arguments* args) {
@@ -3644,8 +3645,7 @@ void WebContents::DevToolsAddFileSystem(
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->SetWithoutPathExpansion(path.AsUTF8Unsafe(),
-                                        std::make_unique<base::Value>(type));
+  update.Get()->SetKey(path.AsUTF8Unsafe(), base::Value(type));
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI.fileSystemAdded", nullptr, file_system_value.get(), nullptr);
 }
@@ -3750,13 +3750,13 @@ void WebContents::ColorPickedInEyeDropper(int r, int g, int b, int a) {
       "DevToolsAPI.eyeDropperPickedColor", &color, nullptr, nullptr);
 }
 
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
+#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
 ui::ImageModel WebContents::GetDevToolsWindowIcon() {
   return owner_window() ? owner_window()->GetWindowAppIcon() : ui::ImageModel{};
 }
 #endif
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 void WebContents::GetDevToolsWindowWMClass(std::string* name,
                                            std::string* class_name) {
   *class_name = Browser::Get()->GetName();

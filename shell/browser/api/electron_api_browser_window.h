@@ -101,7 +101,7 @@ class BrowserWindow : public BaseWindow,
   v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
 
  private:
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void OverrideNSWindowContentView(InspectableWebContentsView* webView);
 #endif
 

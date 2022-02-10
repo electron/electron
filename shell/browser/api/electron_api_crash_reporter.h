@@ -17,7 +17,7 @@ namespace crash_reporter {
 
 bool IsCrashReporterEnabled();
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 const std::map<std::string, std::string>& GetGlobalCrashKeys();
 std::string GetClientId();
 #endif

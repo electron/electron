@@ -21,7 +21,7 @@ ScopedTemporaryFile::~ScopedTemporaryFile() {
     // On Windows it is very likely the file is already in use (because it is
     // mostly used for Node native modules), so deleting it now will halt the
     // program.
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     base::DeleteFileAfterReboot(path_);
 #else
     base::DeleteFile(path_);
@@ -37,7 +37,7 @@ bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
   if (!base::CreateTemporaryFile(&path_))
     return false;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Keep the original extension.
   if (!ext.empty()) {
     base::FilePath new_path = path_.AddExtension(ext);

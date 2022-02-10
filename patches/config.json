@@ -9,6 +9,10 @@
 
   "src/electron/patches/node": "src/third_party/electron_node",
 
+  "src/electron/patches/nan": "src/third_party/nan",
+
+  "src/electron/patches/perfetto": "src/third_party/perfetto",
+
   "src/electron/patches/squirrel.mac": "src/third_party/squirrel.mac",
 
   "src/electron/patches/Mantle": "src/third_party/squirrel.mac/vendor/Mantle",

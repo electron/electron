@@ -42,7 +42,7 @@
 #include "ui/gfx/image/image_skia_operations.h"
 #include "ui/gfx/image/image_util.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
 #include "shell/common/asar/archive.h"
 #include "ui/gfx/icon_util.h"
@@ -78,14 +78,14 @@ base::FilePath NormalizePath(const base::FilePath& path) {
   }
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 bool IsTemplateFilename(const base::FilePath& path) {
   return (base::MatchPattern(path.value(), "*Template.*") ||
           base::MatchPattern(path.value(), "*Template@*x.*"));
 }
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
   // If file is in asar archive, we extract it to a temp file so LoadImage can
   // load it.
@@ -112,7 +112,7 @@ NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
   AdjustAmountOfExternalAllocatedMemory(true);
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
     : hicon_path_(hicon_path), isolate_(isolate) {
   // Use the 256x256 icon as fallback icon.
@@ -149,7 +149,7 @@ bool NativeImage::TryConvertNativeImage(v8::Isolate* isolate,
   if (gin::ConvertFromV8(isolate, image, &icon_path)) {
     *native_image = NativeImage::CreateFromPath(isolate, icon_path).get();
     if ((*native_image)->image().IsEmpty()) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       const auto img_path = base::WideToUTF8(icon_path.value());
 #else
       const auto img_path = icon_path.value();
@@ -178,7 +178,7 @@ bool NativeImage::TryConvertNativeImage(v8::Isolate* isolate,
   return true;
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 HICON NativeImage::GetHICON(int size) {
   auto iter = hicons_.find(size);
   if (iter != hicons_.end())
@@ -287,7 +287,7 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
     gin_helper::ErrorThrower thrower) {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (IsEmpty())
     return node::Buffer::New(thrower.isolate(), 0).ToLocalChecked();
 
@@ -416,7 +416,7 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
   }
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 void NativeImage::SetTemplateImage(bool setAsTemplate) {}
 
 bool NativeImage::IsTemplateImage() {
@@ -460,7 +460,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path) {
   base::FilePath image_path = NormalizePath(path);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
     return gin::CreateHandle(isolate, new NativeImage(isolate, image_path));
   }
@@ -469,7 +469,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromPath(
   electron::util::PopulateImageSkiaRepsFromPath(&image_skia, image_path);
   gfx::Image image(image_skia);
   gin::Handle<NativeImage> handle = Create(isolate, image);
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (IsTemplateFilename(image_path))
     handle->SetTemplateImage(true);
 #endif
@@ -566,7 +566,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
   return CreateEmpty(isolate);
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
                                                            std::string name) {
   return CreateEmpty(args->isolate());
@@ -637,7 +637,7 @@ void Initialize(v8::Local<v8::Object> exports,
   native_image.SetMethod("createFromDataURL", &NativeImage::CreateFromDataURL);
   native_image.SetMethod("createFromNamedImage",
                          &NativeImage::CreateFromNamedImage);
-#if !defined(OS_LINUX)
+#if !BUILDFLAG(IS_LINUX)
   native_image.SetMethod("createThumbnailFromPath",
                          &NativeImage::CreateThumbnailFromPath);
 #endif

@@ -4,7 +4,7 @@
 
 #include "shell/browser/electron_browser_client.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <shlobj.h>
 #endif
 
@@ -50,9 +50,11 @@
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
+#include "crypto/crypto_buildflags.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -112,15 +114,15 @@
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "sandbox/win/src/sandbox_policy.h"
 #endif
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
 #include "net/ssl/client_cert_store_nss.h"
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
 #include "net/ssl/client_cert_store_win.h"
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
 #include "net/ssl/client_cert_store_mac.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
@@ -173,12 +175,12 @@
 #include "shell/browser/plugins/plugin_utils.h"
 #endif
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "content/common/mac_helpers.h"
 #include "content/public/common/child_process_host.h"
 #endif
 
-#if defined(OS_LINUX) && !defined(MAS_BUILD)
+#if BUILDFLAG(IS_LINUX) && !defined(MAS_BUILD)
 #include "base/debug/leak_annotations.h"
 #include "components/crash/content/browser/crash_handler_host_linux.h"
 #include "components/crash/core/app/breakpad_linux.h"  // nogncheck
@@ -186,7 +188,7 @@
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #endif
 
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && defined(OS_WIN)
+#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && BUILDFLAG(IS_WIN)
 #include "chrome/browser/ui/views/overlay/overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
@@ -293,7 +295,7 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
     const std::string& process_type) {
   base::FilePath dumps_path;
@@ -356,7 +358,7 @@ int GetCrashSignalFD(const base::CommandLine& command_line) {
 
   return -1;
 }
-#endif  // defined(OS_LINUX)
+#endif  // BUILDFLAG(IS_LINUX)
 
 }  // namespace
 
@@ -413,18 +415,19 @@ bool ElectronBrowserClient::IsRendererSubFrame(int process_id) const {
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   // When a render process is crashed, it might be reused.
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   int process_id = host->GetID();
 
   auto* browser_context = host->GetBrowserContext();
-  ALLOW_UNUSED_LOCAL(browser_context);
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   host->AddFilter(
       new extensions::ExtensionMessageFilter(process_id, browser_context));
   host->AddFilter(new extensions::ExtensionsGuestViewMessageFilter(
       process_id, browser_context));
   host->AddFilter(
       new ElectronExtensionMessageFilter(process_id, browser_context));
+  host->AddFilter(
+      new extensions::MessagingAPIMessageFilter(process_id, browser_context));
 #endif
 
   // ensure the ProcessPreferences is removed later
@@ -506,7 +509,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     auto renderer_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
@@ -540,7 +543,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   bool enable_crash_reporter = false;
   if (crash_reporter::IsCrashpadEnabled()) {
     command_line->AppendSwitch(::switches::kEnableCrashpad);
@@ -603,7 +606,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   }
 
   if (process_type == ::switches::kRendererProcess) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     // Append --app-user-model-id.
     PWSTR current_app_id;
     if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
@@ -747,7 +750,7 @@ std::unique_ptr<content::OverlayWindow>
 ElectronBrowserClient::CreateWindowForPictureInPicture(
     content::PictureInPictureWindowController* controller) {
   auto overlay_window = content::OverlayWindow::Create(controller);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
@@ -874,12 +877,12 @@ void ElectronBrowserClient::SiteInstanceDeleting(
 std::unique_ptr<net::ClientCertStore>
 ElectronBrowserClient::CreateClientCertStore(
     content::BrowserContext* browser_context) {
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
   return std::make_unique<net::ClientCertStoreNSS>(
       net::ClientCertStoreNSS::PasswordDelegateFactory());
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   return std::make_unique<net::ClientCertStoreWin>();
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
   return std::unique_ptr<net::ClientCertStore>();
@@ -921,7 +924,7 @@ ElectronBrowserClient::CreateBrowserMainParts(
   auto browser_main_parts =
       std::make_unique<ElectronBrowserMainParts>(std::move(params));
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   browser_main_parts_ = browser_main_parts.get();
 #endif
 
@@ -1007,6 +1010,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     ui::PageTransition page_transition,
     bool has_user_gesture,
     const absl::optional<url::Origin>& initiating_origin,
+    content::RenderFrameHost* initiator_document,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   base::PostTask(
       FROM_HERE, {BrowserThread::UI},
@@ -1193,6 +1197,7 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
+    const absl::optional<url::Origin>& request_initiator_origin,
     NonNetworkURLLoaderFactoryMap* factories) {
   auto* render_process_host =
       content::RenderProcessHost::FromID(render_process_id);
@@ -1261,6 +1266,21 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
                        FileURLLoaderFactory::Create(render_process_id));
   }
 #endif
+}
+
+void ElectronBrowserClient::
+    RegisterNonNetworkServiceWorkerUpdateURLLoaderFactories(
+        content::BrowserContext* browser_context,
+        NonNetworkURLLoaderFactoryMap* factories) {
+  DCHECK(browser_context);
+  DCHECK(factories);
+
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  factories->emplace(
+      extensions::kExtensionScheme,
+      extensions::CreateExtensionServiceWorkerScriptURLLoaderFactory(
+          browser_context));
+#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 }
 
 bool ElectronBrowserClient::ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
@@ -1436,7 +1456,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       browser_context, origin, is_for_isolated_world, factory_params);
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
                                           sandbox::mojom::Sandbox sandbox_type,
                                           ChildSpawnFlags flags) {
@@ -1448,61 +1468,59 @@ bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
     return false;
   return true;
 }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
-void BindElectronBrowser(
-    mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser> receiver,
-    content::RenderFrameHost* frame_host) {
-  ElectronBrowserHandlerImpl::Create(frame_host, std::move(receiver));
-}
-
-bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
-    content::RenderFrameHost* render_frame_host,
-    const std::string& interface_name,
-    mojo::ScopedInterfaceEndpointHandle* handle) {
-  if (interface_name == mojom::ElectronAutofillDriver::Name_) {
-    AutofillDriverFactory::BindAutofillDriver(
-        mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
-  if (interface_name == electron::mojom::ElectronBrowser::Name_) {
-    BindElectronBrowser(
-        mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
+void ElectronBrowserClient::
+    RegisterAssociatedInterfaceBindersForRenderFrameHost(
+        content::RenderFrameHost&
+            render_frame_host,  // NOLINT(runtime/references)
+        blink::AssociatedInterfaceRegistry&
+            associated_registry) {  // NOLINT(runtime/references)
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>
+             receiver) {
+        ElectronBrowserHandlerImpl::Create(render_frame_host,
+                                           std::move(receiver));
+      },
+      &render_frame_host));
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+             receiver) {
+        AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
+                                                  render_frame_host);
+      },
+      &render_frame_host));
 #if BUILDFLAG(ENABLE_PRINTING)
-  if (interface_name == printing::mojom::PrintManagerHost::Name_) {
-    mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost> receiver(
-        std::move(*handle));
-    PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
-                                                   render_frame_host);
-    return true;
-  }
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost>
+             receiver) {
+        PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
+                                                       render_frame_host);
+      },
+      &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_EXTENSIONS)
-  if (interface_name == extensions::mojom::LocalFrameHost::Name_) {
-    extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
-        mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>
+             receiver) {
+        extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
+            std::move(receiver), render_frame_host);
+      },
+      &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  if (interface_name == pdf::mojom::PdfService::Name_) {
-    pdf::PDFWebContentsHelper::BindPdfService(
-        mojo::PendingAssociatedReceiver<pdf::mojom::PdfService>(
-            std::move(*handle)),
-        render_frame_host);
-    return true;
-  }
+  associated_registry.AddInterface(base::BindRepeating(
+      [](content::RenderFrameHost* render_frame_host,
+         mojo::PendingAssociatedReceiver<pdf::mojom::PdfService> receiver) {
+        pdf::PDFWebContentsHelper::BindPdfService(std::move(receiver),
+                                                  render_frame_host);
+      },
+      &render_frame_host));
 #endif
-
-  return false;
 }
 
 std::string ElectronBrowserClient::GetApplicationLocale() {
@@ -1613,7 +1631,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
 #endif
 }
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 void ElectronBrowserClient::GetAdditionalMappedFilesForChildProcess(
     const base::CommandLine& command_line,
     int child_process_id,
@@ -1683,12 +1701,6 @@ content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
   return bluetooth_delegate_.get();
 }
 
-content::FontAccessDelegate* ElectronBrowserClient::GetFontAccessDelegate() {
-  if (!font_access_delegate_)
-    font_access_delegate_ = std::make_unique<ElectronFontAccessDelegate>();
-  return font_access_delegate_.get();
-}
-
 void BindBadgeServiceForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& info,
     mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
@@ -1711,7 +1723,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   return browser_main_parts_->GetGeolocationManager();
 #else
   return nullptr;

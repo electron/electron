@@ -18,7 +18,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
 #endif
 
@@ -27,7 +27,7 @@ using extensions::GlobalShortcutListener;
 
 namespace {
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
   if (base::mac::IsAtLeastOS10_14()) {
     if (Command::IsMediaKey(accelerator)) {
@@ -103,7 +103,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
         .ThrowError("globalShortcut cannot be used before the app is ready");
     return false;
   }
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (Command::IsMediaKey(accelerator)) {
     if (RegisteringMediaKeyForUntrustedClient(accelerator))
       return false;
@@ -130,7 +130,7 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
   if (accelerator_callback_map_.erase(accelerator) == 0)
     return;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (Command::IsMediaKey(accelerator) &&
       !MapHasMediaKeys(accelerator_callback_map_)) {
     GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(true);

@@ -65,7 +65,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetReadOnly("mas", true);
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   if (IsRunningInDesktopBridge())
     process->SetReadOnly("windowsStore", true);
 #endif
@@ -77,7 +77,7 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
   BindProcess(isolate, &dict, metrics_.get());
 
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
   dict.SetMethod("setFdLimit", &base::IncreaseFdLimitTo);
 #endif
   dict.SetMethod("activateUvLoop",
@@ -190,7 +190,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 
   // See Chromium's "base/process/process_metrics.h" for an explanation.
   int free =
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       mem_info.avail_phys;
 #else
       mem_info.free;
@@ -198,7 +198,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
   dict.Set("free", free);
 
   // NB: These return bogus values on macOS
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
   dict.Set("swapTotal", mem_info.swap_total);
   dict.Set("swapFree", mem_info.swap_free);
 #endif
@@ -267,7 +267,7 @@ void ElectronBindings::DidReceiveMemoryDump(
     if (target_pid == dump.pid()) {
       gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
       const auto& osdump = dump.os_dump();
-#if defined(OS_LINUX) || defined(OS_WIN)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
       dict.Set("residentSet", osdump.resident_set_kb);
 #endif
       dict.Set("private", osdump.private_footprint_kb);
@@ -295,7 +295,7 @@ v8::Local<v8::Value> ElectronBindings::GetCPUUsage(
 
   // NB: This will throw NOTIMPLEMENTED() on Windows
   // For backwards compatibility, we'll return 0
-#if !defined(OS_WIN)
+#if !BUILDFLAG(IS_WIN)
   dict.Set("idleWakeupsPerSecond", metrics->GetIdleWakeupsPerSecond());
 #else
   dict.Set("idleWakeupsPerSecond", 0);

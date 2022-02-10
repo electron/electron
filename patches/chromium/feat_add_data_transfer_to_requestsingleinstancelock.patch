@@ -19,7 +19,7 @@ instance, but also so the second instance can send back additional
 data to the first instance if needed.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 13b325ecad9ba48398173e89680287c63efd4fa6..e8188e4640b28d41559822e6c1bdd27dcccae93c 100644
+index 8f94cc300b58e8a94b6ca155aa3cf370bcb948d8..4340376f323d24e5e2c5897a81c6a9ebf13adab4 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,7 @@
@@ -29,7 +29,7 @@ index 13b325ecad9ba48398173e89680287c63efd4fa6..e8188e4640b28d41559822e6c1bdd27d
 +#include "base/containers/span.h"
  #include "ui/gfx/native_widget_types.h"
  
- #if defined(OS_POSIX) && !defined(OS_ANDROID)
+ #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
 @@ -93,6 +94,9 @@ class ProcessSingleton {
  
    static constexpr int kNumNotifyResults = LAST_VALUE + 1;
@@ -85,18 +85,18 @@ index 13b325ecad9ba48398173e89680287c63efd4fa6..e8188e4640b28d41559822e6c1bdd27d
 +  // Custom data to pass to the other instance during notify.
 +  base::span<const uint8_t> additional_data_;
  
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 @@ -190,6 +206,7 @@ class ProcessSingleton {
    HANDLE lock_file_;
    base::FilePath user_data_dir_;
    ShouldKillRemoteProcessCallback should_kill_remote_process_callback_;
 +  HANDLE ack_pipe_;
- #elif defined(OS_POSIX) && !defined(OS_ANDROID)
+ #elif BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 0d74cd93a21b937f65f3d417b4734ae5b87acdf2..9bf6e633b5adc68a67d23e4f17460dce24a02cfa 100644
+index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e455dfd03 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -147,7 +147,7 @@ const char kACKToken[] = "ACK";

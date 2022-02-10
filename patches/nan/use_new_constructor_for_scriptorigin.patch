@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Fri, 28 Jan 2022 13:46:07 -0800
+Subject: use new constructor for ScriptOrigin
+
+https://chromium-review.googlesource.com/c/v8/v8/+/3395880
+
+diff --git a/test/cpp/nannew.cpp b/test/cpp/nannew.cpp
+index 64c857996c4626f3a447bdb796d4d581a37d9299..95a12f9521b8c9bed0e5eed85b6e56917069ea09 100644
+--- a/test/cpp/nannew.cpp
++++ b/test/cpp/nannew.cpp
+@@ -248,7 +248,7 @@ NAN_METHOD(testScript) {
+ 
+ #if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION > 8 ||                      \
+   (V8_MAJOR_VERSION == 8 && defined(V8_MINOR_VERSION) && V8_MINOR_VERSION >= 9))
+-  ScriptOrigin origin(New("foo").ToLocalChecked(), 5);
++  ScriptOrigin origin(v8::Isolate::GetCurrent(), New("foo").ToLocalChecked(), 5);
+ #else
+   ScriptOrigin origin(New("foo").ToLocalChecked(), New(5));
+ #endif
+diff --git a/test/cpp/news.cpp b/test/cpp/news.cpp
+index 5b54c0cedaaa824be71b8c6fee948139a34d3310..f0aa65cc80741d57ba6675f7d5d5908b24f601c5 100644
+--- a/test/cpp/news.cpp
++++ b/test/cpp/news.cpp
+@@ -114,7 +114,7 @@ NAN_METHOD(NewScript) {
+ }
+ 
+ NAN_METHOD(NewScript2) {
+-  v8::ScriptOrigin origin(New<v8::String>("x").ToLocalChecked());
++  v8::ScriptOrigin origin(v8::Isolate::GetCurrent(), New<v8::String>("x").ToLocalChecked());
+   v8::Local<UnboundScript> script =
+       New<UnboundScript>(
+           New("2+4").ToLocalChecked()
+@@ -131,7 +131,7 @@ NAN_METHOD(CompileScript) {
+ }
+ 
+ NAN_METHOD(CompileScript2) {
+-  v8::ScriptOrigin origin(New<v8::String>("x").ToLocalChecked());
++  v8::ScriptOrigin origin(v8::Isolate::GetCurrent(), New<v8::String>("x").ToLocalChecked());
+   v8::Local<BoundScript> script =
+       CompileScript(New("2+4").ToLocalChecked(), origin).ToLocalChecked();
+   info.GetReturnValue().Set(
