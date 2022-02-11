@@ -134,7 +134,7 @@ workflows:
     jobs:
       # Job inherited from path-filtering orb
       - path-filtering/filter:
-          base-revision: main
+          base-revision: << pipeline.git.branch >>
           # Params for mapping; `path-to-test parameter-to-set value-for-parameter` for each row
           mapping: |
             ^((?!docs/).)*$ run-build-mac true

@@ -153,6 +153,10 @@ env-linux-medium: &env-linux-medium
   <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 3
 
+env-linux-large: &env-linux-large
+  <<: *env-global
+  NUMBER_OF_NINJA_PROCESSES: 8
+
 env-linux-2xlarge: &env-linux-2xlarge
   <<: *env-global
   NUMBER_OF_NINJA_PROCESSES: 34
@@ -1543,9 +1547,9 @@ jobs:
   ts-compile-doc-change:
     executor:
       name: linux-docker
-      size: medium
+      size: xlarge
     environment:
-      <<: *env-linux-medium
+      <<: *env-linux-large
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-ts-compile-for-doc-change
