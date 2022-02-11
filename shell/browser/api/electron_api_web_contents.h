@@ -689,9 +689,7 @@ class WebContents : public ExclusiveAccessContext,
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
   content::PictureInPictureResult EnterPictureInPicture(
-      content::WebContents* web_contents,
-      const viz::SurfaceId&,
-      const gfx::Size& natural_size) override;
+      content::WebContents* web_contents) override;
   void ExitPictureInPicture() override;
 
   // InspectableWebContentsDelegate:

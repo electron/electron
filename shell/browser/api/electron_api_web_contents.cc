@@ -3526,12 +3526,10 @@ bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
 }
 
 content::PictureInPictureResult WebContents::EnterPictureInPicture(
-    content::WebContents* web_contents,
-    const viz::SurfaceId& surface_id,
-    const gfx::Size& natural_size) {
+    content::WebContents* web_contents) {
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   return PictureInPictureWindowManager::GetInstance()
-      ->EnterVideoPictureInPicture(web_contents, surface_id, natural_size);
+      ->EnterVideoPictureInPicture(web_contents);
 #else
   return content::PictureInPictureResult::kNotSupported;
 #endif

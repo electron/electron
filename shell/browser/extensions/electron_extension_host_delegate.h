@@ -41,9 +41,7 @@ class ElectronExtensionHostDelegate : public ExtensionHostDelegate {
                                   blink::mojom::MediaStreamType type,
                                   const Extension* extension) override;
   content::PictureInPictureResult EnterPictureInPicture(
-      content::WebContents* web_contents,
-      const viz::SurfaceId& surface_id,
-      const gfx::Size& natural_size) override;
+      content::WebContents* web_contents) override;
   void ExitPictureInPicture() override;
 };
 
