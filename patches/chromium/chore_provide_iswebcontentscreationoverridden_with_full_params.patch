@@ -344,10 +344,10 @@ index ef6faf317dd4168adf6fd530a7da0b80f9166dec..f401659a81d4aeaf71039d71eb8fec48
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index 2931fbdea0d44259d0d34ad04d0bc6102afe62c8..81e5349a479affd678ae79f97bb706bf94a52c9c 100644
+index 424c5f89440dccc29f3431e034d0a4fd4f647a00..8d40d0bd30fc28e841eedb3f34be3c033db62449 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
-@@ -403,8 +403,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -402,8 +402,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -358,10 +358,10 @@ index 2931fbdea0d44259d0d34ad04d0bc6102afe62c8..81e5349a479affd678ae79f97bb706bf
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index ea50835c2f8631851659db6abb3ba779a5fcb6e0..14207edb850689c126b2d09eff8d8feb1246ebb7 100644
+index 80a2bcfee4fde0ba1277393cd47dcce79619d3a7..bef47bc040ff91229a1247374b59aba2ca2eee16 100644
 --- a/fuchsia/engine/browser/frame_impl.h
 +++ b/fuchsia/engine/browser/frame_impl.h
-@@ -292,8 +292,7 @@ class FrameImpl : public fuchsia::web::Frame,
+@@ -307,8 +307,7 @@ class FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
