@@ -56,7 +56,7 @@ executors:
         type: enum
         enum: ["macos.x86.medium.gen2", "large"]
     macos:
-      xcode: "12.4.0"
+      xcode: "13.2.1"
     resource_class: << parameters.size >>
 
   # Electron Runners
