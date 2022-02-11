@@ -91,8 +91,7 @@ describe('node feature', () => {
         expect(msg).to.equal('hello');
       });
 
-      // TODO(jkleinsc) fix this test on Windows
-      ifit(process.platform !== 'win32')('has the electron version in process.versions', async () => {
+      it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
         const forked = ChildProcess.fork('--eval', [source]);
         const [message] = await emittedOnce(forked, 'message');
@@ -257,7 +256,8 @@ describe('node feature', () => {
       }
     });
 
-    it('emit error when connect to a socket path without listeners', async () => {
+    // TODO(jkleinsc) fix this flaky test on macOS
+    ifit(process.platform !== 'darwin')('emit error when connect to a socket path without listeners', async () => {
       const socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock');
       const script = path.join(fixtures, 'module', 'create_socket.js');
       const child = ChildProcess.fork(script, [socketPath]);
