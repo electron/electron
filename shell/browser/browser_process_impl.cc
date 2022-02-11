@@ -289,6 +289,10 @@ SerialPolicyAllowedPorts* BrowserProcessImpl::serial_policy_allowed_ports() {
   return nullptr;
 }
 
+HidPolicyAllowedDevices* BrowserProcessImpl::hid_policy_allowed_devices() {
+  return nullptr;
+}
+
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }

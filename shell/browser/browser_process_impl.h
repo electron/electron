@@ -91,6 +91,7 @@ class BrowserProcessImpl : public BrowserProcess {
       override;
   resource_coordinator::TabManager* GetTabManager() override;
   SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
+  HidPolicyAllowedDevices* hid_policy_allowed_devices() override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(
