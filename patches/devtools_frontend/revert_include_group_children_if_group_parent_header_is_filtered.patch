@@ -1,0 +1,254 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim van der Lippe <tvanderlippe@chromium.org>
+Date: Wed, 27 Oct 2021 11:58:27 +0100
+Subject: Revert "Include group children if group parent header is filtered"
+
+This reverts commit cf6a6340628d9d789cab05f97cd8ce0c1c3ef7a5.
+
+Reason for revert: crbug.com/1263070
+
+Original change's description:
+> Include group children if group parent header is filtered
+>
+> This CL adds groupParent and groupChildren to consoleMessage. These are used to filter the console message if group parent or child has the filtered text.
+>
+> Test link: https://codepen.io/noobtiger/pen/QWpYamX
+>
+> Example gif: https://i.imgur.com/8RyRdcI.gif
+>
+> Bug:363796
+> Change-Id: I874c9fd82d72ebb532d14b8b8ec46c529cdfd0b2
+> Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/3024878
+> Commit-Queue: Chait Pinnamaneni <cpinnamaneni@microsoft.com>
+> Reviewed-by: Tim van der Lippe <tvanderlippe@chromium.org>
+> Reviewed-by: Jack Franklin <jacktfranklin@chromium.org>
+
+Bug: 363796
+Fixed: 1263070
+Change-Id: I8fbc85ddd79cc16c85373d0b1b7fbcb1f0665d10
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/3247430
+Reviewed-by: Chait Pinnamaneni <cpinnamaneni@microsoft.com>
+Reviewed-by: Yang Guo <yangguo@chromium.org>
+Auto-Submit: Tim van der Lippe <tvanderlippe@chromium.org>
+Commit-Queue: Yang Guo <yangguo@chromium.org>
+
+diff --git a/front_end/core/sdk/ConsoleModel.ts b/front_end/core/sdk/ConsoleModel.ts
+index 566e1607d555d8377d10fefb37877e84b38d1934..2e653b45c703bb9c0a1f9700f00196e6f48f19ce 100644
+--- a/front_end/core/sdk/ConsoleModel.ts
++++ b/front_end/core/sdk/ConsoleModel.ts
+@@ -84,7 +84,6 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper<EventTypes>
+   #violationsInternal: number;
+   #pageLoadSequenceNumber: number;
+   readonly #targetListeners: WeakMap<Target, Common.EventTarget.EventDescriptor[]>;
+-  #consoleGroupMessageStack: ConsoleMessage[] = [];
+ 
+   private constructor() {
+     super();
+@@ -276,7 +275,6 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper<EventTypes>
+       message = call.args[0].description;
+     }
+     const callFrame = call.stackTrace && call.stackTrace.callFrames.length ? call.stackTrace.callFrames[0] : null;
+-    const groupParent = this.#consoleGroupMessageStack[this.#consoleGroupMessageStack.length - 1];
+     const details = {
+       type: call.type,
+       url: callFrame?.url,
+@@ -287,20 +285,9 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper<EventTypes>
+       timestamp: call.timestamp,
+       executionContextId: call.executionContextId,
+       context: call.context,
+-      groupParent,
+-      groupChildren: [],
+     };
+     const consoleMessage =
+         new ConsoleMessage(runtimeModel, FrontendMessageSource.ConsoleAPI, level, (message as string), details);
+-    if (call.type === Protocol.Runtime.ConsoleAPICalledEventType.StartGroup) {
+-      this.#consoleGroupMessageStack.push(consoleMessage);
+-    }
+-    if (call.type === Protocol.Runtime.ConsoleAPICalledEventType.EndGroup) {
+-      this.#consoleGroupMessageStack.pop();
+-    }
+-    if (groupParent && call.type !== Protocol.Runtime.ConsoleAPICalledEventType.EndGroup) {
+-      groupParent.groupChildren?.push(consoleMessage);
+-    }
+     this.addMessage(consoleMessage);
+   }
+ 
+@@ -392,7 +379,6 @@ export class ConsoleModel extends Common.ObjectWrapper.ObjectWrapper<EventTypes>
+ 
+   private clear(): void {
+     this.#messagesInternal = [];
+-    this.#consoleGroupMessageStack = [];
+     this.#messageByExceptionId.clear();
+     this.#errorsInternal = 0;
+     this.#warningsInternal = 0;
+@@ -518,8 +504,6 @@ export interface ConsoleMessageDetails {
+   workerId?: string;
+   context?: string;
+   affectedResources?: AffectedResources;
+-  groupParent?: ConsoleMessage;
+-  groupChildren?: ConsoleMessage[];
+   category?: Protocol.Log.LogEntryCategory;
+ }
+ 
+@@ -543,8 +527,6 @@ export class ConsoleMessage {
+   #pageLoadSequenceNumber?: number = undefined;
+   #exceptionId?: number = undefined;
+   #affectedResources?: AffectedResources;
+-  groupParent?: ConsoleMessage;
+-  groupChildren?: Array<ConsoleMessage>;
+   category?: Protocol.Log.LogEntryCategory;
+ 
+   constructor(
+@@ -565,8 +547,6 @@ export class ConsoleMessage {
+     this.scriptId = details?.scriptId;
+     this.workerId = details?.workerId;
+     this.#affectedResources = details?.affectedResources;
+-    this.groupParent = details?.groupParent;
+-    this.groupChildren = details?.groupChildren;
+     this.category = details?.category;
+ 
+     if (!this.#executionContextId && this.#runtimeModelInternal) {
+diff --git a/front_end/panels/console/ConsoleFilter.ts b/front_end/panels/console/ConsoleFilter.ts
+index eb0ebc32a2735905e7c357457a93613685029fb5..8887ff091ab129b3e4ebee5c652155ea30d85ffa 100644
+--- a/front_end/panels/console/ConsoleFilter.ts
++++ b/front_end/panels/console/ConsoleFilter.ts
+@@ -68,7 +68,7 @@ export class ConsoleFilter {
+     }
+ 
+     if (message.type === SDK.ConsoleModel.FrontendMessageType.Command ||
+-        message.type === SDK.ConsoleModel.FrontendMessageType.Result) {
++        message.type === SDK.ConsoleModel.FrontendMessageType.Result || message.isGroupMessage()) {
+       return true;
+     }
+     if (message.level && !this.levelsMask[message.level as string]) {
+diff --git a/front_end/panels/console/ConsoleViewMessage.ts b/front_end/panels/console/ConsoleViewMessage.ts
+index 2f94fe09dfeb7c3eb1921468c663d8a24779caed..e8aa86f8825d4d884b3a4fec2c48186a59679b61 100644
+--- a/front_end/panels/console/ConsoleViewMessage.ts
++++ b/front_end/panels/console/ConsoleViewMessage.ts
+@@ -1057,25 +1057,8 @@ export class ConsoleViewMessage implements ConsoleViewportElement {
+   }
+ 
+   matchesFilterText(filter: string): boolean {
+-    return ConsoleViewMessage.recursivelyTestParentConsoleMessage(this.message, filter) ||
+-        ConsoleViewMessage.recursivelyTestChildrenConsoleMessage(this.message, filter);
+-  }
+-
+-  static recursivelyTestParentConsoleMessage(consoleMessage: SDK.ConsoleModel.ConsoleMessage, filterString: string):
+-      boolean {
+-    const doesFilterMatchText = consoleMessage.messageText.toLowerCase().includes(filterString.toLowerCase());
+-    const doesParentMatchText = consoleMessage.groupParent &&
+-        ConsoleViewMessage.recursivelyTestParentConsoleMessage(consoleMessage.groupParent, filterString);
+-    return Boolean(doesFilterMatchText || doesParentMatchText);
+-  }
+-
+-  static recursivelyTestChildrenConsoleMessage(consoleMessage: SDK.ConsoleModel.ConsoleMessage, filterString: string):
+-      boolean {
+-    const doesFilterMatchChildren = consoleMessage.groupChildren?.some(childMessage => {
+-      const filterMatch = childMessage.messageText.toLowerCase().includes(filterString.toLowerCase());
+-      return filterMatch || ConsoleViewMessage.recursivelyTestChildrenConsoleMessage(childMessage, filterString);
+-    });
+-    return Boolean(doesFilterMatchChildren);
++    const text = this.contentElement().deepTextContent();
++    return text.toLowerCase().includes(filter.toLowerCase());
+   }
+ 
+   updateTimestamp(): void {
+diff --git a/test/e2e/console/console-filter_test.ts b/test/e2e/console/console-filter_test.ts
+index f7a01f83a71d5e564b3309bbaf6e570e4039878b..9f782fd58fed06ff3a8f7735c0d10b4126d24c79 100644
+--- a/test/e2e/console/console-filter_test.ts
++++ b/test/e2e/console/console-filter_test.ts
+@@ -11,6 +11,10 @@ import {CONSOLE_MESSAGE_WRAPPER_SELECTOR, deleteConsoleMessagesFilter, filterCon
+ 
+ type MessageCheck = (msg: string) => boolean;
+ 
++function toConsoleRegex(regex: string) {
++  return regex.replace('\\', '\\\\');
++}
++
+ function createUrlFilter(url: string) {
+   return `-url:${url}`;
+ }
+@@ -25,6 +29,10 @@ function collectSourceUrlsFromConsoleOutput(frontend: puppeteer.Page) {
+ 
+ function getExpectedMessages(unfilteredMessages: string[], filter: MessageCheck) {
+   return unfilteredMessages.filter((msg: string) => {
++    // console.group() outputs are not filtered
++    if (/outerGroup$|innerGroup$/.test(msg)) {
++      return true;
++    }
+     return filter(msg);
+   });
+ }
+@@ -157,7 +165,7 @@ describe('The Console Tab', async () => {
+     });
+ 
+     for (const urlToKeep of uniqueUrls) {
+-      const filter = `url:${urlToKeep}`;
++      const filter = urlToKeep;
+       const expectedMessageFilter: MessageCheck = msg => {
+         return msg.indexOf(urlToKeep) !== -1;
+       };
+@@ -179,19 +187,18 @@ describe('The Console Tab', async () => {
+   it('can apply text filter', async () => {
+     const filter = 'outer';
+     const expectedMessageFilter: MessageCheck = msg => {
+-      // With new implementation of console group filtering, we also include child messages
+-      // if parent group is filtered.
+-      return msg.indexOf(filter) !== -1 || msg.indexOf('inner') !== -1;
++      return msg.indexOf(filter) !== -1;
+     };
+     await testMessageFilter(filter, expectedMessageFilter);
+   });
+ 
+   it('can apply start/end line regex filter', async () => {
+-    const filter = new RegExp(/.*Hello\s\d$/);
++    const filter = '/^Hello\s\d$/';
+     const expectedMessageFilter: MessageCheck = msg => {
+-      return filter.test(msg);
++      const regExp = new RegExp(filter);
++      return regExp.test(msg);
+     };
+-    await testMessageFilter(filter.toString(), expectedMessageFilter);
++    await testMessageFilter(toConsoleRegex(filter), expectedMessageFilter);
+   });
+ 
+   it('can apply context filter', async () => {
+@@ -210,11 +217,12 @@ describe('The Console Tab', async () => {
+   });
+ 
+   it('can apply filter on anchor', async () => {
+-    const filter = new RegExp(/.*log-source\.js:\d+/);
++    const filter = '/^log-source\.js:\d+$/';
+     const expectedMessageFilter: MessageCheck = msg => {
+-      return filter.test(msg);
++      const regex = new RegExp(filter.replace('$', ''));
++      return regex.test(msg);
+     };
+-    await testMessageFilter(filter.toString(), expectedMessageFilter);
++    await testMessageFilter(toConsoleRegex(filter), expectedMessageFilter);
+   });
+ 
+   it('can reset filter', async () => {
+@@ -239,22 +247,6 @@ describe('The Console Tab', async () => {
+     });
+   });
+ 
+-  it('will show group parent message if child is filtered', async () => {
+-    const filter = '1outerGroup';
+-    const expectedMessageFilter: MessageCheck = msg => {
+-      return new RegExp(/.* (1|)outerGroup.*$/).test(msg);
+-    };
+-    await testMessageFilter(filter, expectedMessageFilter);
+-  });
+-
+-  it('will show messages in group if group name is filtered', async () => {
+-    const filter = 'innerGroup';
+-    const expectedMessageFilter: MessageCheck = msg => {
+-      return msg.indexOf(filter) !== -1 || new RegExp(/.* outerGroup.*$/).test(msg);
+-    };
+-    await testMessageFilter(filter, expectedMessageFilter);
+-  });
+-
+   it('can exclude CORS error messages', async () => {
+     const CORS_DETAILED_ERROR_PATTERN =
+         /Access to fetch at 'https:.*' from origin 'https:.*' has been blocked by CORS policy: .*/;
