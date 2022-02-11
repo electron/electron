@@ -255,11 +255,6 @@ BrowserProcessImpl::subresource_filter_ruleset_service() {
   return nullptr;
 }
 
-federated_learning::FlocSortingLshClustersService*
-BrowserProcessImpl::floc_sorting_lsh_clusters_service() {
-  return nullptr;
-}
-
 component_updater::ComponentUpdateService*
 BrowserProcessImpl::component_updater() {
   return nullptr;
