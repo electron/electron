@@ -12,6 +12,25 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (20.0)
+
+### Default Changed: renderers without `nodeIntegration: true` are sandboxed by default
+
+Previously, renderers that specified a preload script defaulted to being
+unsandboxed. This meant that by default, preload scripts had access to Node.js.
+In Electron 20, this default has changed. Beginning in Electron 20, renderers
+will be sandboxed by default, unless `nodeIntegration: true` or `sandbox: false`
+is specified.
+
+If your preload scripts do not depend on Node, no action is needed. If your
+preload scripts _do_ depend on Node, either refactor them to remove Node usage
+from the renderer, or explicitly specify `sandbox: false` for the relevant
+renderers.
+
+## Planned Breaking API Changes (19.0)
+
+*None (yet)*
+
 ## Planned Breaking API Changes (18.0)
 
 ### Removed: `nativeWindowOpen`
