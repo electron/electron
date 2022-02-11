@@ -35,6 +35,9 @@ enable_pseudolocales = false
 
 is_cfi = false
 
+# This consumes a bit too much disk space on macOS
+use_thin_lto = false
+
 # Make application name configurable at runtime for cookie crypto
 allow_runtime_configurable_key_storage = true
 
