@@ -3530,8 +3530,8 @@ content::PictureInPictureResult WebContents::EnterPictureInPicture(
     const viz::SurfaceId& surface_id,
     const gfx::Size& natural_size) {
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
-  return PictureInPictureWindowManager::GetInstance()->EnterPictureInPicture(
-      web_contents, surface_id, natural_size);
+  return PictureInPictureWindowManager::GetInstance()
+      ->EnterVideoPictureInPicture(web_contents, surface_id, natural_size);
 #else
   return content::PictureInPictureResult::kNotSupported;
 #endif
