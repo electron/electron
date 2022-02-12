@@ -10,6 +10,7 @@
 
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
+#include "shell/browser/api/electron_api_base_view.h"
 #include "shell/browser/api/electron_api_browser_view.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
@@ -164,6 +165,7 @@ void BaseWindow::OnWindowClosed() {
 
   RemoveFromParentChildWindows();
   BaseWindow::ResetBrowserViews();
+  BaseWindow::ResetBaseViews();
 
   // Destroy the native class when window is closed.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
@@ -318,9 +320,30 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 }
 #endif
 
+void BaseWindow::OnChildViewDetached(NativeView* view) {
+  auto* api_view = TrackableObject::FromWrappedClass(isolate(), view);
+  if (api_view) {
+    auto get_that_view = base_views_.find(api_view->GetID());
+    if (get_that_view != base_views_.end()) {
+      (*get_that_view).second.Reset();
+      base_views_.erase(get_that_view);
+    }
+  }
+}
+
 void BaseWindow::SetContentView(gin::Handle<View> view) {
   ResetBrowserViews();
+  ResetBaseViews();
   content_view_.Reset(isolate(), view.ToV8());
+  window_->SetContentView(view->view());
+}
+
+void BaseWindow::SetContentBaseView(gin::Handle<BaseView> view) {
+  ResetBrowserViews();
+  ResetBaseViews();
+  if (!view->EnsureDetachFromParent())
+    return;
+  content_base_view_.Reset(isolate(), view.ToV8());
   window_->SetContentView(view->view());
 }
 
@@ -814,6 +837,31 @@ void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value,
   }
 }
 
+void BaseWindow::AddChildView(v8::Local<v8::Value> value) {
+  gin::Handle<BaseView> base_view;
+  if (value->IsObject() && gin::ConvertFromV8(isolate(), value, &base_view)) {
+    auto get_that_view = base_views_.find(base_view->GetID());
+    if (get_that_view == base_views_.end()) {
+      if (!base_view->EnsureDetachFromParent())
+        return;
+      window_->AddChildView(base_view->view());
+      base_views_[base_view->GetID()].Reset(isolate(), value);
+    }
+  }
+}
+
+void BaseWindow::RemoveChildView(v8::Local<v8::Value> value) {
+  gin::Handle<BaseView> base_view;
+  if (value->IsObject() && gin::ConvertFromV8(isolate(), value, &base_view)) {
+    auto get_that_view = base_views_.find(base_view->GetID());
+    if (get_that_view != base_views_.end()) {
+      window_->RemoveChildView(base_view->view());
+      (*get_that_view).second.Reset(isolate(), value);
+      base_views_.erase(get_that_view);
+    }
+  }
+}
+
 std::string BaseWindow::GetMediaSourceId() const {
   return window_->GetDesktopMediaID().ToString();
 }
@@ -1023,6 +1071,16 @@ std::vector<v8::Local<v8::Value>> BaseWindow::GetBrowserViews() const {
   return ret;
 }
 
+std::vector<v8::Local<v8::Value>> BaseWindow::GetViews() const {
+  std::vector<v8::Local<v8::Value>> ret;
+
+  for (auto const& views_iter : base_views_) {
+    ret.push_back(v8::Local<v8::Value>::New(isolate(), views_iter.second));
+  }
+
+  return ret;
+}
+
 bool BaseWindow::IsModal() const {
   return window_->is_modal();
 }
@@ -1144,6 +1202,30 @@ void BaseWindow::ResetBrowserViews() {
   browser_views_.clear();
 }
 
+void BaseWindow::ResetBaseViews() {
+  v8::HandleScope scope(isolate());
+
+  for (auto& item : base_views_) {
+    gin::Handle<BaseView> base_view;
+    if (gin::ConvertFromV8(isolate(),
+                           v8::Local<v8::Value>::New(isolate(), item.second),
+                           &base_view) &&
+        !base_view.IsEmpty()) {
+      // There's a chance that the BaseView may have been reparented - only
+      // reset if the owner window is *this* window.
+      auto* owner_window = base_view->view()->GetWindow();
+      if (owner_window && owner_window == window_.get()) {
+        base_view->view()->SetWindow(nullptr);
+        owner_window->RemoveChildView(base_view->view());
+      }
+    }
+
+    item.second.Reset();
+  }
+
+  base_views_.clear();
+}
+
 void BaseWindow::RemoveFromParentChildWindows() {
   if (parent_window_.IsEmpty())
     return;
@@ -1173,6 +1255,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setContentView", &BaseWindow::SetContentView)
+      .SetMethod("setContentBaseView", &BaseWindow::SetContentBaseView)
       .SetMethod("close", &BaseWindow::Close)
       .SetMethod("focus", &BaseWindow::Focus)
       .SetMethod("blur", &BaseWindow::Blur)
@@ -1258,6 +1341,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addBrowserView", &BaseWindow::AddBrowserView)
       .SetMethod("removeBrowserView", &BaseWindow::RemoveBrowserView)
       .SetMethod("setTopBrowserView", &BaseWindow::SetTopBrowserView)
+      .SetMethod("addChildView", &BaseWindow::AddChildView)
+      .SetMethod("removeChildView", &BaseWindow::RemoveChildView)
       .SetMethod("getMediaSourceId", &BaseWindow::GetMediaSourceId)
       .SetMethod("getNativeWindowHandle", &BaseWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &BaseWindow::SetProgressBar)
@@ -1307,6 +1392,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getChildWindows", &BaseWindow::GetChildWindows)
       .SetMethod("getBrowserView", &BaseWindow::GetBrowserView)
       .SetMethod("getBrowserViews", &BaseWindow::GetBrowserViews)
+      .SetMethod("getViews", &BaseWindow::GetViews)
       .SetMethod("isModal", &BaseWindow::IsModal)
       .SetMethod("setThumbarButtons", &BaseWindow::SetThumbarButtons)
 #if defined(TOOLKIT_VIEWS)

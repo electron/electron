@@ -37,6 +37,7 @@ class NativeWindowMac : public NativeWindow,
 
   // NativeWindow:
   void SetContentView(views::View* view) override;
+  void SetContentViewImpl(NativeView* view) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -109,6 +110,8 @@ class NativeWindowMac : public NativeWindow,
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
   void SetTopBrowserView(NativeBrowserView* browser_view) override;
+  void AddChildView(NativeView* view) override;
+  bool RemoveChildView(NativeView* view) override;
   void SetParentWindow(NativeWindow* parent) override;
   content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::NativeView GetNativeView() const override;

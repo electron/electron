@@ -24,6 +24,7 @@ namespace electron {
 
 namespace api {
 
+class BaseView;
 class View;
 
 class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
@@ -89,9 +90,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #if BUILDFLAG(IS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
 #endif
+  void OnChildViewDetached(NativeView* view) override;
 
   // Public APIs of NativeWindow.
   void SetContentView(gin::Handle<View> view);
+  void SetContentBaseView(gin::Handle<BaseView> view);
   void Close();
   virtual void CloseImmediately();
   virtual void Focus();
@@ -183,6 +186,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                                  gin_helper::Arguments* args);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
+  virtual void AddChildView(v8::Local<v8::Value> value);
+  virtual void RemoveChildView(v8::Local<v8::Value> value);
+  virtual std::vector<v8::Local<v8::Value>> GetViews() const;
+  virtual void ResetBaseViews();
   std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
   void SetProgressBar(double progress, gin_helper::Arguments* args);
@@ -270,7 +277,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   v8::Global<v8::Value> content_view_;
+  v8::Global<v8::Value> content_base_view_;
   std::map<int32_t, v8::Global<v8::Value>> browser_views_;
+  std::map<int32_t, v8::Global<v8::Value>> base_views_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;

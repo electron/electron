@@ -1808,6 +1808,21 @@ with `addBrowserView` or `setBrowserView`.
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
+#### `win.addChildView(view)` _Experimental_
+
+* `view` [BaseView](base-view.md)
+
+Supporting work with multi views.
+
+#### `win.removeChildView(view)` _Experimental_
+
+* `view` [BaseView](base-view.md)
+
+#### `win.getViews()` _Experimental_
+
+Returns `BaseView[]` - an array of all BaseViews that have been attached
+with `addChildView`.
+
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
