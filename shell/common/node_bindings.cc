@@ -45,6 +45,7 @@
 #define ELECTRON_BUILTIN_MODULES(V)      \
   V(electron_browser_app)                \
   V(electron_browser_auto_updater)       \
+  V(electron_browser_base_view)          \
   V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
