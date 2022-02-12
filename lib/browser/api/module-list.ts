@@ -36,7 +36,8 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'View', loader: () => require('./view') },
   { name: 'webContents', loader: () => require('./web-contents') },
   { name: 'WebContentsView', loader: () => require('./web-contents-view') },
-  { name: 'webFrameMain', loader: () => require('./web-frame-main') }
+  { name: 'webFrameMain', loader: () => require('./web-frame-main') },
+  { name: 'WrapperBrowserView', loader: () => require('./wrapper-browser-view') }
 ];
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {

@@ -792,9 +792,13 @@ void BaseWindow::AddBrowserView(v8::Local<v8::Value> value) {
     auto get_that_view = browser_views_.find(browser_view->ID());
     if (get_that_view == browser_views_.end()) {
       // If we're reparenting a BrowserView, ensure that it's detached from
-      // its previous owner window.
+      // its previous owner window/view.
       auto* owner_window = browser_view->owner_window();
-      if (owner_window && owner_window != window_.get()) {
+      auto* owner_view = browser_view->owner_view();
+      if (owner_view) {
+        owner_view->DetachBrowserView(browser_view->view());
+        browser_view->SetOwnerView(nullptr);
+      } else if (owner_window && owner_window != window_.get()) {
         owner_window->RemoveBrowserView(browser_view->view());
         browser_view->SetOwnerWindow(nullptr);
       }
