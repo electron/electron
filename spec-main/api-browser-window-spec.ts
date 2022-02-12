@@ -734,6 +734,22 @@ describe('BrowserWindow module', () => {
         w.showInactive();
         expect(w.isFocused()).to.equal(false);
       });
+
+      // TODO(dsanders11): Enable for Linux once CI plays nice with these kinds of tests
+      ifit(process.platform !== 'linux')('should not restore maximized windows', async () => {
+        const maximize = emittedOnce(w, 'maximize');
+        const shown = emittedOnce(w, 'show');
+        w.maximize();
+        // TODO(dsanders11): The maximize event isn't firing on macOS for a window initially hidden
+        if (process.platform !== 'darwin') {
+          await maximize;
+        } else {
+          await delay(1000);
+        }
+        w.showInactive();
+        await shown;
+        expect(w.isMaximized()).to.equal(true);
+      });
     });
 
     describe('BrowserWindow.focus()', () => {
