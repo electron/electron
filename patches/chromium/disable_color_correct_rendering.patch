@@ -293,7 +293,7 @@ index 6260d73068636f4a8d4c73c161a4ffe165b267d0..2686ef0dfb7d8b667647d11fece5aa8e
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 2f4fbbdd8059b2915b4848f95db925f1dbb1fb08..3fc675e4e56b3e658d70475800a938a7ce283567 100644
+index 49ef0d352cfb6163499fa42416187595c7011a68..d5bc620847872fcba96f6941be529428755d83a2 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@
@@ -304,7 +304,7 @@ index 2f4fbbdd8059b2915b4848f95db925f1dbb1fb08..3fc675e4e56b3e658d70475800a938a7
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -177,6 +178,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -184,6 +185,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
