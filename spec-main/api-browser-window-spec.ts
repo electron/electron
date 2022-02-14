@@ -4965,7 +4965,8 @@ describe('BrowserWindow module', () => {
       expect(w.getBounds()).to.deep.equal(newBounds);
     });
 
-    it('should not display a visible background', async () => {
+    // Linux doesn't return any capture sources.
+    ifit(process.platform !== 'linux')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -5006,7 +5007,8 @@ describe('BrowserWindow module', () => {
   describe('"backgroundColor" option', () => {
     afterEach(closeAllWindows);
 
-    it('should display the set color', async () => {
+    // Linux doesn't return any capture sources.
+    ifit(process.platform !== 'linux')('should display the set color', async () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({

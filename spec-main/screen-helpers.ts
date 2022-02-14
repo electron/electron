@@ -41,6 +41,8 @@ const formatHexByte = (val: number): string => {
 export const colorAtPoint = async (point: Electron.Point): Promise<string> => {
   const image = await captureScreen(point);
   const pixel = image.crop({ ...point, width: 1, height: 1 });
+  // TODO(samuelmaddock): NativeImage.toBitmap() should return the raw pixel
+  // color, but it sometimes differs. Why is that?
   const [b, g, r] = pixel.toBitmap();
   return `#${formatHexByte(r)}${formatHexByte(g)}${formatHexByte(b)}`;
 };
