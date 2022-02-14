@@ -1164,6 +1164,14 @@ describe('<webview> tag', function () {
       });
     });
 
+    it('handler modifying params.instanceId does not break <webview>', async () => {
+      ipcRenderer.send('break-next-will-attach-webview');
+
+      await startLoadingWebViewAndWaitForMessage(webview, {
+        src: `file://${fixtures}/pages/a.html`
+      });
+    });
+
     it('supports preventing a webview from being created', async () => {
       ipcRenderer.send('prevent-next-will-attach-webview');
 
