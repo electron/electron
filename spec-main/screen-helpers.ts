@@ -20,7 +20,10 @@ const captureScreen = async (point: Electron.Point = { x: 0, y: 0 }): Promise<Na
   const screenCapture = sources.find(source => source.display_id === `${display.id}`);
   // Fails when HDR is enabled on Windows.
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1247730
-  if (!screenCapture) throw new Error(`Unable to find screen capture for display '${display.id}'`);
+  if (!screenCapture) {
+    const displayIds = sources.map(source => source.display_id);
+    throw new Error(`Unable to find screen capture for display '${display.id}'\n\tAvailable displays: ${displayIds.join(', ')}`);
+  }
   return screenCapture.thumbnail;
 };
 
@@ -40,4 +43,42 @@ export const colorAtPoint = async (point: Electron.Point): Promise<string> => {
   const pixel = image.crop({ ...point, width: 1, height: 1 });
   const [b, g, r] = pixel.toBitmap();
   return `#${formatHexByte(r)}${formatHexByte(g)}${formatHexByte(b)}`;
+};
+
+const hexToRgba = (hexColor: string) => {
+  const match = hexColor.match(/^#([0-9a-fA-F]{6,8})$/);
+  if (!match) return;
+
+  const colorStr = match[1];
+  return [
+    parseInt(colorStr.substring(0, 2), 16),
+    parseInt(colorStr.substring(2, 4), 16),
+    parseInt(colorStr.substring(4, 6), 16),
+    parseInt(colorStr.substring(6, 8), 16) || 0xFF
+  ];
+};
+
+/** Calculate euclidian distance between colors. */
+const colorDistance = (hexColorA: string, hexColorB: string) => {
+  const colorA = hexToRgba(hexColorA);
+  const colorB = hexToRgba(hexColorB);
+  if (!colorA || !colorB) return -1;
+  return Math.sqrt(
+    Math.pow(colorB[0] - colorA[0], 2) +
+    Math.pow(colorB[1] - colorA[1], 2) +
+    Math.pow(colorB[2] - colorA[2], 2)
+  );
+};
+
+/**
+ * Determine if colors are similar based on distance. This can be useful when
+ * comparing colors which may differ based on lossy compression.
+ */
+export const areColorsSimilar = (
+  hexColorA: string,
+  hexColorB: string,
+  distanceThreshold = 90
+): boolean => {
+  const distance = colorDistance(hexColorA, hexColorB);
+  return distance <= distanceThreshold;
 };
