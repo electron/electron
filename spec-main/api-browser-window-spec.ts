@@ -12,7 +12,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { CHROMA_COLOR_HEX, colorAtPoint } from './screen-helpers';
+import { areColorsSimilar, CHROMA_COLOR_HEX, colorAtPoint } from './screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -4947,20 +4947,22 @@ describe('BrowserWindow module', () => {
       const backgroundWindow = new BrowserWindow({
         ...display.bounds,
         frame: false,
-        backgroundColor: CHROMA_COLOR_HEX
+        backgroundColor: CHROMA_COLOR_HEX,
+        hasShadow: false
       });
 
       await backgroundWindow.loadURL('about:blank');
 
-      const w = new BrowserWindow({
+      const foregroundWindow = new BrowserWindow({
         ...display.bounds,
         show: true,
         transparent: true,
-        frame: false
+        frame: false,
+        hasShadow: false
       });
 
-      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html'));
-      await emittedOnce(w, 'ready-to-show');
+      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html'));
+      await emittedOnce(foregroundWindow, 'ready-to-show');
 
       const leftHalfColor = await colorAtPoint({
         x: display.size.width / 4,
@@ -4972,8 +4974,8 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(leftHalfColor).to.equal(CHROMA_COLOR_HEX);
-      expect(rightHalfColor).to.equal('#ff0000');
+      expect(areColorsSimilar(leftHalfColor, CHROMA_COLOR_HEX)).to.be.true();
+      expect(areColorsSimilar(rightHalfColor, '#ff0000')).to.be.true();
     });
   });
 
@@ -4992,15 +4994,12 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await emittedOnce(w, 'ready-to-show');
 
-      // Need to wait for frame to paint sometimes :(
-      await new Promise(resolve => setTimeout(resolve, 1));
-
       const centerColor = await colorAtPoint({
         x: display.size.width / 2,
         y: display.size.height / 2
       });
 
-      expect(centerColor).to.equal(CHROMA_COLOR_HEX);
+      expect(areColorsSimilar(centerColor, CHROMA_COLOR_HEX)).to.be.true();
     });
   });
 });
