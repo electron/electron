@@ -61,7 +61,7 @@ index 90b0c84bc1ed655238841cbbce7ebc02870f3e7f..8b6bed47ebed60e9f3297e9f50f764eb
  }
  
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index 32c2741477157c28ac621ea0e11f45337346fd91..d851f18c08120c0f97c6468f9a7c759c1bf8f62b 100644
+index 32c2741477157c28ac621ea0e11f45337346fd91..cf8a0f684e073ba9ca336faf565b11c16f405c09 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -94,16 +94,22 @@ void AddNativeUiColorMixer(ColorProvider* provider,
@@ -69,9 +69,9 @@ index 32c2741477157c28ac621ea0e11f45337346fd91..d851f18c08120c0f97c6468f9a7c759c
    mixer[kColorSliderTrack] = AlphaBlend(
        kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
 +  mixer[kColorResultsTableHoveredBackground] = AlphaBlend(
-+      kColorNativeWindowText, kColorNativeWindow, 0.25f);
++      kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
 +  mixer[kColorResultsTableDimmedText] = AlphaBlend(
-+      kColorNativeWindowText, kColorNativeWindow, 0.5f);
++      kColorNativeWindowText, kColorNativeWindow, gfx::kGoogleGreyAlpha600);
  
    // Window Background
    mixer[kColorBubbleFooterBackground] = {kColorNativeWindow};
