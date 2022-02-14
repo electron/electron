@@ -55,8 +55,6 @@ static_library("chrome") {
     "//chrome/browser/process_singleton.h",
     "//chrome/browser/process_singleton_internal.cc",
     "//chrome/browser/process_singleton_internal.h",
-    "//chrome/browser/ui/browser_dialogs.cc",
-    "//chrome/browser/ui/browser_dialogs.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.cc",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc",
@@ -282,6 +280,7 @@ static_library("chrome") {
     deps += [
       "//chrome/app/vector_icons",
       "//components/vector_icons:vector_icons",
+      "//ui/views/controls/webview",
     ]
   }
 
