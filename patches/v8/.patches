@@ -16,3 +16,4 @@ cherry-pick-5d2b5e7c006c.patch
 version_9_6_180_13_cherry-pick.patch
 merged_allow_compiled_module_invalidation_at_wasmstreaming_finish.patch
 cherry-pick-27bc67f761e6.patch
+regexp_fix_uaf_in_regexpmacroassembler.patch
