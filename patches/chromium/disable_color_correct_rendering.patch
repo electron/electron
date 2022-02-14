@@ -20,20 +20,19 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index b66723227093f8521631993e53823229990248fc..8a2d5a11d97a5072dc0912f13b832914b0b09ed5 100644
+index 0068835cbde10c9a4dabf1f4b0836be612b5a6d5..9ae522ab490752663245049aae8139df6776fb64 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1900,6 +1900,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
- 
- gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
+@@ -1883,6 +1883,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+ TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
+   TargetColorParams params;
 +  if (!settings_.enable_color_correct_rendering) {
-+    return {};
++    return params;
 +  }
-+
-   constexpr gfx::ColorSpace srgb = gfx::ColorSpace::CreateSRGB();
  
    // If we are likely to software composite the resource, we use sRGB because
+   // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
 index 64f1a3a3cb8d82235ff04f5c01a7cf571d8ba00c..ffa8d1a53870663647e423975f00e5650c6ab579 100644
 --- a/cc/trees/layer_tree_settings.h

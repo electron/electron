@@ -150,7 +150,7 @@ index f889d0bf33cf218a68bf5a9422aecaed23fa260a..3330876f623e5b2cb600b1ce1fd10b33
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index f2c7eedbd38aec03add4444e39f0bdd14765e979..dcb819e0590fbb064cf40b69d1ae32ded460dd18 100644
+index 83517883144a77a0c775ce2d146b4e85ef79ea97..aa65517a568aa0b324b2c8cca8f60bb532ba085a 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -32,6 +32,7 @@
@@ -161,7 +161,7 @@ index f2c7eedbd38aec03add4444e39f0bdd14765e979..dcb819e0590fbb064cf40b69d1ae32de
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -292,6 +293,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -291,6 +292,10 @@ WebView* RenderViewImpl::CreateView(
      params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
  
