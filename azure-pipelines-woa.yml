@@ -123,5 +123,6 @@ steps:
 
 - powershell: |
     Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
+    Remove-Item -path $(Pipeline.Workspace)\src -Recurse -Force -ErrorAction Ignore
   displayName: 'Delete user app data directories'
   condition: always()
