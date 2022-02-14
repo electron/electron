@@ -437,7 +437,8 @@ describe('<webview> tag', function () {
 
     afterEach(closeAllWindows);
 
-    it('should make parent frame element fullscreen too', async () => {
+    // TODO(jkleinsc) fix this test on arm64 macOS.  It causes the tests following it to fail/be flaky
+    ifit(process.platform !== 'darwin' || process.arch !== 'arm64')('should make parent frame element fullscreen too', async () => {
       const [w, webview] = await loadWebViewWindow();
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
 
@@ -448,8 +449,7 @@ describe('<webview> tag', function () {
     });
 
     // FIXME(zcbenz): Fullscreen events do not work on Linux.
-    // This test is flaky on arm64 macOS.
-    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('exiting fullscreen should unfullscreen window', async () => {
+    ifit(process.platform !== 'linux')('exiting fullscreen should unfullscreen window', async () => {
       const [w, webview] = await loadWebViewWindow();
       const enterFullScreen = emittedOnce(w, 'enter-full-screen');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
@@ -476,8 +476,7 @@ describe('<webview> tag', function () {
       expect(w.isFullScreen()).to.be.false();
     });
 
-    // TODO(jkleinsc) fix this flaky test on arm64 macOS
-    ifit(process.platform !== 'darwin' || process.arch !== 'arm64')('pressing ESC should emit the leave-html-full-screen event', async () => {
+    it('pressing ESC should emit the leave-html-full-screen event', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
