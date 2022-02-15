@@ -189,7 +189,8 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/views/overlay/overlay_window_views.h"
+#include "chrome/browser/ui/views/overlay/document_overlay_window_views.h"
+#include "chrome/browser/ui/views/overlay/video_overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
@@ -754,7 +755,7 @@ ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
   std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
-        static_cast<OverlayWindowViews*>(overlay_window.get());
+        static_cast<VideoOverlayWindowViews*>(overlay_window.get());
     ui::win::SetAppIdForWindow(app_user_model_id,
                                overlay_window_view->GetNativeWindow()
                                    ->GetHost()
@@ -772,7 +773,7 @@ ElectronBrowserClient::CreateWindowForDocumentPictureInPicture(
   std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
-        static_cast<OverlayWindowViews*>(overlay_window.get());
+        static_cast<DocumentOverlayWindowViews*>(overlay_window.get());
     ui::win::SetAppIdForWindow(app_user_model_id,
                                overlay_window_view->GetNativeWindow()
                                    ->GetHost()
