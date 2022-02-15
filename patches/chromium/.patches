@@ -117,3 +117,4 @@ fix_crash_when_saving_edited_pdf_files.patch
 fire_iframe_onload_for_cross-origin-initiated_same-document.patch
 do_not_select_vulkan_device_based_on_the_passed_in_gpu_info_on_linux.patch
 cherry-pick-be50c60b4225.patch
+cleanup_pausablecriptexecutor_usage.patch
