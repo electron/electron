@@ -1,7 +1,7 @@
-From e3805f29fed78bac51e5ee5315719a4208f1ff10 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kevin Ellis <kevers@google.com>
 Date: Fri, 11 Feb 2022 01:36:04 +0000
-Subject: [PATCH] Code health cleanup: replacing animations.
+Subject: Code health cleanup: replacing animations.
 
 Animation::Update performed a synchronous processing of the finish
 microtask to ensure that finished events where dispatched ahead of
@@ -10,7 +10,6 @@ should be queuing the replace event.  Microtasks will be processed in
 the correct order.
 
 Spec link: https://www.w3.org/TR/web-animations-1/#timelines
-
 
 Change-Id: Ibe7753e792fb6cf905bbe6815a080a8cc51c2803
 
@@ -27,13 +26,12 @@ Reviewed-by: Adrian Taylor <adetaylor@google.com>
 Commit-Queue: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4758@{#1134}
 Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
----
 
 diff --git a/third_party/blink/renderer/core/animation/animation.cc b/third_party/blink/renderer/core/animation/animation.cc
-index 18bfff86..63c6e370 100644
+index 943d0594b9c2fdcb10f90e3b4e951b8a809e74f3..734e10902292d7d81884af34b562d18a7802135a 100644
 --- a/third_party/blink/renderer/core/animation/animation.cc
 +++ b/third_party/blink/renderer/core/animation/animation.cc
-@@ -2320,10 +2320,6 @@
+@@ -2275,10 +2275,6 @@ bool Animation::Update(TimingUpdateReason reason) {
  
    if (reason == kTimingUpdateForAnimationFrame) {
      if (idle || CalculateAnimationPlayState() == kFinished) {
@@ -45,10 +43,10 @@ index 18bfff86..63c6e370 100644
      }
    }
 diff --git a/third_party/blink/renderer/core/animation/document_animations.cc b/third_party/blink/renderer/core/animation/document_animations.cc
-index 32cfdff..1eb731c5 100644
+index 29217ecb96dbdd342e75145c337c189d85c9bca5..681b30bfdcc30db0d1b8904d327f36582c47a197 100644
 --- a/third_party/blink/renderer/core/animation/document_animations.cc
 +++ b/third_party/blink/renderer/core/animation/document_animations.cc
-@@ -49,6 +49,7 @@
+@@ -47,6 +47,7 @@
  #include "third_party/blink/renderer/core/page/page_animator.h"
  #include "third_party/blink/renderer/core/style/computed_style.h"
  #include "third_party/blink/renderer/platform/bindings/microtask.h"
@@ -56,7 +54,7 @@ index 32cfdff..1eb731c5 100644
  
  namespace blink {
  
-@@ -260,10 +261,13 @@
+@@ -258,10 +259,13 @@ void DocumentAnimations::RemoveReplacedAnimations(
  
    // The list of animations for removal is constructed in reverse composite
    // ordering for efficiency. Flip the ordering to ensure that events are
