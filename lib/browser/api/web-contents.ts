@@ -560,7 +560,7 @@ const loggingEnabled = () => {
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
-  const prefs = this.getLastWebPreferences();
+  const prefs = this.getLastWebPreferences() || {};
   if (!prefs.nodeIntegration && (prefs.preload != null || prefs.preloadURL != null) && prefs.sandbox == null) {
     deprecate.log('The default sandbox option for windows without nodeIntegration is changing. Presently, by default, when a window has a preload script, it defaults to being unsandboxed. In Electron 20, this default will be changing, and all windows that have nodeIntegration: false (which is the default) will be sandboxed by default. If your preload script doesn\'t use Node, no action is needed. If your preload script does use Node, either refactor it to move Node usage to the main process, or specify sandbox: false in your WebPreferences.');
   }
