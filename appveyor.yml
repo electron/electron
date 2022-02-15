@@ -38,6 +38,7 @@ environment:
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
   GOMA_FALLBACK_ON_AUTH_FAILURE: true
+  APPVEYOR_RDP_PASSWORD: password
 notifications:
   - provider: Webhook
     url: https://electron-mission-control.herokuapp.com/rest/appveyor-hook
@@ -234,3 +235,4 @@ deploy_script:
       }
 on_finish:
   - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
