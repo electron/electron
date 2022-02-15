@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Tue, 5 Oct 2021 13:37:34 +0200
+Subject: Fix regexp assembler abortion
+
+When aborting code generation, we need to call {AbortedCodeGeneration}
+on the {MacroAssembler} contained in the {RegExpMacroAssemblerARM}.
+
+R=jgruber@chromium.org
+
+Bug: chromium:1255368
+Change-Id: If37351e8f5715e23affd21ad2de8a8eaad3ea094
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3204965
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#77250}
+
+diff --git a/src/regexp/arm/regexp-macro-assembler-arm.cc b/src/regexp/arm/regexp-macro-assembler-arm.cc
+index f21ee023da951354c035b0bf2d9be29e77c9b6af..7d30c4be24eef7fbfb8e523807619dcedcf87202 100644
+--- a/src/regexp/arm/regexp-macro-assembler-arm.cc
++++ b/src/regexp/arm/regexp-macro-assembler-arm.cc
+@@ -112,7 +112,10 @@ RegExpMacroAssemblerARM::RegExpMacroAssemblerARM(Isolate* isolate, Zone* zone,
+   __ bind(&start_label_);  // And then continue from here.
+ }
+ 
+-RegExpMacroAssemblerARM::~RegExpMacroAssemblerARM() {
++RegExpMacroAssemblerARM::~RegExpMacroAssemblerARM() = default;
++
++void RegExpMacroAssemblerARM::AbortedCodeGeneration() {
++  masm_->AbortedCodeGeneration();
+   // Unuse labels in case we throw away the assembler without calling GetCode.
+   entry_label_.Unuse();
+   start_label_.Unuse();
+@@ -124,7 +127,6 @@ RegExpMacroAssemblerARM::~RegExpMacroAssemblerARM() {
+   fallback_label_.Unuse();
+ }
+ 
+-
+ int RegExpMacroAssemblerARM::stack_limit_slack()  {
+   return RegExpStack::kStackLimitSlack;
+ }
+diff --git a/src/regexp/arm/regexp-macro-assembler-arm.h b/src/regexp/arm/regexp-macro-assembler-arm.h
+index 478ed292ae95235a8aa4b44efc1f4ad8d07c20fc..1446fa69821a078d45b802288c8fcafa7d4311b6 100644
+--- a/src/regexp/arm/regexp-macro-assembler-arm.h
++++ b/src/regexp/arm/regexp-macro-assembler-arm.h
+@@ -17,6 +17,7 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
+   RegExpMacroAssemblerARM(Isolate* isolate, Zone* zone, Mode mode,
+                           int registers_to_save);
+   virtual ~RegExpMacroAssemblerARM();
++  virtual void AbortedCodeGeneration();
+   virtual int stack_limit_slack();
+   virtual void AdvanceCurrentPosition(int by);
+   virtual void AdvanceRegister(int reg, int by);
+diff --git a/test/mjsunit/regress/regress-1255368.js b/test/mjsunit/regress/regress-1255368.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9284c5893ceb1d99d427870e9f0a287b4c725a65
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1255368.js
+@@ -0,0 +1,9 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --no-regexp-tier-up
++
++const arr = new Array(20000).fill([1]);
++const regexp = RegExp(JSON.stringify(arr));
++assertThrows(() => regexp.exec(), SyntaxError, /Regular expression too large/);
