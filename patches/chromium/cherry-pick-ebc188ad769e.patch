@@ -1,7 +1,7 @@
-From ebc188ad769e7a91739cdd443aa0e427b4f205d7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
-Date: Sat, 05 Feb 2022 13:41:47 +0000
-Subject: [PATCH] [M96-LTS] Fix potential handle reuse in Mojo
+Date: Sat, 5 Feb 2022 13:41:47 +0000
+Subject: Fix potential handle reuse in Mojo
 
 (cherry picked from commit 76eca90d0e9c09bfbb8c3e8999f36e6da6842a39)
 
@@ -25,13 +25,12 @@ Owners-Override: Jana Grill <janagrill@google.com>
 Commit-Queue: Zakhar Voit <voit@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1455}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/mojo/core/handle_table.cc b/mojo/core/handle_table.cc
-index 9426281d..a044f1c8 100644
+index 9426281d73f050598bd5f88b38aac39c4b994ff3..a044f1c8e38f0affe269a87a10c70b49fe6d353c 100644
 --- a/mojo/core/handle_table.cc
 +++ b/mojo/core/handle_table.cc
-@@ -65,13 +65,19 @@
+@@ -65,13 +65,19 @@ bool HandleTable::AddDispatchersFromTransit(
      const std::vector<Dispatcher::DispatcherInTransit>& dispatchers,
      MojoHandle* handles) {
    // Oops, we're out of handles.
@@ -39,11 +38,11 @@ index 9426281d..a044f1c8 100644
 +  if (next_available_handle_ == MOJO_HANDLE_INVALID) {
      return false;
 +  }
- 
--  DCHECK_LE(dispatchers.size(), std::numeric_limits<uint32_t>::max());
++
 +  // MOJO_HANDLE_INVALID is zero.
 +  DCHECK_GE(next_available_handle_, 1u);
-+
+ 
+-  DCHECK_LE(dispatchers.size(), std::numeric_limits<uint32_t>::max());
    // If this insertion would cause handle overflow, we're out of handles.
 -  if (next_available_handle_ + dispatchers.size() < next_available_handle_)
 +  const uint32_t num_handles_available =
