@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dominic Battre <battre@chromium.org>
+Date: Mon, 20 Dec 2021 18:53:00 +0000
+Subject: Pin scrollTop to 0 during autofill preview
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This CL forces scrollTop of a ListBox to be 0 during autofill preview
+state. After autofill preview ends, it attempts to scroll the ListBox
+back so that a previously selected element becomes visible.
+
+(cherry picked from commit 55b07dc54220200313366ec821d2303cd847187a)
+
+Fixed: 1261689
+Change-Id: I8593544577cf054cca40e7a487d3248acdcfdaa7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3279960
+Commit-Queue: Dominic Battré <battre@chromium.org>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#941822}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3347570
+Auto-Submit: Dominic Battré <battre@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#1330}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index fb24f5710d37e84701944d4b053764fadc29a6df..daa9e25f645f9d554dd85ed4199bc80bf3a7e049 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -122,6 +122,7 @@
+ #include "third_party/blink/renderer/core/html/custom/custom_element_registry.h"
+ #include "third_party/blink/renderer/core/html/forms/html_form_controls_collection.h"
+ #include "third_party/blink/renderer/core/html/forms/html_options_collection.h"
++#include "third_party/blink/renderer/core/html/forms/html_select_element.h"
+ #include "third_party/blink/renderer/core/html/html_body_element.h"
+ #include "third_party/blink/renderer/core/html/html_collection.h"
+ #include "third_party/blink/renderer/core/html/html_document.h"
+@@ -1556,6 +1557,13 @@ double Element::scrollTop() {
+     return 0;
+   }
+ 
++  // Don't disclose scroll position in preview state. See crbug.com/1261689.
++  auto* select_element = DynamicTo<HTMLSelectElement>(this);
++  if (select_element && !select_element->UsesMenuList() &&
++      !select_element->SuggestedValue().IsEmpty()) {
++    return 0;
++  }
++
+   LayoutBox* box = GetLayoutBoxForScrolling();
+   if (!box)
+     return 0;
+diff --git a/third_party/blink/renderer/core/html/forms/select_type.cc b/third_party/blink/renderer/core/html/forms/select_type.cc
+index 541a3e56671bc26cd7098a8b785061be69027be3..4fd15874c4ce78c19b21ac310eb076077075a4f0 100644
+--- a/third_party/blink/renderer/core/html/forms/select_type.cc
++++ b/third_party/blink/renderer/core/html/forms/select_type.cc
+@@ -977,8 +977,16 @@ void ListBoxSelectType::DidBlur() {
+ }
+ 
+ void ListBoxSelectType::DidSetSuggestedOption(HTMLOptionElement* option) {
+-  if (select_->GetLayoutObject())
+-    ScrollToOption(option);
++  if (!select_->GetLayoutObject())
++    return;
++  // When ending preview state, don't leave the scroll position at the
++  // previewed element but return to the active selection end if it is
++  // defined or to the first selectable option. See crbug.com/1261689.
++  if (!option)
++    option = ActiveSelectionEnd();
++  if (!option)
++    option = FirstSelectableOption();
++  ScrollToOption(option);
+ }
+ 
+ void ListBoxSelectType::SaveLastSelection() {
+diff --git a/third_party/blink/renderer/core/testing/internals.cc b/third_party/blink/renderer/core/testing/internals.cc
+index c855514e9ac6c7521515c417cceffc2dacbab2d9..967f1a0ff38db262b74650915efcc44d6ef1d7ad 100644
+--- a/third_party/blink/renderer/core/testing/internals.cc
++++ b/third_party/blink/renderer/core/testing/internals.cc
+@@ -1743,8 +1743,14 @@ void Internals::setSuggestedValue(Element* element,
+   if (auto* textarea = DynamicTo<HTMLTextAreaElement>(*element))
+     textarea->SetSuggestedValue(value);
+ 
+-  if (auto* select = DynamicTo<HTMLSelectElement>(*element))
+-    select->SetSuggestedValue(value);
++  if (auto* select = DynamicTo<HTMLSelectElement>(*element)) {
++    // A Null string resets the suggested value.
++    select->SetSuggestedValue(value.IsEmpty() ? String() : value);
++  }
++
++  To<HTMLFormControlElement>(element)->SetAutofillState(
++      value.IsEmpty() ? WebAutofillState::kNotFilled
++                      : WebAutofillState::kPreviewed);
+ }
+ 
+ void Internals::setAutofilledValue(Element* element,
+@@ -1773,11 +1779,16 @@ void Internals::setAutofilledValue(Element* element,
+         *Event::CreateBubble(event_type_names::kKeyup));
+   }
+ 
+-  if (auto* select = DynamicTo<HTMLSelectElement>(*element))
+-    select->setValue(value, true /* send_events */);
++  if (auto* select = DynamicTo<HTMLSelectElement>(*element)) {
++    select->setValue(value.IsEmpty()
++                         ? String()  // Null string resets the autofill state.
++                         : value,
++                     true /* send_events */);
++  }
+ 
+   To<HTMLFormControlElement>(element)->SetAutofillState(
+-      blink::WebAutofillState::kAutofilled);
++      value.IsEmpty() ? WebAutofillState::kNotFilled
++                      : blink::WebAutofillState::kAutofilled);
+ }
+ 
+ void Internals::setEditingValue(Element* element,
+diff --git a/third_party/blink/web_tests/fast/forms/text/input-appearance-autocomplete-suggested-value-over-placeholder-value-expected.html b/third_party/blink/web_tests/fast/forms/text/input-appearance-autocomplete-suggested-value-over-placeholder-value-expected.html
+index cac91c4f2fbecf5117b35318e7a88bda1a268135..30e454a79c4d3a5bc2a49879f0929557e011f819 100644
+--- a/third_party/blink/web_tests/fast/forms/text/input-appearance-autocomplete-suggested-value-over-placeholder-value-expected.html
++++ b/third_party/blink/web_tests/fast/forms/text/input-appearance-autocomplete-suggested-value-over-placeholder-value-expected.html
+@@ -1 +1,4 @@
+ <input id="input" value="Springfield">
++<script>
++internals.setAutofilled(input, true);
++</script>
+diff --git a/third_party/blink/web_tests/fast/forms/text/input-appearance-autocomplete-suggested-value-when-underlying-placeholder-is-removed-expected.html b/third_party/blink/web_tests/fast/forms/text/input-appearance-autocomplete-suggested-value-when-underlying-placeholder-is-removed-expected.html
+index cac91c4f2fbecf5117b35318e7a88bda1a268135..30e454a79c4d3a5bc2a49879f0929557e011f819 100644
+--- a/third_party/blink/web_tests/fast/forms/text/input-appearance-autocomplete-suggested-value-when-underlying-placeholder-is-removed-expected.html
++++ b/third_party/blink/web_tests/fast/forms/text/input-appearance-autocomplete-suggested-value-when-underlying-placeholder-is-removed-expected.html
+@@ -1 +1,4 @@
+ <input id="input" value="Springfield">
++<script>
++internals.setAutofilled(input, true);
++</script>

@@ -138,6 +138,12 @@ ipcMain.on('prevent-next-will-attach-webview', (event) => {
   event.sender.once('will-attach-webview', event => event.preventDefault());
 });
 
+ipcMain.on('break-next-will-attach-webview', (event, id) => {
+  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
+    params.instanceId = null;
+  });
+});
+
 ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
   event.sender.once('will-attach-webview', (event, webPreferences, params) => {
     params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`;
