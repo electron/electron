@@ -1,3 +1,6 @@
+workspace:
+  clean: all
+
 steps:
 - checkout: self
   path: src\electron
