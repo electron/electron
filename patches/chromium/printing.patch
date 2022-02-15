@@ -55,10 +55,10 @@ index 8d40bbf98d4d58704f118cb42039b0956a9f6639..06196c0fa02012a5faa82471bd39fac0
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_job.h b/chrome/browser/printing/print_job.h
-index 4ff7f4117fddd8d146f8b9518224c4b8d1c437f9..00531089ade4d4c6bc5ed35f023741e57dbe4fc6 100644
+index 650c78f16c812170aeda99d75300ff88f47347a0..c33ce445a23f97a744db3a4ac30ef471c359553b 100644
 --- a/chrome/browser/printing/print_job.h
 +++ b/chrome/browser/printing/print_job.h
-@@ -257,6 +257,9 @@ class JobEventDetails : public base::RefCountedThreadSafe<JobEventDetails> {
+@@ -261,6 +261,9 @@ class JobEventDetails : public base::RefCountedThreadSafe<JobEventDetails> {
   public:
    // Event type.
    enum Type {
