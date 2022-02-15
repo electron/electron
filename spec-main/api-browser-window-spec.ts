@@ -12,7 +12,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { areColorsSimilar, CHROMA_COLOR_HEX, colorAtPoint } from './screen-helpers';
+import { areColorsSimilar, captureScreen, CHROMA_COLOR_HEX, getPixelColor } from './screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -4938,8 +4938,8 @@ describe('BrowserWindow module', () => {
       expect(w.getBounds()).to.deep.equal(newBounds);
     });
 
-    // Linux doesn't return any capture sources.
-    ifit(process.platform !== 'linux')('should not display a visible background', async () => {
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -4962,12 +4962,12 @@ describe('BrowserWindow module', () => {
       foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html'));
       await emittedOnce(foregroundWindow, 'ready-to-show');
 
-      const leftHalfColor = await colorAtPoint({
+      const screenCapture = await captureScreen();
+      const leftHalfColor = getPixelColor(screenCapture, {
         x: display.size.width / 4,
         y: display.size.height / 2
       });
-
-      const rightHalfColor = await colorAtPoint({
+      const rightHalfColor = getPixelColor(screenCapture, {
         x: display.size.width - (display.size.width / 4),
         y: display.size.height / 2
       });
@@ -4980,8 +4980,8 @@ describe('BrowserWindow module', () => {
   describe('"backgroundColor" option', () => {
     afterEach(closeAllWindows);
 
-    // Linux doesn't return any capture sources.
-    ifit(process.platform !== 'linux')('should display the set color', async () => {
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('should display the set color', async () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
@@ -4993,7 +4993,8 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await emittedOnce(w, 'ready-to-show');
 
-      const centerColor = await colorAtPoint({
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
         x: display.size.width / 2,
         y: display.size.height / 2
       });
