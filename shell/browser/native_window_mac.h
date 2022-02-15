@@ -8,7 +8,6 @@
 #import <Cocoa/Cocoa.h>
 
 #include <memory>
-#include <queue>
 #include <string>
 #include <vector>
 
@@ -171,12 +170,6 @@ class NativeWindowMac : public NativeWindow,
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
 
-  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
-
-  // Handle fullscreen transitions.
-  void SetFullScreenTransitionState(FullScreenTransitionState state);
-  void HandlePendingFullscreenTransitions();
-
   enum class VisualEffectState {
     kFollowWindow,
     kActive,
@@ -241,13 +234,6 @@ class NativeWindowMac : public NativeWindow,
   bool is_kiosk_ = false;
   bool zoom_to_page_width_ = false;
   absl::optional<gfx::Point> traffic_light_position_;
-
-  std::queue<bool> pending_transitions_;
-  FullScreenTransitionState fullscreen_transition_state() const {
-    return fullscreen_transition_state_;
-  }
-  FullScreenTransitionState fullscreen_transition_state_ =
-      FullScreenTransitionState::NONE;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 

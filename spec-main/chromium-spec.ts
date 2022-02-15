@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, delay, defer } from './spec-helpers';
+import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
@@ -1590,7 +1590,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  it('can fullscreen from out-of-process iframes (OOPIFs)', async () => {
+  ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (OOPIFs)', async () => {
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
       '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
@@ -1614,7 +1614,36 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     expect(width).to.equal(0);
   });
 
+  ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (OOPIFs)', async () => {
+    await emittedOnce(w, 'enter-full-screen');
+    const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
+    const html =
+      '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
+    w.loadURL(`data:text/html,${html}`);
+    await fullscreenChange;
+
+    const fullscreenWidth = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(fullscreenWidth > 0).to.be.true();
+
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
+    );
+    await emittedOnce(w.webContents, 'leave-html-full-screen');
+
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
+
+    w.setFullScreen(false);
+    await emittedOnce(w, 'leave-full-screen');
+  });
+
   it('can fullscreen from in-process iframes', async () => {
+    if (process.platform === 'darwin') await emittedOnce(w, 'enter-full-screen');
+
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
     await fullscreenChange;

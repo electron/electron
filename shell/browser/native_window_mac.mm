@@ -578,11 +578,6 @@ bool NativeWindowMac::IsVisible() {
   return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
-void NativeWindowMac::SetFullScreenTransitionState(
-    FullScreenTransitionState state) {
-  fullscreen_transition_state_ = state;
-}
-
 bool NativeWindowMac::IsEnabled() {
   return [window_ attachedSheet] == nil;
 }
@@ -643,15 +638,6 @@ void NativeWindowMac::Restore() {
 
 bool NativeWindowMac::IsMinimized() {
   return [window_ isMiniaturized];
-}
-
-void NativeWindowMac::HandlePendingFullscreenTransitions() {
-  if (pending_transitions_.empty())
-    return;
-
-  bool next_transition = pending_transitions_.front();
-  pending_transitions_.pop();
-  SetFullScreen(next_transition);
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
