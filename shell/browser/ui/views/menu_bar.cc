@@ -8,6 +8,7 @@
 
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/submenu_button.h"
+#include "ui/color/color_provider.h"
 #include "ui/native_theme/common_theme.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
@@ -216,8 +217,7 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
     disabled_color_ = gtk::GetFgColor(
         "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
 #else
-    background_color_ =
-        ui::GetAuraColor(ui::NativeTheme::kColorId_MenuBackgroundColor, theme);
+    background_color_ = GetColorProvider()->GetColor(ui::kColorMenuBackground);
 #endif
   }
 }
