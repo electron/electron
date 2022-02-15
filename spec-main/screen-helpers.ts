@@ -7,7 +7,12 @@ const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
 /** Chroma key green. */
 export const CHROMA_COLOR_HEX = '#00b140';
 
-const captureScreen = async (point: Electron.Point = { x: 0, y: 0 }): Promise<NativeImage> => {
+/**
+ * Capture the screen at the given point.
+ *
+ * NOTE: Not yet supported on Linux in CI due to empty sources list.
+ */
+export const captureScreen = async (point: Electron.Point = { x: 0, y: 0 }): Promise<NativeImage> => {
   const display = screen.getDisplayNearestPoint(point);
   const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: display.size });
   // Toggle to save screen captures for debugging.
@@ -33,13 +38,9 @@ const formatHexByte = (val: number): string => {
 };
 
 /**
- * Get the hex color at the given point.
- *
- * NOTE: The color can be off on Windows when using a scale factor different
- * than 1x.
+ * Get the hex color at the given pixel coordinate in an image.
  */
-export const colorAtPoint = async (point: Electron.Point): Promise<string> => {
-  const image = await captureScreen(point);
+export const getPixelColor = (image: Electron.NativeImage, point: Electron.Point): string => {
   const pixel = image.crop({ ...point, width: 1, height: 1 });
   // TODO(samuelmaddock): NativeImage.toBitmap() should return the raw pixel
   // color, but it sometimes differs. Why is that?
