@@ -526,26 +526,23 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..268be8c0334a4bc051ff08792ea0dc3d
  
  void ProcessSingleton::OverrideShouldKillRemoteProcessCallbackForTesting(
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..ba87ecda02619286bbdb50cdf2c8e0d7d2303425 100644
+index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..ce851d09d501ebcc6d6c4065e746e869d5275b2b 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
-@@ -36,9 +36,15 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+@@ -36,9 +36,10 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
    return base::win::MessageWindow::FindWindow(user_data_dir.value());
  }
  
-+<<<<<<< HEAD
- NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
-   TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
- 
-+=======
+-NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
 +NotifyChromeResult AttemptToNotifyRunningChrome(
 +    HWND remote_window,
 +    const base::span<const uint8_t> additional_data) {
-+>>>>>>> feat: Add data transfer mechanism to requestSingleInstanceLock flow
+   TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
+-
    DCHECK(remote_window);
    DWORD process_id = 0;
    DWORD thread_id = GetWindowThreadProcessId(remote_window, &process_id);
-@@ -50,7 +56,8 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -50,7 +51,8 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
    }
  
    // Send the command line to the remote chrome window.
@@ -555,7 +552,7 @@ index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..ba87ecda02619286bbdb50cdf2c8e0d7
    std::wstring to_send(L"START\0", 6);  // want the NULL in the string.
    base::FilePath cur_dir;
    if (!base::GetCurrentDirectory(&cur_dir)) {
-@@ -64,6 +71,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -64,6 +66,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
        base::CommandLine::ForCurrentProcess()->GetCommandLineString());
    to_send.append(L"\0", 1);  // Null separator.
  
