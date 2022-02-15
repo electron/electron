@@ -460,6 +460,10 @@ step-fix-sync: &step-fix-sync
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python3 src/tools/clang/scripts/update.py
+
+        # Fix esbuild (wrong binary)
+        echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
+        cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
       fi
 
       cd src/third_party/angle
