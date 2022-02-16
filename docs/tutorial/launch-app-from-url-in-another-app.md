@@ -1,6 +1,6 @@
 ---
 title: Deep Links
-description: Setting your Electron app as the default handler for a specific protocol.
+description: Set your Electron app as the default handler for a specific protocol.
 slug: launch-app-from-url-in-another-app
 hide_title: true
 ---
