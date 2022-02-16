@@ -24,7 +24,9 @@ class NotificationPresenter {
   base::WeakPtr<Notification> CreateNotification(
       NotificationDelegate* delegate,
       const std::string& notification_id);
-  void CloseNotificationWithId(const std::string& notification_id);
+
+  void CloseNotificationWithId(const std::string& notification_id,
+                               bool pending_deletion_if_necessary = false);
 
   std::set<Notification*> notifications() const { return notifications_; }
 
@@ -43,6 +45,7 @@ class NotificationPresenter {
   void RemoveNotification(Notification* notification);
 
   std::set<Notification*> notifications_;
+  Notification* in_pending_deletion_;
 };
 
 }  // namespace electron
