@@ -48,23 +48,22 @@ index 0c1fa8676d00240e60ddd037664a409d1c9619dd..64d21f1878c3433324fc61353a10ee21
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..ce339bf232f0a0aa73fdf9615cd9074b96dede80 100644
+index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d42815d9f4 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-@@ -22,20 +22,24 @@
+@@ -20,6 +20,7 @@
+ #include "base/timer/timer.h"
+ #include "build/build_config.h"
  #include "chrome/app/vector_icons/vector_icons.h"
++#if 0
  #include "chrome/browser/command_updater_delegate.h"
  #include "chrome/browser/command_updater_impl.h"
-+#if 0
  #include "chrome/browser/profiles/profile.h"
-+#endif
- #include "chrome/browser/themes/theme_service.h"
-+#if 0
- #include "chrome/browser/ui/browser.h"
+@@ -28,14 +29,15 @@
  #include "chrome/browser/ui/browser_finder.h"
-+#endif
  #include "chrome/browser/ui/toolbar/chrome_location_bar_model_delegate.h"
  #include "chrome/browser/ui/views/location_bar/location_bar_view.h"
++#endif
  #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
  #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
@@ -77,7 +76,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..ce339bf232f0a0aa73fdf9615cd9074b
  #include "content/public/common/content_constants.h"
  #include "media/base/media_switches.h"
  #include "media/base/video_util.h"
-@@ -57,7 +61,7 @@
+@@ -57,7 +59,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -86,7 +85,25 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..ce339bf232f0a0aa73fdf9615cd9074b
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -185,7 +189,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
+@@ -91,7 +93,7 @@ T* AddChildView(std::vector<std::unique_ptr<views::View>>* views,
+ }  // namespace
+ 
+ OverlayLocationBarViewProxy::~OverlayLocationBarViewProxy() = default;
+-
++#if 0
+ class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
+                                    public ChromeLocationBarModelDelegate,
+                                    public LocationBarView::Delegate,
+@@ -149,7 +151,7 @@ class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
+   const std::unique_ptr<LocationBarModelImpl> location_bar_model_;
+   CommandUpdaterImpl command_updater_;
+ };
+-
++#endif
+ // static
+ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
+     content::DocumentPictureInPictureWindowController* controller,
+@@ -185,7 +187,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -95,6 +112,50 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..ce339bf232f0a0aa73fdf9615cd9074b
    std::wstring app_user_model_id;
    Browser* browser =
        chrome::FindBrowserWithWebContents(controller->GetWebContents());
+@@ -260,12 +262,6 @@ views::View* DocumentOverlayWindowViews::GetControlsContainerView() const {
+   return controls_container_view_;
+ }
+ 
+-const ui::ThemeProvider* DocumentOverlayWindowViews::GetThemeProvider() const {
+-  // FIXME: is there a way to use a dark theme just for this window?
+-  DCHECK(profile_for_theme_);
+-  return &ThemeService::GetThemeProviderForProfile(profile_for_theme_);
+-}
+-
+ void DocumentOverlayWindowViews::SetUpViews() {
+   // The window content consists of the fixed-height controls_container_view at
+   // the top which is a box layout, and the remainder of the view is filled with
+@@ -281,6 +277,7 @@ void DocumentOverlayWindowViews::SetUpViews() {
+   //   +-------------------------------------+
+ 
+   content::WebContents* pip_contents = controller_->GetChildWebContents();
++#if 0
+   auto* profile =
+       Profile::FromBrowserContext(pip_contents->GetBrowserContext());
+   profile_for_theme_ = profile;
+@@ -291,8 +288,8 @@ void DocumentOverlayWindowViews::SetUpViews() {
+     location_bar_view_proxy_ = std::make_unique<OverlayLocationBarViewImpl>(
+         profile, controller_->GetWebContents());
+   }
+-
+-  auto web_view = std::make_unique<views::WebView>(profile);
++#endif
++  auto web_view = std::make_unique<views::WebView>();
+   DVLOG(2) << __func__ << ": content WebView=" << web_view.get();
+   web_view->SetWebContents(pip_contents);
+ 
+diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.h b/chrome/browser/ui/views/overlay/document_overlay_window_views.h
+index 86d385842501d28b5eb42f841822294eb597e6ed..43c19dfa6ec6b48f8694636cc184dd616e5d6aca 100644
+--- a/chrome/browser/ui/views/overlay/document_overlay_window_views.h
++++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.h
+@@ -55,7 +55,6 @@ class DocumentOverlayWindowViews : public OverlayWindowViews,
+   bool IsVisible() const override;
+   void OnNativeWidgetMove() override;
+   void OnNativeWidgetDestroyed() override;
+-  const ui::ThemeProvider* GetThemeProvider() const override;
+ 
+   // OverlayWindowViews
+   bool ControlsHitTestContainsPoint(const gfx::Point& point) override;
 diff --git a/chrome/browser/ui/views/overlay/hang_up_button.cc b/chrome/browser/ui/views/overlay/hang_up_button.cc
 index 8e54570ea4c83483eedee4c781f0498ba07bc3dd..b1eb0b2f1a3dfb71e1f5d3917c67e66ac2b27d22 100644
 --- a/chrome/browser/ui/views/overlay/hang_up_button.cc
