@@ -8,7 +8,7 @@ const ChildProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 const { emittedOnce, waitForEvent } = require('./events-helpers');
 const { resolveGetters } = require('./expect-helpers');
-const { ifdescribe, delay } = require('./spec-helpers');
+const { ifit, ifdescribe, delay } = require('./spec-helpers');
 const features = process._linkedBinding('electron_common_features');
 
 /* Most of the APIs here don't use standard callbacks */
@@ -81,7 +81,8 @@ describe('chromium feature', () => {
       expect(event.data).to.equal(`size: ${width} ${height}`);
     });
 
-    it('disables node integration when it is disabled on the parent window', async () => {
+    // FIXME(zcbenz): This test is making the spec runner hang on exit on Windows.
+    ifit(process.platform !== 'win32')('disables node integration when it is disabled on the parent window', async () => {
       const windowUrl = require('url').format({
         pathname: `${fixtures}/pages/window-opener-no-node-integration.html`,
         protocol: 'file',
