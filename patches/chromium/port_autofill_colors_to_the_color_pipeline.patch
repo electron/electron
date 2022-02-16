@@ -31,10 +31,10 @@ index 2c496c6689a7076a3210e91b7c204442f5511f6a..f3c62655f9ea666e6de96d7d2612cee4
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 90b0c84bc1ed655238841cbbce7ebc02870f3e7f..8b6bed47ebed60e9f3297e9f50f764eb67d24d31 100644
+index 1d8415814c6245e3f2dfd01de7a2de11f09cdc7a..6db48efe454820e242b862edbfaf4d40cf16eb9d 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -138,6 +138,17 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -141,6 +141,17 @@ void AddUiColorMixer(ColorProvider* provider,
        kColorPwaSecurityChipForeground};
    mixer[kColorPwaToolbarBackground] = {kColorEndpointBackground};
    mixer[kColorPwaToolbarForeground] = {kColorEndpointForeground};
@@ -43,16 +43,16 @@ index 90b0c84bc1ed655238841cbbce7ebc02870f3e7f..8b6bed47ebed60e9f3297e9f50f764eb
 +      SetAlpha(kColorResultsTableNormalText, 0x0D);
 +  mixer[kColorResultsTableNormalText] = {SK_ColorBLACK};
 +  mixer[kColorResultsTableDimmedText] = {SkColorSetRGB(0x64, 0x64, 0x64)};
-+  if (dark_window) {
++  if (dark_mode) {
 +    mixer[kColorResultsTableNormalBackground] = {SkColorSetRGB(0x28, 0x28, 0x28)};
 +    mixer[kColorResultsTableNormalText] = {SK_ColorWHITE};
 +    mixer[kColorResultsTableDimmedText] =
 +      SetAlpha(kColorResultsTableNormalText, 0x80);
 +  }
    mixer[kColorSeparator] = {kColorMidground};
-   mixer[kColorShadowBase] = {dark_window ? SK_ColorBLACK : gfx::kGoogleGrey800};
+   mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -213,6 +224,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -216,6 +227,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
