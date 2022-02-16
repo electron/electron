@@ -51,27 +51,32 @@ diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/
 index 80672fdac89450e621192e9eab39214e762c66c0..c07eeb14edb9db27564d07b962b7f4bcef91361b 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-@@ -20,17 +20,19 @@
- #include "base/timer/timer.h"
- #include "build/build_config.h"
+@@ -22,20 +22,24 @@
  #include "chrome/app/vector_icons/vector_icons.h"
+ #include "chrome/browser/command_updater_delegate.h"
+ #include "chrome/browser/command_updater_impl.h"
 +#if 0
  #include "chrome/browser/profiles/profile.h"
++#endif
+ #include "chrome/browser/themes/theme_service.h"
++#if 0
  #include "chrome/browser/ui/browser.h"
  #include "chrome/browser/ui/browser_finder.h"
 +#endif
+ #include "chrome/browser/ui/toolbar/chrome_location_bar_model_delegate.h"
+ #include "chrome/browser/ui/views/location_bar/location_bar_view.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
- #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
  #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
 -#include "chrome/grit/generated_resources.h"
+ #include "components/omnibox/browser/location_bar_model_impl.h"
  #include "components/vector_icons/vector_icons.h"
  #include "content/public/browser/document_picture_in_picture_window_controller.h"
  #include "content/public/browser/web_contents.h"
 +#include "electron/grit/electron_resources.h"
+ #include "content/public/common/content_constants.h"
  #include "media/base/media_switches.h"
  #include "media/base/video_util.h"
- #include "third_party/skia/include/core/SkColor.h"
 @@ -51,7 +53,7 @@
  #include "ui/aura/window.h"
  #endif
