@@ -1,4 +1,11 @@
-# In-App Purchases (macOS)
+---
+title: In-App Purchases
+description: Add in-app purchases to your Mac App Store (MAS) application
+slug: in-app-purchases
+hide_title: true
+---
+
+# In-App Purchases
 
 ## Preparing
 
