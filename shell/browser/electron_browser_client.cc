@@ -154,7 +154,7 @@
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
-#include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
+#include "extensions/browser/guest_view/extensions_guest_view.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
@@ -423,8 +423,6 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
 
   host->AddFilter(
       new extensions::ExtensionMessageFilter(process_id, browser_context));
-  host->AddFilter(new extensions::ExtensionsGuestViewMessageFilter(
-      process_id, browser_context));
   host->AddFilter(
       new ElectronExtensionMessageFilter(process_id, browser_context));
   host->AddFilter(
@@ -1610,6 +1608,9 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry->AddInterface(base::BindRepeating(
       &extensions::EventRouter::BindForRenderer, render_process_host->GetID()));
+  associated_registry->AddInterface(
+      base::BindRepeating(&extensions::ExtensionsGuestView::CreateForExtensions,
+                          render_process_host->GetID()));
 #endif
 }
 
