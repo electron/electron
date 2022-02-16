@@ -53,10 +53,10 @@ index 21b90bbb8fe8ddc03eb20538be423a5396d18eb3..f9c735038f733d990783dd66ffe8c74f
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 257fdf20e77f475a73ef6e14e7b37d4609618e60..96d06f5aa3f92d25f90c4fe5b50ddbd0a746f438 100644
+index 3d6e0c0395ff7c92d8908c5151b467beec3a7516..2fadd6d9b2e3747eacea08973d8d3c7aa9c15f26 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -600,6 +600,9 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -599,6 +599,9 @@ class BLINK_EXPORT WebLocalFrameClient {
    virtual void DidCreateScriptContext(v8::Local<v8::Context>,
                                        int32_t world_id) {}
  

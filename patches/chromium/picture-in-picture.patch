@@ -48,7 +48,7 @@ index 0c1fa8676d00240e60ddd037664a409d1c9619dd..64d21f1878c3433324fc61353a10ee21
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-index 80672fdac89450e621192e9eab39214e762c66c0..c07eeb14edb9db27564d07b962b7f4bcef91361b 100644
+index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..ce339bf232f0a0aa73fdf9615cd9074b96dede80 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 @@ -22,20 +22,24 @@
@@ -77,7 +77,7 @@ index 80672fdac89450e621192e9eab39214e762c66c0..c07eeb14edb9db27564d07b962b7f4bc
  #include "content/public/common/content_constants.h"
  #include "media/base/media_switches.h"
  #include "media/base/video_util.h"
-@@ -51,7 +53,7 @@
+@@ -57,7 +61,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -86,7 +86,7 @@ index 80672fdac89450e621192e9eab39214e762c66c0..c07eeb14edb9db27564d07b962b7f4bc
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -117,7 +119,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
+@@ -185,7 +189,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -109,7 +109,7 @@ index 8e54570ea4c83483eedee4c781f0498ba07bc3dd..b1eb0b2f1a3dfb71e1f5d3917c67e66a
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 0d077c57ce3b21cc8cb48ad363e61d8cb8aaeca9..a0975b04a7031e1b184668d73d6922fd8676f7dd 100644
+index d96a4937e6ff6bbf4311673b4c91e9f0e957832a..a06cae5f50eb671fc05bd3d41ae4d218a649e991 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -14,13 +14,15 @@
