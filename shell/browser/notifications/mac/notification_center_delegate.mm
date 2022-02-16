@@ -130,11 +130,15 @@
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
         didDeliverNotification:(NSUserNotification*)notification {
   [self didDeliverNotification:notification];
+  // Clear pending notification
+  presenter_->CloseNotificationWithId("![DELETE]");
 }
 
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
        didActivateNotification:(NSUserNotification*)notification {
   [self didActivateNotification:notification];
+  // Clear pending notification
+  presenter_->CloseNotificationWithId("![DELETE]");
 }
 
 - (BOOL)userNotificationCenter:(NSUserNotificationCenter*)center

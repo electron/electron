@@ -10,11 +10,14 @@
 
 namespace electron {
 
-NotificationPresenter::NotificationPresenter() = default;
+NotificationPresenter::NotificationPresenter() {
+  in_pending_deletion_ = nullptr;
+}
 
 NotificationPresenter::~NotificationPresenter() {
   for (Notification* notification : notifications_)
     delete notification;
+  delete in_pending_deletion_;
 }
 
 base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
@@ -32,14 +35,27 @@ void NotificationPresenter::RemoveNotification(Notification* notification) {
 }
 
 void NotificationPresenter::CloseNotificationWithId(
-    const std::string& notification_id) {
+    const std::string& notification_id,
+    bool pending_deletion_if_necessary /* = false*/) {
   auto it = std::find_if(notifications_.begin(), notifications_.end(),
                          [&notification_id](const Notification* n) {
                            return n->notification_id() == notification_id;
                          });
+  if (in_pending_deletion_) {
+    in_pending_deletion_->Dismiss();
+    delete in_pending_deletion_;
+    in_pending_deletion_ = nullptr;
+  }
   if (it != notifications_.end()) {
     Notification* notification = (*it);
-    notification->Dismiss();
+#if !defined(OS_MAC)
+    pending_deletion_if_necessary = false;
+#endif
+    if (pending_deletion_if_necessary) {
+      in_pending_deletion_ = notification;
+    } else {
+      notification->Dismiss();
+    }
     notifications_.erase(notification);
   }
 }

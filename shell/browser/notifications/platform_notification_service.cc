@@ -189,7 +189,9 @@ void PlatformNotificationService::DisplayNotification(
   //
   // See: https://notifications.spec.whatwg.org/#showing-a-notification
   const size_t prev_notif_count = presenter->notifications().size();
-  presenter->CloseNotificationWithId(notification_id);
+  const bool try_pending_deletion(notification_data.renotify &&
+                                  !notification_data.require_interaction);
+  presenter->CloseNotificationWithId(notification_id, try_pending_deletion);
   const size_t curr_notif_count = presenter->notifications().size();
 
   auto* delegate = new NotificationDelegateImpl(notification_id, origin);
@@ -223,7 +225,9 @@ void PlatformNotificationService::DisplayPersistentNotification(
     return;
 
   const size_t prev_notif_count = presenter->notifications().size();
-  presenter->CloseNotificationWithId(notification_id);
+  const bool try_pending_deletion(notification_data.renotify &&
+                                  !notification_data.require_interaction);
+  presenter->CloseNotificationWithId(notification_id, try_pending_deletion);
   const size_t curr_notif_count = presenter->notifications().size();
 
   auto* delegate = new NotificationDelegateImpl(notification_id, origin);
