@@ -1,4 +1,11 @@
-# Desktop Launcher Actions (Linux)
+---
+title: Desktop Launcher Actions
+description: Add actions to the system launcher on Linux environments.
+slug: linux-desktop-actions
+hide_title: true
+---
+
+# Desktop Launcher Actions
 
 ## Overview
 
@@ -42,4 +49,4 @@ parameters. You can find them in your application in the global variable
 
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [audacious-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png
-[spec]: https://specifications.freedesktop.org/desktop-entry-spec/1.1/ar01s11.html
+[spec]: https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html
