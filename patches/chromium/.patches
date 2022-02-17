@@ -148,5 +148,6 @@ handle_potentiallydanglingmarkup_for_cssimagevalue.patch
 fire_iframe_onload_for_cross-origin-initiated_same-document.patch
 merge_m-97_serial_check_for_detached_buffers_when_writing.patch
 cherry-pick-be50c60b4225.patch
+cherry-pick-ebc188ad769e.patch
 cherry-pick-e3805f29fed7.patch
 cherry-pick-0081bb347e67.patch
