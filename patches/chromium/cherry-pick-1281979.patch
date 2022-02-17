@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Etienne Bergeron <etienneb@chromium.org>
+Date: Wed, 5 Jan 2022 23:37:26 +0000
+Subject: Fix race condition while initializing GPU Watchdog
+
+This CL is fixing a race condition detected by TSAN.
+see: crbug/1281979
+
+The race condition is between these two functions:
+  base::PowerMonitor::IsInitialized() and
+  base::PowerMonitor::Initialize(...)
+
+The power monitor doesn't need to be initialized to add
+observers. In fact, the power monitor initialization
+is for plugging a power monitor source. Observers can be
+safely added/removed.
+
+R=fdoray@chromium.org
+
+Bug: 1281979
+Change-Id: Icaecd877d4b0cf5e79d7fe6a096f9d76d932b076
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3367395
+Reviewed-by: Maggie Chen <magchen@chromium.org>
+Commit-Queue: Etienne Bergeron <etienneb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#955944}
+
+diff --git a/gpu/ipc/service/gpu_watchdog_thread.cc b/gpu/ipc/service/gpu_watchdog_thread.cc
+index ecf8e17ce4183bfe2f22a9a6d666a60828f078a2..c518f978e602eda3cfa150bd8e9e07f7f7fc749b 100644
+--- a/gpu/ipc/service/gpu_watchdog_thread.cc
++++ b/gpu/ipc/service/gpu_watchdog_thread.cc
+@@ -36,9 +36,6 @@
+ #endif
+ 
+ namespace gpu {
+-namespace {
+-constexpr int64_t kDelayForAddPowerObserverInMs = 50;
+-}
+ 
+ base::TimeDelta GetGpuWatchdogTimeout() {
+   std::string timeout_str =
+@@ -176,14 +173,11 @@ void GpuWatchdogThread::OnInitComplete() {
+                                 base::Unretained(this)));
+   Disarm();
+ 
+-  // Use a delayed task for AddPowerObserver. The PowerMonitor is initialized in
+-  // ChildThreadImpl::Init right after GpuInit::InitializeAndStartSandbox which
+-  // calls OnInitComplete() at the end if no errors.
+-  task_runner()->PostDelayedTask(
+-      FROM_HERE,
+-      base::BindOnce(&GpuWatchdogThread::AddPowerObserver,
+-                     base::Unretained(this)),
+-      base::TimeDelta::FromMilliseconds(kDelayForAddPowerObserverInMs));
++  // The PowerMonitorObserver needs to be register on the watchdog thread so the
++  // notifications are delivered on that thread.
++  task_runner()->PostTask(FROM_HERE,
++                          base::BindOnce(&GpuWatchdogThread::AddPowerObserver,
++                                         base::Unretained(this)));
+ }
+ 
+ // Called from the gpu thread in viz::GpuServiceImpl::~GpuServiceImpl().
+@@ -296,26 +290,12 @@ void GpuWatchdogThread::OnResume() {
+ void GpuWatchdogThread::AddPowerObserver() {
+   DCHECK(watchdog_thread_task_runner_->BelongsToCurrentThread());
+ 
+-  // The Observer can only be added after the power monitor is initialized.
+-  // When this function is called, PowerMonitor is probably ready.
+-  if (base::PowerMonitor::IsInitialized()) {
+-    bool is_system_suspended =
+-        base::PowerMonitor::AddPowerSuspendObserverAndReturnSuspendedState(
+-            this);
+-    if (is_system_suspended) {
+-      StopWatchdogTimeoutTask(kPowerSuspendResume);
+-    }
+-
+-    is_power_observer_added_ = true;
+-  } else {
+-    // Just in case PowerMonitor is not ready.
+-    // It usually takes hundreds of milliseconds to finish the whole GPU
+-    // initialization. Try again in 100 ms.
+-    task_runner()->PostDelayedTask(
+-        FROM_HERE,
+-        base::BindOnce(&GpuWatchdogThread::AddPowerObserver, weak_ptr_),
+-        base::TimeDelta::FromMilliseconds(100));
+-  }
++  // Adding the Observer to the power monitor is safe even if power monitor is
++  // not yet initialized.
++  bool is_system_suspended =
++      base::PowerMonitor::AddPowerSuspendObserverAndReturnSuspendedState(this);
++  if (is_system_suspended)
++    StopWatchdogTimeoutTask(kPowerSuspendResume);
+ }
+ 
+ // Running on the watchdog thread.
+@@ -638,7 +618,6 @@ void GpuWatchdogThread::DeliberatelyTerminateToRecoverFromHang() {
+   base::debug::Alias(&in_power_suspension_);
+   base::debug::Alias(&in_gpu_process_teardown_);
+   base::debug::Alias(&is_backgrounded_);
+-  base::debug::Alias(&is_power_observer_added_);
+   base::debug::Alias(&last_on_watchdog_timeout_timeticks_);
+   base::TimeDelta timeticks_elapses =
+       function_begin_timeticks - last_on_watchdog_timeout_timeticks_;
+@@ -843,17 +822,4 @@ bool GpuWatchdogThread::IsGpuHangDetectedForTesting() {
+   return test_result_timeout_and_gpu_hang_.IsSet();
+ }
+ 
+-// This should be called on the test main thread only. It will wait until the
+-// power observer is added on the watchdog thread.
+-void GpuWatchdogThread::WaitForPowerObserverAddedForTesting() {
+-  DCHECK(watched_gpu_task_runner_->BelongsToCurrentThread());
+-
+-  base::WaitableEvent event;
+-  task_runner()->PostDelayedTask(
+-      FROM_HERE,
+-      base::BindOnce(&base::WaitableEvent::Signal, base::Unretained(&event)),
+-      base::TimeDelta::FromMilliseconds(kDelayForAddPowerObserverInMs));
+-  event.Wait();
+-}
+-
+ }  // namespace gpu
+diff --git a/gpu/ipc/service/gpu_watchdog_thread.h b/gpu/ipc/service/gpu_watchdog_thread.h
+index d0d20dfc7c9fd7e13896e212673519ec5233c562..622647a68ee2bc2e3d18e58bbcfb3c7f90b3102c 100644
+--- a/gpu/ipc/service/gpu_watchdog_thread.h
++++ b/gpu/ipc/service/gpu_watchdog_thread.h
+@@ -121,8 +121,6 @@ class GPU_IPC_SERVICE_EXPORT GpuWatchdogThread
+   // For gpu testing only. Return status for the watchdog tests
+   bool IsGpuHangDetectedForTesting();
+ 
+-  void WaitForPowerObserverAddedForTesting();
+-
+   // Implements base::Thread.
+   void Init() override;
+   void CleanUp() override;
+@@ -291,10 +289,6 @@ class GPU_IPC_SERVICE_EXPORT GpuWatchdogThread
+   // The GPU watchdog is paused. The timeout task is temporarily stopped.
+   bool is_paused_ = false;
+ 
+-  // Whether the watchdog thread has added the power monitor observer.
+-  // Read/Write by the watchdog thread only.
+-  bool is_power_observer_added_ = false;
+-
+   // whether GpuWatchdogThreadEvent::kGpuWatchdogStart has been recorded.
+   bool is_watchdog_start_histogram_recorded = false;
+ 
+diff --git a/gpu/ipc/service/gpu_watchdog_thread_unittest.cc b/gpu/ipc/service/gpu_watchdog_thread_unittest.cc
+index ca2006a45dd87bad106b0f75bfe8475fa1090038..b44cdd7e22686ab37c57461291676f01512fd623 100644
+--- a/gpu/ipc/service/gpu_watchdog_thread_unittest.cc
++++ b/gpu/ipc/service/gpu_watchdog_thread_unittest.cc
+@@ -81,9 +81,6 @@ void GpuWatchdogPowerTest::SetUp() {
+ 
+   // Report GPU init complete.
+   watchdog_thread_->OnInitComplete();
+-
+-  // Wait until the power observer is added on the watchdog thread
+-  watchdog_thread_->WaitForPowerObserverAddedForTesting();
+ }
+ 
+ void GpuWatchdogPowerTest::TearDown() {
