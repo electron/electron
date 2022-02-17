@@ -13,7 +13,7 @@ Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3457023
 Reviewed-by: Tim Van Patten <timvp@google.com>
 
 diff --git a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
-index ac4c4086c28be29a65386ef06cc103d14dfb0d48..45308e0261b48eed17d144169b698165b04422f9 100644
+index 892983bd1ad52c6e0080c977022689c1d6a20ac5..7fc8e785af2c9c50f624790eccf5f57ce4af2c87 100644
 --- a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
 @@ -1451,13 +1451,13 @@ angle::Result FramebufferVk::resolveColorWithCommand(ContextVk *contextVk,
@@ -34,76 +34,3 @@ index ac4c4086c28be29a65386ef06cc103d14dfb0d48..45308e0261b48eed17d144169b698165
      resolveRegion.dstOffset.z                   = 0;
      resolveRegion.extent.width                  = params.blitArea.width;
      resolveRegion.extent.height                 = params.blitArea.height;
-diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
-index b9a0423345ba3a19e425a0b7ba7985ca191fdae7..0646a12afacc16fd7df938e615976a28b6da6ab0 100644
---- a/src/tests/angle_end2end_tests_expectations.txt
-+++ b/src/tests/angle_end2end_tests_expectations.txt
-@@ -15,6 +15,8 @@
- 6142 VULKAN : BlitFramebufferTest.BlitDepthStencilPixelByPixel/* = SKIP
- 6153 VULKAN WIN INTEL : GLSLTest_ES31.StructAndArrayEqualOperator/ES3_1_Vulkan_DirectSPIRVGen = SKIP
- 6153 VULKAN PIXEL4ORXL : GLSLTest_ES31.StructAndArrayEqualOperator/ES3_1_Vulkan_DirectSPIRVGen = SKIP
-+6989 OPENGL : BlitFramebufferTestES31.OOBResolve/* = SKIP
-+6989 GLES : BlitFramebufferTestES31.OOBResolve/* = SKIP
- 
- // Direct SPIR-V generation.  The following tests pass on some platforms but not others.  Need to investigate.
- 4889 VULKAN : GeometryShaderTest.LayeredFramebufferPreRenderClear2DArrayColor/ES3_1_Vulkan_DirectSPIRVGen = SKIP
-diff --git a/src/tests/gl_tests/BlitFramebufferANGLETest.cpp b/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
-index 22356a7c65339fe8b1e601f54a3491ea77237432..697cfcc8e10db571a407c0e44da36583614f2cb8 100644
---- a/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
-+++ b/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
-@@ -2637,6 +2637,55 @@ TEST_P(BlitFramebufferTest, BlitDepthStencilPixelByPixel)
-     EXPECT_PIXEL_RECT_EQ(64, 0, 128, 1, GLColor::blue);
- }
- 
-+// Regression test for a bug in the Vulkan backend where vkCmdResolveImage was used with
-+// out-of-bounds regions.
-+TEST_P(BlitFramebufferTestES31, OOBResolve)
-+{
-+    constexpr GLint kWidth  = 16;
-+    constexpr GLint kHeight = 32;
-+
-+    // Read framebuffer is multisampled.
-+    GLTexture readTexture;
-+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, readTexture);
-+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, kWidth, kHeight, GL_TRUE);
-+
-+    GLFramebuffer readFbo;
-+    glBindFramebuffer(GL_FRAMEBUFFER, readFbo);
-+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
-+                           readTexture, 0);
-+    ASSERT_GL_NO_ERROR();
-+    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
-+
-+    glClearColor(1, 0, 0, 1);
-+    glClear(GL_COLOR_BUFFER_BIT);
-+
-+    // Draw framebuffer is single sampled.
-+    GLTexture drawTexture;
-+    glBindTexture(GL_TEXTURE_2D, drawTexture);
-+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-+                 nullptr);
-+    glGenerateMipmap(GL_TEXTURE_2D);
-+
-+    GLFramebuffer drawFbo;
-+    glBindFramebuffer(GL_FRAMEBUFFER, drawFbo);
-+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, drawTexture, 0);
-+    ASSERT_GL_NO_ERROR();
-+    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
-+
-+    glClearColor(0, 1, 0, 1);
-+    glClear(GL_COLOR_BUFFER_BIT);
-+    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::green);
-+
-+    // Resolve the read framebuffer, using bounds that are outside the size of the image.
-+    glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
-+    glBlitFramebuffer(-kWidth * 2, -kHeight * 3, kWidth * 11, kHeight * 8, -kWidth * 2,
-+                      -kHeight * 3, kWidth * 11, kHeight * 8, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-+    ASSERT_GL_NO_ERROR();
-+
-+    glBindFramebuffer(GL_READ_FRAMEBUFFER, drawFbo);
-+    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::red);
-+}
-+
- // Regression test for a bug in the Vulkan backend where vkCmdResolveImage was using the src extents
- // as the resolve area instead of the area passed to glBlitFramebuffer.
- TEST_P(BlitFramebufferTestES31, PartialResolve)
