@@ -214,10 +214,10 @@ index 3da21358d80fafbd8a7cc5f0d485bf417a26e27c..3c29f13814b4442dd11bbed711047f91
    return ReadOnlyRoots(isolate).undefined_value();
  }
 diff --git a/src/runtime/runtime-test.cc b/src/runtime/runtime-test.cc
-index 38cdf5767145df2df4f00f73729ced4d3b916923..b008965901de4d4a5274318f6ab124b77ce38fe3 100644
+index 5e5d997d6903dd5b0dd55b2fadef8b4dee9581be..aec12d3aefd8e6821a3c50633ae7dad6d61ea4f8 100644
 --- a/src/runtime/runtime-test.cc
 +++ b/src/runtime/runtime-test.cc
-@@ -1329,7 +1329,7 @@ RUNTIME_FUNCTION(Runtime_CompleteInobjectSlackTracking) {
+@@ -1333,7 +1333,7 @@ RUNTIME_FUNCTION(Runtime_CompleteInobjectSlackTracking) {
    DCHECK_EQ(1, args.length());
  
    CONVERT_ARG_HANDLE_CHECKED(JSObject, object, 0);
