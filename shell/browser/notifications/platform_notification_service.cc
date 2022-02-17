@@ -28,6 +28,7 @@ static const std::string blink_data_header("\xFF\x14\xFF", 3);
 
 void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
                               const SkBitmap& icon,
+                              const SkBitmap& image,
                               const blink::PlatformNotificationData& data,
                               bool is_persistent,
                               bool is_replacing,
@@ -42,6 +43,8 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     options.tag = data.tag;
     options.icon_url = data.icon;
     options.icon = icon;
+    options.image_url = data.image;
+    options.image = image;
     options.silent = audio_muted ? true : data.silent;
     options.has_reply = false;
     options.is_persistent = is_persistent;
@@ -205,6 +208,7 @@ void PlatformNotificationService::DisplayNotification(
     browser_client_->WebNotificationAllowed(
         content::WebContents::FromRenderFrameHost(render_frame_host),
         base::BindRepeating(&OnWebNotificationAllowed, notification,
+                            notification_resources.image,
                             notification_resources.notification_icon,
                             notification_data, is_persistent, is_replacing));
   }
@@ -245,6 +249,7 @@ void PlatformNotificationService::DisplayPersistentNotification(
     browser_client_->WebNotificationAllowed(
         web_ctx,
         base::BindRepeating(&OnWebNotificationAllowed, notification,
+                            notification_resources.image,
                             notification_resources.notification_icon,
                             notification_data, is_persistent, is_replacing));
     // OnWebNotificationAllowed( notification,
