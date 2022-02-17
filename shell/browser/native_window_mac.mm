@@ -600,13 +600,23 @@ void NativeWindowMac::SetEnabled(bool enable) {
 }
 
 void NativeWindowMac::Maximize() {
-  if (IsMaximized())
+  const bool is_visible = [window_ isVisible];
+
+  if (IsMaximized()) {
+    if (!is_visible)
+      ShowInactive();
     return;
+  }
 
   // Take note of the current window size
   if (IsNormal())
     original_frame_ = [window_ frame];
   [window_ zoom:nil];
+
+  if (!is_visible) {
+    ShowInactive();
+    NotifyWindowMaximize();
+  }
 }
 
 void NativeWindowMac::Unmaximize() {
