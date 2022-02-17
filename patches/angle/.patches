@@ -1,0 +1,3 @@
+vangle_change_the_default_vulkan_device_choose_logic.patch
+m98_vulkan_fix_vkcmdresolveimage_extents.patch
+m98_vulkan_fix_vkcmdresolveimage_offsets.patch
