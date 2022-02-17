@@ -52,7 +52,7 @@ executors:
     parameters:
       size:
         description: "macOS executor size"
-        default: large
+        default: macos.x86.medium.gen2
         type: enum
         enum: ["macos.x86.medium.gen2", "large"]
     macos:
