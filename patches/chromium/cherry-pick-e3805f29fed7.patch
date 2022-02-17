@@ -28,10 +28,10 @@ Cr-Commit-Position: refs/branch-heads/4758@{#1134}
 Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
 
 diff --git a/third_party/blink/renderer/core/animation/animation.cc b/third_party/blink/renderer/core/animation/animation.cc
-index f11b55b34cdaa57f4ccfbe44c40c4d03d485210d..acb59f356d43e368e6e5cfe2f649ae60483ab978 100644
+index 545dcd7f0faae91cee574fce60fdedb4f6903bb6..96ecc0bf8c7dbb01714f680b6f0930d1e801f4a8 100644
 --- a/third_party/blink/renderer/core/animation/animation.cc
 +++ b/third_party/blink/renderer/core/animation/animation.cc
-@@ -2275,10 +2275,6 @@ bool Animation::Update(TimingUpdateReason reason) {
+@@ -2232,10 +2232,6 @@ bool Animation::Update(TimingUpdateReason reason) {
  
    if (reason == kTimingUpdateForAnimationFrame) {
      if (idle || CalculateAnimationPlayState() == kFinished) {
