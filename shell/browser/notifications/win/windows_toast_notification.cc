@@ -282,9 +282,19 @@ HRESULT WindowsToastNotification::ShowInternal(
                               &toast_xml),
         "XML: Invalid XML");
   } else {
+    REPORT_AND_RETURN_IF_FAILED(
+        XmlDocumentFromString(
+            L"<toast><visual><binding "
+            L"template=\"ToastGeneric\"></binding></visual></toast>",
+            &toast_xml),
+        "XML: FAILED during setup ToastGeneric scheme");
+
     auto* presenter_win = static_cast<NotificationPresenterWin*>(presenter());
     std::wstring icon_path =
         presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
+
+    std::wstring image_path =
+        presenter_win->SaveIconToFilesystem(options.image, options.image_url);
 
     // SAP-15259 : Add the reply field on a notification
     // Win XML toast scheme requires that inputs will follow befor buttons
@@ -304,11 +314,11 @@ HRESULT WindowsToastNotification::ShowInternal(
     std::for_each(options.actions.begin(), options.actions.end(), add_inputs);
     std::for_each(options.actions.begin(), options.actions.end(), add_buttons);
     REPORT_AND_RETURN_IF_FAILED(
-        GetToastXml(toast_manager_.Get(), base::UTF16ToWide(options.title),
-                    base::UTF16ToWide(options.msg), icon_path,
+        SetToastXml(toast_xml.Get(), base::UTF16ToWide(options.title),
+                    base::UTF16ToWide(options.msg), icon_path, image_path,
                     base::UTF16ToWide(options.timeout_type),
                     base::UTF16ToWide(options.data), actions, options.silent,
-                    options.require_interaction, &toast_xml),
+                    options.require_interaction),
         "XML: Failed to create XML document");
   }
 
@@ -385,61 +395,40 @@ PCWSTR WindowsToastNotification::AsString(
 }
 
 static const std::wstring kFileUriPrefix{L"file:///"};
-HRESULT WindowsToastNotification::GetToastXml(
-    ABI::Windows::UI::Notifications::IToastNotificationManagerStatics*
-        toastManager,
+HRESULT WindowsToastNotification::SetToastXml(
+    IXmlDocument* toast_xml,
     const std::wstring& title,
     const std::wstring& msg,
     const std::wstring& icon_path,
+    const std::wstring& image_path,
     const std::wstring& timeout_type,
     const std::wstring& data,
     const std::vector<electron::NotificationAction>& actions_list,
     const bool silent,
-    const bool require_interaction,
-    IXmlDocument** toast_xml) {
-  ABI::Windows::UI::Notifications::ToastTemplateType template_type;
-  if (title.empty() || msg.empty()) {
-    // Single line toast.
-    template_type =
-        icon_path.empty()
-            ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText01
-            : ABI::Windows::UI::Notifications::
-                  ToastTemplateType_ToastImageAndText01;
-    REPORT_AND_RETURN_IF_FAILED(
-        toast_manager_->GetTemplateContent(template_type, toast_xml),
-        "XML: Fetching XML ToastImageAndText01 template failed");
-    std::wstring toastMsg = title.empty() ? msg : title;
-    // we can't create an empty notification
-    toastMsg = toastMsg.empty() ? L"[no message]" : toastMsg;
-    REPORT_AND_RETURN_IF_FAILED(
-        SetXmlText(*toast_xml, toastMsg),
-        "XML: Filling XML ToastImageAndText01 template failed");
-  } else {
-    // Title and body toast.
-    template_type =
-        icon_path.empty()
-            ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText02
-            : ABI::Windows::UI::Notifications::
-                  ToastTemplateType_ToastImageAndText02;
-    REPORT_AND_RETURN_IF_FAILED(
-        toastManager->GetTemplateContent(template_type, toast_xml),
-        "XML: Fetching XML ToastImageAndText02 template failed");
-    REPORT_AND_RETURN_IF_FAILED(
-        SetXmlText(*toast_xml, title, msg),
-        "XML: Filling XML ToastImageAndText02 template failed");
+    const bool require_interaction) {
+  // Fill the toast's title
+  if (!title.empty()) {
+    REPORT_AND_RETURN_IF_FAILED(SetXmlText(toast_xml, title),
+                                "XML: Set toast title failed");
+  }
+
+  // Fill the toast's message
+  if (!msg.empty()) {
+    REPORT_AND_RETURN_IF_FAILED(SetXmlText(toast_xml, msg),
+                                "XML: Set toast message failed");
   }
 
   // Configure the toast's timeout settings
   if (timeout_type == base::ASCIIToWide("never")) {
     REPORT_AND_RETURN_IF_FAILED(
-        (SetXmlScenarioReminder(*toast_xml)),
+        (SetXmlScenarioReminder(toast_xml)),
         "XML: Setting \"scenario\" option on notification failed");
   }
 
   // Configure the toast's notification sound
   if (silent) {
     REPORT_AND_RETURN_IF_FAILED(
-        SetXmlAudioSilent(*toast_xml),
+        SetXmlAudioSilent(toast_xml),
         "XML: Setting \"silent\" option on notification failed");
   }
 
@@ -450,7 +439,7 @@ HRESULT WindowsToastNotification::GetToastXml(
         actions_list[0].type != NotificationAction::sTYPE_TEXT;
     REPORT_AND_RETURN_IF_FAILED(
         SetXmlScenarioType(
-            *toast_xml,
+            toast_xml,
             std::wstring(use_reminder ? L"reminder" : L"incomingcall")),
         "XML: Setting \"reminder\" senarion type failed");
     // SAP-17738 - Can not require interaction on Windows
@@ -462,15 +451,22 @@ HRESULT WindowsToastNotification::GetToastXml(
   }
 
   // Configure the toast's image
+  if (!image_path.empty()) {
+    REPORT_AND_RETURN_IF_FAILED(
+        SetXmlImage(toast_xml, image_path, L"hero"),
+        "XML: Setting \"icon\" option on notification failed");
+  }
+
+  // Configure the toast's icon
   if (!icon_path.empty()) {
     REPORT_AND_RETURN_IF_FAILED(
-        SetXmlImage(*toast_xml, icon_path),
-        "XML: Setting \"icon\" option on notification failed");
+        SetXmlImage(toast_xml, icon_path, L"appLogoOverride"),
+        "XML: Setting \"image\" option on notification failed");
   }
 
   if (!data.empty()) {
     REPORT_AND_RETURN_IF_FAILED(
-        SetLaunchParams(*toast_xml, data),
+        SetLaunchParams(toast_xml, data),
         "XML: Setting \"data\" option on notification failed");
   }
   for (const auto& action : actions_list) {
@@ -481,7 +477,7 @@ HRESULT WindowsToastNotification::GetToastXml(
     }
     std::wstring hint_input_id_;
     REPORT_AND_RETURN_IF_FAILED(
-        AddAction(*toast_xml, base::UTF16ToWide(action.type),
+        AddAction(toast_xml, base::UTF16ToWide(action.type),
                   base::UTF16ToWide(action.text), base::UTF16ToWide(action.arg),
                   icon_path_, base::UTF16ToWide(action.placeholder),
                   hint_input_id_),
@@ -491,7 +487,7 @@ HRESULT WindowsToastNotification::GetToastXml(
     hint_input_id_ = base::UTF16ToWide(action.arg);
     REPORT_AND_RETURN_IF_FAILED(
         AddAction(
-            *toast_xml, base::UTF16ToWide(NotificationAction::sTYPE_BUTTON),
+            toast_xml, base::UTF16ToWide(NotificationAction::sTYPE_BUTTON),
             base::UTF16ToWide(action.text),
             base::UTF16ToWide(action.arg + NotificationAction::sTYPE_BUTTON),
             icon_path_, base::UTF16ToWide(action.placeholder), hint_input_id_),
@@ -500,7 +496,7 @@ HRESULT WindowsToastNotification::GetToastXml(
   // Next approach can be used for accessing to XML toast scheme during debug
   // {
   // ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> doc;
-  // doc.Attach(*toast_xml);
+  // doc.Attach(toast_xml);
   // PCWSTR str = AsString(doc);
   // OutputDebugString(str);
   // OutputDebugString(L"\n");
@@ -774,52 +770,91 @@ HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
 
 HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
                                              const std::wstring& text) {
-  ScopedHString tag;
-  ComPtr<IXmlNodeList> node_list;
-  RETURN_IF_FAILED(GetTextNodeList(&tag, doc, &node_list, 1));
-
-  ComPtr<IXmlNode> node;
-  RETURN_IF_FAILED(node_list->Item(0, &node));
-
-  return AppendTextToXml(doc, node.Get(), text);
-}
-
-HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
-                                             const std::wstring& title,
-                                             const std::wstring& body) {
-  ScopedHString tag;
-  ComPtr<IXmlNodeList> node_list;
-  RETURN_IF_FAILED(GetTextNodeList(&tag, doc, &node_list, 2));
-
-  ComPtr<IXmlNode> node;
-  RETURN_IF_FAILED(node_list->Item(0, &node));
-  RETURN_IF_FAILED(AppendTextToXml(doc, node.Get(), title));
-  RETURN_IF_FAILED(node_list->Item(1, &node));
-
-  return AppendTextToXml(doc, node.Get(), body);
-}
-
-HRESULT WindowsToastNotification::SetXmlImage(IXmlDocument* doc,
-                                              const std::wstring& icon_path) {
-  ScopedHString tag(L"image");
+  ScopedHString tag(L"binding");
   if (!tag.success())
     return E_FAIL;
 
   ComPtr<IXmlNodeList> node_list;
   RETURN_IF_FAILED(doc->GetElementsByTagName(tag, &node_list));
 
-  ComPtr<IXmlNode> image_node;
-  RETURN_IF_FAILED(node_list->Item(0, &image_node));
+  ComPtr<IXmlNode> node;
+  RETURN_IF_FAILED(node_list->Item(0, &node));
 
-  ComPtr<IXmlNamedNodeMap> attrs;
-  RETURN_IF_FAILED(image_node->get_Attributes(&attrs));
+  ComPtr<IXmlElement> text_element;
+  ScopedHString text_str(L"text");
+  RETURN_IF_FAILED(doc->CreateElement(text_str, &text_element));
 
-  ScopedHString src(L"src");
-  if (!src.success())
+  ComPtr<IXmlNode> text_node_backup;
+  RETURN_IF_FAILED(text_element.As(&text_node_backup));
+
+  // Append text node to toast xml
+  ComPtr<IXmlNode> text_node;
+  RETURN_IF_FAILED(node->AppendChild(text_node_backup.Get(), &text_node));
+
+  return AppendTextToXml(doc, text_node.Get(), text);
+}
+
+HRESULT WindowsToastNotification::SetXmlImage(IXmlDocument* doc,
+                                              const std::wstring& icon_path,
+                                              const std::wstring& placement) {
+  ScopedHString tag(L"binding");
+  if (!tag.success())
     return E_FAIL;
 
-  ComPtr<IXmlNode> src_attr;
-  RETURN_IF_FAILED(attrs->GetNamedItem(src, &src_attr));
+  ComPtr<IXmlNodeList> node_list;
+  RETURN_IF_FAILED(doc->GetElementsByTagName(tag, &node_list));
+
+  ComPtr<IXmlNode> root;
+  RETURN_IF_FAILED(node_list->Item(0, &root));
+
+  ComPtr<IXmlElement> image_element;
+  ScopedHString image_str(L"image");
+  RETURN_IF_FAILED(doc->CreateElement(image_str, &image_element));
+
+  ComPtr<IXmlNode> image_node_backup;
+  RETURN_IF_FAILED(image_element.As(&image_node_backup));
+
+  // Append image node to toast xml
+  ComPtr<IXmlNode> image_node;
+  RETURN_IF_FAILED(root->AppendChild(image_node_backup.Get(), &image_node));
+
+  // Create image attributes
+  ComPtr<IXmlNamedNodeMap> attributes;
+  RETURN_IF_FAILED(image_node->get_Attributes(&attributes));
+
+  ComPtr<IXmlAttribute> placement_attribute;
+  ScopedHString placement_str(L"placement");
+  RETURN_IF_FAILED(doc->CreateAttribute(placement_str, &placement_attribute));
+
+  ComPtr<IXmlNode> placement_attribute_node;
+  RETURN_IF_FAILED(placement_attribute.As(&placement_attribute_node));
+
+  ScopedHString placement_value(placement);
+  if (!placement_value.success())
+    return E_FAIL;
+
+  ComPtr<IXmlText> placement_text;
+  RETURN_IF_FAILED(doc->CreateTextNode(placement_value, &placement_text));
+
+  ComPtr<IXmlNode> placement_node;
+  RETURN_IF_FAILED(placement_text.As(&placement_node));
+
+  ComPtr<IXmlNode> placement_backup_node;
+  RETURN_IF_FAILED(placement_attribute_node->AppendChild(
+      placement_node.Get(), &placement_backup_node));
+
+  {
+    ComPtr<IXmlNode> scenario_attribute_pnode;
+    RETURN_IF_FAILED(attributes.Get()->SetNamedItem(
+        placement_attribute_node.Get(), &scenario_attribute_pnode));
+  }
+
+  ComPtr<IXmlAttribute> src_attribute;
+  ScopedHString src_str(L"src");
+  RETURN_IF_FAILED(doc->CreateAttribute(src_str, &src_attribute));
+
+  ComPtr<IXmlNode> src_attribute_node;
+  RETURN_IF_FAILED(src_attribute.As(&src_attribute_node));
 
   ScopedHString img_path(icon_path.c_str());
   if (!img_path.success())
@@ -831,8 +866,17 @@ HRESULT WindowsToastNotification::SetXmlImage(IXmlDocument* doc,
   ComPtr<IXmlNode> src_node;
   RETURN_IF_FAILED(src_text.As(&src_node));
 
-  ComPtr<IXmlNode> child_node;
-  return src_attr->AppendChild(src_node.Get(), &child_node);
+  ComPtr<IXmlNode> src_backup_node;
+  RETURN_IF_FAILED(
+      src_attribute_node->AppendChild(src_node.Get(), &src_backup_node));
+
+  {
+    ComPtr<IXmlNode> scenario_attribute_pnode;
+    RETURN_IF_FAILED(attributes.Get()->SetNamedItem(src_attribute_node.Get(),
+                                                    &scenario_attribute_pnode));
+  }
+
+  return S_OK;
 }
 
 HRESULT WindowsToastNotification::SetLaunchParams(
@@ -853,22 +897,6 @@ HRESULT WindowsToastNotification::SetLaunchParams(
 
   return toastElement->SetAttribute(HStringReference(L"launch").Get(),
                                     HStringReference(params.c_str()).Get());
-}
-
-HRESULT WindowsToastNotification::GetTextNodeList(ScopedHString* tag,
-                                                  IXmlDocument* doc,
-                                                  IXmlNodeList** node_list,
-                                                  uint32_t req_length) {
-  tag->Reset(L"text");
-  if (!tag->success())
-    return E_FAIL;
-
-  RETURN_IF_FAILED(doc->GetElementsByTagName(*tag, node_list));
-
-  uint32_t node_length;
-  RETURN_IF_FAILED((*node_list)->get_Length(&node_length));
-
-  return node_length >= req_length;
 }
 
 HRESULT WindowsToastNotification::AppendTextToXml(IXmlDocument* doc,

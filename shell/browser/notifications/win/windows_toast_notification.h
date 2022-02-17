@@ -58,18 +58,17 @@ class WindowsToastNotification : public Notification {
   friend class ToastEventHandler;
 
   HRESULT ShowInternal(const NotificationOptions& options);
-  HRESULT GetToastXml(
-      ABI::Windows::UI::Notifications::IToastNotificationManagerStatics*
-          toastManager,
+  HRESULT SetToastXml(
+      ABI::Windows::Data::Xml::Dom::IXmlDocument* toast_xml,
       const std::wstring& title,
       const std::wstring& msg,
       const std::wstring& icon_path,
+      const std::wstring& image_path,
       const std::wstring& timeout_type,
       const std::wstring& data,
       const std::vector<electron::NotificationAction>& actions_list,
       const bool silent,
-      const bool require_interaction,
-      ABI::Windows::Data::Xml::Dom::IXmlDocument** toast_xml);
+      const bool require_interaction);
   HRESULT SetXmlAudioSilent(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
   HRESULT SetXmlScenarioReminder(
       ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
@@ -77,18 +76,11 @@ class WindowsToastNotification : public Notification {
                              const std::wstring& scenario_type);
   HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                      const std::wstring& text);
-  HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                     const std::wstring& title,
-                     const std::wstring& body);
   HRESULT SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                      const std::wstring& icon_path);
+                      const std::wstring& image_path,
+                      const std::wstring& placement);
   HRESULT SetLaunchParams(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                           const std::wstring& params);
-  HRESULT GetTextNodeList(
-      ScopedHString* tag,
-      ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-      ABI::Windows::Data::Xml::Dom::IXmlNodeList** node_list,
-      uint32_t req_length);
   HRESULT AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                           ABI::Windows::Data::Xml::Dom::IXmlNode* node,
                           const std::wstring& text);

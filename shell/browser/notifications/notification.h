@@ -46,6 +46,8 @@ struct NotificationOptions {
   bool silent;
   GURL icon_url;
   SkBitmap icon;
+  GURL image_url;
+  SkBitmap image;
   bool has_reply;
   std::u16string timeout_type;
   std::u16string reply_placeholder;
