@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Mon, 11 Oct 2021 14:08:06 -0400
+Subject: load v8 snapshot in browser process
+
+https://chromium-review.googlesource.com/c/chromium/src/+/3183394
+made a change to not load the v8 snapshot in the browser process,
+but due to the nature of electron, we need to load the v8 snapshot
+in the browser process.
+
+diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
+index 5a365936031e60fea77a5015414958756dc64ee7..104c1a5848ef0fa8b75b32a1243c52193d8a2d91 100644
+--- a/content/app/content_main_runner_impl.cc
++++ b/content/app/content_main_runner_impl.cc
+@@ -245,11 +245,8 @@ void LoadV8SnapshotFile(const base::CommandLine& command_line) {
+ 
+ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+                           const std::string& process_type) {
+-  // The gpu does not need v8, and the browser only needs v8 when in single
+-  // process mode.
+-  if (process_type == switches::kGpuProcess ||
+-      (process_type.empty() &&
+-       !command_line.HasSwitch(switches::kSingleProcess))) {
++  // The gpu does not need v8
++  if (process_type == switches::kGpuProcess) {
+     return false;
+   }
+   return true;

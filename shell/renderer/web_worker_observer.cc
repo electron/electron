@@ -37,6 +37,8 @@ WebWorkerObserver::WebWorkerObserver()
 
 WebWorkerObserver::~WebWorkerObserver() {
   lazy_tls.Pointer()->Set(nullptr);
+  gin_helper::MicrotasksScope microtasks_scope(
+      node_bindings_->uv_env()->isolate());
   node::FreeEnvironment(node_bindings_->uv_env());
   node::FreeIsolateData(node_bindings_->isolate_data());
 }
@@ -50,6 +52,10 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
 
   // Start the embed thread.
   node_bindings_->PrepareMessageLoop();
+
+  // Setup node tracing controller.
+  if (!node::tracing::TraceEventHelper::GetAgent())
+    node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
   bool initialized = node::InitializeContext(worker_context);

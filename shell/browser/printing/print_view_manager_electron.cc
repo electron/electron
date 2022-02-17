@@ -7,12 +7,14 @@
 #include <utility>
 
 #include "build/build_config.h"
+#include "content/public/browser/web_contents_user_data.h"
 
 namespace electron {
 
 PrintViewManagerElectron::PrintViewManagerElectron(
     content::WebContents* web_contents)
-    : PrintViewManagerBase(web_contents) {}
+    : PrintViewManagerBase(web_contents),
+      content::WebContentsUserData<PrintViewManagerElectron>(*web_contents) {}
 
 PrintViewManagerElectron::~PrintViewManagerElectron() = default;
 
@@ -45,6 +47,6 @@ void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
                                               CheckForCancelCallback callback) {
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintViewManagerElectron)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintViewManagerElectron);
 
 }  // namespace electron

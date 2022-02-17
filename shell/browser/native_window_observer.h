@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_
-#define SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_
+#define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_
 
 #include <string>
 
@@ -11,7 +11,7 @@
 #include "base/values.h"
 #include "ui/base/window_open_disposition.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <windows.h>
 #endif
 
@@ -98,7 +98,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnSystemContextMenu(int x, int y, bool* prevent_default) {}
 
 // Called when window message received
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
 #endif
 
@@ -111,4 +111,4 @@ class NativeWindowObserver : public base::CheckedObserver {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_

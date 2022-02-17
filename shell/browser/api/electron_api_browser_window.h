@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
-#define SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
 
 #include <string>
 #include <vector>
@@ -36,6 +36,10 @@ class BrowserWindow : public BaseWindow,
   base::WeakPtr<BrowserWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
+
+  // disable copy
+  BrowserWindow(const BrowserWindow&) = delete;
+  BrowserWindow& operator=(const BrowserWindow&) = delete;
 
  protected:
   BrowserWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
@@ -97,7 +101,7 @@ class BrowserWindow : public BaseWindow,
   v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
 
  private:
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void OverrideNSWindowContentView(InspectableWebContentsView* webView);
 #endif
 
@@ -123,12 +127,10 @@ class BrowserWindow : public BaseWindow,
   base::WeakPtr<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_

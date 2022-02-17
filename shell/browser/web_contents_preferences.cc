@@ -16,6 +16,7 @@
 #include "cc/base/switches.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
@@ -31,7 +32,7 @@
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
 #include "third_party/blink/public/mojom/webpreferences/web_preferences.mojom.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "ui/gfx/switches.h"
 #endif
 
@@ -98,7 +99,8 @@ std::vector<WebContentsPreferences*>& Instances() {
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
     const gin_helper::Dictionary& web_preferences)
-    : web_contents_(web_contents) {
+    : content::WebContentsUserData<WebContentsPreferences>(*web_contents),
+      web_contents_(web_contents) {
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
   Instances().push_back(this);
   SetFromDictionary(web_preferences);
@@ -130,7 +132,6 @@ void WebContentsPreferences::Clear() {
   disable_html_fullscreen_window_resize_ = false;
   webview_tag_ = false;
   sandbox_ = absl::nullopt;
-  native_window_open_ = true;
   context_isolation_ = true;
   javascript_ = true;
   images_ = true;
@@ -148,7 +149,6 @@ void WebContentsPreferences::Clear() {
   default_monospace_font_size_ = absl::nullopt;
   minimum_font_size_ = absl::nullopt;
   default_encoding_ = absl::nullopt;
-  opener_id_ = 0;
   is_webview_ = false;
   custom_args_.clear();
   custom_switches_.clear();
@@ -165,7 +165,7 @@ void WebContentsPreferences::Clear() {
   preload_path_ = absl::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -176,7 +176,11 @@ void WebContentsPreferences::Clear() {
 void WebContentsPreferences::SetFromDictionary(
     const gin_helper::Dictionary& web_preferences) {
   Clear();
+  Merge(web_preferences);
+}
 
+void WebContentsPreferences::Merge(
+    const gin_helper::Dictionary& web_preferences) {
   web_preferences.Get(options::kPlugins, &plugins_);
   web_preferences.Get(options::kExperimentalFeatures, &experimental_features_);
   web_preferences.Get(options::kNodeIntegration, &node_integration_);
@@ -190,7 +194,6 @@ void WebContentsPreferences::SetFromDictionary(
   bool sandbox;
   if (web_preferences.Get(options::kSandbox, &sandbox))
     sandbox_ = sandbox;
-  web_preferences.Get(options::kNativeWindowOpen, &native_window_open_);
   web_preferences.Get(options::kContextIsolation, &context_isolation_);
   web_preferences.Get(options::kJavaScript, &javascript_);
   web_preferences.Get(options::kImages, &images_);
@@ -219,12 +222,17 @@ void WebContentsPreferences::SetFromDictionary(
   std::string encoding;
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
-  web_preferences.Get(options::kOpenerID, &opener_id_);
   web_preferences.Get(options::kCustomArgs, &custom_args_);
   web_preferences.Get("commandLineSwitches", &custom_switches_);
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
+  // preferences don't save a transparency option,
+  // apply any existing transparency setting to background_color_
+  bool transparent;
+  if (web_preferences.Get(options::kTransparent, &transparent)) {
+    background_color_ = SK_ColorTRANSPARENT;
+  }
   std::string background_color;
   if (web_preferences.GetHidden(options::kBackgroundColor, &background_color))
     background_color_ = ParseHexColor(background_color);
@@ -268,7 +276,7 @@ void WebContentsPreferences::SetFromDictionary(
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
 #endif
 
@@ -361,7 +369,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitch(::switches::kNoZygote);
   }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Enable scroll bounce.
   if (scroll_bounce_)
     command_line->AppendSwitch(switches::kScrollBounce);
@@ -396,13 +404,10 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 void WebContentsPreferences::SaveLastPreferences() {
   last_web_preferences_ = base::Value(base::Value::Type::DICTIONARY);
-  last_web_preferences_.SetKey(options::kOpenerID, base::Value(opener_id_));
   last_web_preferences_.SetKey(options::kNodeIntegration,
                                base::Value(node_integration_));
   last_web_preferences_.SetKey(options::kNodeIntegrationInSubFrames,
                                base::Value(node_integration_in_sub_frames_));
-  last_web_preferences_.SetKey(options::kNativeWindowOpen,
-                               base::Value(native_window_open_));
   last_web_preferences_.SetKey(options::kSandbox, base::Value(IsSandboxed()));
   last_web_preferences_.SetKey(options::kContextIsolation,
                                base::Value(context_isolation_));
@@ -467,9 +472,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (default_encoding_)
     prefs->default_encoding = *default_encoding_;
 
-  // Pass the opener's window id.
-  prefs->opener_id = opener_id_;
-
   // Run Electron APIs and preload script in isolated world
   prefs->context_isolation = context_isolation_;
   prefs->is_webview = is_webview_;
@@ -497,7 +499,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (preload_path_)
     prefs->preload = *preload_path_;
 
-  prefs->native_window_open = native_window_open_;
   prefs->node_integration = node_integration_;
   prefs->node_integration_in_worker = node_integration_in_worker_;
   prefs->node_integration_in_sub_frames = node_integration_in_sub_frames_;
@@ -513,6 +514,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->v8_cache_options = v8_cache_options_;
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);
 
 }  // namespace electron

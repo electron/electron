@@ -96,8 +96,6 @@ class RefCountedGlobal
 
  private:
   v8::Global<T> handle_;
-
-  DISALLOW_COPY_AND_ASSIGN(RefCountedGlobal);
 };
 
 SafeV8Function::SafeV8Function(v8::Isolate* isolate, v8::Local<v8::Value> value)

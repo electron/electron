@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import * as cp from 'child_process';
 import * as https from 'https';
 import * as http from 'http';
@@ -11,8 +11,6 @@ import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import split = require('split')
-
-const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
 
@@ -207,22 +205,32 @@ describe('app module', () => {
   });
 
   describe('app.requestSingleInstanceLock', () => {
+    interface SingleInstanceLockTestArgs {
+      args: string[];
+      expectedAdditionalData: unknown;
+      expectedAck: unknown;
+    }
+
     it('prevents the second launch of app', async function () {
-      this.timeout(120000);
+      this.timeout(60000);
       const appPath = path.join(fixturesPath, 'api', 'singleton');
       const first = cp.spawn(process.execPath, [appPath]);
+      const firstExited = emittedOnce(first, 'exit');
       await emittedOnce(first.stdout, 'data');
+
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const [code2] = await emittedOnce(second, 'exit');
+      const secondExited = emittedOnce(second, 'exit');
+
+      const [code2] = await secondExited;
       expect(code2).to.equal(1);
-      const [code1] = await emittedOnce(first, 'exit');
+      const [code1] = await firstExited;
       expect(code1).to.equal(0);
     });
 
-    it('passes arguments to the second-instance event', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
-      const first = cp.spawn(process.execPath, [appPath]);
+    async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = emittedOnce(first, 'exit');
 
       // Wait for the first app to boot.
@@ -230,21 +238,154 @@ describe('app module', () => {
       while ((await emittedOnce(firstStdoutLines, 'data')).toString() !== 'started') {
         // wait.
       }
-      const data2Promise = emittedOnce(firstStdoutLines, 'data');
+      const additionalDataPromise = emittedOnce(firstStdoutLines, 'data');
 
-      const secondInstanceArgs = [process.execPath, appPath, '--some-switch', 'some-arg'];
+      const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
-      const [code2] = await emittedOnce(second, 'exit');
+      const secondExited = emittedOnce(second, 'exit');
+      const secondStdoutLines = second.stdout.pipe(split());
+      let ackData;
+      while ((ackData = await emittedOnce(secondStdoutLines, 'data'))[0].toString().length === 0) {
+        // This isn't valid data.
+      }
+
+      const [code2] = await secondExited;
       expect(code2).to.equal(1);
       const [code1] = await firstExited;
       expect(code1).to.equal(0);
-      const data2 = (await data2Promise)[0].toString('ascii');
-      const secondInstanceArgsReceived: string[] = JSON.parse(data2.toString('ascii'));
+      const dataFromSecondInstance = await additionalDataPromise;
+      const [args, additionalData] = dataFromSecondInstance[0].toString('ascii').split('||');
+      const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
+      const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
+      const dataAckReceived = JSON.parse(ackData[0].toString('ascii'));
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
         expect(secondInstanceArgsReceived).to.include(arg,
           `argument ${arg} is missing from received second args`);
+      }
+      expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
+        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`);
+      expect(dataAckReceived).to.be.deep.equal(testArgs.expectedAck,
+        `received data ${JSON.stringify(dataAckReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAck)}.`);
+    }
+
+    const expectedAdditionalData = {
+      level: 1,
+      testkey: 'testvalue1',
+      inner: {
+        level: 2,
+        testkey: 'testvalue2'
+      }
+    };
+
+    const expectedAck = {
+      level: 1,
+      testkey: 'acktestvalue1',
+      inner: {
+        level: 2,
+        testkey: 'acktestvalue2'
+      }
+    };
+
+    it('passes arguments to the second-instance event with no additional data', async () => {
+      await testArgumentPassing({
+        args: [],
+        expectedAdditionalData: null,
+        expectedAck: null
+      });
+    });
+
+    it('passes arguments to the second-instance event', async () => {
+      await testArgumentPassing({
+        args: ['--send-data'],
+        expectedAdditionalData,
+        expectedAck: null
+      });
+    });
+
+    it('gets back an ack after preventing default', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--prevent-default'],
+        expectedAdditionalData: null,
+        expectedAck
+      });
+    });
+
+    it('is able to send back empty ack after preventing default', async () => {
+      await testArgumentPassing({
+        args: ['--prevent-default'],
+        expectedAdditionalData: null,
+        expectedAck: null
+      });
+    });
+
+    it('sends and receives data', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--prevent-default', '--send-data'],
+        expectedAdditionalData,
+        expectedAck
+      });
+    });
+
+    it('sends and receives numerical data', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--ack-content=1', '--prevent-default', '--send-data', '--data-content=2'],
+        expectedAdditionalData: 2,
+        expectedAck: 1
+      });
+    });
+
+    it('sends and receives string data', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--ack-content="ack"', '--prevent-default', '--send-data', '--data-content="data"'],
+        expectedAdditionalData: 'data',
+        expectedAck: 'ack'
+      });
+    });
+
+    it('sends and receives boolean data', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--ack-content=true', '--prevent-default', '--send-data', '--data-content=false'],
+        expectedAdditionalData: false,
+        expectedAck: true
+      });
+    });
+
+    it('sends and receives array data', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--ack-content=[1, 2, 3]', '--prevent-default', '--send-data', '--data-content=[2, 3, 4]'],
+        expectedAdditionalData: [2, 3, 4],
+        expectedAck: [1, 2, 3]
+      });
+    });
+
+    it('sends and receives mixed array data', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--ack-content=["1", true, 3]', '--prevent-default', '--send-data', '--data-content=["2", false, 4]'],
+        expectedAdditionalData: ['2', false, 4],
+        expectedAck: ['1', true, 3]
+      });
+    });
+
+    it('sends and receives null data', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--ack-content=null', '--prevent-default', '--send-data', '--data-content=null'],
+        expectedAdditionalData: null,
+        expectedAck: null
+      });
+    });
+
+    it('cannot send or receive undefined data', async () => {
+      try {
+        await testArgumentPassing({
+          args: ['--send-ack', '--ack-content="undefined"', '--prevent-default', '--send-data', '--data-content="undefined"'],
+          expectedAdditionalData: undefined,
+          expectedAck: undefined
+        });
+        assert(false);
+      } catch (e) {
+        // This is expected.
       }
     });
   });
@@ -461,25 +602,6 @@ describe('app module', () => {
       const [, webContents, details] = await emitted;
       expect(webContents).to.equal(w.webContents);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
-    });
-
-    ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
-      it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'desktop-capturer-get-sources');
-        w.webContents.executeJavaScript('require(\'electron\').desktopCapturer.getSources({ types: [\'screen\'] })');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
     });
   });
 
@@ -1397,7 +1519,7 @@ describe('app module', () => {
     describe('when app.enableSandbox() is called', () => {
       it('adds --enable-sandbox to all renderer processes', done => {
         const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox']);
+        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
         server.once('error', error => { done(error); });
 
@@ -1422,7 +1544,7 @@ describe('app module', () => {
     describe('when the app is launched with --enable-sandbox', () => {
       it('adds --enable-sandbox to all renderer processes', done => {
         const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox']);
+        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
         server.once('error', error => { done(error); });
 
@@ -1621,6 +1743,21 @@ describe('app module', () => {
     it('returns an empty string when not present', async () => {
       const { getSwitchValue } = await runTestApp('command-line');
       expect(getSwitchValue).to.equal('');
+    });
+  });
+
+  describe('commandLine.removeSwitch', () => {
+    it('no-ops a non-existent switch', async () => {
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+    });
+
+    it('removes an existing switch', async () => {
+      app.commandLine.appendSwitch('foobar3', 'test');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(true);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
     });
   });
 

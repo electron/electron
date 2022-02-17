@@ -13,6 +13,7 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -73,11 +74,13 @@ v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
+v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
-    const ContextMenuParamsWithWebContents& val) {
+    const ContextMenuParamsWithRenderFrameHost& val) {
   const auto& params = val.first;
+  content::RenderFrameHost* render_frame_host = val.second;
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
   dict.Set("linkURL", params.link_url);
@@ -151,8 +154,6 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "clipboard-read");
     case content::PermissionType::CLIPBOARD_SANITIZED_WRITE:
       return StringToV8(isolate, "clipboard-sanitized-write");
-    case content::PermissionType::FILE_HANDLING:
-      return StringToV8(isolate, "file-handling");
     case content::PermissionType::FONT_ACCESS:
       return StringToV8(isolate, "font-access");
     case content::PermissionType::IDLE_DETECTION:
@@ -206,6 +207,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "openExternal");
     case PermissionType::SERIAL:
       return StringToV8(isolate, "serial");
+    case PermissionType::HID:
+      return StringToV8(isolate, "hid");
     default:
       return StringToV8(isolate, "unknown");
   }

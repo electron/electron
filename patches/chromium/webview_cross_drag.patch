@@ -8,22 +8,23 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 7739e118bacd0de1e51d2a46ff126557d9de960c..7192bbbdafaf1f3825909bfdb3f022c76ea3f31f 100644
+index 1aa844b66d149be252f4757ed656cc6bccb2ac8b..b03507679029ccb3beb3a8984b1449afead539c6 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -790,9 +790,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
- 
- bool WebContentsViewAura::IsValidDragTarget(
-     RenderWidgetHostImpl* target_rwh) const {
--  return target_rwh->GetProcess()->GetID() == drag_start_process_id_ ||
--      GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
--      drag_start_view_id_;
+@@ -881,10 +881,7 @@ bool WebContentsViewAura::IsValidDragTarget(
+   // TODO(https://crbug.com/1266953): There are some known gaps caused by
+   // comparing `RenderViewHost` IDs, as `RenderViewHost` ID is not really a
+   // strong signal for page identity.
+-  return !drag_start_ ||
+-         target_rwh->GetProcess()->GetID() == drag_start_->process_id ||
+-         GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
+-             drag_start_->view_id;
 +  return true;
  }
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index 9d2f771327838ff9b63a34e89573a1843eedd77d..a4c3d1951a6def856437cc589c4d20da7d9b39a3 100644
+index 6455404fdccab1fffceef4b8d291c137d3a448c4..483b0b5b689da03f0d7e43576fa73275197f5a95 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
 @@ -385,9 +385,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {

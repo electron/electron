@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_BASE_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_BASE_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BASE_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BASE_CONVERTER_H_
 
 #include "base/process/kill.h"
 #include "gin/converter.h"
@@ -29,7 +29,7 @@ struct Converter<base::TerminationStatus> {
         return gin::ConvertToV8(isolate, "launch-failed");
       case base::TERMINATION_STATUS_OOM:
         return gin::ConvertToV8(isolate, "oom");
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
         return gin::ConvertToV8(isolate, "integrity-failure");
 #endif
@@ -44,4 +44,4 @@ struct Converter<base::TerminationStatus> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_BASE_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BASE_CONVERTER_H_

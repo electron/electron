@@ -59,10 +59,9 @@ an issue:
 * [Testing and Debugging](tutorial/application-debugging.md)
   * [Debugging the Main Process](tutorial/debugging-main-process.md)
   * [Debugging with Visual Studio Code](tutorial/debugging-vscode.md)
-  * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
   * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
   * [DevTools Extension](tutorial/devtools-extension.md)
-  * [Automated Testing with a Custom Driver](tutorial/automated-testing-with-a-custom-driver.md)
+  * [Automated Testing](tutorial/automated-testing.md)
   * [REPL](tutorial/repl.md)
 * [Distribution](tutorial/application-distribution.md)
   * [Supported Platforms](tutorial/support.md#supported-platforms)
@@ -107,7 +106,6 @@ These individual tutorials expand on topics discussed in the guide above.
 * [`File` Object](api/file-object.md)
 * [`<webview>` Tag](api/webview-tag.md)
 * [`window.open` Function](api/window-open.md)
-* [`BrowserWindowProxy` Object](api/browser-window-proxy.md)
 
 ### Modules for the Main Process:
 

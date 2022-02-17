@@ -24,7 +24,7 @@ describe('ipc module', () => {
         const result = await ipcRenderer.invoke('test', ...args);
         ipcRenderer.send('result', { result });
       } catch (e) {
-        ipcRenderer.send('result', { error: e.message });
+        ipcRenderer.send('result', { error: (e as Error).message });
       }
     }
 
@@ -214,6 +214,18 @@ describe('ipc module', () => {
       expect(ev.ports).to.have.length(1);
       const [port] = ev.ports;
       expect(port).to.be.an.instanceOf(EventEmitter);
+    });
+
+    it('can sent a message without a transfer', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      const p = emittedOnce(ipcMain, 'port');
+      await w.webContents.executeJavaScript(`(${function () {
+        require('electron').ipcRenderer.postMessage('port', 'hi');
+      }})()`);
+      const [ev, msg] = await p;
+      expect(msg).to.equal('hi');
+      expect(ev.ports).to.deep.equal([]);
     });
 
     it('can communicate between main and renderer', async () => {

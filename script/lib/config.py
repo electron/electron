@@ -14,14 +14,15 @@ PLATFORM = {
 }[sys.platform]
 
 LINUX_BINARIES = [
-  'electron',
   'chrome-sandbox',
-  'libffmpeg.so',
-  'libGLESv2.so',
+  'crashpad_handler',
+  'electron',
   'libEGL.so',
-  'swiftshader/libGLESv2.so',
+  'libGLESv2.so',
+  'libffmpeg.so',
+  'libvk_swiftshader.so',
   'swiftshader/libEGL.so',
-  'libvk_swiftshader.so'
+  'swiftshader/libGLESv2.so',
 ]
 
 verbose_mode = False

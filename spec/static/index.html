@@ -1,11 +1,9 @@
 <body>
-<script src="jquery-2.0.3.min.js"></script>
 <script type="text/javascript" charset="utf-8">
 (async function() {
   // Deprecated APIs are still supported and should be tested.
   process.throwDeprecation = false
 
-  const Module = require('module');
   const path = require('path')
   const electron = require('electron')
   const { ipcRenderer } = electron
@@ -13,9 +11,12 @@
   // Extra module paths which can be used to load Mocha reporters
   if (process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS) {
     for (const modulePath of process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS.split(':')) {
-      Module.globalPaths.push(modulePath);
+      module.paths.push(modulePath);
     }
   }
+
+  // Add search paths for loaded spec files
+  require('../global-paths')(module.paths);
 
   // Set up chai-as-promised here first to avoid conflicts
   // It must be loaded first or really strange things happen inside

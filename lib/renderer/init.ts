@@ -2,10 +2,6 @@ import * as path from 'path';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
-import type * as webFrameInitModule from '@electron/internal/renderer/web-frame-init';
-import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
-import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
-import type * as securityWarningsModule from '@electron/internal/renderer/security-warnings';
 
 const Module = require('module');
 
@@ -36,46 +32,24 @@ Module.wrapper = [
 process.argv.splice(1, 1);
 
 // Clear search paths.
-
 require('../common/reset-search-paths');
 
 // Import common settings.
 require('@electron/internal/common/init');
 
-// The global variable will be used by ipc for event dispatching
-const v8Util = process._linkedBinding('electron_common_v8_util');
-
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
-const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
 
-v8Util.setHiddenValue(global, 'ipcNative', {
-  onMessage (internal: boolean, channel: string, ports: any[], args: any[], senderId: number) {
-    if (internal && senderId !== 0) {
-      console.error(`Message ${channel} sent by unexpected WebContents (${senderId})`);
-      return;
-    }
-    const sender = internal ? ipcRendererInternal : ipcRenderer;
-    sender.emit(channel, { sender, senderId, ports }, ...args);
-  }
-});
-
-// Use electron module after everything is ready.
-const { webFrameInit } = require('@electron/internal/renderer/web-frame-init') as typeof webFrameInitModule;
-webFrameInit();
+process.getProcessMemoryInfo = () => {
+  return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
+};
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
-const contextIsolation = mainFrame.getWebPreference('contextIsolation');
 const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
-const webviewTag = mainFrame.getWebPreference('webviewTag');
-const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
-const usesNativeWindowOpen = mainFrame.getWebPreference('nativeWindowOpen');
 const preloadScript = mainFrame.getWebPreference('preload');
 const preloadScripts = mainFrame.getWebPreference('preloadScripts');
-const isWebView = mainFrame.getWebPreference('isWebView');
-const openerId = mainFrame.getWebPreference('openerId');
 const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
 // The webContents preload script is loaded after the session preload scripts.
@@ -83,30 +57,8 @@ if (preloadScript) {
   preloadScripts.push(preloadScript);
 }
 
-switch (window.location.protocol) {
-  case 'devtools:': {
-    // Override some inspector APIs.
-    require('@electron/internal/renderer/inspector');
-    break;
-  }
-  case 'chrome-extension:': {
-    break;
-  }
-  case 'chrome:': {
-    break;
-  }
-  default: {
-    // Override default web functions.
-    const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(isWebView, openerId, isHiddenPage, usesNativeWindowOpen);
-  }
-}
-
-// Load webview tag implementation.
-if (process.isMainFrame) {
-  const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(contextIsolation, webviewTag, isWebView);
-}
+// Common renderer initialization
+require('@electron/internal/renderer/common-init');
 
 if (nodeIntegration) {
   // Export node bindings to global.
@@ -162,7 +114,7 @@ if (nodeIntegration) {
 } else {
   // Delete Node's symbols after the Environment has been loaded in a
   // non context-isolated environment
-  if (!contextIsolation) {
+  if (!process.contextIsolated) {
     process.once('loaded', function () {
       delete (global as any).process;
       delete (global as any).Buffer;
@@ -185,10 +137,4 @@ for (const preloadScript of preloadScripts) {
 
     ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
   }
-}
-
-// Warn about security issues
-if (process.isMainFrame) {
-  const { securityWarnings } = require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
-  securityWarnings(nodeIntegration);
 }

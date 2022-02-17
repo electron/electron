@@ -6,7 +6,7 @@
 
 #include "base/environment.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <windows.h>
 #endif
 
@@ -15,7 +15,7 @@ namespace electron {
 ElectronGpuClient::ElectronGpuClient() = default;
 
 void ElectronGpuClient::PreCreateMessageLoop() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   auto env = base::Environment::Create();
   if (env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);

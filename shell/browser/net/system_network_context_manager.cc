@@ -18,12 +18,14 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/os_crypt.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/network_service_util.h"
 #include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "net/dns/public/dns_over_https_server_config.h"
 #include "net/dns/public/util.h"
 #include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
@@ -40,15 +42,23 @@
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "components/os_crypt/keychain_password_mac.h"
 #endif
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include "components/os_crypt/key_storage_config_linux.h"
 #endif
 
 namespace {
+
+#if BUILDFLAG(IS_WIN)
+namespace {
+
+const char kNetworkServiceSandboxEnabled[] = "net.network_service_sandbox";
+
+}
+#endif  // BUILDFLAG(IS_WIN)
 
 // The global instance of the SystemNetworkContextmanager.
 SystemNetworkContextManager* g_system_network_context_manager = nullptr;
@@ -56,9 +66,6 @@ SystemNetworkContextManager* g_system_network_context_manager = nullptr;
 network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
   network::mojom::HttpAuthStaticParamsPtr auth_static_params =
       network::mojom::HttpAuthStaticParams::New();
-
-  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
-                                           "negotiate"};
 
   return auth_static_params;
 }
@@ -76,6 +83,8 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
       command_line->HasSwitch(electron::switches::kEnableAuthNegotiatePort);
   auth_dynamic_params->ntlm_v2_enabled =
       !command_line->HasSwitch(electron::switches::kDisableNTLMv2);
+  auth_dynamic_params->allowed_schemes = {"basic", "digest", "ntlm",
+                                          "negotiate"};
 
   return auth_dynamic_params;
 }
@@ -91,6 +100,11 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
       : manager_(manager) {
     DETACH_FROM_SEQUENCE(sequence_checker_);
   }
+
+  // disable copy
+  URLLoaderFactoryForSystem(const URLLoaderFactoryForSystem&) = delete;
+  URLLoaderFactoryForSystem& operator=(const URLLoaderFactoryForSystem&) =
+      delete;
 
   // mojom::URLLoaderFactory implementation:
   void CreateLoaderAndStart(
@@ -132,8 +146,6 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
 
   SEQUENCE_CHECKER(sequence_checker_);
   SystemNetworkContextManager* manager_;
-
-  DISALLOW_COPY_AND_ASSIGN(URLLoaderFactoryForSystem);
 };
 
 network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {
@@ -217,6 +229,19 @@ void SystemNetworkContextManager::DeleteInstance() {
   delete g_system_network_context_manager;
 }
 
+// c.f.
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/net/system_network_context_manager.cc;l=730-740;drc=15a616c8043551a7cb22c4f73a88e83afb94631c;bpv=1;bpt=1
+bool SystemNetworkContextManager::IsNetworkSandboxEnabled() {
+#if BUILDFLAG(IS_WIN)
+  auto* local_state = g_browser_process->local_state();
+  if (local_state && local_state->HasPrefPath(kNetworkServiceSandboxEnabled)) {
+    return local_state->GetBoolean(kNetworkServiceSandboxEnabled);
+  }
+#endif  // BUILDFLAG(IS_WIN)
+  // If no policy is specified, then delegate to global sandbox configuration.
+  return sandbox::policy::features::IsNetworkSandboxEnabled();
+}
+
 SystemNetworkContextManager::SystemNetworkContextManager(
     PrefService* pref_service)
     : proxy_config_monitor_(pref_service) {
@@ -249,29 +274,16 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
     default_doh_templates = features::kDnsOverHttpsTemplatesParam.Get();
   }
   std::string server_method;
-  absl::optional<std::vector<network::mojom::DnsOverHttpsServerPtr>>
-      servers_mojo;
+  std::vector<net::DnsOverHttpsServerConfig> dns_over_https_servers;
   if (!default_doh_templates.empty() &&
       default_secure_dns_mode != net::SecureDnsMode::kOff) {
     for (base::StringPiece server_template :
          SplitStringPiece(default_doh_templates, " ", base::TRIM_WHITESPACE,
                           base::SPLIT_WANT_NONEMPTY)) {
-      if (!net::dns_util::IsValidDohTemplate(server_template, &server_method)) {
-        continue;
+      if (auto server_config = net::DnsOverHttpsServerConfig::FromString(
+              std::string(server_template))) {
+        dns_over_https_servers.push_back(server_config.value());
       }
-
-      bool use_post = server_method == "POST";
-
-      if (!servers_mojo.has_value()) {
-        servers_mojo = absl::make_optional<
-            std::vector<network::mojom::DnsOverHttpsServerPtr>>();
-      }
-
-      network::mojom::DnsOverHttpsServerPtr server_mojo =
-          network::mojom::DnsOverHttpsServer::New();
-      server_mojo->server_template = std::string(server_template);
-      server_mojo->use_post = use_post;
-      servers_mojo->emplace_back(std::move(server_mojo));
     }
   }
 
@@ -281,55 +293,21 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
       base::FeatureList::IsEnabled(features::kAsyncDns),
-      default_secure_dns_mode, std::move(servers_mojo),
+      default_secure_dns_mode, std::move(dns_over_https_servers),
       additional_dns_query_types_enabled);
 
   std::string app_name = electron::Browser::Get()->GetName();
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   KeychainPassword::GetServiceName() = app_name + " Safe Storage";
   KeychainPassword::GetAccountName() = app_name;
-#endif
-#if defined(OS_LINUX)
-  // c.f.
-  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/net/system_network_context_manager.cc;l=515;drc=9d82515060b9b75fa941986f5db7390299669ef1;bpv=1;bpt=1
-  const base::CommandLine& command_line =
-      *base::CommandLine::ForCurrentProcess();
-
-  auto config = std::make_unique<os_crypt::Config>();
-  config->store = command_line.GetSwitchValueASCII(::switches::kPasswordStore);
-  config->product_name = app_name;
-  config->application_name = app_name;
-  config->main_thread_runner = base::ThreadTaskRunnerHandle::Get();
-  // c.f.
-  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
-  config->should_use_preference =
-      command_line.HasSwitch(::switches::kEnableEncryptionSelection);
-  base::PathService::Get(chrome::DIR_USER_DATA, &config->user_data_path);
 #endif
 
   // The OSCrypt keys are process bound, so if network service is out of
   // process, send it the required key.
   if (content::IsOutOfProcessNetworkService() &&
       electron::fuses::IsCookieEncryptionEnabled()) {
-#if defined(OS_LINUX)
-    network::mojom::CryptConfigPtr network_crypt_config =
-        network::mojom::CryptConfig::New();
-    network_crypt_config->application_name = config->application_name;
-    network_crypt_config->product_name = config->product_name;
-    network_crypt_config->store = config->store;
-    network_crypt_config->should_use_preference = config->should_use_preference;
-    network_crypt_config->user_data_path = config->user_data_path;
-
-    network_service->SetCryptConfig(std::move(network_crypt_config));
-
-#else
     network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
-#endif
   }
-
-#if defined(OS_LINUX)
-  OSCrypt::SetConfig(std::move(config));
-#endif
 
 #if DCHECK_IS_ON()
   electron::safestorage::SetElectronCryptoReady(true);
@@ -341,8 +319,6 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
   // TODO(mmenke): Set up parameters here (in memory cookie store, etc).
   network::mojom::NetworkContextParamsPtr network_context_params =
       CreateDefaultNetworkContextParams();
-
-  network_context_params->context_name = std::string("system");
 
   network_context_params->user_agent =
       electron::ElectronBrowserClient::Get()->GetUserAgent();

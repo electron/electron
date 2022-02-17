@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
-#define SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
 
 #include <memory>
 #include <string>
@@ -15,7 +15,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "ui/gfx/sys_color_change_listener.h"
@@ -25,7 +25,7 @@ namespace electron {
 
 namespace api {
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 enum class NotificationCenterKind {
   kNSDistributedNotificationCenter = 0,
   kNSNotificationCenter,
@@ -36,7 +36,7 @@ enum class NotificationCenterKind {
 class SystemPreferences
     : public gin::Wrappable<SystemPreferences>,
       public gin_helper::EventEmitterMixin<SystemPreferences>
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     ,
       public BrowserObserver,
       public gfx::SysColorChangeListener
@@ -51,14 +51,14 @@ class SystemPreferences
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-#if defined(OS_WIN) || defined(OS_MAC)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
   std::string GetAccentColor();
   std::string GetColor(gin_helper::ErrorThrower thrower,
                        const std::string& color);
   std::string GetMediaAccessStatus(gin_helper::ErrorThrower thrower,
                                    const std::string& media_type);
 #endif
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   bool IsAeroGlassEnabled();
 
   void InitializeWindow();
@@ -69,7 +69,7 @@ class SystemPreferences
   // BrowserObserver:
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
 
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
   using NotificationCallback = base::RepeatingCallback<
       void(const std::string&, base::DictionaryValue, const std::string&)>;
 
@@ -121,11 +121,15 @@ class SystemPreferences
   bool IsHighContrastColorScheme();
   v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
 
+  // disable copy
+  SystemPreferences(const SystemPreferences&) = delete;
+  SystemPreferences& operator=(const SystemPreferences&) = delete;
+
  protected:
   SystemPreferences();
   ~SystemPreferences() override;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   int DoSubscribeNotification(const std::string& name,
                               const NotificationCallback& callback,
                               NotificationCenterKind kind);
@@ -133,7 +137,7 @@ class SystemPreferences
 #endif
 
  private:
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Static callback invoked when a message comes in to our messaging window.
   static LRESULT CALLBACK WndProcStatic(HWND hwnd,
                                         UINT message,
@@ -162,11 +166,10 @@ class SystemPreferences
 
   std::unique_ptr<gfx::ScopedSysColorChangeListener> color_change_listener_;
 #endif
-  DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_

@@ -35,7 +35,7 @@ const spawnUpdate = function (args: string[], detached: boolean, callback: Funct
       spawnedArgs = args || [];
     }
   } catch (error1) {
-    error = error1;
+    error = error1 as Error;
 
     // Shouldn't happen, but still guard it.
     process.nextTick(function () {

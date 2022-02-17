@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
-#define SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
+#define ELECTRON_SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
 
 #include <shobjidl.h>
 #include <wrl/client.h>
@@ -34,6 +34,10 @@ class TaskbarHost {
 
   TaskbarHost();
   virtual ~TaskbarHost();
+
+  // disable copy
+  TaskbarHost(const TaskbarHost&) = delete;
+  TaskbarHost& operator=(const TaskbarHost&) = delete;
 
   // Add or update the buttons in thumbar.
   bool SetThumbarButtons(HWND window,
@@ -76,10 +80,8 @@ class TaskbarHost {
 
   // Whether we have already added the buttons to thumbar.
   bool thumbar_buttons_added_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(TaskbarHost);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_

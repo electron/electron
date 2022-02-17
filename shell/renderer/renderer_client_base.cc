@@ -48,11 +48,11 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "base/strings/sys_string_conversions.h"
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <shlobj.h>
 #endif
 
@@ -71,7 +71,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/renderer/print_render_frame_helper.h"
-#include "printing/print_settings.h"  // nogncheck
+#include "printing/metafile_agent.h"  // nogncheck
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
@@ -235,7 +235,7 @@ void RendererClientBase::RenderThreadStarted() {
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Set ApplicationUserModelID in renderer process.
   std::wstring app_id =
       command_line->GetSwitchValueNative(switches::kAppUserModelId);

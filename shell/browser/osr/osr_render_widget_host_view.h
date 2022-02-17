@@ -2,15 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
-#define SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
 
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
 
-#if defined(OS_WIN)
+#include "build/build_config.h"
+
+#if BUILDFLAG(IS_WIN)
 #include <windows.h>
 #endif
 
@@ -27,6 +29,7 @@
 #include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
+#include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
 #include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
@@ -37,7 +40,7 @@
 
 #include "components/viz/host/host_display_client.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "ui/gfx/win/window_impl.h"
 #endif
 
@@ -69,6 +72,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                 gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
 
+  // disable copy
+  OffScreenRenderWidgetHostView(const OffScreenRenderWidgetHostView&) = delete;
+  OffScreenRenderWidgetHostView& operator=(
+      const OffScreenRenderWidgetHostView&) = delete;
+
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
@@ -80,7 +88,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   bool HasFocus(void) override;
   uint32_t GetCaptureSequenceNumber() const override;
   bool IsSurfaceAvailableForCopy(void) override;
-  void Show(void) override;
   void Hide(void) override;
   bool IsShowing(void) override;
   void EnsureSurfaceSynchronizedForWebTest() override;
@@ -96,7 +103,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       bool request_unadjusted_movement) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
@@ -108,7 +115,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const std::vector<std::string>& file_paths,
       blink::mojom::ShareService::ShareCallback callback) override;
   bool UpdateNSViewAndDisplay();
-#endif  // defined(OS_MAC)
+#endif  // BUILDFLAG(IS_MAC)
 
   // content::RenderWidgetHostViewBase:
 
@@ -121,6 +128,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
   void ImeCancelComposition(void) override;
   void RenderProcessGone() override;
+  void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
   void Destroy(void) override;
   void UpdateTooltipUnderCursor(const std::u16string&) override;
   content::CursorManager* GetCursorManager() override;
@@ -128,12 +136,17 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
-  void GetScreenInfo(display::ScreenInfo* screen_info) override;
+  display::ScreenInfo GetScreenInfo() const override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
   absl::optional<content::DisplayFeature> GetDisplayFeature() override;
   void SetDisplayFeatureForTesting(
       const content::DisplayFeature* display_feature) override;
+  void NotifyHostAndDelegateOnWasShown(
+      blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
+  void RequestPresentationTimeFromHostOrDelegate(
+      blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
+  void CancelPresentationTimeRequestForHostAndDelegate() final;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;
@@ -290,10 +303,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   std::unique_ptr<SkBitmap> backing_;
 
   base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(OffScreenRenderWidgetHostView);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_

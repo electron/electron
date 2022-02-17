@@ -24,11 +24,11 @@
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
 #include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 namespace gin {
 
@@ -74,7 +74,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
                                     const gfx::Size& thumbnail_size,
                                     bool fetch_window_icons) {
   fetch_window_icons_ = fetch_window_icons;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   if (content::desktop_capture::CreateDesktopCaptureOptions()
           .allow_directx_capturer()) {
     // DxgiDuplicatorController should be alive in this scope according to
@@ -82,7 +82,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
     auto duplicator = webrtc::DxgiDuplicatorController::Instance();
     using_directx_capturer_ = webrtc::ScreenCapturerWinDirectx::IsSupported();
   }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
   // clear any existing captured sources.
   captured_sources_.clear();
@@ -143,7 +143,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
       screen_sources.emplace_back(
           DesktopCapturer::Source{list->GetSource(i), std::string()});
     }
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     // Gather the same unique screen IDs used by the electron.screen API in
     // order to provide an association between it and
     // desktopCapturer/getUserMedia. This is only required when using the
@@ -176,12 +176,12 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
         source.display_id = base::NumberToString(device_id);
       }
     }
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
     // On Mac, the IDs across the APIs match.
     for (auto& source : screen_sources) {
       source.display_id = base::NumberToString(source.media_list_source.id.id);
     }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
     // TODO(ajmacd): Add Linux support. The IDs across APIs differ but Chrome
     // only supports capturing the entire desktop on Linux. Revisit this if
     // individual screen support is added.

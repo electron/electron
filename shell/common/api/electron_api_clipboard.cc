@@ -15,6 +15,7 @@
 #include "third_party/skia/include/core/SkPixmap.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
+#include "ui/gfx/codec/png_codec.h"
 
 namespace electron {
 
@@ -50,21 +51,44 @@ bool Clipboard::Has(const std::string& format_string,
 
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  // Prefer raw platform format names
+  ui::ClipboardFormatType rawFormat(
+      ui::ClipboardFormatType::CustomPlatformType(format_string));
+  bool rawFormatAvailable = clipboard->IsFormatAvailable(
+      rawFormat, ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr);
+#if BUILDFLAG(IS_LINUX)
+  if (!rawFormatAvailable) {
+    rawFormatAvailable = clipboard->IsFormatAvailable(
+        rawFormat, ui::ClipboardBuffer::kSelection, /* data_dst = */ nullptr);
+  }
+#endif
+  if (rawFormatAvailable) {
+    std::string data;
+    clipboard->ReadData(rawFormat, /* data_dst = */ nullptr, &data);
+    return data;
+  }
+  // Otherwise, resolve custom format names
   std::map<std::string, std::string> custom_format_names;
   custom_format_names =
       clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
                                             /* data_dst = */ nullptr);
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   if (custom_format_names.find(format_string) == custom_format_names.end()) {
     custom_format_names =
         clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kSelection,
                                               /* data_dst = */ nullptr);
   }
 #endif
-  CHECK(custom_format_names.find(format_string) != custom_format_names.end());
-  ui::ClipboardFormatType format(ui::ClipboardFormatType::CustomPlatformType(
-      custom_format_names[format_string]));
 
+  ui::ClipboardFormatType format;
+  if (custom_format_names.find(format_string) != custom_format_names.end()) {
+    format =
+        ui::ClipboardFormatType(ui::ClipboardFormatType::CustomPlatformType(
+            custom_format_names[format_string]));
+  } else {
+    format = ui::ClipboardFormatType(
+        ui::ClipboardFormatType::CustomPlatformType(format_string));
+  }
   std::string data;
   clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
   return data;
@@ -89,8 +113,8 @@ void Clipboard::WriteBuffer(const std::string& format,
   base::span<const uint8_t> payload_span(
       reinterpret_cast<const uint8_t*>(node::Buffer::Data(buffer)),
       node::Buffer::Length(buffer));
-  writer.WriteData(base::UTF8ToUTF16(format),
-                   mojo_base::BigBuffer(payload_span));
+  writer.WriteUnsafeRawData(base::UTF8ToUTF16(format),
+                            mojo_base::BigBuffer(payload_span));
 }
 
 void Clipboard::Write(const gin_helper::Dictionary& data,
@@ -126,7 +150,7 @@ std::u16string Clipboard::ReadText(gin_helper::Arguments* args) {
                                    type, /* data_dst = */ nullptr)) {
     clipboard->ReadText(type, /* data_dst = */ nullptr, &data);
   } else {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextAType(),
                                      type,
                                      /* data_dst = */ nullptr)) {
@@ -198,12 +222,15 @@ void Clipboard::WriteBookmark(const std::u16string& title,
 gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   absl::optional<gfx::Image> image;
-  clipboard->ReadImage(
+  clipboard->ReadPng(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image, const SkBitmap& result) {
-            image->emplace(gfx::Image::CreateFrom1xBitmap(result));
+          [](absl::optional<gfx::Image>* image,
+             const std::vector<uint8_t>& result) {
+            SkBitmap bitmap;
+            gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
+            image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
           },
           &image));
   DCHECK(image.has_value());
@@ -222,7 +249,7 @@ void Clipboard::WriteImage(const gfx::Image& image,
   }
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 void Clipboard::WriteFindText(const std::u16string& text) {}
 std::u16string Clipboard::ReadFindText() {
   return std::u16string();

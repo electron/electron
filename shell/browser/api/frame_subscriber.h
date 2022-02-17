@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
-#define SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
+#define ELECTRON_SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
 
 #include <memory>
 #include <string>
@@ -13,6 +13,7 @@
 #include "components/viz/host/client_frame_sink_video_capturer.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "media/capture/mojom/video_capture_buffer.mojom-forward.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "v8/include/v8.h"
 
@@ -38,6 +39,10 @@ class FrameSubscriber : public content::WebContentsObserver,
                   bool only_dirty);
   ~FrameSubscriber() override;
 
+  // disable copy
+  FrameSubscriber(const FrameSubscriber&) = delete;
+  FrameSubscriber& operator=(const FrameSubscriber&) = delete;
+
  private:
   void AttachToHost(content::RenderWidgetHost* host);
   void DetachFromHost();
@@ -49,7 +54,7 @@ class FrameSubscriber : public content::WebContentsObserver,
 
   // viz::mojom::FrameSinkVideoConsumer implementation.
   void OnFrameCaptured(
-      base::ReadOnlySharedMemoryRegion data,
+      ::media::mojom::VideoBufferHandlePtr data,
       ::media::mojom::VideoFrameInfoPtr info,
       const gfx::Rect& content_rect,
       mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
@@ -69,12 +74,10 @@ class FrameSubscriber : public content::WebContentsObserver,
   std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_

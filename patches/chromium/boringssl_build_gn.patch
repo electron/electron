@@ -6,10 +6,10 @@ Subject: boringssl BUILD.gn
 Build BoringSSL with some extra functions that nodejs needs.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index 23c167f1178705cedb0e309f5017052bbed1e089..feb8013545b5ee11f57d91cf942fb5cc7147e8f7 100644
+index e31d092151a68028e09bb73ddb896cf8df77355d..aee73fe9b9e0a6b061504db46bb91b7a4baf6a7a 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
-@@ -40,6 +40,19 @@ config("no_asm_config") {
+@@ -44,6 +44,20 @@ config("no_asm_config") {
  
  all_sources = crypto_sources + ssl_sources
  all_headers = crypto_headers + ssl_headers
@@ -21,9 +21,10 @@ index 23c167f1178705cedb0e309f5017052bbed1e089..feb8013545b5ee11f57d91cf942fb5cc
 +  ]
 +
 +  all_sources += [
++    "src/decrepit/blowfish/blowfish.c",
++    "src/decrepit/cfb/cfb.c",
 +    "src/decrepit/ripemd/internal.h",
 +    "src/decrepit/ripemd/ripemd.c",
-+    "src/decrepit/cfb/cfb.c",
 +  ]
 +}
  

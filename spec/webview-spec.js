@@ -490,7 +490,6 @@ describe('<webview> tag', function () {
 
     generateSpecs('without sandbox');
     generateSpecs('with sandbox', 'sandbox=yes');
-    generateSpecs('with nativeWindowOpen', 'nativeWindowOpen=yes');
   });
 
   describe('webpreferences attribute', () => {
@@ -996,6 +995,26 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('context-menu event', () => {
+    it('emits when right-clicked in page', async () => {
+      await loadWebView(webview, { src: 'about:blank' });
+
+      const promise = waitForEvent(webview, 'context-menu');
+
+      // Simulate right-click to create context-menu event.
+      const opts = { x: 0, y: 0, button: 'right' };
+      webview.sendInputEvent({ ...opts, type: 'mouseDown' });
+      webview.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const { params } = await promise;
+
+      expect(params.pageURL).to.equal(webview.getURL());
+      expect(params.frame).to.be.undefined();
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
+    });
+  });
+
   describe('media-started-playing media-paused events', () => {
     beforeEach(function () {
       if (!document.createElement('audio').canPlayType('audio/wav')) {
@@ -1064,7 +1083,10 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('<webview>.capturePage()', () => {
+  // TODO(nornagon): this seems to have become much less reliable as of
+  // https://github.com/electron/electron/pull/32419. Tracked at
+  // https://github.com/electron/electron/issues/32705.
+  describe.skip('<webview>.capturePage()', () => {
     before(function () {
       // TODO(miniak): figure out why this is failing on windows
       if (process.platform === 'win32') {
@@ -1141,6 +1163,14 @@ describe('<webview> tag', function () {
         module: 'undefined',
         process: 'undefined',
         global: 'undefined'
+      });
+    });
+
+    it('handler modifying params.instanceId does not break <webview>', async () => {
+      ipcRenderer.send('break-next-will-attach-webview');
+
+      await startLoadingWebViewAndWaitForMessage(webview, {
+        src: `file://${fixtures}/pages/a.html`
       });
     });
 

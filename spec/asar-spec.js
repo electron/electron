@@ -1564,7 +1564,7 @@ describe('asar package', function () {
         forked.on('message', function (stats) {
           try {
             expect(stats.isFile).to.be.true();
-            expect(stats.size).to.equal(778);
+            expect(stats.size).to.equal(3458);
             done();
           } catch (e) {
             done(e);
@@ -1588,7 +1588,7 @@ describe('asar package', function () {
           try {
             const stats = JSON.parse(output);
             expect(stats.isFile).to.be.true();
-            expect(stats.size).to.equal(778);
+            expect(stats.size).to.equal(3458);
             done();
           } catch (e) {
             done(e);
@@ -1599,67 +1599,42 @@ describe('asar package', function () {
   });
 
   describe('asar protocol', function () {
-    it('can request a file in package', function (done) {
+    it('can request a file in package', async function () {
       const p = path.resolve(asarDir, 'a.asar', 'file1');
-      $.get('file://' + p, function (data) {
-        try {
-          expect(data.trim()).to.equal('file1');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
+      const response = await fetch('file://' + p);
+      const data = await response.text();
+      expect(data.trim()).to.equal('file1');
     });
 
-    it('can request a file in package with unpacked files', function (done) {
+    it('can request a file in package with unpacked files', async function () {
       const p = path.resolve(asarDir, 'unpack.asar', 'a.txt');
-      $.get('file://' + p, function (data) {
-        try {
-          expect(data.trim()).to.equal('a');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
+      const response = await fetch('file://' + p);
+      const data = await response.text();
+      expect(data.trim()).to.equal('a');
     });
 
-    it('can request a linked file in package', function (done) {
+    it('can request a linked file in package', async function () {
       const p = path.resolve(asarDir, 'a.asar', 'link2', 'link1');
-      $.get('file://' + p, function (data) {
-        try {
-          expect(data.trim()).to.equal('file1');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
+      const response = await fetch('file://' + p);
+      const data = await response.text();
+      expect(data.trim()).to.equal('file1');
     });
 
-    it('can request a file in filesystem', function (done) {
+    it('can request a file in filesystem', async function () {
       const p = path.resolve(asarDir, 'file');
-      $.get('file://' + p, function (data) {
-        try {
-          expect(data.trim()).to.equal('file');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
+      const response = await fetch('file://' + p);
+      const data = await response.text();
+      expect(data.trim()).to.equal('file');
     });
 
-    it('gets 404 when file is not found', function (done) {
+    it('gets error when file is not found', async function () {
       const p = path.resolve(asarDir, 'a.asar', 'no-exist');
-      $.ajax({
-        url: 'file://' + p,
-        error: function (err) {
-          try {
-            expect(err.status).to.equal(404);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        }
-      });
+      try {
+        const response = await fetch('file://' + p);
+        expect(response.status).to.equal(404);
+      } catch (error) {
+        expect(error.message).to.equal('Failed to fetch');
+      }
     });
   });
 

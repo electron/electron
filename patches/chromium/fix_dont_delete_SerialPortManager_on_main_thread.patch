@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Wed, 5 Jan 2022 15:01:31 -0500
+Subject: fix: dont delete SerialPortManager on the main thread
+
+This patch is neccessary because of the changes made in
+https://chromium-review.googlesource.com/c/chromium/src/+/3283743.
+
+Several DCHECKs was firing because AddObserver runs in the WorkerThread but
+RemoveObserver runs in the UI thread. Ceasing to delete the
+`SerialPortManagerImpl` class on the main thread prevents this problem.
+
+A bit more of explanation from @deepak1556 as to why:
+
+SerialPortManagerImpl  which is responsible for holding the mojo connection
+between the device service process and client has this following unique
+lifetime,
+// Threading notes:
+// 1. Created on the UI thread.
+// 2. Used on the UI thread runner (macOS only), otherwise on a blocking task
+//    runner.
+// 3. Deleted on the same runner on which it is used *except* sometimes
+//    during shutdown when the runner threadpool is already shutdown.
+//    See crbug.com/1263149#c20 for details.
+An instance of this class is created when the device service is instantiated
+https://source.chromium.org/chromium/chromium/src/+/main:services/device/device_service.cc;l=122-135
+On windows and linux from the above code you can see that a blocking task
+runner is created to perform operations via this manager.  DeviceService itself
+has a lifetime of being associated with the local storage of a sequence, in
+most cases this will be the main thread sequence of the application. Now when
+you establish a connection with the device service via
+SerialChooserContext::EnsurePortManagerConnection
+https://github.com/electron/electron/blob/dd4eae8a3b7f707bcd3d083d553988a29e332189/shell/browser/serial/serial_chooser_context.cc#L206-L207
+although the call is original made on the UI thread, it will be bound to the
+blocking task runner sequence for windows and linux in the device service end
+via https://source.chromium.org/chromium/chromium/src/+/main:services/device/device_service.cc;l=341-349
+when binding the receiver. Based on the stack trace of the crash, the
+port_manager_ receiver that is bound on a sequence is not destroyed on the same
+sequence during shutdown. But that would be weird given
+https://source.chromium.org/chromium/chromium/src/+/main:services/device/device_service.cc;l=155-156
+ which ensures that SerialPortManagerImpl  gets destroyed on the bound sequence.
+This is where https://chromium-review.googlesource.com/c/chromium/src/+/3283743
+gives clarity that the DeleteSoon  task never completed because the threadpool
+instance was already shutdown by the time device service was being destroyed
+leading to a leak and now they instead just synchronously delete the instance
+on the main thread sequence which leads to the above DCHECK failure. So tl:dr,
+this is not a new bug it was always present due to the lifetime associated with
+this service, it just came to light because of the above CL. I am pretty sure
+upstream would also hit this DCHECK, so give it a try with content_shell or
+chrome and that would help reporting upstream crbug.
+
+diff --git a/services/device/device_service.cc b/services/device/device_service.cc
+index 11a7b2902490986ba2462f92c3b3e5ae1b1a127f..32d591621c7206affab50ef061aa565527d5952f 100644
+--- a/services/device/device_service.cc
++++ b/services/device/device_service.cc
+@@ -159,7 +159,7 @@ DeviceService::~DeviceService() {
+     // naturally sequenced after the last task on
+     // |serial_port_manager_task_runner_| per ThreadPool shutdown semantics).
+     // See crbug.com/1263149#c20 for details.
+-    delete serial_port_manager;
++    // delete serial_port_manager;
+   }
+ #endif  // defined(IS_SERIAL_ENABLED_PLATFORM)
+ }

@@ -12,11 +12,11 @@
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include "ui/gtk/gtk_util.h"
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "ui/gfx/color_utils.h"
 #endif
 
@@ -122,6 +122,11 @@ void MenuBar::OnWindowFocus() {
   SetAcceleratorVisibility(pane_has_focus());
 }
 
+void MenuBar::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  node_data->SetNameExplicitlyEmpty();
+  node_data->role = ax::mojom::Role::kMenuBar;
+}
+
 bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
   // Treat pressing Alt the same as pressing Esc.
   const ui::Accelerator& translated =
@@ -204,7 +209,7 @@ void MenuBar::ButtonPressed(int id, const ui::Event& event) {
 
 void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
   if (theme) {
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
     background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
     enabled_color_ =
         gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
@@ -236,7 +241,7 @@ void MenuBar::UpdateViewColors() {
   // set child colors
   if (menu_model_ == nullptr)
     return;
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   const auto& textColor =
       window_->IsFocused() ? enabled_color_ : disabled_color_;
   for (auto* child : GetChildrenInZOrder()) {
@@ -247,7 +252,7 @@ void MenuBar::UpdateViewColors() {
     button->SetTextColor(views::Button::STATE_HOVERED, textColor);
     button->SetUnderlineColor(textColor);
   }
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   for (auto* child : GetChildrenInZOrder()) {
     auto* button = static_cast<SubmenuButton*>(child);
     button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_MENUTEXT));

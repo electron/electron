@@ -37,14 +37,22 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
       gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
-  // Copy the backgroundColor to webContents.
-  v8::Local<v8::Value> value;
   bool transparent = false;
-  if (options.Get(options::kBackgroundColor, &value)) {
-    web_preferences.SetHidden(options::kBackgroundColor, value);
-  } else if (options.Get(options::kTransparent, &transparent) && transparent) {
-    // If the BrowserWindow is transparent, also propagate transparency to the
-    // WebContents unless a separate backgroundColor has been set.
+  options.Get(options::kTransparent, &transparent);
+
+  std::string vibrancy_type;
+#if BUILDFLAG(IS_MAC)
+  options.Get(options::kVibrancyType, &vibrancy_type);
+#endif
+
+  // Copy the backgroundColor to webContents.
+  std::string color;
+  if (options.Get(options::kBackgroundColor, &color)) {
+    web_preferences.SetHidden(options::kBackgroundColor, color);
+  } else if (!vibrancy_type.empty() || transparent) {
+    // If the BrowserWindow is transparent or a vibrancy type has been set,
+    // also propagate transparency to the WebContents unless a separate
+    // backgroundColor has been set.
     web_preferences.SetHidden(options::kBackgroundColor,
                               ToRGBAHex(SK_ColorTRANSPARENT));
   }
@@ -70,8 +78,8 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kEnableBlinkFeatures, enabled_features);
   }
 
-  // Copy the webContents option to webPreferences. This is only used internally
-  // to implement nativeWindowOpen option.
+  // Copy the webContents option to webPreferences.
+  v8::Local<v8::Value> value;
   if (options.Get("webContents", &value)) {
     web_preferences.SetHidden("webContents", value);
   }
@@ -101,7 +109,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Install the content view after BaseWindow's JS code is initialized.
   SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   OverrideNSWindowContentView(
       web_contents->inspectable_web_contents()->GetView());
 #endif
@@ -211,7 +219,7 @@ void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
 
 void BrowserWindow::OnActivateContents() {
   // Hide the auto-hide menu when webContents is focused.
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
   if (IsMenuBarAutoHide() && IsMenuBarVisible())
     window()->SetMenuBarVisibility(false);
 #endif
@@ -246,7 +254,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
     ScheduleUnresponsiveEvent(5000);
 
   // Already closed by renderer.
-  if (!web_contents())
+  if (!web_contents() || !api_web_contents_)
     return;
 
   // Required to make beforeunload handler work.
@@ -286,7 +294,7 @@ void BrowserWindow::OnWindowFocus() {
   // focus/blur events might be emitted while closing window.
   if (api_web_contents_) {
     web_contents()->RestoreFocus();
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
     if (!api_web_contents_->IsDevToolsOpened())
       web_contents()->Focus();
 #endif
@@ -296,7 +304,7 @@ void BrowserWindow::OnWindowFocus() {
 }
 
 void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(is_key);
@@ -305,7 +313,7 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 }
 
 void BrowserWindow::OnWindowResize() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (!draggable_regions_.empty()) {
     UpdateDraggableRegions(draggable_regions_);
   } else {
@@ -318,7 +326,7 @@ void BrowserWindow::OnWindowResize() {
 }
 
 void BrowserWindow::OnWindowLeaveFullScreen() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (web_contents()->IsFullscreen())
     web_contents()->ExitFullscreen(true);
 #endif
@@ -362,7 +370,14 @@ void BrowserWindow::Blur() {
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
-  web_contents()->SetPageBaseBackgroundColor(ParseHexColor(color_name));
+  SkColor color = ParseHexColor(color_name);
+  web_contents()->SetPageBaseBackgroundColor(color);
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (rwhv) {
+    rwhv->SetBackgroundColor(color);
+    static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+        ->SetContentBackgroundColor(color);
+  }
   // Also update the web preferences object otherwise the view will be reset on
   // the next load URL call
   if (api_web_contents_) {
@@ -377,21 +392,21 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
 void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
   BaseWindow::ResetBrowserViews();
   BaseWindow::AddBrowserView(value);
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::AddBrowserView(v8::Local<v8::Value> value) {
   BaseWindow::AddBrowserView(value);
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   BaseWindow::RemoveBrowserView(value);
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
@@ -399,14 +414,14 @@ void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
 void BrowserWindow::SetTopBrowserView(v8::Local<v8::Value> value,
                                       gin_helper::Arguments* args) {
   BaseWindow::SetTopBrowserView(value, args);
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::ResetBrowserViews() {
   BaseWindow::ResetBrowserViews();
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
@@ -459,7 +474,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
       &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
   base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
       FROM_HERE, window_unresponsive_closure_.callback(),
-      base::TimeDelta::FromMilliseconds(ms));
+      base::Milliseconds(ms));
 }
 
 void BrowserWindow::NotifyWindowUnresponsive() {

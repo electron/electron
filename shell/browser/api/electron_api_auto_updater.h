@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
 
 #include <string>
 
@@ -30,6 +30,10 @@ class AutoUpdater : public gin::Wrappable<AutoUpdater>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  AutoUpdater(const AutoUpdater&) = delete;
+  AutoUpdater& operator=(const AutoUpdater&) = delete;
+
  protected:
   AutoUpdater();
   ~AutoUpdater() override;
@@ -54,12 +58,10 @@ class AutoUpdater : public gin::Wrappable<AutoUpdater>,
   std::string GetFeedURL();
   void SetFeedURL(gin::Arguments* args);
   void QuitAndInstall();
-
-  DISALLOW_COPY_AND_ASSIGN(AutoUpdater);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_

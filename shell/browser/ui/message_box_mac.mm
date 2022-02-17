@@ -17,6 +17,9 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image_skia.h"
@@ -98,6 +101,12 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
     [alert setIcon:image];
   }
 
+  if (settings.text_width > 0) {
+    NSRect rect = NSMakeRect(0, 0, settings.text_width, 0);
+    NSView* accessoryView = [[NSView alloc] initWithFrame:rect];
+    [alert setAccessoryView:[accessoryView autorelease]];
+  }
+
   return alert;
 }
 
@@ -154,20 +163,26 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     __block absl::optional<int> id = std::move(settings.id);
     __block int cancel_id = settings.cancel_id;
 
-    [alert beginSheetModalForWindow:window
-                  completionHandler:^(NSModalResponse response) {
-                    if (id)
-                      GetDialogsMap().erase(*id);
-                    // When the alert is cancelled programmatically, the
-                    // response would be something like -1000. This currently
-                    // only happens when users call CloseMessageBox API, and we
-                    // should return cancelId as result.
-                    if (response < 0)
-                      response = cancel_id;
-                    std::move(callback_).Run(
-                        response, alert.suppressionButton.state == NSOnState);
-                    [alert release];
-                  }];
+    auto handler = ^(NSModalResponse response) {
+      if (id)
+        GetDialogsMap().erase(*id);
+      // When the alert is cancelled programmatically, the response would be
+      // something like -1000. This currently only happens when users call
+      // CloseMessageBox API, and we should return cancelId as result.
+      if (response < 0)
+        response = cancel_id;
+      bool suppressed = alert.suppressionButton.state == NSOnState;
+      [alert release];
+      // The completionHandler runs inside a transaction commit, and we should
+      // not do any runModal inside it. However since we can not control what
+      // users will run in the callback, we have to delay running the callback
+      // until next tick, otherwise crash like this may happen:
+      // https://github.com/electron/electron/issues/26884
+      base::PostTask(
+          FROM_HERE, {content::BrowserThread::UI},
+          base::BindOnce(std::move(callback_), response, suppressed));
+    };
+    [alert beginSheetModalForWindow:window completionHandler:handler];
   }
 }
 

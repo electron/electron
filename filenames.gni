@@ -32,10 +32,13 @@ filenames = {
     "shell/browser/notifications/linux/notification_presenter_linux.cc",
     "shell/browser/notifications/linux/notification_presenter_linux.h",
     "shell/browser/relauncher_linux.cc",
+    "shell/browser/ui/electron_desktop_window_tree_host_linux.cc",
     "shell/browser/ui/file_dialog_gtk.cc",
     "shell/browser/ui/message_box_gtk.cc",
     "shell/browser/ui/tray_icon_gtk.cc",
     "shell/browser/ui/tray_icon_gtk.h",
+    "shell/browser/ui/views/client_frame_view_linux.cc",
+    "shell/browser/ui/views/client_frame_view_linux.h",
     "shell/common/application_info_linux.cc",
     "shell/common/language_util_linux.cc",
     "shell/common/node_bindings_linux.cc",
@@ -191,6 +194,7 @@ filenames = {
     "shell/browser/ui/tray_icon_cocoa.mm",
     "shell/common/api/electron_api_clipboard_mac.mm",
     "shell/common/api/electron_api_native_image_mac.mm",
+    "shell/common/asar/archive_mac.mm",
     "shell/common/application_info_mac.mm",
     "shell/common/language_util_mac.mm",
     "shell/common/mac/main_application_bundle.h",
@@ -384,6 +388,14 @@ filenames = {
     "shell/browser/file_select_helper_mac.mm",
     "shell/browser/font_defaults.cc",
     "shell/browser/font_defaults.h",
+    "shell/browser/hid/electron_hid_delegate.cc",
+    "shell/browser/hid/electron_hid_delegate.h",
+    "shell/browser/hid/hid_chooser_context.cc",
+    "shell/browser/hid/hid_chooser_context.h",
+    "shell/browser/hid/hid_chooser_context_factory.cc",
+    "shell/browser/hid/hid_chooser_context_factory.h",
+    "shell/browser/hid/hid_chooser_controller.cc",
+    "shell/browser/hid/hid_chooser_controller.h",
     "shell/browser/javascript_environment.cc",
     "shell/browser/javascript_environment.h",
     "shell/browser/lib/bluetooth_chooser.cc",
@@ -402,7 +414,11 @@ filenames = {
     "shell/browser/native_browser_view.h",
     "shell/browser/native_window.cc",
     "shell/browser/native_window.h",
+    "shell/browser/native_window_features.cc",
+    "shell/browser/native_window_features.h",
     "shell/browser/native_window_observer.h",
+    "shell/browser/net/asar/asar_file_validator.cc",
+    "shell/browser/net/asar/asar_file_validator.h",
     "shell/browser/net/asar/asar_url_loader.cc",
     "shell/browser/net/asar/asar_url_loader.h",
     "shell/browser/net/asar/asar_url_loader_factory.cc",
@@ -491,8 +507,6 @@ filenames = {
     "shell/browser/web_contents_preferences.h",
     "shell/browser/web_contents_zoom_controller.cc",
     "shell/browser/web_contents_zoom_controller.h",
-    "shell/browser/web_dialog_helper.cc",
-    "shell/browser/web_dialog_helper.h",
     "shell/browser/web_view_guest_delegate.cc",
     "shell/browser/web_view_guest_delegate.h",
     "shell/browser/web_view_manager.cc",
@@ -664,14 +678,7 @@ filenames = {
     "shell/utility/electron_content_utility_client.h",
   ]
 
-  lib_sources_nss = [
-    "chromium_src/chrome/browser/certificate_manager_model.cc",
-    "chromium_src/chrome/browser/certificate_manager_model.h",
-  ]
-
   lib_sources_extensions = [
-    "shell/browser/extensions/api/i18n/i18n_api.cc",
-    "shell/browser/extensions/api/i18n/i18n_api.h",
     "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.cc",
     "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.h",
     "shell/browser/extensions/api/management/electron_management_api_delegate.cc",
@@ -728,11 +735,6 @@ filenames = {
     "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h",
     "shell/renderer/extensions/electron_extensions_renderer_client.cc",
     "shell/renderer/extensions/electron_extensions_renderer_client.h",
-  ]
-
-  app_sources = [
-    "shell/app/electron_main.cc",
-    "shell/app/electron_main.h",
   ]
 
   framework_sources = [

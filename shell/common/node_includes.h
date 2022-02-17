@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_NODE_INCLUDES_H_
-#define SHELL_COMMON_NODE_INCLUDES_H_
+#ifndef ELECTRON_SHELL_COMMON_NODE_INCLUDES_H_
+#define ELECTRON_SHELL_COMMON_NODE_INCLUDES_H_
 
 // Include common headers for using node APIs.
 
@@ -36,4 +36,4 @@
 #define NODE_LINKED_MODULE_CONTEXT_AWARE(modname, regfunc) \
   NODE_MODULE_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED)
 
-#endif  // SHELL_COMMON_NODE_INCLUDES_H_
+#endif  // ELECTRON_SHELL_COMMON_NODE_INCLUDES_H_

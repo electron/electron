@@ -12,7 +12,6 @@ function_registration("api_registration") {
   sources = [
     "//electron/shell/common/extensions/api/cryptotoken_private.idl",
     "//electron/shell/common/extensions/api/extension.json",
-    "//electron/shell/common/extensions/api/i18n.json",
     "//electron/shell/common/extensions/api/resources_private.idl",
     "//electron/shell/common/extensions/api/tabs.json",
   ]

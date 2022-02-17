@@ -22,6 +22,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "shell/common/gin_helper/locker.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -52,7 +53,8 @@ void StopWorker(int document_cookie) {
 
 PrintPreviewMessageHandler::PrintPreviewMessageHandler(
     content::WebContents* web_contents)
-    : web_contents_(web_contents) {
+    : content::WebContentsUserData<PrintPreviewMessageHandler>(*web_contents),
+      web_contents_(web_contents) {
   DCHECK(web_contents);
 }
 
@@ -269,6 +271,6 @@ void PrintPreviewMessageHandler::RejectPromise(int request_id) {
   promise.RejectWithErrorMessage("Failed to generate PDF");
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintPreviewMessageHandler)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintPreviewMessageHandler);
 
 }  // namespace electron

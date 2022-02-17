@@ -6,30 +6,23 @@ Subject: Don't run PCScan functions if PCScan is disabled
 PCScan should not be invoked if PCScan is disabled.  Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/2916657.
 
 diff --git a/base/allocator/partition_allocator/memory_reclaimer.cc b/base/allocator/partition_allocator/memory_reclaimer.cc
-index fd846ca91cb17638bf07ca35bf695099174f8f00..5b2ab293ade39b2ecd68d0438034da77417b1e94 100644
+index 63819bf2593894bd763547d58cfae31d821bd7eb..a4ee9520cfc11125837e42955f8f6f6c3f21bf9e 100644
 --- a/base/allocator/partition_allocator/memory_reclaimer.cc
 +++ b/base/allocator/partition_allocator/memory_reclaimer.cc
-@@ -121,6 +121,7 @@ void PartitionAllocMemoryReclaimer::Reclaim(int flags) {
-   AutoLock lock(lock_);  // Has to protect from concurrent (Un)Register calls.
-   TRACE_EVENT0("base", "PartitionAllocMemoryReclaimer::Reclaim()");
- 
-+#if defined(PA_ALLOW_PCSCAN)
-   // PCScan quarantines freed slots. Trigger the scan first to let it call
-   // FreeNoHooksImmediate on slots that pass the quarantine.
+@@ -67,7 +67,7 @@ void PartitionAllocMemoryReclaimer::Reclaim(int flags) {
    //
-@@ -137,6 +138,7 @@ void PartitionAllocMemoryReclaimer::Reclaim(int flags) {
-                                      : PCScan::InvocationMode::kBlocking;
-     PCScan::PerformScanIfNeeded(invocation_mode);
-   }
-+#endif
- 
- #if defined(PA_THREAD_CACHE_SUPPORTED)
-   // Don't completely empty the thread cache outside of low memory situations,
+   // Lastly decommit empty slot spans and lastly try to discard unused pages at
+   // the end of the remaining active slots.
+-#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM
++#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM && defined(PA_ALLOW_PCSCAN)
+   {
+     using PCScan = internal::PCScan;
+     const auto invocation_mode = flags & PartitionPurgeAggressiveReclaim
 diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
-index e6c8ec66ab837ffa9c47495c170854a6fa000476..3e6eeda6e57a06b680cbfadea6fc886bbccbc247 100644
+index 4bfe2501309e832dc9962d5f4642c6b7c782f83d..c45f1207be984fae9aee2cc5b9a7c405ed5ed96e 100644
 --- a/base/threading/platform_thread_posix.cc
 +++ b/base/threading/platform_thread_posix.cc
-@@ -39,6 +39,7 @@
+@@ -43,6 +43,7 @@
  #endif
  
  #if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
@@ -37,29 +30,29 @@ index e6c8ec66ab837ffa9c47495c170854a6fa000476..3e6eeda6e57a06b680cbfadea6fc886b
  #include "base/allocator/partition_allocator/starscan/pcscan.h"
  #include "base/allocator/partition_allocator/starscan/stack/stack.h"
  #endif
-@@ -72,7 +73,7 @@ void* ThreadFunc(void* params) {
-       base::ThreadRestrictions::SetSingletonAllowed(false);
+@@ -76,7 +77,7 @@ void* ThreadFunc(void* params) {
+       base::DisallowSingleton();
  
- #if !defined(OS_NACL)
+ #if !BUILDFLAG(IS_NACL)
 -#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 +#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && defined(PA_ALLOW_PCSCAN)
      internal::PCScan::NotifyThreadCreated(internal::GetStackPointer());
  #endif
  
-@@ -98,7 +99,7 @@ void* ThreadFunc(void* params) {
+@@ -102,7 +103,7 @@ void* ThreadFunc(void* params) {
        PlatformThread::CurrentHandle().platform_handle(),
        PlatformThread::CurrentId());
  
--#if !defined(OS_NACL) && BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
-+#if !defined(OS_NACL) && BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && defined(PA_ALLOW_PCSCAN)
+-#if !BUILDFLAG(IS_NACL) && BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
++#if !BUILDFLAG(IS_NACL) && BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && defined(PA_ALLOW_PCSCAN)
    internal::PCScan::NotifyThreadDestroyed();
  #endif
  
 diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thread_win.cc
-index 86e240b231d3236aea1b0343e0e6763282ff70c9..0d85d2acb6652a580f79a2c4ca2277562dd5156b 100644
+index 5aee160aec0160f37d61005ec3b71accb58b2eaa..bc73591dd8b66c304fa42b3349bbbf6f82ed13ad 100644
 --- a/base/threading/platform_thread_win.cc
 +++ b/base/threading/platform_thread_win.cc
-@@ -28,6 +28,7 @@
+@@ -29,6 +29,7 @@
  #include <windows.h>
  
  #if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
@@ -67,7 +60,7 @@ index 86e240b231d3236aea1b0343e0e6763282ff70c9..0d85d2acb6652a580f79a2c4ca227756
  #include "base/allocator/partition_allocator/starscan/pcscan.h"
  #include "base/allocator/partition_allocator/starscan/stack/stack.h"
  #endif
-@@ -104,7 +105,7 @@ DWORD __stdcall ThreadFunc(void* params) {
+@@ -105,7 +106,7 @@ DWORD __stdcall ThreadFunc(void* params) {
                                  FALSE,
                                  DUPLICATE_SAME_ACCESS);
  
@@ -76,7 +69,7 @@ index 86e240b231d3236aea1b0343e0e6763282ff70c9..0d85d2acb6652a580f79a2c4ca227756
    internal::PCScan::NotifyThreadCreated(internal::GetStackPointer());
  #endif
  
-@@ -126,7 +127,7 @@ DWORD __stdcall ThreadFunc(void* params) {
+@@ -127,7 +128,7 @@ DWORD __stdcall ThreadFunc(void* params) {
          PlatformThread::CurrentId());
    }
  

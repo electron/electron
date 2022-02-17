@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
-#define SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
 #include <map>
 #include <string>
@@ -35,6 +35,12 @@ class WebContentsPreferences
   WebContentsPreferences(content::WebContents* web_contents,
                          const gin_helper::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
+
+  // disable copy
+  WebContentsPreferences(const WebContentsPreferences&) = delete;
+  WebContentsPreferences& operator=(const WebContentsPreferences&) = delete;
+
+  void Merge(const gin_helper::Dictionary& new_web_preferences);
 
   void SetFromDictionary(const gin_helper::Dictionary& new_web_preferences);
 
@@ -69,7 +75,6 @@ class WebContentsPreferences
   bool ShouldUseSafeDialogs() const { return safe_dialogs_; }
   bool GetSafeDialogsMessage(std::string* message) const;
   bool ShouldDisablePopups() const { return disable_popups_; }
-  bool ShouldUseNativeWindowOpen() const { return native_window_open_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
   bool GetPreloadPath(base::FilePath* path) const;
   bool IsSandboxed() const;
@@ -84,6 +89,8 @@ class WebContentsPreferences
   void Clear();
   void SaveLastPreferences();
 
+  // TODO(clavin): refactor to use the WebContents provided by the
+  // WebContentsUserData base class instead of storing a duplicate ref
   content::WebContents* web_contents_;
 
   bool plugins_;
@@ -94,7 +101,6 @@ class WebContentsPreferences
   bool disable_html_fullscreen_window_resize_;
   bool webview_tag_;
   absl::optional<bool> sandbox_;
-  bool native_window_open_;
   bool context_isolation_;
   bool javascript_;
   bool images_;
@@ -112,7 +118,6 @@ class WebContentsPreferences
   absl::optional<int> default_monospace_font_size_;
   absl::optional<int> minimum_font_size_;
   absl::optional<std::string> default_encoding_;
-  int opener_id_;
   bool is_webview_;
   std::vector<std::string> custom_args_;
   std::vector<std::string> custom_switches_;
@@ -128,7 +133,7 @@ class WebContentsPreferences
   absl::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -140,10 +145,8 @@ class WebContentsPreferences
   base::Value last_web_preferences_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_

@@ -22,7 +22,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
-#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
 
@@ -59,8 +59,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
         v8::Global<v8::Context>(isolate, isolate->GetCurrentContext());
     weak_context_.SetWeak();
 
-    render_frame->GetBrowserInterfaceBroker()->GetInterface(
-        electron_browser_remote_.BindNewPipeAndPassReceiver());
+    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+        &electron_browser_remote_);
   }
 
   void OnDestruct() override { electron_browser_remote_.reset(); }
@@ -146,7 +146,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     }
 
     std::vector<v8::Local<v8::Object>> transferables;
-    if (transfer) {
+    if (transfer && !transfer.value()->IsUndefined()) {
       if (!gin::ConvertFromV8(isolate, *transfer, &transferables)) {
         thrower.ThrowTypeError("Invalid value for transfer");
         return;
@@ -223,7 +223,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
   }
 
   v8::Global<v8::Context> weak_context_;
-  mojo::Remote<electron::mojom::ElectronBrowser> electron_browser_remote_;
+  mojo::AssociatedRemote<electron::mojom::ElectronBrowser>
+      electron_browser_remote_;
 };
 
 gin::WrapperInfo IPCRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};

@@ -7,7 +7,7 @@ Subject: add should_read_node_options_from_env option to disable NODE_OPTIONS
 We can remove the NODE_OPTIONS environment variable but it in theory could be injected / re-inserted at runtime and be used for workers.  In order to ensure the fuse is respected we need a hard runtime toggle for NODE_OPTION support.
 
 diff --git a/src/env.cc b/src/env.cc
-index 1cc7da1ce15f43905ce607adcc1a23ed9d92948a..16af6aec3791df1363682f1ed024c52208b9a8f6 100644
+index 2cb2dccdf32ba4ad58972bb1d2b185996104b5ee..0abd61d6ddd1fb55afde40b38cf7c9400a8c3d41 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -329,6 +329,9 @@ std::string GetExecPath(const std::vector<std::string>& argv) {
@@ -21,7 +21,7 @@ index 1cc7da1ce15f43905ce607adcc1a23ed9d92948a..16af6aec3791df1363682f1ed024c522
                           Isolate* isolate,
                           const std::vector<std::string>& args,
 diff --git a/src/env.h b/src/env.h
-index b38a69fc06a189569524df767dbbbe5c1985aa20..6b22cc4aaaf59d309d1bcebfbb3710ceeafd13e6 100644
+index e0deca497feb111622b257b952c9ed9161c7d001..ab8334bf0e3405fee4d21a4b541bd1164d92ca89 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -1145,6 +1145,8 @@ class Environment : public MemoryRetainer {
@@ -34,10 +34,10 @@ index b38a69fc06a189569524df767dbbbe5c1985aa20..6b22cc4aaaf59d309d1bcebfbb3710ce
    inline std::vector<double>* destroy_async_id_list();
  
 diff --git a/src/node.cc b/src/node.cc
-index 6302bb925339d709a54151a8fc8b58f1a2253881..48a9eedfaf6350fc05fb104a1f44e85b75878f9a 100644
+index 207a95d202b4e422a39f837241f1655f7111b1e3..14b9002dbd918b59b05d8b12c5441080695ed9f0 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -882,7 +882,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -875,7 +875,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
  #if !defined(NODE_WITHOUT_NODE_OPTIONS)
    std::string node_options;
  
@@ -47,10 +47,10 @@ index 6302bb925339d709a54151a8fc8b58f1a2253881..48a9eedfaf6350fc05fb104a1f44e85b
          ParseNodeOptionsEnvVar(node_options, errors);
  
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 3e3cb67d9e8c8b1ea867ff31d96a81709b47cc8d..679282e688258314fcd594bab7fd711cac2c9e48 100644
+index 16b7be36f284311f38583fa1df28a2945560b524..62a7dae080fad7e18863968dee22dbe4b461ab82 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -457,6 +457,7 @@ void Worker::New(const FunctionCallbackInfo<Value>& args) {
+@@ -467,6 +467,7 @@ void Worker::New(const FunctionCallbackInfo<Value>& args) {
      });
  
  #ifndef NODE_WITHOUT_NODE_OPTIONS
@@ -58,7 +58,7 @@ index 3e3cb67d9e8c8b1ea867ff31d96a81709b47cc8d..679282e688258314fcd594bab7fd711c
      MaybeLocal<String> maybe_node_opts =
          env_vars->Get(isolate, OneByteString(isolate, "NODE_OPTIONS"));
      Local<String> node_opts;
-@@ -487,6 +488,7 @@ void Worker::New(const FunctionCallbackInfo<Value>& args) {
+@@ -497,6 +498,7 @@ void Worker::New(const FunctionCallbackInfo<Value>& args) {
          return;
        }
      }

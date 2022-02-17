@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
-#define SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
+#ifndef ELECTRON_SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
+#define ELECTRON_SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
 
 #include <string>
 
@@ -25,6 +25,10 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   ElectronApiServiceImpl(content::RenderFrame* render_frame,
                          RendererClientBase* renderer_client);
   ~ElectronApiServiceImpl() override;
+
+  // disable copy
+  ElectronApiServiceImpl(const ElectronApiServiceImpl&) = delete;
+  ElectronApiServiceImpl& operator=(const ElectronApiServiceImpl&) = delete;
 
   void BindTo(mojo::PendingReceiver<mojom::ElectronRenderer> receiver);
 
@@ -62,10 +66,8 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
 
   RendererClientBase* renderer_client_;
   base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
+#endif  // ELECTRON_SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_

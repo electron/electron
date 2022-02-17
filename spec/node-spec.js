@@ -317,6 +317,21 @@ describe('node feature', () => {
       // eslint-disable-next-line no-octal
       crypto.createDiffieHellman('abc', '123');
     });
+
+    it('does not crash when calling crypto.createPrivateKey() with an unsupported algorithm', () => {
+      const crypto = require('crypto');
+
+      const ed448 = {
+        crv: 'Ed448',
+        x: 'KYWcaDwgH77xdAwcbzOgvCVcGMy9I6prRQBhQTTdKXUcr-VquTz7Fd5adJO0wT2VHysF3bk3kBoA',
+        d: 'UhC3-vN5vp_g9PnTknXZgfXUez7Xvw-OfuJ0pYkuwzpYkcTvacqoFkV_O05WMHpyXkzH9q2wzx5n',
+        kty: 'OKP'
+      };
+
+      expect(() => {
+        crypto.createPrivateKey({ key: ed448, format: 'jwk' });
+      }).to.throw(/Invalid JWK data/);
+    });
   });
 
   describe('process.stdout', () => {
@@ -379,6 +394,12 @@ describe('node feature', () => {
 
     it('should be able to create an aes-256-cfb cipher', () => {
       require('crypto').createCipheriv('aes-256-cfb', '0123456789abcdef0123456789abcdef', '0123456789abcdef');
+    });
+
+    it('should be able to create a bf-{cbc,cfb,ecb} ciphers', () => {
+      require('crypto').createCipheriv('bf-cbc', Buffer.from('0123456789abcdef'), Buffer.from('01234567'));
+      require('crypto').createCipheriv('bf-cfb', Buffer.from('0123456789abcdef'), Buffer.from('01234567'));
+      require('crypto').createCipheriv('bf-ecb', Buffer.from('0123456789abcdef'), Buffer.from('01234567'));
     });
 
     it('should list des-ede-cbc in getCiphers', () => {

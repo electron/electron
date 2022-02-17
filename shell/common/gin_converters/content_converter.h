@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
 
 #include <utility>
 
@@ -17,11 +17,12 @@
 namespace content {
 struct ContextMenuParams;
 struct NativeWebKeyboardEvent;
+class RenderFrameHost;
 class WebContents;
 }  // namespace content
 
-using ContextMenuParamsWithWebContents =
-    std::pair<content::ContextMenuParams, content::WebContents*>;
+using ContextMenuParamsWithRenderFrameHost =
+    std::pair<content::ContextMenuParams, content::RenderFrameHost*>;
 
 namespace gin {
 
@@ -32,9 +33,10 @@ struct Converter<blink::mojom::MenuItem::Type> {
 };
 
 template <>
-struct Converter<ContextMenuParamsWithWebContents> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const ContextMenuParamsWithWebContents& val);
+struct Converter<ContextMenuParamsWithRenderFrameHost> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const ContextMenuParamsWithRenderFrameHost& val);
 };
 
 template <>
@@ -86,4 +88,4 @@ struct Converter<content::NativeWebKeyboardEvent> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_

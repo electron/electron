@@ -25,8 +25,6 @@ class IDUserData : public base::SupportsUserData::Data {
 
  private:
   int32_t id_;
-
-  DISALLOW_COPY_AND_ASSIGN(IDUserData);
 };
 
 }  // namespace

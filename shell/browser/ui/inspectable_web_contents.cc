@@ -86,6 +86,13 @@ const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
 const char kDevToolsBoundsPref[] = "electron.devtools.bounds";
 const char kDevToolsZoomPref[] = "electron.devtools.zoom";
 const char kDevToolsPreferences[] = "electron.devtools.preferences";
+const char kDevToolsSyncPreferences[] = "electron.devtools.sync_preferences";
+const char kDevToolsSyncedPreferencesSyncEnabled[] =
+    "electron.devtools.synced_preferences_sync_enabled";
+const char kDevToolsSyncedPreferencesSyncDisabled[] =
+    "electron.devtools.synced_preferences_sync_disabled";
+const char kSyncDevToolsPreferencesFrontendName[] = "electron.sync_preferences";
+const bool kSyncDevToolsPreferencesDefault = false;
 
 const char kFrontendHostId[] = "id";
 const char kFrontendHostMethod[] = "method";
@@ -168,9 +175,8 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
-constexpr base::TimeDelta kInitialBackoffDelay =
-    base::TimeDelta::FromMilliseconds(250);
-constexpr base::TimeDelta kMaxBackoffDelay = base::TimeDelta::FromSeconds(10);
+constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
+constexpr base::TimeDelta kMaxBackoffDelay = base::Seconds(10);
 
 }  // namespace
 
@@ -336,14 +342,18 @@ void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
                                    RectToDictionary(gfx::Rect(0, 0, 800, 600)));
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
   registry->RegisterDictionaryPref(kDevToolsPreferences);
+  registry->RegisterDictionaryPref(kDevToolsSyncedPreferencesSyncEnabled);
+  registry->RegisterDictionaryPref(kDevToolsSyncedPreferencesSyncDisabled);
+  registry->RegisterBooleanPref(kDevToolsSyncPreferences,
+                                kSyncDevToolsPreferencesDefault);
 }
 
 InspectableWebContents::InspectableWebContents(
-    content::WebContents* web_contents,
+    std::unique_ptr<content::WebContents> web_contents,
     PrefService* pref_service,
     bool is_guest)
     : pref_service_(pref_service),
-      web_contents_(web_contents),
+      web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
       view_(CreateInspectableContentsView(this)) {
   const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
@@ -356,9 +366,9 @@ InspectableWebContents::InspectableWebContents(
     }
     if (!IsPointInScreen(devtools_bounds_.origin())) {
       gfx::Rect display;
-      if (!is_guest && web_contents->GetNativeView()) {
+      if (!is_guest && web_contents_->GetNativeView()) {
         display = display::Screen::GetScreen()
-                      ->GetDisplayNearestView(web_contents->GetNativeView())
+                      ->GetDisplayNearestView(web_contents_->GetNativeView())
                       .bounds();
       } else {
         display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
@@ -570,11 +580,11 @@ void InspectableWebContents::LoadCompleted() {
     SetIsDocked(DispatchCallback(), false);
   } else {
     if (dock_state_.empty()) {
-      const base::DictionaryValue* prefs =
+      const base::Value* prefs =
           pref_service_->GetDictionary(kDevToolsPreferences);
-      std::string current_dock_state;
-      prefs->GetString("currentDockState", &current_dock_state);
-      base::RemoveChars(current_dock_state, "\"", &dock_state_);
+      const std::string* current_dock_state =
+          prefs->FindStringKey("currentDockState");
+      base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
@@ -854,26 +864,130 @@ void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
   std::move(callback).Run(nullptr);
 }
 
+void InspectableWebContents::RegisterPreference(
+    const std::string& name,
+    const RegisterOptions& options) {
+  // kSyncDevToolsPreferenceFrontendName is not stored in any of the relevant
+  // dictionaries. Skip registration.
+  if (name == kSyncDevToolsPreferencesFrontendName)
+    return;
+
+  if (options.sync_mode == RegisterOptions::SyncMode::kSync) {
+    synced_setting_names_.insert(name);
+  }
+
+  // Setting might have had a different sync status in the past. Move the
+  // setting to the correct dictionary.
+  const char* dictionary_to_remove_from =
+      options.sync_mode == RegisterOptions::SyncMode::kSync
+          ? kDevToolsPreferences
+          : GetDictionaryNameForSyncedPrefs();
+  const std::string* settings_value =
+      pref_service_->GetDictionary(dictionary_to_remove_from)
+          ->FindStringKey(name);
+  if (!settings_value) {
+    return;
+  }
+
+  const char* dictionary_to_insert_into =
+      GetDictionaryNameForSettingsName(name);
+  // Settings already moved to the synced dictionary on a different device have
+  // precedence.
+  const std::string* already_synced_value =
+      pref_service_->GetDictionary(dictionary_to_insert_into)
+          ->FindStringKey(name);
+  if (dictionary_to_insert_into == kDevToolsPreferences ||
+      !already_synced_value) {
+    DictionaryPrefUpdate insert_update(pref_service_,
+                                       dictionary_to_insert_into);
+    insert_update.Get()->SetKey(name, base::Value(*settings_value));
+  }
+
+  DictionaryPrefUpdate remove_update(pref_service_, dictionary_to_remove_from);
+  remove_update.Get()->RemoveKey(name);
+}
+
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
-  const base::DictionaryValue* prefs =
-      pref_service_->GetDictionary(kDevToolsPreferences);
-  std::move(callback).Run(prefs);
+  base::Value settings(base::Value::Type::DICTIONARY);
+  settings.SetBoolKey(kSyncDevToolsPreferencesFrontendName,
+                      pref_service_->GetBoolean(kDevToolsSyncPreferences));
+  settings.MergeDictionary(pref_service_->GetDictionary(kDevToolsPreferences));
+  settings.MergeDictionary(
+      pref_service_->GetDictionary(GetDictionaryNameForSyncedPrefs()));
+
+  std::move(callback).Run(&settings);
+}
+
+void InspectableWebContents::GetPreference(DispatchCallback callback,
+                                           const std::string& name) {
+  // Handle kSyncDevToolsPreferencesFrontendName
+  if (name == kSyncDevToolsPreferencesFrontendName) {
+    base::Value pref =
+        base::Value(pref_service_->GetBoolean(kDevToolsSyncPreferences));
+    std::move(callback).Run(&pref);
+    return;
+  }
+
+  // Check dev tools prefs
+  if (auto* pref =
+          pref_service_->GetDictionary(kDevToolsPreferences)->FindKey(name)) {
+    std::move(callback).Run(pref);
+    return;
+  }
+
+  // Check synced prefs
+  if (auto* pref =
+          pref_service_->GetDictionary(GetDictionaryNameForSyncedPrefs())
+              ->FindKey(name)) {
+    std::move(callback).Run(pref);
+    return;
+  }
+
+  // Pref wasn't found, return an empty value
+  base::Value no_pref;
+  std::move(callback).Run(&no_pref);
 }
 
 void InspectableWebContents::SetPreference(const std::string& name,
                                            const std::string& value) {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
+  if (name == kSyncDevToolsPreferencesFrontendName) {
+    pref_service_->SetBoolean(kDevToolsSyncPreferences, value == "true");
+    return;
+  }
+  DictionaryPrefUpdate update(pref_service_,
+                              GetDictionaryNameForSettingsName(name));
   update.Get()->SetKey(name, base::Value(value));
 }
 
 void InspectableWebContents::RemovePreference(const std::string& name) {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
+  if (name == kSyncDevToolsPreferencesFrontendName) {
+    pref_service_->SetBoolean(kDevToolsSyncPreferences,
+                              kSyncDevToolsPreferencesDefault);
+    return;
+  }
+  DictionaryPrefUpdate update(pref_service_,
+                              GetDictionaryNameForSettingsName(name));
   update.Get()->RemoveKey(name);
 }
 
 void InspectableWebContents::ClearPreferences() {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->Clear();
+  pref_service_->SetBoolean(kDevToolsSyncPreferences,
+                            kSyncDevToolsPreferencesDefault);
+  DictionaryPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
+  unsynced_update.Get()->DictClear();
+  DictionaryPrefUpdate sync_enabled_update(
+      pref_service_, kDevToolsSyncedPreferencesSyncEnabled);
+  sync_enabled_update.Get()->DictClear();
+  DictionaryPrefUpdate sync_disabled_update(
+      pref_service_, kDevToolsSyncedPreferencesSyncDisabled);
+  sync_disabled_update.Get()->DictClear();
+}
+
+void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
+  // TODO(anyone): do we want devtool syncing in Electron?
+  base::Value result(base::Value::Type::DICTIONARY);
+  result.SetBoolKey("isSyncActive", false);
+  std::move(callback).Run(&result);
 }
 
 void InspectableWebContents::ConnectionReady() {}
@@ -1033,7 +1147,7 @@ void InspectableWebContents::DidFinishNavigation(
       !navigation_handle->HasCommitted())
     return;
   content::RenderFrameHost* frame = navigation_handle->GetRenderFrameHost();
-  auto origin = navigation_handle->GetURL().GetOrigin().spec();
+  auto origin = navigation_handle->GetURL().DeprecatedGetOriginAsURL().spec();
   auto it = extensions_api_.find(origin);
   if (it == extensions_api_.end())
     return;
@@ -1053,6 +1167,20 @@ void InspectableWebContents::SendMessageAck(int request_id,
                                             const base::Value* arg) {
   base::Value id_value(request_id);
   CallClientFunction("DevToolsAPI.embedderMessageAck", &id_value, arg, nullptr);
+}
+
+const char* InspectableWebContents::GetDictionaryNameForSettingsName(
+    const std::string& name) const {
+  return synced_setting_names_.contains(name)
+             ? kDevToolsSyncedPreferencesSyncEnabled
+             : kDevToolsPreferences;
+}
+
+const char* InspectableWebContents::GetDictionaryNameForSyncedPrefs() const {
+  const bool isDevToolsSyncEnabled =
+      pref_service_->GetBoolean(kDevToolsSyncPreferences);
+  return isDevToolsSyncEnabled ? kDevToolsSyncedPreferencesSyncEnabled
+                               : kDevToolsSyncedPreferencesSyncDisabled;
 }
 
 }  // namespace electron

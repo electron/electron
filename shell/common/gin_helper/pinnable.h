@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_PINNABLE_H_
-#define SHELL_COMMON_GIN_HELPER_PINNABLE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PINNABLE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_PINNABLE_H_
 
 #include "v8/include/v8.h"
 
@@ -31,4 +31,4 @@ class Pinnable {
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_PINNABLE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_PINNABLE_H_

@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 55cc762b92193ed3f65b4d0b562202869530e1ac..d4c2a4e49eb469d3e2278fdc972c0aedc849d3f6 100644
+index 88fad9811069e7851363c8068f9702a9019669cc..526d951589f2757835fded706f4e448a8bb9daae 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,7 +11,9 @@
@@ -42,7 +42,7 @@ index 55cc762b92193ed3f65b4d0b562202869530e1ac..d4c2a4e49eb469d3e2278fdc972c0aed
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -134,9 +138,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -133,9 +137,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -54,7 +54,7 @@ index 55cc762b92193ed3f65b4d0b562202869530e1ac..d4c2a4e49eb469d3e2278fdc972c0aed
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -150,9 +156,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -149,9 +155,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      // controlled.
      return;
    }
@@ -67,7 +67,7 @@ index 55cc762b92193ed3f65b4d0b562202869530e1ac..d4c2a4e49eb469d3e2278fdc972c0aed
  }
  #endif
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index abffb6dbdbf730e2cc4423eaca6a9a8a9f8af582..7fe1badcdebebce9028825ac98d7ab6cfa65dcdd 100644
+index 89784b4d6eab9938c475abb6b58c3e08e8801371..72ee9a34e63ca9870c1c2f68f4cb1da63870ad3d 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
 @@ -40,11 +40,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
@@ -84,12 +84,12 @@ index abffb6dbdbf730e2cc4423eaca6a9a8a9f8af582..7fe1badcdebebce9028825ac98d7ab6c
    // Creates a ProxyConfigMonitor that gets proxy settings from the
    // |local_state|, for use with NetworkContexts not
    // associated with a profile. Must be destroyed before |local_state|.
-@@ -91,7 +92,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -94,7 +95,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  #if BUILDFLAG(ENABLE_EXTENSIONS)
    mojo::ReceiverSet<network::mojom::ProxyErrorClient> error_receiver_set_;
--  Profile* profile_ = nullptr;
-+  // Profile* profile_ = nullptr;
+-  raw_ptr<Profile> profile_ = nullptr;
++  // raw_ptr<Profile> profile_ = nullptr;
  #endif
+ };
  
-   DISALLOW_COPY_AND_ASSIGN(ProxyConfigMonitor);

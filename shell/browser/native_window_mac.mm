@@ -295,12 +295,12 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   NSUInteger styleMask = NSWindowStyleMaskTitled;
 
-  // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
-  // for framless window.
+  // Removing NSWindowStyleMaskTitled removes window title, which removes
+  // rounded corners of window.
   bool rounded_corner = true;
   options.Get(options::kRoundedCorners, &rounded_corner);
   if (!rounded_corner && !has_frame())
-    styleMask = NSWindowStyleMaskFullSizeContentView;
+    styleMask = 0;
 
   if (minimizable)
     styleMask |= NSMiniaturizableWindowMask;
@@ -323,6 +323,13 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
+
+  RegisterDeleteDelegateCallback(base::BindOnce(
+      [](NativeWindowMac* window) {
+        if (window->window_)
+          window->window_ = nil;
+      },
+      this));
 
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
@@ -362,6 +369,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
       InternalSetWindowButtonVisibility(false);
     } else {
       buttons_proxy_.reset([[WindowButtonsProxy alloc] initWithWindow:window_]);
+      [buttons_proxy_ setHeight:titlebar_overlay_height()];
       if (traffic_light_position_) {
         [buttons_proxy_ setMargin:*traffic_light_position_];
       } else if (title_bar_style_ == TitleBarStyle::kHiddenInset) {
@@ -609,16 +617,14 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0) {
+  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
-  } else {
-    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
-    NSRect rectWindow = [window_ frame];
-    return (rectScreen.origin.x == rectWindow.origin.x &&
-            rectScreen.origin.y == rectWindow.origin.y &&
-            rectScreen.size.width == rectWindow.size.width &&
-            rectScreen.size.height == rectWindow.size.height);
-  }
+
+  NSRect rectScreen = GetAspectRatio() > 0.0
+                          ? default_frame_for_zoom()
+                          : [[NSScreen mainScreen] visibleFrame];
+
+  return NSEqualRects([window_ frame], rectScreen);
 }
 
 void NativeWindowMac::Minimize() {
@@ -1344,7 +1350,7 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
 
   if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner =
-        [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
+        !([window_ styleMask] & NSWindowStyleMaskTitled);
     if (!has_frame() && !is_modal() && !no_rounded_corner) {
       CGFloat radius;
       if (fullscreen) {
@@ -1410,24 +1416,21 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancyType = NSVisualEffectMaterialTitlebar;
   }
 
-  if (@available(macOS 10.11, *)) {
-    if (type == "selection") {
-      vibrancyType = NSVisualEffectMaterialSelection;
-    } else if (type == "menu") {
-      vibrancyType = NSVisualEffectMaterialMenu;
-    } else if (type == "popover") {
-      vibrancyType = NSVisualEffectMaterialPopover;
-    } else if (type == "sidebar") {
-      vibrancyType = NSVisualEffectMaterialSidebar;
-    } else if (type == "medium-light") {
-      EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
-                  "electron");
-      vibrancyType = NSVisualEffectMaterialMediumLight;
-    } else if (type == "ultra-dark") {
-      EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
-                  "electron");
-      vibrancyType = NSVisualEffectMaterialUltraDark;
-    }
+  if (type == "selection") {
+    vibrancyType = NSVisualEffectMaterialSelection;
+  } else if (type == "menu") {
+    vibrancyType = NSVisualEffectMaterialMenu;
+  } else if (type == "popover") {
+    vibrancyType = NSVisualEffectMaterialPopover;
+  } else if (type == "sidebar") {
+    vibrancyType = NSVisualEffectMaterialSidebar;
+  } else if (type == "medium-light") {
+    EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
+                "electron");
+    vibrancyType = NSVisualEffectMaterialMediumLight;
+  } else if (type == "ultra-dark") {
+    EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn, "electron");
+    vibrancyType = NSVisualEffectMaterialUltraDark;
   }
 
   if (@available(macOS 10.14, *)) {
@@ -1598,10 +1601,15 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
   NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
 
   // Reset the behaviour to default if aspect_ratio is set to 0 or less.
-  if (aspect_ratio > 0.0)
-    [window_ setContentAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
-  else
+  if (aspect_ratio > 0.0) {
+    NSSize aspect_ratio_size = NSMakeSize(aspect_ratio, 1.0);
+    if (has_frame())
+      [window_ setContentAspectRatio:aspect_ratio_size];
+    else
+      [window_ setAspectRatio:aspect_ratio_size];
+  } else {
     [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
+  }
 }
 
 void NativeWindowMac::PreviewFile(const std::string& path,
@@ -1715,29 +1723,33 @@ void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
   // we explicitly disable resizing while setting it.
   ScopedDisableResize disable_resize;
 
-  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setStyleMask:[window_ styleMask] | flag];
   else
     [window_ setStyleMask:[window_ styleMask] & (~flag)];
+
   // Change style mask will make the zoom button revert to default, probably
   // a bug of Cocoa or macOS.
-  SetMaximizable(was_maximizable);
+  SetMaximizable(maximizable_);
 }
 
 void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
-  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setCollectionBehavior:[window_ collectionBehavior] | flag];
   else
     [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
+
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
-  SetMaximizable(was_maximizable);
+  SetMaximizable(maximizable_);
 }
 
 views::View* NativeWindowMac::GetContentsView() {
   return root_view_.get();
+}
+
+bool NativeWindowMac::CanMaximize() const {
+  return maximizable_;
 }
 
 void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
@@ -1825,7 +1837,12 @@ gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
     NSRect buttons = [buttons_proxy_ getButtonsContainerBounds];
     gfx::Rect overlay;
     overlay.set_width(GetContentSize().width() - NSWidth(buttons));
-    overlay.set_height(NSHeight(buttons));
+    if ([buttons_proxy_ useCustomHeight]) {
+      overlay.set_height(titlebar_overlay_height());
+    } else {
+      overlay.set_height(NSHeight(buttons));
+    }
+
     if (!base::i18n::IsRTL())
       overlay.set_x(NSMaxX(buttons));
     return overlay;

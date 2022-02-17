@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
-#define SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
 
 #include <map>
 #include <memory>
@@ -18,6 +18,10 @@ class ViewsDelegate : public views::ViewsDelegate {
  public:
   ViewsDelegate();
   ~ViewsDelegate() override;
+
+  // disable copy
+  ViewsDelegate(const ViewsDelegate&) = delete;
+  ViewsDelegate& operator=(const ViewsDelegate&) = delete;
 
  protected:
   // views::ViewsDelegate:
@@ -35,13 +39,13 @@ class ViewsDelegate : public views::ViewsDelegate {
                              int item_count,
                              bool has_submenu) override;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   HICON GetDefaultWindowIcon() const override;
   HICON GetSmallWindowIcon() const override;
   bool IsWindowInMetro(gfx::NativeWindow window) const override;
   int GetAppbarAutohideEdges(HMONITOR monitor,
                              base::OnceClosure callback) override;
-#elif defined(OS_LINUX) && !defined(OS_CHROMEOS)
+#elif BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)
   gfx::ImageSkia* GetDefaultWindowIcon() const override;
 #endif
   std::unique_ptr<views::NonClientFrameView> CreateDefaultNonClientFrameView(
@@ -54,7 +58,7 @@ class ViewsDelegate : public views::ViewsDelegate {
   bool WindowManagerProvidesTitleBar(bool maximized) override;
 
  private:
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   using AppbarAutohideEdgeMap = std::map<HMONITOR, int>;
 
   // Callback on main thread with the edges. |returned_edges| is the value that
@@ -71,10 +75,8 @@ class ViewsDelegate : public views::ViewsDelegate {
 
   base::WeakPtrFactory<ViewsDelegate> weak_factory_{this};
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(ViewsDelegate);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_ELECTRON_VIEWS_DELEGATE_H_

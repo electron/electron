@@ -19,7 +19,7 @@
 #include "shell/common/node_includes.h"
 #include "ui/base/models/image_model.h"
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 
 namespace gin {
 
@@ -54,7 +54,7 @@ Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
   model_->AddObserver(this);
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
     ElectronMenuModel::SharingItem item;
@@ -117,7 +117,7 @@ bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
                           command_id);
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 bool Menu::GetSharingItemForCommandId(
     int command_id,
     ElectronMenuModel::SharingItem* item) const {
@@ -236,13 +236,11 @@ std::u16string Menu::GetToolTipAt(int index) const {
   return model_->GetToolTipAt(index);
 }
 
-#if DCHECK_IS_ON()
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
   return accelerator.GetShortcutText();
 }
-#endif
 
 bool Menu::IsItemCheckedAt(int index) const {
   return model_->IsItemCheckedAt(index);
@@ -297,10 +295,8 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
-#if DCHECK_IS_ON()
-      .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
-#endif
-#if defined(OS_MAC)
+      .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
+#if BUILDFLAG(IS_MAC)
       .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
 #endif
       .Build();
@@ -322,7 +318,7 @@ void Initialize(v8::Local<v8::Object> exports,
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Menu", Menu::GetConstructor(context));
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",
                  &Menu::SendActionToFirstResponder);

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NATIVE_WINDOW_VIEWS_H_
-#define SHELL_BROWSER_NATIVE_WINDOW_VIEWS_H_
+#ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_VIEWS_H_
+#define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_VIEWS_H_
 
 #include "shell/browser/native_window.h"
 
@@ -15,7 +15,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "ui/views/widget/widget_observer.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 
@@ -35,7 +35,7 @@ class WindowStateWatcher;
 class EventDisabler;
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds);
 #endif
 
@@ -153,7 +153,7 @@ class NativeWindowViews : public NativeWindow,
   void IncrementChildModals();
   void DecrementChildModals();
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
   // HWNDMessageHandler's built-in handling, which may pre-empt some
   // expectations in Views/Aura if messages are consumed. Returns true if the
@@ -165,17 +165,17 @@ class NativeWindowViews : public NativeWindow,
                     LPARAM l_param,
                     LRESULT* result);
   void SetIcon(HICON small_icon, HICON app_icon);
-#elif defined(OS_LINUX)
+#elif BUILDFLAG(IS_LINUX)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   TaskbarHost& taskbar_host() { return taskbar_host_; }
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   bool IsWindowControlsOverlayEnabled() const {
     return (title_bar_style_ == NativeWindowViews::TitleBarStyle::kHidden) &&
            titlebar_overlay_;
@@ -205,11 +205,11 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
       views::Widget* widget) override;
   void OnWidgetMove() override;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   bool ExecuteWindowsCommand(int command_id) override;
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void SetForwardMouseMessages(bool forward);
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
@@ -262,7 +262,7 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 
   ui::WindowShowState last_window_state_;
 
@@ -332,10 +332,8 @@ class NativeWindowViews : public NativeWindow,
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NATIVE_WINDOW_VIEWS_H_
+#endif  // ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_VIEWS_H_

@@ -1,6 +1,7 @@
 import { Buffer } from 'buffer';
 import * as path from 'path';
 import * as util from 'util';
+import type * as Crypto from 'crypto';
 
 const asar = process._linkedBinding('electron_common_asar');
 
@@ -193,6 +194,20 @@ const overrideAPI = function (module: Record<string, any>, name: string, pathArg
     module.promises[name] = makePromiseFunction(module.promises[name], pathArgumentIndex);
   }
 };
+
+let crypto: typeof Crypto;
+function validateBufferIntegrity (buffer: Buffer, integrity: NodeJS.AsarFileInfo['integrity']) {
+  if (!integrity) return;
+
+  // Delay load crypto to improve app boot performance
+  // when integrity protection is not enabled
+  crypto = crypto || require('crypto');
+  const actual = crypto.createHash(integrity.algorithm).update(buffer).digest('hex');
+  if (actual !== integrity.hash) {
+    console.error(`ASAR Integrity Violation: got a hash mismatch (${actual} vs ${integrity.hash})`);
+    process.exit(1);
+  }
+}
 
 const makePromiseFunction = function (orig: Function, pathArgumentIndex: number) {
   return function (this: any, ...args: any[]) {
@@ -531,7 +546,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       }
 
       const buffer = Buffer.alloc(info.size);
-      const fd = archive.getFd();
+      const fd = archive.getFdAndValidateIntegrityLater();
       if (!(fd >= 0)) {
         const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
         nextTick(callback, [error]);
@@ -540,6 +555,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
       logASARAccess(asarPath, filePath, info.offset);
       fs.read(fd, buffer, 0, info.size, info.offset, (error: Error) => {
+        validateBufferIntegrity(buffer, info.integrity);
         callback(error, encoding ? buffer.toString(encoding) : buffer);
       });
     }
@@ -595,11 +611,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const { encoding } = options;
     const buffer = Buffer.alloc(info.size);
-    const fd = archive.getFd();
+    const fd = archive.getFdAndValidateIntegrityLater();
     if (!(fd >= 0)) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
 
     logASARAccess(asarPath, filePath, info.offset);
     fs.readSync(fd, buffer, 0, info.size, info.offset);
+    validateBufferIntegrity(buffer, info.integrity);
     return (encoding) ? buffer.toString(encoding) : buffer;
   };
 
@@ -713,11 +730,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     const buffer = Buffer.alloc(info.size);
-    const fd = archive.getFd();
+    const fd = archive.getFdAndValidateIntegrityLater();
     if (!(fd >= 0)) return [];
 
     logASARAccess(asarPath, filePath, info.offset);
     fs.readSync(fd, buffer, 0, info.size, info.offset);
+    validateBufferIntegrity(buffer, info.integrity);
     const str = buffer.toString('utf8');
     return [str, str.length > 0];
   };

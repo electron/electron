@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_
-#define SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_
 
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/native_widget_types.h"
@@ -40,6 +39,10 @@ class GlobalMenuBarX11 {
  public:
   explicit GlobalMenuBarX11(NativeWindowViews* window);
   virtual ~GlobalMenuBarX11();
+
+  // disable copy
+  GlobalMenuBarX11(const GlobalMenuBarX11&) = delete;
+  GlobalMenuBarX11& operator=(const GlobalMenuBarX11&) = delete;
 
   // Creates the object path for DbusmenuServer which is attached to |window|.
   static std::string GetPathForWindow(x11::Window window);
@@ -73,10 +76,8 @@ class GlobalMenuBarX11 {
   x11::Window xwindow_;
 
   DbusmenuServer* server_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(GlobalMenuBarX11);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_X11_H_

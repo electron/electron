@@ -2,11 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
-#define SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
+#ifndef ELECTRON_SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
+#define ELECTRON_SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
 
 #include "base/callback_list.h"
-#include "base/macros.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "net/cookies/cookie_change_dispatcher.h"
 #include "services/network/public/mojom/cookie_manager.mojom.h"
@@ -20,6 +19,10 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
  public:
   explicit CookieChangeNotifier(ElectronBrowserContext* browser_context);
   ~CookieChangeNotifier() override;
+
+  // disable copy
+  CookieChangeNotifier(const CookieChangeNotifier&) = delete;
+  CookieChangeNotifier& operator=(const CookieChangeNotifier&) = delete;
 
   // Register callbacks that needs to notified on any cookie store changes.
   base::CallbackListSubscription RegisterCookieChangeCallback(
@@ -38,10 +41,8 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
       cookie_change_sub_list_;
 
   mojo::Receiver<network::mojom::CookieChangeListener> receiver_;
-
-  DISALLOW_COPY_AND_ASSIGN(CookieChangeNotifier);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
+#endif  // ELECTRON_SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_

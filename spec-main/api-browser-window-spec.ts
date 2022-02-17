@@ -15,6 +15,7 @@ import { closeWindow, closeAllWindows } from './window-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+const mainFixtures = path.resolve(__dirname, 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
 // values?
@@ -108,6 +109,19 @@ describe('BrowserWindow module', () => {
       dialog.showMessageBox(w, { message: 'Hello Error' });
       w.close();
       await closed;
+    });
+
+    it('closes window without rounded corners', async () => {
+      await closeWindow(w);
+      w = new BrowserWindow({ show: false, frame: false, roundedCorners: false });
+      const closed = emittedOnce(w, 'closed');
+      w.close();
+      await closed;
+    });
+
+    it('should not crash if called after webContents is destroyed', () => {
+      w.webContents.destroy();
+      w.webContents.on('destroyed', () => w.close());
     });
 
     it('should emit unload handler', async () => {
@@ -947,6 +961,17 @@ describe('BrowserWindow module', () => {
         await resize;
         expectBoundsEqual(w.getSize(), size);
       });
+
+      it('doesn\'t change bounds when maximum size is set', () => {
+        w.setMenu(null);
+        w.setMaximumSize(400, 400);
+        // Without https://github.com/electron/electron/pull/29101
+        // following call would shrink the window to 384x361.
+        // There would be also DCHECK in resize_utils.cc on
+        // debug build.
+        w.setAspectRatio(1.0);
+        expectBoundsEqual(w.getSize(), [400, 400]);
+      });
     });
 
     describe('BrowserWindow.setPosition(x, y)', () => {
@@ -1094,7 +1119,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
-        it('can check transparent window maximization', async () => {
+        it('correctly checks transparent window maximization state', async () => {
           w.destroy();
           w = new BrowserWindow({
             show: false,
@@ -1103,15 +1128,33 @@ describe('BrowserWindow module', () => {
             transparent: true
           });
 
-          const maximize = emittedOnce(w, 'resize');
+          const maximize = emittedOnce(w, 'maximize');
           w.show();
           w.maximize();
           await maximize;
           expect(w.isMaximized()).to.equal(true);
-          const unmaximize = emittedOnce(w, 'resize');
+          const unmaximize = emittedOnce(w, 'unmaximize');
           w.unmaximize();
           await unmaximize;
           expect(w.isMaximized()).to.equal(false);
+        });
+        it('returns the correct value for windows with an aspect ratio', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            fullscreenable: false
+          });
+
+          w.setAspectRatio(16 / 11);
+
+          const maximize = emittedOnce(w, 'resize');
+          w.show();
+          w.maximize();
+          await maximize;
+
+          expect(w.isMaximized()).to.equal(true);
+          w.resizable = false;
+          expect(w.isMaximized()).to.equal(true);
         });
       });
 
@@ -1606,7 +1649,15 @@ describe('BrowserWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
-    afterEach(closeAllWindows);
+    let appProcess: childProcess.ChildProcessWithoutNullStreams | undefined;
+
+    afterEach(() => {
+      if (appProcess && !appProcess.killed) {
+        appProcess.kill();
+        appProcess = undefined;
+      }
+      closeAllWindows();
+    });
 
     it('allows setting, changing, and removing the vibrancy', () => {
       const w = new BrowserWindow({ show: false });
@@ -1624,6 +1675,15 @@ describe('BrowserWindow module', () => {
       expect(() => {
         w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
       }).to.not.throw();
+    });
+
+    it('Allows setting a transparent window via CSS', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'background-color-transparent');
+
+      appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+      const [code] = await emittedOnce(appProcess, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
@@ -1943,6 +2003,56 @@ describe('BrowserWindow module', () => {
     });
     ifit(process.platform === 'darwin')('sets Window Control Overlay with hidden inset title bar', async () => {
       await testWindowsOverlay('hiddenInset');
+    });
+  });
+
+  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarOverlay" option', () => {
+    const testWindowsOverlayHeight = async (size: any) => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          height: size
+        }
+      });
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      if (process.platform === 'darwin') {
+        await w.loadFile(overlayHTML);
+      } else {
+        const overlayReady = emittedOnce(ipcMain, 'geometrychange');
+        await w.loadFile(overlayHTML);
+        await overlayReady;
+      }
+      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
+      expect(overlayEnabled).to.be.true('overlayEnabled');
+      const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+      await w.maximize();
+      const max = await w.isMaximized();
+      expect(max).to.equal(true);
+      const overlayRectPostMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+
+      expect(overlayRectPreMax.y).to.equal(0);
+      if (process.platform === 'darwin') {
+        expect(overlayRectPreMax.x).to.be.greaterThan(0);
+      } else {
+        expect(overlayRectPreMax.x).to.equal(0);
+      }
+      expect(overlayRectPreMax.width).to.be.greaterThan(0);
+
+      expect(overlayRectPreMax.height).to.equal(size);
+      // Confirm that maximization only affected the height of the buttons and not the title bar
+      expect(overlayRectPostMax.height).to.equal(size);
+    };
+    afterEach(closeAllWindows);
+    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    it('sets Window Control Overlay with title bar height of 40', async () => {
+      await testWindowsOverlayHeight(40);
     });
   });
 
@@ -2416,7 +2526,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
+        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [, { argv }] = await emittedOnce(ipcMain, 'answer');
@@ -2431,7 +2541,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
+        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
@@ -2602,7 +2712,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('nativeWindowOpen option', () => {
+    describe('child windows', () => {
       let w: BrowserWindow = null as unknown as BrowserWindow;
 
       beforeEach(() => {
@@ -2610,7 +2720,6 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            nativeWindowOpen: true,
             // tests relies on preloads in opened windows
             nodeIntegrationInSubFrames: true,
             contextIsolation: false
@@ -2642,6 +2751,17 @@ describe('BrowserWindow module', () => {
         const [, content] = await answer;
         expect(content).to.equal('Hello');
       });
+      it('opens window with cross-scripting enabled from isolated context', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: path.join(fixtures, 'api', 'native-window-open-isolated-preload.js')
+          }
+        });
+        w.loadFile(path.join(fixtures, 'api', 'native-window-open-isolated.html'));
+        const [, content] = await emittedOnce(ipcMain, 'answer');
+        expect(content).to.equal('Hello');
+      });
       ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native addons correctly after reload', async () => {
         w.loadFile(path.join(__dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'));
         {
@@ -2661,7 +2781,6 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             nodeIntegrationInSubFrames: true,
-            nativeWindowOpen: true,
             webviewTag: true,
             contextIsolation: false,
             preload
@@ -2669,7 +2788,7 @@ describe('BrowserWindow module', () => {
         });
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
-          overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nativeWindowOpen: true, nodeIntegrationInSubFrames: true } }
+          overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nodeIntegrationInSubFrames: true } }
         }));
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
           options.show = false;
@@ -2679,23 +2798,8 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'));
         await webviewLoaded;
       });
-      it('should inherit the nativeWindowOpen setting in opened windows', async () => {
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
-
-        w.webContents.setWindowOpenHandler(() => ({
-          action: 'allow',
-          overrideBrowserWindowOptions: {
-            webPreferences: {
-              preload: preloadPath
-            }
-          }
-        }));
-        w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
-        const [, { nativeWindowOpen }] = await emittedOnce(ipcMain, 'answer');
-        expect(nativeWindowOpen).to.be.true();
-      });
       it('should open windows with the options configured via new-window event listeners', async () => {
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
+        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
           overrideBrowserWindowOptions: {
@@ -2738,7 +2842,6 @@ describe('BrowserWindow module', () => {
           const w = new BrowserWindow({
             show: false,
             webPreferences: {
-              nativeWindowOpen: true,
               // test relies on preloads in opened window
               nodeIntegrationInSubFrames: true,
               contextIsolation: false
@@ -2749,7 +2852,7 @@ describe('BrowserWindow module', () => {
             action: 'allow',
             overrideBrowserWindowOptions: {
               webPreferences: {
-                preload: path.join(fixtures, 'api', 'window-open-preload.js'),
+                preload: path.join(mainFixtures, 'api', 'window-open-preload.js'),
                 contextIsolation: false,
                 nodeIntegrationInSubFrames: true
               }
@@ -2757,9 +2860,8 @@ describe('BrowserWindow module', () => {
           }));
 
           w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'));
-          const [, { nodeIntegration, nativeWindowOpen, typeofProcess }] = await emittedOnce(ipcMain, 'answer');
+          const [, { nodeIntegration, typeofProcess }] = await emittedOnce(ipcMain, 'answer');
           expect(nodeIntegration).to.be.false();
-          expect(nativeWindowOpen).to.be.true();
           expect(typeofProcess).to.eql('undefined');
         });
 
@@ -2767,7 +2869,6 @@ describe('BrowserWindow module', () => {
           const w = new BrowserWindow({
             show: false,
             webPreferences: {
-              nativeWindowOpen: true,
               // test relies on preloads in opened window
               nodeIntegrationInSubFrames: true
             }
@@ -2777,7 +2878,7 @@ describe('BrowserWindow module', () => {
             action: 'allow',
             overrideBrowserWindowOptions: {
               webPreferences: {
-                preload: path.join(fixtures, 'api', 'window-open-preload.js')
+                preload: path.join(mainFixtures, 'api', 'window-open-preload.js')
               }
             }
           }));
@@ -2803,23 +2904,6 @@ describe('BrowserWindow module', () => {
         await enterHtmlFullScreen;
         expect(w.getSize()).to.deep.equal(size);
       });
-    });
-  });
-
-  describe('nativeWindowOpen + contextIsolation options', () => {
-    afterEach(closeAllWindows);
-    it('opens window with cross-scripting enabled from isolated context', async () => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nativeWindowOpen: true,
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'native-window-open-isolated-preload.js')
-        }
-      });
-      w.loadFile(path.join(fixtures, 'api', 'native-window-open-isolated.html'));
-      const [, content] = await emittedOnce(ipcMain, 'answer');
-      expect(content).to.equal('Hello');
     });
   });
 
@@ -3182,6 +3266,19 @@ describe('BrowserWindow module', () => {
       await maximize;
     });
 
+    it('emits an event when a transparent window is maximized', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        frame: false,
+        transparent: true
+      });
+
+      const maximize = emittedOnce(w, 'maximize');
+      w.show();
+      w.maximize();
+      await maximize;
+    });
+
     it('emits only one event when frameless window is maximized', () => {
       const w = new BrowserWindow({ show: false, frame: false });
       let emitted = 0;
@@ -3196,6 +3293,22 @@ describe('BrowserWindow module', () => {
       const unmaximize = emittedOnce(w, 'unmaximize');
       w.show();
       w.maximize();
+      w.unmaximize();
+      await unmaximize;
+    });
+
+    it('emits an event when a transparent window is unmaximized', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        frame: false,
+        transparent: true
+      });
+
+      const maximize = emittedOnce(w, 'maximize');
+      const unmaximize = emittedOnce(w, 'unmaximize');
+      w.show();
+      w.maximize();
+      await maximize;
       w.unmaximize();
       await unmaximize;
     });
@@ -3306,20 +3419,56 @@ describe('BrowserWindow module', () => {
     const savePageJsPath = path.join(savePageDir, 'save_page_files', 'test.js');
     const savePageCssPath = path.join(savePageDir, 'save_page_files', 'test.css');
 
-    after(() => {
+    afterEach(() => {
+      closeAllWindows();
+
       try {
         fs.unlinkSync(savePageCssPath);
         fs.unlinkSync(savePageJsPath);
         fs.unlinkSync(savePageHtmlPath);
         fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
         fs.rmdirSync(savePageDir);
-      } catch (e) {
-        // Ignore error
-      }
+      } catch {}
     });
-    afterEach(closeAllWindows);
 
-    it('should save page to disk', async () => {
+    it('should throw when passing relative paths', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'HTMLComplete')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'HTMLOnly')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'MHTML')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+    });
+
+    it('should save page to disk with HTMLOnly', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+      await w.webContents.savePage(savePageHtmlPath, 'HTMLOnly');
+
+      expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
+      expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
+    });
+
+    it('should save page to disk with MHTML', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+      await w.webContents.savePage(savePageHtmlPath, 'MHTML');
+
+      expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
+      expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
+    });
+
+    it('should save page to disk with HTMLComplete', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
       await w.webContents.savePage(savePageHtmlPath, 'HTMLComplete');
@@ -3368,6 +3517,29 @@ describe('BrowserWindow module', () => {
       const initialPosition = w.getPosition();
       w.maximize();
       w.unmaximize();
+      expectBoundsEqual(w.getPosition(), initialPosition);
+    });
+
+    // TODO(dsanders11): Enable once minimize event works on Linux again.
+    //                   See https://github.com/electron/electron/issues/28699
+    ifit(process.platform !== 'linux')('should not restore a minimized window', async () => {
+      const w = new BrowserWindow();
+      const minimize = emittedOnce(w, 'minimize');
+      w.minimize();
+      await minimize;
+      w.unmaximize();
+      await delay(1000);
+      expect(w.isMinimized()).to.be.true();
+    });
+
+    it('should not change the size or position of a normal window', async () => {
+      const w = new BrowserWindow();
+
+      const initialSize = w.getSize();
+      const initialPosition = w.getPosition();
+      w.unmaximize();
+      await delay(1000);
+      expectBoundsEqual(w.getSize(), initialSize);
       expectBoundsEqual(w.getPosition(), initialPosition);
     });
   });
@@ -3467,7 +3639,7 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
         expect(c.isVisible()).to.be.false('child is visible');
-        expect(c.getParentWindow().isVisible()).to.be.false('parent is visible');
+        expect(c.getParentWindow()!.isVisible()).to.be.false('parent is visible');
       });
     });
 
@@ -3667,6 +3839,18 @@ describe('BrowserWindow module', () => {
           const w = new BrowserWindow({ show: false, thickFrame: false });
           expect(w.resizable).to.be.false('resizable');
         }
+      });
+
+      // On Linux there is no "resizable" property of a window.
+      ifit(process.platform !== 'linux')('does affect maximizability when disabled and enabled', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.resizable).to.be.true('resizable');
+
+        expect(w.maximizable).to.be.true('maximizable');
+        w.resizable = false;
+        expect(w.maximizable).to.be.false('not maximizable');
+        w.resizable = true;
+        expect(w.maximizable).to.be.true('maximizable');
       });
 
       ifit(process.platform === 'win32')('works for a window smaller than 64x64', () => {
@@ -4127,8 +4311,6 @@ describe('BrowserWindow module', () => {
         const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
         w.setFullScreen(false);
         await leaveFullScreen;
-
-        w.close();
       });
 
       it('can be changed with setFullScreen method', async () => {
@@ -4525,9 +4707,9 @@ describe('BrowserWindow module', () => {
       w1.loadURL('about:blank');
       const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 });
       w2.loadURL('about:blank');
+      const w1Focused = emittedOnce(w1, 'focus');
       w1.webContents.focus();
-      // Give focus some time to switch to w1
-      await delay();
+      await w1Focused;
       expect(w1.webContents.isFocused()).to.be.true('focuses window');
     });
   });

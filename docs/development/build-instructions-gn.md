@@ -16,6 +16,19 @@ Check the build prerequisites for your platform before proceeding
 
 [Electron's Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. If you wish to set up the environment manually, the instructions are listed below.
 
+Electron uses [GN](https://gn.googlesource.com/gn) for project generation and
+[ninja](https://ninja-build.org/) for building. Project configurations can
+be found in the `.gn` and `.gni` files.
+
+## GN Files
+
+The following `gn` files contain the main rules for building Electron:
+
+* `BUILD.gn` defines how Electron itself is built and
+  includes the default configurations for linking with Chromium.
+* `build/args/{testing,release,all}.gn` contain the default build arguments for
+  building Electron.
+
 ## GN prerequisites
 
 You'll need to install [`depot_tools`][depot-tools], the toolset
@@ -65,8 +78,8 @@ origin URLs.
 $ cd src/electron
 $ git remote remove origin
 $ git remote add origin https://github.com/electron/electron
-$ git checkout master
-$ git branch --set-upstream-to=origin/master
+$ git checkout main
+$ git branch --set-upstream-to=origin/main
 $ cd -
 ```
 
@@ -85,45 +98,40 @@ $ gclient sync -f
 
 ## Building
 
+**Set the environment variable for chromium build tools**
+
+On Linux & MacOS
+
 ```sh
 $ cd src
 $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-$ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS"
 ```
 
-Or on Windows (without the optional argument):
+On Windows:
 
 ```sh
 $ cd src
 $ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
+```
+
+**To generate Testing build config of Electron:**
+
+```sh
 $ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\")"
 ```
 
-This will generate a build directory `out/Testing` under `src/` with
-the testing build configuration. You can replace `Testing` with another name,
-but it should be a subdirectory of `out`.
-Also you shouldn't have to run `gn gen` again—if you want to change the
-build arguments, you can run `gn args out/Testing` to bring up an editor.
-
-To see the list of available build configuration options, run `gn args
-out/Testing --list`.
-
-**For generating Testing build config of
-Electron:**
+**To generate Release build config of Electron:**
 
 ```sh
-$ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS"
+$ gn gen out/Release --args="import(\"//electron/build/args/release.gn\")"
 ```
 
-**For generating Release (aka "non-component" or "static") build config of
-Electron:**
+**Note:** This will generate a `out/Testing` or `out/Release` build directory under `src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
 
-```sh
-$ gn gen out/Release --args="import(\"//electron/build/args/release.gn\") $GN_EXTRA_ARGS"
-```
+Also you shouldn't have to run `gn gen` again—if you want to change the build arguments, you can run `gn args out/Testing` to bring up an editor. To see the list of available build configuration options, run `gn args out/Testing --list`.
 
 **To build, run `ninja` with the `electron` target:**
-Nota Bene: This will also take a while and probably heat up your lap.
+Note: This will also take a while and probably heat up your lap.
 
 For the testing configuration:
 
@@ -156,13 +164,13 @@ $ ./out/Testing/electron
 On linux, first strip the debugging and symbol information:
 
 ```sh
-electron/script/strip-binaries.py -d out/Release
+$ electron/script/strip-binaries.py -d out/Release
 ```
 
 To package the electron build as a distributable zip file:
 
 ```sh
-ninja -C out/Release electron:electron_dist_zip
+$ ninja -C out/Release electron:electron_dist_zip
 ```
 
 ### Cross-compiling

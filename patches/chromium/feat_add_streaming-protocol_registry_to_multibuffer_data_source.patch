@@ -13,10 +13,10 @@ other protocols to register their streaming behavior. MultibufferDataSource::Ass
 then refers to the list so that it can correctly determine the data source's settings.
 
 diff --git a/third_party/blink/public/platform/media/multi_buffer_data_source.h b/third_party/blink/public/platform/media/multi_buffer_data_source.h
-index 274308e54f2b5c6311d68daa162c146113ba669e..e450fe31011620d87219ce28ef37fb5eba7cc348 100644
+index fd2441add0c816c5031ed0e9321d2be7e0937161..c324d855b26f6dcb63d127d7ddafa509cb1074e4 100644
 --- a/third_party/blink/public/platform/media/multi_buffer_data_source.h
 +++ b/third_party/blink/public/platform/media/multi_buffer_data_source.h
-@@ -34,6 +34,8 @@ namespace blink {
+@@ -33,6 +33,8 @@ namespace blink {
  class BufferedDataSourceHost;
  class MultiBufferReader;
  
@@ -26,7 +26,7 @@ index 274308e54f2b5c6311d68daa162c146113ba669e..e450fe31011620d87219ce28ef37fb5e
  // in-memory sliding window.
  //
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index fa51f3f0c43a4b2e33fb8dc94bba18462903a051..e1ec6fe15613a55aa71b31d136a3c12b461cb784 100644
+index ba3e8d75ce49614e26dd77692166a11b614a5d9c..4c3170ecb94716ec2869c363381759cbf08f3ae6 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -10,8 +10,10 @@
@@ -35,14 +35,14 @@ index fa51f3f0c43a4b2e33fb8dc94bba18462903a051..e1ec6fe15613a55aa71b31d136a3c12b
  #include "base/location.h"
 +#include "base/no_destructor.h"
  #include "base/numerics/safe_conversions.h"
- #include "base/single_thread_task_runner.h"
+ #include "base/task/single_thread_task_runner.h"
 +#include "base/strings/string_util.h"
  #include "media/base/media_log.h"
  #include "net/base/net_errors.h"
  #include "third_party/blink/public/platform/media/buffered_data_source_host_impl.h"
 @@ -60,8 +62,20 @@ const int kUpdateBufferSizeFrequency = 32;
  // How long to we delay a seek after a read?
- constexpr base::TimeDelta kSeekDelay = base::TimeDelta::FromMilliseconds(20);
+ constexpr base::TimeDelta kSeekDelay = base::Milliseconds(20);
  
 +std::vector<std::string>* GetStreamingSchemes() {
 +  static base::NoDestructor<std::vector<std::string>> streaming_schemes({

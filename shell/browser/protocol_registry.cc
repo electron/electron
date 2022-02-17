@@ -47,7 +47,7 @@ void ProtocolRegistry::RegisterURLLoaderFactories(
 bool ProtocolRegistry::RegisterProtocol(ProtocolType type,
                                         const std::string& scheme,
                                         const ProtocolHandler& handler) {
-  return base::TryEmplace(handlers_, scheme, type, handler).second;
+  return handlers_.try_emplace(scheme, type, handler).second;
 }
 
 bool ProtocolRegistry::UnregisterProtocol(const std::string& scheme) {
@@ -61,7 +61,7 @@ bool ProtocolRegistry::IsProtocolRegistered(const std::string& scheme) {
 bool ProtocolRegistry::InterceptProtocol(ProtocolType type,
                                          const std::string& scheme,
                                          const ProtocolHandler& handler) {
-  return base::TryEmplace(intercept_handlers_, scheme, type, handler).second;
+  return intercept_handlers_.try_emplace(scheme, type, handler).second;
 }
 
 bool ProtocolRegistry::UninterceptProtocol(const std::string& scheme) {

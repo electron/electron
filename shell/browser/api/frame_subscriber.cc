@@ -12,6 +12,7 @@
 #include "media/capture/mojom/video_capture_buffer.mojom.h"
 #include "media/capture/mojom/video_capture_types.mojom.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom-shared.h"
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/skbitmap_operations.h"
@@ -49,11 +50,9 @@ void FrameSubscriber::AttachToHost(content::RenderWidgetHost* host) {
   video_capturer_->SetResolutionConstraints(size, size, true);
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
-  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB,
-                             gfx::ColorSpace::CreateREC709());
-  video_capturer_->SetMinCapturePeriod(base::TimeDelta::FromSeconds(1) /
-                                       kMaxFrameRate);
-  video_capturer_->Start(this);
+  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
+  video_capturer_->SetMinCapturePeriod(base::Seconds(1) / kMaxFrameRate);
+  video_capturer_->Start(this, viz::mojom::BufferFormatPreference::kDefault);
 }
 
 void FrameSubscriber::DetachFromHost() {
@@ -84,11 +83,13 @@ void FrameSubscriber::RenderViewHostChanged(content::RenderViewHost* old_host,
 }
 
 void FrameSubscriber::OnFrameCaptured(
-    base::ReadOnlySharedMemoryRegion data,
+    ::media::mojom::VideoBufferHandlePtr data,
     ::media::mojom::VideoFrameInfoPtr info,
     const gfx::Rect& content_rect,
     mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
         callbacks) {
+  auto& data_region = data->get_read_only_shmem_region();
+
   gfx::Size size = GetRenderViewSize();
   if (size != content_rect.size()) {
     video_capturer_->SetResolutionConstraints(size, size, true);
@@ -98,11 +99,11 @@ void FrameSubscriber::OnFrameCaptured(
 
   mojo::Remote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
       callbacks_remote(std::move(callbacks));
-  if (!data.IsValid()) {
+  if (!data_region.IsValid()) {
     callbacks_remote->Done();
     return;
   }
-  base::ReadOnlySharedMemoryMapping mapping = data.Map();
+  base::ReadOnlySharedMemoryMapping mapping = data_region.Map();
   if (!mapping.IsValid()) {
     DLOG(ERROR) << "Shared memory mapping failed.";
     return;

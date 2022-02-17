@@ -99,7 +99,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   OSCrypt::RegisterLocalPrefs(pref_registry.get());
 #endif
 
@@ -195,10 +195,6 @@ BrowserProcessImpl::system_network_context_manager() {
 }
 
 network::NetworkQualityTracker* BrowserProcessImpl::network_quality_tracker() {
-  return nullptr;
-}
-
-WatchDogThread* BrowserProcessImpl::watchdog_thread() {
   return nullptr;
 }
 

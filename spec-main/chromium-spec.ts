@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron/main';
+import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import * as https from 'https';
@@ -84,19 +84,15 @@ describe('window.postMessage', () => {
     await closeAllWindows();
   });
 
-  for (const nativeWindowOpen of [true, false]) {
-    describe(`when nativeWindowOpen: ${nativeWindowOpen}`, () => {
-      it('sets the source and origin correctly', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen, contextIsolation: false } });
-        w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
-        const [, message] = await emittedOnce(ipcMain, 'complete');
-        expect(message.data).to.equal('testing');
-        expect(message.origin).to.equal('file://');
-        expect(message.sourceEqualsOpener).to.equal(true);
-        expect(message.eventOrigin).to.equal('file://');
-      });
-    });
-  }
+  it('sets the source and origin correctly', async () => {
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
+    const [, message] = await emittedOnce(ipcMain, 'complete');
+    expect(message.data).to.equal('testing');
+    expect(message.origin).to.equal('file://');
+    expect(message.sourceEqualsOpener).to.equal(true);
+    expect(message.eventOrigin).to.equal('file://');
+  });
 });
 
 describe('focus handling', () => {
@@ -242,7 +238,8 @@ describe('web security', () => {
     await p;
   });
 
-  it('bypasses CORB when web security is disabled', async () => {
+  // TODO(codebytere): Re-enable after Chromium fixes upstream v8_scriptormodule_legacy_lifetime crash.
+  xit('bypasses CORB when web security is disabled', async () => {
     const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true, contextIsolation: false } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,
@@ -588,7 +585,6 @@ describe('chromium features', () => {
 
     it('should register for custom scheme', (done) => {
       const customSession = session.fromPartition('custom-scheme');
-      const { serviceWorkerScheme } = global as any;
       customSession.protocol.registerFileProtocol(serviceWorkerScheme, (request, callback) => {
         let file = url.parse(request.url).pathname!;
         if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
@@ -813,6 +809,17 @@ describe('chromium features', () => {
       expect(typeofProcessGlobal).to.equal('undefined');
     });
 
+    it('can disable node integration when it is enabled on the parent window', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript(`
+        { b = window.open('about:blank', '', 'nodeIntegration=no,show=no'); null }
+      `);
+      const [, contents] = await emittedOnce(app, 'web-contents-created');
+      const typeofProcessGlobal = await contents.executeJavaScript('typeof process');
+      expect(typeofProcessGlobal).to.equal('undefined');
+    });
+
     it('disables JavaScript when it is disabled on the parent window', async () => {
       const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
       w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
@@ -897,34 +904,6 @@ describe('chromium features', () => {
 
       expect(frameName).to.equal('__proto__');
     });
-
-    it('denies custom open when nativeWindowOpen: true', async () => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: false,
-          nodeIntegration: true,
-          nativeWindowOpen: true
-        }
-      });
-      w.loadURL('about:blank');
-
-      const previousListeners = process.listeners('uncaughtException');
-      process.removeAllListeners('uncaughtException');
-      try {
-        const uncaughtException = new Promise<Error>(resolve => {
-          process.once('uncaughtException', resolve);
-        });
-        expect(await w.webContents.executeJavaScript(`(${function () {
-          const { ipc } = process._linkedBinding('electron_renderer_ipc');
-          return ipc.sendSync(true, 'GUEST_WINDOW_MANAGER_WINDOW_OPEN', ['', '', '']);
-        }})()`)).to.be.null();
-        const exception = await uncaughtException;
-        expect(exception.message).to.match(/denied: expected native window\.open/);
-      } finally {
-        previousListeners.forEach(l => process.on('uncaughtException', l));
-      }
-    });
   });
 
   describe('window.opener', () => {
@@ -947,6 +926,7 @@ describe('chromium features', () => {
     afterEach(closeAllWindows);
     afterEach(() => {
       session.defaultSession.setPermissionCheckHandler(null);
+      session.defaultSession.setPermissionRequestHandler(null);
     });
 
     it('can return labels of enumerated devices', async () => {
@@ -996,6 +976,32 @@ describe('chromium features', () => {
       const [, secondDeviceIds] = await emittedOnce(ipcMain, 'deviceIds', () => w.webContents.reload());
       expect(firstDeviceIds).to.not.deep.equal(secondDeviceIds);
     });
+
+    it('provides a securityOrigin to the request handler', async () => {
+      session.defaultSession.setPermissionRequestHandler(
+        (wc, permission, callback, details) => {
+          if (details.securityOrigin !== undefined) {
+            callback(true);
+          } else {
+            callback(false);
+          }
+        }
+      );
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const labels = await w.webContents.executeJavaScript(`navigator.mediaDevices.getUserMedia({
+          video: {
+            mandatory: {
+              chromeMediaSource: "desktop",
+              minWidth: 1280,
+              maxWidth: 1280,
+              minHeight: 720,
+              maxHeight: 720
+            }
+          }
+        }).then((stream) => stream.getVideoTracks())`);
+      expect(labels.some((l: any) => l)).to.be.true();
+    });
   });
 
   describe('window.opener access', () => {
@@ -1008,31 +1014,21 @@ describe('chromium features', () => {
     const httpBlank = `${scheme}://origin1/blank`;
 
     const table = [
-      { parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false },
-      { parent: fileBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false },
-      { parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
-      { parent: fileBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false },
+      { parent: fileBlank, child: httpUrl1, nodeIntegration: false, openerAccessible: false },
+      { parent: fileBlank, child: httpUrl1, nodeIntegration: true, openerAccessible: false },
 
-      { parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false },
-      // {parent: httpBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
-      { parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
-      // {parent: httpBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false}, // can't window.open()
+      // {parent: httpBlank, child: fileUrl, nodeIntegration: false, openerAccessible: false}, // can't window.open()
+      // {parent: httpBlank, child: fileUrl, nodeIntegration: true, openerAccessible: false}, // can't window.open()
 
       // NB. this is different from Chrome's behavior, which isolates file: urls from each other
-      { parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true },
-      { parent: fileBlank, child: fileUrl, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true },
-      { parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
-      { parent: fileBlank, child: fileUrl, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true },
+      { parent: fileBlank, child: fileUrl, nodeIntegration: false, openerAccessible: true },
+      { parent: fileBlank, child: fileUrl, nodeIntegration: true, openerAccessible: true },
 
-      { parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: true },
-      { parent: httpBlank, child: httpUrl1, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: true },
-      { parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
-      { parent: httpBlank, child: httpUrl1, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: true },
+      { parent: httpBlank, child: httpUrl1, nodeIntegration: false, openerAccessible: true },
+      { parent: httpBlank, child: httpUrl1, nodeIntegration: true, openerAccessible: true },
 
-      { parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: false, openerAccessible: false },
-      { parent: httpBlank, child: httpUrl2, nodeIntegration: false, nativeWindowOpen: true, openerAccessible: false },
-      { parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: false, openerAccessible: true },
-      { parent: httpBlank, child: httpUrl2, nodeIntegration: true, nativeWindowOpen: true, openerAccessible: false }
+      { parent: httpBlank, child: httpUrl2, nodeIntegration: false, openerAccessible: false },
+      { parent: httpBlank, child: httpUrl2, nodeIntegration: true, openerAccessible: false }
     ];
     const s = (url: string) => url.startsWith('file') ? 'file://...' : url;
 
@@ -1051,11 +1047,11 @@ describe('chromium features', () => {
     afterEach(closeAllWindows);
 
     describe('when opened from main window', () => {
-      for (const { parent, child, nodeIntegration, nativeWindowOpen, openerAccessible } of table) {
+      for (const { parent, child, nodeIntegration, openerAccessible } of table) {
         for (const sandboxPopup of [false, true]) {
-          const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
+          const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
-            const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, nativeWindowOpen, contextIsolation: false } });
+            const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, contextIsolation: false } });
             w.webContents.setWindowOpenHandler(() => ({
               action: 'allow',
               overrideBrowserWindowOptions: {
@@ -1082,11 +1078,9 @@ describe('chromium features', () => {
     });
 
     describe('when opened from <webview>', () => {
-      for (const { parent, child, nodeIntegration, nativeWindowOpen, openerAccessible } of table) {
-        const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} nativeWindowOpen=${nativeWindowOpen}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
-        // WebView erroneously allows access to the parent window when nativeWindowOpen is false.
-        const skip = !nativeWindowOpen && !openerAccessible;
-        ifit(!skip)(description, async () => {
+      for (const { parent, child, nodeIntegration, openerAccessible } of table) {
+        const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
+        it(description, async () => {
           // This test involves three contexts:
           //  1. The root BrowserWindow in which the test is run,
           //  2. A <webview> belonging to the root window,
@@ -1094,7 +1088,7 @@ describe('chromium features', () => {
           // We are testing whether context (3) can access context (2) under various conditions.
 
           // This is context (1), the base window for the test.
-          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false, nativeWindowOpen: false } });
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
           await w.loadURL('about:blank');
 
           const parentCode = `new Promise((resolve) => {
@@ -1108,7 +1102,7 @@ describe('chromium features', () => {
             // This is context (2), a WebView which will call window.open()
             const webview = new WebView()
             webview.setAttribute('nodeintegration', '${nodeIntegration ? 'on' : 'off'}')
-            webview.setAttribute('webpreferences', 'nativeWindowOpen=${nativeWindowOpen ? 'yes' : 'no'},contextIsolation=no')
+            webview.setAttribute('webpreferences', 'contextIsolation=no')
             webview.setAttribute('allowpopups', 'on')
             webview.src = ${JSON.stringify(parent + '?p=' + encodeURIComponent(child))}
             webview.addEventListener('dom-ready', async () => {
@@ -1255,7 +1249,6 @@ describe('chromium features', () => {
     });
 
     describe('enableWebSQL webpreference', () => {
-      const standardScheme = (global as any).standardScheme;
       const origin = `${standardScheme}://fake-host`;
       const filePath = path.join(fixturesPath, 'pages', 'storage', 'web_sql.html');
       const sqlPartition = 'web-sql-preference-test';
@@ -1876,5 +1869,129 @@ describe('navigator.bluetooth', () => {
     const bluetooth = await w.webContents.executeJavaScript(`
     navigator.bluetooth.requestDevice({ acceptAllDevices: true}).then(device => "Found a device!").catch(err => err.message);`, true);
     expect(bluetooth).to.be.oneOf(['Found a device!', 'Bluetooth adapter not available.', 'User cancelled the requestDevice() chooser.']);
+  });
+});
+
+describe('navigator.hid', () => {
+  let w: BrowserWindow;
+  let server: http.Server;
+  let serverUrl: string;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<body>');
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    serverUrl = `http://localhost:${(server.address() as any).port}`;
+  });
+
+  const getDevices: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.hid.requestDevice({filters: []}).then(device => device.toString()).catch(err => err.toString());
+    `, true);
+  };
+
+  after(() => {
+    server.close();
+    closeAllWindows();
+  });
+  afterEach(() => {
+    session.defaultSession.setPermissionCheckHandler(null);
+    session.defaultSession.setDevicePermissionHandler(null);
+    session.defaultSession.removeAllListeners('select-hid-device');
+  });
+
+  it('does not return a device if select-hid-device event is not defined', async () => {
+    w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const device = await getDevices();
+    expect(device).to.equal('');
+  });
+
+  it('does not return a device when permission denied', async () => {
+    let selectFired = false;
+    w.webContents.session.on('select-hid-device', (event, details, callback) => {
+      selectFired = true;
+      callback();
+    });
+    session.defaultSession.setPermissionCheckHandler(() => false);
+    const device = await getDevices();
+    expect(selectFired).to.be.false();
+    expect(device).to.equal('');
+  });
+
+  it('returns a device when select-hid-device event is defined', async () => {
+    let haveDevices = false;
+    let selectFired = false;
+    w.webContents.session.on('select-hid-device', (event, details, callback) => {
+      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
+      selectFired = true;
+      if (details.deviceList.length > 0) {
+        haveDevices = true;
+        callback(details.deviceList[0].deviceId);
+      } else {
+        callback();
+      }
+    });
+    const device = await getDevices();
+    expect(selectFired).to.be.true();
+    if (haveDevices) {
+      expect(device).to.contain('[object HIDDevice]');
+    } else {
+      expect(device).to.equal('');
+    }
+    if (process.arch === 'arm64' || process.arch === 'arm') {
+      // arm CI returns HID devices - this block may need to change if CI hardware changes.
+      expect(haveDevices).to.be.true();
+      // Verify that navigation will clear device permissions
+      const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
+      expect(grantedDevices).to.not.be.empty();
+      w.loadURL(serverUrl);
+      const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
+      const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+      expect(frame).to.not.be.empty();
+      if (frame) {
+        const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.hid.getDevices()');
+        expect(grantedDevicesOnNewPage).to.be.empty();
+      }
+    }
+  });
+
+  it('returns a device when DevicePermissionHandler is defined', async () => {
+    let haveDevices = false;
+    let selectFired = false;
+    let gotDevicePerms = false;
+    w.webContents.session.on('select-hid-device', (event, details, callback) => {
+      selectFired = true;
+      if (details.deviceList.length > 0) {
+        const foundDevice = details.deviceList.find((device) => {
+          if (device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '') {
+            haveDevices = true;
+            return true;
+          }
+        });
+        if (foundDevice) {
+          callback(foundDevice.deviceId);
+          return;
+        }
+      }
+      callback();
+    });
+    session.defaultSession.setDevicePermissionHandler(() => {
+      gotDevicePerms = true;
+      return true;
+    });
+    await w.webContents.executeJavaScript('navigator.hid.getDevices();', true);
+    const device = await getDevices();
+    expect(selectFired).to.be.true();
+    if (haveDevices) {
+      expect(device).to.contain('[object HIDDevice]');
+      expect(gotDevicePerms).to.be.true();
+    } else {
+      expect(device).to.equal('');
+    }
   });
 });

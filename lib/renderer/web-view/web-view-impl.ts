@@ -25,7 +25,6 @@ export class WebViewImpl {
   public hasFocus = false
   public internalInstanceId?: number;
   public resizeObserver?: ResizeObserver;
-  public userAgentOverride?: string;
   public viewInstanceId: number
 
   // on* Event handlers.
@@ -180,8 +179,7 @@ export class WebViewImpl {
 
   buildParams () {
     const params: Record<string, any> = {
-      instanceId: this.viewInstanceId,
-      userAgentOverride: this.userAgentOverride
+      instanceId: this.viewInstanceId
     };
 
     for (const [attributeName, attribute] of this.attributes) {
@@ -193,7 +191,7 @@ export class WebViewImpl {
 
   attachGuestInstance (guestInstanceId: number) {
     if (guestInstanceId === -1) {
-      this.dispatchEvent('destroyed');
+      // Do nothing
       return;
     }
 

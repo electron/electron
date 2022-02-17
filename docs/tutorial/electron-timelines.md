@@ -7,7 +7,7 @@ Special notes:
 * All dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.
 * Take a look at the [5.0.0 Timeline blog post](https://electronjs.org/blog/electron-5-0-timeline) for info about publicizing our release dates.
 * Since Electron 6.0, we've been targeting every other Chromium version and releasing our stable on the same day as Chrome stable. You can reference Chromium's release schedule [here](https://chromiumdash.appspot.com/schedule). See [Electron's new release cadence blog post](https://www.electronjs.org/blog/12-week-cadence) for more details on our release schedule.
-* Electron 15.0 only will include a special Alpha release. Starting in Electron 16.0, we will release on an 8-week cadence. See [Electron's new 8-week cadence blog post](https://www.electronjs.org/blog/8-week-cadence) for more details.
+* Starting in Electron 16.0, we will release on an 8-week cadence. See [Electron's new 8-week cadence blog post](https://www.electronjs.org/blog/8-week-cadence) for more details.
 
 | Electron | Alpha | Beta | Stable | Chrome | Node |
 | ------- | ----- | ------- | ------ | ------ | ---- |
@@ -23,5 +23,8 @@ Special notes:
 | 11.0.0 | -- | 2020-Aug-27 | 2020-Nov-17 | M87 | v12.18 |
 | 12.0.0 | -- | 2020-Nov-19 | 2021-Mar-02 | M89 | v14.16 |
 | 13.0.0 | -- | 2021-Mar-04 | 2021-May-25 | M91 | v14.16 |
-| 14.0.0 | -- | 2021-May-27 | 2021-Aug-31 | M93 | TBD |
-| 15.0.0 | 2021-Jul-20 | 2021-Sep-01 | 2021-Sep-21 | M94 | TBD |
+| 14.0.0 | -- | 2021-May-27 | 2021-Aug-31 | M93 | v14.17 |
+| 15.0.0 | 2021-Jul-20 | 2021-Sep-01 | 2021-Sep-21 | M94 | v16.5 |
+| 16.0.0 | 2021-Sep-23 | 2021-Oct-20 | 2021-Nov-16 | M96 | v16.9 |
+| 17.0.0 | 2021-Nov-18 | 2022-Jan-06 | 2022-Feb-01 | M98 | v16.13 |
+| 18.0.0 | 2022-Feb-03 | 2022-Mar-03 | 2022-Mar-29 | M100 | TBD |

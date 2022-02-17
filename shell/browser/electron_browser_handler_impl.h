@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
-#define SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
 
 #include <string>
 #include <vector>
 
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -24,10 +23,16 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
  public:
   explicit ElectronBrowserHandlerImpl(
       content::RenderFrameHost* render_frame_host,
-      mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
+      mojo::PendingAssociatedReceiver<mojom::ElectronBrowser> receiver);
 
-  static void Create(content::RenderFrameHost* frame_host,
-                     mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
+  static void Create(
+      content::RenderFrameHost* frame_host,
+      mojo::PendingAssociatedReceiver<mojom::ElectronBrowser> receiver);
+
+  // disable copy
+  ElectronBrowserHandlerImpl(const ElectronBrowserHandlerImpl&) = delete;
+  ElectronBrowserHandlerImpl& operator=(const ElectronBrowserHandlerImpl&) =
+      delete;
 
   // mojom::ElectronBrowser:
   void Message(bool internal,
@@ -71,11 +76,9 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
   const int render_process_id_;
   const int render_frame_id_;
 
-  mojo::Receiver<mojom::ElectronBrowser> receiver_{this};
+  mojo::AssociatedReceiver<mojom::ElectronBrowser> receiver_{this};
 
   base::WeakPtrFactory<ElectronBrowserHandlerImpl> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserHandlerImpl);
 };
 }  // namespace electron
-#endif  // SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_

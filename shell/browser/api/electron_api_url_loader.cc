@@ -40,7 +40,7 @@ struct Converter<network::mojom::HttpRawHeaderPairPtr> {
       v8::Isolate* isolate,
       const network::mojom::HttpRawHeaderPairPtr& pair) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-    dict.Set("key", base::ToLowerASCII(pair->key));
+    dict.Set("key", pair->key);
     dict.Set("value", pair->value);
     return dict.GetHandle();
   }
@@ -361,10 +361,12 @@ void SimpleURLLoaderWrapper::OnSSLCertificateError(
   std::move(response).Run(net_error);
 }
 
-void SimpleURLLoaderWrapper::OnClearSiteData(const GURL& url,
-                                             const std::string& header_value,
-                                             int32_t load_flags,
-                                             OnClearSiteDataCallback callback) {
+void SimpleURLLoaderWrapper::OnClearSiteData(
+    const GURL& url,
+    const std::string& header_value,
+    int32_t load_flags,
+    const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+    OnClearSiteDataCallback callback) {
   std::move(callback).Run();
 }
 void SimpleURLLoaderWrapper::OnLoadingStateUpdate(

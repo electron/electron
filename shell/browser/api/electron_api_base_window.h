@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
-#define SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 
 #include <map>
 #include <memory>
@@ -86,7 +86,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                             const base::DictionaryValue& details) override;
   void OnNewWindowForTab() override;
   void OnSystemContextMenu(int x, int y, bool* prevent_default) override;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
 #endif
 
@@ -193,7 +193,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   std::string GetAlwaysOnTopLevel();
   void SetWindowButtonVisibility(bool visible);
   bool GetWindowButtonVisibility() const;
@@ -234,7 +234,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                    v8::Local<v8::Value> icon,
                    NativeImage::OnConvertError on_error);
 #endif
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,
                                        v8::Local<v8::Value>)>
       MessageCallback;
@@ -264,7 +264,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                        weak_factory_.GetWeakPtr(), eventName));
   }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;
   MessageCallbackMap messages_callback_map_;
 #endif
@@ -287,4 +287,4 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_

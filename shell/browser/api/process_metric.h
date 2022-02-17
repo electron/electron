@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_PROCESS_METRIC_H_
-#define SHELL_BROWSER_API_PROCESS_METRIC_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_PROCESS_METRIC_H_
+#define ELECTRON_SHELL_BROWSER_API_PROCESS_METRIC_H_
 
 #include <memory>
 #include <string>
@@ -14,17 +14,17 @@
 
 namespace electron {
 
-#if !defined(OS_LINUX)
+#if !BUILDFLAG(IS_LINUX)
 struct ProcessMemoryInfo {
   size_t working_set_size = 0;
   size_t peak_working_set_size = 0;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   size_t private_bytes = 0;
 #endif
 };
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 enum class ProcessIntegrityLevel {
   kUnknown,
   kUntrusted,
@@ -48,18 +48,18 @@ struct ProcessMetric {
                 const std::string& name = std::string());
   ~ProcessMetric();
 
-#if !defined(OS_LINUX)
+#if !BUILDFLAG(IS_LINUX)
   ProcessMemoryInfo GetMemoryInfo() const;
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   ProcessIntegrityLevel GetIntegrityLevel() const;
   static bool IsSandboxed(ProcessIntegrityLevel integrity_level);
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
   bool IsSandboxed() const;
 #endif
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_PROCESS_METRIC_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_PROCESS_METRIC_H_

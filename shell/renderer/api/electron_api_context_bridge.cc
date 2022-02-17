@@ -279,12 +279,12 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
         std::move(global_catch_source_context),
         std::move(global_catch_destination_context));
 
-    ignore_result(source_promise->Then(
+    std::ignore = source_promise->Then(
         source_context,
-        gin::ConvertToV8(destination_context->GetIsolate(), then_cb)
+        gin::ConvertToV8(destination_context->GetIsolate(), std::move(then_cb))
             .As<v8::Function>(),
-        gin::ConvertToV8(destination_context->GetIsolate(), catch_cb)
-            .As<v8::Function>()));
+        gin::ConvertToV8(destination_context->GetIsolate(), std::move(catch_cb))
+            .As<v8::Function>());
 
     object_cache->CacheProxiedObject(value, proxied_promise_handle);
     return v8::MaybeLocal<v8::Value>(proxied_promise_handle);
@@ -537,8 +537,8 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             }
 
             v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
-            ignore_result(proxy.GetHandle()->DefineProperty(
-                destination_context, key.As<v8::Name>(), desc));
+            std::ignore = proxy.GetHandle()->DefineProperty(
+                destination_context, key.As<v8::Name>(), desc);
           }
           continue;
         }

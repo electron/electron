@@ -403,7 +403,7 @@ void Browser::DockHide() {
   // immediately after DockShow. After some experiments, 1 second seems to be
   // a proper interval.
   if (!last_dock_show_.is_null() &&
-      base::Time::Now() - last_dock_show_ < base::TimeDelta::FromSeconds(1)) {
+      base::Time::Now() - last_dock_show_ < base::Seconds(1)) {
     return;
   }
 
@@ -499,7 +499,7 @@ void Browser::ShowAboutPanel() {
 }
 
 void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
-  about_panel_options_.Clear();
+  about_panel_options_.DictClear();
 
   for (const auto pair : options.DictItems()) {
     std::string key = std::string(pair.first);

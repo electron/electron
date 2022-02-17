@@ -36,10 +36,10 @@ Returns:
 * `launchInfo` Record<string, any> | [NotificationResponse](structures/notification-response.md) _macOS_
 
 Emitted once, when Electron has finished initializing. On macOS, `launchInfo`
-holds the `userInfo` of the `NSUserNotification` or information from
-[`UNNotificationResponse`](structures/notification-response.md) that was used to open the
-application, if it was launched from Notification Center. You can also call
-`app.isReady()` to check if this event has already fired and `app.whenReady()`
+holds the `userInfo` of the [`NSUserNotification`](https://developer.apple.com/documentation/foundation/nsusernotification)
+or information from [`UNNotificationResponse`](https://developer.apple.com/documentation/usernotifications/unnotificationresponse)
+that was used to open the application, if it was launched from Notification Center.
+You can also call `app.isReady()` to check if this event has already fired and `app.whenReady()`
 to get a Promise that is fulfilled when Electron is initialized.
 
 ### Event: 'window-all-closed'
@@ -103,7 +103,7 @@ to a shutdown/restart of the system or a user logout.
 Returns:
 
 * `event` Event
-* `path` String
+* `path` string
 
 Emitted when the user wants to open a file with the application. The `open-file`
 event is usually emitted when the application is already open and the OS wants
@@ -122,7 +122,7 @@ filepath.
 Returns:
 
 * `event` Event
-* `url` String
+* `url` string
 
 Emitted when the user wants to open a URL with the application. Your application's
 `Info.plist` file must define the URL scheme within the `CFBundleURLTypes` key, and
@@ -135,7 +135,7 @@ You should call `event.preventDefault()` if you want to handle this event.
 Returns:
 
 * `event` Event
-* `hasVisibleWindows` Boolean
+* `hasVisibleWindows` boolean
 
 Emitted when the application is activated. Various actions can trigger
 this event, such as launching the application for the first time, attempting
@@ -157,12 +157,12 @@ when Dock icon is clicked or application is re-launched.
 Returns:
 
 * `event` Event
-* `type` String - A string identifying the activity. Maps to
+* `type` string - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` unknown - Contains app-specific state stored by the activity on
   another device.
 * `details` Object
-  * `webpageURL` String (optional) - A string identifying the URL of the webpage accessed by the activity on another device, if available.
+  * `webpageURL` string (optional) - A string identifying the URL of the webpage accessed by the activity on another device, if available.
 
 Emitted during [Handoff][handoff] when an activity from a different device wants
 to be resumed. You should call `event.preventDefault()` if you want to handle
@@ -178,7 +178,7 @@ Supported activity types are specified in the app's `Info.plist` under the
 Returns:
 
 * `event` Event
-* `type` String - A string identifying the activity. Maps to
+* `type` string - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 
 Emitted during [Handoff][handoff] before an activity from a different device wants
@@ -190,9 +190,9 @@ this event.
 Returns:
 
 * `event` Event
-* `type` String - A string identifying the activity. Maps to
+* `type` string - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
-* `error` String - A string with the error's localized description.
+* `error` string - A string with the error's localized description.
 
 Emitted during [Handoff][handoff] when an activity from a different device
 fails to be resumed.
@@ -202,7 +202,7 @@ fails to be resumed.
 Returns:
 
 * `event` Event
-* `type` String - A string identifying the activity. Maps to
+* `type` string - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` unknown - Contains app-specific state stored by the activity.
 
@@ -214,7 +214,7 @@ resumed on another one.
 Returns:
 
 * `event` Event
-* `type` String - A string identifying the activity. Maps to
+* `type` string - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` unknown - Contains app-specific state stored by the activity.
 
@@ -272,11 +272,12 @@ Returns:
 
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
-* `url` String
-* `error` String - The error code
+* `url` string
+* `error` string - The error code
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
-  * `isTrusted` Boolean - Whether to consider the certificate as trusted
+  * `isTrusted` boolean - Whether to consider the certificate as trusted
+* `isMainFrame` boolean
 
 Emitted when failed to verify the `certificate` for `url`, to trust the
 certificate you should prevent the default behavior with
@@ -332,14 +333,14 @@ Returns:
 * `authenticationResponseDetails` Object
   * `url` URL
 * `authInfo` Object
-  * `isProxy` Boolean
-  * `scheme` String
-  * `host` String
+  * `isProxy` boolean
+  * `scheme` string
+  * `host` string
   * `port` Integer
-  * `realm` String
+  * `realm` string
 * `callback` Function
-  * `username` String (optional)
-  * `password` String (optional)
+  * `username` string (optional)
+  * `password` string (optional)
 
 Emitted when `webContents` wants to do basic auth.
 
@@ -369,7 +370,7 @@ Emitted whenever there is a GPU info update.
 Returns:
 
 * `event` Event
-* `killed` Boolean
+* `killed` boolean
 
 Emitted when the GPU process crashes or is killed.
 
@@ -384,7 +385,7 @@ Returns:
 
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
-* `killed` Boolean
+* `killed` boolean
 
 Emitted when the renderer process of `webContents` crashes or is killed.
 
@@ -400,7 +401,7 @@ Returns:
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
 * `details` Object
-  * `reason` String - The reason the render process is gone.  Possible values:
+  * `reason` string - The reason the render process is gone.  Possible values:
     * `clean-exit` - Process exited with an exit code of zero
     * `abnormal-exit` - Process exited with a non-zero exit code
     * `killed` - Process was sent a SIGTERM or otherwise killed externally
@@ -421,7 +422,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `type` String - Process type. One of the following values:
+  * `type` string - Process type. One of the following values:
     * `Utility`
     * `Zygote`
     * `Sandbox helper`
@@ -429,7 +430,7 @@ Returns:
     * `Pepper Plugin`
     * `Pepper Plugin Broker`
     * `Unknown`
-  * `reason` String - The reason the child process is gone. Possible values:
+  * `reason` string - The reason the child process is gone. Possible values:
     * `clean-exit` - Process exited with an exit code of zero
     * `abnormal-exit` - Process exited with a non-zero exit code
     * `killed` - Process was sent a SIGTERM or otherwise killed externally
@@ -437,10 +438,10 @@ Returns:
     * `oom` - Process ran out of memory
     * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
-  * `exitCode` Number - The exit code for the process
+  * `exitCode` number - The exit code for the process
       (e.g. status from waitpid if on posix, from GetExitCodeProcess on Windows).
-  * `serviceName` String (optional) - The non-localized name of the process.
-  * `name` String (optional) - The name of the process.
+  * `serviceName` string (optional) - The non-localized name of the process.
+  * `name` string (optional) - The name of the process.
     Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
 
 Emitted when the child process unexpectedly disappears. This is normally
@@ -451,7 +452,7 @@ because it was crashed or killed. It does not include renderer processes.
 Returns:
 
 * `event` Event
-* `accessibilitySupportEnabled` Boolean - `true` when Chrome's accessibility
+* `accessibilitySupportEnabled` boolean - `true` when Chrome's accessibility
   support is enabled, `false` otherwise.
 
 Emitted when Chrome's accessibility support changes. This event fires when
@@ -480,8 +481,10 @@ app.on('session-created', (session) => {
 Returns:
 
 * `event` Event
-* `argv` String[] - An array of the second instance's command line arguments
-* `workingDirectory` String - The second instance's working directory
+* `argv` string[] - An array of the second instance's command line arguments
+* `workingDirectory` string - The second instance's working directory
+* `additionalData` unknown - A JSON object of additional data passed from the second instance
+* `ackCallback` unknown - A function that can be used to send data back to the second instance
 
 This event will be emitted inside the primary instance of your application
 when a second instance has been executed and calls `app.requestSingleInstanceLock()`.
@@ -493,21 +496,34 @@ non-minimized.
 
 **Note:** If the second instance is started by a different user than the first, the `argv` array will not include the arguments.
 
+**Note:** `ackCallback` allows the user to send data back to the
+second instance during the `app.requestSingleInstanceLock()` flow.
+This callback can be used for cases where the second instance
+needs to obtain additional information from the first instance
+before quitting.
+
+Currently, the limit on the message size is kMaxMessageLength,
+or around 32kB. To be safe, keep the amount of data passed to 31kB at most.
+
+In order to call the callback, `event.preventDefault()` must be called, first.
+If the callback is not called in either case, `null` will be sent back.
+If `event.preventDefault()` is not called, but `ackCallback` is called
+by the user in the event, then the behaviour is undefined.
+
 This event is guaranteed to be emitted after the `ready` event of `app`
 gets emitted.
 
 **Note:** Extra command line arguments might be added by Chromium,
 such as `--original-process-start-time`.
 
-### Event: 'desktop-capturer-get-sources'
+### Event: 'first-instance-ack'
 
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](web-contents.md)
+* `additionalData` unknown - A JSON object of additional data passed from the first instance, in response to the first instance's `second-instance` event.
 
-Emitted when `desktopCapturer.getSources()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will make it return empty sources.
+This event will be emitted within the second instance during the call to `app.requestSingleInstanceLock()`, when the first instance calls the `ackCallback` provided by the `second-instance` event handler.
 
 ## Methods
 
@@ -538,8 +554,8 @@ and `will-quit` events will not be emitted.
 ### `app.relaunch([options])`
 
 * `options` Object (optional)
-  * `args` String[] (optional)
-  * `execPath` String (optional)
+  * `args` string[] (optional)
+  * `execPath` string (optional)
 
 Relaunches the app when current instance exits.
 
@@ -566,7 +582,7 @@ app.exit(0)
 
 ### `app.isReady()`
 
-Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
+Returns `boolean` - `true` if Electron has finished initializing, `false` otherwise.
 See also `app.whenReady()`.
 
 ### `app.whenReady()`
@@ -578,7 +594,7 @@ and subscribing to the `ready` event if the app is not ready yet.
 ### `app.focus([options])`
 
 * `options` Object (optional)
-  * `steal` Boolean _macOS_ - Make the receiver the active app even if another app is
+  * `steal` boolean _macOS_ - Make the receiver the active app even if another app is
   currently active.
 
 On Linux, focuses on the first visible window. On macOS, makes the application
@@ -597,7 +613,7 @@ them.
 
 ### `app.setAppLogsPath([path])`
 
-* `path` String (optional) - A custom path for your logs. Must be absolute.
+* `path` string (optional) - A custom path for your logs. Must be absolute.
 
 Sets or creates a directory your app's logs which can then be manipulated with `app.getPath()` or `app.setPath(pathName, newPath)`.
 
@@ -605,11 +621,11 @@ Calling `app.setAppLogsPath()` without a `path` parameter will result in this di
 
 ### `app.getAppPath()`
 
-Returns `String` - The current application directory.
+Returns `string` - The current application directory.
 
 ### `app.getPath(name)`
 
-* `name` String - You can request the following paths by the name:
+* `name` string - You can request the following paths by the name:
   * `home` User's home directory.
   * `appData` Per-user application data directory, which by default points to:
     * `%APPDATA%` on Windows
@@ -631,16 +647,16 @@ Returns `String` - The current application directory.
   * `logs` Directory for your app's log folder.
   * `crashDumps` Directory where crash dumps are stored.
 
-Returns `String` - A path to a special directory or file associated with `name`. On
+Returns `string` - A path to a special directory or file associated with `name`. On
 failure, an `Error` is thrown.
 
 If `app.getPath('logs')` is called without called `app.setAppLogsPath()` being called first, a default log directory will be created equivalent to calling `app.setAppLogsPath()` without a `path` parameter.
 
 ### `app.getFileIcon(path[, options])`
 
-* `path` String
+* `path` string
 * `options` Object (optional)
-  * `size` String
+  * `size` string
     * `small` - 16x16
     * `normal` - 32x32
     * `large` - 48x48 on _Linux_, 32x32 on _Windows_, unsupported on _macOS_.
@@ -658,8 +674,8 @@ On _Linux_ and _macOS_, icons depend on the application associated with file mim
 
 ### `app.setPath(name, path)`
 
-* `name` String
-* `path` String
+* `name` string
+* `path` string
 
 Overrides the `path` to a special directory or file associated with `name`.
 If the path specifies a directory that does not exist, an `Error` is thrown.
@@ -673,13 +689,13 @@ directory. If you want to change this location, you have to override the
 
 ### `app.getVersion()`
 
-Returns `String` - The version of the loaded application. If no version is found in the
+Returns `string` - The version of the loaded application. If no version is found in the
 application's `package.json` file, the version of the current bundle or
 executable is returned.
 
 ### `app.getName()`
 
-Returns `String` - The current application's name, which is the name in the application's
+Returns `string` - The current application's name, which is the name in the application's
 `package.json` file.
 
 Usually the `name` field of `package.json` is a short lowercase name, according
@@ -689,7 +705,7 @@ preferred over `name` by Electron.
 
 ### `app.setName(name)`
 
-* `name` String
+* `name` string
 
 Overrides the current application's name.
 
@@ -697,7 +713,7 @@ Overrides the current application's name.
 
 ### `app.getLocale()`
 
-Returns `String` - The current application locale, fetched using Chromium's `l10n_util` library.
+Returns `string` - The current application locale, fetched using Chromium's `l10n_util` library.
 Possible return values are documented [here](https://source.chromium.org/chromium/chromium/src/+/master:ui/base/l10n/l10n_util.cc).
 
 To set the locale, you'll want to use a command line switch at app startup, which may be found [here](command-line-switches.md).
@@ -709,13 +725,13 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 
 ### `app.getLocaleCountryCode()`
 
-Returns `String` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
+Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
 
 **Note:** When unable to detect locale country code, it returns empty string.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
-* `path` String
+* `path` string
 
 Adds `path` to the recent documents list.
 
@@ -728,15 +744,15 @@ Clears the recent documents list.
 
 ### `app.setAsDefaultProtocolClient(protocol[, path, args])`
 
-* `protocol` String - The name of your protocol, without `://`. For example,
+* `protocol` string - The name of your protocol, without `://`. For example,
   if you want your app to handle `electron://` links, call this method with
   `electron` as the parameter.
-* `path` String (optional) _Windows_ - The path to the Electron executable.
+* `path` string (optional) _Windows_ - The path to the Electron executable.
   Defaults to `process.execPath`
-* `args` String[] (optional) _Windows_ - Arguments passed to the executable.
+* `args` string[] (optional) _Windows_ - Arguments passed to the executable.
   Defaults to an empty array
 
-Returns `Boolean` - Whether the call succeeded.
+Returns `boolean` - Whether the call succeeded.
 
 Sets the current executable as the default handler for a protocol (aka URI
 scheme). It allows you to integrate your app deeper into the operating system.
@@ -759,22 +775,22 @@ The API uses the Windows Registry and `LSSetDefaultHandlerForURLScheme` internal
 
 ### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
-* `protocol` String - The name of your protocol, without `://`.
-* `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` String[] (optional) _Windows_ - Defaults to an empty array
+* `protocol` string - The name of your protocol, without `://`.
+* `path` string (optional) _Windows_ - Defaults to `process.execPath`
+* `args` string[] (optional) _Windows_ - Defaults to an empty array
 
-Returns `Boolean` - Whether the call succeeded.
+Returns `boolean` - Whether the call succeeded.
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
 ### `app.isDefaultProtocolClient(protocol[, path, args])`
 
-* `protocol` String - The name of your protocol, without `://`.
-* `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` String[] (optional) _Windows_ - Defaults to an empty array
+* `protocol` string - The name of your protocol, without `://`.
+* `path` string (optional) _Windows_ - Defaults to `process.execPath`
+* `args` string[] (optional) _Windows_ - Defaults to an empty array
 
-Returns `Boolean` - Whether the current executable is the default handler for a
+Returns `boolean` - Whether the current executable is the default handler for a
 protocol (aka URI scheme).
 
 **Note:** On macOS, you can use this method to check if the app has been
@@ -787,11 +803,11 @@ The API uses the Windows Registry and `LSCopyDefaultHandlerForURLScheme` interna
 
 ### `app.getApplicationNameForProtocol(url)`
 
-* `url` String - a URL with the protocol name to check. Unlike the other
+* `url` string - a URL with the protocol name to check. Unlike the other
   methods in this family, this accepts an entire URL, including `://` at a
   minimum (e.g. `https://`).
 
-Returns `String` - Name of the application handling the protocol, or an empty
+Returns `string` - Name of the application handling the protocol, or an empty
   string if there is no handler. For instance, if Electron is the default
   handler of the URL, this could be `Electron` on Windows and Mac. However,
   don't rely on the precise format which is not guaranteed to remain unchanged.
@@ -802,15 +818,15 @@ This method returns the application name of the default handler for the protocol
 
 ### `app.getApplicationInfoForProtocol(url)` _macOS_ _Windows_
 
-* `url` String - a URL with the protocol name to check. Unlike the other
+* `url` string - a URL with the protocol name to check. Unlike the other
   methods in this family, this accepts an entire URL, including `://` at a
   minimum (e.g. `https://`).
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
 
 * `icon` NativeImage - the display icon of the app handling the protocol.
-* `path` String  - installation path of the app handling the protocol.
-* `name` String - display name of the app handling the protocol.
+* `path` string  - installation path of the app handling the protocol.
+* `name` string - display name of the app handling the protocol.
 
 This method returns a promise that contains the application name, icon and path of the default handler for the protocol
 (aka URI scheme) of a URL.
@@ -823,7 +839,7 @@ Adds `tasks` to the [Tasks][tasks] category of the Jump List on Windows.
 
 `tasks` is an array of [`Task`](structures/task.md) objects.
 
-Returns `Boolean` - Whether the call succeeded.
+Returns `boolean` - Whether the call succeeded.
 
 **Note:** If you'd like to customize the Jump List even more use
 `app.setJumpList(categories)` instead.
@@ -938,9 +954,11 @@ app.setJumpList([
 ])
 ```
 
-### `app.requestSingleInstanceLock()`
+### `app.requestSingleInstanceLock([additionalData])`
 
-Returns `Boolean`
+* `additionalData` Record<any, any> (optional) - A JSON object containing additional data to send to the first instance.
+
+Returns `boolean`
 
 The return value of this method indicates whether or not this instance of your
 application successfully obtained the lock.  If it failed to obtain the lock,
@@ -965,17 +983,33 @@ starts:
 const { app } = require('electron')
 let myWindow = null
 
-const gotTheLock = app.requestSingleInstanceLock()
+app.on('first-instance-ack', (event, additionalData) => {
+  // Print out the ack received from the first instance.
+  // Note this event handler must come before the requestSingleInstanceLock call.
+  // Expected output: '{"myAckKey":"myAckValue"}'
+  console.log(JSON.stringify(additionalData))
+})
+
+const additionalData = { myKey: 'myValue' }
+const gotTheLock = app.requestSingleInstanceLock(additionalData)
 
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
+    // We must call preventDefault if we're sending back data.
+    event.preventDefault()
+    // Print out data received from the second instance.
+    // Expected output: '{"myKey":"myValue"}'
+    console.log(JSON.stringify(additionalData))
+
     // Someone tried to run a second instance, we should focus our window.
     if (myWindow) {
       if (myWindow.isMinimized()) myWindow.restore()
       myWindow.focus()
     }
+    const ackData = { myAckKey: 'myAckValue' }
+    ackCallback(ackData)
   })
 
   // Create myWindow, load the rest of the app, etc...
@@ -987,7 +1021,7 @@ if (!gotTheLock) {
 
 ### `app.hasSingleInstanceLock()`
 
-Returns `Boolean`
+Returns `boolean`
 
 This method returns whether or not this instance of your app is currently
 holding the single instance lock.  You can request the lock with
@@ -1001,10 +1035,10 @@ allow multiple instances of the application to once again run side by side.
 
 ### `app.setUserActivity(type, userInfo[, webpageURL])` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
+* `type` string - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` any - App-specific state to store for use by another device.
-* `webpageURL` String (optional) - The webpage to load in a browser if no suitable app is
+* `webpageURL` string (optional) - The webpage to load in a browser if no suitable app is
   installed on the resuming device. The scheme must be `http` or `https`.
 
 Creates an `NSUserActivity` and sets it as the current activity. The activity
@@ -1012,7 +1046,7 @@ is eligible for [Handoff][handoff] to another device afterward.
 
 ### `app.getCurrentActivityType()` _macOS_
 
-Returns `String` - The type of the currently running activity.
+Returns `string` - The type of the currently running activity.
 
 ### `app.invalidateCurrentActivity()` _macOS_
 
@@ -1024,7 +1058,7 @@ Marks the current [Handoff][handoff] user activity as inactive without invalidat
 
 ### `app.updateCurrentActivity(type, userInfo)` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
+* `type` string - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` any - App-specific state to store for use by another device.
 
@@ -1033,13 +1067,13 @@ Updates the current activity if its type matches `type`, merging the entries fro
 
 ### `app.setAppUserModelId(id)` _Windows_
 
-* `id` String
+* `id` string
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
 
 ### `app.setActivationPolicy(policy)` _macOS_
 
-* `policy` String - Can be 'regular', 'accessory', or 'prohibited'.
+* `policy` string - Can be 'regular', 'accessory', or 'prohibited'.
 
 Sets the activation policy for a given app.
 
@@ -1052,8 +1086,8 @@ Activation policy types:
 ### `app.importCertificate(options, callback)` _Linux_
 
 * `options` Object
-  * `certificate` String - Path for the pkcs12 file.
-  * `password` String - Passphrase for the certificate.
+  * `certificate` string - Path for the pkcs12 file.
+  * `password` string - Passphrase for the certificate.
 * `callback` Function
   * `result` Integer - Result of import.
 
@@ -1064,23 +1098,23 @@ indicates success while any other value indicates failure according to Chromium 
 ### `app.configureHostResolver(options)`
 
 * `options` Object
-  * `enableBuiltInResolver` Boolean (optional) - Whether the built-in host
+  * `enableBuiltInResolver` boolean (optional) - Whether the built-in host
     resolver is used in preference to getaddrinfo. When enabled, the built-in
     resolver will attempt to use the system's DNS settings to do DNS lookups
     itself. Enabled by default on macOS, disabled by default on Windows and
     Linux.
-  * `secureDnsMode` String (optional) - Can be "off", "automatic" or "secure".
+  * `secureDnsMode` string (optional) - Can be "off", "automatic" or "secure".
     Configures the DNS-over-HTTP mode. When "off", no DoH lookups will be
-    performed. When "automatic", DoH lookups will be peformed first if DoH is
+    performed. When "automatic", DoH lookups will be performed first if DoH is
     available, and insecure DNS lookups will be performed as a fallback. When
     "secure", only DoH lookups will be performed. Defaults to "automatic".
-  * `secureDnsServers` String[]&#32;(optional) - A list of DNS-over-HTTP
+  * `secureDnsServers` string[]&#32;(optional) - A list of DNS-over-HTTP
     server templates. See [RFC8484 § 3][] for details on the template format.
     Most servers support the POST method; the template for such servers is
     simply a URI. Note that for [some DNS providers][doh-providers], the
     resolver will automatically upgrade to DoH unless DoH is explicitly
     disabled, even if there are no DoH servers provided in this list.
-  * `enableAdditionalDnsQueryTypes` Boolean (optional) - Controls whether additional DNS
+  * `enableAdditionalDnsQueryTypes` boolean (optional) - Controls whether additional DNS
     query types, e.g. HTTPS (DNS type 65) will be allowed besides the
     traditional A and AAAA queries when a request is being made via insecure
     DNS. Has no effect on Secure DNS which always allows additional types.
@@ -1142,7 +1176,7 @@ Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Fe
 
 ### `app.getGPUInfo(infoType)`
 
-* `infoType` String - Can be `basic` or `complete`.
+* `infoType` string - Can be `basic` or `complete`.
 
 Returns `Promise<unknown>`
 
@@ -1185,7 +1219,7 @@ Using `basic` should be preferred if only basic information like `vendorId` or `
 
 * `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications). On Linux, if a value is not provided the badge will not display.
 
-Returns `Boolean` - Whether the call succeeded.
+Returns `boolean` - Whether the call succeeded.
 
 Sets the counter badge for current app. Setting the count to `0` will hide the
 badge.
@@ -1201,14 +1235,14 @@ Returns `Integer` - The current value displayed in the counter badge.
 
 ### `app.isUnityRunning()` _Linux_
 
-Returns `Boolean` - Whether the current desktop environment is Unity launcher.
+Returns `boolean` - Whether the current desktop environment is Unity launcher.
 
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
 * `options` Object (optional)
-  * `path` String (optional) _Windows_ - The executable path to compare against.
+  * `path` string (optional) _Windows_ - The executable path to compare against.
     Defaults to `process.execPath`.
-  * `args` String[] (optional) _Windows_ - The command-line arguments to compare
+  * `args` string[] (optional) _Windows_ - The command-line arguments to compare
     against. Defaults to an empty array.
 
 If you provided `path` and `args` options to `app.setLoginItemSettings`, then you
@@ -1216,43 +1250,43 @@ need to pass the same arguments here for `openAtLogin` to be set correctly.
 
 Returns `Object`:
 
-* `openAtLogin` Boolean - `true` if the app is set to open at login.
-* `openAsHidden` Boolean _macOS_ - `true` if the app is set to open as hidden at login.
+* `openAtLogin` boolean - `true` if the app is set to open at login.
+* `openAsHidden` boolean _macOS_ - `true` if the app is set to open as hidden at login.
   This setting is not available on [MAS builds][mas-builds].
-* `wasOpenedAtLogin` Boolean _macOS_ - `true` if the app was opened at login
+* `wasOpenedAtLogin` boolean _macOS_ - `true` if the app was opened at login
   automatically. This setting is not available on [MAS builds][mas-builds].
-* `wasOpenedAsHidden` Boolean _macOS_ - `true` if the app was opened as a hidden login
+* `wasOpenedAsHidden` boolean _macOS_ - `true` if the app was opened as a hidden login
   item. This indicates that the app should not open any windows at startup.
   This setting is not available on [MAS builds][mas-builds].
-* `restoreState` Boolean _macOS_ - `true` if the app was opened as a login item that
+* `restoreState` boolean _macOS_ - `true` if the app was opened as a login item that
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
   closed. This setting is not available on [MAS builds][mas-builds].
-* `executableWillLaunchAtLogin` Boolean _Windows_ - `true` if app is set to open at login and its run key is not deactivated. This differs from `openAtLogin` as it ignores the `args` option, this property will be true if the given executable would be launched at login with **any** arguments.
+* `executableWillLaunchAtLogin` boolean _Windows_ - `true` if app is set to open at login and its run key is not deactivated. This differs from `openAtLogin` as it ignores the `args` option, this property will be true if the given executable would be launched at login with **any** arguments.
 * `launchItems` Object[] _Windows_
-  * `name` String _Windows_ - name value of a registry entry.
-  * `path` String _Windows_ - The executable to an app that corresponds to a registry entry.
-  * `args` String[] _Windows_ - the command-line arguments to pass to the executable.
-  * `scope` String _Windows_ - one of `user` or `machine`. Indicates whether the registry entry is under `HKEY_CURRENT USER` or `HKEY_LOCAL_MACHINE`.
-  * `enabled` Boolean _Windows_ - `true` if the app registry key is startup approved and therefore shows as `enabled` in Task Manager and Windows settings.
+  * `name` string _Windows_ - name value of a registry entry.
+  * `path` string _Windows_ - The executable to an app that corresponds to a registry entry.
+  * `args` string[] _Windows_ - the command-line arguments to pass to the executable.
+  * `scope` string _Windows_ - one of `user` or `machine`. Indicates whether the registry entry is under `HKEY_CURRENT USER` or `HKEY_LOCAL_MACHINE`.
+  * `enabled` boolean _Windows_ - `true` if the app registry key is startup approved and therefore shows as `enabled` in Task Manager and Windows settings.
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
-  * `openAtLogin` Boolean (optional) - `true` to open the app at login, `false` to remove
+  * `openAtLogin` boolean (optional) - `true` to open the app at login, `false` to remove
     the app as a login item. Defaults to `false`.
-  * `openAsHidden` Boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
+  * `openAsHidden` boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
     `false`. The user can edit this setting from the System Preferences so
     `app.getLoginItemSettings().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is not available on [MAS builds][mas-builds].
-  * `path` String (optional) _Windows_ - The executable to launch at login.
+  * `path` string (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.
-  * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
+  * `args` string[] (optional) _Windows_ - The command-line arguments to pass to
     the executable. Defaults to an empty array. Take care to wrap paths in
     quotes.
-  * `enabled` Boolean (optional) _Windows_ - `true` will change the startup approved registry key and `enable / disable` the App in Task Manager and Windows Settings.
+  * `enabled` boolean (optional) _Windows_ - `true` will change the startup approved registry key and `enable / disable` the App in Task Manager and Windows Settings.
     Defaults to `true`.
-  * `name` String (optional) _Windows_ - value name to write into registry. Defaults to the app's AppUserModelId().
+  * `name` string (optional) _Windows_ - value name to write into registry. Defaults to the app's AppUserModelId().
 Set the app's login item settings.
 
 To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows],
@@ -1276,7 +1310,7 @@ app.setLoginItemSettings({
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-Returns `Boolean` - `true` if Chrome's accessibility support is enabled,
+Returns `boolean` - `true` if Chrome's accessibility support is enabled,
 `false` otherwise. This API will return `true` if the use of assistive
 technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
@@ -1284,7 +1318,7 @@ details.
 
 ### `app.setAccessibilitySupportEnabled(enabled)` _macOS_ _Windows_
 
-* `enabled` Boolean - Enable or disable [accessibility tree](https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree) rendering
+* `enabled` boolean - Enable or disable [accessibility tree](https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree) rendering
 
 Manually enables Chrome's accessibility support, allowing to expose accessibility switch to users in application settings. See [Chromium's accessibility docs](https://www.chromium.org/developers/design-documents/accessibility) for more
 details. Disabled by default.
@@ -1300,14 +1334,14 @@ Show the app's about panel options. These options can be overridden with `app.se
 ### `app.setAboutPanelOptions(options)`
 
 * `options` Object
-  * `applicationName` String (optional) - The app's name.
-  * `applicationVersion` String (optional) - The app's version.
-  * `copyright` String (optional) - Copyright information.
-  * `version` String (optional) _macOS_ - The app's build version number.
-  * `credits` String (optional) _macOS_ _Windows_ - Credit information.
-  * `authors` String[] (optional) _Linux_ - List of app authors.
-  * `website` String (optional) _Linux_ - The app's website.
-  * `iconPath` String (optional) _Linux_ _Windows_ - Path to the app's icon in a JPEG or PNG file format. On Linux, will be shown as 64x64 pixels while retaining aspect ratio.
+  * `applicationName` string (optional) - The app's name.
+  * `applicationVersion` string (optional) - The app's version.
+  * `copyright` string (optional) - Copyright information.
+  * `version` string (optional) _macOS_ - The app's build version number.
+  * `credits` string (optional) _macOS_ _Windows_ - Credit information.
+  * `authors` string[] (optional) _Linux_ - List of app authors.
+  * `website` string (optional) _Linux_ - The app's website.
+  * `iconPath` string (optional) _Linux_ _Windows_ - Path to the app's icon in a JPEG or PNG file format. On Linux, will be shown as 64x64 pixels while retaining aspect ratio.
 
 Set the about panel options. This will override the values defined in the app's `.plist` file on macOS. See the [Apple docs][about-panel-options] for more details. On Linux, values must be set in order to be shown; there are no defaults.
 
@@ -1315,7 +1349,7 @@ If you do not set `credits` but still wish to surface them in your app, AppKit w
 
 ### `app.isEmojiPanelSupported()`
 
-Returns `Boolean` - whether or not the current OS version allows for native emoji pickers.
+Returns `boolean` - whether or not the current OS version allows for native emoji pickers.
 
 ### `app.showEmojiPanel()` _macOS_ _Windows_
 
@@ -1323,7 +1357,7 @@ Show the platform's native emoji picker.
 
 ### `app.startAccessingSecurityScopedResource(bookmarkData)` _mas_
 
-* `bookmarkData` String - The base64 encoded security scoped bookmark data returned by the `dialog.showOpenDialog` or `dialog.showSaveDialog` methods.
+* `bookmarkData` string - The base64 encoded security scoped bookmark data returned by the `dialog.showOpenDialog` or `dialog.showSaveDialog` methods.
 
 Returns `Function` - This function **must** be called once you have finished accessing the security scoped file. If you do not remember to stop accessing the bookmark, [kernel resources will be leaked](https://developer.apple.com/reference/foundation/nsurl/1417051-startaccessingsecurityscopedreso?language=objc) and your app will lose its ability to reach outside the sandbox completely, until your app is restarted.
 
@@ -1346,16 +1380,16 @@ This method can only be called before app is ready.
 
 ### `app.isInApplicationsFolder()` _macOS_
 
-Returns `Boolean` - Whether the application is currently running from the
+Returns `boolean` - Whether the application is currently running from the
 systems Application folder. Use in combination with `app.moveToApplicationsFolder()`
 
 ### `app.moveToApplicationsFolder([options])` _macOS_
 
 * `options` Object (optional)
-  * `conflictHandler` Function\<Boolean> (optional) - A handler for potential conflict in move failure.
-    * `conflictType` String - The type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
+  * `conflictHandler` Function\<boolean> (optional) - A handler for potential conflict in move failure.
+    * `conflictType` string - The type of move conflict encountered by the handler; can be `exists` or `existsAndRunning`, where `exists` means that an app of the same name is present in the Applications directory and `existsAndRunning` means both that it exists and that it's presently running.
 
-Returns `Boolean` - Whether the move was successful. Please note that if
+Returns `boolean` - Whether the move was successful. Please note that if
 the move is successful, your application will quit and relaunch.
 
 No confirmation dialog will be presented by default. If you wish to allow
@@ -1391,13 +1425,13 @@ Would mean that if an app already exists in the user directory, if the user choo
 
 ### `app.isSecureKeyboardEntryEnabled()` _macOS_
 
-Returns `Boolean` - whether `Secure Keyboard Entry` is enabled.
+Returns `boolean` - whether `Secure Keyboard Entry` is enabled.
 
 By default this API will return `false`.
 
 ### `app.setSecureKeyboardEntryEnabled(enabled)` _macOS_
 
-* `enabled` Boolean - Enable or disable `Secure Keyboard Entry`
+* `enabled` boolean - Enable or disable `Secure Keyboard Entry`
 
 Set the `Secure Keyboard Entry` is enabled in your application.
 
@@ -1412,7 +1446,7 @@ details.
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_
 
-A `Boolean` property that's `true` if Chrome's accessibility support is enabled, `false` otherwise. This property will be `true` if the use of assistive technologies, such as screen readers, has been detected. Setting this property to `true` manually enables Chrome's accessibility support, allowing developers to expose accessibility switch to users in application settings.
+A `boolean` property that's `true` if Chrome's accessibility support is enabled, `false` otherwise. This property will be `true` if the use of assistive technologies, such as screen readers, has been detected. Setting this property to `true` manually enables Chrome's accessibility support, allowing developers to expose accessibility switch to users in application settings.
 
 See [Chromium's accessibility docs](https://www.chromium.org/developers/design-documents/accessibility) for more details. Disabled by default.
 
@@ -1449,7 +1483,7 @@ dock on macOS.
 
 ### `app.isPackaged` _Readonly_
 
-A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
+A `boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 
 [dock-menu]:https://developer.apple.com/macos/human-interface-guidelines/menus/dock-menus/
 [tasks]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
@@ -1468,7 +1502,7 @@ A `Boolean` property that returns  `true` if the app is packaged, `false` otherw
 
 ### `app.name`
 
-A `String` property that indicates the current application's name, which is the name in the application's `package.json` file.
+A `string` property that indicates the current application's name, which is the name in the application's `package.json` file.
 
 Usually the `name` field of `package.json` is a short lowercase name, according
 to the npm modules spec. You should usually also specify a `productName`
@@ -1477,7 +1511,7 @@ preferred over `name` by Electron.
 
 ### `app.userAgentFallback`
 
-A `String` which is the user agent string Electron will use as a global fallback.
+A `string` which is the user agent string Electron will use as a global fallback.
 
 This is the user agent that will be used when no user agent is set at the
 `webContents` or `session` level.  It is useful for ensuring that your entire
@@ -1486,7 +1520,7 @@ in your app's initialization to ensure that your overridden value is used.
 
 ### `app.runningUnderRosettaTranslation` _macOS_ _Readonly_ _Deprecated_
 
-A `Boolean` which when `true` indicates that the app is currently running
+A `boolean` which when `true` indicates that the app is currently running
 under the [Rosetta Translator Environment](https://en.wikipedia.org/wiki/Rosetta_(software)).
 
 You can use this property to prompt users to download the arm64 version of
@@ -1499,7 +1533,7 @@ and Windows.
 
 ### `app.runningUnderARM64Translation` _Readonly_ _macOS_ _Windows_
 
-A `Boolean` which when `true` indicates that the app is currently running under
+A `boolean` which when `true` indicates that the app is currently running under
 an ARM64 translator (like the macOS
 [Rosetta Translator Environment](https://en.wikipedia.org/wiki/Rosetta_(software))
 or Windows [WOW](https://en.wikipedia.org/wiki/Windows_on_Windows)).

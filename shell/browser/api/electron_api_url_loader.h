@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
 
 #include <memory>
 #include <string>
@@ -86,10 +86,12 @@ class SimpleURLLoaderWrapper
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
           client_cert_responder) override {}
-  void OnClearSiteData(const GURL& url,
-                       const std::string& header_value,
-                       int32_t load_flags,
-                       OnClearSiteDataCallback callback) override;
+  void OnClearSiteData(
+      const GURL& url,
+      const std::string& header_value,
+      int32_t load_flags,
+      const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+      OnClearSiteDataCallback callback) override;
   void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
                             OnLoadingStateUpdateCallback callback) override;
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
@@ -125,4 +127,4 @@ class SimpleURLLoaderWrapper
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_

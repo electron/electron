@@ -50,8 +50,8 @@ In your `api_name.h` file:
 
 ```cpp title='api_name.h'
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_{API_NAME}_H_
-#define SHELL_BROWSER_API_ELECTRON_API_{API_NAME}_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_{API_NAME}_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_{API_NAME}_H_
 
 #include "gin/handle.h"
 #include "gin/wrappable.h"

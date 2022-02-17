@@ -2,15 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
-#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "build/build_config.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/kiosk/kiosk_delegate.h"
@@ -37,6 +36,12 @@ class ElectronExtensionsBrowserClient
  public:
   ElectronExtensionsBrowserClient();
   ~ElectronExtensionsBrowserClient() override;
+
+  // disable copy
+  ElectronExtensionsBrowserClient(const ElectronExtensionsBrowserClient&) =
+      delete;
+  ElectronExtensionsBrowserClient& operator=(
+      const ElectronExtensionsBrowserClient&) = delete;
 
   // ExtensionsBrowserClient overrides:
   bool IsShuttingDown() override;
@@ -140,10 +145,8 @@ class ElectronExtensionsBrowserClient
 
   std::unique_ptr<extensions::ElectronComponentExtensionResourceManager>
       resource_manager_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsBrowserClient);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_CLIENT_H_

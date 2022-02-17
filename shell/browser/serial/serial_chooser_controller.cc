@@ -41,11 +41,11 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
     if (port->serial_number && !port->serial_number->empty()) {
       dict.Set("serialNumber", *port->serial_number);
     }
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     if (port->usb_driver_name && !port->usb_driver_name->empty()) {
       dict.Set("usbDriverName", *port->usb_driver_name);
     }
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
     if (!port->device_instance_id.empty()) {
       dict.Set("deviceInstanceId", port->device_instance_id);
     }
@@ -67,7 +67,8 @@ SerialChooserController::SerialChooserController(
     : WebContentsObserver(web_contents),
       filters_(std::move(filters)),
       callback_(std::move(callback)),
-      serial_delegate_(serial_delegate) {
+      serial_delegate_(serial_delegate),
+      render_frame_host_id_(render_frame_host->GetGlobalId()) {
   origin_ = web_contents->GetMainFrame()->GetLastCommittedOrigin();
 
   chooser_context_ = SerialChooserContextFactory::GetForBrowserContext(
@@ -124,7 +125,8 @@ void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
           return ptr->token.ToString() == port_id;
         });
     if (it != ports_.end()) {
-      chooser_context_->GrantPortPermission(origin_, *it->get());
+      auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
+      chooser_context_->GrantPortPermission(origin_, *it->get(), rfh);
       RunCallback(it->Clone());
     } else {
       RunCallback(/*port=*/nullptr);

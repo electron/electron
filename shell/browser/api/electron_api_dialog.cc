@@ -97,7 +97,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialogSync", &ShowSaveDialogSync);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
-#if defined(OS_MAC) || defined(OS_WIN)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   dict.SetMethod("showCertificateTrustDialog",
                  &certificate_trust::ShowCertificateTrust);
 #endif

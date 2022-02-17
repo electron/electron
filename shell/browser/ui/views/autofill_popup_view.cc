@@ -305,8 +305,8 @@ void AutofillPopupView::OnMouseExited(const ui::MouseEvent& event) {
 void AutofillPopupView::OnMouseMoved(const ui::MouseEvent& event) {
   // A synthesized mouse move will be sent when the popup is first shown.
   // Don't preview a suggestion if the mouse happens to be hovering there.
-#if defined(OS_WIN)
-  if (base::Time::Now() - show_time_ <= base::TimeDelta::FromMilliseconds(50))
+#if BUILDFLAG(IS_WIN)
+  if (base::Time::Now() - show_time_ <= base::Milliseconds(50))
     return;
 #else
   if (event.flags() & ui::EF_IS_SYNTHESIZED)

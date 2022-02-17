@@ -36,6 +36,9 @@ const char kRoundedCorners[] = "roundedCorners";
 const char kOverlayButtonColor[] = "color";
 const char kOverlaySymbolColor[] = "symbolColor";
 
+// The custom height for Window Controls Overlay.
+const char kOverlayHeight[] = "height";
+
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
 
@@ -129,9 +132,6 @@ const char kContextIsolation[] = "contextIsolation";
 // Web runtime features.
 const char kExperimentalFeatures[] = "experimentalFeatures";
 
-// Opener window's ID.
-const char kOpenerID[] = "openerId";
-
 // Enable the rubber banding effect.
 const char kScrollBounce[] = "scrollBounce";
 
@@ -146,8 +146,6 @@ const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
 
 // Enable the web view tag.
 const char kWebviewTag[] = "webviewTag";
-
-const char kNativeWindowOpen[] = "nativeWindowOpen";
 
 const char kCustomArgs[] = "additionalArguments";
 
@@ -240,8 +238,6 @@ const char kAppUserModelId[] = "app-user-model-id";
 
 // The application path
 const char kAppPath[] = "app-path";
-
-const char kEnableApiFilteringLogging[] = "enable-api-filtering-logging";
 
 // The command line switch versions of the options.
 const char kScrollBounce[] = "scroll-bounce";

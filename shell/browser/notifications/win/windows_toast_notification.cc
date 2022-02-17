@@ -12,6 +12,7 @@
 #include <wrl\wrappers\corewrappers.h>
 
 #include "base/environment.h"
+#include "base/logging.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"

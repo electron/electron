@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
-#define SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
 
 #include <utility>
 #include <vector>
@@ -21,7 +21,7 @@ namespace gin_helper {
 
 namespace internal {
 
-v8::Local<v8::Object> CreateEvent(
+v8::Local<v8::Object> CreateCustomEvent(
     v8::Isolate* isolate,
     v8::Local<v8::Object> sender = v8::Local<v8::Object>(),
     v8::Local<v8::Object> custom_event = v8::Local<v8::Object>());
@@ -53,9 +53,9 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   bool EmitCustomEvent(base::StringPiece name,
                        v8::Local<v8::Object> event,
                        Args&&... args) {
-    return EmitWithEvent(name,
-                         internal::CreateEvent(isolate(), GetWrapper(), event),
-                         std::forward<Args>(args)...);
+    return EmitWithEvent(
+        name, internal::CreateCustomEvent(isolate(), GetWrapper(), event),
+        std::forward<Args>(args)...);
   }
 
   // this.emit(name, new Event(), args...);
@@ -66,9 +66,14 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
       return false;
-    v8::Local<v8::Object> event = internal::CreateEvent(isolate(), wrapper);
+    v8::Local<v8::Object> event =
+        internal::CreateCustomEvent(isolate(), wrapper);
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
   }
+
+  // disable copy
+  EventEmitter(const EventEmitter&) = delete;
+  EventEmitter& operator=(const EventEmitter&) = delete;
 
  protected:
   EventEmitter() {}
@@ -92,10 +97,8 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     }
     return false;
   }
-
-  DISALLOW_COPY_AND_ASSIGN(EventEmitter);
 };
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_

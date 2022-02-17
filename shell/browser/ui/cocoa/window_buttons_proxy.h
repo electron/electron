@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_
-#define SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_
+#define ELECTRON_SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_
 
 #import <Cocoa/Cocoa.h>
 
@@ -30,6 +30,8 @@
   gfx::Point margin_;
   // The default left-top margin.
   gfx::Point default_margin_;
+  // Current height of the title bar container.
+  float height_;
 
   // Track mouse moves above window buttons.
   BOOL show_on_hover_;
@@ -49,6 +51,10 @@
 // Set left-top margin of the window buttons..
 - (void)setMargin:(const absl::optional<gfx::Point>&)margin;
 
+// Set height of button container
+- (void)setHeight:(const float)height;
+- (BOOL)useCustomHeight;
+
 // Return the bounds of all 3 buttons, with margin on all sides.
 - (NSRect)getButtonsContainerBounds;
 
@@ -56,4 +62,4 @@
 - (void)updateTrackingAreas;
 @end
 
-#endif  // SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_

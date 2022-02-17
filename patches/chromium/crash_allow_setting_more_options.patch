@@ -9,7 +9,7 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 00009dacdc2b084d7c647ab34c8c8be6decf1a5b..5eb19c8a47467d8df30316bfbd7f3c2f38aea7c0 100644
+index 823e49a234e3dd31bf6527c2e4efa96f3d23f1f2..43f6d476f3ee2759cf41c492f932522994e7ddec 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -112,6 +112,7 @@ void SetUploadURL(const std::string& url) {
@@ -21,10 +21,10 @@ index 00009dacdc2b084d7c647ab34c8c8be6decf1a5b..5eb19c8a47467d8df30316bfbd7f3c2f
  uint64_t g_process_start_time = 0;
  pid_t g_pid = 0;
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 89b4bfccd5d3278231726184547378805fb30ed5..9f0cb9d52e2f7fc0c1808500b775bc28b4514d00 100644
+index 82b7f241e26184240260d0b6287ded159681e15b..abbb267f6a40de0cdf4d09700f9dd444a575fbdf 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
-@@ -139,6 +139,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
+@@ -141,6 +141,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
    return false;
  }
  
@@ -39,11 +39,11 @@ index 89b4bfccd5d3278231726184547378805fb30ed5..9f0cb9d52e2f7fc0c1808500b775bc28
 +void CrashReporterClient::GetProcessSimpleAnnotations(std::map<std::string, std::string>* annotations) {
 +}
 +
- #if defined(OS_ANDROID)
+ #if BUILDFLAG(IS_ANDROID)
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c318334080b 100644
+index 24e53fa62c2c4a11494ad3d43f0c5a806930fcdd..9b691baa6cc90cc3f9ada307c43f44c4353e2487 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@
@@ -54,7 +54,7 @@ index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c31
  #include <string>
  
  #include "build/build_config.h"
-@@ -144,6 +145,19 @@ class CrashReporterClient {
+@@ -146,6 +147,19 @@ class CrashReporterClient {
    // that case, |breakpad_enabled| is set to the value enforced by policies.
    virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
  
@@ -71,14 +71,14 @@ index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c31
 +  virtual void GetProcessSimpleAnnotations(
 +      std::map<std::string, std::string>* annotations);
 +
- #if defined(OS_ANDROID)
+ #if BUILDFLAG(IS_ANDROID)
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index 1abde7faf44a4526d7c622e6ce2d6fafe957a4c8..68d745567c1a0e37fa4ebc9e7e705d2a24f3e1fe 100644
+index dc2b18b322350121768571b7997d632a10220ac9..3e3ee0f721a2316d324fb31e17ba97ff24d9e6d7 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
-@@ -165,6 +165,7 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -180,6 +180,7 @@ bool PlatformCrashpadInitialization(
      // where crash_reporter provides it's own values for lsb-release.
      annotations["lsb-release"] = base::GetLinuxDistro();
  #endif
@@ -86,7 +86,7 @@ index 1abde7faf44a4526d7c622e6ce2d6fafe957a4c8..68d745567c1a0e37fa4ebc9e7e705d2a
  
      std::vector<std::string> arguments;
      if (crash_reporter_client->ShouldMonitorCrashHandlerExpensively()) {
-@@ -186,6 +187,13 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -201,6 +202,13 @@ bool PlatformCrashpadInitialization(
      }
  #endif
  
@@ -98,10 +98,10 @@ index 1abde7faf44a4526d7c622e6ce2d6fafe957a4c8..68d745567c1a0e37fa4ebc9e7e705d2a
 +    }
 +
      bool result =
-         client.StartHandler(handler_path, database_path, metrics_path, url,
+         client.StartHandler(handler_path, *database_path, metrics_path, url,
                              annotations, arguments, false, false);
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895dba6286e1 100644
+index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a59bf46b96 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
 @@ -85,6 +85,8 @@
@@ -113,7 +113,7 @@ index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895d
    return annotations;
  }
  
-@@ -155,6 +157,13 @@ void DumpProcessWithoutCrashing(task_t task_port) {
+@@ -155,6 +157,13 @@ bool PlatformCrashpadInitialization(
  
        std::vector<std::string> arguments;
  
@@ -128,10 +128,10 @@ index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895d
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index 7dd251b2fdda8c59bb630a5d3ee86e9e858f256e..93f1d5954651ef961c72b97885a708ecff2e9aa7 100644
+index 1a8f42cb4e2ea493642d8b264d0be5c3da358793..e972272de54107aaed6143e3f3569ba56bd3cf3e 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
-@@ -89,6 +89,7 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -89,6 +89,7 @@ bool PlatformCrashpadInitialization(
  
      std::map<std::string, std::string> process_annotations;
      GetPlatformCrashpadAnnotations(&process_annotations);
@@ -139,7 +139,7 @@ index 7dd251b2fdda8c59bb630a5d3ee86e9e858f256e..93f1d5954651ef961c72b97885a708ec
  
      std::string url = crash_reporter_client->GetUploadUrl();
  
-@@ -127,6 +128,13 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -127,6 +128,13 @@ bool PlatformCrashpadInitialization(
  
      std::vector<std::string> arguments(start_arguments);
  

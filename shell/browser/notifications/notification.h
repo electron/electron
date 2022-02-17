@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_H_
-#define SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_H_
+#ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_H_
+#define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_H_
 
 #include <string>
 #include <vector>
@@ -72,6 +72,10 @@ class Notification {
   NotificationPresenter* presenter() const { return presenter_; }
   const std::string& notification_id() const { return notification_id_; }
 
+  // disable copy
+  Notification(const Notification&) = delete;
+  Notification& operator=(const Notification&) = delete;
+
  protected:
   Notification(NotificationDelegate* delegate,
                NotificationPresenter* presenter);
@@ -82,10 +86,8 @@ class Notification {
   std::string notification_id_;
 
   base::WeakPtrFactory<Notification> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(Notification);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_H_
+#endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_H_

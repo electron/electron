@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
-#define SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
+#define ELECTRON_SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
 
 #include <cstdint>
 #include <map>
@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_frame_host.h"
@@ -69,6 +68,10 @@ class ProxyingURLLoaderFactory
                       const network::ResourceRequest& request);
     ~InProgressRequest() override;
 
+    // disable copy
+    InProgressRequest(const InProgressRequest&) = delete;
+    InProgressRequest& operator=(const InProgressRequest&) = delete;
+
     void Restart();
 
     // network::mojom::URLLoader:
@@ -85,7 +88,8 @@ class ProxyingURLLoaderFactory
     // network::mojom::URLLoaderClient:
     void OnReceiveEarlyHints(
         network::mojom::EarlyHintsPtr early_hints) override;
-    void OnReceiveResponse(network::mojom::URLResponseHeadPtr head) override;
+    void OnReceiveResponse(network::mojom::URLResponseHeadPtr head,
+                           mojo::ScopedDataPipeConsumerHandle body) override;
     void OnReceiveRedirect(const net::RedirectInfo& redirect_info,
                            network::mojom::URLResponseHeadPtr head) override;
     void OnUploadProgress(int64_t current_position,
@@ -145,6 +149,7 @@ class ProxyingURLLoaderFactory
     network::mojom::URLLoaderPtr target_loader_;
 
     network::mojom::URLResponseHeadPtr current_response_;
+    mojo::ScopedDataPipeConsumerHandle current_body_;
     scoped_refptr<net::HttpResponseHeaders> override_headers_;
     GURL redirect_url_;
 
@@ -175,13 +180,13 @@ class ProxyingURLLoaderFactory
       net::HttpRequestHeaders modified_cors_exempt_headers;
       absl::optional<GURL> new_url;
 
-      DISALLOW_COPY_AND_ASSIGN(FollowRedirectParams);
+      // disable copy
+      FollowRedirectParams(const FollowRedirectParams&) = delete;
+      FollowRedirectParams& operator=(const FollowRedirectParams&) = delete;
     };
     std::unique_ptr<FollowRedirectParams> pending_follow_redirect_params_;
 
     base::WeakPtrFactory<InProgressRequest> weak_factory_{this};
-
-    DISALLOW_COPY_AND_ASSIGN(InProgressRequest);
   };
 
   ProxyingURLLoaderFactory(
@@ -201,6 +206,10 @@ class ProxyingURLLoaderFactory
       content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type);
 
   ~ProxyingURLLoaderFactory() override;
+
+  // disable copy
+  ProxyingURLLoaderFactory(const ProxyingURLLoaderFactory&) = delete;
+  ProxyingURLLoaderFactory& operator=(const ProxyingURLLoaderFactory&) = delete;
 
   // network::mojom::URLLoaderFactory:
   void CreateLoaderAndStart(
@@ -270,10 +279,8 @@ class ProxyingURLLoaderFactory
   std::map<int32_t, uint64_t> network_request_id_to_web_request_id_;
 
   std::vector<std::string> ignore_connections_limit_domains_;
-
-  DISALLOW_COPY_AND_ASSIGN(ProxyingURLLoaderFactory);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_PROXYING_URL_LOADER_FACTORY_H_

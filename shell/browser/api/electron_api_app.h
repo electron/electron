@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_APP_H_
-#define SHELL_BROWSER_API_ELECTRON_API_APP_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_
 
 #include <map>
 #include <memory>
@@ -16,6 +16,7 @@
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/render_process_host.h"
+#include "crypto/crypto_buildflags.h"
 #include "gin/handle.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
@@ -29,8 +30,8 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 
-#if defined(USE_NSS_CERTS)
-#include "chrome/browser/certificate_manager_model.h"
+#if BUILDFLAG(USE_NSS_CERTS)
+#include "shell/browser/certificate_manager_model.h"
 #endif
 
 namespace base {
@@ -39,7 +40,7 @@ class FilePath;
 
 namespace electron {
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 enum class JumpListResult : int;
 #endif
 
@@ -64,7 +65,7 @@ class App : public ElectronBrowserClient::Delegate,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
       base::Value options,
       net::CompletionOnceCallback callback,
@@ -78,6 +79,10 @@ class App : public ElectronBrowserClient::Delegate,
   static bool IsPackaged();
 
   App();
+
+  // disable copy
+  App(const App&) = delete;
+  App& operator=(const App&) = delete;
 
  private:
   ~App() override;
@@ -95,7 +100,7 @@ class App : public ElectronBrowserClient::Delegate,
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
   void OnPreCreateThreads() override;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void OnWillContinueUserActivity(bool* prevent_default,
                                   const std::string& type) override;
   void OnDidFailToContinueUserActivity(const std::string& type,
@@ -188,10 +193,14 @@ class App : public ElectronBrowserClient::Delegate,
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
-  void OnSecondInstance(const base::CommandLine& cmd,
-                        const base::FilePath& cwd);
+  void OnFirstInstanceAck(const base::span<const uint8_t>* first_instance_data);
+  void OnSecondInstance(
+      const base::CommandLine& cmd,
+      const base::FilePath& cwd,
+      const std::vector<const uint8_t> additional_data,
+      const ProcessSingleton::NotificationAckCallback& ack_callback);
   bool HasSingleInstanceLock() const;
-  bool RequestSingleInstanceLock();
+  bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
   bool Relaunch(gin::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
@@ -200,7 +209,7 @@ class App : public ElectronBrowserClient::Delegate,
   void SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                       bool enabled);
   Browser::LoginItemSettings GetLoginItemSettings(gin::Arguments* args);
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
   void ImportCertificate(gin_helper::ErrorThrower thrower,
                          base::Value options,
                          net::CompletionOnceCallback callback);
@@ -216,7 +225,7 @@ class App : public ElectronBrowserClient::Delegate,
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
                            const std::string& policy);
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
@@ -226,7 +235,7 @@ class App : public ElectronBrowserClient::Delegate,
   v8::Global<v8::Value> dock_;
 #endif
 
-#if defined(OS_MAC) || defined(OS_WIN)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   bool IsRunningUnderARM64Translation() const;
 #endif
 
@@ -235,17 +244,17 @@ class App : public ElectronBrowserClient::Delegate,
       gin::Arguments* args);
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Get the current Jump List settings.
   v8::Local<v8::Value> GetJumpListSettings();
 
   // Set or remove a custom Jump List for the application.
   JumpListResult SetJumpList(v8::Local<v8::Value> val, gin::Arguments* args);
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
   std::unique_ptr<ProcessSingleton> process_singleton_;
 
-#if defined(USE_NSS_CERTS)
+#if BUILDFLAG(USE_NSS_CERTS)
   std::unique_ptr<CertificateManagerModel> certificate_manager_model_;
 #endif
 
@@ -260,12 +269,10 @@ class App : public ElectronBrowserClient::Delegate,
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(App);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_APP_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_FRAMELESS_VIEW_H_
-#define SHELL_BROWSER_UI_VIEWS_FRAMELESS_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_FRAMELESS_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_FRAMELESS_VIEW_H_
 
 #include "ui/views/window/non_client_view.h"
 
@@ -21,12 +21,21 @@ class FramelessView : public views::NonClientFrameView {
   FramelessView();
   ~FramelessView() override;
 
+  // disable copy
+  FramelessView(const FramelessView&) = delete;
+  FramelessView& operator=(const FramelessView&) = delete;
+
   virtual void Init(NativeWindowViews* window, views::Widget* frame);
 
   // Returns whether the |point| is on frameless window's resizing border.
-  int ResizingBorderHitTest(const gfx::Point& point);
+  virtual int ResizingBorderHitTest(const gfx::Point& point);
 
  protected:
+  // Helper function for subclasses to implement ResizingBorderHitTest with a
+  // custom resize inset.
+  int ResizingBorderHitTestImpl(const gfx::Point& point,
+                                const gfx::Insets& resize_border);
+
   // views::NonClientFrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
@@ -49,11 +58,8 @@ class FramelessView : public views::NonClientFrameView {
   views::Widget* frame_ = nullptr;
 
   friend class NativeWindowsViews;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(FramelessView);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_FRAMELESS_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_FRAMELESS_VIEW_H_

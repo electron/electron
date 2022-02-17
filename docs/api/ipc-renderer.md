@@ -1,3 +1,10 @@
+---
+title: "ipcRenderer"
+description: "Communicate asynchronously from a renderer process to the main process."
+slug: ipc-renderer
+hide_title: false
+---
+
 # ipcRenderer
 
 > Communicate asynchronously from a renderer process to the main process.
@@ -9,7 +16,7 @@ methods so you can send synchronous and asynchronous messages from the render
 process (web page) to the main process. You can also receive replies from the
 main process.
 
-See [ipcMain](ipc-main.md) for code examples.
+See [IPC tutorial](../tutorial/ipc.md) for code examples.
 
 ## Methods
 
@@ -17,7 +24,7 @@ The `ipcRenderer` module has the following method to listen for events and send 
 
 ### `ipcRenderer.on(channel, listener)`
 
-* `channel` String
+* `channel` string
 * `listener` Function
   * `event` IpcRendererEvent
   * `...args` any[]
@@ -27,7 +34,7 @@ Listens to `channel`, when a new message arrives `listener` would be called with
 
 ### `ipcRenderer.once(channel, listener)`
 
-* `channel` String
+* `channel` string
 * `listener` Function
   * `event` IpcRendererEvent
   * `...args` any[]
@@ -37,7 +44,7 @@ only the next time a message is sent to `channel`, after which it is removed.
 
 ### `ipcRenderer.removeListener(channel, listener)`
 
-* `channel` String
+* `channel` string
 * `listener` Function
   * `...args` any[]
 
@@ -46,13 +53,13 @@ Removes the specified `listener` from the listener array for the specified
 
 ### `ipcRenderer.removeAllListeners(channel)`
 
-* `channel` String
+* `channel` string
 
 Removes all listeners, or those of the specified `channel`.
 
 ### `ipcRenderer.send(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Send an asynchronous message to the main process via `channel`, along with
@@ -70,7 +77,7 @@ throw an exception.
 > them. Attempting to send such objects over IPC will result in an error.
 
 The main process handles it by listening for `channel` with the
-[`ipcMain`](ipc-main.md) module.
+[`ipcMain`](./ipc-main.md) module.
 
 If you need to transfer a [`MessagePort`][] to the main process, use [`ipcRenderer.postMessage`](#ipcrendererpostmessagechannel-message-transfer).
 
@@ -78,7 +85,7 @@ If you want to receive a single response from the main process, like the result 
 
 ### `ipcRenderer.invoke(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Returns `Promise<any>` - Resolves with the response from the main process.
@@ -98,7 +105,7 @@ throw an exception.
 > them. Attempting to send such objects over IPC will result in an error.
 
 The main process should listen for `channel` with
-[`ipcMain.handle()`](ipc-main.md#ipcmainhandlechannel-listener).
+[`ipcMain.handle()`](./ipc-main.md#ipcmainhandlechannel-listener).
 
 For example:
 
@@ -121,14 +128,14 @@ If you do not need a response to the message, consider using [`ipcRenderer.send`
 
 ### `ipcRenderer.sendSync(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
-Returns `any` - The value sent back by the [`ipcMain`](ipc-main.md) handler.
+Returns `any` - The value sent back by the [`ipcMain`](./ipc-main.md) handler.
 
 Send a message to the main process via `channel` and expect a result
 synchronously. Arguments will be serialized with the [Structured Clone
-Algorithm][SCA], just like [`window.postMessage`][], so prototype chains will not be
+Algorithm][SCA], just like [`window.postMessage`], so prototype chains will not be
 included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
@@ -140,17 +147,17 @@ throw an exception.
 > Electron's IPC to the main process, as the main process would have no way to decode
 > them. Attempting to send such objects over IPC will result in an error.
 
-The main process handles it by listening for `channel` with [`ipcMain`](ipc-main.md) module,
+The main process handles it by listening for `channel` with [`ipcMain`](./ipc-main.md) module,
 and replies by setting `event.returnValue`.
 
 > :warning: **WARNING**: Sending a synchronous message will block the whole
 > renderer process until the reply is received, so use this method only as a
 > last resort. It's much better to use the asynchronous version,
-> [`invoke()`](ipc-renderer.md#ipcrendererinvokechannel-args).
+> [`invoke()`](./ipc-renderer.md#ipcrendererinvokechannel-args).
 
 ### `ipcRenderer.postMessage(channel, message, [transfer])`
 
-* `channel` String
+* `channel` string
 * `message` any
 * `transfer` MessagePort[] (optional)
 
@@ -158,7 +165,7 @@ Send a message to the main process, optionally transferring ownership of zero
 or more [`MessagePort`][] objects.
 
 The transferred `MessagePort` objects will be available in the main process as
-[`MessagePortMain`](message-port-main.md) objects by accessing the `ports`
+[`MessagePortMain`](./message-port-main.md) objects by accessing the `ports`
 property of the emitted event.
 
 For example:
@@ -180,15 +187,15 @@ documentation](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel).
 
 ### `ipcRenderer.sendTo(webContentsId, channel, ...args)`
 
-* `webContentsId` Number
-* `channel` String
+* `webContentsId` number
+* `channel` string
 * `...args` any[]
 
 Sends a message to a window with `webContentsId` via `channel`.
 
 ### `ipcRenderer.sendToHost(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Like `ipcRenderer.send` but the event will be sent to the `<webview>` element in
@@ -197,7 +204,7 @@ the host page instead of the main process.
 ## Event object
 
 The documentation for the `event` object passed to the `callback` can be found
-in the [`ipc-renderer-event`](structures/ipc-renderer-event.md) structure docs.
+in the [`ipc-renderer-event`](./structures/ipc-renderer-event.md) structure docs.
 
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm

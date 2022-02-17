@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
-#define SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
 #include <string>
 
@@ -33,7 +33,7 @@ class InspectableWebContentsView {
   }
   InspectableWebContentsViewDelegate* GetDelegate() const { return delegate_; }
 
-#if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
+#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
   // Returns the container control, which has devtools view attached.
   virtual views::View* GetView() = 0;
 
@@ -60,4 +60,4 @@ class InspectableWebContentsView {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_

@@ -23,7 +23,7 @@
 #include "ui/gfx/image/image_skia_operations.h"
 #include "ui/gfx/image/image_util.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "ui/gfx/icon_util.h"
 #endif
 
@@ -151,7 +151,7 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
         image, path.InsertBeforeExtensionASCII(pair.name), pair.scale);
   return succeed;
 }
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
   // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
   SkBitmap bitmap = IconUtil::CreateSkBitmapFromHICON(icon);

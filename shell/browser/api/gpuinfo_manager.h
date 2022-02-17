@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_GPUINFO_MANAGER_H_
-#define SHELL_BROWSER_API_GPUINFO_MANAGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_GPUINFO_MANAGER_H_
+#define ELECTRON_SHELL_BROWSER_API_GPUINFO_MANAGER_H_
 
 #include <memory>
 #include <vector>
@@ -22,6 +22,11 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
 
   GPUInfoManager();
   ~GPUInfoManager() override;
+
+  // disable copy
+  GPUInfoManager(const GPUInfoManager&) = delete;
+  GPUInfoManager& operator=(const GPUInfoManager&) = delete;
+
   bool NeedsCompleteGpuInfoCollection() const;
   void FetchCompleteInfo(gin_helper::Promise<base::DictionaryValue> promise);
   void FetchBasicInfo(gin_helper::Promise<base::DictionaryValue> promise);
@@ -40,9 +45,7 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   std::vector<gin_helper::Promise<base::DictionaryValue>>
       complete_info_promise_set_;
   content::GpuDataManagerImpl* gpu_data_manager_;
-
-  DISALLOW_COPY_AND_ASSIGN(GPUInfoManager);
 };
 
 }  // namespace electron
-#endif  // SHELL_BROWSER_API_GPUINFO_MANAGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_GPUINFO_MANAGER_H_

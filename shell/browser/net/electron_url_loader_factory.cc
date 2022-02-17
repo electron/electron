@@ -559,7 +559,8 @@ void ElectronURLLoaderFactory::StartLoadingStream(
     //
     // Note that We must submit a empty body otherwise NetworkService would
     // crash.
-    client_remote->OnReceiveResponse(std::move(head));
+    client_remote->OnReceiveResponse(std::move(head),
+                                     mojo::ScopedDataPipeConsumerHandle());
     mojo::ScopedDataPipeProducerHandle producer;
     mojo::ScopedDataPipeConsumerHandle consumer;
     if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
@@ -604,7 +605,8 @@ void ElectronURLLoaderFactory::SendContents(
 
   // Add header to ignore CORS.
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
-  client_remote->OnReceiveResponse(std::move(head));
+  client_remote->OnReceiveResponse(std::move(head),
+                                   mojo::ScopedDataPipeConsumerHandle());
 
   // Code below follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;

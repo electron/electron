@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_CALLBACK_H_
-#define SHELL_COMMON_GIN_HELPER_CALLBACK_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_CALLBACK_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_CALLBACK_H_
 
 #include <utility>
 #include <vector>
@@ -50,7 +50,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
       return v8::Null(isolate);
     gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
-    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Local<v8::Context> context = holder->GetCreationContextChecked();
     v8::Context::Scope context_scope(context);
     std::vector<v8::MaybeLocal<v8::Value>> maybe_args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -79,7 +79,7 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
       return;
     gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
-    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Local<v8::Context> context = holder->GetCreationContextChecked();
     v8::Context::Scope context_scope(context);
     std::vector<v8::Local<v8::Value>> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -102,7 +102,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
       return ret;
     gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
-    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Local<v8::Context> context = holder->GetCreationContextChecked();
     v8::Context::Scope context_scope(context);
     std::vector<v8::MaybeLocal<v8::Value>> maybe_args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -159,4 +159,4 @@ v8::Local<v8::Value> CallbackToV8Leaked(
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_CALLBACK_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_CALLBACK_H_

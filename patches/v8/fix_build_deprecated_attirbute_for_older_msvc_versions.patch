@@ -9,10 +9,10 @@ higher versions, but native module compiling with this version
 will have an issue.
 
 diff --git a/include/v8config.h b/include/v8config.h
-index b010b65dfd648bc01608befd886613a82dab2a05..fa740c2acde6134312aabfa0aae0c0093450bd48 100644
+index b16ab3ff88d1054d12af4de3ad0018c97c0b7fcc..c9963b43c121964c0c37c858adb228cd090d5c2a 100644
 --- a/include/v8config.h
 +++ b/include/v8config.h
-@@ -448,10 +448,13 @@ path. Add it with -I<path> to the command line
+@@ -452,10 +452,13 @@ path. Add it with -I<path> to the command line
  # define V8_NOINLINE /* NOT SUPPORTED */
  #endif
  
@@ -28,7 +28,7 @@ index b010b65dfd648bc01608befd886613a82dab2a05..fa740c2acde6134312aabfa0aae0c009
  #else
  # define V8_DEPRECATED(message)
  #endif
-@@ -459,7 +462,11 @@ path. Add it with -I<path> to the command line
+@@ -463,7 +466,11 @@ path. Add it with -I<path> to the command line
  
  // A macro (V8_DEPRECATE_SOON) to make it easier to see what will be deprecated.
  #if defined(V8_IMMINENT_DEPRECATION_WARNINGS)

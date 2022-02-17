@@ -102,32 +102,6 @@ void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
       v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
 }
 
-bool IsSameOrigin(const GURL& l, const GURL& r) {
-  return url::Origin::Create(l).IsSameOriginWith(url::Origin::Create(r));
-}
-
-#if DCHECK_IS_ON()
-std::vector<v8::Global<v8::Value>> weakly_tracked_values;
-
-void WeaklyTrackValue(v8::Isolate* isolate, v8::Local<v8::Value> value) {
-  v8::Global<v8::Value> global_value(isolate, value);
-  global_value.SetWeak();
-  weakly_tracked_values.push_back(std::move(global_value));
-}
-
-void ClearWeaklyTrackedValues() {
-  weakly_tracked_values.clear();
-}
-
-std::vector<v8::Local<v8::Value>> GetWeaklyTrackedValues(v8::Isolate* isolate) {
-  std::vector<v8::Local<v8::Value>> locals;
-  for (const auto& value : weakly_tracked_values) {
-    if (!value.IsEmpty())
-      locals.push_back(value.Get(isolate));
-  }
-  return locals;
-}
-
 // This causes a fatal error by creating a circular extension dependency.
 void TriggerFatalErrorForTesting(v8::Isolate* isolate) {
   static const char* aDeps[] = {"B"};
@@ -141,7 +115,6 @@ void TriggerFatalErrorForTesting(v8::Isolate* isolate) {
 void RunUntilIdle() {
   base::RunLoop().RunUntilIdle();
 }
-#endif
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -155,14 +128,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
-  dict.SetMethod("isSameOrigin", &IsSameOrigin);
-#if DCHECK_IS_ON()
   dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
-  dict.SetMethod("getWeaklyTrackedValues", &GetWeaklyTrackedValues);
-  dict.SetMethod("clearWeaklyTrackedValues", &ClearWeaklyTrackedValues);
-  dict.SetMethod("weaklyTrackValue", &WeaklyTrackValue);
   dict.SetMethod("runUntilIdle", &RunUntilIdle);
-#endif
 }
 
 }  // namespace

@@ -133,8 +133,10 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
         net::HttpContentDisposition header(value, std::string());
         std::string decodedFilename =
             header.is_attachment() ? " attachment" : " inline";
-        decodedFilename += "; filename=" + header.filename();
-        value = decodedFilename;
+        // The filename must be encased in double quotes for serialization
+        // to happen correctly.
+        std::string filename = "\"" + header.filename() + "\"";
+        value = decodedFilename + "; filename=" + filename;
       }
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());

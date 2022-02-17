@@ -16,7 +16,7 @@ app.dock.bounce()
 
 #### `dock.bounce([type])` _macOS_
 
-* `type` String (optional) - Can be `critical` or `informational`. The default is
+* `type` string (optional) - Can be `critical` or `informational`. The default is
  `informational`
 
 Returns `Integer` - an ID representing the request.
@@ -28,7 +28,7 @@ When `informational` is passed, the dock icon will bounce for one second.
 However, the request remains active until either the application becomes active
 or the request is canceled.
 
-**Nota Bene:** This method can only be used while the app is not focused; when the app is focused it will return -1.
+**Note:** This method can only be used while the app is not focused; when the app is focused it will return -1.
 
 #### `dock.cancelBounce(id)` _macOS_
 
@@ -38,19 +38,19 @@ Cancel the bounce of `id`.
 
 #### `dock.downloadFinished(filePath)` _macOS_
 
-* `filePath` String
+* `filePath` string
 
 Bounces the Downloads stack if the filePath is inside the Downloads folder.
 
 #### `dock.setBadge(text)` _macOS_
 
-* `text` String
+* `text` string
 
 Sets the string to be displayed in the dock’s badging area.
 
 #### `dock.getBadge()` _macOS_
 
-Returns `String` - The badge string of the dock.
+Returns `string` - The badge string of the dock.
 
 #### `dock.hide()` _macOS_
 
@@ -62,7 +62,7 @@ Returns `Promise<void>` - Resolves when the dock icon is shown.
 
 #### `dock.isVisible()` _macOS_
 
-Returns `Boolean` - Whether the dock icon is visible.
+Returns `boolean` - Whether the dock icon is visible.
 
 #### `dock.setMenu(menu)` _macOS_
 
@@ -76,6 +76,6 @@ Returns `Menu | null` - The application's [dock menu][dock-menu].
 
 #### `dock.setIcon(image)` _macOS_
 
-* `image` ([NativeImage](native-image.md) | String)
+* `image` ([NativeImage](native-image.md) | string)
 
 Sets the `image` associated with this dock icon.

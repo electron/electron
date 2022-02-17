@@ -1,0 +1,15 @@
+<html>
+<body>
+<script>
+  window.ajax = async (url, options) => {
+    const response = await fetch(url, options);
+    const data = await response.text();
+    const headers = {};
+    for (const [key, value] of response.headers.entries()) {
+      headers[key] = value;
+    }
+    return {data, status: response.status, headers};
+  }
+</script>
+</body>
+</html>

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
-#define SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
 
 #include <string>
 #include <vector>
@@ -58,6 +58,10 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   const char* GetTypeName() override;
 
   content::RenderFrameHost* render_frame_host() const { return render_frame_; }
+
+  // disable copy
+  WebFrameMain(const WebFrameMain&) = delete;
+  WebFrameMain& operator=(const WebFrameMain&) = delete;
 
  protected:
   explicit WebFrameMain(content::RenderFrameHost* render_frame);
@@ -124,12 +128,10 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   bool render_frame_disposed_ = false;
 
   base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(WebFrameMain);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_

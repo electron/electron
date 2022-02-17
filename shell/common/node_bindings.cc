@@ -17,9 +17,9 @@
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
-#include "base/single_thread_task_runner.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
@@ -221,7 +221,7 @@ void SetNodeCliFlags() {
   args.emplace_back("electron");
 
   for (const auto& arg : argv) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
@@ -301,7 +301,7 @@ namespace electron {
 namespace {
 
 base::FilePath GetResourcesPath() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
 #else
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -367,7 +367,7 @@ void NodeBindings::Initialize() {
   // Open node's error reporting system for browser process.
   node::g_upstream_node_mode = false;
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   // Get real command line in renderer process forked by zygote.
   if (browser_env_ != BrowserEnvironment::kBrowser)
     ElectronCommandLine::InitializeFromCommandLine();
@@ -396,7 +396,7 @@ void NodeBindings::Initialize() {
   if (exit_code != 0)
     exit(exit_code);
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
   if (browser_env_ == BrowserEnvironment::kBrowser ||
@@ -410,7 +410,7 @@ void NodeBindings::Initialize() {
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   auto& atom_args = ElectronCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
   std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
@@ -433,12 +433,28 @@ node::Environment* NodeBindings::CreateEnvironment(
       break;
   }
 
-  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
+  v8::Isolate* isolate = context->GetIsolate();
+  gin_helper::Dictionary global(isolate, context->Global());
   // Do not set DOM globals for renderer process.
   // We must set this before the node bootstrapper which is run inside
   // CreateEnvironment
   if (browser_env_ != BrowserEnvironment::kBrowser)
     global.Set("_noBrowserGlobals", true);
+
+  if (browser_env_ == BrowserEnvironment::kBrowser) {
+    const std::vector<std::string> search_paths = {"app.asar", "app",
+                                                   "default_app.asar"};
+    const std::vector<std::string> app_asar_search_paths = {"app.asar"};
+    context->Global()->SetPrivate(
+        context,
+        v8::Private::ForApi(
+            isolate,
+            gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
+        gin::ConvertToV8(isolate,
+                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()
+                             ? app_asar_search_paths
+                             : search_paths));
+  }
 
   std::vector<std::string> exec_args;
   base::FilePath resources_path = GetResourcesPath();
@@ -446,12 +462,12 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  isolate_data_ =
-      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
+  isolate_data_ = node::CreateIsolateData(isolate, uv_loop_, platform);
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                   node::EnvironmentFlags::kHideConsoleWindows;
+                   node::EnvironmentFlags::kHideConsoleWindows |
+                   node::EnvironmentFlags::kNoGlobalSearchPaths;
 
   if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -
@@ -459,24 +475,24 @@ node::Environment* NodeBindings::CreateEnvironment(
     // not to register its handler (overriding blinks) in non-browser processes.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
              node::EnvironmentFlags::kNoInitializeInspector;
-    v8::TryCatch try_catch(context->GetIsolate());
-    env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
-    DCHECK(env);
-
-    // This will only be caught when something has gone terrible wrong as all
-    // electron scripts are wrapped in a try {} catch {} by webpack
-    if (try_catch.HasCaught()) {
-      LOG(ERROR) << "Failed to initialize node environment in process: "
-                 << process_type;
-    }
-  } else {
-    env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
-    DCHECK(env);
   }
+
+  v8::TryCatch try_catch(isolate);
+  env = node::CreateEnvironment(
+      isolate_data_, context, args, exec_args,
+      static_cast<node::EnvironmentFlags::Flags>(flags));
+
+  if (try_catch.HasCaught()) {
+    std::string err_msg =
+        "Failed to initialize node environment in process: " + process_type;
+    v8::Local<v8::Message> message = try_catch.Message();
+    std::string msg;
+    if (!message.IsEmpty() && gin::ConvertFromV8(isolate, message->Get(), &msg))
+      err_msg += " , with error: " + msg;
+    LOG(ERROR) << err_msg;
+  }
+
+  DCHECK(env);
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
@@ -557,7 +573,7 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
-#if !defined(OS_WIN)
+#if !BUILDFLAG(IS_WIN)
   int handle = uv_backend_fd(uv_loop_);
 
   // If the backend fd hasn't changed, don't proceed.

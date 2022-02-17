@@ -1,8 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "rootDir": "spec-main"
-  },
   "include": [
     "spec-main",
     "typings"

@@ -100,7 +100,8 @@ def main():
     # Upload libcxx_objects.zip for linux only
     libcxx_objects = get_zip_name('libcxx-objects', ELECTRON_VERSION)
     libcxx_objects_zip = os.path.join(OUT_DIR, libcxx_objects)
-    shutil.copy2(os.path.join(OUT_DIR, 'libcxx_objects.zip'), libcxx_objects_zip)
+    shutil.copy2(os.path.join(OUT_DIR, 'libcxx_objects.zip'),
+        libcxx_objects_zip)
     upload_electron(release, libcxx_objects_zip, args)
 
     # Upload headers.zip and abi_headers.zip as non-platform specific

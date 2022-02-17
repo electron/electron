@@ -114,6 +114,8 @@ const getNoteFromClerk = async (ghKey) => {
         .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
         .split(/\r?\n/) // split into lines
         .map(line => line.trim())
+        .map(line => line.replace('&lt;', '<'))
+        .map(line => line.replace('&gt;', '>'))
         .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
         .map(line => line.slice(QUOTE_LEAD.length)); // unquote the lines
 

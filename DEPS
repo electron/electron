@@ -15,9 +15,9 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '95.0.4629.0',
+    '100.0.4855.0',
   'node_version':
-    'v16.9.0',
+    'v16.13.2',
   'nan_version':
     # The following commit hash of NAN is v2.14.2 with *only* changes to the
     # test suite. This should be updated to a specific tag when one becomes
