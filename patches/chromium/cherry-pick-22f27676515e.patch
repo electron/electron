@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christopher Cameron <ccameron@chromium.org>
+Date: Tue, 9 Nov 2021 00:23:45 +0000
+Subject: WebContentsVideoCaptureDevice: Fix use-after-free
+
+The classes WebContentsVideoCaptureDevice,
+AuraWindowVideoCaptureDevice::WindowTracker, and
+ViewsWidgetVideoCaptureDeviceMac::UIThreadDelegate all keep a raw
+pointer that they use to access the MouseCursorOverlayController.
+
+This raw pointer comes from the base class FrameSinkVideoCaptureDevice
+and should outlive the class that has a raw pointer. On macOS, this
+isn't necessarily the case.
+
+Avoid this sharp edge by using a WeakPtr for the
+MouseCursorOverlayController, and checking that it is valid before
+using it.
+
+Bug: 1252562, 1179098
+Change-Id: I1d74bea1255597662aab3f9f2430c49d2e39836a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3260842
+Commit-Queue: ccameron <ccameron@chromium.org>
+Reviewed-by: mark a. foltz <mfoltz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#939604}
+
+diff --git a/content/browser/media/capture/views_widget_video_capture_device_mac.cc b/content/browser/media/capture/views_widget_video_capture_device_mac.cc
+index fee27cebfd64ee1cddbcb9873fa4b5e67cb526fc..50da870a417c17b1999b7d98bd8c2cb82e356c06 100644
+--- a/content/browser/media/capture/views_widget_video_capture_device_mac.cc
++++ b/content/browser/media/capture/views_widget_video_capture_device_mac.cc
+@@ -19,9 +19,10 @@ namespace content {
+ class ViewsWidgetVideoCaptureDeviceMac::UIThreadDelegate
+     : public remote_cocoa::ScopedCGWindowID::Observer {
+  public:
+-  UIThreadDelegate(uint32_t cg_window_id,
+-                   const base::WeakPtr<FrameSinkVideoCaptureDevice> device,
+-                   MouseCursorOverlayController* cursor_controller)
++  UIThreadDelegate(
++      uint32_t cg_window_id,
++      const base::WeakPtr<FrameSinkVideoCaptureDevice> device,
++      const base::WeakPtr<MouseCursorOverlayController> cursor_controller)
+       : cg_window_id_(cg_window_id),
+         device_task_runner_(base::ThreadTaskRunnerHandle::Get()),
+         device_(device),
+@@ -83,8 +84,11 @@ class ViewsWidgetVideoCaptureDeviceMac::UIThreadDelegate
+   void OnScopedCGWindowIDMouseMoved(uint32_t cg_window_id,
+                                     const gfx::PointF& location_in_window,
+                                     const gfx::Size& window_size) override {
+-    cursor_controller_->SetTargetSize(window_size);
+-    cursor_controller_->OnMouseMoved(location_in_window);
++    DCHECK_CURRENTLY_ON(BrowserThread::UI);
++    if (cursor_controller_) {
++      cursor_controller_->SetTargetSize(window_size);
++      cursor_controller_->OnMouseMoved(location_in_window);
++    }
+   }
+ 
+   const uint32_t cg_window_id_;
+@@ -96,20 +100,21 @@ class ViewsWidgetVideoCaptureDeviceMac::UIThreadDelegate
+ 
+   // |device_| may only be dereferenced by tasks posted to
+   // |device_task_runner_|.
+-  base::WeakPtr<FrameSinkVideoCaptureDevice> device_;
++  const base::WeakPtr<FrameSinkVideoCaptureDevice> device_;
+ 
+-  // Owned by FrameSinkVideoCaptureDevice. This will be valid for the life of
+-  // UIThreadDelegate because the UIThreadDelegate deleter task will be posted
+-  // to the UI thread before the MouseCursorOverlayController deleter task.
+-  // See similar behavior in WebContentsVideoCaptureDevice::FrameTracker.
+-  MouseCursorOverlayController* const cursor_controller_;
++  // Owned by FrameSinkVideoCaptureDevice.  This may only be accessed on the
++  // UI thread. This is not guaranteed to be valid and must be checked before
++  // use.
++  // https://crbug.com/1252562
++  const base::WeakPtr<MouseCursorOverlayController> cursor_controller_;
+ };
+ 
+ ViewsWidgetVideoCaptureDeviceMac::ViewsWidgetVideoCaptureDeviceMac(
+     const DesktopMediaID& source_id)
+     : weak_factory_(this) {
+   ui_thread_delegate_ = std::make_unique<UIThreadDelegate>(
+-      source_id.id, weak_factory_.GetWeakPtr(), cursor_controller());
++      source_id.id, weak_factory_.GetWeakPtr(),
++      cursor_controller()->GetWeakPtr());
+ }
+ 
+ ViewsWidgetVideoCaptureDeviceMac::~ViewsWidgetVideoCaptureDeviceMac() {
