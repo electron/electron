@@ -136,5 +136,6 @@ cherry-pick-da11d71a0227.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
 cherry-pick-6bb320d134b1.patch
 cherry-pick-c5571653d932.patch
+cherry-pick-1283375.patch
 cherry-pick-1283198.patch
 cherry-pick-1284367.patch
