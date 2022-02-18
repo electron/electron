@@ -89,7 +89,9 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-* [China](https://registry.npmmirror.com/binary.html?path=electron/)
+* [China](https://npm.taobao.org/mirrors/electron)
+
+See the [Advanced Installation Instructions](https://www.electronjs.org/docs/latest/tutorial/installation#mirror) to learn how to use a custom mirror.
 
 ## Documentation translations
 
