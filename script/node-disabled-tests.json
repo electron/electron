@@ -26,6 +26,7 @@
   "parallel/test-crypto-padding-aes256",
   "parallel/test-crypto-secure-heap",
   "parallel/test-fs-utimes-y2K38",
+  "parallel/test-heapsnapshot-near-heap-limit-worker.js",
   "parallel/test-http2-clean-output",
   "parallel/test-https-agent-session-reuse",
   "parallel/test-https-options-boolean-check",
