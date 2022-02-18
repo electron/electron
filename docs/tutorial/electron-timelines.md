@@ -41,18 +41,22 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 * Since Electron 16, Electron has been releasing major versions on an 8-week cadence in accordance to Chrome's change to a 4-week release cadence ([see blog post](https://www.electronjs.org/blog/8-week-cadence).
 
 :::info Chrome release dates
+
 Chromium has the own public release schedule [here](https://chromiumdash.appspot.com/schedule).
+
 :::
 
 ## Version support policy
 
 :::info
+
 Beginning in September 2021 (Electron 15), the Electron team
 will temporarily support the latest **four** stable major versions. This
 extended support is intended to help Electron developers transition to
 the [new 8-week release cadence](https://electronjs.org/blog/8-week-cadence),
 and will continue until the release of Electron 19. At that time,
 the Electron team will drop support back to the latest three stable major versions.
+
 :::
 
 The latest three *stable* major versions are supported by the Electron team.
