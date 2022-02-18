@@ -302,4 +302,66 @@ describe('BrowserView module', () => {
       view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
     });
   });
+
+  describe('BrowserView.capturePage(rect)', () => {
+    it('returns a Promise with a Buffer', async () => {
+      view = new BrowserView({
+        webPreferences: {
+          backgroundThrottling: false
+        }
+      });
+      w.addBrowserView(view);
+      view.setBounds({
+        ...w.getBounds(),
+        x: 0,
+        y: 0
+      });
+      const image = await view.webContents.capturePage({
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100
+      });
+
+      expect(image.isEmpty()).to.equal(true);
+    });
+
+    xit('resolves after the window is hidden and capturer count is non-zero', async () => {
+      view = new BrowserView({
+        webPreferences: {
+          backgroundThrottling: false
+        }
+      });
+      w.setBrowserView(view);
+      view.setBounds({
+        ...w.getBounds(),
+        x: 0,
+        y: 0
+      });
+      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+      view.webContents.incrementCapturerCount();
+      const image = await view.webContents.capturePage();
+      expect(image.isEmpty()).to.equal(false);
+    });
+
+    it('should increase the capturer count', () => {
+      view = new BrowserView({
+        webPreferences: {
+          backgroundThrottling: false
+        }
+      });
+      w.setBrowserView(view);
+      view.setBounds({
+        ...w.getBounds(),
+        x: 0,
+        y: 0
+      });
+
+      view.webContents.incrementCapturerCount();
+      expect(view.webContents.isBeingCaptured()).to.be.true();
+      view.webContents.decrementCapturerCount();
+      expect(view.webContents.isBeingCaptured()).to.be.false();
+    });
+  });
 });
