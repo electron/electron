@@ -580,11 +580,13 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 
 #if defined(OS_LINUX)
 void NativeWindowViews::Maximize() {
-  if (IsVisible())
+  if (IsVisible()) {
     widget()->Maximize();
-  else
+  } else {
     widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
                                             gfx::Rect());
+    NotifyWindowShow();
+  }
 }
 #endif
 
