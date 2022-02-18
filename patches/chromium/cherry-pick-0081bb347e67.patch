@@ -1,0 +1,27 @@
+From 0081bb347e67f820f3b23ee8e45a7dce24e46d11 Mon Sep 17 00:00:00 2001
+From: Matt Reynolds <mattreynolds@google.com>
+Date: Wed, 19 Jan 2022 21:03:08 +0000
+Subject: [PATCH] gamepad: Return an invalid handle after ReportBadMessage
+
+Bug: 1285449
+Change-Id: I746c539577f7bdf69cbe4212ac380e0c92a5c771
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3373944
+Auto-Submit: Matt Reynolds <mattreynolds@chromium.org>
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#961125}
+---
+
+diff --git a/device/gamepad/gamepad_monitor.cc b/device/gamepad/gamepad_monitor.cc
+index ce8ba1e..28082924 100644
+--- a/device/gamepad/gamepad_monitor.cc
++++ b/device/gamepad/gamepad_monitor.cc
+@@ -53,6 +53,8 @@
+   GamepadService* service = GamepadService::GetInstance();
+   if (!service->ConsumerBecameActive(this)) {
+     mojo::ReportBadMessage("GamepadMonitor::GamepadStartPolling failed");
++    std::move(callback).Run(base::ReadOnlySharedMemoryRegion());
++    return;
+   }
+   std::move(callback).Run(service->DuplicateSharedMemoryRegion());
+ }
