@@ -208,7 +208,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
     // GCC thinks that create_flags is going unused, even though the
     // expansion above clearly makes use of it. Per jyasskin@, casting
     // to void is the commonly accepted way to convince the compiler
-    // that you're actually using a parameter/varible.
+    // that you're actually using a parameter/variable.
     (void)create_flags;
   }
 
