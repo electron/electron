@@ -3103,8 +3103,9 @@ void WebContents::IncrementCapturerCount(gin::Arguments* args) {
   // get stayAwake arguments if they exist
   args->GetNext(&stay_awake);
 
-  std::ignore =
-      web_contents()->IncrementCapturerCount(size, stay_hidden, stay_awake);
+  std::ignore = web_contents()
+                    ->IncrementCapturerCount(size, stay_hidden, stay_awake)
+                    .Release();
 }
 
 void WebContents::DecrementCapturerCount(gin::Arguments* args) {
