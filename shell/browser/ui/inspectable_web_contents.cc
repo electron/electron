@@ -175,6 +175,10 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
+void OnOpenItemComplete(const base::FilePath& path, const std::string& result) {
+  platform_util::ShowItemInFolder(path);
+}
+
 constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
 constexpr base::TimeDelta kMaxBackoffDelay = base::Seconds(10);
 
@@ -737,9 +741,8 @@ void InspectableWebContents::ShowItemInFolder(
     return;
 
   base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-
-  // Pass empty callback here; we can ignore errors
-  platform_util::OpenPath(path, platform_util::OpenCallback());
+  platform_util::OpenPath(path.DirName(),
+                          base::BindOnce(&OnOpenItemComplete, path));
 }
 
 void InspectableWebContents::SaveToFile(const std::string& url,
