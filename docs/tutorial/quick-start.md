@@ -479,7 +479,7 @@ We have ATTEMPTED to convert your app to be in a format that electron-forge unde
 Thanks for using "electron-forge"!!!
 ```
 
-1. Create a distributable using Forge's `make` command:
+2. Create a distributable using Forge's `make` command:
 
 ```sh npm2yarn
 npm run make
