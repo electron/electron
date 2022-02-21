@@ -161,16 +161,25 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // On Linux and Window we may already have maximum size defined.
   extensions::SizeConstraints size_constraints(
       use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
+
   int min_width = size_constraints.GetMinimumSize().width();
   int min_height = size_constraints.GetMinimumSize().height();
   options.Get(options::kMinWidth, &min_width);
   options.Get(options::kMinHeight, &min_height);
   size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
-  int max_width = size_constraints.GetMaximumSize().width();
-  int max_height = size_constraints.GetMaximumSize().height();
-  options.Get(options::kMaxWidth, &max_width);
-  options.Get(options::kMaxHeight, &max_height);
-  size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
+
+  gfx::Size max_size = size_constraints.GetMaximumSize();
+  int max_width = max_size.width() > 0 ? max_size.width() : INT_MAX;
+  int max_height = max_size.height() > 0 ? max_size.height() : INT_MAX;
+  bool have_max_width = options.Get(options::kMaxWidth, &max_width);
+  bool have_max_height = options.Get(options::kMaxHeight, &max_height);
+
+  // By default the window has a default maximum size that prevents it
+  // from being resized larger than the screen, so we should only set this
+  // if th user has passed in values.
+  if (have_max_height || have_max_width)
+    size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
+
   if (use_content_size) {
     SetContentSizeConstraints(size_constraints);
   } else {
