@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Mon, 11 Oct 2021 16:09:15 -0700
+Subject: Skip non-compilation functions in %OptimizeOsr
+
+Bug: chromium:1258603
+Change-Id: Ife2284de6151c7e70592b55871875061b93bbcca
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3218193
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#77405}
+
+diff --git a/src/runtime/runtime-test.cc b/src/runtime/runtime-test.cc
+index 69b0f6241bd006c90b57fd371e01f311d4fee115..57b729272113226c24ce6f1898498ab29a2c2132 100644
+--- a/src/runtime/runtime-test.cc
++++ b/src/runtime/runtime-test.cc
+@@ -485,6 +485,10 @@ RUNTIME_FUNCTION(Runtime_OptimizeOsr) {
+ 
+   if (!FLAG_opt) return ReadOnlyRoots(isolate).undefined_value();
+ 
++  if (!function->shared().allows_lazy_compilation()) {
++    return CrashUnlessFuzzing(isolate);
++  }
++
+   if (function->shared().optimization_disabled() &&
+       function->shared().disable_optimization_reason() ==
+           BailoutReason::kNeverOptimize) {
+diff --git a/test/mjsunit/regress/regress-crbug-1258603.js b/test/mjsunit/regress/regress-crbug-1258603.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f371ae889ffaa1a190422a79f06f5af93519a830
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1258603.js
+@@ -0,0 +1,7 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --allow-natives-syntax --fuzzing --no-testing-d8-test-runner
++
++[1,2,3].reduceRight(() => { %OptimizeOsr(1); });
