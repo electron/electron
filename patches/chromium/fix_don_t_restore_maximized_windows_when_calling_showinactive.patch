@@ -7,10 +7,10 @@ This is a backport from Chromium of
 https://chromium-review.googlesource.com/c/chromium/src/+/3371573.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 067861bb743ee2f3c1916794d45efb7dd591b230..6507557bf5a47492343602607e0dbb7d8f88246d 100644
+index 4be0e5b0ef187d68f054672bc3d1dc328057c58b..264a9109e42c23e9be6bf7269b3cfee2634b61e4 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -664,9 +664,16 @@ void HWNDMessageHandler::Show(ui::WindowShowState show_state,
+@@ -665,9 +665,16 @@ void HWNDMessageHandler::Show(ui::WindowShowState show_state,
      SetWindowPlacement(hwnd(), &placement);
      native_show_state = SW_SHOWMAXIMIZED;
    } else {
@@ -28,7 +28,7 @@ index 067861bb743ee2f3c1916794d45efb7dd591b230..6507557bf5a47492343602607e0dbb7d
          break;
        case ui::SHOW_STATE_MAXIMIZED:
          native_show_state = SW_SHOWMAXIMIZED;
-@@ -677,9 +684,9 @@ void HWNDMessageHandler::Show(ui::WindowShowState show_state,
+@@ -678,9 +685,9 @@ void HWNDMessageHandler::Show(ui::WindowShowState show_state,
        case ui::SHOW_STATE_NORMAL:
          if ((GetWindowLong(hwnd(), GWL_EXSTYLE) & WS_EX_TRANSPARENT) ||
              (GetWindowLong(hwnd(), GWL_EXSTYLE) & WS_EX_NOACTIVATE)) {
