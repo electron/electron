@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Austin Sullivan <asully@chromium.org>
+Date: Thu, 10 Feb 2022 22:18:54 +0000
+Subject: M98: FS: Fix FileUtil lifetime issue
+
+Keeps FileSystemContext alive while while resolving a URL on an open
+file system, removing the possibility of the file system being
+destroyed while a URL is being resolved on it.
+
+(cherry picked from commit 3fdf2adf11b3c716c9015597d30b59bffc7ac91b)
+
+Bug: 1275622, 1289394
+Change-Id: Ic1b97552f9d41a61163d72ff8c605699f673f55f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3373583
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Commit-Queue: Austin Sullivan <asully@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#968470}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3451059
+Auto-Submit: Austin Sullivan <asully@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4758@{#1131}
+Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
+
+diff --git a/storage/browser/file_system/file_system_context.cc b/storage/browser/file_system/file_system_context.cc
+index a9dff4886dc2697a5e146d3dae14dfd7137c8942..54dc48d097f37e62db188157bd928f85e2666fa9 100644
+--- a/storage/browser/file_system/file_system_context.cc
++++ b/storage/browser/file_system/file_system_context.cc
+@@ -430,9 +430,22 @@ void FileSystemContext::OpenFileSystem(const blink::StorageKey& storage_key,
+     return;
+   }
+ 
++  // Bind `this` to the callback to ensure this instance stays alive while the
++  // URL is resolving.
+   backend->ResolveURL(
+       CreateCrackedFileSystemURL(storage_key, type, base::FilePath()), mode,
+-      std::move(callback));
++      base::BindOnce(&FileSystemContext::DidResolveURLOnOpenFileSystem, this,
++                     std::move(callback)));
++}
++
++void FileSystemContext::DidResolveURLOnOpenFileSystem(
++    OpenFileSystemCallback callback,
++    const GURL& filesystem_root,
++    const std::string& filesystem_name,
++    base::File::Error error) {
++  DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
++
++  std::move(callback).Run(filesystem_root, filesystem_name, error);
+ }
+ 
+ void FileSystemContext::ResolveURL(const FileSystemURL& url,
+diff --git a/storage/browser/file_system/file_system_context.h b/storage/browser/file_system/file_system_context.h
+index 49d34aaf8a4f5226a26232cf6d29567fa75616ec..22e55b190c95fbdba247526deaa030b50bb45e42 100644
+--- a/storage/browser/file_system/file_system_context.h
++++ b/storage/browser/file_system/file_system_context.h
+@@ -396,6 +396,11 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) FileSystemContext
+                                       const std::string& filesystem_name,
+                                       base::File::Error error);
+ 
++  void DidResolveURLOnOpenFileSystem(OpenFileSystemCallback callback,
++                                     const GURL& filesystem_root,
++                                     const std::string& filesystem_name,
++                                     base::File::Error error);
++
+   // Returns a FileSystemBackend, used only by test code.
+   SandboxFileSystemBackend* sandbox_backend() const {
+     return sandbox_backend_.get();
