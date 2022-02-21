@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 31 Jan 2022 12:07:43 -0500
+Subject: M98: Vulkan: Fix vkCmdResolveImage extents
+
+The source framebuffer's extents were accidentally used instead of the
+blit area extents.
+
+Bug: chromium:1288020
+Change-Id: I5c6128a191deeea2f972dc7f010be9d40c674ce6
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3457022
+Reviewed-by: Tim Van Patten <timvp@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+index 2eeaa66d2692fe7631591377f32b89cdd90aaf05..4ece465efb683c40027dfee083dd2ed567a0bfc4 100644
+--- a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
++++ b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+@@ -1464,8 +1464,8 @@ angle::Result FramebufferVk::resolveColorWithCommand(ContextVk *contextVk,
+     resolveRegion.dstOffset.x                   = params.destOffset[0];
+     resolveRegion.dstOffset.y                   = params.destOffset[1];
+     resolveRegion.dstOffset.z                   = 0;
+-    resolveRegion.extent.width                  = params.srcExtents[0];
+-    resolveRegion.extent.height                 = params.srcExtents[1];
++    resolveRegion.extent.width                  = params.blitArea.width;
++    resolveRegion.extent.height                 = params.blitArea.height;
+     resolveRegion.extent.depth                  = 1;
+ 
+     vk::PerfCounters &perfCounters = contextVk->getPerfCounters();
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 18b80da7f6f30f7e8e8e1df2b05c13be6c5b85de..844d38a75ad054c6ed5cd95cb20a49dadbae267b 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -81,6 +81,7 @@
+ // the test says.  The test also fails on Intel/Vulkan/Windows.
+ 6068 INTEL VULKAN : MultiviewRenderPrimitiveTest.LineLoop/* = SKIP
+ 6068 INTEL VULKAN : MultiviewRenderPrimitiveTest.LineStrip/* = SKIP
++6962 WIN INTEL VULKAN : BlitFramebufferTestES31.PartialResolve/* = SKIP
+ 
+ // Mac
+ 
+diff --git a/src/tests/gl_tests/BlitFramebufferANGLETest.cpp b/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
+index 6fd3f08ef20e315d10c593868d94f6653fa5cdf4..e4d82a511b77ac3b379ec088703d21ce480fafa9 100644
+--- a/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
++++ b/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
+@@ -2603,6 +2603,67 @@ TEST_P(BlitFramebufferTest, BlitDepthStencilPixelByPixel)
+     EXPECT_PIXEL_RECT_EQ(64, 0, 128, 1, GLColor::blue);
+ }
+ 
++// Regression test for a bug in the Vulkan backend where vkCmdResolveImage was using the src extents
++// as the resolve area instead of the area passed to glBlitFramebuffer.
++TEST_P(BlitFramebufferTestES31, PartialResolve)
++{
++    constexpr GLint kWidth  = 16;
++    constexpr GLint kHeight = 32;
++
++    // Read framebuffer is multisampled.
++    GLTexture readTexture;
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, readTexture);
++    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, kWidth, kHeight, GL_TRUE);
++
++    GLFramebuffer readFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, readFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
++                           readTexture, 0);
++    ASSERT_GL_NO_ERROR();
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glClearColor(1, 0, 0, 1);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    // Draw framebuffer is single sampled.  It's bound to a texture with base level the same size as
++    // the read framebuffer, but it's bound to mip 1.
++    GLTexture drawTexture;
++    glBindTexture(GL_TEXTURE_2D, drawTexture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glGenerateMipmap(GL_TEXTURE_2D);
++
++    GLFramebuffer drawFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, drawFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, drawTexture, 1);
++    ASSERT_GL_NO_ERROR();
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glClearColor(0, 1, 0, 1);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth / 2, kHeight / 2, GLColor::green);
++
++    constexpr GLint kResolveX0 = 1;
++    constexpr GLint kResolveY0 = 2;
++    constexpr GLint kResolveX1 = 4;
++    constexpr GLint kResolveY1 = 6;
++
++    // Resolve only a portion of the read framebuffer.
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
++    glBlitFramebuffer(kResolveX0, kResolveY0, kResolveX1, kResolveY1, kResolveX0, kResolveY0,
++                      kResolveX1, kResolveY1, GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, drawFbo);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth / 2, kResolveY0, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kResolveX0, kHeight / 2, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(kResolveX1, 0, kWidth / 2 - kResolveX1, kHeight / 2, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(0, kResolveY1, kWidth / 2, kHeight / 2 - kResolveY1, GLColor::green);
++
++    EXPECT_PIXEL_RECT_EQ(kResolveX0, kResolveY0, kResolveX1 - kResolveX0, kResolveY1 - kResolveY0,
++                         GLColor::red);
++}
++
+ // Test that a draw call to a small FBO followed by a resolve of a large FBO works.
+ TEST_P(BlitFramebufferTestES31, DrawToSmallFBOThenResolveLargeFBO)
+ {
