@@ -120,7 +120,7 @@ class ShowItemHelper {
       bool owned = false;
 
       if (!reader.PopBool(&owned)) {
-        LOG(ERROR) << "Failed to read " << kMethodNameHasOwner << " resposne";
+        LOG(ERROR) << "Failed to read " << kMethodNameHasOwner << " response";
       } else if (owned) {
         is_running = true;
       }

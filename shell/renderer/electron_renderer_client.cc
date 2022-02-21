@@ -50,7 +50,7 @@ void ElectronRendererClient::RenderFrameCreated(
 void ElectronRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);
-  // Inform the document start pharse.
+  // Inform the document start phase.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
@@ -61,7 +61,7 @@ void ElectronRendererClient::RunScriptsAtDocumentStart(
 void ElectronRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
-  // Inform the document end pharse.
+  // Inform the document end phase.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
