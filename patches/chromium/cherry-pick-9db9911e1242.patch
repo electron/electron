@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Roettger <sroettger@google.com>
+Date: Fri, 7 Jan 2022 09:36:31 +0000
+Subject: Keep a set of previously dropped peers
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Test that a given node name hasn't been seen before.
+A side effect of this fix is that re-invitation will not work anymore.
+
+BUG=chromium:1274113
+
+Change-Id: Ibdc50291efa1f6298614b163b544ad980615a981
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3341553
+Reviewed-by: Ken Rockot <rockot@google.com>
+Commit-Queue: Stephen Röttger <sroettger@google.com>
+Cr-Commit-Position: refs/heads/main@{#956441}
+
+diff --git a/mojo/core/invitation_unittest.cc b/mojo/core/invitation_unittest.cc
+index 2c8eeef9feefc6be689f1ca2052af316b4b7db68..0687a58ee2b294580d1165e872ec5855e5de2b53 100644
+--- a/mojo/core/invitation_unittest.cc
++++ b/mojo/core/invitation_unittest.cc
+@@ -693,7 +693,8 @@ DEFINE_TEST_CLIENT(ProcessErrorsClient) {
+   EXPECT_EQ(kDisconnectMessage, ReadMessage(pipe));
+ }
+ 
+-TEST_F(InvitationTest, Reinvitation) {
++// Temporary removed support for reinvitation for non-isolated connections.
++TEST_F(InvitationTest, DISABLED_Reinvitation) {
+   // The gist of this test is that a process should be able to accept an
+   // invitation, lose its connection to the process network, and then accept a
+   // new invitation to re-establish communication.
+diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
+index 21edab39368e69ee6665e490b2c4de13f424edbd..79b933ebbe9eb1cb9eb11512f8480c682811745c 100644
+--- a/mojo/core/node_controller.cc
++++ b/mojo/core/node_controller.cc
+@@ -543,7 +543,8 @@ scoped_refptr<NodeChannel> NodeController::GetBrokerChannel() {
+ 
+ void NodeController::AddPeer(const ports::NodeName& name,
+                              scoped_refptr<NodeChannel> channel,
+-                             bool start_channel) {
++                             bool start_channel,
++                             bool allow_name_reuse) {
+   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
+ 
+   DCHECK(name != ports::kInvalidNodeName);
+@@ -562,6 +563,11 @@ void NodeController::AddPeer(const ports::NodeName& name,
+       return;
+     }
+ 
++    if (dropped_peers_.Contains(name) && !allow_name_reuse) {
++      LOG(ERROR) << "Trying to re-add dropped peer " << name;
++      return;
++    }
++
+     auto result = peers_.insert(std::make_pair(name, channel));
+     DCHECK(result.second);
+ 
+@@ -602,6 +608,7 @@ void NodeController::DropPeer(const ports::NodeName& node_name,
+     if (it != peers_.end()) {
+       ports::NodeName peer = it->first;
+       peers_.erase(it);
++      dropped_peers_.Insert(peer);
+       DVLOG(1) << "Dropped peer " << peer;
+     }
+ 
+@@ -1265,7 +1272,8 @@ void NodeController::OnAcceptPeer(const ports::NodeName& from_node,
+     // Note that we explicitly drop any prior connection to the same peer so
+     // that new isolated connections can replace old ones.
+     DropPeer(peer_name, nullptr);
+-    AddPeer(peer_name, channel, false /* start_channel */);
++    AddPeer(peer_name, channel, false /* start_channel */,
++            true /* allow_name_reuse */);
+     DVLOG(1) << "Node " << name_ << " accepted peer " << peer_name;
+   }
+ 
+@@ -1381,5 +1389,24 @@ NodeController::IsolatedConnection&
+ NodeController::IsolatedConnection::operator=(IsolatedConnection&& other) =
+     default;
+ 
++BoundedPeerSet::BoundedPeerSet() = default;
++BoundedPeerSet::~BoundedPeerSet() = default;
++
++void BoundedPeerSet::Insert(const ports::NodeName& name) {
++  if (new_set_.size() == kHalfSize) {
++    old_set_.clear();
++    std::swap(old_set_, new_set_);
++  }
++  new_set_.insert(name);
++}
++
++bool BoundedPeerSet::Contains(const ports::NodeName& name) {
++  if (old_set_.find(name) != old_set_.end())
++    return true;
++  if (new_set_.find(name) != new_set_.end())
++    return true;
++  return false;
++}
++
+ }  // namespace core
+ }  // namespace mojo
+diff --git a/mojo/core/node_controller.h b/mojo/core/node_controller.h
+index 040eeab79f72efcdb2823cf62e7dbaefa8b9233f..571e578da4950135456bb97c8ea7a30ceabca7cc 100644
+--- a/mojo/core/node_controller.h
++++ b/mojo/core/node_controller.h
+@@ -38,6 +38,26 @@ namespace core {
+ class Broker;
+ class Core;
+ 
++// A set of NodeNames that is bounded by a maximum size.
++// If the max size is reached, it will delete the older half of stored names.
++class BoundedPeerSet {
++ public:
++  BoundedPeerSet();
++  BoundedPeerSet(const BoundedPeerSet&) = delete;
++  BoundedPeerSet& operator=(const BoundedPeerSet&) = delete;
++
++  ~BoundedPeerSet();
++
++  void Insert(const ports::NodeName& name);
++  bool Contains(const ports::NodeName& name);
++
++ private:
++  static constexpr int kHalfSize = 50000;
++
++  std::unordered_set<ports::NodeName> old_set_;
++  std::unordered_set<ports::NodeName> new_set_;
++};
++
+ // The owner of ports::Node which facilitates core EDK implementation. All
+ // public interface methods are safe to call from any thread.
+ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
+@@ -180,7 +200,8 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
+ 
+   void AddPeer(const ports::NodeName& name,
+                scoped_refptr<NodeChannel> channel,
+-               bool start_channel);
++               bool start_channel,
++               bool allow_name_reuse = false);
+   void DropPeer(const ports::NodeName& name, NodeChannel* channel);
+   void SendPeerEvent(const ports::NodeName& name, ports::ScopedEvent event);
+   void DropAllPeers();
+@@ -265,6 +286,7 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeController : public ports::NodeDelegate,
+ 
+   // Channels to known peers, including inviter and invitees, if any.
+   NodeMap peers_;
++  BoundedPeerSet dropped_peers_;
+ 
+   // Outgoing message queues for peers we've heard of but can't yet talk to.
+   std::unordered_map<ports::NodeName, OutgoingMessageQueue>

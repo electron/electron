@@ -15,3 +15,6 @@ merge_inspector_use_ephemeron_table_for_exception_metadata.patch
 cherry-pick-5d2b5e7c006c.patch
 version_9_6_180_13_cherry-pick.patch
 merged_allow_compiled_module_invalidation_at_wasmstreaming_finish.patch
+merged_wasm_32-bit_platforms_lower_kv8maxwasmmemorypages_by_1.patch
+cherry-pick-27bc67f761e6.patch
+regexp_fix_uaf_in_regexpmacroassembler.patch

@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dominic Battre <battre@chromium.org>
+Date: Wed, 22 Dec 2021 16:25:16 +0000
+Subject: Fix preview state detection
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This CL fixes the preview state detection in some edge cases. See
+crbug.com/1261689#c23.
+
+(cherry picked from commit e3aeadcf584ebb5d7f61cd141f9af317cb60cf21)
+
+Fixed: 1261689
+Change-Id: Iefe27e2748acb4b524e8a0811973bdceda46089a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3335637
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Commit-Queue: Dominic Battré <battre@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#951313}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3348406
+Auto-Submit: Dominic Battré <battre@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4758@{#186}
+Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index daa9e25f645f9d554dd85ed4199bc80bf3a7e049..4bf8054f5b6382bbef85b83996dbb6b48dfc2f74 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -36,6 +36,7 @@
+ #include "third_party/blink/public/common/privacy_budget/identifiability_metric_builder.h"
+ #include "third_party/blink/public/common/privacy_budget/identifiability_study_settings.h"
+ #include "third_party/blink/public/mojom/scroll/scroll_into_view_params.mojom-blink.h"
++#include "third_party/blink/public/web/web_autofill_state.h"
+ #include "third_party/blink/renderer/bindings/core/v8/dictionary.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_get_inner_html_options.h"
+@@ -1560,7 +1561,7 @@ double Element::scrollTop() {
+   // Don't disclose scroll position in preview state. See crbug.com/1261689.
+   auto* select_element = DynamicTo<HTMLSelectElement>(this);
+   if (select_element && !select_element->UsesMenuList() &&
+-      !select_element->SuggestedValue().IsEmpty()) {
++      select_element->GetAutofillState() == WebAutofillState::kPreviewed) {
+     return 0;
+   }
+ 

@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Sat, 5 Feb 2022 13:41:47 +0000
+Subject: Fix potential handle reuse in Mojo
+
+(cherry picked from commit 76eca90d0e9c09bfbb8c3e8999f36e6da6842a39)
+
+(cherry picked from commit e1432faf5e101b3a516037a26818c03c759d2fdd)
+
+Fixed: 1270333
+Change-Id: Ife188d519092e4e634355fd53d97c85009771b76
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3414063
+Auto-Submit: Ken Rockot <rockot@google.com>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/main@{#962946}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3421488
+Commit-Queue: Ken Rockot <rockot@google.com>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Original-Commit-Position: refs/branch-heads/4844@{#87}
+Cr-Original-Branched-From: 007241ce2e6c8e5a7b306cc36c730cd07cd38825-refs/heads/main@{#961656}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3427544
+Reviewed-by: Jana Grill <janagrill@google.com>
+Owners-Override: Jana Grill <janagrill@google.com>
+Commit-Queue: Zakhar Voit <voit@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1455}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/mojo/core/handle_table.cc b/mojo/core/handle_table.cc
+index 9426281d73f050598bd5f88b38aac39c4b994ff3..a044f1c8e38f0affe269a87a10c70b49fe6d353c 100644
+--- a/mojo/core/handle_table.cc
++++ b/mojo/core/handle_table.cc
+@@ -65,13 +65,19 @@ bool HandleTable::AddDispatchersFromTransit(
+     const std::vector<Dispatcher::DispatcherInTransit>& dispatchers,
+     MojoHandle* handles) {
+   // Oops, we're out of handles.
+-  if (next_available_handle_ == MOJO_HANDLE_INVALID)
++  if (next_available_handle_ == MOJO_HANDLE_INVALID) {
+     return false;
++  }
++
++  // MOJO_HANDLE_INVALID is zero.
++  DCHECK_GE(next_available_handle_, 1u);
+ 
+-  DCHECK_LE(dispatchers.size(), std::numeric_limits<uint32_t>::max());
+   // If this insertion would cause handle overflow, we're out of handles.
+-  if (next_available_handle_ + dispatchers.size() < next_available_handle_)
++  const uint32_t num_handles_available =
++      std::numeric_limits<uint32_t>::max() - next_available_handle_ + 1;
++  if (num_handles_available < dispatchers.size()) {
+     return false;
++  }
+ 
+   for (size_t i = 0; i < dispatchers.size(); ++i) {
+     MojoHandle handle = MOJO_HANDLE_INVALID;
