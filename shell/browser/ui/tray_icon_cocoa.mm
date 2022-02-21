@@ -93,6 +93,15 @@
 
 - (void)setAlternateImage:(NSImage*)image {
   [[statusItem_ button] setAlternateImage:image];
+
+  // We need to change the button type here because the default button type for
+  // NSStatusItem, NSStatusBarButton, does not display alternate content when
+  // clicked. NSButtonTypeMomentaryChange displays its alternate content when
+  // clicked and returns to its normal content when the user releases it, which
+  // is the behavior users would expect when clicking a button with an alternate
+  // image set.
+  [[statusItem_ button] setButtonType:NSButtonTypeMomentaryChange];
+  [self updateDimensions];
 }
 
 - (void)setIgnoreDoubleClickEvents:(BOOL)ignore {
