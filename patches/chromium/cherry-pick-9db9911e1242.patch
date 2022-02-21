@@ -32,7 +32,7 @@ index 2c8eeef9feefc6be689f1ca2052af316b4b7db68..0687a58ee2b294580d1165e872ec5855
    // invitation, lose its connection to the process network, and then accept a
    // new invitation to re-establish communication.
 diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
-index 21edab39368e69ee6665e490b2c4de13f424edbd..79b933ebbe9eb1cb9eb11512f8480c682811745c 100644
+index b34753b2dc0c58e5a80e1d0678ee178e2589e8e3..1a343929127e748b78fdb2107ec7a91f71c846a7 100644
 --- a/mojo/core/node_controller.cc
 +++ b/mojo/core/node_controller.cc
 @@ -543,7 +543,8 @@ scoped_refptr<NodeChannel> NodeController::GetBrokerChannel() {
@@ -65,7 +65,7 @@ index 21edab39368e69ee6665e490b2c4de13f424edbd..79b933ebbe9eb1cb9eb11512f8480c68
        DVLOG(1) << "Dropped peer " << peer;
      }
  
-@@ -1265,7 +1272,8 @@ void NodeController::OnAcceptPeer(const ports::NodeName& from_node,
+@@ -1270,7 +1277,8 @@ void NodeController::OnAcceptPeer(const ports::NodeName& from_node,
      // Note that we explicitly drop any prior connection to the same peer so
      // that new isolated connections can replace old ones.
      DropPeer(peer_name, nullptr);
@@ -75,7 +75,7 @@ index 21edab39368e69ee6665e490b2c4de13f424edbd..79b933ebbe9eb1cb9eb11512f8480c68
      DVLOG(1) << "Node " << name_ << " accepted peer " << peer_name;
    }
  
-@@ -1381,5 +1389,24 @@ NodeController::IsolatedConnection&
+@@ -1386,5 +1394,24 @@ NodeController::IsolatedConnection&
  NodeController::IsolatedConnection::operator=(IsolatedConnection&& other) =
      default;
  
