@@ -473,7 +473,7 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
       // windows can occur due to rapidly entering and leaving forwarding mode.
       // By consuming and ignoring the message, we're essentially telling
       // Chromium that we have not left the window despite somebody else getting
-      // the messages. As to why this is catched for the legacy window and not
+      // the messages. As to why this is caught for the legacy window and not
       // the actual browser window is simply that the legacy window somehow
       // makes use of these events; posting to the main window didn't work.
       if (window->forwarding_mouse_messages_) {

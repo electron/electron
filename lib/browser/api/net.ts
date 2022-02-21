@@ -198,7 +198,7 @@ class ChunkedBodyStream extends Writable {
     this._downstream = pipe;
     if (this._pendingChunk) {
       const doneWriting = (maybeError: Error | void) => {
-        // If the underlying request has been aborted, we honeslty don't care about the error
+        // If the underlying request has been aborted, we honestly don't care about the error
         // all work should cease as soon as we abort anyway, this error is probably a
         // "mojo pipe disconnected" error (code=9)
         if (this._clientRequest._aborted) return;
