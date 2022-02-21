@@ -132,6 +132,7 @@ m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
 cherry-pick-f781748dcb3c.patch
 cherry-pick-c5571653d932.patch
 fix_crash_when_saving_edited_pdf_files.patch
+mojo_reject_addbrokerclient_on_non-broker_nodes.patch
 cherry-pick-1277917.patch
 cherry-pick-1281979.patch
 cherry-pick-1282354.patch
