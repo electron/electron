@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin Ellis <kevers@google.com>
+Date: Fri, 11 Feb 2022 01:36:04 +0000
+Subject: Code health cleanup: replacing animations.
+
+Animation::Update performed a synchronous processing of the finish
+microtask to ensure that finished events where dispatched ahead of
+replace events. This step does not align with the spec.  Instead we
+should be queuing the replace event.  Microtasks will be processed in
+the correct order.
+
+Spec link: https://www.w3.org/TR/web-animations-1/#timelines
+
+Change-Id: Ibe7753e792fb6cf905bbe6815a080a8cc51c2803
+
+(cherry picked from commit d4fb69ff0fe343fe8a171014785a88eabfe2b1c2)
+
+Bug: 1290858
+Change-Id: Ibe7753e792fb6cf905bbe6815a080a8cc51c2803
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3414765
+Reviewed-by: Mustaq Ahmed <mustaq@chromium.org>
+Commit-Queue: Kevin Ellis <kevers@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#964223}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3453925
+Reviewed-by: Adrian Taylor <adetaylor@google.com>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4758@{#1134}
+Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
+
+diff --git a/third_party/blink/renderer/core/animation/animation.cc b/third_party/blink/renderer/core/animation/animation.cc
+index f11b55b34cdaa57f4ccfbe44c40c4d03d485210d..acb59f356d43e368e6e5cfe2f649ae60483ab978 100644
+--- a/third_party/blink/renderer/core/animation/animation.cc
++++ b/third_party/blink/renderer/core/animation/animation.cc
+@@ -2275,10 +2275,6 @@ bool Animation::Update(TimingUpdateReason reason) {
+ 
+   if (reason == kTimingUpdateForAnimationFrame) {
+     if (idle || CalculateAnimationPlayState() == kFinished) {
+-      // TODO(crbug.com/1029348): Per spec, we should have a microtask
+-      // checkpoint right after the update cycle. Once this is fixed we should
+-      // no longer need to force a synchronous resolution here.
+-      AsyncFinishMicrotask();
+       finished_ = true;
+     }
+   }
+diff --git a/third_party/blink/renderer/core/animation/document_animations.cc b/third_party/blink/renderer/core/animation/document_animations.cc
+index 6e5b4f970387929b6b940b18e14e997d2baa339c..f8090e41f8b0aa2e138738f5a3ba7c434d85535b 100644
+--- a/third_party/blink/renderer/core/animation/document_animations.cc
++++ b/third_party/blink/renderer/core/animation/document_animations.cc
+@@ -45,6 +45,7 @@
+ #include "third_party/blink/renderer/core/page/page.h"
+ #include "third_party/blink/renderer/core/page/page_animator.h"
+ #include "third_party/blink/renderer/platform/bindings/microtask.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
+ 
+ namespace blink {
+ 
+@@ -286,10 +287,13 @@ void DocumentAnimations::RemoveReplacedAnimations(
+ 
+   // The list of animations for removal is constructed in reverse composite
+   // ordering for efficiency. Flip the ordering to ensure that events are
+-  // dispatched in composite order.
++  // dispatched in composite order.  Queue as a microtask so that the finished
++  // event is dispatched ahead of the remove event.
+   for (auto it = animations_to_remove.rbegin();
+        it != animations_to_remove.rend(); it++) {
+-    (*it)->RemoveReplacedAnimation();
++    Animation* animation = *it;
++    Microtask::EnqueueMicrotask(WTF::Bind(&Animation::RemoveReplacedAnimation,
++                                          WrapWeakPersistent(animation)));
+   }
+ }
+ 

@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alan Screen <awscreen@chromium.org>
+Date: Fri, 7 Jan 2022 09:38:01 +0000
+Subject: Ensure valid print render host before proceeding to print.
+
+Bug: 1283375
+Change-Id: I5691fc2a9d09040e777aafd0061b957025643b8a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3369086
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Alan Screen <awscreen@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#956443}
+
+diff --git a/chrome/browser/printing/print_view_manager.cc b/chrome/browser/printing/print_view_manager.cc
+index 4662db344afb08574b7ac7d96cb72c71edc802af..c7535ddd5b54ae33fe6f6aea09b6b313ba38b840 100644
+--- a/chrome/browser/printing/print_view_manager.cc
++++ b/chrome/browser/printing/print_view_manager.cc
+@@ -111,6 +111,11 @@ bool PrintViewManager::PrintForSystemDialogNow(
+   on_print_dialog_shown_callback_ = std::move(dialog_shown_callback);
+   is_switching_to_system_dialog_ = true;
+ 
++  // Remember the ID for `print_preview_rfh_`, to enable checking that the
++  // `RenderFrameHost` is still valid after a possible inner message loop runs
++  // in `DisconnectFromCurrentPrintJob()`.
++  content::GlobalRenderFrameHostId rfh_id = print_preview_rfh_->GetGlobalId();
++
+   auto weak_this = weak_factory_.GetWeakPtr();
+   DisconnectFromCurrentPrintJob();
+   if (!weak_this)
+@@ -120,6 +125,10 @@ bool PrintViewManager::PrintForSystemDialogNow(
+   if (IsCrashed())
+     return false;
+ 
++  // Don't print if `print_preview_rfh_` is no longer live.
++  if (!content::RenderFrameHost::FromID(rfh_id))
++    return false;
++
+   // TODO(crbug.com/809738)  Register with `PrintBackendServiceManager` when
+   // system print is enabled out-of-process.
+ 
+diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
+index 143ee383668965ba04da092e3445fc9f4a33a433..055d97cb63cb5a1b64ee0a113ec27b664113aba9 100644
+--- a/chrome/browser/printing/print_view_manager_base.cc
++++ b/chrome/browser/printing/print_view_manager_base.cc
+@@ -39,6 +39,7 @@
+ #include "components/services/print_compositor/public/cpp/print_service_mojo_types.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"
++#include "content/public/browser/global_routing_id.h"
+ #include "content/public/browser/notification_details.h"
+ #include "content/public/browser/notification_service.h"
+ #include "content/public/browser/notification_source.h"
+@@ -365,6 +366,11 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
+                                     bool silent,
+                                     base::Value settings,
+                                     CompletionCallback callback)  {
++  // Remember the ID for `rfh`, to enable checking that the `RenderFrameHost`
++  // is still valid after a possible inner message loop runs in
++  // `DisconnectFromCurrentPrintJob()`.
++  content::GlobalRenderFrameHostId rfh_id = rfh->GetGlobalId();
++
+   auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   DisconnectFromCurrentPrintJob();
+   if (!weak_this)
+@@ -374,6 +380,10 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
+   if (IsCrashed())
+     return false;
+ 
++  // Don't print if `rfh` is no longer live.
++  if (!content::RenderFrameHost::FromID(rfh_id))
++    return false;
++
+   // TODO(crbug.com/809738)  Register with `PrintBackendServiceManager` when
+   // system print is enabled out-of-process.  A corresponding unregister should
+   // go in `ReleasePrintJob()`.
