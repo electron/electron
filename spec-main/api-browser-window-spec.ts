@@ -3422,6 +3422,23 @@ describe('BrowserWindow module', () => {
       } catch {}
     });
 
+    it('should throw when passing relative paths', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'HTMLComplete')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'HTMLOnly')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'MHTML')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+    });
+
     it('should save page to disk with HTMLOnly', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
