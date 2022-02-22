@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain} = require('electron')
+const {app, BrowserWindow, ipcMain,dialog} = require('electron')
 const path = require('path')
 
 async function handleFileOpen() {
