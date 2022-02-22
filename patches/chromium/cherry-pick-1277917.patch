@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Simon Pelchat <spelchat@chromium.org>
+Date: Fri, 7 Jan 2022 20:00:37 +0000
+Subject: Avoid UAF on StreamingSearchPrefetchURLLoader.
+
+StreamingSearchPrefetchURLLoader::OnDataAvailable used to "delete this",
+which results in deleting the DataPipeDrainer, which will then be used
+once OnDataAvailable returns. Instead, we post a task to delete the
+URL loader later on.
+
+Bug: 1277917
+Change-Id: I8d78c73a01fff0315b96ccb0e7fe605884b99823
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3365387
+Reviewed-by: Max Curran <curranmax@chromium.org>
+Reviewed-by: Robert Ogden <robertogden@chromium.org>
+Commit-Queue: Simon Pelchat <spelchat@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#956628}
+
+diff --git a/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.cc b/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.cc
+index 1d3d1ea93c026d371a6ad5678e8ff37dc58f8423..e3eaad96fbada18211f295988c07d218ab67921f 100644
+--- a/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.cc
++++ b/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.cc
+@@ -5,6 +5,7 @@
+ #include "chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.h"
+ 
+ #include "chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.h"
++#include "streaming_search_prefetch_request.h"
+ 
+ StreamingSearchPrefetchRequest::StreamingSearchPrefetchRequest(
+     const GURL& prefetch_url,
+@@ -19,7 +20,9 @@ void StreamingSearchPrefetchRequest::StartPrefetchRequestInternal(
+     std::unique_ptr<network::ResourceRequest> resource_request,
+     const net::NetworkTrafficAnnotationTag& network_traffic_annotation) {
+   streaming_url_loader_ = std::make_unique<StreamingSearchPrefetchURLLoader>(
+-      this, profile, std::move(resource_request), network_traffic_annotation);
++      this, profile, std::move(resource_request), network_traffic_annotation,
++      base::BindOnce(&StreamingSearchPrefetchRequest::StopPrefetch,
++                     weak_factory_.GetWeakPtr()));
+ }
+ 
+ std::unique_ptr<SearchPrefetchURLLoader>
+diff --git a/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.h b/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.h
+index ff051c61e9cbed67d5cffbcac007d6c12a26cc76..ad75d404abe9e743d079725ffd8b01d3a49ae017 100644
+--- a/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.h
++++ b/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_request.h
+@@ -47,6 +47,8 @@ class StreamingSearchPrefetchRequest : public BaseSearchPrefetchRequest {
+  private:
+   // The ongoing prefetch request. Null before and after the fetch.
+   std::unique_ptr<StreamingSearchPrefetchURLLoader> streaming_url_loader_;
++
++  base::WeakPtrFactory<StreamingSearchPrefetchRequest> weak_factory_{this};
+ };
+ 
+ #endif  // CHROME_BROWSER_PREFETCH_SEARCH_PREFETCH_STREAMING_SEARCH_PREFETCH_REQUEST_H_
+diff --git a/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.cc b/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.cc
+index 07f4e5cd7f0adde63861962a78cdac0de43591b0..8d9009c42cdde766e105b02827a539a4477ea58e 100644
+--- a/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.cc
++++ b/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.cc
+@@ -26,15 +26,18 @@
+ #include "services/network/public/cpp/shared_url_loader_factory.h"
+ #include "services/network/public/mojom/early_hints.mojom.h"
+ #include "services/network/public/mojom/url_response_head.mojom.h"
++#include "streaming_search_prefetch_url_loader.h"
+ #include "url/gurl.h"
+ 
+ StreamingSearchPrefetchURLLoader::StreamingSearchPrefetchURLLoader(
+     StreamingSearchPrefetchRequest* streaming_prefetch_request,
+     Profile* profile,
+     std::unique_ptr<network::ResourceRequest> resource_request,
+-    const net::NetworkTrafficAnnotationTag& network_traffic_annotation)
++    const net::NetworkTrafficAnnotationTag& network_traffic_annotation,
++    base::OnceClosure stop_prefetch_closure)
+     : resource_request_(std::move(resource_request)),
+-      streaming_prefetch_request_(streaming_prefetch_request) {
++      streaming_prefetch_request_(streaming_prefetch_request),
++      stop_prefetch_closure_(std::move(stop_prefetch_closure)) {
+   DCHECK(streaming_prefetch_request_);
+   auto url_loader_factory = profile->GetDefaultStoragePartition()
+                                 ->GetURLLoaderFactoryForBrowserProcess();
+@@ -126,7 +129,7 @@ void StreamingSearchPrefetchURLLoader::OnReceiveRedirect(
+   if (streaming_prefetch_request_) {
+     streaming_prefetch_request_->ErrorEncountered();
+   } else {
+-    delete this;
++    PostTaskToStopPrefetchAndDeleteSelf();
+   }
+ }
+ 
+@@ -209,7 +212,7 @@ void StreamingSearchPrefetchURLLoader::OnStartLoadingResponseBodyFromData() {
+       mojo::CreateDataPipe(&options, producer_handle_, consumer_handle);
+ 
+   if (rv != MOJO_RESULT_OK) {
+-    delete this;
++    PostTaskToStopPrefetchAndDeleteSelf();
+     return;
+   }
+ 
+@@ -231,7 +234,7 @@ void StreamingSearchPrefetchURLLoader::OnHandleReady(
+     MojoResult result,
+     const mojo::HandleSignalsState& state) {
+   if (result != MOJO_RESULT_OK) {
+-    delete this;
++    PostTaskToStopPrefetchAndDeleteSelf();
+     return;
+   }
+   PushData();
+@@ -257,7 +260,7 @@ void StreamingSearchPrefetchURLLoader::PushData() {
+     }
+ 
+     if (result != MOJO_RESULT_OK) {
+-      delete this;
++      PostTaskToStopPrefetchAndDeleteSelf();
+       return;
+     }
+ 
+@@ -344,16 +347,24 @@ void StreamingSearchPrefetchURLLoader::OnURLLoaderMojoDisconnect() {
+     DCHECK(streaming_prefetch_request_);
+     streaming_prefetch_request_->ErrorEncountered();
+   } else {
+-    delete this;
++    PostTaskToStopPrefetchAndDeleteSelf();
+   }
+ }
+ 
+ void StreamingSearchPrefetchURLLoader::OnURLLoaderClientMojoDisconnect() {
+   DCHECK(forwarding_client_);
+   DCHECK(!streaming_prefetch_request_);
+-  delete this;
++  PostTaskToStopPrefetchAndDeleteSelf();
+ }
+ 
+ void StreamingSearchPrefetchURLLoader::ClearOwnerPointer() {
+   streaming_prefetch_request_ = nullptr;
+ }
++
++void StreamingSearchPrefetchURLLoader::PostTaskToStopPrefetchAndDeleteSelf() {
++  // To avoid UAF bugs, post a separate task to delete this object.
++  if (stop_prefetch_closure_) {
++    base::SequencedTaskRunnerHandle::Get()->PostTask(
++        FROM_HERE, std::move(stop_prefetch_closure_));
++  }
++}
+diff --git a/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.h b/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.h
+index 2213fb079e3f29566d67030dd2fa399ce11024e2..ed225db0b4d2b0d24aae967f320a7010c1a45044 100644
+--- a/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.h
++++ b/chrome/browser/prefetch/search_prefetch/streaming_search_prefetch_url_loader.h
+@@ -39,7 +39,8 @@ class StreamingSearchPrefetchURLLoader : public network::mojom::URLLoader,
+       StreamingSearchPrefetchRequest* streaming_prefetch_request,
+       Profile* profile,
+       std::unique_ptr<network::ResourceRequest> resource_request,
+-      const net::NetworkTrafficAnnotationTag& network_traffic_annotation);
++      const net::NetworkTrafficAnnotationTag& network_traffic_annotation,
++      base::OnceClosure stop_prefetch_closure);
+ 
+   ~StreamingSearchPrefetchURLLoader() override;
+ 
+@@ -105,6 +106,9 @@ class StreamingSearchPrefetchURLLoader : public network::mojom::URLLoader,
+   // Clears |producer_handle_| and |handle_watcher_|.
+   void Finish();
+ 
++  // Post a task to delete this object by running stop_prefetch_closure_.
++  void PostTaskToStopPrefetchAndDeleteSelf();
++
+   // Sets up mojo forwarding to the navigation path. Resumes
+   // |network_url_loader_| calls. Serves the start of the response to the
+   // navigation path. After this method is called, |this| manages its own
+@@ -164,6 +168,9 @@ class StreamingSearchPrefetchURLLoader : public network::mojom::URLLoader,
+   mojo::ScopedDataPipeProducerHandle producer_handle_;
+   std::unique_ptr<mojo::SimpleWatcher> handle_watcher_;
+ 
++  // Closure to cancel this prefetch. Running this callback will destroy |this|.
++  base::OnceClosure stop_prefetch_closure_;
++
+   base::WeakPtrFactory<StreamingSearchPrefetchURLLoader> weak_factory_{this};
+ };
+ 

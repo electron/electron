@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Wed, 2 Feb 2022 05:45:44 +0000
+Subject: Viz: Fix UAF on context loss
+
+(cherry picked from commit 98d246cabe677e1d8287e4d42ce02825417be9e2)
+
+Fixed: 1250655
+Change-Id: I2898316635d370fa36b94e0ae2564ed357745b2c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3413372
+Auto-Submit: Ken Rockot <rockot@google.com>
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#963012}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3430523
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Cr-Commit-Position: refs/branch-heads/4758@{#1050}
+Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
+
+diff --git a/services/viz/public/cpp/gpu/context_provider_command_buffer.cc b/services/viz/public/cpp/gpu/context_provider_command_buffer.cc
+index a31c10c610000415b5a88a0824eea63b45a435cc..1b323f142d934afea0215dea190efaa197cec554 100644
+--- a/services/viz/public/cpp/gpu/context_provider_command_buffer.cc
++++ b/services/viz/public/cpp/gpu/context_provider_command_buffer.cc
+@@ -478,9 +478,13 @@ const gpu::GpuFeatureInfo& ContextProviderCommandBuffer::GetGpuFeatureInfo()
+ void ContextProviderCommandBuffer::OnLostContext() {
+   CheckValidThreadOrLockAcquired();
+ 
+-  // Ensure |this| isn't destroyed in the middle of OnLostContext() if observers
+-  // drop all references to it.
+-  scoped_refptr<ContextProviderCommandBuffer> ref(this);
++  // Observers may drop the last persistent references to `this`, but there may
++  // be weak references in use further up the stack. This task is posted to
++  // ensure that destruction is deferred until it's safe.
++  base::SequencedTaskRunnerHandle::Get()->PostTask(
++      FROM_HERE,
++      base::BindOnce([](scoped_refptr<ContextProviderCommandBuffer>) {},
++                     base::WrapRefCounted(this)));
+ 
+   for (auto& observer : observers_)
+     observer.OnContextLost();
