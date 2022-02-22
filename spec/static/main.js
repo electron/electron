@@ -132,6 +132,10 @@ app.whenReady().then(async function () {
   window.webContents.on('render-process-gone', function (event, details) {
     console.error('Renderer process gone', details);
     if (details.reason === 'crashed') {
+      if (details.exitCode) {
+        const textStatus = process.platform === 'win32' ? `0x${details.exitCode.toString(16)}` : details.exitCode.toString();
+        console.log(`render process crashed with code ${textStatus}.`);
+      }
       process.exit(1);
     }
   });
