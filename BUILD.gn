@@ -472,8 +472,8 @@ source_set("electron_lib") {
 
   if (is_linux) {
     deps += [
-      "//build/config/linux/gtk:gtkprint",
       "//components/crash/content/browser",
+      "//ui/gtk:gtk_config",
     ]
   }
 
@@ -500,6 +500,8 @@ source_set("electron_lib") {
       "ServiceManagement.framework",
       "StoreKit.framework",
     ]
+
+    weak_frameworks = [ "QuickLookThumbnailing.framework" ]
 
     sources += [
       "shell/browser/ui/views/autofill_popup_view.cc",
@@ -549,7 +551,7 @@ source_set("electron_lib") {
       sources += filenames.lib_sources_linux_x11
       public_deps += [
         "//ui/base/x",
-        "//ui/platform_window/x11",
+        "//ui/ozone/platform/x11",
       ]
     }
     configs += [ ":gio_unix" ]
@@ -1401,11 +1403,13 @@ dist_zip("electron_dist_zip") {
   if (is_linux) {
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
+  deps = data_deps
   outputs = [ "$root_build_dir/dist.zip" ]
 }
 
 dist_zip("electron_ffmpeg_zip") {
   data_deps = [ "//third_party/ffmpeg" ]
+  deps = data_deps
   outputs = [ "$root_build_dir/ffmpeg.zip" ]
 }
 
@@ -1423,6 +1427,7 @@ group("electron_chromedriver") {
 dist_zip("electron_chromedriver_zip") {
   testonly = true
   data_deps = electron_chromedriver_deps
+  deps = data_deps
   outputs = [ "$root_build_dir/chromedriver.zip" ]
 }
 
@@ -1441,6 +1446,7 @@ group("electron_mksnapshot") {
 
 dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
+  deps = data_deps
   outputs = [ "$root_build_dir/mksnapshot.zip" ]
 }
 
@@ -1451,6 +1457,7 @@ copy("hunspell_dictionaries") {
 
 dist_zip("hunspell_dictionaries_zip") {
   data_deps = [ ":hunspell_dictionaries" ]
+  deps = data_deps
   flatten = true
 
   outputs = [ "$root_build_dir/hunspell_dictionaries.zip" ]
@@ -1464,6 +1471,7 @@ copy("libcxx_headers") {
 
 dist_zip("libcxx_headers_zip") {
   data_deps = [ ":libcxx_headers" ]
+  deps = data_deps
   flatten = true
   flatten_relative_to = rebase_path(
           "$target_gen_dir/electron_libcxx_include/buildtools/third_party/libc++/trunk",
@@ -1479,6 +1487,7 @@ copy("libcxxabi_headers") {
 
 dist_zip("libcxxabi_headers_zip") {
   data_deps = [ ":libcxxabi_headers" ]
+  deps = data_deps
   flatten = true
   flatten_relative_to = rebase_path(
           "$target_gen_dir/electron_libcxxabi_include/buildtools/third_party/libc++abi/trunk",

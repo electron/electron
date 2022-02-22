@@ -44,7 +44,7 @@ namespace {
 const char kUserDataDir[] = "user-data-dir";
 const char kProcessType[] = "type";
 
-ALLOW_UNUSED_TYPE bool IsEnvSet(const char* name) {
+bool IsEnvSet(const char* name) {
   size_t required_size;
   getenv_s(&required_size, nullptr, 0, name);
   return required_size != 0;

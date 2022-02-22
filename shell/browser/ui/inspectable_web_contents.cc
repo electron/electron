@@ -580,11 +580,11 @@ void InspectableWebContents::LoadCompleted() {
     SetIsDocked(DispatchCallback(), false);
   } else {
     if (dock_state_.empty()) {
-      const base::DictionaryValue* prefs =
+      const base::Value* prefs =
           pref_service_->GetDictionary(kDevToolsPreferences);
-      std::string current_dock_state;
-      prefs->GetString("currentDockState", &current_dock_state);
-      base::RemoveChars(current_dock_state, "\"", &dock_state_);
+      const std::string* current_dock_state =
+          prefs->FindStringKey("currentDockState");
+      base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");

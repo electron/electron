@@ -394,10 +394,10 @@ std::string Browser::DockGetBadgeText() {
 
 void Browser::DockHide() {
   // Transforming application state from UIElement to Foreground is an
-  // asyncronous operation, and unfortunately there is currently no way to know
+  // asynchronous operation, and unfortunately there is currently no way to know
   // when it is finished.
   // So if we call DockHide => DockShow => DockHide => DockShow in a very short
-  // time, we would triger a bug of macOS that, there would be multiple dock
+  // time, we would trigger a bug of macOS that, there would be multiple dock
   // icons of the app left in system.
   // To work around this, we make sure DockHide does nothing if it is called
   // immediately after DockShow. After some experiments, 1 second seems to be

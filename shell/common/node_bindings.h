@@ -161,7 +161,7 @@ class NodeBindings {
   // Isolate data used in creating the environment
   node::IsolateData* isolate_data_ = nullptr;
 
-#if !defined(OS_WIN)
+#if !BUILDFLAG(IS_WIN)
   int handle_ = -1;
 #endif
 

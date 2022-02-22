@@ -12,7 +12,7 @@ should be removed as soon as those have been updated. Patching because
 every instance is a FTBFS that prevents testing any one instance's fix.
 
 diff --git a/base/callback_helpers.h b/base/callback_helpers.h
-index da876907836f0dbbd02a90ad7e0556304a9532cf..c3401f4cdd276e0f1b094b29753f37b10e72222d 100644
+index 046130ff8cbc4945e94a4ee71ac6320b4f7c5369..c71c3e1720b3f4c7b7362d99957cd2479bf88a37 100644
 --- a/base/callback_helpers.h
 +++ b/base/callback_helpers.h
 @@ -94,6 +94,22 @@ class OnceCallbackHolder final {

@@ -4,12 +4,12 @@
 
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
+#include <tuple>
 #include <vector>
 
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
-#include "base/ignore_result.h"
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
 #include "base/process/process_metrics.h"
@@ -124,7 +124,7 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
   auto callback_value = binding->Get(context, callback_key).ToLocalChecked();
   DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
   auto callback = callback_value.As<v8::Function>();
-  ignore_result(callback->Call(context, binding, 0, nullptr));
+  std::ignore = callback->Call(context, binding, 0, nullptr);
 }
 
 }  // namespace

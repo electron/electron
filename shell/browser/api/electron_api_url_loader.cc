@@ -361,10 +361,12 @@ void SimpleURLLoaderWrapper::OnSSLCertificateError(
   std::move(response).Run(net_error);
 }
 
-void SimpleURLLoaderWrapper::OnClearSiteData(const GURL& url,
-                                             const std::string& header_value,
-                                             int32_t load_flags,
-                                             OnClearSiteDataCallback callback) {
+void SimpleURLLoaderWrapper::OnClearSiteData(
+    const GURL& url,
+    const std::string& header_value,
+    int32_t load_flags,
+    const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+    OnClearSiteDataCallback callback) {
   std::move(callback).Run();
 }
 void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
@@ -488,7 +490,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   int options = 0;
   if (!credentials_specified && !use_session_cookies) {
     // This is the default case, as well as the case when credentials is not
-    // specified and useSessionCoookies is false. credentials_mode will be
+    // specified and useSessionCookies is false. credentials_mode will be
     // kInclude, but cookies will be blocked.
     request->credentials_mode = network::mojom::CredentialsMode::kInclude;
     options |= network::mojom::kURLLoadOptionBlockAllCookies;

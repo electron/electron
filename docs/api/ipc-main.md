@@ -1,3 +1,10 @@
+---
+title: "ipcMain"
+description: "Communicate asynchronously from the main process to renderer processes."
+slug: ipc-main
+hide_title: false
+---
+
 # ipcMain
 
 > Communicate asynchronously from the main process to renderer processes.
@@ -9,7 +16,9 @@ process, it handles asynchronous and synchronous messages sent from a renderer
 process (web page). Messages sent from a renderer will be emitted to this
 module.
 
-## Sending Messages
+For usage examples, check out the [IPC tutorial].
+
+## Sending messages
 
 It is also possible to send messages from the main process to the renderer
 process, see [webContents.send][web-contents-send] for more information.
@@ -21,36 +30,6 @@ process, see [webContents.send][web-contents-send] for more information.
   coming from frames that aren't the main frame (e.g. iframes) whereas
   `event.sender.send(...)` will always send to the main frame.
 
-An example of sending and handling messages between the render and main
-processes:
-
-```javascript
-// In main process.
-const { ipcMain } = require('electron')
-ipcMain.on('asynchronous-message', (event, arg) => {
-  console.log(arg) // prints "ping"
-  event.reply('asynchronous-reply', 'pong')
-})
-
-ipcMain.on('synchronous-message', (event, arg) => {
-  console.log(arg) // prints "ping"
-  event.returnValue = 'pong'
-})
-```
-
-```javascript
-// In renderer process (web page).
-// NB. Electron APIs are only accessible from preload, unless contextIsolation is disabled.
-// See https://www.electronjs.org/docs/tutorial/process-model#preload-scripts for more details.
-const { ipcRenderer } = require('electron')
-console.log(ipcRenderer.sendSync('synchronous-message', 'ping')) // prints "pong"
-
-ipcRenderer.on('asynchronous-reply', (event, arg) => {
-  console.log(arg) // prints "pong"
-})
-ipcRenderer.send('asynchronous-message', 'ping')
-```
-
 ## Methods
 
 The `ipcMain` module has the following method to listen for events:
@@ -59,7 +38,7 @@ The `ipcMain` module has the following method to listen for events:
 
 * `channel` string
 * `listener` Function
-  * `event` IpcMainEvent
+  * `event` [IpcMainEvent][ipc-main-event]
   * `...args` any[]
 
 Listens to `channel`, when a new message arrives `listener` would be called with
@@ -69,7 +48,7 @@ Listens to `channel`, when a new message arrives `listener` would be called with
 
 * `channel` string
 * `listener` Function
-  * `event` IpcMainEvent
+  * `event` [IpcMainEvent][ipc-main-event]
   * `...args` any[]
 
 Adds a one time `listener` function for the event. This `listener` is invoked
@@ -93,8 +72,8 @@ Removes listeners of the specified `channel`.
 ### `ipcMain.handle(channel, listener)`
 
 * `channel` string
-* `listener` Function<Promise\<void> | any>
-  * `event` IpcMainInvokeEvent
+* `listener` Function<Promise\<void&#62; | any&#62;
+  * `event` [IpcMainInvokeEvent][ipc-main-invoke-event]
   * `...args` any[]
 
 Adds a handler for an `invoke`able IPC. This handler will be called whenever a
@@ -104,14 +83,14 @@ If `listener` returns a Promise, the eventual result of the promise will be
 returned as a reply to the remote caller. Otherwise, the return value of the
 listener will be used as the value of the reply.
 
-```js
-// Main process
+```js title='Main Process'
 ipcMain.handle('my-invokable-ipc', async (event, ...args) => {
   const result = await somePromise(...args)
   return result
 })
+```
 
-// Renderer process
+```js title='Renderer Process'
 async () => {
   const result = await ipcRenderer.invoke('my-invokable-ipc', arg1, arg2)
   // ...
@@ -130,7 +109,7 @@ provided to the renderer process. Please refer to
 ### `ipcMain.handleOnce(channel, listener)`
 
 * `channel` string
-* `listener` Function<Promise\<void> | any>
+* `listener` Function<Promise\<void&#62; | any&#62;
   * `event` IpcMainInvokeEvent
   * `...args` any[]
 
@@ -146,13 +125,16 @@ Removes any handler for `channel`, if present.
 ## IpcMainEvent object
 
 The documentation for the `event` object passed to the `callback` can be found
-in the [`ipc-main-event`](structures/ipc-main-event.md) structure docs.
+in the [`ipc-main-event`][ipc-main-event] structure docs.
 
 ## IpcMainInvokeEvent object
 
 The documentation for the `event` object passed to `handle` callbacks can be
-found in the [`ipc-main-invoke-event`](structures/ipc-main-invoke-event.md)
+found in the [`ipc-main-invoke-event`][ipc-main-invoke-event]
 structure docs.
 
+[IPC tutorial]: ../tutorial/ipc.md
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
-[web-contents-send]: web-contents.md#contentssendchannel-args
+[web-contents-send]: ../api/web-contents.md#contentssendchannel-args
+[ipc-main-event]:../api/structures/ipc-main-event.md
+[ipc-main-invoke-event]:../api/structures/ipc-main-invoke-event.md

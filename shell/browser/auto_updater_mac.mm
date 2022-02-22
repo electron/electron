@@ -24,7 +24,7 @@ namespace auto_updater {
 
 namespace {
 
-// The gloal SQRLUpdater object.
+// The global SQRLUpdater object.
 SQRLUpdater* g_updater = nil;
 
 }  // namespace

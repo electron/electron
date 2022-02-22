@@ -6,11 +6,11 @@ Subject: mas: avoid usage of _CFIsObjC
 Removes usage of the _CFIsObjC private API.
 
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index 6e5d76dc70e472f599385d967e8941200730fd9d..73d7f162a465d2e50d3ea3e6d14b6c0ed37775d1 100644
+index 11fa4bb6714518b98321d5e10919de3e01403efd..c9232593c08be04cb62fe7163a240cbed4f6e464 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -31,12 +31,6 @@
- #if !defined(OS_IOS)
+ #if !BUILDFLAG(IS_IOS)
  CFTypeID SecACLGetTypeID();
  CFTypeID SecTrustedApplicationGetTypeID();
 -// The NSFont/CTFont toll-free bridging is broken before 10.15.
@@ -22,7 +22,7 @@ index 6e5d76dc70e472f599385d967e8941200730fd9d..73d7f162a465d2e50d3ea3e6d14b6c0e
  #endif
  }  // extern "C"
  
-@@ -329,8 +323,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
+@@ -328,8 +322,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -32,7 +32,7 @@ index 6e5d76dc70e472f599385d967e8941200730fd9d..73d7f162a465d2e50d3ea3e6d14b6c0e
    return ns_val;
  }
  
-@@ -401,9 +394,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+@@ -400,9 +393,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
      return (CTFontRef)(cf_val);
    }
  

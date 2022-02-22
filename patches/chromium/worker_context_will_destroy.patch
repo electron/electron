@@ -10,10 +10,10 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 4352aada84d7fe5abbc2f3320a3a643e838774dc..b6d5fe0a21e9343d82323a9f7c06f9b5891316cc 100644
+index 3c5b962a3ca5baffe525898d7f417f5fd3687a0b..3c85714b68adda07615cf13740a7257561ecc6f9 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -356,6 +356,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -363,6 +363,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -26,10 +26,10 @@ index 4352aada84d7fe5abbc2f3320a3a643e838774dc..b6d5fe0a21e9343d82323a9f7c06f9b5
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index df9f357a597c7d5990058e7c3ab26b32cc4e7252..f72f927bfcd9fe42e49682b12b361ae8a877ace8 100644
+index b4e37bbdd3a80c8d6255d4b536bedbff1d4202a0..e793b0c25f2900d949a7473c3f29c620ffd80408 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -925,6 +925,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -924,6 +924,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -43,7 +43,7 @@ index df9f357a597c7d5990058e7c3ab26b32cc4e7252..f72f927bfcd9fe42e49682b12b361ae8
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index cba574c571ded199c70374ffe01bad5f88b5902f..7801b60329802c92e6b6103ccc74d6871584c9b2 100644
+index 2191ab72dcaccf50ddbc700ded63f66b95de856d..b4f6e7a468661c272a4cef338e1c171f7247191f 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -207,6 +207,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
@@ -55,7 +55,7 @@ index cba574c571ded199c70374ffe01bad5f88b5902f..7801b60329802c92e6b6103ccc74d687
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index f545c18c2e142a46481b1669bb726b60d9815600..14bd8c3436602689e44e3c718388406a7de6b211 100644
+index 6acdee7c9eb8e5368401ba804f9a359e5c7b2b70..c72c142a8b4591b12ff2b3a10a143658c6dcfff3 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -713,6 +713,7 @@ class BLINK_PLATFORM_EXPORT Platform {

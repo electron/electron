@@ -41,11 +41,11 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
     if (port->serial_number && !port->serial_number->empty()) {
       dict.Set("serialNumber", *port->serial_number);
     }
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
     if (port->usb_driver_name && !port->usb_driver_name->empty()) {
       dict.Set("usbDriverName", *port->usb_driver_name);
     }
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
     if (!port->device_instance_id.empty()) {
       dict.Set("deviceInstanceId", port->device_instance_id);
     }

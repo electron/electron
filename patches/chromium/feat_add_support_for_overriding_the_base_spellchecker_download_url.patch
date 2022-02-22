@@ -9,7 +9,7 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index 51c061d3bd117c926b74a10deab37d3a694e808b..1f0b787b13567be74553ced382d4b48a65bb2003 100644
+index 22fade6370fe654e48373f35bbac079131b873ff..57d694eab66c1431789405656f600390e023b533 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 @@ -51,6 +51,9 @@ namespace {
@@ -44,7 +44,7 @@ index 51c061d3bd117c926b74a10deab37d3a694e808b..1f0b787b13567be74553ced382d4b48a
        "https://redirector.gvt1.com/edgedl/chrome/dict/";
  
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
-index a8a1fb3c22b812cc3ff76a4c50853cb60c74c541..27c07b11ca2f56600fe8534170066bb77dd36037 100644
+index 4df6fc23f0e51e3279208a9331c9e55d7d4cb0ac..f4ddb557f6c04ede0caf5029b3dfb877a02ea721 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 @@ -93,6 +93,8 @@ class SpellcheckHunspellDictionary

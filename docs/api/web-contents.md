@@ -516,6 +516,15 @@ Emitted when the `WebContents` loses focus.
 
 Emitted when the `WebContents` gains focus.
 
+Note that on macOS, having focus means the `WebContents` is the first responder
+of window, so switching focus between windows would not trigger the `focus` and
+`blur` events of `WebContents`, as the first responder of each window is not
+changed.
+
+The `focus` and `blur` events of `WebContents` should only be used to detect
+focus change between different `WebContents` and `BrowserView` in the same
+window.
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
@@ -1092,7 +1101,7 @@ Returns `string` - The user agent for this web page.
 
 * `css` string
 * `options` Object (optional)
-  * `cssOrigin` string (optional) - Can be either 'user' or 'author'; Specifying 'user' enables you to prevent websites from overriding the CSS you insert. Default is 'author'.
+  * `cssOrigin` string (optional) - Can be either 'user' or 'author'. Sets the [cascade origin](https://www.w3.org/TR/css3-cascade/#cascade-origin) of the inserted stylesheet. Default is 'author'.
 
 Returns `Promise<string>` - A promise that resolves with a key for the inserted CSS that can later be used to remove the CSS via `contents.removeInsertedCSS(key)`.
 
@@ -1847,7 +1856,7 @@ the cursor when dragging.
 
 #### `contents.savePage(fullPath, saveType)`
 
-* `fullPath` string - The full file path.
+* `fullPath` string - The absolute file path.
 * `saveType` string - Specify the save type.
   * `HTMLOnly` - Save only the HTML of the page.
   * `HTMLComplete` - Save complete-html page.

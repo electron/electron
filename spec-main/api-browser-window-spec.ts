@@ -735,6 +735,22 @@ describe('BrowserWindow module', () => {
         w.showInactive();
         expect(w.isFocused()).to.equal(false);
       });
+
+      // TODO(dsanders11): Enable for Linux once CI plays nice with these kinds of tests
+      ifit(process.platform !== 'linux')('should not restore maximized windows', async () => {
+        const maximize = emittedOnce(w, 'maximize');
+        const shown = emittedOnce(w, 'show');
+        w.maximize();
+        // TODO(dsanders11): The maximize event isn't firing on macOS for a window initially hidden
+        if (process.platform !== 'darwin') {
+          await maximize;
+        } else {
+          await delay(1000);
+        }
+        w.showInactive();
+        await shown;
+        expect(w.isMaximized()).to.equal(true);
+      });
     });
 
     describe('BrowserWindow.focus()', () => {
@@ -3419,20 +3435,56 @@ describe('BrowserWindow module', () => {
     const savePageJsPath = path.join(savePageDir, 'save_page_files', 'test.js');
     const savePageCssPath = path.join(savePageDir, 'save_page_files', 'test.css');
 
-    after(() => {
+    afterEach(() => {
+      closeAllWindows();
+
       try {
         fs.unlinkSync(savePageCssPath);
         fs.unlinkSync(savePageJsPath);
         fs.unlinkSync(savePageHtmlPath);
         fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
         fs.rmdirSync(savePageDir);
-      } catch (e) {
-        // Ignore error
-      }
+      } catch {}
     });
-    afterEach(closeAllWindows);
 
-    it('should save page to disk', async () => {
+    it('should throw when passing relative paths', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'HTMLComplete')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'HTMLOnly')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'MHTML')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+    });
+
+    it('should save page to disk with HTMLOnly', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+      await w.webContents.savePage(savePageHtmlPath, 'HTMLOnly');
+
+      expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
+      expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
+    });
+
+    it('should save page to disk with MHTML', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+      await w.webContents.savePage(savePageHtmlPath, 'MHTML');
+
+      expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
+      expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
+    });
+
+    it('should save page to disk with HTMLComplete', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
       await w.webContents.savePage(savePageHtmlPath, 'HTMLComplete');

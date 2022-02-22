@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Fri, 11 Feb 2022 22:37:39 +0000
+Subject: fix: don't restore maximized windows when calling ShowInactive
+
+This is a backport from Chromium of
+https://chromium-review.googlesource.com/c/chromium/src/+/3371573.
+
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 4be0e5b0ef187d68f054672bc3d1dc328057c58b..264a9109e42c23e9be6bf7269b3cfee2634b61e4 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -665,9 +665,16 @@ void HWNDMessageHandler::Show(ui::WindowShowState show_state,
+     SetWindowPlacement(hwnd(), &placement);
+     native_show_state = SW_SHOWMAXIMIZED;
+   } else {
++    const bool is_maximized = IsMaximized();
++
++    // Use SW_SHOW/SW_SHOWNA instead of SW_SHOWNORMAL/SW_SHOWNOACTIVATE so that
++    // the window is not restored to its original position if it is maximized.
++    // This could be used unconditionally for ui::SHOW_STATE_INACTIVE, but
++    // cross-platform behavior when showing a minimized window is inconsistent,
++    // some platforms restore the position, some do not. See crbug.com/1296710
+     switch (show_state) {
+       case ui::SHOW_STATE_INACTIVE:
+-        native_show_state = SW_SHOWNOACTIVATE;
++        native_show_state = is_maximized ? SW_SHOWNA : SW_SHOWNOACTIVATE;
+         break;
+       case ui::SHOW_STATE_MAXIMIZED:
+         native_show_state = SW_SHOWMAXIMIZED;
+@@ -678,9 +685,9 @@ void HWNDMessageHandler::Show(ui::WindowShowState show_state,
+       case ui::SHOW_STATE_NORMAL:
+         if ((GetWindowLong(hwnd(), GWL_EXSTYLE) & WS_EX_TRANSPARENT) ||
+             (GetWindowLong(hwnd(), GWL_EXSTYLE) & WS_EX_NOACTIVATE)) {
+-          native_show_state = SW_SHOWNOACTIVATE;
++          native_show_state = is_maximized ? SW_SHOWNA : SW_SHOWNOACTIVATE;
+         } else {
+-          native_show_state = SW_SHOWNORMAL;
++          native_show_state = is_maximized ? SW_SHOW : SW_SHOWNORMAL;
+         }
+         break;
+       case ui::SHOW_STATE_FULLSCREEN:

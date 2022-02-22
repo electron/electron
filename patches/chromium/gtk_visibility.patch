@@ -6,25 +6,27 @@ Subject: gtk_visibility.patch
 Allow electron to depend on GTK in the GN build.
 
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index c7173176472e80d8de4888000e99d45843240785..c3076d8112ec8976a438d1351ad2e404ac64fce7 100644
+index 349043f8a3cfc9f91cbae951e74258799a4fd126..0f7e3e544f524a7ad6660b54912cb1190282b6fc 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
-@@ -33,6 +33,7 @@ pkg_config("gtk_internal_config") {
+@@ -27,6 +27,7 @@ pkg_config("gtk_internal_config") {
  
  group("gtk") {
    visibility = [
 +    "//electron:*",
-     # This is the only target that can depend on GTK.  Do not add more targets
-     # to this list.
-     "//ui/gtk:gtk_stubs",
-@@ -64,6 +65,9 @@ pkg_config("gtkprint_internal_config") {
- }
+     # These are allow-listed for WebRTC builds.  Nothing in else should depend
+     # on GTK.
+     "//examples:peerconnection_client",
+diff --git a/ui/ozone/platform/x11/BUILD.gn b/ui/ozone/platform/x11/BUILD.gn
+index 54a3e170f5131ee03892410a0c883d4da4dd885a..1653e392630913dab5db84a7aafff0dfe36d1f71 100644
+--- a/ui/ozone/platform/x11/BUILD.gn
++++ b/ui/ozone/platform/x11/BUILD.gn
+@@ -6,7 +6,7 @@ import("//build/config/chromeos/ui_mode.gni")
+ import("//gpu/vulkan/features.gni")
+ import("//ui/base/ui_features.gni")
  
- group("gtkprint") {
--  visibility = [ "//ui/gtk:*" ]
-+  visibility = [
-+    "//electron:*",
-+    "//ui/gtk:*",
-+  ]
-   public_configs = [ ":gtkprint_internal_config" ]
- }
+-visibility = [ "//ui/ozone/*" ]
++visibility = [ "//ui/ozone/*", "//electron:*" ]
+ 
+ assert(is_linux || is_chromeos)
+ 

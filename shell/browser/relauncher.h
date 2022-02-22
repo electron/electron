@@ -31,7 +31,7 @@
 
 #include "base/command_line.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/process/process_handle.h"
 #endif
 
@@ -76,7 +76,7 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters);
 
 namespace internal {
 
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
 // The "magic" file descriptor that the relauncher process' write side of the
 // pipe shows up on. Chosen to avoid conflicting with stdin, stdout, and
 // stderr.
@@ -95,7 +95,7 @@ extern const CharType* kRelauncherTypeArg;
 // reporting.
 extern const CharType* kRelauncherArgSeparator;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 StringType GetWaitEventName(base::ProcessId pid);
 
 StringType ArgvToCommandLineString(const StringVector& argv);

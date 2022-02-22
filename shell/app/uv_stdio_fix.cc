@@ -8,11 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstdio>
-
-// Copied from //base/ignore_result.h to avoid taking a dependency on //base on
-// macOS.
-template <typename T>
-inline void ignore_result(const T&) {}
+#include <tuple>
 
 void FixStdioStreams() {
   // libuv may mark stdin/stdout/stderr as close-on-exec, which interferes
@@ -24,9 +20,9 @@ void FixStdioStreams() {
   // For details see https://github.com/libuv/libuv/issues/2062
   struct stat st;
   if (fstat(STDIN_FILENO, &st) < 0 && errno == EBADF)
-    ignore_result(freopen("/dev/null", "r", stdin));
+    std::ignore = freopen("/dev/null", "r", stdin);
   if (fstat(STDOUT_FILENO, &st) < 0 && errno == EBADF)
-    ignore_result(freopen("/dev/null", "w", stdout));
+    std::ignore = freopen("/dev/null", "w", stdout);
   if (fstat(STDERR_FILENO, &st) < 0 && errno == EBADF)
-    ignore_result(freopen("/dev/null", "w", stderr));
+    std::ignore = freopen("/dev/null", "w", stderr);
 }

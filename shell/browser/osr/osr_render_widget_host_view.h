@@ -10,7 +10,9 @@
 #include <string>
 #include <vector>
 
-#if defined(OS_WIN)
+#include "build/build_config.h"
+
+#if BUILDFLAG(IS_WIN)
 #include <windows.h>
 #endif
 
@@ -38,7 +40,7 @@
 
 #include "components/viz/host/host_display_client.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "ui/gfx/win/window_impl.h"
 #endif
 
@@ -101,7 +103,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       bool request_unadjusted_movement) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
@@ -113,7 +115,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const std::vector<std::string>& file_paths,
       blink::mojom::ShareService::ShareCallback callback) override;
   bool UpdateNSViewAndDisplay();
-#endif  // defined(OS_MAC)
+#endif  // BUILDFLAG(IS_MAC)
 
   // content::RenderWidgetHostViewBase:
 
