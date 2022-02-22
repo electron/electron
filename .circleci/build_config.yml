@@ -52,7 +52,7 @@ executors:
     parameters:
       size:
         description: "macOS executor size"
-        default: large
+        default: macos.x86.medium.gen2
         type: enum
         enum: ["macos.x86.medium.gen2", "large"]
     macos:
@@ -394,24 +394,24 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         tmpify /usr/local/Homebrew
         sudo rm -rf $TMPDIR/del-target
 
-        sudo rm -rf "/System/Library/Desktop Pictures"
-        sudo rm -rf /System/Library/Templates/Data
-        sudo rm -rf /System/Library/Speech/Voices
-        sudo rm -rf "/System/Library/Screen Savers"
-        sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
-        sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
-        sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/
-        sudo rm -rf /System/Volumes/Data/Library/Java
-        sudo rm -rf /System/Volumes/Data/Library/Ruby
-        sudo rm -rf /System/Volumes/Data/Library/Printers
-        sudo rm -rf /System/iOSSupport
-        sudo rm -rf /System/Applications/*.app
-        sudo rm -rf /System/Applications/Utilities/*.app
-        sudo rm -rf /System/Library/LinguisticData
-        sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
+        # sudo rm -rf "/System/Library/Desktop Pictures"
+        # sudo rm -rf /System/Library/Templates/Data
+        # sudo rm -rf /System/Library/Speech/Voices
+        # sudo rm -rf "/System/Library/Screen Savers"
+        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
+        # sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
+        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/
+        # sudo rm -rf /System/Volumes/Data/Library/Java
+        # sudo rm -rf /System/Volumes/Data/Library/Ruby
+        # sudo rm -rf /System/Volumes/Data/Library/Printers
+        # sudo rm -rf /System/iOSSupport
+        # sudo rm -rf /System/Applications/*.app
+        # sudo rm -rf /System/Applications/Utilities/*.app
+        # sudo rm -rf /System/Library/LinguisticData
+        # sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
         # sudo rm -rf /System/Library/Fonts/*
         # sudo rm -rf /System/Library/PreferencePanes
-        sudo rm -rf /System/Library/AssetsV2/*
+        # sudo rm -rf /System/Library/AssetsV2/*
         sudo rm -rf /Applications/Safari.app
         sudo rm -rf ~/project/src/build/linux
         sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
@@ -419,7 +419,7 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
 
         # lipo off some huge binaries arm64 versions to save space
         strip_arm_deep $(xcode-select -p)/../SharedFrameworks
-        strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
+        # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
       fi
     background: true
 
