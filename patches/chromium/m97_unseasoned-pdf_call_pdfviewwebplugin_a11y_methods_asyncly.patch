@@ -1,0 +1,128 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Hosseinian <dhoss@chromium.org>
+Date: Wed, 8 Dec 2021 00:32:35 +0000
+Subject: Call PdfViewWebPlugin a11y methods asyncly
+
+Calling a11y methods asyncly protects against the self-deletions they
+may cause. The a11y methods call
+content::RenderAccessibility::GenerateAXID() underneath, which may
+cause a relayout which causes the PdfViewWebPlugin to be deleted.
+
+Isolating the calls in posted tasks is a clean way to protect against
+continuing control flow in the object after it is deleted.
+
+(cherry picked from commit 6d9638366ae0f60f8d2db41857fcbc738c2514d4)
+
+Bug: 1274376
+Change-Id: Iffd610a95199826fea56d7f23cb8e344657631d3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3313692
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Daniel Hosseinian <dhoss@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#948105}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3319376
+Auto-Submit: Daniel Hosseinian <dhoss@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4692@{#799}
+Cr-Branched-From: 038cd96142d384c0d2238973f1cb277725a62eba-refs/heads/main@{#938553}
+
+diff --git a/pdf/pdf_view_web_plugin.cc b/pdf/pdf_view_web_plugin.cc
+index 29f922ed74379e2d2327a896e4c8149692590de8..193ac2e1b3fed341ce460e736c107652369f87fd 100644
+--- a/pdf/pdf_view_web_plugin.cc
++++ b/pdf/pdf_view_web_plugin.cc
+@@ -802,9 +802,9 @@ void PdfViewWebPlugin::SetFormFieldInFocus(bool in_focus) {
+ 
+ void PdfViewWebPlugin::SetAccessibilityDocInfo(
+     const AccessibilityDocInfo& doc_info) {
+-  if (!pdf_accessibility_data_handler_)
+-    return;
+-  pdf_accessibility_data_handler_->SetAccessibilityDocInfo(doc_info);
++  base::ThreadTaskRunnerHandle::Get()->PostTask(
++      FROM_HERE, base::BindOnce(&PdfViewWebPlugin::OnSetAccessibilityDocInfo,
++                                weak_factory_.GetWeakPtr(), doc_info));
+ }
+ 
+ void PdfViewWebPlugin::SetAccessibilityPageInfo(
+@@ -812,16 +812,15 @@ void PdfViewWebPlugin::SetAccessibilityPageInfo(
+     std::vector<AccessibilityTextRunInfo> text_runs,
+     std::vector<AccessibilityCharInfo> chars,
+     AccessibilityPageObjects page_objects) {
+-  if (!pdf_accessibility_data_handler_)
+-    return;
+-  pdf_accessibility_data_handler_->SetAccessibilityPageInfo(
+-      page_info, text_runs, chars, page_objects);
++  base::ThreadTaskRunnerHandle::Get()->PostTask(
++      FROM_HERE, base::BindOnce(&PdfViewWebPlugin::OnSetAccessibilityPageInfo,
++                                weak_factory_.GetWeakPtr(),
++                                std::move(page_info), std::move(text_runs),
++                                std::move(chars), std::move(page_objects)));
+ }
+ 
+ void PdfViewWebPlugin::SetAccessibilityViewportInfo(
+     const AccessibilityViewportInfo& viewport_info) {
+-  // The accessibility tree cannot be updated within the scope of
+-  // `UpdateGeometry`.
+   base::ThreadTaskRunnerHandle::Get()->PostTask(
+       FROM_HERE,
+       base::BindOnce(&PdfViewWebPlugin::OnSetAccessibilityViewportInfo,
+@@ -1009,11 +1008,32 @@ void PdfViewWebPlugin::OnInvokePrintDialog(int32_t /*result*/) {
+   client_->Print(Container()->GetElement());
+ }
+ 
++void PdfViewWebPlugin::OnSetAccessibilityDocInfo(
++    AccessibilityDocInfo doc_info) {
++  if (!pdf_accessibility_data_handler_)
++    return;
++  pdf_accessibility_data_handler_->SetAccessibilityDocInfo(doc_info);
++  // `this` may be deleted. Don't do anything else.
++}
++
++void PdfViewWebPlugin::OnSetAccessibilityPageInfo(
++    AccessibilityPageInfo page_info,
++    std::vector<AccessibilityTextRunInfo> text_runs,
++    std::vector<AccessibilityCharInfo> chars,
++    AccessibilityPageObjects page_objects) {
++  if (!pdf_accessibility_data_handler_)
++    return;
++  pdf_accessibility_data_handler_->SetAccessibilityPageInfo(
++      page_info, text_runs, chars, page_objects);
++  // `this` may be deleted. Don't do anything else.
++}
++
+ void PdfViewWebPlugin::OnSetAccessibilityViewportInfo(
+-    const AccessibilityViewportInfo& viewport_info) {
++    AccessibilityViewportInfo viewport_info) {
+   if (!pdf_accessibility_data_handler_)
+     return;
+   pdf_accessibility_data_handler_->SetAccessibilityViewportInfo(viewport_info);
++  // `this` may be deleted. Don't do anything else.
+ }
+ 
+ pdf::mojom::PdfService* PdfViewWebPlugin::GetPdfService() {
+diff --git a/pdf/pdf_view_web_plugin.h b/pdf/pdf_view_web_plugin.h
+index f0c182f948ded59474e73bb03b89a3364d0b399e..f3eb489f6dc6553a67ab783814b111e2a64213fa 100644
+--- a/pdf/pdf_view_web_plugin.h
++++ b/pdf/pdf_view_web_plugin.h
+@@ -330,10 +330,21 @@ class PdfViewWebPlugin final : public PdfViewPluginBase,
+   // the plugin are moved off the main thread.
+   void OnInvokePrintDialog(int32_t /*result*/);
+ 
+-  // Callback to set the viewport information in accessibility tree
++  // Callback to set the document information in the accessibility tree
+   // asynchronously.
+-  void OnSetAccessibilityViewportInfo(
+-      const AccessibilityViewportInfo& viewport_info);
++  void OnSetAccessibilityDocInfo(AccessibilityDocInfo doc_info);
++
++  // Callback to set the page information in the accessibility tree
++  // asynchronously.
++  void OnSetAccessibilityPageInfo(
++      AccessibilityPageInfo page_info,
++      std::vector<AccessibilityTextRunInfo> text_runs,
++      std::vector<AccessibilityCharInfo> chars,
++      AccessibilityPageObjects page_objects);
++
++  // Callback to set the viewport information in the accessibility tree
++  // asynchronously.
++  void OnSetAccessibilityViewportInfo(AccessibilityViewportInfo viewport_info);
+ 
+   // May be null in unit tests.
+   pdf::mojom::PdfService* GetPdfService();
