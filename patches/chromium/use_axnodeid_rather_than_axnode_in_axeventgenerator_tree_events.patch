@@ -1,0 +1,387 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Abigail Klein <abigailbklein@google.com>
+Date: Wed, 3 Nov 2021 03:53:27 +0000
+Subject: Use AXNodeID rather than AXNode* in AXEventGenerator tree events.
+
+We suspect that sometimes AXNodes are destroyed while processing events.
+Specifically, we suspect that the extra mac nodes that are created for
+table column and row headers when VoiceOver requests them are destroyed
+if an ancestor up the chain is modified. In order to safeguard against
+the possibility of an AXNode* becoming stale, we will store AXNodeIDs in
+the list of tree events. This way, when the tree event is used, we can
+first check for the validity of the AXNodeID before using the
+corresponding AXNode.
+
+Bug: 1262967
+Change-Id: Ifa2b23544fff532b379857a637f417d5f639c7ce
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3244046
+Commit-Queue: Abigail Klein <abigailbklein@google.com>
+Reviewed-by: Aaron Leventhal <aleventhal@chromium.org>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#937698}
+
+diff --git a/content/browser/accessibility/browser_accessibility_manager.cc b/content/browser/accessibility/browser_accessibility_manager.cc
+index e7756900afd53bab4b9f74c96a9f6c3ad05e18e3..ca05af4879d56be6de46604f10a801be91cb4e00 100644
+--- a/content/browser/accessibility/browser_accessibility_manager.cc
++++ b/content/browser/accessibility/browser_accessibility_manager.cc
+@@ -503,7 +503,7 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+   std::vector<ui::AXEventGenerator::TargetedEvent> deferred_events;
+   bool received_load_complete_event = false;
+   for (const auto& targeted_event : event_generator()) {
+-    BrowserAccessibility* event_target = GetFromAXNode(targeted_event.node);
++    BrowserAccessibility* event_target = GetFromID(targeted_event.node_id);
+     if (!event_target)
+       continue;
+ 
+@@ -540,7 +540,7 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+ 
+   // Now fire all of the rest of the generated events we previously deferred.
+   for (const auto& targeted_event : deferred_events) {
+-    BrowserAccessibility* event_target = GetFromAXNode(targeted_event.node);
++    BrowserAccessibility* event_target = GetFromID(targeted_event.node_id);
+     if (!event_target)
+       continue;
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_manager_win.cc b/content/browser/accessibility/browser_accessibility_manager_win.cc
+index 4ce35f1c152cfc4927ade17431e6bfe4c6d75b1d..f6bc93e302920464ec2a1f26562d327a7989a805 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_win.cc
++++ b/content/browser/accessibility/browser_accessibility_manager_win.cc
+@@ -949,7 +949,7 @@ void BrowserAccessibilityManagerWin::BeforeAccessibilityEvents() {
+   for (const auto& targeted_event : event_generator()) {
+     if (targeted_event.event_params.event ==
+         ui::AXEventGenerator::Event::IGNORED_CHANGED) {
+-      BrowserAccessibility* event_target = GetFromAXNode(targeted_event.node);
++      BrowserAccessibility* event_target = GetFromID(targeted_event.node_id);
+       if (!event_target)
+         continue;
+ 
+diff --git a/extensions/renderer/api/automation/automation_ax_tree_wrapper.cc b/extensions/renderer/api/automation/automation_ax_tree_wrapper.cc
+index f8725107d788a6cc70ad337ad92b65ba636968b6..e9e09b22ff40b657dec538813cc3464c9933ab1a 100644
+--- a/extensions/renderer/api/automation/automation_ax_tree_wrapper.cc
++++ b/extensions/renderer/api/automation/automation_ax_tree_wrapper.cc
+@@ -152,7 +152,7 @@ bool AutomationAXTreeWrapper::OnAccessibilityEvents(
+     if (ShouldIgnoreGeneratedEvent(targeted_event.event_params.event))
+       continue;
+     ui::AXEvent generated_event;
+-    generated_event.id = targeted_event.node->id();
++    generated_event.id = targeted_event.node_id;
+     generated_event.event_from = targeted_event.event_params.event_from;
+     generated_event.event_from_action =
+         targeted_event.event_params.event_from_action;
+diff --git a/ui/accessibility/ax_event_generator.cc b/ui/accessibility/ax_event_generator.cc
+index d890e0365204421ac62aee716c9b1c364d810635..dbe1a78cdbd8fbead5d4a05f07bff7a55844197b 100644
+--- a/ui/accessibility/ax_event_generator.cc
++++ b/ui/accessibility/ax_event_generator.cc
+@@ -102,10 +102,10 @@ bool AXEventGenerator::EventParams::operator<(const EventParams& rhs) const {
+ // AXEventGenerator::TargetedEvent
+ //
+ 
+-AXEventGenerator::TargetedEvent::TargetedEvent(AXNode* node,
++AXEventGenerator::TargetedEvent::TargetedEvent(AXNodeID node_id,
+                                                const EventParams& event_params)
+-    : node(node), event_params(event_params) {
+-  DCHECK(node);
++    : node_id(node_id), event_params(event_params) {
++  DCHECK_NE(node_id, kInvalidAXNodeID);
+ }
+ 
+ AXEventGenerator::TargetedEvent::~TargetedEvent() = default;
+@@ -115,8 +115,8 @@ AXEventGenerator::TargetedEvent::~TargetedEvent() = default;
+ //
+ 
+ AXEventGenerator::Iterator::Iterator(
+-    std::map<AXNode*, std::set<EventParams>>::const_iterator map_start_iter,
+-    std::map<AXNode*, std::set<EventParams>>::const_iterator map_end_iter)
++    std::map<AXNodeID, std::set<EventParams>>::const_iterator map_start_iter,
++    std::map<AXNodeID, std::set<EventParams>>::const_iterator map_end_iter)
+     : map_iter_(map_start_iter), map_end_iter_(map_end_iter) {
+   if (map_iter_ != map_end_iter_)
+     set_iter_ = map_iter_->second.begin();
+@@ -180,11 +180,11 @@ void swap(AXEventGenerator::Iterator& lhs, AXEventGenerator::Iterator& rhs) {
+   if (lhs == rhs)
+     return;
+ 
+-  std::map<AXNode*, std::set<AXEventGenerator::EventParams>>::const_iterator
++  std::map<AXNodeID, std::set<AXEventGenerator::EventParams>>::const_iterator
+       map_iter = lhs.map_iter_;
+   lhs.map_iter_ = rhs.map_iter_;
+   rhs.map_iter_ = map_iter;
+-  std::map<AXNode*, std::set<AXEventGenerator::EventParams>>::const_iterator
++  std::map<AXNodeID, std::set<AXEventGenerator::EventParams>>::const_iterator
+       map_end_iter = lhs.map_end_iter_;
+   lhs.map_end_iter_ = rhs.map_end_iter_;
+   rhs.map_end_iter_ = map_end_iter;
+@@ -269,7 +269,7 @@ void AXEventGenerator::AddEvent(AXNode* node, AXEventGenerator::Event event) {
+   if (node->data().role == ax::mojom::Role::kInlineTextBox)
+     return;
+ 
+-  std::set<EventParams>& node_events = tree_events_[node];
++  std::set<EventParams>& node_events = tree_events_[node->id()];
+   node_events.emplace(event, ax::mojom::EventFrom::kNone,
+                       ax::mojom::Action::kNone, tree_->event_intents());
+ }
+@@ -739,7 +739,7 @@ void AXEventGenerator::OnNodeWillBeDeleted(AXTree* tree, AXNode* node) {
+   live_region_tracker_->OnNodeWillBeDeleted(*node);
+ 
+   DCHECK_EQ(tree_, tree);
+-  tree_events_.erase(node);
++  tree_events_.erase(node->id());
+ }
+ 
+ void AXEventGenerator::OnSubtreeWillBeDeleted(AXTree* tree, AXNode* node) {
+@@ -748,7 +748,7 @@ void AXEventGenerator::OnSubtreeWillBeDeleted(AXTree* tree, AXNode* node) {
+ 
+ void AXEventGenerator::OnNodeWillBeReparented(AXTree* tree, AXNode* node) {
+   DCHECK_EQ(tree_, tree);
+-  tree_events_.erase(node);
++  tree_events_.erase(node->id());
+ }
+ 
+ void AXEventGenerator::OnSubtreeWillBeReparented(AXTree* tree, AXNode* node) {
+@@ -823,10 +823,9 @@ void AXEventGenerator::OnAtomicUpdateFinished(
+ }
+ 
+ void AXEventGenerator::AddEventsForTesting(
+-    AXNode* node,
++    const AXNode& node,
+     const std::set<EventParams>& events) {
+-  DCHECK(node);
+-  tree_events_[node] = events;
++  tree_events_[node.id()] = events;
+ }
+ 
+ void AXEventGenerator::FireLiveRegionEvents(AXNode* node) {
+@@ -951,7 +950,7 @@ void AXEventGenerator::TrimEventsDueToAncestorIgnoredChanged(
+   // IGNORED_CHANGED event.
+   const auto& parent_map_iter =
+       ancestor_ignored_changed_map.find(node->parent());
+-  const auto& curr_events_iter = tree_events_.find(node);
++  const auto& curr_events_iter = tree_events_.find(node->id());
+ 
+   // Initialize |ancestor_ignored_changed_map[node]| with an empty bitset,
+   // representing neither |node| nor its ancestor has IGNORED_CHANGED.
+@@ -1027,7 +1026,8 @@ void AXEventGenerator::PostprocessEvents() {
+ 
+   // First pass through |tree_events_|, remove events that we do not need.
+   for (auto& iter : tree_events_) {
+-    AXNode* node = iter.first;
++    AXNodeID node_id = iter.first;
++    AXNode* node = tree_->GetFromId(node_id);
+ 
+     // TODO(http://crbug.com/2279799): remove all of the cases that could
+     // add a null node to |tree_events|.
+@@ -1067,8 +1067,8 @@ void AXEventGenerator::PostprocessEvents() {
+     // Don't fire text attribute changed on this node if its immediate parent
+     // also has text attribute changed.
+     if (parent && HasEvent(node_events, Event::TEXT_ATTRIBUTE_CHANGED) &&
+-        tree_events_.find(parent) != tree_events_.end() &&
+-        HasEvent(tree_events_[parent], Event::TEXT_ATTRIBUTE_CHANGED)) {
++        tree_events_.find(parent->id()) != tree_events_.end() &&
++        HasEvent(tree_events_[parent->id()], Event::TEXT_ATTRIBUTE_CHANGED)) {
+       RemoveEvent(&node_events, Event::TEXT_ATTRIBUTE_CHANGED);
+     }
+ 
+@@ -1078,11 +1078,11 @@ void AXEventGenerator::PostprocessEvents() {
+     // of an existing node. In that instance, we need to inform ATs that the
+     // existing node's parent has changed on the platform.
+     if (HasEvent(node_events, Event::PARENT_CHANGED)) {
+-      while (parent && (tree_events_.find(parent) != tree_events_.end() ||
++      while (parent && (tree_events_.find(parent->id()) != tree_events_.end() ||
+                         base::Contains(removed_parent_changed_nodes, parent))) {
+         if ((base::Contains(removed_parent_changed_nodes, parent) ||
+-             HasEvent(tree_events_[parent], Event::PARENT_CHANGED)) &&
+-            !HasEvent(tree_events_[parent], Event::SUBTREE_CREATED)) {
++             HasEvent(tree_events_[parent->id()], Event::PARENT_CHANGED)) &&
++            !HasEvent(tree_events_[parent->id()], Event::SUBTREE_CREATED)) {
+           RemoveEvent(&node_events, Event::PARENT_CHANGED);
+           removed_parent_changed_nodes.insert(node);
+           break;
+@@ -1096,10 +1096,10 @@ void AXEventGenerator::PostprocessEvents() {
+     parent = node->GetUnignoredParent();
+     if (HasEvent(node_events, Event::SUBTREE_CREATED)) {
+       while (parent &&
+-             (tree_events_.find(parent) != tree_events_.end() ||
++             (tree_events_.find(parent->id()) != tree_events_.end() ||
+               base::Contains(removed_subtree_created_nodes, parent))) {
+         if (base::Contains(removed_subtree_created_nodes, parent) ||
+-            HasEvent(tree_events_[parent], Event::SUBTREE_CREATED)) {
++            HasEvent(tree_events_[parent->id()], Event::SUBTREE_CREATED)) {
+           RemoveEvent(&node_events, Event::SUBTREE_CREATED);
+           removed_subtree_created_nodes.insert(node);
+           break;
+diff --git a/ui/accessibility/ax_event_generator.h b/ui/accessibility/ax_event_generator.h
+index 026ecdf19342de6e0658a3c7f2a5cfe69a80ee4c..3bba25e9a1d5ca2f874efd18868aca2501f531b4 100644
+--- a/ui/accessibility/ax_event_generator.h
++++ b/ui/accessibility/ax_event_generator.h
+@@ -151,11 +151,10 @@ class AX_EXPORT AXEventGenerator : public AXTreeObserver {
+   };
+ 
+   struct AX_EXPORT TargetedEvent final {
+-    // |node| must not be null.
+-    TargetedEvent(AXNode* node, const EventParams& event_params);
++    TargetedEvent(AXNodeID node_id, const EventParams& event_params);
+     ~TargetedEvent();
+ 
+-    AXNode* const node;
++    const AXNodeID node_id;
+     const EventParams& event_params;
+   };
+ 
+@@ -163,8 +162,9 @@ class AX_EXPORT AXEventGenerator : public AXTreeObserver {
+       : public std::iterator<std::input_iterator_tag, TargetedEvent> {
+    public:
+     Iterator(
+-        std::map<AXNode*, std::set<EventParams>>::const_iterator map_start_iter,
+-        std::map<AXNode*, std::set<EventParams>>::const_iterator map_end_iter);
++        std::map<AXNodeID, std::set<EventParams>>::const_iterator
++            map_start_iter,
++        std::map<AXNodeID, std::set<EventParams>>::const_iterator map_end_iter);
+     Iterator(const Iterator& other);
+     ~Iterator();
+ 
+@@ -178,8 +178,8 @@ class AX_EXPORT AXEventGenerator : public AXTreeObserver {
+     AX_EXPORT friend bool operator!=(const Iterator& lhs, const Iterator& rhs);
+     AX_EXPORT friend void swap(Iterator& lhs, Iterator& rhs);
+ 
+-    std::map<AXNode*, std::set<EventParams>>::const_iterator map_iter_;
+-    std::map<AXNode*, std::set<EventParams>>::const_iterator map_end_iter_;
++    std::map<AXNodeID, std::set<EventParams>>::const_iterator map_iter_;
++    std::map<AXNodeID, std::set<EventParams>>::const_iterator map_end_iter_;
+     std::set<EventParams>::const_iterator set_iter_;
+   };
+ 
+@@ -243,7 +243,8 @@ class AX_EXPORT AXEventGenerator : public AXTreeObserver {
+     always_fire_load_complete_ = val;
+   }
+ 
+-  void AddEventsForTesting(AXNode* node, const std::set<EventParams>& events);
++  void AddEventsForTesting(const AXNode& node,
++                           const std::set<EventParams>& events);
+ 
+  protected:
+   // AXTreeObserver overrides.
+@@ -332,7 +333,7 @@ class AX_EXPORT AXEventGenerator : public AXTreeObserver {
+   void PostprocessEvents();
+ 
+   AXTree* tree_ = nullptr;  // Not owned.
+-  std::map<AXNode*, std::set<EventParams>> tree_events_;
++  std::map<AXNodeID, std::set<EventParams>> tree_events_;
+ 
+   // Valid between the call to OnIntAttributeChanged and the call to
+   // OnAtomicUpdateFinished. List of nodes whose active descendant changed.
+diff --git a/ui/accessibility/ax_event_generator_unittest.cc b/ui/accessibility/ax_event_generator_unittest.cc
+index 3797cf10490bd9cdd74dc2fec9934613281a51a0..2160fb1721c5929754e2464cbe3e80c455ba0c1a 100644
+--- a/ui/accessibility/ax_event_generator_unittest.cc
++++ b/ui/accessibility/ax_event_generator_unittest.cc
+@@ -16,7 +16,7 @@ namespace ui {
+ 
+ // Required by gmock to print TargetedEvent in a human-readable way.
+ void PrintTo(const AXEventGenerator::TargetedEvent& event, std::ostream* os) {
+-  *os << event.event_params.event << " on " << event.node->id();
++  *os << event.event_params.event << " on " << event.node_id;
+ }
+ 
+ namespace {
+@@ -37,7 +37,7 @@ MATCHER_P2(HasEventAtNode,
+                PrintToString(expected_node_id)) {
+   const auto& event = arg;
+   return Matches(expected_event_type)(event.event_params.event) &&
+-         Matches(expected_node_id)(event.node->id());
++         Matches(expected_node_id)(event.node_id);
+ }
+ 
+ }  // namespace
+@@ -128,15 +128,15 @@ TEST(AXEventGeneratorTest, IterateThroughEmptyEventSets) {
+   // Node9 contains no event.
+   std::set<AXEventGenerator::EventParams> node9_events;
+ 
+-  event_generator.AddEventsForTesting(node1, node1_events);
+-  event_generator.AddEventsForTesting(node2, node2_events);
+-  event_generator.AddEventsForTesting(node3, node3_events);
+-  event_generator.AddEventsForTesting(node4, node4_events);
+-  event_generator.AddEventsForTesting(node5, node5_events);
+-  event_generator.AddEventsForTesting(node6, node6_events);
+-  event_generator.AddEventsForTesting(node7, node7_events);
+-  event_generator.AddEventsForTesting(node8, node8_events);
+-  event_generator.AddEventsForTesting(node9, node9_events);
++  event_generator.AddEventsForTesting(*node1, node1_events);
++  event_generator.AddEventsForTesting(*node2, node2_events);
++  event_generator.AddEventsForTesting(*node3, node3_events);
++  event_generator.AddEventsForTesting(*node4, node4_events);
++  event_generator.AddEventsForTesting(*node5, node5_events);
++  event_generator.AddEventsForTesting(*node6, node6_events);
++  event_generator.AddEventsForTesting(*node7, node7_events);
++  event_generator.AddEventsForTesting(*node8, node8_events);
++  event_generator.AddEventsForTesting(*node9, node9_events);
+ 
+   std::map<AXNode*, std::set<AXEventGenerator::Event>> expected_event_map;
+   expected_event_map[node3] = {AXEventGenerator::Event::IGNORED_CHANGED,
+@@ -145,10 +145,12 @@ TEST(AXEventGeneratorTest, IterateThroughEmptyEventSets) {
+   expected_event_map[node7] = {AXEventGenerator::Event::IGNORED_CHANGED};
+ 
+   for (const auto& targeted_event : event_generator) {
+-    auto map_iter = expected_event_map.find(targeted_event.node);
++    AXNode* node = tree.GetFromId(targeted_event.node_id);
++    ASSERT_NE(nullptr, node);
++    auto map_iter = expected_event_map.find(node);
+ 
+     ASSERT_NE(map_iter, expected_event_map.end())
+-        << "|expected_event_map| contains node.id=" << targeted_event.node->id()
++        << "|expected_event_map| contains node_id=" << targeted_event.node_id
+         << "\nExpected: true"
+         << "\nActual: " << std::boolalpha
+         << (map_iter != expected_event_map.end());
+@@ -158,7 +160,7 @@ TEST(AXEventGeneratorTest, IterateThroughEmptyEventSets) {
+ 
+     ASSERT_NE(event_iter, node_events.end())
+         << "Event=" << targeted_event.event_params.event
+-        << ", on node.id=" << targeted_event.node->id()
++        << ", on node_id=" << targeted_event.node_id
+         << " NOT found in |expected_event_map|";
+ 
+     // If the event from |event_generator| is found in |expected_event_map|,
+diff --git a/ui/accessibility/ax_generated_tree_unittest.cc b/ui/accessibility/ax_generated_tree_unittest.cc
+index 6c301f68de70757a3abb2a632380e3136d9f183b..d3007e17ef07ec72145ac373ed6fea8d24650d1c 100644
+--- a/ui/accessibility/ax_generated_tree_unittest.cc
++++ b/ui/accessibility/ax_generated_tree_unittest.cc
+@@ -365,13 +365,15 @@ TEST(AXGeneratedTreeTest, GeneratedTreesWithIgnoredNodes) {
+         // Capture the events generated.
+         std::map<AXNodeID, std::set<AXEventGenerator::Event>> actual_events;
+         for (const AXEventGenerator::TargetedEvent& event : event_generator) {
+-          if (event.node->IsIgnored() ||
++          const AXNode* node = fat_tree.GetFromId(event.node_id);
++          ASSERT_NE(nullptr, node);
++          if (node->IsIgnored() ||
+               event.event_params.event ==
+                   AXEventGenerator::Event::IGNORED_CHANGED) {
+             continue;
+           }
+ 
+-          actual_events[event.node->id()].insert(event.event_params.event);
++          actual_events[event.node_id].insert(event.event_params.event);
+         }
+ 
+         // Now, turn skinny_tree into skinny_tree1 and compare
+@@ -391,7 +393,7 @@ TEST(AXGeneratedTreeTest, GeneratedTreesWithIgnoredNodes) {
+         std::map<AXNodeID, std::set<AXEventGenerator::Event>> expected_events;
+         for (const AXEventGenerator::TargetedEvent& event :
+              skinny_event_generator)
+-          expected_events[event.node->id()].insert(event.event_params.event);
++          expected_events[event.node_id].insert(event.event_params.event);
+ 
+         for (auto& entry : expected_events) {
+           AXNodeID node_id = entry.first;
+diff --git a/ui/views/accessibility/views_ax_tree_manager.cc b/ui/views/accessibility/views_ax_tree_manager.cc
+index 861009afe4fbe956ab63b3f261734a6d9590042b..d999c3cda6c3ef046c80a83f89909d3b8ed3fa38 100644
+--- a/ui/views/accessibility/views_ax_tree_manager.cc
++++ b/ui/views/accessibility/views_ax_tree_manager.cc
+@@ -185,7 +185,8 @@ void ViewsAXTreeManager::UnserializeTreeUpdates(
+   // AXEventGenerator to generate events based on the updates.
+   for (const ui::AXEventGenerator::TargetedEvent& targeted_event :
+        event_generator_) {
+-    FireGeneratedEvent(targeted_event.event_params.event, *targeted_event.node);
++    if (ui::AXNode* node = ax_tree().GetFromId(targeted_event.node_id))
++      FireGeneratedEvent(targeted_event.event_params.event, *node);
+   }
+   event_generator_.ClearEvents();
+ }
