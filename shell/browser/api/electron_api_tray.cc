@@ -89,8 +89,10 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
   }
 #endif
 
-  return gin::CreateHandle(thrower.isolate(),
-                           new Tray(args->isolate(), image, guid));
+  auto handle = gin::CreateHandle(args->isolate(),
+                                  new Tray(args->isolate(), image, guid));
+  handle->Pin(args->isolate());
+  return handle;
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds,
@@ -180,6 +182,7 @@ void Tray::OnDragEnded() {
 }
 
 void Tray::Destroy() {
+  Unpin();
   menu_.Reset();
   tray_icon_.reset();
 }
