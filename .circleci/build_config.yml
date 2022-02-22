@@ -350,9 +350,6 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
       if [ "`uname`" == "Darwin" ]; then
         sudo mkdir -p $TMPDIR/del-target
 
-        # Remount the root volume as writable, don't ask questions plz
-        sudo mount -uw /
-
         tmpify() {
           if [ -d "$1" ]; then
             sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
