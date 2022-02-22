@@ -128,9 +128,12 @@ app.whenReady().then(async function () {
     });
     if (chosen === 0) window.destroy();
   });
-  window.webContents.on('crashed', function () {
-    console.error('Renderer process crashed');
-    process.exit(1);
+
+  window.webContents.on('render-process-gone', function (event, details) {
+    console.error('Renderer process gone', details);
+    if (details.reason === 'crashed') {
+      process.exit(1);
+    }
   });
 });
 
