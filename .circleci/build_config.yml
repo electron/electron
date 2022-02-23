@@ -57,7 +57,7 @@ executors:
         enum: ["macos.x86.medium.gen2", "large"]
       xcode:
         description: "xcode version"
-        default: "13.2.1"
+        default: "12.4.0"
         type: enum
         enum: ["12.4.0", "13.2.1"]
 
@@ -1903,7 +1903,9 @@ jobs:
                 checkout: true
 
   osx-testing-x64:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1920,14 +1922,16 @@ jobs:
   osx-testing-x64-gn-check:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      xcode: "13.2.1"
     environment:
       <<: *env-machine-mac
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   osx-publish-x64-skip-checkout:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1946,7 +1950,9 @@ jobs:
                 checkout: false
 
   osx-publish-arm64-skip-checkout:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1966,7 +1972,9 @@ jobs:
                 checkout: false
 
   osx-testing-arm64:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1983,7 +1991,9 @@ jobs:
           attach: true
 
   mas-testing-x64:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large
       <<: *env-mas
@@ -2001,7 +2011,7 @@ jobs:
   mas-testing-x64-gn-check:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      xcode: "13.2.1"
     environment:
       <<: *env-machine-mac
       <<: *env-mas
@@ -2009,7 +2019,9 @@ jobs:
     <<: *steps-electron-gn-check
 
   mas-publish-x64-skip-checkout:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large-release
       <<: *env-mas
@@ -2028,7 +2040,9 @@ jobs:
                 checkout: false
 
   mas-publish-arm64-skip-checkout:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2048,7 +2062,9 @@ jobs:
                 checkout: false
 
   mas-testing-arm64:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2235,10 +2251,7 @@ jobs:
     <<: *steps-tests
 
   osx-testing-x64-tests:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-      xcode: "12.4.0"
+    executor: macos      
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2254,10 +2267,7 @@ jobs:
     <<: *steps-tests
 
   mas-testing-x64-tests:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-      xcode: "12.4.0"
+    executor: macos
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
