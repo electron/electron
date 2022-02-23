@@ -4,8 +4,10 @@
 
 #include "shell/common/color_util.h"
 
+#include <cmath>
 #include <vector>
 
+#include "base/cxx17_backports.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/common/color_parser.h"
@@ -14,9 +16,8 @@
 namespace electron {
 
 std::string SkColorToColorString(SkColor color, const std::string& format) {
-  double alpha_double = (double)(SkColorGetA(color)) / 255.0;
-  double alpha =
-      alpha_double <= 0.0 ? 0.0 : alpha_double >= 1.0 ? 1.0 : alpha_double;
+  const double alpha_double = double(SkColorGetA(color)) / 255.0;
+  const double alpha = base::clamp(alpha_double, 0.0, 1.0);
 
   if (format == "hsl" || format == "hsla") {
     color_utils::HSL hsl;
@@ -32,13 +33,19 @@ std::string SkColorToColorString(SkColor color, const std::string& format) {
       return base::StringPrintf("hsl(%ld, %ld%%, %ld%%)", lround(hsl.h * 360),
                                 lround(hsl.s * 100), lround(hsl.l * 100));
     }
-  } else if (format == "rgba") {
+  }
+
+  if (format == "rgba") {
     return base::StringPrintf("rgba(%d, %d, %d, %.1f)", SkColorGetR(color),
                               SkColorGetG(color), SkColorGetB(color), alpha);
-  } else if (format == "rgb") {
+  }
+
+  if (format == "rgb") {
     return base::StringPrintf("rgb(%d, %d, %d)", SkColorGetR(color),
                               SkColorGetG(color), SkColorGetB(color));
-  } else if (alpha != 1.0) {
+  }
+
+  if (alpha != 1.0) {
     return ToRGBAHex(color, true);
   }
 
