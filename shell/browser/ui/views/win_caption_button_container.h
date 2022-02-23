@@ -5,8 +5,8 @@
 // Modified from
 // chrome/browser/ui/views/frame/glass_browser_caption_button_container.h
 
-#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
-#define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
+#ifndef SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
+#define SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
 
 #include "base/scoped_observation.h"
 #include "ui/base/metadata/metadata_header_macros.h"
