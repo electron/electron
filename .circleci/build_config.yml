@@ -55,8 +55,14 @@ executors:
         default: macos.x86.medium.gen2
         type: enum
         enum: ["macos.x86.medium.gen2", "large"]
+      xcode:
+        description: "xcode version"
+        default: "13.2.1"
+        type: enum
+        enum: ["12.4.0", "13.2.1"]
+
     macos:
-      xcode: "13.2.1"
+      xcode: << parameters.xcode >>
     resource_class: << parameters.size >>
 
   # Electron Runners
@@ -2232,6 +2238,7 @@ jobs:
     executor:
       name: macos
       size: macos.x86.medium.gen2
+      xcode: "12.4.0"
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2250,6 +2257,7 @@ jobs:
     executor:
       name: macos
       size: macos.x86.medium.gen2
+      xcode: "12.4.0"
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
