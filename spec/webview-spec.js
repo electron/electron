@@ -911,14 +911,17 @@ describe('<webview> tag', function () {
 
   describe('executeJavaScript', () => {
     it('should support user gesture', async () => {
-      await loadWebView(webview, { src: `file://${fixtures}/pages/base-page.html` });
-      webview.executeJavaScript(`
-        const audio = document.createElement("audio")
-        audio.src = "../assets/tone.wav"
-        document.body.appendChild(audio);
-        audio.play()
-      `, true);
-      await waitForEvent(webview, 'media-started-playing');
+      await loadWebView(webview, {
+        src: `file://${fixtures}/pages/fullscreen.html`
+      });
+
+      // Event handler has to be added before js execution.
+      const waitForEnterHtmlFullScreen = waitForEvent(webview, 'enter-html-full-screen');
+
+      const jsScript = "document.querySelector('video').webkitRequestFullscreen()";
+      webview.executeJavaScript(jsScript, true);
+
+      return waitForEnterHtmlFullScreen;
     });
 
     it('can return the result of the executed script', async () => {
