@@ -92,8 +92,7 @@ describe('node feature', () => {
         expect(msg).to.equal('hello');
       });
 
-      // TODO(jkleinsc) fix this test on Windows
-      ifit(process.platform !== 'win32')('has the electron version in process.versions', async () => {
+      it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
         const forked = ChildProcess.fork('--eval', [source]);
         const [message] = await emittedOnce(forked, 'message');
@@ -104,8 +103,7 @@ describe('node feature', () => {
       });
     });
 
-    // TODO(jkleinsc) fix this test on Windows
-    ifdescribe(process.platform !== 'win32')('child_process.spawn', () => {
+    describe(process.platform !== 'win32')('child_process.spawn', () => {
       let child;
 
       afterEach(() => {
@@ -148,8 +146,7 @@ describe('node feature', () => {
 
   describe('contexts', () => {
     describe('setTimeout in fs callback', () => {
-      // TODO(jkleinsc) fix this test on Windows
-      ifit(process.platform !== 'win32')('does not crash', (done) => {
+      it('does not crash', (done) => {
         fs.readFile(__filename, () => {
           setTimeout(done, 0);
         });
@@ -157,8 +154,7 @@ describe('node feature', () => {
     });
 
     describe('error thrown in renderer process node context', () => {
-      // TODO(jkleinsc) fix this test on Windows
-      ifit(process.platform !== 'win32')('gets emitted as a process uncaughtException event', (done) => {
+      it('gets emitted as a process uncaughtException event', (done) => {
         const error = new Error('boo!');
         const listeners = process.listeners('uncaughtException');
         process.removeAllListeners('uncaughtException');
