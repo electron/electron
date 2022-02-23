@@ -136,8 +136,16 @@ cherry-pick-da11d71a0227.patch
 m96_fileapi_move_origin_checks_in_bloburlstore_sooner.patch
 cherry-pick-6bb320d134b1.patch
 cherry-pick-c5571653d932.patch
+cherry-pick-1282354.patch
+cherry-pick-9db9911e1242.patch
+cherry-pick-22f27676515e.patch
 cherry-pick-1283371.patch
 cherry-pick-1283375.patch
 cherry-pick-1283198.patch
 cherry-pick-1284367.patch
 cherry-pick-e3805f29fed7.patch
+m98_fs_fix_fileutil_lifetime_issue.patch
+cherry-pick-0081bb347e67.patch
+cleanup_pausablecriptexecutor_usage.patch
+cherry-pick-ebc188ad769e.patch
+cherry-pick-1277917.patch

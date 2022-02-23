@@ -463,7 +463,8 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
     std::unique_ptr<base::RunLoop>& run_loop) {
   js_env_->OnMessageLoopCreated();
   exit_code_ = content::RESULT_CODE_NORMAL_EXIT;
-  Browser::Get()->SetMainMessageLoopQuitClosure(run_loop->QuitClosure());
+  Browser::Get()->SetMainMessageLoopQuitClosure(
+      run_loop->QuitWhenIdleClosure());
 }
 
 void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
