@@ -177,7 +177,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // By default the window has a default maximum size that prevents it
   // from being resized larger than the screen, so we should only set this
   // if th user has passed in values.
-  if (have_max_height || have_max_width)
+  if (have_max_height || have_max_width || !max_size.IsEmpty())
     size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
 
   if (use_content_size) {
