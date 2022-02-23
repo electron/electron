@@ -266,6 +266,7 @@
       inspectableWebContentsView_->inspectable_web_contents();
   DCHECK(inspectable_web_contents);
   auto* webContents = inspectable_web_contents->GetWebContents();
+  if (!webContents) return;
   auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
 
   NSView* view = [notification object];
