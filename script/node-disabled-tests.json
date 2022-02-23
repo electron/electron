@@ -117,6 +117,7 @@
   "parallel/test-webcrypto-rsa-pss-params",
   "parallel/test-webcrypto-sign-verify-node-dsa",
   "parallel/test-webcrypto-x25519-x448",
+  "parallel/test-worker-debug",
   "parallel/test-worker-stdio",
   "parallel/test-zlib-unused-weak",
   "report/test-report-fatal-error",
