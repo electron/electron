@@ -73,6 +73,11 @@ creating the window. Note that this is more powerful than passing options
 through the feature string, as the renderer has more limited privileges in
 deciding security preferences than the main process.
 
+In addition to passing in `action` and `overrideBrowserWindowOptions`,
+`outlivesOpener` can be passed like: `{ action: 'allow', outlivesOpener: true,
+overrideBrowserWindowOptions: { ... } }`. If set to `true`, the newly created
+window will not close when the opener window closes. The default value is `false`.
+
 ### Native `Window` example
 
 ```javascript
