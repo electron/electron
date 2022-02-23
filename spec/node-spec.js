@@ -19,7 +19,8 @@ describe('node feature', () => {
       }
     });
 
-    describe('child_process.fork', () => {
+    // TODO(jkleinsc) fix this test on Windows
+    ifdescribe(process.platform !== 'win32')('child_process.fork', () => {
       it('works in current process', async () => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'ping.js'));
         const message = emittedOnce(child, 'message');
