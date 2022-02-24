@@ -766,8 +766,12 @@ WebContents::WebContents(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_OSR)
     }
   } else if (IsOffScreen()) {
-    bool transparent = false;
-    options.Get(options::kTransparent, &transparent);
+    // webPreferences does not have a transparent option, so if the window needs
+    // to be transparent, that will be set at electron_api_browser_window.cc#L57
+    // and we then need to pull it back out and check it here.
+    std::string background_color;
+    options.GetHidden(options::kBackgroundColor, &background_color);
+    bool transparent = ParseHexColor(background_color) == SK_ColorTRANSPARENT;
 
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
