@@ -7,7 +7,7 @@ The wayland specification expects client to mmap the xkb keymap file descriptor 
 This fixes mapping issues regarding file descriptor permissions.
 
 diff --git a/ui/ozone/platform/wayland/host/wayland_keyboard.cc b/ui/ozone/platform/wayland/host/wayland_keyboard.cc
-index 272322210b59228e5faa606101957c48c6371249..1f832407361f75d18bccc0c76419c07f593ec2b3 100644
+index 272322210b59228e5faa606101957c48c6371249..1c661e1ed92428f7c810fe4c041e91a08a0901e5 100644
 --- a/ui/ozone/platform/wayland/host/wayland_keyboard.cc
 +++ b/ui/ozone/platform/wayland/host/wayland_keyboard.cc
 @@ -4,11 +4,12 @@
@@ -24,7 +24,7 @@ index 272322210b59228e5faa606101957c48c6371249..1f832407361f75d18bccc0c76419c07f
  #include "base/unguessable_token.h"
  #include "ui/base/buildflags.h"
  #include "ui/events/base_event_utils.h"
-@@ -111,26 +112,27 @@ WaylandKeyboard::~WaylandKeyboard() {
+@@ -111,26 +112,28 @@ WaylandKeyboard::~WaylandKeyboard() {
  void WaylandKeyboard::Keymap(void* data,
                               wl_keyboard* obj,
                               uint32_t format,
@@ -62,6 +62,7 @@ index 272322210b59228e5faa606101957c48c6371249..1f832407361f75d18bccc0c76419c07f
 +    DLOG(ERROR) << "Failed to set XKB keymap.";
 +  }
 +  munmap(keymap, size);
++  close(fd);
  }
  
  void WaylandKeyboard::Enter(void* data,
