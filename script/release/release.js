@@ -38,7 +38,10 @@ async function getDraftRelease (version, skipValidation) {
   const releaseInfo = await octokit.repos.listReleases({
     owner: 'electron',
     repo: targetRepo
+  }).catch(err => {
+    console.error(`Failed to fetch releases: ${err}`);
   });
+  console.log('releaseInfo: ', releaseInfo);
 
   const versionToCheck = version || pkgVersion;
   const drafts = releaseInfo.data.filter(release => {
@@ -46,6 +49,7 @@ async function getDraftRelease (version, skipValidation) {
   });
 
   const draft = drafts[0];
+  console.log('drafts: ', drafts);
   if (!skipValidation) {
     failureCount = 0;
     check(drafts.length === 1, 'one draft exists', true);
