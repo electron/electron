@@ -475,7 +475,7 @@ Forge's scaffolding:
   ✔ Fixing .gitignore
 
   We have ATTEMPTED to convert your app to be in a format that electron-forge understands.
- 
+
   Thanks for using "electron-forge"!!!
   ```
 
