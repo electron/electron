@@ -20,22 +20,21 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 2c6e923952c7d8c1e411e3dedb149712a0e64025..0034d9998133920a2cd074b1f5562b58976d6d49 100644
+index 61ab59e0d97a392ae18c1d7ad7dd606b5cd1c567..2a899818ebb67ba4fc06ccbcff3ee03f6b83c0e6 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1891,6 +1891,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
- 
- gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
+@@ -1882,6 +1882,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+ TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
+   TargetColorParams params;
 +  if (!settings_.enable_color_correct_rendering) {
-+    return {};
++    return params;
 +  }
-+
-   constexpr gfx::ColorSpace srgb = gfx::ColorSpace::CreateSRGB();
  
    // If we are likely to software composite the resource, we use sRGB because
+   // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 86180d4f001a7f849553a4bd5401d69fe4f1bec2..953b1f4f24e55e127af5fcb5fb3c4e1e3f23429d 100644
+index 64f1a3a3cb8d82235ff04f5c01a7cf571d8ba00c..ffa8d1a53870663647e423975f00e5650c6ab579 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -93,6 +93,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -81,7 +80,7 @@ index 6a830ec9f29b9764cd425f0681dafbb18d90b457..a7a095ceb9e626c79db21e0d16c8ef47
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 963154eeda506350b71e3243ef172061efc8d4fb..daaea93f536759b67b4fffbca7c26479ceb04fcd 100644
+index deb95d2f0728b27af6115674094cc1b7a8e25807..339fe73954f33fb7bbc17f88b949187690aca71c 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -87,6 +87,9 @@
@@ -229,7 +228,7 @@ index 963154eeda506350b71e3243ef172061efc8d4fb..daaea93f536759b67b4fffbca7c26479
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 926ea905b775c0706fd1b882f37b88b646b8b154..691eb2c5f7a26ea2b213b6378ab600b6b047531d 100644
+index f5d73922086b5b27907fd393d4d4204a574c3b25..5b09f5ef5f04b519ed4148498c82d003c9fd6c91 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,10 +240,10 @@ index 926ea905b775c0706fd1b882f37b88b646b8b154..691eb2c5f7a26ea2b213b6378ab600b6
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 30a0c9216a206042a9769bdeda015eaf00e3cc49..e94e895aa31ab98e28137e793a8f298ed3146f5a 100644
+index ac9570fa3d9cb3b0026f70465e5b21ac7778c3df..acc0e121e7746da397cfab07b3707de7ae9a3143 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -193,6 +193,7 @@
+@@ -194,6 +194,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +251,7 @@ index 30a0c9216a206042a9769bdeda015eaf00e3cc49..e94e895aa31ab98e28137e793a8f298e
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3281,6 +3282,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3283,6 +3284,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -293,7 +292,7 @@ index 6260d73068636f4a8d4c73c161a4ffe165b267d0..2686ef0dfb7d8b667647d11fece5aa8e
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 2f4fbbdd8059b2915b4848f95db925f1dbb1fb08..3fc675e4e56b3e658d70475800a938a7ce283567 100644
+index 49ef0d352cfb6163499fa42416187595c7011a68..d5bc620847872fcba96f6941be529428755d83a2 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@
@@ -304,7 +303,7 @@ index 2f4fbbdd8059b2915b4848f95db925f1dbb1fb08..3fc675e4e56b3e658d70475800a938a7
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -177,6 +178,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -184,6 +185,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

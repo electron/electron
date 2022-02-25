@@ -13,7 +13,8 @@
 
 namespace base {
 class Location;
-}
+class TimeDelta;
+}  // namespace base
 
 namespace electron {
 

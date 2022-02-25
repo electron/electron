@@ -1023,7 +1023,7 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
   int id = message.FindIntKey(kFrontendHostId).value_or(0);
   std::vector<base::Value> params_list;
   if (params)
-    params_list = std::move(*params).TakeList();
+    params_list = std::move(*params).TakeListDeprecated();
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),

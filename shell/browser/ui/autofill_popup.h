@@ -9,8 +9,8 @@
 
 #include "content/public/browser/render_frame_host.h"
 #include "shell/browser/ui/views/autofill_popup_view.h"
+#include "ui/color/color_id.h"
 #include "ui/gfx/font_list.h"
-#include "ui/native_theme/native_theme.h"
 #include "ui/views/view.h"
 #include "ui/views/widget/widget.h"
 
@@ -54,7 +54,7 @@ class AutofillPopup : public views::ViewObserver {
   gfx::Rect GetRowBounds(int i);
   const gfx::FontList& GetValueFontListForRow(int index) const;
   const gfx::FontList& GetLabelFontListForRow(int index) const;
-  ui::NativeTheme::ColorId GetBackgroundColorIDForRow(int index) const;
+  ui::ColorId GetBackgroundColorIDForRow(int index) const;
 
   int GetLineCount();
   std::u16string GetValueAt(int i);

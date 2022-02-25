@@ -25,7 +25,7 @@
 #include "content/public/common/network_service_util.h"
 #include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "net/dns/public/dns_over_https_server_config.h"
+#include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/util.h"
 #include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
@@ -273,18 +273,11 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
     }
     default_doh_templates = features::kDnsOverHttpsTemplatesParam.Get();
   }
-  std::string server_method;
-  std::vector<net::DnsOverHttpsServerConfig> dns_over_https_servers;
+
+  net::DnsOverHttpsConfig doh_config;
   if (!default_doh_templates.empty() &&
       default_secure_dns_mode != net::SecureDnsMode::kOff) {
-    for (base::StringPiece server_template :
-         SplitStringPiece(default_doh_templates, " ", base::TRIM_WHITESPACE,
-                          base::SPLIT_WANT_NONEMPTY)) {
-      if (auto server_config = net::DnsOverHttpsServerConfig::FromString(
-              std::string(server_template))) {
-        dns_over_https_servers.push_back(server_config.value());
-      }
-    }
+    doh_config = *net::DnsOverHttpsConfig::FromString(default_doh_templates);
   }
 
   bool additional_dns_query_types_enabled = true;
@@ -293,8 +286,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
       base::FeatureList::IsEnabled(features::kAsyncDns),
-      default_secure_dns_mode, std::move(dns_over_https_servers),
-      additional_dns_query_types_enabled);
+      default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
 
   std::string app_name = electron::Browser::Get()->GetName();
 #if BUILDFLAG(IS_MAC)

@@ -145,6 +145,8 @@ void FrameSubscriber::OnFrameCaptured(
   Done(content_rect, bitmap);
 }
 
+void FrameSubscriber::OnFrameWithEmptyRegionCapture() {}
+
 void FrameSubscriber::OnStopped() {}
 
 void FrameSubscriber::OnLog(const std::string& message) {}
