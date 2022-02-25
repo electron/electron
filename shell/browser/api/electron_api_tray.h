@@ -19,6 +19,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/pinnable.h"
 
 namespace gfx {
 class Image;
@@ -38,6 +39,7 @@ class Tray : public gin::Wrappable<Tray>,
              public gin_helper::EventEmitterMixin<Tray>,
              public gin_helper::Constructible<Tray>,
              public gin_helper::CleanedUpAtExit,
+             public gin_helper::Pinnable<Tray>,
              public TrayIconObserver {
  public:
   // gin_helper::Constructible
