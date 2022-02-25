@@ -361,6 +361,7 @@ source_set("electron_lib") {
     "//components/network_hints/common:mojo_bindings",
     "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
+    "//components/omnibox/browser:buildflags",
     "//components/os_crypt",
     "//components/pref_registry",
     "//components/prefs",
@@ -1188,7 +1189,7 @@ if (is_mac) {
     if (enable_hidpi) {
       data += [ "$root_out_dir/chrome_200_percent.pak" ]
     }
-    foreach(locale, locales) {
+    foreach(locale, platform_pak_locales) {
       data += [ "$root_out_dir/locales/$locale.pak" ]
     }
 

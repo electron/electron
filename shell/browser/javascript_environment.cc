@@ -156,6 +156,8 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
                       gin::IsolateHolder::IsolateCreationMode::kNormal,
                       nullptr,
                       nullptr,
+                      nullptr,
+                      nullptr,
                       isolate_),
       locker_(isolate_) {
   isolate_->Enter();

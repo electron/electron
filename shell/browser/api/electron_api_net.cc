@@ -6,6 +6,7 @@
 
 #include "gin/handle.h"
 #include "net/base/network_change_notifier.h"
+#include "net/http/http_util.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/electron_api_url_loader.h"
 #include "shell/common/gin_helper/dictionary.h"

@@ -96,10 +96,10 @@ index 8f94cc300b58e8a94b6ca155aa3cf370bcb948d8..4340376f323d24e5e2c5897a81c6a9eb
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e455dfd03 100644
+index 47e60bfd8239d4a2e292b835c49132bdbb751555..9861a884a15e79b36833e6df58897141acdc6718 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -147,7 +147,7 @@ const char kACKToken[] = "ACK";
+@@ -148,7 +148,7 @@ const char kACKToken[] = "ACK";
  const char kShutdownToken[] = "SHUTDOWN";
  const char kTokenDelimiter = '\0';
  const int kMaxMessageLength = 32 * 1024;
@@ -108,7 +108,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
  
  bool g_disable_prompt = false;
  bool g_skip_is_chrome_process_check = false;
-@@ -627,6 +627,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -614,6 +614,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
@@ -116,7 +116,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
                       SocketReader* reader);
  
   private:
-@@ -651,6 +652,9 @@ class ProcessSingleton::LinuxWatcher
+@@ -638,6 +639,9 @@ class ProcessSingleton::LinuxWatcher
    // The ProcessSingleton that owns us.
    ProcessSingleton* const parent_;
  
@@ -126,7 +126,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
    std::set<std::unique_ptr<SocketReader>, base::UniquePtrComparator> readers_;
  };
  
-@@ -681,16 +685,21 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+@@ -668,16 +672,21 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -154,7 +154,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
      LOG(WARNING) << "Not handling interprocess notification as browser"
                      " is shutting down";
      // Send back "SHUTDOWN" message, so that the client process can start up
-@@ -700,6 +709,22 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
+@@ -687,6 +696,22 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
    }
  }
  
@@ -177,7 +177,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
  void ProcessSingleton::LinuxWatcher::RemoveSocketReader(SocketReader* reader) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
    DCHECK(reader);
-@@ -735,7 +760,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -722,7 +747,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
      }
    }
  
@@ -187,7 +187,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
    const size_t kMinMessageLength = base::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-@@ -765,10 +791,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -752,10 +778,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
@@ -217,7 +217,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -797,8 +841,12 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -784,8 +828,12 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -231,7 +231,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -915,7 +963,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -904,7 +952,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -241,7 +241,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -925,11 +974,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -914,11 +963,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -263,7 +263,7 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
    // Send the message
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
-@@ -969,6 +1028,17 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -960,6 +1019,17 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
        linux_ui->NotifyWindowManagerStartupComplete();
  #endif
  
@@ -282,18 +282,18 @@ index 81fb8994c53fb16d7c96de008c96127d0b85b8f9..b56577857c54a245ba8554df164a184e
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648c27a2a34 100644
+index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..268be8c0334a4bc051ff08792ea0dc3d0c912034 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -22,6 +22,7 @@
+@@ -21,6 +21,7 @@
+ #include "base/strings/string_number_conversions.h"
  #include "base/strings/utf_string_conversions.h"
  #include "base/time/time.h"
- #include "base/trace_event/trace_event.h"
 +#include "base/timer/timer.h"
+ #include "base/trace_event/base_tracing.h"
  #include "base/win/registry.h"
  #include "base/win/scoped_handle.h"
- #include "base/win/windows_version.h"
-@@ -44,6 +45,14 @@
+@@ -45,6 +46,14 @@
  namespace {
  
  const char kLockfile[] = "lockfile";
@@ -308,7 +308,7 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
  
  // A helper class that acquires the given |mutex| while the AutoLockMutex is in
  // scope.
-@@ -98,10 +107,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -80,10 +89,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -323,7 +323,7 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -151,11 +162,82 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -133,11 +144,82 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -406,7 +406,7 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
  bool ProcessLaunchNotification(
      const ProcessSingleton::NotificationCallback& notification_callback,
      UINT message,
-@@ -167,16 +249,23 @@ bool ProcessLaunchNotification(
+@@ -151,16 +233,23 @@ bool ProcessLaunchNotification(
  
    // Handle the WM_COPYDATA message from another process.
    const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
@@ -434,7 +434,7 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
    return true;
  }
  
-@@ -273,9 +362,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -254,9 +343,13 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -449,7 +449,7 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -290,6 +383,37 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -271,6 +364,37 @@ ProcessSingleton::~ProcessSingleton() {
      ::CloseHandle(lock_file_);
  }
  
@@ -486,8 +486,8 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
 +
  // Code roughly based on Mozilla.
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-   if (is_virtualized_)
-@@ -300,8 +424,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+   TRACE_EVENT0("startup", "ProcessSingleton::NotifyOtherProcess");
+@@ -283,8 +407,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
@@ -498,7 +498,7 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
        remote_window_ = NULL;
-@@ -431,6 +556,18 @@ bool ProcessSingleton::Create() {
+@@ -422,6 +547,18 @@ bool ProcessSingleton::Create() {
            << "Lock file can not be created! Error code: " << error;
  
        if (lock_file_ != INVALID_HANDLE_VALUE) {
@@ -516,8 +516,8 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
 +
          // Set the window's title to the path of our user data directory so
          // other Chrome instances can decide if they should forward to us.
-         bool result =
-@@ -457,6 +594,7 @@ bool ProcessSingleton::Create() {
+         TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateWindow");
+@@ -449,6 +586,7 @@ bool ProcessSingleton::Create() {
  }
  
  void ProcessSingleton::Cleanup() {
@@ -526,10 +526,10 @@ index 679350dd08ca0211653ea669405e3f4f86c2fc0f..16ad742721e9c5af13224f74e864e648
  
  void ProcessSingleton::OverrideShouldKillRemoteProcessCallbackForTesting(
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index b4fec8878c37b9d157ea768e3b6d99399a988c75..e1cb0f21f752aaeee2c360ce9c5fd08bfede26e3 100644
+index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..ce851d09d501ebcc6d6c4065e746e869d5275b2b 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
-@@ -34,7 +34,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+@@ -36,9 +36,10 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
    return base::win::MessageWindow::FindWindow(user_data_dir.value());
  }
  
@@ -537,11 +537,13 @@ index b4fec8878c37b9d157ea768e3b6d99399a988c75..e1cb0f21f752aaeee2c360ce9c5fd08b
 +NotifyChromeResult AttemptToNotifyRunningChrome(
 +    HWND remote_window,
 +    const base::span<const uint8_t> additional_data) {
+   TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
+-
    DCHECK(remote_window);
    DWORD process_id = 0;
    DWORD thread_id = GetWindowThreadProcessId(remote_window, &process_id);
-@@ -42,7 +44,8 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
-     return NOTIFY_FAILED;
+@@ -50,7 +51,8 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+   }
  
    // Send the command line to the remote chrome window.
 -  // Format is "START\0<<<current directory>>>\0<<<commandline>>>".
@@ -549,8 +551,8 @@ index b4fec8878c37b9d157ea768e3b6d99399a988c75..e1cb0f21f752aaeee2c360ce9c5fd08b
 +  // "START\0<current-directory>\0<command-line>\0<additional-data-length>\0<additional-data>".
    std::wstring to_send(L"START\0", 6);  // want the NULL in the string.
    base::FilePath cur_dir;
-   if (!base::GetCurrentDirectory(&cur_dir))
-@@ -53,6 +56,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+   if (!base::GetCurrentDirectory(&cur_dir)) {
+@@ -64,6 +66,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
        base::CommandLine::ForCurrentProcess()->GetCommandLineString());
    to_send.append(L"\0", 1);  // Null separator.
  

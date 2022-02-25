@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "base/hash/hash.h"
+#include "base/run_loop.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/common/api/electron_api_key_weak_map.h"
 #include "shell/common/gin_converters/content_converter.h"

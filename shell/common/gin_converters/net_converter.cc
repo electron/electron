@@ -317,7 +317,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
   *out = base::MakeRefCounted<network::ResourceRequestBody>();
-  for (size_t i = 0; i < list->GetList().size(); ++i) {
+  for (size_t i = 0; i < list->GetListDeprecated().size(); ++i) {
     base::DictionaryValue* dict = nullptr;
     std::string type;
     if (!list->GetDictionary(i, &dict))
