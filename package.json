@@ -19,7 +19,7 @@
     "@types/klaw": "^3.0.1",
     "@types/minimist": "^1.2.0",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^14.6.2",
+    "@types/node": "^16.11.26",
     "@types/semver": "^7.3.3",
     "@types/send": "^0.14.5",
     "@types/split": "^1.0.0",
