@@ -11,6 +11,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "electron/fuses.h"
+#include "net/http/http_util.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/cors/origin_access_list.h"

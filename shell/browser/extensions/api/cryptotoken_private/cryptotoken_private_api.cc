@@ -58,7 +58,7 @@ bool ContainsAppIdByHash(const base::ListValue& list,
     return false;
   }
 
-  for (const auto& i : list.GetList()) {
+  for (const auto& i : list.GetListDeprecated()) {
     const std::string& s = i.GetString();
     if (s.find('/') == std::string::npos) {
       // No slashes mean that this is a webauthn RP ID, not a U2F AppID.

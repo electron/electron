@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 7a8ca6523bfd1ce237da9dce7fce03a6acb8b75e..c485572aa06e4b750468b8e23816fbcbf0515757 100644
+index 555dba06e99bd7294f88a21ddaf3b86a12fdd5ac..8064592eb285d1407ff8334149c27e3a65560d9e 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -20,7 +20,10 @@
@@ -53,12 +53,12 @@ index 7a8ca6523bfd1ce237da9dce7fce03a6acb8b75e..c485572aa06e4b750468b8e23816fbcb
        content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
    bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
 @@ -236,7 +243,7 @@ void HandleAccessibilityRequestCallback(
-   data.SetBoolean(kViewsAccessibility,
+   data.SetBoolKey(kViewsAccessibility,
                    features::IsAccessibilityTreeForViewsEnabled());
  
 -  bool show_internal = pref->GetBoolean(prefs::kShowInternalAccessibilityTree);
 +  bool show_internal = true;
-   data.SetString(kInternal, show_internal ? kOn : kOff);
+   data.SetStringKey(kInternal, show_internal ? kOn : kOff);
  
    std::unique_ptr<base::ListValue> rvh_list(new base::ListValue());
 @@ -271,11 +278,11 @@ void HandleAccessibilityRequestCallback(
@@ -97,7 +97,7 @@ index 7a8ca6523bfd1ce237da9dce7fce03a6acb8b75e..c485572aa06e4b750468b8e23816fbcb
    std::string accessibility_contents =
 -      web_contents->DumpAccessibilityTree(internal, property_filters);
 +      web_contents->DumpAccessibilityTree(true, property_filters);
-   result->SetString(kTreeField, accessibility_contents);
+   result->SetStringKey(kTreeField, accessibility_contents);
    FireWebUIListener(request_type, *(result.get()));
  }
 @@ -627,6 +638,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(

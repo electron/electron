@@ -138,7 +138,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
         integrity_payload.hash = *hash;
         integrity_payload.block_size =
             static_cast<uint32_t>(block_size.value());
-        for (auto& value : blocks->GetList()) {
+        for (auto& value : blocks->GetListDeprecated()) {
           if (auto* block = value.GetIfString()) {
             integrity_payload.blocks.push_back(*block);
           } else {

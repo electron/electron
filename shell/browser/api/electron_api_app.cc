@@ -34,7 +34,7 @@
 #include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "media/audio/audio_manager.h"
-#include "net/dns/public/dns_over_https_server_config.h"
+#include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/util.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -1640,18 +1640,14 @@ void ConfigureHostResolver(v8::Isolate* isolate,
     }
     default_doh_templates = features::kDnsOverHttpsTemplatesParam.Get();
   }
-  std::string server_method;
-  std::vector<net::DnsOverHttpsServerConfig> dns_over_https_servers;
+
+  net::DnsOverHttpsConfig doh_config;
   if (!default_doh_templates.empty() &&
       secure_dns_mode != net::SecureDnsMode::kOff) {
-    for (base::StringPiece server_template :
-         SplitStringPiece(default_doh_templates, " ", base::TRIM_WHITESPACE,
-                          base::SPLIT_WANT_NONEMPTY)) {
-      if (auto server_config = net::DnsOverHttpsServerConfig::FromString(
-              std::string(server_template))) {
-        dns_over_https_servers.push_back(server_config.value());
-      }
-    }
+    auto maybe_doh_config =
+        net::DnsOverHttpsConfig::FromString(default_doh_templates);
+    if (maybe_doh_config.has_value())
+      doh_config = maybe_doh_config.value();
   }
 
   bool enable_built_in_resolver =
@@ -1677,17 +1673,20 @@ void ConfigureHostResolver(v8::Isolate* isolate,
       thrower.ThrowTypeError("secureDnsServers must be an array of strings");
       return;
     }
-    dns_over_https_servers.clear();
+
+    // Validate individual server templates prior to batch-assigning to
+    // doh_config.
     for (const std::string& server_template : secure_dns_server_strings) {
-      if (auto server_config =
-              net::DnsOverHttpsServerConfig::FromString(server_template)) {
-        dns_over_https_servers.push_back(server_config.value());
-      } else {
+      absl::optional<net::DnsOverHttpsConfig> server_config =
+          net::DnsOverHttpsConfig::FromString(server_template);
+      if (!server_config.has_value()) {
         thrower.ThrowTypeError(std::string("not a valid DoH template: ") +
                                server_template);
         return;
       }
     }
+    doh_config = *net::DnsOverHttpsConfig::FromStrings(
+        std::move(secure_dns_server_strings));
   }
 
   if (opts.Has("enableAdditionalDnsQueryTypes") &&
@@ -1700,8 +1699,8 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      enable_built_in_resolver, secure_dns_mode,
-      std::move(dns_over_https_servers), additional_dns_query_types_enabled);
+      enable_built_in_resolver, secure_dns_mode, doh_config,
+      additional_dns_query_types_enabled);
 }
 
 // static
