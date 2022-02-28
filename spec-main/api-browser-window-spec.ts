@@ -1988,6 +1988,56 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarOverlay" option', () => {
+    const testWindowsOverlayHeight = async (size: any) => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          height: size
+        }
+      });
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      if (process.platform === 'darwin') {
+        await w.loadFile(overlayHTML);
+      } else {
+        const overlayReady = emittedOnce(ipcMain, 'geometrychange');
+        await w.loadFile(overlayHTML);
+        await overlayReady;
+      }
+      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
+      expect(overlayEnabled).to.be.true('overlayEnabled');
+      const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+      await w.maximize();
+      const max = await w.isMaximized();
+      expect(max).to.equal(true);
+      const overlayRectPostMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+
+      expect(overlayRectPreMax.y).to.equal(0);
+      if (process.platform === 'darwin') {
+        expect(overlayRectPreMax.x).to.be.greaterThan(0);
+      } else {
+        expect(overlayRectPreMax.x).to.equal(0);
+      }
+      expect(overlayRectPreMax.width).to.be.greaterThan(0);
+
+      expect(overlayRectPreMax.height).to.equal(size);
+      // Confirm that maximization only affected the height of the buttons and not the title bar
+      expect(overlayRectPostMax.height).to.equal(size);
+    };
+    afterEach(closeAllWindows);
+    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    it('sets Window Control Overlay with title bar height of 40', async () => {
+      await testWindowsOverlayHeight(40);
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('"enableLargerThanScreen" option', () => {
     afterEach(closeAllWindows);
     it('can move the window out of screen', () => {
