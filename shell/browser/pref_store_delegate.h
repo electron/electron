@@ -34,6 +34,7 @@ class PrefStoreDelegate : public PrefValueStore::Delegate {
   void Init(PrefStore* managed_prefs,
             PrefStore* supervised_user_prefs,
             PrefStore* extension_prefs,
+            PrefStore* standalone_browser_prefs,
             PrefStore* command_line_prefs,
             PrefStore* user_prefs,
             PrefStore* recommended_prefs,

@@ -221,7 +221,7 @@ void SetNodeCliFlags() {
   args.emplace_back("electron");
 
   for (const auto& arg : argv) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
@@ -301,7 +301,7 @@ namespace electron {
 namespace {
 
 base::FilePath GetResourcesPath() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
 #else
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -367,7 +367,7 @@ void NodeBindings::Initialize() {
   // Open node's error reporting system for browser process.
   node::g_upstream_node_mode = false;
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   // Get real command line in renderer process forked by zygote.
   if (browser_env_ != BrowserEnvironment::kBrowser)
     ElectronCommandLine::InitializeFromCommandLine();
@@ -396,7 +396,7 @@ void NodeBindings::Initialize() {
   if (exit_code != 0)
     exit(exit_code);
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
   if (browser_env_ == BrowserEnvironment::kBrowser ||
@@ -410,7 +410,7 @@ void NodeBindings::Initialize() {
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   auto& atom_args = ElectronCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
   std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
@@ -574,7 +574,7 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
-#if !defined(OS_WIN)
+#if !BUILDFLAG(IS_WIN)
   int handle = uv_backend_fd(uv_loop_);
 
   // If the backend fd hasn't changed, don't proceed.

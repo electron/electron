@@ -15,7 +15,7 @@ namespace electron {
 namespace {
 
 // The menu bar height in pixels.
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 const int kMenuBarHeight = 20;
 #else
 const int kMenuBarHeight = 25;

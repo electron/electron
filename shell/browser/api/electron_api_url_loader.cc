@@ -17,6 +17,7 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "net/base/load_flags.h"
+#include "net/http/http_util.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
@@ -361,10 +362,12 @@ void SimpleURLLoaderWrapper::OnSSLCertificateError(
   std::move(response).Run(net_error);
 }
 
-void SimpleURLLoaderWrapper::OnClearSiteData(const GURL& url,
-                                             const std::string& header_value,
-                                             int32_t load_flags,
-                                             OnClearSiteDataCallback callback) {
+void SimpleURLLoaderWrapper::OnClearSiteData(
+    const GURL& url,
+    const std::string& header_value,
+    int32_t load_flags,
+    const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+    OnClearSiteDataCallback callback) {
   std::move(callback).Run();
 }
 void SimpleURLLoaderWrapper::OnLoadingStateUpdate(

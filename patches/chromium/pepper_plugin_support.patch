@@ -156,13 +156,13 @@ index 40fafdbed313800a3f420d9d5a3daf8bbbdb7d95..1367725e04455ba5f299b8341a28f222
  
  #endif  // CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_ISOLATED_FILE_SYSTEM_MESSAGE_FILTER_H_
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a611926acb2 100644
+index 4b84f4ef068a76fa2be244a7f7ca2c6a8734bd46..13ae0a57535dfb516eb70b272fdaa5a4720d0591 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-@@ -7,8 +7,13 @@
+@@ -6,8 +6,13 @@
+ 
  #include "base/check_op.h"
  #include "chrome/renderer/pepper/pepper_flash_font_file_host.h"
- #include "chrome/renderer/pepper/pepper_flash_fullscreen_host.h"
 +#if 0
  #include "chrome/renderer/pepper/pepper_uma_host.h"
 +#endif
@@ -173,23 +173,7 @@ index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a61
  #include "content/public/renderer/renderer_ppapi_host.h"
  #include "pdf/buildflags.h"
  #include "ppapi/host/ppapi_host.h"
-@@ -37,6 +42,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
-   if (!host_->IsValidInstance(instance))
-     return nullptr;
- 
-+#if 0
-   if (host_->GetPpapiHost()->permissions().HasPermission(
-           ppapi::PERMISSION_FLASH)) {
-     switch (message.type()) {
-@@ -46,6 +52,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
-       }
-     }
-   }
-+#endif
- 
-   // TODO(raymes): PDF also needs access to the FlashFontFileHost currently.
-   // We should either rename PPB_FlashFont_File to PPB_FontFile_Private or get
-@@ -68,7 +75,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -55,7 +60,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
      }
    }
  
@@ -198,7 +182,7 @@ index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a61
    if (host_->GetPpapiHost()->permissions().HasPermission(
            ppapi::PERMISSION_PDF)) {
      switch (message.type()) {
-@@ -79,6 +86,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -66,6 +71,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
    }
  #endif
  
@@ -206,7 +190,7 @@ index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a61
    // Permissions for the following interfaces will be checked at the
    // time of the corresponding instance's method calls.  Currently these
    // interfaces are available only for whitelisted apps which may not have
-@@ -88,6 +96,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -75,6 +81,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        return std::make_unique<PepperUMAHost>(host_, instance, resource);
      }
    }

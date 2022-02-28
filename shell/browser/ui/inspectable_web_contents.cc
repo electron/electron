@@ -580,11 +580,11 @@ void InspectableWebContents::LoadCompleted() {
     SetIsDocked(DispatchCallback(), false);
   } else {
     if (dock_state_.empty()) {
-      const base::DictionaryValue* prefs =
+      const base::Value* prefs =
           pref_service_->GetDictionary(kDevToolsPreferences);
-      std::string current_dock_state;
-      prefs->GetString("currentDockState", &current_dock_state);
-      base::RemoveChars(current_dock_state, "\"", &dock_state_);
+      const std::string* current_dock_state =
+          prefs->FindStringKey("currentDockState");
+      base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
@@ -1023,7 +1023,7 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
   int id = message.FindIntKey(kFrontendHostId).value_or(0);
   std::vector<base::Value> params_list;
   if (params)
-    params_list = std::move(*params).TakeList();
+    params_list = std::move(*params).TakeListDeprecated();
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),

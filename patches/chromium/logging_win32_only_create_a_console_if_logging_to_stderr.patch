@@ -9,12 +9,12 @@ be created for each child process, despite logs being redirected to a
 file.
 
 diff --git a/content/app/content_main.cc b/content/app/content_main.cc
-index 5ad6c026e9d05b3c016adeab1c5eea9883dcac6c..2c94c115514b644c897e9c3896fe2941d42cf132 100644
+index 332b7d026e0365a66d5f4f275a90b48d0f2db5aa..3813fe1a3b2e95af5e213201ab3ea08a656e01c3 100644
 --- a/content/app/content_main.cc
 +++ b/content/app/content_main.cc
-@@ -378,8 +378,12 @@ RunContentProcess(ContentMainParams params,
+@@ -381,8 +381,12 @@ RunContentProcess(ContentMainParams params,
  
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)
      // Route stdio to parent console (if any) or create one.
 -    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
 -            switches::kEnableLogging)) {

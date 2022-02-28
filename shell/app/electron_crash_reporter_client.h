@@ -31,7 +31,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
       const std::map<std::string, std::string>& annotations);
 
   // crash_reporter::CrashReporterClient implementation.
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   void SetCrashReporterClientIdFromGUID(
       const std::string& client_guid) override;
   void GetProductNameAndVersion(const char** product_name,
@@ -42,7 +42,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   base::FilePath GetReporterLogFilename() override;
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   void GetProductNameAndVersion(const std::wstring& exe_path,
                                 std::wstring* product_name,
                                 std::wstring* version,
@@ -50,7 +50,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
                                 std::wstring* channel_name) override;
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   bool GetCrashDumpLocation(std::wstring* crash_dir) override;
 #else
   bool GetCrashDumpLocation(base::FilePath* crash_dir) override;
@@ -66,11 +66,11 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   void GetProcessSimpleAnnotations(
       std::map<std::string, std::string>* annotations) override;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled) override;
 #endif
 
-#if defined(OS_MAC) || defined(OS_LINUX)
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
   bool ShouldMonitorCrashHandlerExpensively() override;
 #endif
 

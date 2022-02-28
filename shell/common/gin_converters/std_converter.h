@@ -11,7 +11,7 @@
 
 #include "gin/converter.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/strings/string_util_win.h"
 #endif
 
@@ -24,7 +24,7 @@ v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
       isolate, std::forward<T>(input));
 }
 
-#if !defined(OS_LINUX) && !defined(OS_FREEBSD)
+#if !BUILDFLAG(IS_LINUX) && !defined(OS_FREEBSD)
 template <>
 struct Converter<unsigned long> {  // NOLINT(runtime/int)
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -186,7 +186,7 @@ struct Converter<std::map<K, V>> {
   }
 };
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 template <>
 struct Converter<std::wstring> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,

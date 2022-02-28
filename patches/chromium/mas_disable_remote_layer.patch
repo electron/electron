@@ -16,10 +16,10 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index c384f18ec959303bd3671c570af87b604d20cf23..f420bd94951f5a2b03d20e5892a4039271ed2078 100644
+index 1b84c9df5990d0905d068ca822d5173313a74edd..89a90a5c8e0c3ede1b0fe63d45c5768b42394474 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-@@ -20,7 +20,9 @@
+@@ -21,7 +21,9 @@
  #include "ui/gl/gl_surface_egl.h"
  #endif
  
@@ -29,7 +29,7 @@ index c384f18ec959303bd3671c570af87b604d20cf23..f420bd94951f5a2b03d20e5892a40392
  @class CALayer;
  
  namespace ui {
-@@ -113,7 +115,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
+@@ -116,7 +118,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -40,10 +40,10 @@ index c384f18ec959303bd3671c570af87b604d20cf23..f420bd94951f5a2b03d20e5892a40392
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 79a357037df22c78d31ace77ee8cf6291818ecee..3c7d5add7e4f4372708a1b2f7bf31f7b0a4aa0af 100644
+index 224542e2a70e980684d5d882af7fe3988c5ee96b..7a726eea86f21fe31077aaa447cccc05007d5eaa 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -53,7 +53,7 @@
+@@ -59,7 +59,7 @@
  
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
@@ -52,7 +52,7 @@ index 79a357037df22c78d31ace77ee8cf6291818ecee..3c7d5add7e4f4372708a1b2f7bf31f7b
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -62,6 +62,7 @@
+@@ -68,6 +68,7 @@
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -60,7 +60,7 @@ index 79a357037df22c78d31ace77ee8cf6291818ecee..3c7d5add7e4f4372708a1b2f7bf31f7b
  }
  
  template <typename BaseClass>
-@@ -142,7 +143,9 @@
+@@ -148,7 +149,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
@@ -114,18 +114,28 @@ index d684614589c9e55965450d712ee6dc0deef6aade..e0446753a3d972215423c079160fe8bf
  
  // This function will check if all of the interfaces listed above are supported
 diff --git a/ui/base/cocoa/remote_layer_api.mm b/ui/base/cocoa/remote_layer_api.mm
-index bbaf9f466f4999acb5bfccf3b9565fd8f556ca2f..8c846ce9523a4b2f6fbdbdbeae4f94b45ac3c115 100644
+index e6baf74c966791ed5326fea23e7d23259a781313..7fab070b8b06dfc5c9940c3b800735d187a72cf9 100644
 --- a/ui/base/cocoa/remote_layer_api.mm
 +++ b/ui/base/cocoa/remote_layer_api.mm
-@@ -12,6 +12,7 @@
+@@ -10,14 +10,17 @@
+ 
  namespace ui {
+ 
++#ifndef MAS_BUILD
+ namespace {
+ // Control use of cross-process CALayers to display content directly from the
+ // GPU process on Mac.
+ base::Feature kRemoteCoreAnimationAPI{"RemoteCoreAnimationAPI",
+                                       base::FEATURE_ENABLED_BY_DEFAULT};
+ }  // namespace
++#endif
  
  bool RemoteLayerAPISupported() {
 +#ifndef MAS_BUILD
-   static bool disabled_at_command_line =
-       base::CommandLine::ForCurrentProcess()->HasSwitch(
-           switches::kDisableRemoteCoreAnimation);
-@@ -46,6 +47,9 @@ bool RemoteLayerAPISupported() {
+   if (!base::FeatureList::IsEnabled(kRemoteCoreAnimationAPI))
+     return false;
+ 
+@@ -49,6 +52,9 @@ bool RemoteLayerAPISupported() {
  
    // If everything is there, we should be able to use the API.
    return true;

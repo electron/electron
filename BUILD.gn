@@ -361,6 +361,7 @@ source_set("electron_lib") {
     "//components/network_hints/common:mojo_bindings",
     "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
+    "//components/omnibox/browser:buildflags",
     "//components/os_crypt",
     "//components/pref_registry",
     "//components/prefs",
@@ -472,8 +473,8 @@ source_set("electron_lib") {
 
   if (is_linux) {
     deps += [
-      "//build/config/linux/gtk:gtkprint",
       "//components/crash/content/browser",
+      "//ui/gtk:gtk_config",
     ]
   }
 
@@ -549,7 +550,7 @@ source_set("electron_lib") {
       sources += filenames.lib_sources_linux_x11
       public_deps += [
         "//ui/base/x",
-        "//ui/platform_window/x11",
+        "//ui/ozone/platform/x11",
       ]
     }
     configs += [ ":gio_unix" ]
@@ -1186,7 +1187,7 @@ if (is_mac) {
     if (enable_hidpi) {
       data += [ "$root_out_dir/chrome_200_percent.pak" ]
     }
-    foreach(locale, locales) {
+    foreach(locale, platform_pak_locales) {
       data += [ "$root_out_dir/locales/$locale.pak" ]
     }
 

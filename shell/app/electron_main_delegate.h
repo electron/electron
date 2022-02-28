@@ -45,12 +45,12 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
       content::MainFunctionParams main_function_params) override;
   bool ShouldCreateFeatureList() override;
   bool ShouldLockSchemeRegistry() override;
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   void ZygoteForked() override;
 #endif
 
  private:
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void OverrideChildProcessPath();
   void OverrideFrameworkBundlePath();
   void SetUpBundleOverrides();

@@ -36,10 +36,10 @@ index 89255a0927a647ca32d1a9508853425a3207b441..f0e1e32f80d79e400ad139818edce60a
  import '../../ui/legacy/components/source_frame/source_frame-meta.js';
  import '../../panels/console_counters/console_counters-meta.js';
 diff --git a/front_end/ui/legacy/BUILD.gn b/front_end/ui/legacy/BUILD.gn
-index fe7c150cf6ce24b10821fa5a91d55f82cf865222..7177d495ec9e2b31a641c7a531b63584c597cf97 100644
+index 8cefe7e1b0cd298ce52ea06186b43f3412115a4f..c03f52d42aef6e094a922d342276439f8628ff42 100644
 --- a/front_end/ui/legacy/BUILD.gn
 +++ b/front_end/ui/legacy/BUILD.gn
-@@ -182,5 +182,6 @@ devtools_entrypoint("legacy") {
+@@ -181,5 +181,6 @@ devtools_entrypoint("legacy") {
    visibility = [
      "../..:legacy_entrypoints",
      "../../legacy_test_runner/*",
