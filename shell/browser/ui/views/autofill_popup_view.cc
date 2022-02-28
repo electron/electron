@@ -13,6 +13,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "ui/accessibility/ax_enums.mojom.h"
 #include "ui/base/dragdrop/drag_drop_types.h"
+#include "ui/color/color_provider.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/point.h"
@@ -88,8 +89,7 @@ void AutofillPopupView::Show() {
 
   SetBorder(views::CreateSolidBorder(
       kPopupBorderThickness,
-      GetNativeTheme()->GetSystemColor(
-          ui::NativeTheme::kColorId_UnfocusedBorderColor)));
+      GetColorProvider()->GetColor(ui::kColorUnfocusedBorder)));
 
   DoUpdateBoundsAndRedrawPopup();
   GetWidget()->Show();
@@ -167,7 +167,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   if (!popup_)
     return;
 
-  canvas->FillRect(entry_rect, GetNativeTheme()->GetSystemColor(
+  canvas->FillRect(entry_rect, GetColorProvider()->GetColor(
                                    popup_->GetBackgroundColorIDForRow(index)));
 
   const bool is_rtl = base::i18n::IsRTL();
@@ -185,8 +185,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
 
   canvas->DrawStringRectWithFlags(
       popup_->GetValueAt(index), popup_->GetValueFontListForRow(index),
-      GetNativeTheme()->GetSystemColor(
-          ui::NativeTheme::kColorId_ResultsTableNormalText),
+      GetColorProvider()->GetColor(ui::kColorResultsTableNormalText),
       gfx::Rect(value_x_align_left, value_rect.y(), value_width,
                 value_rect.height()),
       text_align);
@@ -201,8 +200,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
 
     canvas->DrawStringRectWithFlags(
         popup_->GetLabelAt(index), popup_->GetLabelFontListForRow(index),
-        GetNativeTheme()->GetSystemColor(
-            ui::NativeTheme::kColorId_ResultsTableDimmedText),
+        GetColorProvider()->GetColor(ui::kColorResultsTableDimmedText),
         gfx::Rect(label_x_align_left, entry_rect.y(), label_width,
                   entry_rect.height()),
         text_align);
@@ -252,8 +250,8 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   }
 #endif
 
-  draw_canvas->DrawColor(GetNativeTheme()->GetSystemColor(
-      ui::NativeTheme::kColorId_ResultsTableNormalBackground));
+  draw_canvas->DrawColor(
+      GetColorProvider()->GetColor(ui::kColorResultsTableNormalBackground));
   OnPaintBorder(draw_canvas);
 
   for (int i = 0; i < popup_->GetLineCount(); ++i) {
@@ -305,7 +303,7 @@ void AutofillPopupView::OnMouseExited(const ui::MouseEvent& event) {
 void AutofillPopupView::OnMouseMoved(const ui::MouseEvent& event) {
   // A synthesized mouse move will be sent when the popup is first shown.
   // Don't preview a suggestion if the mouse happens to be hovering there.
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   if (base::Time::Now() - show_time_ <= base::Milliseconds(50))
     return;
 #else

@@ -53,8 +53,8 @@ static_library("chrome") {
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
     "//chrome/browser/predictors/resolve_host_client_impl.h",
     "//chrome/browser/process_singleton.h",
-    "//chrome/browser/ui/browser_dialogs.cc",
-    "//chrome/browser/ui/browser_dialogs.h",
+    "//chrome/browser/process_singleton_internal.cc",
+    "//chrome/browser/process_singleton_internal.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.cc",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc",
@@ -139,10 +139,6 @@ static_library("chrome") {
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//components/optimization_guide/proto:optimization_guide_proto",
   ]
-
-  if (enable_basic_printing && is_win) {
-    deps += [ "//chrome/common:cloud_print_utility_mojom" ]
-  }
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
@@ -243,8 +239,6 @@ static_library("chrome") {
       sources += [
         "//chrome/browser/printing/pdf_to_emf_converter.cc",
         "//chrome/browser/printing/pdf_to_emf_converter.h",
-        "//chrome/utility/printing_handler.cc",
-        "//chrome/utility/printing_handler.h",
       ]
     }
   }
@@ -259,8 +253,12 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/close_image_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.h",
       "//chrome/browser/ui/views/overlay/constants.h",
+      "//chrome/browser/ui/views/overlay/document_overlay_window_views.cc",
+      "//chrome/browser/ui/views/overlay/document_overlay_window_views.h",
       "//chrome/browser/ui/views/overlay/hang_up_button.cc",
       "//chrome/browser/ui/views/overlay/hang_up_button.h",
+      "//chrome/browser/ui/views/overlay/overlay_window_image_button.cc",
+      "//chrome/browser/ui/views/overlay/overlay_window_image_button.h",
       "//chrome/browser/ui/views/overlay/overlay_window_views.cc",
       "//chrome/browser/ui/views/overlay/overlay_window_views.h",
       "//chrome/browser/ui/views/overlay/playback_image_button.cc",
@@ -275,11 +273,14 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
       "//chrome/browser/ui/views/overlay/track_image_button.cc",
       "//chrome/browser/ui/views/overlay/track_image_button.h",
+      "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
+      "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
     ]
 
     deps += [
       "//chrome/app/vector_icons",
       "//components/vector_icons:vector_icons",
+      "//ui/views/controls/webview",
     ]
   }
 
@@ -299,6 +300,8 @@ static_library("chrome") {
       sources += [
         "//chrome/browser/pdf/pdf_extension_util.cc",
         "//chrome/browser/pdf/pdf_extension_util.h",
+        "//chrome/browser/pdf/pdf_frame_util.cc",
+        "//chrome/browser/pdf/pdf_frame_util.h",
         "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
         "//chrome/renderer/pepper/chrome_pdf_print_client.h",
       ]

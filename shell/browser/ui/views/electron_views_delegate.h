@@ -39,13 +39,13 @@ class ViewsDelegate : public views::ViewsDelegate {
                              int item_count,
                              bool has_submenu) override;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   HICON GetDefaultWindowIcon() const override;
   HICON GetSmallWindowIcon() const override;
   bool IsWindowInMetro(gfx::NativeWindow window) const override;
   int GetAppbarAutohideEdges(HMONITOR monitor,
                              base::OnceClosure callback) override;
-#elif defined(OS_LINUX) && !defined(OS_CHROMEOS)
+#elif BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)
   gfx::ImageSkia* GetDefaultWindowIcon() const override;
 #endif
   std::unique_ptr<views::NonClientFrameView> CreateDefaultNonClientFrameView(
@@ -58,7 +58,7 @@ class ViewsDelegate : public views::ViewsDelegate {
   bool WindowManagerProvidesTitleBar(bool maximized) override;
 
  private:
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   using AppbarAutohideEdgeMap = std::map<HMONITOR, int>;
 
   // Callback on main thread with the edges. |returned_edges| is the value that

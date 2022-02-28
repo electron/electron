@@ -735,6 +735,22 @@ describe('BrowserWindow module', () => {
         w.showInactive();
         expect(w.isFocused()).to.equal(false);
       });
+
+      // TODO(dsanders11): Enable for Linux once CI plays nice with these kinds of tests
+      ifit(process.platform !== 'linux')('should not restore maximized windows', async () => {
+        const maximize = emittedOnce(w, 'maximize');
+        const shown = emittedOnce(w, 'show');
+        w.maximize();
+        // TODO(dsanders11): The maximize event isn't firing on macOS for a window initially hidden
+        if (process.platform !== 'darwin') {
+          await maximize;
+        } else {
+          await delay(1000);
+        }
+        w.showInactive();
+        await shown;
+        expect(w.isMaximized()).to.equal(true);
+      });
     });
 
     describe('BrowserWindow.focus()', () => {
@@ -3429,6 +3445,23 @@ describe('BrowserWindow module', () => {
         fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
         fs.rmdirSync(savePageDir);
       } catch {}
+    });
+
+    it('should throw when passing relative paths', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'HTMLComplete')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'HTMLOnly')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
+
+      await expect(
+        w.webContents.savePage('save_page.html', 'MHTML')
+      ).to.eventually.be.rejectedWith('Path must be absolute');
     });
 
     it('should save page to disk with HTMLOnly', async () => {

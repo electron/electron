@@ -15,7 +15,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "ui/gfx/sys_color_change_listener.h"
@@ -25,7 +25,7 @@ namespace electron {
 
 namespace api {
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 enum class NotificationCenterKind {
   kNSDistributedNotificationCenter = 0,
   kNSNotificationCenter,
@@ -36,7 +36,7 @@ enum class NotificationCenterKind {
 class SystemPreferences
     : public gin::Wrappable<SystemPreferences>,
       public gin_helper::EventEmitterMixin<SystemPreferences>
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     ,
       public BrowserObserver,
       public gfx::SysColorChangeListener
@@ -51,14 +51,14 @@ class SystemPreferences
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-#if defined(OS_WIN) || defined(OS_MAC)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
   std::string GetAccentColor();
   std::string GetColor(gin_helper::ErrorThrower thrower,
                        const std::string& color);
   std::string GetMediaAccessStatus(gin_helper::ErrorThrower thrower,
                                    const std::string& media_type);
 #endif
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   bool IsAeroGlassEnabled();
 
   void InitializeWindow();
@@ -69,7 +69,7 @@ class SystemPreferences
   // BrowserObserver:
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
 
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
   using NotificationCallback = base::RepeatingCallback<
       void(const std::string&, base::DictionaryValue, const std::string&)>;
 
@@ -129,7 +129,7 @@ class SystemPreferences
   SystemPreferences();
   ~SystemPreferences() override;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   int DoSubscribeNotification(const std::string& name,
                               const NotificationCallback& callback,
                               NotificationCenterKind kind);
@@ -137,7 +137,7 @@ class SystemPreferences
 #endif
 
  private:
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Static callback invoked when a message comes in to our messaging window.
   static LRESULT CALLBACK WndProcStatic(HWND hwnd,
                                         UINT message,

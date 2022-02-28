@@ -13,7 +13,7 @@ Ultimately we should remove the option to disable compression, and
 subsequently remove this patch.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 5b308900ae8e9d49d711a1638e40c22d1d45af80..87e222070ce5bbd2f9f5c8bac6db7367b6161931 100644
+index 8df14f416ee321e1259433715a61fa6025207d80..1d7f38d3f89d9c7f110cc9eb880264464787eb32 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -110,6 +110,8 @@ void SetUploadURL(const std::string& url) {
@@ -25,7 +25,7 @@ index 5b308900ae8e9d49d711a1638e40c22d1d45af80..87e222070ce5bbd2f9f5c8bac6db7367
  #endif
  
  bool g_is_node = false;
-@@ -1323,56 +1325,60 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1322,56 +1324,60 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
  
  #else   // BUILDFLAG(IS_CHROMEOS_ASH)
  
@@ -127,7 +127,7 @@ index 5b308900ae8e9d49d711a1638e40c22d1d45af80..87e222070ce5bbd2f9f5c8bac6db7367
    static const char header_msg[] =
        "--header=Content-Type: multipart/form-data; boundary=";
    const size_t header_content_type_size =
-@@ -1399,7 +1405,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1398,7 +1404,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
    static const char kWgetBinary[] = "/usr/bin/wget";
    const char* args[] = {
        kWgetBinary,
@@ -137,7 +137,7 @@ index 5b308900ae8e9d49d711a1638e40c22d1d45af80..87e222070ce5bbd2f9f5c8bac6db7367
        header_content_type,
        post_file,
        g_upload_url,
-@@ -2040,6 +2047,7 @@ void InitCrashReporter(const std::string& process_type) {
+@@ -2039,6 +2046,7 @@ void InitCrashReporter(const std::string& process_type) {
  
  #if !BUILDFLAG(IS_CHROMEOS_ASH)
    SetUploadURL(GetCrashReporterClient()->GetUploadUrl());

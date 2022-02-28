@@ -76,6 +76,13 @@ bool ElectronHidDelegate::HasDevicePermission(
                                               render_frame_host);
 }
 
+void ElectronHidDelegate::RevokeDevicePermission(
+    content::RenderFrameHost* render_frame_host,
+    const device::mojom::HidDeviceInfo& device) {
+  // TODO(jkleinsc) implement this for
+  // https://chromium-review.googlesource.com/c/chromium/src/+/3297868
+}
+
 device::mojom::HidManager* ElectronHidDelegate::GetHidManager(
     content::RenderFrameHost* render_frame_host) {
   auto* chooser_context = GetChooserContext(render_frame_host);
@@ -104,7 +111,9 @@ const device::mojom::HidDeviceInfo* ElectronHidDelegate::GetDeviceInfo(
   return chooser_context->GetDeviceInfo(guid);
 }
 
-bool ElectronHidDelegate::IsFidoAllowedForOrigin(const url::Origin& origin) {
+bool ElectronHidDelegate::IsFidoAllowedForOrigin(
+    content::RenderFrameHost* render_frame_host,
+    const url::Origin& origin) {
   return base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kDisableHidBlocklist);
 }

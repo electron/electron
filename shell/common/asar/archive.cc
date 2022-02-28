@@ -22,7 +22,7 @@
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/asar/scoped_temporary_file.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <io.h>
 #endif
 
@@ -30,7 +30,7 @@ namespace asar {
 
 namespace {
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 const char kSeparators[] = "\\/";
 #else
 const char kSeparators[] = "/";
@@ -124,7 +124,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     info->executable = executable.value();
   }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   if (load_integrity &&
       electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
     if (auto* integrity = node->FindDictKey("integrity")) {
@@ -138,7 +138,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
         integrity_payload.hash = *hash;
         integrity_payload.block_size =
             static_cast<uint32_t>(block_size.value());
-        for (auto& value : blocks->GetList()) {
+        for (auto& value : blocks->GetListDeprecated()) {
           if (auto* block = value.GetIfString()) {
             integrity_payload.blocks.push_back(*block);
           } else {
@@ -178,15 +178,15 @@ Archive::Archive(const base::FilePath& path)
     : initialized_(false), path_(path), file_(base::File::FILE_OK) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   fd_ = _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
   fd_ = file_.GetPlatformFile();
 #endif
 }
 
 Archive::~Archive() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   if (fd_ != -1) {
     _close(fd_);
     // Don't close the handle since we already closed the fd.
@@ -247,7 +247,7 @@ bool Archive::Init() {
     return false;
   }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Validate header signature if required and possible
   if (electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled() &&
       RelativePath().has_value()) {
@@ -285,7 +285,7 @@ bool Archive::Init() {
   return true;
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   return absl::nullopt;
 }
@@ -400,7 +400,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
                                info.integrity))
     return false;
 
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
   if (info.executable) {
     // chmod a+x temp_file;
     base::SetPosixFilePermissions(temp_file->path(), 0755);

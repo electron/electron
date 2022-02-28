@@ -131,7 +131,7 @@ const GURL& ElectronExtensionsClient::GetWebstoreUpdateURL() const {
   return webstore_update_url_;
 }
 
-bool ElectronExtensionsClient::IsBlacklistUpdateURL(const GURL& url) const {
+bool ElectronExtensionsClient::IsBlocklistUpdateURL(const GURL& url) const {
   return false;
 }
 

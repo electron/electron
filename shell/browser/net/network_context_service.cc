@@ -11,6 +11,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "electron/fuses.h"
+#include "net/http/http_util.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/cors/origin_access_list.h"
@@ -23,11 +24,11 @@ namespace electron {
 namespace {
 
 bool ShouldTriggerNetworkDataMigration() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // On Windows, if sandbox enabled means data must be migrated.
   if (SystemNetworkContextManager::IsNetworkSandboxEnabled())
     return true;
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
   if (base::FeatureList::IsEnabled(features::kTriggerNetworkDataMigration))
     return true;
   return false;

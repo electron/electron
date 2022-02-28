@@ -1,11 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Raymond Zhao <raymondzhao@microsoft.com>
 Date: Wed, 18 Aug 2021 08:24:10 -0700
-Subject: Convert Electron ProcessSingleton changes to patch
+Subject: extend ProcessSingleton
 
-This patch applies Electron ProcessSingleton changes
-onto the Chromium files, so that Electron doesn't need to maintain
-separate copies of those files.
+This patch applies Electron ProcessSingleton changes onto the Chromium
+files.
 
 This patch adds a few changes to the Chromium code:
 1. It adds a parameter `program_name` to the Windows constructor, making
@@ -25,7 +24,7 @@ This patch adds a few changes to the Chromium code:
    before the browser thread is ready.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index fd88cc5122ad5e02a6694b2dec9fd0d16a300cc0..13b325ecad9ba48398173e89680287c63efd4fa6 100644
+index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..8f94cc300b58e8a94b6ca155aa3cf370bcb948d8 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -102,12 +102,19 @@ class ProcessSingleton {
@@ -58,7 +57,7 @@ index fd88cc5122ad5e02a6694b2dec9fd0d16a300cc0..13b325ecad9ba48398173e89680287c6
    // Sets ourself up as the singleton instance.  Returns true on success.  If
    // false is returned, we are not the singleton instance and the caller must
 @@ -173,6 +182,8 @@ class ProcessSingleton {
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
  
 +  std::string program_name_; // Used for mutexName.
@@ -74,19 +73,19 @@ index fd88cc5122ad5e02a6694b2dec9fd0d16a300cc0..13b325ecad9ba48398173e89680287c6
 +  bool listen_on_ready_ = false;
  #endif
  
- #if defined(OS_MAC)
+ #if BUILDFLAG(IS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5b87acdf2 100644
+index c9f26ea2d2ea16484d416fdce095ec1b8b885991..47e60bfd8239d4a2e292b835c49132bdbb751555 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -65,6 +65,7 @@
- #include "base/files/file_descriptor_watcher_posix.h"
- #include "base/files/file_path.h"
- #include "base/files/file_util.h"
-+#include "base/ignore_result.h"
- #include "base/location.h"
- #include "base/logging.h"
- #include "base/memory/ref_counted.h"
+@@ -53,6 +53,7 @@
+ #include <memory>
+ #include <set>
+ #include <string>
++#include <tuple>
+ #include <type_traits>
+ 
+ #include <stddef.h>
 @@ -82,6 +83,7 @@
  #include "base/strings/utf_string_conversions.h"
  #include "base/task/sequenced_task_runner_helpers.h"
@@ -95,19 +94,19 @@ index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5
  #include "base/threading/platform_thread.h"
  #include "base/threading/thread_task_runner_handle.h"
  #include "base/time/time.h"
-@@ -97,9 +99,11 @@
+@@ -98,9 +100,11 @@
  #include "net/base/network_interfaces.h"
  #include "ui/base/l10n/l10n_util.h"
  
 +#if 0
- #if defined(OS_LINUX) || defined(OS_CHROMEOS)
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
  #include "chrome/browser/ui/process_singleton_dialog_linux.h"
  #endif
 +#endif
  
  #if defined(TOOLKIT_VIEWS) && \
-     (defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
-@@ -348,6 +352,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+     (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
+@@ -349,6 +353,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -117,7 +116,7 @@ index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5
    std::u16string error = l10n_util::GetStringFUTF16(
        IDS_PROFILE_IN_USE_POSIX, base::NumberToString16(pid),
        base::ASCIIToUTF16(hostname));
-@@ -367,6 +374,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -368,6 +375,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
    NOTREACHED();
    return false;
@@ -125,7 +124,7 @@ index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -407,6 +415,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
+@@ -408,6 +416,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
    return (cookie == ReadLink(path));
  }
  
@@ -147,18 +146,18 @@ index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -788,6 +811,10 @@ ProcessSingleton::ProcessSingleton(
+@@ -775,6 +798,10 @@ ProcessSingleton::ProcessSingleton(
  
  ProcessSingleton::~ProcessSingleton() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 +  // Manually free resources with IO explicitly allowed.
 +  base::ThreadRestrictions::ScopedAllowIO allow_io;
 +  watcher_ = nullptr;
-+  ignore_result(socket_dir_.Delete());
++  std::ignore = socket_dir_.Delete();
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -956,6 +983,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -947,6 +974,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
        base::Seconds(kTimeoutInSeconds));
  }
  
@@ -179,7 +178,7 @@ index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -1055,14 +1096,32 @@ bool ProcessSingleton::Create() {
+@@ -1046,14 +1087,32 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -217,7 +216,7 @@ index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5
    // Check that the directory was created with the correct permissions.
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
-@@ -1105,10 +1164,13 @@ bool ProcessSingleton::Create() {
+@@ -1096,10 +1155,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  
@@ -236,12 +235,12 @@ index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5
    return true;
  }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 1df74f5299b1b3bdd180034a6895796dc4b2ec60..679350dd08ca0211653ea669405e3f4f86c2fc0f 100644
+index 8eb7de0cd4007a5fd5431bcc7fb7be4962bd608e..0ea5eb3e3cf055d981ab73486115bac53287f2d7 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -27,7 +27,9 @@
- #include "base/win/windows_version.h"
+@@ -28,7 +28,9 @@
  #include "base/win/wmi.h"
+ #include "chrome/browser/process_singleton_internal.h"
  #include "chrome/browser/shell_integration.h"
 +#if 0
  #include "chrome/browser/ui/simple_message_box.h"
@@ -249,11 +248,12 @@ index 1df74f5299b1b3bdd180034a6895796dc4b2ec60..679350dd08ca0211653ea669405e3f4f
  #include "chrome/browser/win/chrome_process_finder.h"
  #include "chrome/common/chrome_constants.h"
  #include "chrome/common/chrome_paths.h"
-@@ -179,10 +181,15 @@ bool ProcessLaunchNotification(
+@@ -163,11 +165,16 @@ bool ProcessLaunchNotification(
  }
  
  bool DisplayShouldKillMessageBox() {
 +#if 0
+   TRACE_EVENT0("startup", "ProcessSingleton:DisplayShouldKillMessageBox");
    return chrome::ShowQuestionMessageBoxSync(
               NULL, l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
               l10n_util::GetStringUTF16(IDS_BROWSER_HUNGBROWSER_MESSAGE)) !=
@@ -264,8 +264,8 @@ index 1df74f5299b1b3bdd180034a6895796dc4b2ec60..679350dd08ca0211653ea669405e3f4f
 +  return false;
  }
  
- void SendRemoteProcessInteractionResultHistogram(
-@@ -264,9 +271,13 @@ bool ProcessSingleton::EscapeVirtualization(
+ // Function was copied from Process::Terminate.
+@@ -245,9 +252,13 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -279,7 +279,7 @@ index 1df74f5299b1b3bdd180034a6895796dc4b2ec60..679350dd08ca0211653ea669405e3f4f
        is_virtualized_(false),
        lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-@@ -371,11 +382,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -361,13 +372,16 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
    return PROFILE_IN_USE;
  }
  
@@ -290,12 +290,14 @@ index 1df74f5299b1b3bdd180034a6895796dc4b2ec60..679350dd08ca0211653ea669405e3f4f
  // isn't one, create a message window with its title set to the profile
  // directory path.
  bool ProcessSingleton::Create() {
+   TRACE_EVENT0("startup", "ProcessSingleton::Create");
+ 
 -  static const wchar_t kMutexName[] = L"Local\\ChromeProcessSingletonStartup!";
 +  std::wstring mutexName = base::UTF8ToWide("Local\\" + program_name_ + "ProcessSingletonStartup");
  
    remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -384,7 +398,7 @@ bool ProcessSingleton::Create() {
+@@ -376,7 +390,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -304,7 +306,7 @@ index 1df74f5299b1b3bdd180034a6895796dc4b2ec60..679350dd08ca0211653ea669405e3f4f
      if (!only_me.IsValid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -423,6 +437,17 @@ bool ProcessSingleton::Create() {
+@@ -415,6 +429,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());

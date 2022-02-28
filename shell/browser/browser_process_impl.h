@@ -82,8 +82,6 @@ class BrowserProcessImpl : public BrowserProcess {
   safe_browsing::SafeBrowsingService* safe_browsing_service() override;
   subresource_filter::RulesetService* subresource_filter_ruleset_service()
       override;
-  federated_learning::FlocSortingLshClustersService*
-  floc_sorting_lsh_clusters_service() override;
   component_updater::ComponentUpdateService* component_updater() override;
   MediaFileSystemRegistry* media_file_system_registry() override;
   WebRtcLogUploader* webrtc_log_uploader() override;
@@ -93,11 +91,12 @@ class BrowserProcessImpl : public BrowserProcess {
       override;
   resource_coordinator::TabManager* GetTabManager() override;
   SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
+  HidPolicyAllowedDevices* hid_policy_allowed_devices() override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(
       std::unique_ptr<BackgroundModeManager> manager) override {}
-#if (defined(OS_WIN) || defined(OS_LINUX))
+#if (BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX))
   void StartAutoupdateTimer() override {}
 #endif
   void SetApplicationLocale(const std::string& locale) override;

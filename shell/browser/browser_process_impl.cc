@@ -99,7 +99,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   OSCrypt::RegisterLocalPrefs(pref_registry.get());
 #endif
 
@@ -255,11 +255,6 @@ BrowserProcessImpl::subresource_filter_ruleset_service() {
   return nullptr;
 }
 
-federated_learning::FlocSortingLshClustersService*
-BrowserProcessImpl::floc_sorting_lsh_clusters_service() {
-  return nullptr;
-}
-
 component_updater::ComponentUpdateService*
 BrowserProcessImpl::component_updater() {
   return nullptr;
@@ -291,6 +286,10 @@ resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
 }
 
 SerialPolicyAllowedPorts* BrowserProcessImpl::serial_policy_allowed_ports() {
+  return nullptr;
+}
+
+HidPolicyAllowedDevices* BrowserProcessImpl::hid_policy_allowed_devices() {
   return nullptr;
 }
 
