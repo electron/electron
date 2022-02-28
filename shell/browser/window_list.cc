@@ -109,7 +109,7 @@ void WindowList::DestroyAllWindows() {
       ConvertToWeakPtrVector(GetInstance()->windows_);
 
   for (const auto& window : weak_windows) {
-    if (window)
+    if (window && !window->IsClosed())
       window->CloseImmediately();
   }
 }
