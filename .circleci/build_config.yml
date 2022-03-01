@@ -530,11 +530,11 @@ step-electron-build: &step-electron-build
       fi
       cd src
       # Enable if things get really bad
-      if [ "`uname`" == "Darwin" ]; then
-        diskutil erasevolume HFS+ "xcode_disk" `hdiutil attach -nomount ram://12582912`
-        mv /Applications/Xcode-12.beta.5.app /Volumes/xcode_disk/
-        ln -s /Volumes/xcode_disk/Xcode-12.beta.5.app /Applications/Xcode-12.beta.5.app
-      fi
+      # if [ "`uname`" == "Darwin" ]; then
+      #   diskutil erasevolume HFS+ "xcode_disk" `hdiutil attach -nomount ram://12582912`
+      #   mv /Applications/Xcode-12.beta.5.app /Volumes/xcode_disk/
+      #   ln -s /Volumes/xcode_disk/Xcode-12.beta.5.app /Applications/Xcode-12.beta.5.app
+      # fi
 
       # Lets generate a snapshot and mksnapshot and then delete all the x-compiled generated files to save space
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" == "1" ]; then
