@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Tue, 1 Mar 2022 12:07:25 -0800
+Subject: build: disable partition alloc on mac
+
+Enabling partition alloc caused a crash when spawning
+a child process. This patch disables partition alloc for mac,
+and can be removed when the crash in fork is resolved.
+Related issue: https://github.com/electron/electron/issues/32718
+
+diff --git a/base/allocator/allocator.gni b/base/allocator/allocator.gni
+index 56acfed89ec4ad4ee568a1b517923efa4b4e9c1f..a1da35a84f896d158ac88368ff6d95025a23ff95 100644
+--- a/base/allocator/allocator.gni
++++ b/base/allocator/allocator.gni
+@@ -20,7 +20,7 @@ _disable_partition_alloc = is_component_build || (is_win && is_debug)
+ 
+ # - NaCl: No plans to support it.
+ # - iOS: not done yet.
+-_is_partition_alloc_platform = !is_nacl && !is_ios
++_is_partition_alloc_platform = !is_nacl && !is_ios && !is_mac
+ 
+ # Under Windows Debug the allocator shim is not compatible with CRT.
+ #     NaCl in particular does seem to link some binaries statically
