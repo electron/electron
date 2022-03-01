@@ -198,9 +198,6 @@ class InspectableWebContents
 
   void SendMessageAck(int request_id, const base::Value* arg1);
 
-  const char* GetDictionaryNameForSettingsName(const std::string& name) const;
-  const char* GetDictionaryNameForSyncedPrefs() const;
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void AddDevToolsExtensionsToClient();
 #endif
