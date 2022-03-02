@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Tue, 1 Mar 2022 16:02:22 -0800
+Subject: build: disable partition alloc on mac
+
+Enabling partition alloc caused a crash when spawning
+a child process. This patch disables partition alloc for mac,
+and can be removed when the crash in fork is resolved.
+Related issue: https://github.com/electron/electron/issues/32718
+
+diff --git a/base/allocator/allocator.gni b/base/allocator/allocator.gni
+index 2c35e82ec5ad94840cc894cc55bb90e7c4c00d4f..af34f85f686f61a1d4dc2ee1248af4d0b61e4cb6 100644
+--- a/base/allocator/allocator.gni
++++ b/base/allocator/allocator.gni
+@@ -18,7 +18,7 @@ _is_using_sanitizers = is_asan || is_hwasan || is_lsan || is_tsan || is_msan
+ # - Windows: debug CRT is not compatible, see below.
+ _disable_partition_alloc = is_component_build || (is_win && is_debug)
+ _is_partition_alloc_platform =
+-    is_android || is_win || is_mac || is_linux || is_chromeos ||
++    is_android || is_win || is_linux || is_chromeos ||
+     # TODO(crbug.com/1278780): Allow x64 once compatible with safe-stack.
+     (is_fuchsia && target_cpu == "arm64")
+ 

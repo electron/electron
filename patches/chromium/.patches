@@ -114,3 +114,4 @@ fix_dont_delete_SerialPortManager_on_main_thread.patch
 fix_crash_when_saving_edited_pdf_files.patch
 cherry-pick-f5101995acd2.patch
 fix_don_t_restore_maximized_windows_when_calling_showinactive.patch
+build_disable_partition_alloc_on_mac.patch
