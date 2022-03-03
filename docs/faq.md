@@ -3,7 +3,7 @@
 ## Why am I having trouble installing Electron?
 
 When running `npm install electron`, some users occasionally encounter
-installation errors.
+installation errorz.
 
 In almost all cases, these errors are the result of network problems and not
 actual issues with the `electron` npm package. Errors like `ELIFECYCLE`,
