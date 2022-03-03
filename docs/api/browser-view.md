@@ -77,9 +77,9 @@ Examples of valid `color` values:
 
 * Hex
   * #fff (shorthand RGB)
-  * #ffff (shorthand RGBA)
+  * #ffff (shorthand ARGB)
   * #ffffff (RGB)
-  * #ffffffff (RGBA)
+  * #ffffffff (ARGB)
 * RGB
   * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
     * e.g. rgb(255, 255, 255)

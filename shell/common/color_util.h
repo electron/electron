@@ -11,9 +11,6 @@
 
 namespace electron {
 
-// Converts an SKColor to either Hex, HSL, HSLA, RBG, or RGBA color string.
-std::string SkColorToColorString(SkColor color, const std::string& format);
-
 // Parses a CSS-style color string from hex, rgb(), rgba(),
 // hsl(), hsla(), or color name formats.
 SkColor ParseCSSColor(const std::string& color_string);

@@ -211,7 +211,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` boolean (optional) - Enable the window to be resized larger
     than screen. Only relevant for macOS, as other OSes allow
     larger-than-screen windows by default. Default is `false`.
-  * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #RRGGBBAA format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](browser-window.md#winsetbackgroundcolorbackgroundcolor) for more information.
+  * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #AARRGGBB format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](browser-window.md#winsetbackgroundcolorbackgroundcolor) for more information.
   * `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
   * `opacity` number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
@@ -1008,9 +1008,9 @@ Examples of valid `backgroundColor` values:
 
 * Hex
   * #fff (shorthand RGB)
-  * #ffff (shorthand RGBA)
+  * #ffff (shorthand ARGB)
   * #ffffff (RGB)
-  * #ffffffff (RGBA)
+  * #ffffffff (ARGB)
 * RGB
   * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
     * e.g. rgb(255, 255, 255)
@@ -1070,14 +1070,11 @@ console.log(win.getBounds())
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
 
-#### `win.getBackgroundColor([format])`
+#### `win.getBackgroundColor()`
 
-* `format` string (optional) - One of either `hex`, `rgb`, `rgba`, `hsl` or `hsla`.
+Returns `string` - Gets the background color of the window in Hex (`#RRGGBB`) format.
 
-Returns `string` - Gets the background color in Hex, RBG, RBGA, HSL, or HSLA format. The alpha channel is
-optional for the hex type. Default is `hex` if `format` is not passed.
-
-See [Setting `backgroundColor`](#setting-the-backgroundcolor-property) for more information.
+See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 
 #### `win.setContentBounds(bounds[, animate])`
 
