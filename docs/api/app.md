@@ -584,7 +584,7 @@ Hides all application windows without minimizing them.
 
 ### `app.isHidden()` _macOS_
 
-Whether the application is hidden (e.g. with Command-H).
+Whether the application—including all of its windows—is hidden (e.g. with `Command-H`).
 
 ### `app.show()` _macOS_
 
