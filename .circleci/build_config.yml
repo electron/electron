@@ -1552,9 +1552,9 @@ commands:
 jobs:
   # Layer 0: Docs. Standalone.
   ts-compile-doc-change:
-    executor:
-      name: linux-docker
-      size: medium
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
