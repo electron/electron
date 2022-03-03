@@ -4874,8 +4874,8 @@ describe('BrowserWindow module', () => {
       expect(w.getBounds()).to.deep.equal(newBounds);
     });
 
-    // Linux and WOA do not return any capture sources
-    ifit(process.platform !== 'linux' && (process.platform !== 'win32' || process.arch !== 'arm64'))('should not display a visible background', async () => {
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
