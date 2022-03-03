@@ -1279,7 +1279,7 @@ Ignore application menu shortcuts while this web contents is focused.
 
 #### `contents.setWindowOpenHandler(handler)`
 
-* `handler` Function<{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+* `handler` Function<[WindowOpenHandlerResponse](structures/window-open-handler-response.md)>
   * `details` Object
     * `url` string - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` string - Name of the window provided in `window.open()`
@@ -1294,11 +1294,8 @@ Ignore application menu shortcuts while this web contents is focused.
       be set. If no post data is to be sent, the value will be `null`. Only defined
       when the window is being created by a form that set `target=_blank`.
 
-  Returns `{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
-  window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
-  By default, child windows are closed when their opener is closed. This can be
-  changed by specifying `outlivesOpener: true`, in which case the opened window
-  will not be closed when its opener is closed.
+  Returns `WindowOpenHandlerResponse` - When set to `{ action: 'deny' }` cancels the creation of the new
+  window. `{ action: 'allow' }` will allow the new window to be created.
   Returning an unrecognized value such as a null, undefined, or an object
   without a recognized 'action' value will result in a console error and have
   the same effect as returning `{action: 'deny'}`.
@@ -1308,6 +1305,26 @@ by `window.open()`, a link with `target="_blank"`, shift+clicking on a link, or
 submitting a form with `<form target="_blank">`. See
 [`window.open()`](window-open.md) for more details and how to use this in
 conjunction with `did-create-window`.
+
+An example showing how to customize the process of new `BrowserWindow` creation to be `BrowserView` attached to main window instead:
+
+```js
+const { BrowserView, BrowserWindow } = require('electron')
+
+const mainWindow = new BrowserWindow()
+
+mainWindow.webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    createWindow: (options) => {
+      const browserView = new BrowserView(options)
+      mainWindow.addBrowserView(browserView)
+      browserView.setBounds({ x: 0, y: 0, width: 640, height: 480 })
+      return browserView.webContents
+    }
+  }
+})
+```
 
 #### `contents.setAudioMuted(muted)`
 
