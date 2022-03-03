@@ -853,18 +853,6 @@ void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
   std::move(callback).Run(nullptr);
 }
 
-void InspectableWebContents::RegisterPreference(
-    const std::string& name,
-    const RegisterOptions& options) {
-  const std::string* settings_value =
-      pref_service_->GetDictionary(kDevToolsPreferences)->FindStringKey(name);
-  if (!settings_value)
-    return;
-
-  DictionaryPrefUpdate insert_update(pref_service_, kDevToolsPreferences);
-  insert_update.Get()->SetKey(name, base::Value(*settings_value));
-}
-
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
   const base::Value* prefs = pref_service_->GetDictionary(kDevToolsPreferences);
   std::move(callback).Run(prefs);
