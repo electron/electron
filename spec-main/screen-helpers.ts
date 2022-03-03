@@ -41,7 +41,8 @@ const formatHexByte = (val: number): string => {
  * Get the hex color at the given pixel coordinate in an image.
  */
 export const getPixelColor = (image: Electron.NativeImage, point: Electron.Point): string => {
-  const pixel = image.crop({ ...point, width: 1, height: 1 });
+  // image.crop crashes if point is fractional, so round to prevent that crash
+  const pixel = image.crop({ x: Math.round(point.x), y: Math.round(point.y), width: 1, height: 1 });
   // TODO(samuelmaddock): NativeImage.toBitmap() should return the raw pixel
   // color, but it sometimes differs. Why is that?
   const [b, g, r] = pixel.toBitmap();
