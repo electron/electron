@@ -2302,8 +2302,11 @@ workflows:
         - equal: [false, << pipeline.parameters.run-linux-publish >>]
         - equal: [true, << pipeline.parameters.run-docs-only >>]
     jobs:
-      - ts-compile-doc-change
-
+      - linux-checkout-for-workspace
+      - ts-compile-doc-change:
+          requires:
+            - linux-checkout-for-workspace
+  
   publish-linux:
     when: << pipeline.parameters.run-linux-publish >>
     jobs:
