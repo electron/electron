@@ -1079,32 +1079,20 @@ describe('BrowserWindow module', () => {
         w.destroy();
         w = new BrowserWindow({});
 
+        w.setBackgroundColor('#AABBFF');
+        expect(w.getBackgroundColor()).to.equal('#AABBFF');
+
         w.setBackgroundColor('blueviolet');
         expect(w.getBackgroundColor()).to.equal('#8A2BE2');
-        expect(w.getBackgroundColor('rgb')).to.equal('rgb(138, 43, 226)');
-        expect(w.getBackgroundColor('rgba')).to.equal('rgba(138, 43, 226, 1.0)');
-        expect(w.getBackgroundColor('hsl')).to.equal('hsl(271, 76%, 53%)');
-        expect(w.getBackgroundColor('hsla')).to.equal('hsl(271, 76%, 53%, 1.0)');
 
         w.setBackgroundColor('rgb(255, 0, 185)');
         expect(w.getBackgroundColor('hex')).to.equal('#FF00B9');
-        expect(w.getBackgroundColor('hsl')).to.equal('hsl(316, 100%, 50%)');
 
         w.setBackgroundColor('rgba(245, 40, 145, 0.8)');
-        expect(w.getBackgroundColor('hex')).to.equal('#F52891CC');
-        expect(w.getBackgroundColor('hsl')).to.equal('hsl(329, 91%, 56%)');
-        expect(w.getBackgroundColor('hsla')).to.equal('hsl(329, 91%, 56%, 0.8)');
-
-        w.setBackgroundColor('#23853466');
-        expect(w.getBackgroundColor('rgb')).to.equal('rgb(35, 133, 52)');
-        expect(w.getBackgroundColor('rgba')).to.equal('rgba(35, 133, 52, 0.4)');
-        expect(w.getBackgroundColor('hsl')).to.equal('hsl(130, 58%, 33%)');
-        expect(w.getBackgroundColor('hsla')).to.equal('hsl(130, 58%, 33%, 0.4)');
+        expect(w.getBackgroundColor('hex')).to.equal('#F52891');
 
         w.setBackgroundColor('hsl(155, 100%, 50%)');
         expect(w.getBackgroundColor()).to.equal('#00FF95');
-        expect(w.getBackgroundColor('rgb')).to.equal('rgb(0, 255, 149)');
-        expect(w.getBackgroundColor('hsl')).to.equal('hsl(155, 100%, 50%)');
       });
     });
 

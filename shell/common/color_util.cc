@@ -13,49 +13,41 @@
 #include "content/public/common/color_parser.h"
 #include "ui/gfx/color_utils.h"
 
+namespace {
+
+bool IsHexFormat(const std::string& str) {
+  // Must be either #ARGB or #AARRGGBB.
+  bool is_hex_length = str.length() == 5 || str.length() == 9;
+  if (str[0] != '#' || !is_hex_length)
+    return false;
+
+  if (!std::all_of(str.begin() + 1, str.end(), ::isxdigit))
+    return false;
+
+  return true;
+}
+
+}  // namespace
+
 namespace electron {
 
-std::string SkColorToColorString(SkColor color, const std::string& format) {
-  const double alpha_double = double(SkColorGetA(color)) / 255.0;
-  const double alpha = base::clamp(alpha_double, 0.0, 1.0);
-
-  if (format == "hsl" || format == "hsla") {
-    color_utils::HSL hsl;
-
-    // Hue ranges between 0 - 360, and saturation/lightness both range from 0 -
-    // 100%, so multiply appropriately to convert to correct int values.
-    color_utils::SkColorToHSL(color, &hsl);
-    if (format == "hsla") {
-      return base::StringPrintf("hsl(%ld, %ld%%, %ld%%, %.1f)",
-                                lround(hsl.h * 360), lround(hsl.s * 100),
-                                lround(hsl.l * 100), alpha);
+SkColor ParseCSSColor(const std::string& color_string) {
+  // ParseCssColorString expects RGBA and we historically use ARGB
+  // so we need to convert before passing to ParseCssColorString.
+  std::string color_str = color_string;
+  if (IsHexFormat(color_str)) {
+    if (color_str.length() == 5) {
+      // #ARGB => #RGBA
+      std::swap(color_str[1], color_str[4]);
     } else {
-      return base::StringPrintf("hsl(%ld, %ld%%, %ld%%)", lround(hsl.h * 360),
-                                lround(hsl.s * 100), lround(hsl.l * 100));
+      // #AARRGGBB => #RRGGBBAA
+      std::swap(color_str[1], color_str[7]);
+      std::swap(color_str[2], color_str[8]);
     }
   }
 
-  if (format == "rgba") {
-    return base::StringPrintf("rgba(%d, %d, %d, %.1f)", SkColorGetR(color),
-                              SkColorGetG(color), SkColorGetB(color), alpha);
-  }
-
-  if (format == "rgb") {
-    return base::StringPrintf("rgb(%d, %d, %d)", SkColorGetR(color),
-                              SkColorGetG(color), SkColorGetB(color));
-  }
-
-  if (alpha != 1.0) {
-    return ToRGBAHex(color, true);
-  }
-
-  // Return hex by default.
-  return ToRGBHex(color);
-}
-
-SkColor ParseCSSColor(const std::string& color_string) {
   SkColor color;
-  if (!content::ParseCssColorString(color_string, &color))
+  if (!content::ParseCssColorString(color_str, &color))
     color = SK_ColorWHITE;
 
   return color;

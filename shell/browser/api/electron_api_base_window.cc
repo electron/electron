@@ -648,10 +648,7 @@ void BaseWindow::SetBackgroundColor(const std::string& color_name) {
 }
 
 std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) {
-  std::string format;
-  args->GetNext(&format);
-
-  return SkColorToColorString(window_->GetBackgroundColor(), format);
+  return ToRGBHex(window_->GetBackgroundColor());
 }
 
 void BaseWindow::SetHasShadow(bool has_shadow) {
