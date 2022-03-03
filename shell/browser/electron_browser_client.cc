@@ -154,7 +154,7 @@
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
-#include "extensions/browser/guest_view/extensions_guest_view_message_filter.h"
+#include "extensions/browser/guest_view/extensions_guest_view.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
@@ -189,7 +189,8 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/views/overlay/overlay_window_views.h"
+#include "chrome/browser/ui/views/overlay/document_overlay_window_views.h"
+#include "chrome/browser/ui/views/overlay/video_overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
@@ -422,8 +423,6 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
 
   host->AddFilter(
       new extensions::ExtensionMessageFilter(process_id, browser_context));
-  host->AddFilter(new extensions::ExtensionsGuestViewMessageFilter(
-      process_id, browser_context));
   host->AddFilter(
       new ElectronExtensionMessageFilter(process_id, browser_context));
   host->AddFilter(
@@ -746,15 +745,33 @@ bool ElectronBrowserClient::CanCreateWindow(
 }
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
-std::unique_ptr<content::OverlayWindow>
-ElectronBrowserClient::CreateWindowForPictureInPicture(
-    content::PictureInPictureWindowController* controller) {
-  auto overlay_window = content::OverlayWindow::Create(controller);
+std::unique_ptr<content::VideoOverlayWindow>
+ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
+    content::VideoPictureInPictureWindowController* controller) {
+  auto overlay_window = content::VideoOverlayWindow::Create(controller);
 #if BUILDFLAG(IS_WIN)
   std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
-        static_cast<OverlayWindowViews*>(overlay_window.get());
+        static_cast<VideoOverlayWindowViews*>(overlay_window.get());
+    ui::win::SetAppIdForWindow(app_user_model_id,
+                               overlay_window_view->GetNativeWindow()
+                                   ->GetHost()
+                                   ->GetAcceleratedWidget());
+  }
+#endif
+  return overlay_window;
+}
+
+std::unique_ptr<content::DocumentOverlayWindow>
+ElectronBrowserClient::CreateWindowForDocumentPictureInPicture(
+    content::DocumentPictureInPictureWindowController* controller) {
+  auto overlay_window = content::DocumentOverlayWindow::Create(controller);
+#if BUILDFLAG(IS_WIN)
+  std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
+  if (!app_user_model_id.empty()) {
+    auto* overlay_window_view =
+        static_cast<DocumentOverlayWindowViews*>(overlay_window.get());
     ui::win::SetAppIdForWindow(app_user_model_id,
                                overlay_window_view->GetNativeWindow()
                                    ->GetHost()
@@ -1591,6 +1608,9 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry->AddInterface(base::BindRepeating(
       &extensions::EventRouter::BindForRenderer, render_process_host->GetID()));
+  associated_registry->AddInterface(
+      base::BindRepeating(&extensions::ExtensionsGuestView::CreateForExtensions,
+                          render_process_host->GetID()));
 #endif
 }
 

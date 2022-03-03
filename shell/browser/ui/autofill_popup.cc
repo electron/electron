@@ -15,6 +15,8 @@
 #include "shell/browser/ui/autofill_popup.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "ui/color/color_id.h"
+#include "ui/color/color_provider.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
@@ -310,11 +312,10 @@ const gfx::FontList& AutofillPopup::GetLabelFontListForRow(int index) const {
   return smaller_font_list_;
 }
 
-ui::NativeTheme::ColorId AutofillPopup::GetBackgroundColorIDForRow(
-    int index) const {
+ui::ColorId AutofillPopup::GetBackgroundColorIDForRow(int index) const {
   return (view_ && index == view_->GetSelectedLine())
-             ? ui::NativeTheme::kColorId_ResultsTableHoveredBackground
-             : ui::NativeTheme::kColorId_ResultsTableNormalBackground;
+             ? ui::kColorResultsTableHoveredBackground
+             : ui::kColorResultsTableNormalBackground;
 }
 
 int AutofillPopup::GetLineCount() {

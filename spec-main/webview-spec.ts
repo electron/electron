@@ -436,7 +436,8 @@ describe('<webview> tag', function () {
 
     afterEach(closeAllWindows);
 
-    it('should make parent frame element fullscreen too', async () => {
+    // TODO(jkleinsc) fix this test on arm64 macOS.  It causes the tests following it to fail/be flaky
+    ifit(process.platform !== 'darwin' || process.arch !== 'arm64')('should make parent frame element fullscreen too', async () => {
       const [w, webview] = await loadWebViewWindow();
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
 

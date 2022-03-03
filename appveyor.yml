@@ -157,7 +157,9 @@ test_script:
       }
   - cd electron
   # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
-  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --trace-uncaught --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
+  - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
+  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeperately --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
+  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )  
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"
@@ -165,6 +167,7 @@ test_script:
   - echo "Done verifying mksnapshot"
   - if "%RUN_TESTS%"=="true" ( echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd% )
   - echo "Done verifying chromedriver"
+  - if exist %cd%\electron.log ( appveyor-retry appveyor PushArtifact %cd%\electron.log )
 deploy_script:
   - cd electron
   - ps: >-
@@ -180,4 +183,4 @@ deploy_script:
         node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
       }
 on_finish:
-  - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
+  - if exist src\electron\electron.log ( appveyor-retry appveyor PushArtifact src\electron\electron.log )

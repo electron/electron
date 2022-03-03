@@ -64,7 +64,6 @@ an issue:
   * [Automated Testing](tutorial/automated-testing.md)
   * [REPL](tutorial/repl.md)
 * [Distribution](tutorial/application-distribution.md)
-  * [Supported Platforms](tutorial/support.md#supported-platforms)
   * [Code Signing](tutorial/code-signing.md)
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
   * [Windows Store](tutorial/windows-store-guide.md)

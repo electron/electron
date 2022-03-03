@@ -122,7 +122,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
         head->headers->AddHeader(iter.first, iter.second.GetString());
       } else if (iter.second.is_list()) {
         // key: [values...]
-        for (const auto& item : iter.second.GetList()) {
+        for (const auto& item : iter.second.GetListDeprecated()) {
           if (item.is_string())
             head->headers->AddHeader(iter.first, item.GetString());
         }

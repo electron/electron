@@ -326,10 +326,10 @@ bool RendererClientBase::OverrideCreatePlugin(
   return true;
 }
 
-void RendererClientBase::AddSupportedKeySystems(
-    std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
+void RendererClientBase::GetSupportedKeySystems(
+    media::GetSupportedKeySystemsCB cb) {
 #if defined(WIDEVINE_CDM_AVAILABLE)
-  key_systems_provider_.AddSupportedKeySystems(key_systems);
+  key_systems_provider_.GetSupportedKeySystems(std::move(cb));
 #endif
 }
 
