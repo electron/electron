@@ -9,7 +9,7 @@ import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit, waitUntil } from './spec-helpers';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
@@ -1522,13 +1522,17 @@ describe('app module', () => {
   const showHideDescribe = process.platform === 'darwin' ? describe : describe.skip;
   showHideDescribe('app hide and show API', () => {
     describe('app.isHidden', () => {
-      it('returns true when the app is hidden', () => {
+      it('returns true when the app is hidden', async () => {
         app.hide();
-        expect(app.isHidden()).to.be.true();
+        await expect(
+          waitUntil(() => app.isHidden())
+        ).to.eventually.be.fulfilled();
       });
-      it('returns false when the app is shown', () => {
+      it('returns false when the app is shown', async () => {
         app.show();
-        expect(app.isHidden()).to.be.false();
+        await expect(
+          waitUntil(() => !app.isHidden())
+        ).to.eventually.be.fulfilled();
       });
     });
   });
