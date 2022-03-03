@@ -1,4 +1,11 @@
-# Taskbar Progress Bar (Windows & macOS)
+---
+title: Progress Bars
+description: Provide progress information to users outside of a BrowserWindow.
+slug: progress-bar
+hide_title: true
+---
+
+# Progress Bars
 
 ## Overview
 
