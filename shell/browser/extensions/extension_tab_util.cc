@@ -149,7 +149,8 @@ ExtensionTabUtil::GetTabDetailsFromWebContents(
 }
 
 int ExtensionTabUtil::GetTabId(WebContents* web_contents) {
-  return electron::api::WebContents::From(web_contents)->ID();
+  auto* contents = electron::api::WebContents::From(web_contents);
+  return contents ? contents->ID() : -1;
 }
 
 std::unique_ptr<api::tabs::MutedInfo> CreateMutedInfo(
