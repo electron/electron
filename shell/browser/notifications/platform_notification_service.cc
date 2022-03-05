@@ -208,9 +208,9 @@ void PlatformNotificationService::DisplayNotification(
     browser_client_->WebNotificationAllowed(
         content::WebContents::FromRenderFrameHost(render_frame_host),
         base::BindRepeating(&OnWebNotificationAllowed, notification,
-                            notification_resources.image,
                             notification_resources.notification_icon,
-                            notification_data, is_persistent, is_replacing));
+                            notification_resources.image, notification_data,
+                            is_persistent, is_replacing));
   }
 }
 
@@ -249,9 +249,9 @@ void PlatformNotificationService::DisplayPersistentNotification(
     browser_client_->WebNotificationAllowed(
         web_ctx,
         base::BindRepeating(&OnWebNotificationAllowed, notification,
-                            notification_resources.image,
                             notification_resources.notification_icon,
-                            notification_data, is_persistent, is_replacing));
+                            notification_resources.image, notification_data,
+                            is_persistent, is_replacing));
     // OnWebNotificationAllowed( notification,
     //     notification_resources.notification_icon,
     //     notification_data, is_persistent, false, true);
