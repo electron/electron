@@ -226,10 +226,10 @@ index a480befb5d8db36e7e281d5033aeef0bea83d220..4e54acc897d08c87bccc3b44f68634e2
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..4efea02f80f8b6818291321a7c63f0f4815a5b98
+index 0000000000000000000000000000000000000000..88aba74877a6490e08e357266b1ce8461b5b6dff
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,158 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -239,6 +239,7 @@ index 0000000000000000000000000000000000000000..4efea02f80f8b6818291321a7c63f0f4
 +#include "base/memory/unsafe_shared_memory_region.h"
 +#include "base/threading/thread_checker.h"
 +#include "base/trace_event/trace_event.h"
++#include "build/build_config.h"
 +#include "components/viz/common/resources/resource_sizes.h"
 +#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "mojo/public/cpp/system/platform_handle.h"
@@ -247,7 +248,7 @@ index 0000000000000000000000000000000000000000..4efea02f80f8b6818291321a7c63f0f4
 +#include "third_party/skia/include/core/SkCanvas.h"
 +#include "ui/gfx/skia_util.h"
 +
-+#if defined(OS_WIN)
++#if BUILDFLAG(IS_WIN)
 +#include "skia/ext/skia_utils_win.h"
 +#include "ui/gfx/gdi_util.h"
 +#include "ui/gfx/win/hwnd_util.h"
@@ -389,10 +390,10 @@ index 0000000000000000000000000000000000000000..4efea02f80f8b6818291321a7c63f0f4
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..fbc517e164d9bf33256c1ecbe86e31744375097e
+index 0000000000000000000000000000000000000000..a80258d6165e45a3c3d2b551158ff7d2a5778a7c
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,93 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -400,19 +401,20 @@ index 0000000000000000000000000000000000000000..fbc517e164d9bf33256c1ecbe86e3174
 +#ifndef COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 +#define COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 +
-+#if defined(OS_WIN)
-+#include <windows.h>
-+#endif
-+
 +#include <memory>
 +
 +#include "base/memory/shared_memory_mapping.h"
 +#include "base/threading/thread_checker.h"
++#include "build/build_config.h"
 +#include "components/viz/host/host_display_client.h"
 +#include "components/viz/service/display/software_output_device.h"
 +#include "components/viz/service/viz_service_export.h"
 +#include "services/viz/privileged/mojom/compositing/display_private.mojom.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
++
++#if BUILDFLAG(IS_WIN)
++#include <windows.h>
++#endif
 +
 +namespace viz {
 +
