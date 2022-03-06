@@ -19,7 +19,7 @@ instance, but also so the second instance can send back additional
 data to the first instance if needed.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 8f94cc300b58e8a94b6ca155aa3cf370bcb948d8..4340376f323d24e5e2c5897a81c6a9ebf13adab4 100644
+index 5a64220aaf1309832dc0ad543e353de67fe0a779..a568dd10d1ef8679d66f4cdc6a471c251cbcd4eb 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,7 @@
@@ -49,7 +49,7 @@ index 8f94cc300b58e8a94b6ca155aa3cf370bcb948d8..4340376f323d24e5e2c5897a81c6a9eb
 +                                   const std::vector<const uint8_t> additional_data,
 +                                   const NotificationAckCallback& ack_callback)>;
  
- #if defined(OS_WIN)
+ #if BUILDFLAG(IS_WIN)
    ProcessSingleton(const std::string& program_name,
                     const base::FilePath& user_data_dir,
 +                   const base::span<const uint8_t> additional_data,
@@ -96,7 +96,7 @@ index 8f94cc300b58e8a94b6ca155aa3cf370bcb948d8..4340376f323d24e5e2c5897a81c6a9eb
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 47e60bfd8239d4a2e292b835c49132bdbb751555..9861a884a15e79b36833e6df58897141acdc6718 100644
+index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65ddbfc332 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -148,7 +148,7 @@ const char kACKToken[] = "ACK";

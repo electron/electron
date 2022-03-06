@@ -24,14 +24,14 @@ This patch adds a few changes to the Chromium code:
    before the browser thread is ready.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..8f94cc300b58e8a94b6ca155aa3cf370bcb948d8 100644
+index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..5a64220aaf1309832dc0ad543e353de67fe0a779 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -102,12 +102,19 @@ class ProcessSingleton {
        base::RepeatingCallback<bool(const base::CommandLine& command_line,
                                     const base::FilePath& current_directory)>;
  
-+#if defined(OS_WIN)
++#if BUILDFLAG(IS_WIN)
 +  ProcessSingleton(const std::string& program_name,
 +                   const base::FilePath& user_data_dir,
 +                   bool is_sandboxed,
@@ -75,7 +75,7 @@ index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..8f94cc300b58e8a94b6ca155aa3cf370
  
  #if BUILDFLAG(IS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index c9f26ea2d2ea16484d416fdce095ec1b8b885991..47e60bfd8239d4a2e292b835c49132bdbb751555 100644
+index c9f26ea2d2ea16484d416fdce095ec1b8b885991..7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -53,6 +53,7 @@
@@ -129,7 +129,7 @@ index c9f26ea2d2ea16484d416fdce095ec1b8b885991..47e60bfd8239d4a2e292b835c49132bd
  }
  
 +bool IsAppSandboxed() {
-+#if defined(OS_MAC)
++#if BUILDFLAG(IS_MAC)
 +  // NB: There is no sane API for this, we have to just guess by
 +  // reading tea leaves
 +  base::FilePath home_dir;
@@ -140,7 +140,7 @@ index c9f26ea2d2ea16484d416fdce095ec1b8b885991..47e60bfd8239d4a2e292b835c49132bd
 +  return home_dir.value().find("Library/Containers") != std::string::npos;
 +#else
 +  return false;
-+#endif  // defined(OS_MAC)
++#endif  // BUILDFLAG(IS_MAC)
 +}
 +
  bool ConnectSocket(ScopedSocket* socket,
