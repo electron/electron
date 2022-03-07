@@ -184,7 +184,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
     params.delegate = devtools_window_delegate_;
     params.bounds = inspectable_web_contents()->GetDevToolsBounds();
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
     params.wm_role_name = "devtools";
     if (GetDelegate())
       GetDelegate()->GetDevToolsWindowWMClass(&params.wm_class_name,

@@ -129,7 +129,7 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   // callback is received from the enumeration code.
   void EnumerateDirectoryEnd();
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Must be called from a MayBlock() task. Each selected file that is a package
   // will be zipped, and the zip will be passed to the render view host in place
   // of the package.
@@ -145,7 +145,7 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   // temporary destination, if the zip was successful. Otherwise returns an
   // empty path.
   static base::FilePath ZipPackage(const base::FilePath& path);
-#endif  // defined(OS_MAC)
+#endif  // BUILDFLAG(IS_MAC)
 
   void ConvertToFileChooserFileInfoList(
       const std::vector<ui::SelectedFileInfo>& files);

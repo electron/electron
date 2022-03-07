@@ -310,8 +310,8 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     return;
   }
 
-  auto event = std::make_unique<extensions::Event>(histogram_value, event_name,
-                                                   std::move(*args).TakeList());
+  auto event = std::make_unique<extensions::Event>(
+      histogram_value, event_name, std::move(*args).TakeListDeprecated());
   auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second) {

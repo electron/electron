@@ -70,9 +70,9 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
   bool capture_window_ = false;
   bool capture_screen_ = false;
   bool fetch_window_icons_ = false;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   bool using_directx_capturer_ = false;
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
   base::WeakPtrFactory<DesktopCapturer> weak_ptr_factory_{this};
 };

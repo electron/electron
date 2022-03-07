@@ -212,8 +212,7 @@ void ElectronExtensionSystem::RegisterExtensionWithRequestContexts(
 }
 
 void ElectronExtensionSystem::UnregisterExtensionWithRequestContexts(
-    const std::string& extension_id,
-    const UnloadedExtensionReason reason) {}
+    const std::string& extension_id) {}
 
 const base::OneShotEvent& ElectronExtensionSystem::ready() const {
   return ready_;

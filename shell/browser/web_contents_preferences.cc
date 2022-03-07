@@ -32,7 +32,7 @@
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
 #include "third_party/blink/public/mojom/webpreferences/web_preferences.mojom.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "ui/gfx/switches.h"
 #endif
 
@@ -165,7 +165,7 @@ void WebContentsPreferences::Clear() {
   preload_path_ = absl::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -276,7 +276,7 @@ void WebContentsPreferences::Merge(
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
 #endif
 
@@ -369,7 +369,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitch(::switches::kNoZygote);
   }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Enable scroll bounce.
   if (scroll_bounce_)
     command_line->AppendSwitch(switches::kScrollBounce);

@@ -86,10 +86,12 @@ class SimpleURLLoaderWrapper
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
           client_cert_responder) override {}
-  void OnClearSiteData(const GURL& url,
-                       const std::string& header_value,
-                       int32_t load_flags,
-                       OnClearSiteDataCallback callback) override;
+  void OnClearSiteData(
+      const GURL& url,
+      const std::string& header_value,
+      int32_t load_flags,
+      const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+      OnClearSiteDataCallback callback) override;
   void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
                             OnLoadingStateUpdateCallback callback) override;
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,

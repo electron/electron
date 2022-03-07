@@ -63,7 +63,7 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
   void SetActive(bool active);
 
  private:
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void OnDisplayReceivedCALayerParams(
       const gfx::CALayerParams& ca_layer_params) override;
 #endif
@@ -72,7 +72,7 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
       mojo::PendingReceiver<viz::mojom::LayeredWindowUpdater> receiver)
       override;
 
-#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)
   void DidCompleteSwapWithNewSize(const gfx::Size& size) override;
 #endif
 

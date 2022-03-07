@@ -51,7 +51,7 @@
 
 // This view would inform Chromium to resize the hosted views::View.
 //
-// The overrided methods should behave the same with BridgedContentView.
+// The overridden methods should behave the same with BridgedContentView.
 @interface ElectronAdaptedContentView : NSView {
  @private
   views::NativeWidgetMacNSWindowHost* bridge_host_;
@@ -373,7 +373,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
       if (traffic_light_position_) {
         [buttons_proxy_ setMargin:*traffic_light_position_];
       } else if (title_bar_style_ == TitleBarStyle::kHiddenInset) {
-        // For macOS >= 11, while this value does not match offical macOS apps
+        // For macOS >= 11, while this value does not match official macOS apps
         // like Safari or Notes, it matches titleBarStyle's old implementation
         // before Electron <= 12.
         [buttons_proxy_ setMargin:gfx::Point(12, 11)];
@@ -381,7 +381,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
       if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
         [buttons_proxy_ setShowOnHover:YES];
       } else {
-        // customButtonsOnHover does not show buttons initialiy.
+        // customButtonsOnHover does not show buttons initially.
         InternalSetWindowButtonVisibility(true);
       }
     }
@@ -562,7 +562,7 @@ void NativeWindowMac::Hide() {
     }
   }
 
-  // Deattach the window from the parent before.
+  // Detach the window from the parent before.
   if (parent())
     InternalSetParentWindow(parent(), false);
 

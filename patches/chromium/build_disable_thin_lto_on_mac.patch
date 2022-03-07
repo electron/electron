@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Tue, 1 Mar 2022 11:31:59 -0800
+Subject: build: disable thin lto on mac
+
+Ths build disables thin lto for mac, in order to preserve
+disk space on mac without breaking win-ia32.
+The patch can be removed when we have more disk space on CircleCI
+
+diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
+index 9d25c10587c7ab4e2053f8f69aef3f135ef8e9f9..8d8b8d13c62da1fdd051019c8b726de7d1783113 100644
+--- a/build/config/compiler/compiler.gni
++++ b/build/config/compiler/compiler.gni
+@@ -74,7 +74,7 @@ declare_args() {
+   use_thin_lto =
+       is_cfi ||
+       (is_clang && is_official_build && chrome_pgo_phase != 1 &&
+-       (is_linux || is_win || is_mac ||
++       (is_linux || is_win ||
+         (is_android && target_os != "chromeos") ||
+         ((is_chromeos_ash || is_chromeos_lacros) && is_chromeos_device)))
+ 

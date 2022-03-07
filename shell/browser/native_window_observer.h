@@ -11,7 +11,7 @@
 #include "base/values.h"
 #include "ui/base/window_open_disposition.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <windows.h>
 #endif
 
@@ -98,7 +98,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnSystemContextMenu(int x, int y, bool* prevent_default) {}
 
 // Called when window message received
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
 #endif
 

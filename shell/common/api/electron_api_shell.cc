@@ -14,7 +14,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/shortcut.h"
 
@@ -29,11 +29,11 @@ struct Converter<base::win::ShortcutOperation> {
     if (!ConvertFromV8(isolate, val, &operation))
       return false;
     if (operation.empty() || operation == "create")
-      *out = base::win::SHORTCUT_CREATE_ALWAYS;
+      *out = base::win::ShortcutOperation::kCreateAlways;
     else if (operation == "update")
-      *out = base::win::SHORTCUT_UPDATE_EXISTING;
+      *out = base::win::ShortcutOperation::kUpdateExisting;
     else if (operation == "replace")
-      *out = base::win::SHORTCUT_REPLACE_EXISTING;
+      *out = base::win::ShortcutOperation::kReplaceExisting;
     else
       return false;
     return true;
@@ -104,10 +104,11 @@ v8::Local<v8::Promise> TrashItem(v8::Isolate* isolate,
   return handle;
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
                        gin_helper::Arguments* args) {
-  base::win::ShortcutOperation operation = base::win::SHORTCUT_CREATE_ALWAYS;
+  base::win::ShortcutOperation operation =
+      base::win::ShortcutOperation::kCreateAlways;
   args->GetNext(&operation);
   gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
   if (!args->GetNext(&options)) {
@@ -173,7 +174,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("openExternal", &OpenExternal);
   dict.SetMethod("trashItem", &TrashItem);
   dict.SetMethod("beep", &platform_util::Beep);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   dict.SetMethod("writeShortcutLink", &WriteShortcutLink);
   dict.SetMethod("readShortcutLink", &ReadShortcutLink);
 #endif

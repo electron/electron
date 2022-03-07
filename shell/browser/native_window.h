@@ -46,7 +46,7 @@ namespace electron {
 class ElectronMenuModel;
 class NativeBrowserView;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 typedef NSView* NativeWindowHandle;
 #else
 typedef gfx::AcceleratedWidget NativeWindowHandle;
@@ -138,7 +138,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   virtual std::string GetAlwaysOnTopLevel() = 0;
   virtual void SetActive(bool is_key) = 0;
   virtual bool IsActive() const = 0;
@@ -210,7 +210,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Traffic Light API
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;
   virtual bool GetWindowButtonVisibility() const = 0;
   virtual void SetTrafficLightPosition(absl::optional<gfx::Point> position) = 0;
@@ -309,7 +309,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
 #endif
 

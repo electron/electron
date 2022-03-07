@@ -242,7 +242,9 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveEarlyHints(
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
-    network::mojom::URLResponseHeadPtr head) {
+    network::mojom::URLResponseHeadPtr head,
+    mojo::ScopedDataPipeConsumerHandle body) {
+  current_body_ = std::move(body);
   if (current_request_uses_header_client_) {
     // Use the headers we got from OnHeadersReceived as that'll contain
     // Set-Cookie if it existed.
@@ -673,7 +675,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
   proxied_client_receiver_.Resume();
 
   factory_->web_request_api()->OnResponseStarted(&info_.value(), request_);
-  target_client_->OnReceiveResponse(current_response_.Clone());
+  target_client_->OnReceiveResponse(current_response_.Clone(),
+                                    std::move(current_body_));
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(

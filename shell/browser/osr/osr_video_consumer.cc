@@ -121,6 +121,8 @@ void OffScreenVideoConsumer::OnFrameCaptured(
   callback_.Run(*update_rect, bitmap);
 }
 
+void OffScreenVideoConsumer::OnFrameWithEmptyRegionCapture() {}
+
 void OffScreenVideoConsumer::OnStopped() {}
 
 void OffScreenVideoConsumer::OnLog(const std::string& message) {}

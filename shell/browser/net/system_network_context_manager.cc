@@ -25,7 +25,7 @@
 #include "content/public/common/network_service_util.h"
 #include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "net/dns/public/dns_over_https_server_config.h"
+#include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/util.h"
 #include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
@@ -42,23 +42,23 @@
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "components/os_crypt/keychain_password_mac.h"
 #endif
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include "components/os_crypt/key_storage_config_linux.h"
 #endif
 
 namespace {
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 namespace {
 
 const char kNetworkServiceSandboxEnabled[] = "net.network_service_sandbox";
 
 }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 // The global instance of the SystemNetworkContextmanager.
 SystemNetworkContextManager* g_system_network_context_manager = nullptr;
@@ -66,9 +66,6 @@ SystemNetworkContextManager* g_system_network_context_manager = nullptr;
 network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
   network::mojom::HttpAuthStaticParamsPtr auth_static_params =
       network::mojom::HttpAuthStaticParams::New();
-
-  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
-                                           "negotiate"};
 
   return auth_static_params;
 }
@@ -86,6 +83,8 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
       command_line->HasSwitch(electron::switches::kEnableAuthNegotiatePort);
   auth_dynamic_params->ntlm_v2_enabled =
       !command_line->HasSwitch(electron::switches::kDisableNTLMv2);
+  auth_dynamic_params->allowed_schemes = {"basic", "digest", "ntlm",
+                                          "negotiate"};
 
   return auth_dynamic_params;
 }
@@ -233,12 +232,12 @@ void SystemNetworkContextManager::DeleteInstance() {
 // c.f.
 // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/net/system_network_context_manager.cc;l=730-740;drc=15a616c8043551a7cb22c4f73a88e83afb94631c;bpv=1;bpt=1
 bool SystemNetworkContextManager::IsNetworkSandboxEnabled() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   auto* local_state = g_browser_process->local_state();
   if (local_state && local_state->HasPrefPath(kNetworkServiceSandboxEnabled)) {
     return local_state->GetBoolean(kNetworkServiceSandboxEnabled);
   }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
   // If no policy is specified, then delegate to global sandbox configuration.
   return sandbox::policy::features::IsNetworkSandboxEnabled();
 }
@@ -274,18 +273,11 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
     }
     default_doh_templates = features::kDnsOverHttpsTemplatesParam.Get();
   }
-  std::string server_method;
-  std::vector<net::DnsOverHttpsServerConfig> dns_over_https_servers;
+
+  net::DnsOverHttpsConfig doh_config;
   if (!default_doh_templates.empty() &&
       default_secure_dns_mode != net::SecureDnsMode::kOff) {
-    for (base::StringPiece server_template :
-         SplitStringPiece(default_doh_templates, " ", base::TRIM_WHITESPACE,
-                          base::SPLIT_WANT_NONEMPTY)) {
-      if (auto server_config = net::DnsOverHttpsServerConfig::FromString(
-              std::string(server_template))) {
-        dns_over_https_servers.push_back(server_config.value());
-      }
-    }
+    doh_config = *net::DnsOverHttpsConfig::FromString(default_doh_templates);
   }
 
   bool additional_dns_query_types_enabled = true;
@@ -294,55 +286,20 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
       base::FeatureList::IsEnabled(features::kAsyncDns),
-      default_secure_dns_mode, std::move(dns_over_https_servers),
-      additional_dns_query_types_enabled);
+      default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
 
   std::string app_name = electron::Browser::Get()->GetName();
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   KeychainPassword::GetServiceName() = app_name + " Safe Storage";
   KeychainPassword::GetAccountName() = app_name;
-#endif
-#if defined(OS_LINUX)
-  // c.f.
-  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/net/system_network_context_manager.cc;l=515;drc=9d82515060b9b75fa941986f5db7390299669ef1;bpv=1;bpt=1
-  const base::CommandLine& command_line =
-      *base::CommandLine::ForCurrentProcess();
-
-  auto config = std::make_unique<os_crypt::Config>();
-  config->store = command_line.GetSwitchValueASCII(::switches::kPasswordStore);
-  config->product_name = app_name;
-  config->application_name = app_name;
-  config->main_thread_runner = base::ThreadTaskRunnerHandle::Get();
-  // c.f.
-  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
-  config->should_use_preference =
-      command_line.HasSwitch(::switches::kEnableEncryptionSelection);
-  base::PathService::Get(chrome::DIR_USER_DATA, &config->user_data_path);
 #endif
 
   // The OSCrypt keys are process bound, so if network service is out of
   // process, send it the required key.
   if (content::IsOutOfProcessNetworkService() &&
       electron::fuses::IsCookieEncryptionEnabled()) {
-#if defined(OS_LINUX)
-    network::mojom::CryptConfigPtr network_crypt_config =
-        network::mojom::CryptConfig::New();
-    network_crypt_config->application_name = config->application_name;
-    network_crypt_config->product_name = config->product_name;
-    network_crypt_config->store = config->store;
-    network_crypt_config->should_use_preference = config->should_use_preference;
-    network_crypt_config->user_data_path = config->user_data_path;
-
-    network_service->SetCryptConfig(std::move(network_crypt_config));
-
-#else
     network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
-#endif
   }
-
-#if defined(OS_LINUX)
-  OSCrypt::SetConfig(std::move(config));
-#endif
 
 #if DCHECK_IS_ON()
   electron::safestorage::SetElectronCryptoReady(true);

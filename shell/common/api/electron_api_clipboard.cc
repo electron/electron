@@ -56,7 +56,7 @@ std::string Clipboard::Read(const std::string& format_string) {
       ui::ClipboardFormatType::CustomPlatformType(format_string));
   bool rawFormatAvailable = clipboard->IsFormatAvailable(
       rawFormat, ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr);
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   if (!rawFormatAvailable) {
     rawFormatAvailable = clipboard->IsFormatAvailable(
         rawFormat, ui::ClipboardBuffer::kSelection, /* data_dst = */ nullptr);
@@ -72,7 +72,7 @@ std::string Clipboard::Read(const std::string& format_string) {
   custom_format_names =
       clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
                                             /* data_dst = */ nullptr);
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   if (custom_format_names.find(format_string) == custom_format_names.end()) {
     custom_format_names =
         clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kSelection,
@@ -150,7 +150,7 @@ std::u16string Clipboard::ReadText(gin_helper::Arguments* args) {
                                    type, /* data_dst = */ nullptr)) {
     clipboard->ReadText(type, /* data_dst = */ nullptr, &data);
   } else {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextAType(),
                                      type,
                                      /* data_dst = */ nullptr)) {
@@ -249,7 +249,7 @@ void Clipboard::WriteImage(const gfx::Image& image,
   }
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 void Clipboard::WriteFindText(const std::u16string& text) {}
 std::u16string Clipboard::ReadFindText() {
   return std::u16string();

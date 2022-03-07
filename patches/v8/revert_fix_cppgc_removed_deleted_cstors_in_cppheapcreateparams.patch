@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Thu, 27 Jan 2022 13:01:36 -0800
+Subject: Revert "fix(cppgc): removed deleted cstors in CppHeapCreateParams"
+
+This reverts commit a66b09e5510d62ff469e72b1a8ff7f0ead1bf0f6.
+
+diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
+index 201773f59ddd3ce2ed61fe08cb58786aeed605cc..7761d87fd0a325a53d398bafcdeadd6a87f4f1c2 100644
+--- a/include/v8-cppgc.h
++++ b/include/v8-cppgc.h
+@@ -77,6 +77,9 @@ struct WrapperDescriptor final {
+ };
+ 
+ struct V8_EXPORT CppHeapCreateParams {
++  CppHeapCreateParams(const CppHeapCreateParams&) = delete;
++  CppHeapCreateParams& operator=(const CppHeapCreateParams&) = delete;
++
+   std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces;
+   WrapperDescriptor wrapper_descriptor;
+ };
