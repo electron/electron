@@ -15,7 +15,7 @@ PLATFORM = {
 
 LINUX_BINARIES = [
   'chrome-sandbox',
-  'crashpad_handler',
+  'chrome_crashpad_handler',
   'electron',
   'libEGL.so',
   'libGLESv2.so',
