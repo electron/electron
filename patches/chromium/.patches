@@ -128,3 +128,4 @@ m98_fs_fix_fileutil_lifetime_issue.patch
 cleanup_pausablecriptexecutor_usage.patch
 fix_don_t_restore_maximized_windows_when_calling_showinactive.patch
 cherry-pick-1887414c016d.patch
+cherry-pick-6b2643846ae3.patch
