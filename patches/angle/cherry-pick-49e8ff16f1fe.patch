@@ -1,7 +1,7 @@
-From 49e8ff16f1fe411460bc778d703a59bbaab3b5fe Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shahbaz Youssefi <syoussefi@chromium.org>
 Date: Tue, 25 Jan 2022 12:15:16 -0500
-Subject: [PATCH] M99: Vulkan: Fix texture array level redefinition
+Subject: M99: Vulkan: Fix texture array level redefinition
 
 When a level of a texture is redefined, all staged updates to that level
 should be removed, not the ones specific to the new layers.  The bug
@@ -14,13 +14,12 @@ Change-Id: Iab79c38d846d1abbdd92e11b1b60a3adf0fbde4c
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3441309
 Reviewed-by: Lingfeng Yang <lfy@google.com>
 Reviewed-by: Jamie Madill <jmadill@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
-index 6b900dc..c9b1690 100644
+index ee159cbd3621a655f00ccf2eb24c8711e050da8b..859e017d491f49d76db8c5fdd4c76ff51759075c 100644
 --- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
-@@ -1577,12 +1577,25 @@
+@@ -1553,12 +1553,25 @@ angle::Result TextureVk::redefineLevel(const gl::Context *context,
  
      if (mImage != nullptr)
      {
@@ -50,10 +49,10 @@ index 6b900dc..c9b1690 100644
          if (mImage->valid())
          {
 diff --git a/src/tests/gl_tests/MipmapTest.cpp b/src/tests/gl_tests/MipmapTest.cpp
-index a223936..ddfdf99 100644
+index 8a6d01ca36a84a9e294de3f6f0114ee7a54e1d9a..957a52304edc9aa245f9f21e5557cc105cbad789 100644
 --- a/src/tests/gl_tests/MipmapTest.cpp
 +++ b/src/tests/gl_tests/MipmapTest.cpp
-@@ -1572,6 +1572,106 @@
+@@ -1686,6 +1686,106 @@ TEST_P(MipmapTestES3, MipmapsForTexture3D)
      EXPECT_PIXEL_COLOR_EQ(px, py, GLColor::red);
  }
  
@@ -161,10 +160,10 @@ index a223936..ddfdf99 100644
  // the same, and then sample levels 0 and 2.
  // GLES 3.0.4 section 3.8.10:
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index 57df3de..091705c 100644
+index f1df6b5b947ca2684a9db7bd800f5de59ce0c64c..54ab7910ddeacf740a27816c6b9c5a9ce12cba68 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
-@@ -1038,31 +1038,37 @@
+@@ -1025,31 +1025,37 @@ class SamplerArrayAsFunctionParameterTest : public SamplerArrayTest
  class Texture2DArrayTestES3 : public TexCoordDrawTest
  {
    protected:
@@ -220,7 +219,7 @@ index 57df3de..091705c 100644
      }
  
      void testSetUp() override
-@@ -1074,6 +1080,9 @@
+@@ -1061,6 +1067,9 @@ class Texture2DArrayTestES3 : public TexCoordDrawTest
          mTextureArrayLocation = glGetUniformLocation(mProgram, "tex2DArray");
          ASSERT_NE(-1, mTextureArrayLocation);
  
@@ -230,7 +229,7 @@ index 57df3de..091705c 100644
          glGenTextures(1, &m2DArrayTexture);
          ASSERT_GL_NO_ERROR();
      }
-@@ -1086,6 +1095,7 @@
+@@ -1073,6 +1082,7 @@ class Texture2DArrayTestES3 : public TexCoordDrawTest
  
      GLuint m2DArrayTexture;
      GLint mTextureArrayLocation;
@@ -238,7 +237,7 @@ index 57df3de..091705c 100644
  };
  
  class TextureSizeTextureArrayTest : public TexCoordDrawTest
-@@ -1728,28 +1738,28 @@
+@@ -1715,28 +1725,28 @@ class Texture2DArrayIntegerTestES3 : public Texture2DArrayTestES3
  
      const char *getVertexShaderSource() override
      {
@@ -285,7 +284,7 @@ index 57df3de..091705c 100644
      }
  };
  
-@@ -5161,6 +5171,94 @@
+@@ -4972,6 +4982,94 @@ TEST_P(Texture2DArrayTestES3, DrawWithLevelsOutsideRangeWithInconsistentDimensio
      EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::cyan);
  }
  
