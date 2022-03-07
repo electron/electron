@@ -326,10 +326,10 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   RegisterDeleteDelegateCallback(base::BindOnce(
       [](NativeWindowMac* window) {
-        if (window->window_) {
-          window->buttons_proxy_.reset(nil);
+        if (window->window_)
           window->window_ = nil;
-        }
+        if (window->buttons_proxy_)
+          window->buttons_proxy_.reset();
       },
       this));
 
