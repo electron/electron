@@ -11,7 +11,7 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 9ca11a19e66e34585b4b11e89cc3b789a4389b5e..264a9109e42c23e9be6bf7269b3cfee2634b61e4 100644
+index 5ac9e8f10a4af8b7eb8f7b9e1265844a0f6e576e..86f06d2a2c9588a2210a9f78f47e73f1b7c5e329 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -3581,6 +3581,21 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,

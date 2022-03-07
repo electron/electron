@@ -108,10 +108,10 @@ index 6688ba8ba2fb7d930773144cdbc43f1f6fa2b685..22015c7b9b50e1264551ce226757f90e
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 04e327d970b872f0a9c505a0b99c6273900930f9..5993b3cb0cbe76cd266dee074effd736efa8fc50 100644
+index a257e06943fc0771d33a0cf288404d070e55120e..a8a3c84c003897af0bfff4dce5d329c9efd066a2 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1767,12 +1767,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1762,12 +1762,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -127,7 +127,7 @@ index 04e327d970b872f0a9c505a0b99c6273900930f9..5993b3cb0cbe76cd266dee074effd736
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index a63ba24be314eb4372d7dda7206dee4b52730d1e..f9bcaa001bfed987edd0ebb001f5cda0e0aca4aa 100644
+index 5edda102ff59ccb30d2150a88e75e8fb65379fca..82aaa442bca9e7a5e57315ace0b1c62e40ec1d24 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -808,8 +808,7 @@ class Browser : public TabStripModelObserver,
@@ -246,10 +246,10 @@ index c6bd5c19f8a7ceec17c9e32af5296a9617f3a619..02199b439fba7fdc617b7f7980d958b7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5c63a024827359ccf697d0b7fc8fa2092eb107b7..3da88b5831717c979373c064b4c1520c28d4fd98 100644
+index 9a379c66adc935b5eecbea3e70a2cb21967e507c..a34f660c6e84da4cfce86d6cd664d8bdcd5ee7b0 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3873,8 +3873,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3872,8 +3872,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -316,10 +316,10 @@ index 7350382146178f58960a9bf68cd959076d2d9790..a70a94d14bdfa993feab60b8e4f32e10
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 0b01120f6a6053ab03355c93216d703d0958aeab..a1c6c5a4b507bbf50668d7ed2febe97aca942c1d 100644
+index 3c60b327d43ff72b7ad2c98352f1f638032036fc..8d1d3ca49a931de67c76a122f3f19e78ba654f0f 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -388,8 +388,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -383,8 +383,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -386,10 +386,10 @@ index 2214ba7726f105e62bdc92bd0e6142ea9fa6ed72..2b9b804106317bfc914efacc7adfd282
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 1c3eebdc2cc3f5d8f110562eb3e18a1f45521c4f..11b7b0c6617c40c766d64cd0d4e60d22e569bfb1 100644
+index 749200efec166e0c29402a3d5e079f2e94460363..2cbc96e911291fb0b31c3f4a1444ded0be4521f5 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -426,8 +426,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -427,8 +427,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

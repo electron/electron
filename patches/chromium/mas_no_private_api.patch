@@ -139,7 +139,7 @@ index 3f7dce0281f7b5a540d7b9377ef14a8a6aa9a2fa..11d8419791f3e45d5242081422d452d4
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 6ffc09426b92b0623957f4a5f547865f49e29546..45cf4e11a77c175d61c2ffe69009802596c97e25 100644
+index c25a221db474d582d7ffd4c209a63be22d296c73..9ee571379568a69f159c613a2b02b329938c6d11 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -175,6 +175,12 @@ source_set("audio") {
@@ -169,7 +169,7 @@ index ebdc6364312ee710d416318836c03aeec9bfb65c..aa9b50de7efaf0e1b64effea93204984
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index e59fec60e9d593d311b21c12daf2d611a36a2d6e..b812dee59b55edee6efe73ce4b1da0a89b45240e 100644
+index 3cce5f20af78f4456466df64fe0d040b5dba5fa8..1814ebbca91007b242a4e4ef359896594c23616a 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -129,8 +129,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {

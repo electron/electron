@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index eff91b68cf4b72de41b7b2ad09c029b8b5dcf3c6..c736f772e3714c6a80703c41c8a2f0dab36b166d 100644
+index 03a9986ff94bc57e82a95e7a2a3fcc1415f28da0..79283e753512855360127471d40e145c325649ca 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -139,6 +139,8 @@ viz_component("service") {
@@ -501,7 +501,7 @@ index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef2
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 4b6712b2a4f3c56a6d243ff9d93539505a5c7b86..7f62362ab27abd3497d23e8db8c8bb5a2e3392f9 100644
+index df92bab44402330869b44aa76bb40fc20e33b16a..2b3fbaee17c0a8bb7b04cd4c4edb13626dd1bb27 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -84,7 +84,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -571,7 +571,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 8b74e1d2a463156f62e983f535ff68a53215f648..6ef04da46c8b097b01d5ee40dcadf222d7a7870c 100644
+index 45d1326e261d52c6a687997b8c62a5d62d8cfaa9..a9dc82cdc44f92e9d05b4849125444719357df89 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -81,6 +81,7 @@ class DisplayPrivate;
@@ -609,7 +609,7 @@ index 8b74e1d2a463156f62e983f535ff68a53215f648..6ef04da46c8b097b01d5ee40dcadf222
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -467,6 +481,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -465,6 +479,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
@@ -619,7 +619,7 @@ index 8b74e1d2a463156f62e983f535ff68a53215f648..6ef04da46c8b097b01d5ee40dcadf222
    raw_ptr<Layer> root_layer_ = nullptr;
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
-index 12e115cd6a128d8d150abc786d4d38b1d5119d91..b6320de28750333bee7ee83393849f4eb0a956ac 100644
+index c5fb29b30b9c5b7483998c567ed9a479d8743939..dc10d78315f76a3914ccd6e2e99af97fa909918b 100644
 --- a/ui/gfx/ca_layer_params.h
 +++ b/ui/gfx/ca_layer_params.h
 @@ -6,6 +6,7 @@
@@ -630,7 +630,7 @@ index 12e115cd6a128d8d150abc786d4d38b1d5119d91..b6320de28750333bee7ee83393849f4e
  #include "ui/gfx/geometry/size.h"
  #include "ui/gfx/gfx_export.h"
  
-@@ -51,6 +52,8 @@ struct GFX_EXPORT CALayerParams {
+@@ -41,6 +42,8 @@ struct GFX_EXPORT CALayerParams {
    gfx::ScopedRefCountedIOSurfaceMachPort io_surface_mach_port;
  #endif
  

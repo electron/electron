@@ -146,10 +146,10 @@ index ada705fb42e88d4bfa05b212c84111be9057a50e..a866b975687dd08ad88031a63f161b31
    }
  
 diff --git a/ui/base/x/x11_global_shortcut_listener.cc b/ui/base/x/x11_global_shortcut_listener.cc
-index a772666160a71e8e31242e25a8f3383ad9b914bf..7ed78ff875ccf9c38a480d0d59f4688ada1a3ad3 100644
+index 898e15a25c99ad25221c41594803521565ff4432..664337941023e800c9605f987d0e1d65bb0a444d 100644
 --- a/ui/base/x/x11_global_shortcut_listener.cc
 +++ b/ui/base/x/x11_global_shortcut_listener.cc
-@@ -32,11 +32,13 @@ const x11::ModMask kModifiersMasks[] = {
+@@ -31,11 +31,13 @@ const x11::ModMask kModifiersMasks[] = {
  
  x11::ModMask GetNativeModifiers(bool is_alt_down,
                                  bool is_ctrl_down,
@@ -165,7 +165,7 @@ index a772666160a71e8e31242e25a8f3383ad9b914bf..7ed78ff875ccf9c38a480d0d59f4688a
  }
  
  }  // namespace
-@@ -82,8 +84,9 @@ uint32_t XGlobalShortcutListener::DispatchEvent(const PlatformEvent& event) {
+@@ -81,8 +83,9 @@ uint32_t XGlobalShortcutListener::DispatchEvent(const PlatformEvent& event) {
  bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
                                                    bool is_alt_down,
                                                    bool is_ctrl_down,
@@ -177,7 +177,7 @@ index a772666160a71e8e31242e25a8f3383ad9b914bf..7ed78ff875ccf9c38a480d0d59f4688a
    auto keysym = XKeysymForWindowsKeyCode(key_code, false);
    auto keycode = connection_->KeysymToKeycode(keysym);
  
-@@ -108,7 +111,7 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
+@@ -107,7 +110,7 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
    }
  
    registered_combinations_.insert(
@@ -186,7 +186,7 @@ index a772666160a71e8e31242e25a8f3383ad9b914bf..7ed78ff875ccf9c38a480d0d59f4688a
  
    return true;
  }
-@@ -116,8 +119,9 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
+@@ -115,8 +118,9 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
  void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
                                                      bool is_alt_down,
                                                      bool is_ctrl_down,
@@ -198,7 +198,7 @@ index a772666160a71e8e31242e25a8f3383ad9b914bf..7ed78ff875ccf9c38a480d0d59f4688a
    auto keysym = XKeysymForWindowsKeyCode(key_code, false);
    auto keycode = connection_->KeysymToKeycode(keysym);
  
-@@ -125,7 +129,7 @@ void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
+@@ -124,7 +128,7 @@ void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
      connection_->UngrabKey({keycode, x_root_window_, modifiers | mask});
  
    registered_combinations_.erase(
@@ -207,7 +207,7 @@ index a772666160a71e8e31242e25a8f3383ad9b914bf..7ed78ff875ccf9c38a480d0d59f4688a
  }
  
  void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
-@@ -135,14 +139,15 @@ void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
+@@ -134,14 +138,15 @@ void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
    const bool is_alt_down = event.flags() & EF_ALT_DOWN;
    const bool is_ctrl_down = event.flags() & EF_CONTROL_DOWN;
    const bool is_shift_down = event.flags() & EF_SHIFT_DOWN;

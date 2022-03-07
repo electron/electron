@@ -128,10 +128,10 @@ index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a5
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index 1a8f42cb4e2ea493642d8b264d0be5c3da358793..e972272de54107aaed6143e3f3569ba56bd3cf3e 100644
+index d2354b84f3a184ad53571518198055a0a91cbc25..c05529257dda2acf0fa588d49e2b902736d9b02f 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
-@@ -89,6 +89,7 @@ bool PlatformCrashpadInitialization(
+@@ -88,6 +88,7 @@ bool PlatformCrashpadInitialization(
  
      std::map<std::string, std::string> process_annotations;
      GetPlatformCrashpadAnnotations(&process_annotations);
@@ -139,7 +139,7 @@ index 1a8f42cb4e2ea493642d8b264d0be5c3da358793..e972272de54107aaed6143e3f3569ba5
  
      std::string url = crash_reporter_client->GetUploadUrl();
  
-@@ -127,6 +128,13 @@ bool PlatformCrashpadInitialization(
+@@ -126,6 +127,13 @@ bool PlatformCrashpadInitialization(
  
      std::vector<std::string> arguments(start_arguments);
  

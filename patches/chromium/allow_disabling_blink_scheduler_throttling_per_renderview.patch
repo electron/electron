@@ -22,10 +22,10 @@ index 56c08919ab626a8a7b3bcb892ee94cdee2a106fc..b85bdf4ed574a149a6502e8d21e54f2e
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 9e32df9f5fd765895c8470c3922a62f754e7d409..9bac2321d65d9e54ce88fffafd72a74803ed2c87 100644
+index 9382b2a56a643be645694b06b54a76fb4a80f901..ddc2de8f0164c28410ab8ffa0b1ecd93f6cc20eb 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -134,6 +134,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    bool IsRenderViewLive() override;
    void WriteIntoTrace(perfetto::TracedValue context) override;
  
@@ -73,10 +73,10 @@ index befd736a9cf362514b9a2ee475dc4a814c85a87b..24b2617f56673a3075697802cf5b574b
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 14d4a00293ab0b11e733676844ce483992d6cd8e..c6c2dbb9dddd1eaa21e8c7b276d871a3898463fa 100644
+index 560b72dfbc70172bc668229b29fe0c9da139f320..13ec73b9d627259625d64f5b97838033db89745c 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -368,6 +368,7 @@ class WebView {
+@@ -369,6 +369,7 @@ class WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -85,10 +85,10 @@ index 14d4a00293ab0b11e733676844ce483992d6cd8e..c6c2dbb9dddd1eaa21e8c7b276d871a3
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 8cdffac8ecb9ed2c6892f1e975a953846e7e3a5c..7e7927c7258963bd95a2c064ef85e410f4d2571d 100644
+index 9e7af740d848653196211bbc2e3f982602ea26d5..3ff6aacaf27437945d52bb65bdbb10e1834bd2b0 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3659,6 +3659,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3665,6 +3665,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index 8cdffac8ecb9ed2c6892f1e975a953846e7e3a5c..7e7927c7258963bd95a2c064ef85e410
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3670,7 +3677,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3676,7 +3683,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(

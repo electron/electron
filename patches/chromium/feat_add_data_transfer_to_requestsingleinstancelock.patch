@@ -96,19 +96,19 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..a568dd10d1ef8679d66f4cdc6a471c25
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65ddbfc332 100644
+index 872e74463aefa4f642f49fdf4ff819fbe03d46c3..aedb22455d4d8255ea77c1eb1559b801678f96de 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -148,7 +148,7 @@ const char kACKToken[] = "ACK";
+@@ -146,7 +146,7 @@ const char kACKToken[] = "ACK";
  const char kShutdownToken[] = "SHUTDOWN";
  const char kTokenDelimiter = '\0';
  const int kMaxMessageLength = 32 * 1024;
--const int kMaxACKMessageLength = base::size(kShutdownToken) - 1;
+-const int kMaxACKMessageLength = std::size(kShutdownToken) - 1;
 +const int kMaxACKMessageLength = kMaxMessageLength;
  
  bool g_disable_prompt = false;
  bool g_skip_is_chrome_process_check = false;
-@@ -614,6 +614,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -612,6 +612,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
@@ -116,7 +116,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
                       SocketReader* reader);
  
   private:
-@@ -638,6 +639,9 @@ class ProcessSingleton::LinuxWatcher
+@@ -636,6 +637,9 @@ class ProcessSingleton::LinuxWatcher
    // The ProcessSingleton that owns us.
    ProcessSingleton* const parent_;
  
@@ -126,7 +126,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
    std::set<std::unique_ptr<SocketReader>, base::UniquePtrComparator> readers_;
  };
  
-@@ -668,16 +672,21 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+@@ -666,16 +670,21 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -141,7 +141,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
 -  if (parent_->notification_callback_.Run(base::CommandLine(argv),
 -                                          base::FilePath(current_dir))) {
 -    // Send back "ACK" message to prevent the client process from starting up.
--    reader->FinishWithACK(kACKToken, base::size(kACKToken) - 1);
+-    reader->FinishWithACK(kACKToken, std::size(kACKToken) - 1);
 -  } else {
 +  auto wrapped_ack_callback =
 +      base::BindRepeating(&ProcessSingleton::LinuxWatcher::AckCallback,
@@ -154,7 +154,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
      LOG(WARNING) << "Not handling interprocess notification as browser"
                      " is shutting down";
      // Send back "SHUTDOWN" message, so that the client process can start up
-@@ -687,6 +696,22 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
+@@ -685,6 +694,22 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
    }
  }
  
@@ -177,17 +177,17 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
  void ProcessSingleton::LinuxWatcher::RemoveSocketReader(SocketReader* reader) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
    DCHECK(reader);
-@@ -722,7 +747,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -720,7 +745,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
      }
    }
  
 -  // Validate the message.  The shortest message is kStartToken\0x\0x
 +  // Validate the message.  The shortest message kStartToken\0\00
 +  // The shortest message with additional data is kStartToken\0\00\00\0.
-   const size_t kMinMessageLength = base::size(kStartToken) + 4;
+   const size_t kMinMessageLength = std::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-@@ -752,10 +778,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -750,10 +776,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
@@ -217,7 +217,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -784,8 +828,12 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -782,8 +826,12 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -231,7 +231,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -904,7 +952,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -902,7 +950,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -241,7 +241,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -914,11 +963,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -912,11 +961,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -263,7 +263,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
    // Send the message
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
-@@ -960,6 +1019,17 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -958,6 +1017,17 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
        linux_ui->NotifyWindowManagerStartupComplete();
  #endif
  
