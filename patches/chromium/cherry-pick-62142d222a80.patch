@@ -1,7 +1,7 @@
-From 62142d222a80b14827ebc9317c7a3300a8af4259 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Thu, 24 Feb 2022 15:13:13 +0000
-Subject: [PATCH] [M96-LTS][mojo-bindings]: Validate message headers sooner
+Subject: Validate message headers sooner
 
 M96 merge issues:
   - multiplex_router.h: conflict in removed lines because of
@@ -34,10 +34,9 @@ Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1505}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/mojo/public/cpp/bindings/connector.h b/mojo/public/cpp/bindings/connector.h
-index c788d5a..6076d73 100644
+index 3975d01a434d6caf229c6d8eaedfe5e2acf684f8..ff17af9b378a1992dbd681e80e957826ebfd83dd 100644
 --- a/mojo/public/cpp/bindings/connector.h
 +++ b/mojo/public/cpp/bindings/connector.h
 @@ -18,6 +18,7 @@
@@ -48,7 +47,7 @@ index c788d5a..6076d73 100644
  #include "mojo/public/cpp/bindings/sync_handle_watcher.h"
  #include "mojo/public/cpp/system/core.h"
  #include "mojo/public/cpp/system/handle_signal_tracker.h"
-@@ -348,6 +349,8 @@
+@@ -345,6 +346,8 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) Connector : public MessageReceiver {
    // The number of pending tasks for |CallDispatchNextMessageFromPipe|.
    size_t num_pending_dispatch_tasks_ = 0;
  
@@ -58,7 +57,7 @@ index c788d5a..6076d73 100644
    std::unique_ptr<MessageReceiver> message_dumper_;
  #endif
 diff --git a/mojo/public/cpp/bindings/lib/connector.cc b/mojo/public/cpp/bindings/lib/connector.cc
-index c1d111c..0af91f3 100644
+index 92a9756cbaebe12377e9c9b81467260c73528311..cb08f13b1bfa13a1a79f7f39005f826e51c12a69 100644
 --- a/mojo/public/cpp/bindings/lib/connector.cc
 +++ b/mojo/public/cpp/bindings/lib/connector.cc
 @@ -19,6 +19,7 @@
@@ -69,7 +68,7 @@ index c1d111c..0af91f3 100644
  #include "base/synchronization/lock.h"
  #include "base/task/current_thread.h"
  #include "base/threading/sequence_local_storage_slot.h"
-@@ -155,7 +156,11 @@
+@@ -152,7 +153,11 @@ Connector::Connector(ScopedMessagePipeHandle message_pipe,
        force_immediate_dispatch_(!EnableTaskPerMessage()),
        outgoing_serialization_mode_(g_default_outgoing_serialization_mode),
        incoming_serialization_mode_(g_default_incoming_serialization_mode),
@@ -82,7 +81,7 @@ index c1d111c..0af91f3 100644
    if (config == MULTI_THREADED_SEND)
      lock_.emplace();
  
-@@ -495,6 +500,7 @@
+@@ -492,6 +497,7 @@ MojoResult Connector::ReadMessage(Message* message) {
      return result;
  
    *message = Message::CreateFromMessageHandle(&handle);
@@ -90,7 +89,7 @@ index c1d111c..0af91f3 100644
    if (message->IsNull()) {
      // Even if the read was successful, the Message may still be null if there
      // was a problem extracting handles from it. We treat this essentially as
-@@ -510,6 +516,10 @@
+@@ -507,6 +513,10 @@ MojoResult Connector::ReadMessage(Message* message) {
      return MOJO_RESULT_ABORTED;
    }
  
@@ -102,7 +101,7 @@ index c1d111c..0af91f3 100644
  }
  
 diff --git a/mojo/public/cpp/bindings/lib/multiplex_router.cc b/mojo/public/cpp/bindings/lib/multiplex_router.cc
-index e62252a..ad7a700 100644
+index 605e51344d64eb5ede3ab475bc8833b37a458535..23e3970089e33d07b18d734d4f599c9c9f9e4bc8 100644
 --- a/mojo/public/cpp/bindings/lib/multiplex_router.cc
 +++ b/mojo/public/cpp/bindings/lib/multiplex_router.cc
 @@ -23,7 +23,6 @@
@@ -113,7 +112,7 @@ index e62252a..ad7a700 100644
  #include "mojo/public/cpp/bindings/sequence_local_sync_event_watcher.h"
  
  namespace mojo {
-@@ -391,14 +390,7 @@
+@@ -389,14 +388,7 @@ MultiplexRouter::MultiplexRouter(
    if (quota_checker)
      connector_.SetMessageQuotaChecker(std::move(quota_checker));
  
@@ -129,10 +128,10 @@ index e62252a..ad7a700 100644
          {primary_interface_name, "[primary] PipeControlMessageHandler"}, " "));
    }
 diff --git a/mojo/public/cpp/bindings/lib/multiplex_router.h b/mojo/public/cpp/bindings/lib/multiplex_router.h
-index df94c8a..c20d196 100644
+index 3d3bbb16e25b1adc678e536bd977fa22fc478920..3a9f76a57e301aa89d1bdc5aa1000f815793e238 100644
 --- a/mojo/public/cpp/bindings/lib/multiplex_router.h
 +++ b/mojo/public/cpp/bindings/lib/multiplex_router.h
-@@ -38,7 +38,6 @@
+@@ -38,7 +38,6 @@ class SequencedTaskRunner;
  namespace mojo {
  
  class AsyncFlusher;
@@ -140,7 +139,7 @@ index df94c8a..c20d196 100644
  class PendingFlush;
  
  namespace internal {
-@@ -304,9 +303,6 @@
+@@ -301,9 +300,6 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) MultiplexRouter
  
    scoped_refptr<base::SequencedTaskRunner> task_runner_;
  
