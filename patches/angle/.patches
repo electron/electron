@@ -6,3 +6,4 @@ cherry-pick-2b98abd8cb6c.patch
 cherry-pick-cc44ae61f37b.patch
 m98_vulkan_fix_vkcmdresolveimage_extents.patch
 m98_vulkan_fix_vkcmdresolveimage_offsets.patch
+cherry-pick-49e8ff16f1fe.patch
