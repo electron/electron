@@ -1086,10 +1086,10 @@ describe('BrowserWindow module', () => {
         expect(w.getBackgroundColor()).to.equal('#8A2BE2');
 
         w.setBackgroundColor('rgb(255, 0, 185)');
-        expect(w.getBackgroundColor('hex')).to.equal('#FF00B9');
+        expect(w.getBackgroundColor()).to.equal('#FF00B9');
 
         w.setBackgroundColor('rgba(245, 40, 145, 0.8)');
-        expect(w.getBackgroundColor('hex')).to.equal('#F52891');
+        expect(w.getBackgroundColor()).to.equal('#F52891');
 
         w.setBackgroundColor('hsl(155, 100%, 50%)');
         expect(w.getBackgroundColor()).to.equal('#00FF95');
