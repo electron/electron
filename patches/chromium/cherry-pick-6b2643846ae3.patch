@@ -1,7 +1,10 @@
-From 6b2643846ae3a2ea925a0d3d0773bbf5c9565917 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ted Meyer <tmathmeyer@chromium.org>
 Date: Thu, 24 Feb 2022 17:39:53 +0000
-Subject: [PATCH] [M96-LTS] Guard BatchingMediaLog::event_handlers_ with lock
+Subject: Guard BatchingMediaLog::event_handlers_ with lock
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 It seems that despite MediaLog::OnWebMediaPlayerDestroyed and
 MediaLog::AddLogRecord both grabbing a lock,
@@ -26,13 +29,12 @@ Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1508}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/content/renderer/media/batching_media_log.cc b/content/renderer/media/batching_media_log.cc
-index 79e6df9..e2d3378 100644
+index 79e6df99f2161da1ef551562c8277d4e02739d91..e2d33781f8c4254595e216202f3c9b3b55377e33 100644
 --- a/content/renderer/media/batching_media_log.cc
 +++ b/content/renderer/media/batching_media_log.cc
-@@ -52,9 +52,9 @@
+@@ -52,9 +52,9 @@ BatchingMediaLog::BatchingMediaLog(
      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
      std::vector<std::unique_ptr<EventHandler>> event_handlers)
      : task_runner_(std::move(task_runner)),
@@ -43,7 +45,7 @@ index 79e6df9..e2d3378 100644
        ipc_send_pending_(false),
        logged_rate_limit_warning_(false) {
    // Pre-bind the WeakPtr on the right thread since we'll receive calls from
-@@ -76,6 +76,7 @@
+@@ -76,6 +76,7 @@ BatchingMediaLog::~BatchingMediaLog() {
  }
  
  void BatchingMediaLog::OnWebMediaPlayerDestroyedLocked() {
@@ -51,7 +53,7 @@ index 79e6df9..e2d3378 100644
    for (const auto& handler : event_handlers_)
      handler->OnWebMediaPlayerDestroyed();
  }
-@@ -198,32 +199,30 @@
+@@ -198,32 +199,30 @@ std::string BatchingMediaLog::MediaEventToMessageString(
  
  void BatchingMediaLog::SendQueuedMediaEvents() {
    DCHECK(task_runner_->BelongsToCurrentThread());
@@ -62,32 +64,31 @@ index 79e6df9..e2d3378 100644
 -    base::AutoLock auto_lock(lock_);
 -    DCHECK(ipc_send_pending_);
 -    ipc_send_pending_ = false;
-+  DCHECK(ipc_send_pending_);
-+  ipc_send_pending_ = false;
- 
+-
 -    if (last_duration_changed_event_) {
 -      queued_media_events_.push_back(*last_duration_changed_event_);
 -      last_duration_changed_event_.reset();
 -    }
--
++  DCHECK(ipc_send_pending_);
++  ipc_send_pending_ = false;
+ 
 -    if (last_buffering_state_event_) {
 -      queued_media_events_.push_back(*last_buffering_state_event_);
 -      last_buffering_state_event_.reset();
 -    }
--
--    queued_media_events_.swap(events_to_send);
--    last_ipc_send_time_ = tick_clock_->NowTicks();
 +  if (last_duration_changed_event_) {
 +    queued_media_events_.push_back(*last_duration_changed_event_);
 +    last_duration_changed_event_.reset();
-   }
++  }
  
--  if (events_to_send.empty())
+-    queued_media_events_.swap(events_to_send);
+-    last_ipc_send_time_ = tick_clock_->NowTicks();
 +  if (last_buffering_state_event_) {
 +    queued_media_events_.push_back(*last_buffering_state_event_);
 +    last_buffering_state_event_.reset();
-+  }
-+
+   }
+ 
+-  if (events_to_send.empty())
 +  last_ipc_send_time_ = tick_clock_->NowTicks();
 +
 +  if (queued_media_events_.empty())
@@ -102,10 +103,10 @@ index 79e6df9..e2d3378 100644
  
  void BatchingMediaLog::SetTickClockForTesting(
 diff --git a/content/renderer/media/batching_media_log.h b/content/renderer/media/batching_media_log.h
-index 6753ebe6..d3dd09d 100644
+index 6753ebe6605b239bdff84ff7f169cb00ea7d2b64..d3dd09d0c881c4894d0df1b1c6d18c53dcf480b8 100644
 --- a/content/renderer/media/batching_media_log.h
 +++ b/content/renderer/media/batching_media_log.h
-@@ -67,9 +67,6 @@
+@@ -67,9 +67,6 @@ class CONTENT_EXPORT BatchingMediaLog : public media::MediaLog {
  
    scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
  
@@ -115,7 +116,7 @@ index 6753ebe6..d3dd09d 100644
    // |lock_| protects access to all of the following member variables.  It
    // allows any render process thread to AddEvent(), while preserving their
    // sequence for throttled send on |task_runner_| and coherent retrieval by
-@@ -77,19 +74,24 @@
+@@ -77,19 +74,24 @@ class CONTENT_EXPORT BatchingMediaLog : public media::MediaLog {
    // guarantees provided by MediaLog, since SendQueuedMediaEvents must also
    // be synchronized with respect to AddEvent.
    mutable base::Lock lock_;
