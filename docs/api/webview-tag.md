@@ -558,7 +558,7 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
     * `vertical` number (optional) - The vertical dpi.
   * `header` string (optional) - string to be printed as page header.
   * `footer` string (optional) - string to be printed as page footer.
-  * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A3`,
+  * `pageSize` string | Size ([optional](structures/size.md)) - Specify page size of the printed document. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`.
 
 Returns `Promise<void>`
@@ -579,7 +579,7 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `pageRanges` Record<string, number> (optional) - The page range to print. On macOS, only the first range is honored.
     * `from` number - Index of the first page to print (0-based).
     * `to` number - Index of the last page to print (inclusive) (0-based).
-  * `pageSize` string | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
+  * `pageSize` string | Size ([optional](structures/size.md)) - Specify page size of the generated PDF. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
   * `printBackground` boolean (optional) - Whether to print CSS backgrounds.
   * `printSelectionOnly` boolean (optional) - Whether to print selection only.
