@@ -1552,11 +1552,9 @@ commands:
 jobs:
   # Layer 0: Docs. Standalone.
   ts-compile-doc-change:
-    executor:
-      name: linux-docker
-      size: medium
+    executor: linux-docker
     environment:
-      <<: *env-linux-medium
+      <<: *env-linux-2xlarge
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-ts-compile-for-doc-change

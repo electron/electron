@@ -1,4 +1,11 @@
-# Taskbar Customization (Windows)
+---
+title: Taskbar Customization
+description: Customize the look and feel of your app's Windows taskbar presence.
+slug: windows-taskbar
+hide_title: true
+---
+
+# Taskbar Customization
 
 ## Overview
 
