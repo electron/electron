@@ -93,11 +93,15 @@ class NodeBindings {
   void LoadEnvironment(node::Environment* env);
 
   // Prepare for message loop integration.
-  void PrepareMessageLoop();
+  virtual void PrepareMessageLoop();
 
   // Do message loop integration.
   virtual void RunMessageLoop();
 
+  // Gets/sets the per isolate data.
+  void set_isolate_data(node::IsolateData* isolate_data) {
+    isolate_data_ = isolate_data;
+  }
   node::IsolateData* isolate_data() const { return isolate_data_; }
 
   // Gets/sets the environment to wrap uv loop.
@@ -160,10 +164,6 @@ class NodeBindings {
 
   // Isolate data used in creating the environment
   node::IsolateData* isolate_data_ = nullptr;
-
-#if !BUILDFLAG(IS_WIN)
-  int handle_ = -1;
-#endif
 
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 };
