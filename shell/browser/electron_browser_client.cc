@@ -620,8 +620,8 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames,
                                    base::size(kCommonSwitchNames));
-    if (process_type == = ::switches::kUtilityProcess ||
-                          content::RenderProcessHost::FromID(process_id)) {
+    if (process_type == ::switches::kUtilityProcess ||
+        content::RenderProcessHost::FromID(process_id)) {
       MaybeAppendSecureOriginsAllowlistSwitch(command_line);
     }
   }
