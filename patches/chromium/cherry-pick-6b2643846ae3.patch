@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Thu, 24 Feb 2022 17:39:53 +0000
+Subject: Guard BatchingMediaLog::event_handlers_ with lock
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+It seems that despite MediaLog::OnWebMediaPlayerDestroyed and
+MediaLog::AddLogRecord both grabbing a lock,
+BatchingMediaLog::AddLogRecordLocked can escape the lock handle by
+posting BatchingMediaLog::SendQueuedMediaEvents, causing a race.
+
+When the addition of an event is interrupted by the deletion of a player
+due to player culling in MediaInspectorContextImpl, a UAF can occur.
+
+R=​dalecurtis
+
+(cherry picked from commit 34526c3d0a857a22618e4d77c7f63b5ca6f8d3d2)
+
+Bug: 1295786
+Change-Id: I77df94988f806e4d98924669d27860e50455299d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3451494
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#970815}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3483655
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1508}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/content/renderer/media/batching_media_log.cc b/content/renderer/media/batching_media_log.cc
+index 8d8c5cb28b9bb0fcebcceb9e56db98fdace13c88..2d12a5eb42b930acac74a5ea2b2961e6c7e32fcf 100644
+--- a/content/renderer/media/batching_media_log.cc
++++ b/content/renderer/media/batching_media_log.cc
+@@ -52,9 +52,9 @@ BatchingMediaLog::BatchingMediaLog(
+     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+     std::vector<std::unique_ptr<EventHandler>> event_handlers)
+     : task_runner_(std::move(task_runner)),
+-      event_handlers_(std::move(event_handlers)),
+       tick_clock_(base::DefaultTickClock::GetInstance()),
+       last_ipc_send_time_(tick_clock_->NowTicks()),
++      event_handlers_(std::move(event_handlers)),
+       ipc_send_pending_(false),
+       logged_rate_limit_warning_(false) {
+   // Pre-bind the WeakPtr on the right thread since we'll receive calls from
+@@ -76,6 +76,7 @@ BatchingMediaLog::~BatchingMediaLog() {
+ }
+ 
+ void BatchingMediaLog::OnWebMediaPlayerDestroyedLocked() {
++  base::AutoLock lock(lock_);
+   for (const auto& handler : event_handlers_)
+     handler->OnWebMediaPlayerDestroyed();
+ }
+@@ -198,32 +199,30 @@ std::string BatchingMediaLog::MediaEventToMessageString(
+ 
+ void BatchingMediaLog::SendQueuedMediaEvents() {
+   DCHECK(task_runner_->BelongsToCurrentThread());
++  base::AutoLock auto_lock(lock_);
+ 
+-  std::vector<media::MediaLogRecord> events_to_send;
+-  {
+-    base::AutoLock auto_lock(lock_);
+-    DCHECK(ipc_send_pending_);
+-    ipc_send_pending_ = false;
+-
+-    if (last_duration_changed_event_) {
+-      queued_media_events_.push_back(*last_duration_changed_event_);
+-      last_duration_changed_event_.reset();
+-    }
++  DCHECK(ipc_send_pending_);
++  ipc_send_pending_ = false;
+ 
+-    if (last_buffering_state_event_) {
+-      queued_media_events_.push_back(*last_buffering_state_event_);
+-      last_buffering_state_event_.reset();
+-    }
++  if (last_duration_changed_event_) {
++    queued_media_events_.push_back(*last_duration_changed_event_);
++    last_duration_changed_event_.reset();
++  }
+ 
+-    queued_media_events_.swap(events_to_send);
+-    last_ipc_send_time_ = tick_clock_->NowTicks();
++  if (last_buffering_state_event_) {
++    queued_media_events_.push_back(*last_buffering_state_event_);
++    last_buffering_state_event_.reset();
+   }
+ 
+-  if (events_to_send.empty())
++  last_ipc_send_time_ = tick_clock_->NowTicks();
++
++  if (queued_media_events_.empty())
+     return;
+ 
+   for (const auto& handler : event_handlers_)
+-    handler->SendQueuedMediaEvents(events_to_send);
++    handler->SendQueuedMediaEvents(queued_media_events_);
++
++  queued_media_events_.clear();
+ }
+ 
+ void BatchingMediaLog::SetTickClockForTesting(
+diff --git a/content/renderer/media/batching_media_log.h b/content/renderer/media/batching_media_log.h
+index 5810efdf0a75b809b94fb5abcd5f3dfbde7b019d..c59dbf2a2b980a89b41c45818476c77e9096339b 100644
+--- a/content/renderer/media/batching_media_log.h
++++ b/content/renderer/media/batching_media_log.h
+@@ -63,9 +63,6 @@ class CONTENT_EXPORT BatchingMediaLog : public media::MediaLog {
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+ 
+-  // impl for sending queued events.
+-  std::vector<std::unique_ptr<EventHandler>> event_handlers_;
+-
+   // |lock_| protects access to all of the following member variables.  It
+   // allows any render process thread to AddEvent(), while preserving their
+   // sequence for throttled send on |task_runner_| and coherent retrieval by
+@@ -73,19 +70,24 @@ class CONTENT_EXPORT BatchingMediaLog : public media::MediaLog {
+   // guarantees provided by MediaLog, since SendQueuedMediaEvents must also
+   // be synchronized with respect to AddEvent.
+   mutable base::Lock lock_;
+-  const base::TickClock* tick_clock_;
+-  base::TimeTicks last_ipc_send_time_;
+-  std::vector<media::MediaLogRecord> queued_media_events_;
++  const base::TickClock* tick_clock_ GUARDED_BY(lock_);
++  base::TimeTicks last_ipc_send_time_ GUARDED_BY(lock_);
++  std::vector<media::MediaLogRecord> queued_media_events_ GUARDED_BY(lock_);
++
++  // impl for sending queued events.
++  std::vector<std::unique_ptr<EventHandler>> event_handlers_ GUARDED_BY(lock_);
+ 
+   // For enforcing max 1 pending send.
+-  bool ipc_send_pending_;
++  bool ipc_send_pending_ GUARDED_BY(lock_);
+ 
+   // True if we've logged a warning message about exceeding rate limits.
+-  bool logged_rate_limit_warning_;
++  bool logged_rate_limit_warning_ GUARDED_BY(lock_);
+ 
+   // Limits the number of events we send over IPC to one.
+-  absl::optional<media::MediaLogRecord> last_duration_changed_event_;
+-  absl::optional<media::MediaLogRecord> last_buffering_state_event_;
++  absl::optional<media::MediaLogRecord> last_duration_changed_event_
++      GUARDED_BY(lock_);
++  absl::optional<media::MediaLogRecord> last_buffering_state_event_
++      GUARDED_BY(lock_);
+ 
+   // Holds the earliest MEDIA_ERROR_LOG_ENTRY event added to this log. This is
+   // most likely to contain the most specific information available describing
