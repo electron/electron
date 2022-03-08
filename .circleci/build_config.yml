@@ -128,8 +128,9 @@ env-arm: &env-arm
   TARGET_ARCH: arm
 
 env-apple-silicon: &env-apple-silicon
-  GN_EXTRA_ARGS: 'target_cpu = "arm64"'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" use_prebuilt_v8_context_snapshot = true'
   TARGET_ARCH: arm64
+  USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
   npm_config_arch: arm64
 
 env-arm64: &env-arm64
@@ -143,9 +144,10 @@ env-mas: &env-mas
   MAS_BUILD: 'true'
 
 env-mas-apple-silicon: &env-mas-apple-silicon
-  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" is_mas_build = true use_prebuilt_v8_context_snapshot = true'
   MAS_BUILD: 'true'
   TARGET_ARCH: arm64
+  USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
@@ -457,6 +459,19 @@ step-electron-build: &step-electron-build
       #   ln -s /Volumes/xcode_disk/Xcode-12.beta.5.app /Applications/Xcode-12.beta.5.app
       # fi
 
+      # Lets generate a snapshot and mksnapshot and then delete all the x-compiled generated files to save space
+      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" == "1" ]; then
+        ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
+        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
+        rm -rf out/Default/clang_x64_v8_arm64/gen
+        rm -rf out/Default/clang_x64_v8_arm64/obj
+        rm -rf out/Default/clang_x64/obj
+
+        # Regenerate because we just deleted some ninja files 
+        gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      fi
       NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
       cp out/Default/.ninja_log out/electron_ninja_log
       node electron/script/check-symlinks.js
@@ -690,8 +705,10 @@ step-mksnapshot-build: &step-mksnapshot-build
     name: mksnapshot build
     command: |
       cd src
-      ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
-      gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
+        ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+      fi
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
@@ -704,7 +721,7 @@ step-mksnapshot-build: &step-mksnapshot-build
           electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
         fi
       fi
-      if [ "$SKIP_DIST_ZIP" != "1" ]; then
+      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ] && [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
