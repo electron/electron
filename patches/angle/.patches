@@ -7,3 +7,4 @@ vangle_change_the_default_vulkan_device_choose_logic.patch
 m96_validate_samplerformat.patch
 m98_vulkan_fix_vkcmdresolveimage_extents.patch
 m98_vulkan_fix_vkcmdresolveimage_offsets.patch
+cherry-pick-49e8ff16f1fe.patch
