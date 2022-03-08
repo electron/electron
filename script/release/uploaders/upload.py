@@ -33,6 +33,8 @@ OUT_DIR = get_out_dir()
 DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
 SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
 DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
+DSYM_SNAPSHOT_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
+                                  'dsym-snapshot')
 PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 DEBUG_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'debug')
 TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
@@ -88,6 +90,10 @@ def main():
     dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
     upload_electron(release, dsym_zip, args)
+
+    dsym_snaphot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snaphot_zip)
+    upload_electron(release, dsym_snaphot_zip, args)    
   elif PLATFORM == 'win32':
     pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
@@ -153,7 +159,6 @@ def main():
         os.path.join(OUT_DIR, 'windows_toolchain_profile.json'),
         'toolchain_profile.json')
     upload_electron(release, toolchain_profile_zip, args)
-
 
 def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
