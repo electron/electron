@@ -478,6 +478,12 @@ node::Environment* NodeBindings::CreateEnvironment(
              node::EnvironmentFlags::kNoInitializeInspector;
   }
 
+  if (!electron::fuses::IsNodeCliInspectEnabled()) {
+    // If --inspect and friends are disabled we also shouldn't listen for
+    // SIGUSR1
+    flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
+  }
+
   v8::TryCatch try_catch(isolate);
   env = node::CreateEnvironment(
       isolate_data_, context, args, exec_args,
