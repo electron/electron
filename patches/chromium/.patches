@@ -113,3 +113,4 @@ fix_crash_when_saving_edited_pdf_files.patch
 port_autofill_colors_to_the_color_pipeline.patch
 build_disable_partition_alloc_on_mac.patch
 build_disable_thin_lto_on_mac.patch
+fix_non-client_mouse_tracking_and_message_bubbling_on_windows.patch
