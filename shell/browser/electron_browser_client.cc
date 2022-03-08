@@ -21,6 +21,7 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/stl_util.h"
+#include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -63,6 +64,8 @@
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/is_potentially_trustworthy.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "shell/app/electron_crash_reporter_client.h"
@@ -361,6 +364,21 @@ int GetCrashSignalFD(const base::CommandLine& command_line) {
 }
 #endif  // BUILDFLAG(IS_LINUX)
 
+void MaybeAppendSecureOriginsAllowlistSwitch(base::CommandLine* cmdline) {
+  // |allowlist| combines pref/policy + cmdline switch in the browser process.
+  // For renderer and utility (e.g. NetworkService) processes the switch is the
+  // only available source, so below the combined (pref/policy + cmdline)
+  // allowlist of secure origins is injected into |cmdline| for these other
+  // processes.
+  std::vector<std::string> allowlist =
+      network::SecureOriginAllowlist::GetInstance().GetCurrentAllowlist();
+  if (!allowlist.empty()) {
+    cmdline->AppendSwitchASCII(
+        network::switches::kUnsafelyTreatInsecureOriginAsSecure,
+        base::JoinString(allowlist, ","));
+  }
+}
+
 }  // namespace
 
 // static
@@ -602,6 +620,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames,
                                    base::size(kCommonSwitchNames));
+    if (process_type == = ::switches::kUtilityProcess ||
+                          content::RenderProcessHost::FromID(process_id)) {
+      MaybeAppendSecureOriginsAllowlistSwitch(command_line);
+    }
   }
 
   if (process_type == ::switches::kRendererProcess) {
