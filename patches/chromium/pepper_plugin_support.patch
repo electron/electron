@@ -156,41 +156,20 @@ index 40fafdbed313800a3f420d9d5a3daf8bbbdb7d95..1367725e04455ba5f299b8341a28f222
  
  #endif  // CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_ISOLATED_FILE_SYSTEM_MESSAGE_FILTER_H_
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index 4b84f4ef068a76fa2be244a7f7ca2c6a8734bd46..13ae0a57535dfb516eb70b272fdaa5a4720d0591 100644
+index e3ee403ec5d4d75f22f1853ec8637a0559ce3c43..714d64e5ff96c47b86d554d338f4b5123174559a 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-@@ -6,8 +6,13 @@
+@@ -5,7 +5,9 @@
+ #include "chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h"
  
  #include "base/check_op.h"
- #include "chrome/renderer/pepper/pepper_flash_font_file_host.h"
 +#if 0
  #include "chrome/renderer/pepper/pepper_uma_host.h"
 +#endif
-+#include "electron/buildflags/buildflags.h"
-+#if BUILDFLAG(ENABLE_PDF_VIEWER)
- #include "components/pdf/renderer/pepper_pdf_host.h"
-+#endif
  #include "content/public/renderer/renderer_ppapi_host.h"
- #include "pdf/buildflags.h"
  #include "ppapi/host/ppapi_host.h"
-@@ -55,7 +60,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
-     }
-   }
- 
--#if BUILDFLAG(ENABLE_PDF)
-+#if BUILDFLAG(ENABLE_PDF_VIEWER)
-   if (host_->GetPpapiHost()->permissions().HasPermission(
-           ppapi::PERMISSION_PDF)) {
-     switch (message.type()) {
-@@ -66,6 +71,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
-   }
- #endif
- 
-+#if 0
-   // Permissions for the following interfaces will be checked at the
-   // time of the corresponding instance's method calls.  Currently these
-   // interfaces are available only for whitelisted apps which may not have
-@@ -75,6 +81,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+ #include "ppapi/host/resource_host.h"
+@@ -42,6 +44,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        return std::make_unique<PepperUMAHost>(host_, instance, resource);
      }
    }
