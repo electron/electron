@@ -34,7 +34,7 @@ def calculate_hash(root):
         return CalculateHash('.', None)
 
 def windows_installed_software():
-  powershell_command = [
+    powershell_command = [
         "Get-CimInstance",
         "-Namespace",
         "root\cimv2",
