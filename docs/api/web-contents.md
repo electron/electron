@@ -35,7 +35,7 @@ for all windows, webviews, opened devtools, and devtools extension background pa
 
 ### `webContents.getFocusedWebContents()`
 
-Returns `WebContents` - The web contents that is focused in this application, otherwise
+Returns `WebContents` | null - The web contents that is focused in this application, otherwise
 returns `null`.
 
 ### `webContents.fromId(id)`
