@@ -147,7 +147,7 @@ v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
   CHECK(!bind.IsEmpty());
   v8::Local<v8::Function> bind_func = bind.ToLocalChecked().As<v8::Function>();
   v8::Local<v8::Value> converted[] = {func, arg1, arg2};
-  return bind_func->Call(context, func, base::size(converted), converted)
+  return bind_func->Call(context, func, std::size(converted), converted)
       .ToLocalChecked();
 }
 
