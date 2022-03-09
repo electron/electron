@@ -226,7 +226,7 @@ index a480befb5d8db36e7e281d5033aeef0bea83d220..4e54acc897d08c87bccc3b44f68634e2
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..88aba74877a6490e08e357266b1ce8461b5b6dff
+index 0000000000000000000000000000000000000000..efb2e373e9367f3f240857e223e432a7dcf7b4f3
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
 @@ -0,0 +1,158 @@
@@ -302,7 +302,7 @@ index 0000000000000000000000000000000000000000..88aba74877a6490e08e357266b1ce846
 +SoftwareOutputDeviceProxy::~SoftwareOutputDeviceProxy() = default;
 +
 +SoftwareOutputDeviceProxy::SoftwareOutputDeviceProxy(
-+    mojom::LayeredWindowUpdaterPtr layered_window_updater)
++    mojo::PendingRemote<mojom::LayeredWindowUpdater> layered_window_updater)
 +    : layered_window_updater_(std::move(layered_window_updater)) {
 +  DCHECK(layered_window_updater_.is_bound());
 +}
@@ -390,10 +390,10 @@ index 0000000000000000000000000000000000000000..88aba74877a6490e08e357266b1ce846
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..a80258d6165e45a3c3d2b551158ff7d2a5778a7c
+index 0000000000000000000000000000000000000000..c80b51e54cba564ff080128e461e0f009a888e78
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,94 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -409,6 +409,8 @@ index 0000000000000000000000000000000000000000..a80258d6165e45a3c3d2b551158ff7d2
 +#include "components/viz/host/host_display_client.h"
 +#include "components/viz/service/display/software_output_device.h"
 +#include "components/viz/service/viz_service_export.h"
++#include "mojo/public/cpp/bindings/pending_remote.h"
++#include "mojo/public/cpp/bindings/remote.h"
 +#include "services/viz/privileged/mojom/compositing/display_private.mojom.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 +
@@ -455,7 +457,7 @@ index 0000000000000000000000000000000000000000..a80258d6165e45a3c3d2b551158ff7d2
 +class SoftwareOutputDeviceProxy : public SoftwareOutputDeviceBase {
 + public:
 +  explicit SoftwareOutputDeviceProxy(
-+      mojom::LayeredWindowUpdaterPtr layered_window_updater);
++      mojo::PendingRemote<mojom::LayeredWindowUpdater> layered_window_updater);
 +  ~SoftwareOutputDeviceProxy() override;
 +
 +  SoftwareOutputDeviceProxy(const SoftwareOutputDeviceProxy&) = delete;
@@ -473,7 +475,7 @@ index 0000000000000000000000000000000000000000..a80258d6165e45a3c3d2b551158ff7d2
 +  // Runs |swap_ack_callback_| after draw has happened.
 +  void DrawAck();
 +
-+  mojom::LayeredWindowUpdaterPtr layered_window_updater_;
++  mojo::Remote<mojom::LayeredWindowUpdater> layered_window_updater_;
 +
 +  std::unique_ptr<SkCanvas> canvas_;
 +  bool waiting_on_draw_ack_ = false;
