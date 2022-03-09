@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Muyao Xu <muyaoxu@google.com>
+Date: Thu, 17 Feb 2022 16:23:29 +0000
+Subject: Replace WidgetObserver::OnWidgetClosing() with OnWidgetDestroying()
+
+In some cases, OnWidgetClosing() is not called when the widget is
+closed, resulting an invalid pointer |widget_| stored in
+WebContentsDisplayObserverView.
+
+This CL replaces OnWidgetClosing() with OnWidgetDestroying(), which
+is recommended in crbug.com/1240365
+
+(cherry picked from commit 4535fe2334d0713535adb52b641a8cb34e11333c)
+
+Bug: 1291728
+Change-Id: I64fef8b30930f60220008809ee00f4385d6c3520
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3425473
+Auto-Submit: Muyao Xu <muyaoxu@google.com>
+Commit-Queue: Takumi Fujimoto <takumif@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#965431}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3435985
+Reviewed-by: Michael Ershov <miersh@google.com>
+Owners-Override: Michael Ershov <miersh@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1480}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/chrome/browser/ui/views/media_router/web_contents_display_observer_view.cc b/chrome/browser/ui/views/media_router/web_contents_display_observer_view.cc
+index 80d33b238cd7455ec5b44d5fd966f42f690946bf..2061c2ecb476cd33ed999f180c0293641f7ac23a 100644
+--- a/chrome/browser/ui/views/media_router/web_contents_display_observer_view.cc
++++ b/chrome/browser/ui/views/media_router/web_contents_display_observer_view.cc
+@@ -65,7 +65,7 @@ void WebContentsDisplayObserverView::OnBrowserSetLastActive(Browser* browser) {
+   }
+ }
+ 
+-void WebContentsDisplayObserverView::OnWidgetClosing(views::Widget* widget) {
++void WebContentsDisplayObserverView::OnWidgetDestroying(views::Widget* widget) {
+   if (widget_)
+     widget_->RemoveObserver(this);
+   widget_ = nullptr;
+diff --git a/chrome/browser/ui/views/media_router/web_contents_display_observer_view.h b/chrome/browser/ui/views/media_router/web_contents_display_observer_view.h
+index 17a8ca48b1c836a82e2be5e5c605bc1837150cba..b63cf4505318a44c65585b06ec13960bad5d9e32 100644
+--- a/chrome/browser/ui/views/media_router/web_contents_display_observer_view.h
++++ b/chrome/browser/ui/views/media_router/web_contents_display_observer_view.h
+@@ -28,7 +28,7 @@ class WebContentsDisplayObserverView : public WebContentsDisplayObserver,
+   void OnBrowserSetLastActive(Browser* browser) override;
+ 
+   // views::WidgetObserver overrides:
+-  void OnWidgetClosing(views::Widget* widget) override;
++  void OnWidgetDestroying(views::Widget* widget) override;
+   void OnWidgetBoundsChanged(views::Widget* widget,
+                              const gfx::Rect& new_bounds) override;
+ 
