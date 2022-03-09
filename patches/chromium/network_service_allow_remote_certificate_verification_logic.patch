@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8ff62f92ed6efdbfc18db53db3c5bb59c1acfe34..be42b3b5b2d4b12531aba056715fb36b4ee05e08 100644
+index 8ff62f92ed6efdbfc18db53db3c5bb59c1acfe34..45a3cd13e1899ae0168d2695486bb3313e1be4bd 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -126,6 +126,11 @@
@@ -41,12 +41,12 @@ index 8ff62f92ed6efdbfc18db53db3c5bb59c1acfe34..be42b3b5b2d4b12531aba056715fb36b
 +        const net::CertVerifyResult& verify_result_from_client) {
 +      if (error_from_client == net::ERR_ABORTED) {
 +        // use the default
-+        std::move(callback).Run(error);
++        std::move(callback).Run(error_from_upstream);
 +      } else {
 +        // use the override
 +        verify_result->Reset();
 +        verify_result->verified_cert = verify_result_from_client.verified_cert;
-+        std::move(callback).Run(error2);
++        std::move(callback).Run(error_from_client);
 +      }
 +    }
 +    base::WeakPtr<Request> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
@@ -73,7 +73,7 @@ index 8ff62f92ed6efdbfc18db53db3c5bb59c1acfe34..be42b3b5b2d4b12531aba056715fb36b
 +             std::unique_ptr<CertVerifier::Request>* out_req,
 +             const net::NetLogWithSource& net_log) override {
 +    out_req->reset();
-+    *out_req = std::make_unique<Request>(); // TODO: also pass this to OnRequestFinished
++    *out_req = std::make_unique<Request>();
 +
 +    net::CompletionOnceCallback callback2 = base::BindOnce(
 +        &RemoteCertVerifier::OnRequestFinished, base::Unretained(this),
