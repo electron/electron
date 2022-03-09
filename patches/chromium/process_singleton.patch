@@ -75,7 +75,7 @@ index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..5a64220aaf1309832dc0ad543e353de6
  
  #if BUILDFLAG(IS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 35fbe86a5d1ce0e09691284a07f5ff28abcfed58..872e74463aefa4f642f49fdf4ff819fbe03d46c3 100644
+index 35fbe86a5d1ce0e09691284a07f5ff28abcfed58..79dde4f13109d61711ddd1ceea864dcdbaf572df 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@

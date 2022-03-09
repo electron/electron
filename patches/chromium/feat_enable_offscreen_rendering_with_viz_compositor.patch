@@ -226,7 +226,7 @@ index a480befb5d8db36e7e281d5033aeef0bea83d220..4e54acc897d08c87bccc3b44f68634e2
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..efb2e373e9367f3f240857e223e432a7dcf7b4f3
+index 0000000000000000000000000000000000000000..d5e90022d129ce6a7a8effd6c85d3a5295ac79bf
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
 @@ -0,0 +1,158 @@
@@ -390,7 +390,7 @@ index 0000000000000000000000000000000000000000..efb2e373e9367f3f240857e223e432a7
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..c80b51e54cba564ff080128e461e0f009a888e78
+index 0000000000000000000000000000000000000000..41d14a516fc0125b6d66ea25720469f1b12afd0e
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
 @@ -0,0 +1,94 @@
@@ -488,7 +488,6 @@ index 0000000000000000000000000000000000000000..c80b51e54cba564ff080128e461e0f00
 +
 +}  // namespace viz
 +
-+#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 diff --git a/components/viz/service/display_embedder/software_output_device_win.cc b/components/viz/service/display_embedder/software_output_device_win.cc
 index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef232eb515f 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
