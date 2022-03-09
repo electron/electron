@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8ff62f92ed6efdbfc18db53db3c5bb59c1acfe34..45a3cd13e1899ae0168d2695486bb3313e1be4bd 100644
+index 8ff62f92ed6efdbfc18db53db3c5bb59c1acfe34..20373c0e86852446569c401c4a993512cb388fc7 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -126,6 +126,11 @@
@@ -73,7 +73,6 @@ index 8ff62f92ed6efdbfc18db53db3c5bb59c1acfe34..45a3cd13e1899ae0168d2695486bb331
 +             std::unique_ptr<CertVerifier::Request>* out_req,
 +             const net::NetLogWithSource& net_log) override {
 +    out_req->reset();
-+    *out_req = std::make_unique<Request>();
 +
 +    net::CompletionOnceCallback callback2 = base::BindOnce(
 +        &RemoteCertVerifier::OnRequestFinished, base::Unretained(this),
@@ -96,6 +95,7 @@ index 8ff62f92ed6efdbfc18db53db3c5bb59c1acfe34..45a3cd13e1899ae0168d2695486bb331
 +      // is what signals cancellation. Thus if the request is cancelled, the
 +      // callback won't be called, thus avoiding UAF, because |verify_result|
 +      // is freed when the request is cancelled.
++      *out_req = std::make_unique<Request>();
 +      base::WeakPtr<Request> weak_req = static_cast<Request*>(out_req->get())->GetWeakPtr();
 +      client_->Verify(error, *verify_result, params.certificate(),
 +          params.hostname(), params.flags(), params.ocsp_response(),
