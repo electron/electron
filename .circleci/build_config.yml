@@ -781,6 +781,7 @@ step-show-goma-stats: &step-show-goma-stats
 step-mksnapshot-build: &step-mksnapshot-build
   run:
     name: mksnapshot build
+    no_output_timeout: 30m
     command: |
       cd src
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
