@@ -355,11 +355,13 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo mkdir -p $TMPDIR/del-target
+
         tmpify() {
           if [ -d "$1" ]; then
             sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
           fi
         }
+
         strip_arm_deep() {
           opwd=$(pwd)
           cd $1
@@ -375,8 +377,10 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
               fi
             fi
           done
+
           cd $opwd
         }
+
         tmpify /Library/Developer/CoreSimulator
         tmpify ~/Library/Developer/CoreSimulator
         tmpify $(xcode-select -p)/Platforms/AppleTVOS.platform
@@ -392,6 +396,7 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         tmpify ~/Library/Caches/Homebrew
         tmpify /usr/local/Homebrew
         sudo rm -rf $TMPDIR/del-target
+
         # sudo rm -rf "/System/Library/Desktop Pictures"
         # sudo rm -rf /System/Library/Templates/Data
         # sudo rm -rf /System/Library/Speech/Voices
@@ -414,6 +419,7 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         sudo rm -rf ~/project/src/build/linux
         sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
         sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
+
         # lipo off some huge binaries arm64 versions to save space
         strip_arm_deep $(xcode-select -p)/../SharedFrameworks
         # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
@@ -539,7 +545,6 @@ step-electron-build: &step-electron-build
         rm -rf out/Default/clang_x64_v8_arm64/gen
         rm -rf out/Default/clang_x64_v8_arm64/obj
         rm -rf out/Default/clang_x64_v8_arm64/thinlto-cache
-        rm -rf out/Default/clang_x64_v8_arm64/v8_context_snapshot_generator.dSYM
         rm -rf out/Default/clang_x64/obj
 
         # Regenerate because we just deleted some ninja files 
@@ -1030,6 +1035,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
     - *step-install-gnutar-on-mac
+    - *step-get-more-space-on-mac
     - *step-generate-deps-hash
     - *step-touch-sync-done
     - maybe-restore-portaled-src-cache
@@ -1050,6 +1056,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
+    - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync
     - *step-gn-gen-default
@@ -1342,6 +1349,7 @@ commands:
             - *step-checkout-electron
             - *step-depot-tools-get
             - *step-depot-tools-add-to-path
+            - *step-get-more-space-on-mac
             - *step-generate-deps-hash
             - *step-touch-sync-done
             - when:
@@ -1397,6 +1405,7 @@ commands:
             - *step-depot-tools-add-to-path
             - *step-setup-env-for-build
             - *step-setup-goma-for-build
+            - *step-get-more-space-on-mac
             - *step-fix-sync
             - *step-delete-git-directories
 
@@ -1490,6 +1499,7 @@ commands:
             - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-restore-brew-cache
+      - *step-get-more-space-on-mac
       - when:
           condition: << parameters.checkout >>
           steps:
