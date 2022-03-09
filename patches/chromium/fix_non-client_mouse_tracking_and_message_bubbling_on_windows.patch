@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: clavin <cwatford@slack-corp.com>
+Date: Fri, 11 Feb 2022 15:05:42 -0700
+Subject: fix: non-client mouse tracking and message bubbling on windows
+
+It is not known why, but for some reason calling |DefWindowProc| on the parent
+window handle causes a WM_NCMOUSELEAVE (non-client mouse exit) message to be
+sent to the parent window, even though |TrackMouseEvent| is never called on it.
+
+This patch also adds some boilerplate for properly tracking non-client mouse
+messages in the legacy window handle layer.
+
+These conditions are regularly hit with WCO-enabled windows on Windows.
+
+diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+index 8b196e1a10c96443a912eaaeb9327982618efa41..73105fbc3ce41cec821aa1b25006fcf202a4ae77 100644
+--- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
++++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+@@ -288,12 +288,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+                                                  WPARAM w_param,
+                                                  LPARAM l_param,
+                                                  BOOL& handled) {
+-  if (message == WM_MOUSEMOVE) {
++  if (message == WM_MOUSEMOVE || message == WM_NCMOUSEMOVE) {
+     if (!mouse_tracking_enabled_) {
+       mouse_tracking_enabled_ = true;
+       TRACKMOUSEEVENT tme;
+       tme.cbSize = sizeof(tme);
+-      tme.dwFlags = TME_LEAVE;
++      tme.dwFlags = message == WM_NCMOUSEMOVE ? TME_NONCLIENT | TME_LEAVE : TME_LEAVE;
+       tme.hwndTrack = hwnd();
+       tme.dwHoverTime = 0;
+       TrackMouseEvent(&tme);
+@@ -319,12 +319,11 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+         message, w_param, l_param, &msg_handled);
+     handled = msg_handled;
+     // If the parent did not handle non client mouse messages, we call
+-    // DefWindowProc on the message with the parent window handle. This
+-    // ensures that WM_SYSCOMMAND is generated for the parent and we are
+-    // out of the picture.
++    // DefWindowProc on the message. This ensures that WM_SYSCOMMAND is
++    // generated.
+     if (!handled &&
+          (message >= WM_NCMOUSEMOVE && message <= WM_NCXBUTTONDBLCLK)) {
+-      ret = ::DefWindowProc(GetParent(), message, w_param, l_param);
++      ret = ::DefWindowProc(hwnd(), message, w_param, l_param);
+       handled = TRUE;
+     }
+   }
+diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
+index 026e8b93602766e8d8e4a04f467b68ce3cea92de..83ca674adb6c6bf5e16d38b12aa33dddbf685bd8 100644
+--- a/content/browser/renderer_host/legacy_render_widget_host_win.h
++++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
+@@ -100,6 +100,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+     MESSAGE_HANDLER_EX(WM_NCHITTEST, OnNCHitTest)
+     MESSAGE_RANGE_HANDLER(WM_NCMOUSEMOVE, WM_NCXBUTTONDBLCLK,
+                           OnMouseRange)
++    MESSAGE_HANDLER_EX(WM_NCMOUSELEAVE, OnMouseLeave)
+     MESSAGE_HANDLER_EX(WM_NCCALCSIZE, OnNCCalcSize)
+     MESSAGE_HANDLER_EX(WM_SIZE, OnSize)
+     MESSAGE_HANDLER_EX(WM_DESTROY, OnDestroy)
