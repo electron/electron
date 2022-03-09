@@ -96,7 +96,7 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..a568dd10d1ef8679d66f4cdc6a471c25
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 872e74463aefa4f642f49fdf4ff819fbe03d46c3..aedb22455d4d8255ea77c1eb1559b801678f96de 100644
+index 872e74463aefa4f642f49fdf4ff819fbe03d46c3..c9360fe07de8851d94aaaf83cfdb6d195a708217 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -146,7 +146,7 @@ const char kACKToken[] = "ACK";
@@ -165,7 +165,7 @@ index 872e74463aefa4f642f49fdf4ff819fbe03d46c3..aedb22455d4d8255ea77c1eb1559b801
 +  if (!ack_callback_called_) {
 +    ack_callback_called_ = true;
 +    std::string ack_message;
-+    ack_message.append(kACKToken, base::size(kACKToken) - 1);
++    ack_message.append(kACKToken, std::size(kACKToken) - 1);
 +    if (response && response->size_bytes()) {
 +      ack_message.append(reinterpret_cast<const char*>(response->data()),
 +                         response->size_bytes());
@@ -267,10 +267,10 @@ index 872e74463aefa4f642f49fdf4ff819fbe03d46c3..aedb22455d4d8255ea77c1eb1559b801
        linux_ui->NotifyWindowManagerStartupComplete();
  #endif
  
-+    size_t ack_data_len = len - (base::size(kACKToken) - 1);
++    size_t ack_data_len = len - (std::size(kACKToken) - 1);
 +    if (ack_data_len) {
 +      const uint8_t* raw_ack_data =
-+          reinterpret_cast<const uint8_t*>(buf + base::size(kACKToken) - 1);
++          reinterpret_cast<const uint8_t*>(buf + std::size(kACKToken) - 1);
 +      base::span<const uint8_t> ack_data =
 +          base::make_span(raw_ack_data, raw_ack_data + ack_data_len);
 +      notification_ack_callback_.Run(&ack_data);
