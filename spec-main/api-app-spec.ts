@@ -1519,8 +1519,7 @@ describe('app module', () => {
     });
   });
 
-  const showHideDescribe = process.platform === 'darwin' ? describe : describe.skip;
-  showHideDescribe('app hide and show API', () => {
+  ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
     describe('app.isHidden', () => {
       it('returns true when the app is hidden', async () => {
         app.hide();
