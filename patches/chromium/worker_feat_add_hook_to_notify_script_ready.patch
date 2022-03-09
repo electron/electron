@@ -65,10 +65,10 @@ index ab771fe015c195f53ce8bb1411050635f02c69f3..a78d38985b3761a63cc4efbd354820c6
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 2fe5234832f8a3510326171e1ccf5dbfeca49fc9..b36a118861b2efae6ae28ef0e7f14db5d284b929 100644
+index a8f2ac91912370f55734d8d123bee0475c8a1601..1115b8bc7ece1af0ca5573474f353999ab1c6688 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -720,6 +720,8 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -721,6 +721,8 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}

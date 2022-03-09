@@ -55,10 +55,10 @@ index 7255ac218c8fd061c2125e33054d9a87c13d1eb4..ab771fe015c195f53ce8bb1411050635
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index d188491afffbd259d4287b0668a9d1cec291934a..2fe5234832f8a3510326171e1ccf5dbfeca49fc9 100644
+index 1d7c9a8e62a680156b4f26ed4af5fbf4827e6295..a8f2ac91912370f55734d8d123bee0475c8a1601 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -720,6 +720,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -721,6 +721,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
