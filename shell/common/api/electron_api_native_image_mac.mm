@@ -19,7 +19,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "ui/gfx/color_utils.h"
-#include "ui/gfx/image/image.h"
+#include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_operations.h"
 
