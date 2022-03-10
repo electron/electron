@@ -66,7 +66,6 @@ extern const char kOverlayHeight[];
 extern const char kZoomFactor[];
 extern const char kPreloadScript[];
 extern const char kPreloadScripts[];
-extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
 extern const char kExperimentalFeatures[];
