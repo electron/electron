@@ -5,6 +5,7 @@ import sys
 import os
 import optparse
 import json
+import re
 import subprocess
 
 sys.path.append("%s/../../build" % os.path.dirname(os.path.realpath(__file__)))
@@ -67,11 +68,22 @@ def windows_installed_software():
     if proc.returncode != 0:
         raise RuntimeError("Failed to get list of installed software")
 
+    # On AppVeyor there's other output related to PSReadline,
+    # so grab only the JSON output and ignore everything else
+    json_match = re.match(
+        r".*(\[.*{.*}.*\]).*", stdout.decode("utf-8"), re.DOTALL
+    )
+
+    if not json_match:
+        raise RuntimeError(
+            "Couldn't find JSON output for list of installed software"
+        )
+
     # Filter out missing keys
     return list(
         map(
             lambda info: {k: info[k] for k in info if info[k]},
-            json.loads(stdout.decode("utf-8")),
+            json.loads(json_match.group(1)),
         )
     )
 
