@@ -12,6 +12,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
+import { areColorsSimilar, captureScreen, CHROMA_COLOR_HEX, getPixelColor } from './screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -3525,6 +3526,29 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  // TODO(dsanders11): Enable once maximize event works on Linux again on CI
+  ifdescribe(process.platform !== 'linux')('BrowserWindow.maximize()', () => {
+    afterEach(closeAllWindows);
+    // TODO(dsanders11): Disabled on macOS, see https://github.com/electron/electron/issues/32947
+    ifit(process.platform !== 'darwin')('should show the window if it is not currently shown', async () => {
+      const w = new BrowserWindow({ show: false });
+      const hidden = emittedOnce(w, 'hide');
+      const shown = emittedOnce(w, 'show');
+      const maximize = emittedOnce(w, 'maximize');
+      expect(w.isVisible()).to.be.false('visible');
+      w.maximize();
+      await maximize;
+      expect(w.isVisible()).to.be.true('visible');
+      // Even if the window is already maximized
+      w.hide();
+      await hidden;
+      expect(w.isVisible()).to.be.false('visible');
+      w.maximize();
+      await shown; // Ensure a 'show' event happens when it becomes visible
+      expect(w.isVisible()).to.be.true('visible');
+    });
+  });
+
   describe('BrowserWindow.unmaximize()', () => {
     afterEach(closeAllWindows);
     it('should restore the previous window position', () => {
@@ -4871,6 +4895,70 @@ describe('BrowserWindow module', () => {
       const newBounds = { width: 256, height: 256, x: 0, y: 0 };
       w.setBounds(newBounds);
       expect(w.getBounds()).to.deep.equal(newBounds);
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('should not display a visible background', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const backgroundWindow = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        backgroundColor: CHROMA_COLOR_HEX,
+        hasShadow: false
+      });
+
+      await backgroundWindow.loadURL('about:blank');
+
+      const foregroundWindow = new BrowserWindow({
+        ...display.bounds,
+        show: true,
+        transparent: true,
+        frame: false,
+        hasShadow: false
+      });
+
+      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html'));
+      await emittedOnce(foregroundWindow, 'ready-to-show');
+
+      const screenCapture = await captureScreen();
+      const leftHalfColor = getPixelColor(screenCapture, {
+        x: display.size.width / 4,
+        y: display.size.height / 2
+      });
+      const rightHalfColor = getPixelColor(screenCapture, {
+        x: display.size.width - (display.size.width / 4),
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(leftHalfColor, CHROMA_COLOR_HEX)).to.be.true();
+      expect(areColorsSimilar(rightHalfColor, '#ff0000')).to.be.true();
+    });
+  });
+
+  describe('"backgroundColor" option', () => {
+    afterEach(closeAllWindows);
+
+    // Linux/WOA doesn't return any capture sources.
+    ifit(process.platform !== 'linux' && (process.platform !== 'win32' || process.arch !== 'arm64'))('should display the set color', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        ...display.bounds,
+        show: true,
+        backgroundColor: CHROMA_COLOR_HEX
+      });
+
+      w.loadURL('about:blank');
+      await emittedOnce(w, 'ready-to-show');
+
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(centerColor, CHROMA_COLOR_HEX)).to.be.true();
     });
   });
 });

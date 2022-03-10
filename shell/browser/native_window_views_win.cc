@@ -178,12 +178,13 @@ HHOOK NativeWindowViews::mouse_hook_ = NULL;
 void NativeWindowViews::Maximize() {
   // Only use Maximize() when window is NOT transparent style
   if (!transparent()) {
-    if (IsVisible())
+    if (IsVisible()) {
       widget()->Maximize();
-    else
+    } else {
       widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
                                               gfx::Rect());
-    return;
+      NotifyWindowShow();
+    }
   } else {
     restore_bounds_ = GetBounds();
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
