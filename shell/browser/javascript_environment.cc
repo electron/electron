@@ -133,7 +133,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
     if (policy == kZeroInitialize) {
       flags |= base::PartitionAllocZeroFill;
     }
-    void* data = allocator_->root()->AllocFlags(flags, size, "Electron");
+    void* data = allocator_->root()->AllocWithFlags(flags, size, "Electron");
     if (base::kAlignment < 16) {
       char* ptr = reinterpret_cast<char*>(data);
       DCHECK_EQ(base::bits::AlignUp(ptr, 16), ptr)
