@@ -34,7 +34,7 @@ const getOrCreateArchive = (archivePath: string) => {
     const newArchive = new asar.Archive(archivePath);
     cachedArchives.set(archivePath, newArchive);
     return newArchive;
-  } catch (_) {
+  } catch {
     return null;
   }
 };
