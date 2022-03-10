@@ -1,5 +1,5 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Fedor Indutnyy <indutny@signal.org>
+From: Fedor Indutny <indutny@signal.org>
 Date: Wed, 9 Mar 2022 17:52:32 -0800
 Subject: worker_thread: add asar support
 
