@@ -133,39 +133,26 @@ describe('debugger module', () => {
       w.webContents.debugger.detach();
     });
 
-    // TODO(deepak1556): Fix and enable with upgrade
-    it.skip('handles valid unicode characters in message', (done) => {
-      try {
-        w.webContents.debugger.attach();
-      } catch (err) {
-        done(`unexpected error : ${err}`);
-      }
-
-      let requestId : number;
-      w.webContents.debugger.on('message', (event, method, params) => {
-        if (method === 'Network.responseReceived' &&
-            params.response.url.startsWith('http://127.0.0.1')) {
-          requestId = params.requestId;
-        } else if (method === 'Network.loadingFinished' &&
-                   params.requestId === requestId) {
-          w.webContents.debugger.sendCommand('Network.getResponseBody', {
-            requestId: params.requestId
-          }).then(data => {
-            expect(data.body).to.equal('\u0024');
-            done();
-          }).catch(result => done(result));
-        }
-      });
-
+    it('handles valid unicode characters in message', async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.end('\u0024');
       });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
 
-      server.listen(0, '127.0.0.1', () => {
-        w.webContents.debugger.sendCommand('Network.enable');
-        w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
-      });
+      w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+      // If we do this synchronously, it's fast enough to attach and enable
+      // network capture before the load. If we do it before the loadURL, for
+      // some reason network capture doesn't get enabled soon enough and we get
+      // an error when calling `Network.getResponseBody`.
+      w.webContents.debugger.attach();
+      w.webContents.debugger.sendCommand('Network.enable');
+      const [,, { requestId }] = await emittedUntil(w.webContents.debugger, 'message', (_event: any, method: string, params: any) =>
+        method === 'Network.responseReceived' && params.response.url.startsWith('http://127.0.0.1'));
+      await emittedUntil(w.webContents.debugger, 'message', (_event: any, method: string, params: any) =>
+        method === 'Network.loadingFinished' && params.requestId === requestId);
+      const { body } = await w.webContents.debugger.sendCommand('Network.getResponseBody', { requestId });
+      expect(body).to.equal('\u0024');
     });
 
     it('does not crash for invalid unicode characters in message', (done) => {
