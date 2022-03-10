@@ -413,7 +413,7 @@ function createWindow () {
 ```
 
 For the purposes of the tutorial, it's important to note that the `click` handler
-sends a message (either `1` or `-1`) to the renderer process through the `counter` channel.
+sends a message (either `1` or `-1`) to the renderer process through the `update-counter` channel.
 
 ```javascript
 click: () => mainWindow.webContents.send('update-counter', -1)
