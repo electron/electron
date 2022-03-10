@@ -975,10 +975,16 @@ v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
   return gin::ConvertToV8(isolate, browser_context_->GetPath());
 }
 
-void Session::SetCodeCachePath(const base::FilePath& code_cache_path) {
+void Session::SetCodeCachePath(gin::Arguments* args) {
+  base::FilePath code_cache_path;
   auto* storage_partition = browser_context_->GetDefaultStoragePartition();
   auto* code_cache_context = storage_partition->GetGeneratedCodeCacheContext();
-  if (code_cache_context && !code_cache_path.empty()) {
+  if (code_cache_context) {
+    if (!args->GetNext(&code_cache_path) || !code_cache_path.IsAbsolute()) {
+      args->ThrowTypeError(
+          "Absolute path must be provided to store code cache.");
+      return;
+    }
     code_cache_context->Initialize(
         code_cache_path, 0 /* allows disk_cache to choose the size */);
   }
