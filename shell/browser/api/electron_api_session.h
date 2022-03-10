@@ -127,7 +127,7 @@ class Session : public gin::Wrappable<Session>,
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
   v8::Local<v8::Value> GetPath(v8::Isolate* isolate);
-  void SetCodeCachePath(const base::FilePath& code_cache_path);
+  void SetCodeCachePath(gin::Arguments* args);
   v8::Local<v8::Promise> ClearCodeCaches(const gin_helper::Dictionary& options);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
