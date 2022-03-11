@@ -107,7 +107,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
  private:
   static void* AllocateMemoryOrNull(size_t size, InitializationPolicy policy) {
     return AllocateMemoryWithFlags(size, policy,
-                                   base::PartitionAllocReturnNull);
+                                   partition_alloc::AllocFlags::kReturnNull);
   }
 
   static void* AllocateMemoryWithFlags(size_t size,
@@ -131,7 +131,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
     }
 
     if (policy == kZeroInitialize) {
-      flags |= base::PartitionAllocZeroFill;
+      flags |= partition_alloc::AllocFlags::kZeroFill;
     }
     void* data = allocator_->root()->AllocWithFlags(flags, size, "Electron");
     if (base::kAlignment < 16) {
