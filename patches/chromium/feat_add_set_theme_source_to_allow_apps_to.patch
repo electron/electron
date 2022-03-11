@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index f3b25e58513488ed3df134ee23b05db5d43c14f8..add2fec166f512254730bdcf6b44267214ffbe27 100644
+index d3592770b6f06ac18a3d3ee4aa8928c431bffae3..ec3b40a579e693f0e74bfbdf42a604201e9673e0 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -121,6 +121,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
+@@ -123,6 +123,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,12 +26,12 @@ index f3b25e58513488ed3df134ee23b05db5d43c14f8..add2fec166f512254730bdcf6b442672
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index beadf20c26cf5088a5b4485ada27114451092538..f6962607b78785afa58158d10202d98111a960b7 100644
+index 7e5e569eb5724a1ecdab4ca98184cd82c80edafe..d4ee449fa14486ff0072dbeebac75ecb6bf996b2 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -389,6 +389,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
-       scoped_refptr<ColorProviderManager::InitializerSupplier> custom_theme)
-       const;
+@@ -391,6 +391,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+       scoped_refptr<ColorProviderManager::InitializerSupplier> custom_theme,
+       bool use_custom_frame = true) const;
  
 +
 +  enum ThemeSource {
@@ -53,7 +53,7 @@ index beadf20c26cf5088a5b4485ada27114451092538..f6962607b78785afa58158d10202d981
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -554,6 +571,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -556,6 +573,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool forced_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;

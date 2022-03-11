@@ -462,7 +462,7 @@ index 2661776307f773ac8f2c62529ec86349b045ee8f..4fa8f358ee59baed32ef4fd0684d0102
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 51ebcb4ae399018d3fd8566656596a7ef1f148af..c0fbff95137e2e5bccb9702a8cc858df2d989964 100644
+index 5afad24754e12554368a6619466ca025edc26180..0d91a0b1581d434c06ee6aa9db8958506e73eb3f 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -274,7 +274,7 @@ interface PrintPreviewUI {

@@ -44,7 +44,7 @@ index 9734fb620a9a4010083af41a9e5cea038556eef5..05c95fb9b15f5ccbfecaee29d360dd27
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 8a431b6e9a6bb5073e140966aa646fa39a2c2f61..37c36fbe2cb37773cea08eb90612942d1e56eb58 100644
+index be072932132545a5e9fa6889b4428a77248b4a14..569bb1cfbc6c899a7ac14e03291a3c569721f4b5 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -562,10 +562,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -167,7 +167,7 @@ index a0112bd537816ed115f0451087e279d88f606ce9..e92b7a5fef7474d32309899b0637fa91
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index b702c9e2d752e1ae3c162dfb374b173f7febf4c6..2fd13566777d5f5a4b03021b521036edb7041aa5 100644
+index 85a49141d3c0ac3a4c615f6bc0ccd43e842aa0a1..14b78db11cbc3ba5fe0d7e7ca0a6702608c4f78e 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -319,6 +319,13 @@ component("base") {
@@ -205,7 +205,7 @@ index e7adfee3210ec723c687adfcc4bee8827ef643e7..25a924a47eeb30d783ef83dbb4896c4b
 +
  #endif  // UI_BASE_COCOA_REMOTE_ACCESSIBILITY_API_H_
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 1964f624abc96c54645d1697b598799cfd9a2a00..30580103974b99dcaed2adb0b460b1af17658927 100644
+index d4051a7a8755c7b10d4df3746cb2857471f07c45..de04616893d1c97e3607eb5a4b942733ae597b05 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -31,7 +31,9 @@
@@ -218,7 +218,7 @@ index 1964f624abc96c54645d1697b598799cfd9a2a00..30580103974b99dcaed2adb0b460b1af
  @class NSView;
  
  namespace remote_cocoa {
-@@ -445,11 +447,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -449,11 +451,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
@@ -233,7 +233,7 @@ index 1964f624abc96c54645d1697b598799cfd9a2a00..30580103974b99dcaed2adb0b460b1af
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index b77478d96caba7e94c198e9cc8cdd7a6b78e6b25..79af41886c66b51219b69282db17497c5af702d5 100644
+index ff084ba9baf63714ac1ba3fb61badd08557161ba..87e5e43704e9a1b310a2ef50b4aa8ca8d98f2226 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -294,14 +294,22 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -259,7 +259,7 @@ index b77478d96caba7e94c198e9cc8cdd7a6b78e6b25..79af41886c66b51219b69282db17497c
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1275,6 +1283,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1284,6 +1292,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -267,7 +267,7 @@ index b77478d96caba7e94c198e9cc8cdd7a6b78e6b25..79af41886c66b51219b69282db17497c
    remote_window_accessible_ =
        ui::RemoteAccessibility::GetRemoteElementFromToken(window_token);
    remote_view_accessible_ =
-@@ -1282,14 +1291,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1291,14 +1300,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    [remote_view_accessible_ setWindowUIElement:remote_window_accessible_.get()];
    [remote_view_accessible_
        setTopLevelUIElement:remote_window_accessible_.get()];

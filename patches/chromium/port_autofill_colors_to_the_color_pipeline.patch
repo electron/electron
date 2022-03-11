@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 1b9518366ba6c44421a86565ea3eba80e14b6c43..203ac8902eda26262f4178985ee565874bf879b8 100644
+index 6db84aca6d9a205ddb5fd390614ca519dc88fa05..7b9d8e24a755b21963d7d84f930c1e9c9bd36ac5 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -121,6 +121,10 @@
+@@ -122,6 +122,10 @@
    E_CPONLY(kColorPwaSecurityChipForegroundSecure) \
    E_CPONLY(kColorPwaToolbarBackground) \
    E_CPONLY(kColorPwaToolbarForeground) \
@@ -22,7 +22,7 @@ index 1b9518366ba6c44421a86565ea3eba80e14b6c43..203ac8902eda26262f4178985ee56587
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -173,6 +177,7 @@
+@@ -174,6 +178,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,10 +31,10 @@ index 1b9518366ba6c44421a86565ea3eba80e14b6c43..203ac8902eda26262f4178985ee56587
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 1d8415814c6245e3f2dfd01de7a2de11f09cdc7a..6db48efe454820e242b862edbfaf4d40cf16eb9d 100644
+index 2c49e13b0e266be241ab2629f7c474ac54b5a020..9b5e0dfd80b08865fefc48c6542365b307c28e26 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -141,6 +141,17 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -142,6 +142,17 @@ void AddUiColorMixer(ColorProvider* provider,
        kColorPwaSecurityChipForeground};
    mixer[kColorPwaToolbarBackground] = {kColorEndpointBackground};
    mixer[kColorPwaToolbarForeground] = {kColorEndpointForeground};
@@ -52,7 +52,7 @@ index 1d8415814c6245e3f2dfd01de7a2de11f09cdc7a..6db48efe454820e242b862edbfaf4d40
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -216,6 +227,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -217,6 +228,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};

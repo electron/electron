@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 3b3f2bdb030aca409f4543cc7bcbebc4361448a0..56f9a441b8513da1523220e44e4979ea660157dc 100644
+index 8a88ef10bc6b3c06eab10db15d2c043aa0981b32..90cbe88d40b458b0989886e5e21e84410634bb91 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -171,11 +171,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index 3b3f2bdb030aca409f4543cc7bcbebc4361448a0..56f9a441b8513da1523220e44e4979ea
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 833809b1a479c4c817da7ff3f5bdc1102e1c145a..5ecf28569183352ec7e8365f4a70bcbbb1460e78 100644
+index 1a0be729148568a332841740b4af7df14b92ed05..d06c36ac468e27dba850e2ca4cad552a23e1d527 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4480,7 +4480,7 @@ static_library("browser") {
+@@ -4482,7 +4482,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index 833809b1a479c4c817da7ff3f5bdc1102e1c145a..5ecf28569183352ec7e8365f4a70bcbb
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 867445c95534476961610226bcc06608e14b48b2..250a3b9ef814476967e758ff09f25964030d82bc 100644
+index 63b4ca1020f3ea1c8a69a3cf492d4b65dcf70eba..92ad0dde1bad1ca6bd098381603e1f26e5b5ad98 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5836,7 +5836,6 @@ test("unit_tests") {
@@ -68,7 +68,7 @@ index 867445c95534476961610226bcc06608e14b48b2..250a3b9ef814476967e758ff09f25964
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6547,7 +6550,6 @@ test("unit_tests") {
+@@ -6548,7 +6551,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 867445c95534476961610226bcc06608e14b48b2..250a3b9ef814476967e758ff09f25964
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6592,6 +6594,11 @@ test("unit_tests") {
+@@ -6593,6 +6595,11 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
