@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Joey Arhar <jarhar@chromium.org>
 Date: Thu, 17 Feb 2022 22:21:18 +0000
-Subject: [M96-LTS] Roll libxml from dea91c97 to eab86522
+Subject: Roll libxml from dea91c97 to eab86522
 
 2022-01-31 wellnhofer@aevum.de Make xmllint return an error if arguments
 are missing
