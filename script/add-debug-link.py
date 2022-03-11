@@ -14,8 +14,7 @@ def add_debug_link_into_binaries(directory, target_cpu, debug_dir):
       add_debug_link_into_binary(binary_path, target_cpu, debug_dir)
 
 def add_debug_link_into_binary(binary_path, target_cpu, debug_dir):
-  if PLATFORM == 'linux' and (target_cpu == 'x86' or target_cpu == 'arm' or
-    target_cpu == 'arm64'):
+  if PLATFORM == 'linux' and target_cpu in ('x86', 'arm', 'arm64'):
     # Skip because no objcopy binary on the given target.
     return
 
