@@ -23,10 +23,10 @@ Commit-Queue: Bruce Dawson <brucedawson@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#975872}
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 264a9109e42c23e9be6bf7269b3cfee2634b61e4..86f06d2a2c9588a2210a9f78f47e73f1b7c5e329 100644
+index ef01843018cfada041330c3ed75d9d55c3225049..76dcfa99e9958d66ccd17db914aaafa354a03682 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -2834,8 +2834,8 @@ void HWNDMessageHandler::OnWindowPosChanging(WINDOWPOS* window_pos) {
+@@ -2829,8 +2829,8 @@ void HWNDMessageHandler::OnWindowPosChanging(WINDOWPOS* window_pos) {
        // (Win+Shift+Arrows). See crbug.com/656001.
        window_rect.left = window_pos->x;
        window_rect.top = window_pos->y;
