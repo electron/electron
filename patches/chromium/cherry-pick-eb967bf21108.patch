@@ -1,0 +1,125 @@
+From eb967bf2110884ddde91aea6ba1696ae6b56f892 Mon Sep 17 00:00:00 2001
+From: Justin Novosad <junov@chromium.org>
+Date: Fri, 14 Jan 2022 15:26:55 +0000
+Subject: [PATCH] Fix ImageBitmapRenderingContext interaction with software compositor.
+
+Before this CL, there was an early exit condition that prevented
+texture-backed resources from being presented to the software compositor
+even when the texture backing is swiftshader. This meant that in some
+cases, ImageBitmaps that were created by webGL contexts would fail to
+render.  Once the early exit removed, there were other bugs due to the
+fact that bitmaps were not being converted to N32 format before being
+dispatched to the software compositor.  This could cause several types
+of rendering artifacts, including leaking bitmap data between contexts.
+
+BUG=1283434
+
+Change-Id: I6f353bc6301b79d7a4124445c85956125135f539
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3387268
+Reviewed-by: Juanmi Huertas <juanmihd@chromium.org>
+Commit-Queue: Justin Novosad <junov@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#959192}
+---
+
+diff --git a/third_party/blink/renderer/platform/graphics/gpu/image_layer_bridge.cc b/third_party/blink/renderer/platform/graphics/gpu/image_layer_bridge.cc
+index a3c1153..3d74e301 100644
+--- a/third_party/blink/renderer/platform/graphics/gpu/image_layer_bridge.cc
++++ b/third_party/blink/renderer/platform/graphics/gpu/image_layer_bridge.cc
+@@ -139,11 +139,6 @@
+   has_presented_since_last_set_image_ = true;
+ 
+   const bool gpu_compositing = SharedGpuContext::IsGpuCompositingEnabled();
+-  const bool gpu_image = image_->IsTextureBacked();
+-
+-  // Expect software images for software compositing.
+-  if (!gpu_compositing && gpu_image)
+-    return false;
+ 
+   const ImageOrientation origin = image_->IsOriginTopLeft()
+                                       ? ImageOrientationEnum::kOriginTopLeft
+@@ -211,14 +206,17 @@
+       return false;
+ 
+     const gfx::Size size(image_->width(), image_->height());
+-    viz::ResourceFormat resource_format = viz::RGBA_8888;
+-    if (sk_image->colorType() == SkColorType::kRGBA_F16_SkColorType)
+-      resource_format = viz::RGBA_F16;
++
++    // Always convert to N32 format.  This is a constraint of the software
++    // compositor.
++    constexpr SkColorType dst_color_type = kN32_SkColorType;
++    viz::ResourceFormat resource_format =
++        viz::SkColorTypeToResourceFormat(dst_color_type);
+     RegisteredBitmap registered =
+         CreateOrRecycleBitmap(size, resource_format, bitmap_registrar);
+ 
+     SkImageInfo dst_info =
+-        SkImageInfo::Make(size.width(), size.height(), sk_image->colorType(),
++        SkImageInfo::Make(size.width(), size.height(), dst_color_type,
+                           kPremul_SkAlphaType, sk_image->refColorSpace());
+     void* pixels = registered.bitmap->memory();
+ 
+@@ -247,8 +245,8 @@
+       recycled_bitmaps_.begin(), recycled_bitmaps_.end(),
+       [&size, &format](const RegisteredBitmap& registered) {
+         unsigned src_bytes_per_pixel =
+-            (registered.bitmap->format() == viz::RGBA_8888) ? 4 : 8;
+-        unsigned target_bytes_per_pixel = (format == viz::RGBA_8888) ? 4 : 8;
++            viz::BitsPerPixel(registered.bitmap->format()) / 8;
++        unsigned target_bytes_per_pixel = viz::BitsPerPixel(format) / 8;
+         return (registered.bitmap->size().GetArea() * src_bytes_per_pixel !=
+                 size.GetArea() * target_bytes_per_pixel);
+       });
+diff --git a/third_party/blink/web_tests/fast/canvas/bug1283434-expected.html b/third_party/blink/web_tests/fast/canvas/bug1283434-expected.html
+new file mode 100644
+index 0000000..d0046a6
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/canvas/bug1283434-expected.html
+@@ -0,0 +1,11 @@
++
++<!doctype html>
++<html>
++<head>
++</head>
++<body>
++<p>The two squares below should be filled in blue.</p>
++<canvas id="c" width="100" height="100" style="background-color: #00f;"></canvas>
++<canvas id="c2" width="100" height="100" style="background-color: #00f;"></canvas>
++</body>
++</html>
+\ No newline at end of file
+diff --git a/third_party/blink/web_tests/fast/canvas/bug1283434.html b/third_party/blink/web_tests/fast/canvas/bug1283434.html
+new file mode 100644
+index 0000000..b07298c
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/canvas/bug1283434.html
+@@ -0,0 +1,28 @@
++
++<!doctype html>
++<html>
++<head>
++</head>
++<body>
++<p>The two squares below should be filled in blue.</p>
++<canvas id="c" width="100" height="100" style="background-color: red;"></canvas>
++<canvas id="c2" width="100" height="100" style="background-color: red;"></canvas>
++<script>
++    const canvas = document.getElementById('c');
++    const canvas2 = document.getElementById('c2');
++    const renderer = canvas.getContext('bitmaprenderer');
++    const renderer2 = canvas2.getContext('2d');
++
++    const temp_canvas = new OffscreenCanvas(640, 480);
++    const gl = temp_canvas.getContext('webgl');
++
++    gl.clearColor(0.0, 0.0, 1.0, 1.0);
++    gl.clear(gl.COLOR_BUFFER_BIT);
++
++    const bitmap = temp_canvas.transferToImageBitmap();
++
++    renderer2.drawImage(bitmap, 0, 0);
++    renderer.transferFromImageBitmap(bitmap);
++</script>
++</body>
++</html>
+\ No newline at end of file
