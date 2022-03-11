@@ -39,6 +39,8 @@ This change adds an "embedder id" pointer as the first embedder field in all
 Node-managed objects. This ensures that cppgc will always skip over Node
 objects.
 
+This patch should be upstreamed to Node.
+
 [1]: https://source.chromium.org/chromium/chromium/src/+/main:gin/public/gin_embedders.h;l=20;drc=5a758a97032f0b656c3c36a3497560762495501a
 
 See also: https://source.chromium.org/chromium/chromium/src/+/main:v8/include/v8-cppgc.h;l=70-76;drc=5a758a97032f0b656c3c36a3497560762495501a
