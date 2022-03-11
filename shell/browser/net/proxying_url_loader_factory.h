@@ -28,9 +28,12 @@
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "services/network/url_loader_factory.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/browser/net/web_request_api_interface.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
+// #include
+// "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom.h"
 #include "url/gurl.h"
 
 namespace electron {
@@ -146,7 +149,8 @@ class ProxyingURLLoaderFactory
 
     mojo::Receiver<network::mojom::URLLoaderClient> proxied_client_receiver_{
         this};
-    network::mojom::URLLoaderPtr target_loader_;
+    // blink::mojom::TransferrableURLLoaderPtr target_loader_;
+    mojo::Remote<network::mojom::URLLoader> target_loader_;
 
     network::mojom::URLResponseHeadPtr current_response_;
     mojo::ScopedDataPipeConsumerHandle current_body_;
@@ -198,7 +202,7 @@ class ProxyingURLLoaderFactory
       uint64_t* request_id_generator,
       std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
       absl::optional<int64_t> navigation_id,
-      network::mojom::URLLoaderFactoryRequest loader_request,
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader_request,
       mojo::PendingRemote<network::mojom::URLLoaderFactory>
           target_factory_remote,
       mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>

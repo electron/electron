@@ -23,6 +23,7 @@
 #include "shell/browser/hid/electron_hid_delegate.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
+#include "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom.h"
 
 namespace content {
 class ClientCertificateDelegate;
@@ -250,6 +251,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       int frame_tree_node_id,
       content::NavigationUIData* navigation_data,
       bool is_primary_main_frame,
+      bool is_in_fenced_frame_tree,
       network::mojom::WebSandboxFlags sandbox_flags,
       ui::PageTransition page_transition,
       bool has_user_gesture,
