@@ -1,7 +1,8 @@
-From 246c10dede97d21787c0ce57fa3032f6470954b3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tony Herre <toprice@chromium.org>
 Date: Fri, 18 Feb 2022 13:52:01 +0000
-Subject: [PATCH] [CherryPick to 99] Switch to new RequestPermissionsFromCurrentDocument API method for Media Stream Devices
+Subject: Switch to new RequestPermissionsFromCurrentDocument API method for
+ Media Stream Devices
 
 Switch away from the deprecated RequestPermissions() API, as a part of removing a bug where the previously provided request.security_origin param might get destroyed during the method execution.
 
@@ -16,13 +17,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#964535}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3473365
 Cr-Commit-Position: refs/branch-heads/4844@{#655}
 Cr-Branched-From: 007241ce2e6c8e5a7b306cc36c730cd07cd38825-refs/heads/main@{#961656}
----
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 08c1cd49..261a62c 100644
+index 8eb0e01815f6a5f2f0241554b3e5b93017564242..33468f9f2b1bcc2cda8d98748902984ae82e147d 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
-@@ -139,9 +139,8 @@
+@@ -139,9 +139,8 @@ void MediaStreamDevicesController::RequestPermissions(
      }
    }
  
