@@ -1,7 +1,7 @@
-From eb967bf2110884ddde91aea6ba1696ae6b56f892 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Justin Novosad <junov@chromium.org>
 Date: Fri, 14 Jan 2022 15:26:55 +0000
-Subject: [PATCH] Fix ImageBitmapRenderingContext interaction with software compositor.
+Subject: Fix ImageBitmapRenderingContext interaction with software compositor.
 
 Before this CL, there was an early exit condition that prevented
 texture-backed resources from being presented to the software compositor
@@ -19,13 +19,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3387268
 Reviewed-by: Juanmi Huertas <juanmihd@chromium.org>
 Commit-Queue: Justin Novosad <junov@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#959192}
----
 
 diff --git a/third_party/blink/renderer/platform/graphics/gpu/image_layer_bridge.cc b/third_party/blink/renderer/platform/graphics/gpu/image_layer_bridge.cc
-index a3c1153..3d74e301 100644
+index c36554413381f4830ac279707bf46778d4ad6329..500f34322cfbfa28b8b6cd76b0bee6c84186fe38 100644
 --- a/third_party/blink/renderer/platform/graphics/gpu/image_layer_bridge.cc
 +++ b/third_party/blink/renderer/platform/graphics/gpu/image_layer_bridge.cc
-@@ -139,11 +139,6 @@
+@@ -139,11 +139,6 @@ bool ImageLayerBridge::PrepareTransferableResource(
    has_presented_since_last_set_image_ = true;
  
    const bool gpu_compositing = SharedGpuContext::IsGpuCompositingEnabled();
@@ -37,7 +36,7 @@ index a3c1153..3d74e301 100644
  
    const ImageOrientation origin = image_->IsOriginTopLeft()
                                        ? ImageOrientationEnum::kOriginTopLeft
-@@ -211,14 +206,17 @@
+@@ -211,14 +206,17 @@ bool ImageLayerBridge::PrepareTransferableResource(
        return false;
  
      const gfx::Size size(image_->width(), image_->height());
@@ -59,7 +58,7 @@ index a3c1153..3d74e301 100644
                            kPremul_SkAlphaType, sk_image->refColorSpace());
      void* pixels = registered.bitmap->memory();
  
-@@ -247,8 +245,8 @@
+@@ -247,8 +245,8 @@ ImageLayerBridge::RegisteredBitmap ImageLayerBridge::CreateOrRecycleBitmap(
        recycled_bitmaps_.begin(), recycled_bitmaps_.end(),
        [&size, &format](const RegisteredBitmap& registered) {
          unsigned src_bytes_per_pixel =
@@ -72,7 +71,7 @@ index a3c1153..3d74e301 100644
        });
 diff --git a/third_party/blink/web_tests/fast/canvas/bug1283434-expected.html b/third_party/blink/web_tests/fast/canvas/bug1283434-expected.html
 new file mode 100644
-index 0000000..d0046a6
+index 0000000000000000000000000000000000000000..d0046a6c5ede6804497107318650f5f452b0d5e2
 --- /dev/null
 +++ b/third_party/blink/web_tests/fast/canvas/bug1283434-expected.html
 @@ -0,0 +1,11 @@
@@ -90,7 +89,7 @@ index 0000000..d0046a6
 \ No newline at end of file
 diff --git a/third_party/blink/web_tests/fast/canvas/bug1283434.html b/third_party/blink/web_tests/fast/canvas/bug1283434.html
 new file mode 100644
-index 0000000..b07298c
+index 0000000000000000000000000000000000000000..b07298cbcb356b7fb34e3923259c3365e3a976fb
 --- /dev/null
 +++ b/third_party/blink/web_tests/fast/canvas/bug1283434.html
 @@ -0,0 +1,28 @@
