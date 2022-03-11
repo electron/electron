@@ -1,0 +1,1864 @@
+From 905302eb3a2bd502786dd0321a8ccb5330669954 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Thu, 17 Feb 2022 22:21:18 +0000
+Subject: [PATCH] [M96-LTS] Roll libxml from dea91c97 to eab86522
+
+2022-01-31 wellnhofer@aevum.de Make xmllint return an error if arguments
+are missing
+2022-01-28 wellnhofer@aevum.de Avoid potential integer overflow in
+xmlstring.c
+2021-07-07 ddkilzer@apple.com xmlAddChild() and xmlAddNextSibling() may
+not attach their second argument
+2022-01-25 wellnhofer@aevum.de Run CI tests with UBSan
+implicit-conversion checks
+2022-01-25 wellnhofer@aevum.de Fix casting of line numbers in SAX2.c
+2022-01-25 wellnhofer@aevum.de Fix integer conversion warnings in hash.c
+2022-01-25 wellnhofer@aevum.de Add explicit casts in runtest.c
+2022-01-25 wellnhofer@aevum.de Fix integer conversion warning in
+xmlIconvWrapper
+2022-01-25 wellnhofer@aevum.de Add suffix to unsigned constant in
+xmlmemory.c
+2022-01-25 wellnhofer@aevum.de Add explicit casts in testchar.c
+2022-01-25 wellnhofer@aevum.de Fix integer conversion warnings in
+xmlstring.c
+2022-01-25 wellnhofer@aevum.de Add explicit cast in xmlURIUnescapeString
+2022-01-25 wellnhofer@aevum.de Fix handling of ctxt->base in
+xmlXPtrEvalXPtrPart
+2022-01-20 wellnhofer@aevum.de Remove wrong tarname from AC_INIT
+2022-01-17 wellnhofer@aevum.de Remove old devhelp format
+2022-01-16 wellnhofer@aevum.de Fix regression with PEs in external DTD
+2022-01-16 wellnhofer@aevum.de Fix xmllint --maxmem
+2021-11-03 huangduirong@huawei.com Fix
+Null-deref-in-xmlSchemaGetComponentTargetNs
+2022-01-16 wellnhofer@aevum.de Fix libxml2.doap
+2021-08-26 finnbarber@protonmail.com Added regression tests for
+xmlReadFd() and htmlReadFd()
+2021-07-27 finnbarber@protonmail.com Fix htmlReadFd, which was using a
+mix of xml and html context functions
+2022-01-16 wellnhofer@aevum.de Fix memory leak in xmlXPathCompNodeTest
+2021-07-22 fanchunwei@src.gnome.org setup.py.in: Try to import
+setuptools
+2021-07-22 fanchunwei@src.gnome.org Python distutils: Make DLL packaging
+more flexible
+2021-07-22 fanchunwei@src.gnome.org tstmem.py: Try importing from
+libxmlmods.libxml2mod if needed
+2021-03-30 fanchunwei@src.gnome.org python: Port python 3.x module to
+Windows
+2021-11-03 mrazavi64@gmail.com Fix random dropping of characters on
+dumping ASCII encoded XML
+2021-10-14 kjellahlstedt@gmail.com Update URL for libxml++ C++ binding
+2022-01-16 wellnhofer@aevum.de Fix null pointer deref in
+xmlStringGetNodeList
+2021-08-06 liyulin@pku.edu.cn move current position before possible
+calling of ctxt->sax->characters.
+2021-07-29 mattia@mapreri.org Correctly install the HTML examples into
+their subdirectory.
+2021-07-29 mattia@mapreri.org Refactor the settings of $docdir
+2021-07-26 ben.boeckel@kitware.com configure: remove unused checks for
+functions
+2021-07-26 ben.boeckel@kitware.com configure: remove unused checks for
+libraries
+2021-07-26 ben.boeckel@kitware.com cmake: remove unused checks
+2021-07-26 ben.boeckel@kitware.com configure: remove unused checks for
+headers
+2021-07-26 ben.boeckel@kitware.com cmake: fix `ATTRIBUTE_DESTRUCTOR`
+definition
+2021-07-23 ebassi@gnome.org Generate devhelp2 index file
+2021-07-14 amigadave@amigadave.com Remove duplicated code in xmlcatalog
+2021-07-14 amigadave@amigadave.com Fix leak in
+__xmlOutputBufferCreateFilename
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+xmlRelaxNGNewDocParserCtxt
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+xmlRelaxNGParseData
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+libxml_C14NDocSaveTo
+2021-07-14 amigadave@amigadave.com Fix memory leak in libxml_saveNodeTo
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+xmlNewInputFromFile
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+xmlCreateIOParserCtxt
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+xmlParseSGMLCatalog
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+xmlParseCatalogFile
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+xmlSAX2AttributeDecl
+2021-07-14 amigadave@amigadave.com Fix memory leak in
+xmlFreeParserInputBuffer
+2021-07-07 ddkilzer@apple.com Fix parse failure when 4-byte character in
+UTF-16 BE is split across a chunk
+2021-07-05 jtojnar@gmail.com man: Mention XML_CATALOG_FILES is
+space-separated
+2021-07-05 rainer.canavan@avenga.com add documentaiton for xmllint exit
+code 10
+2021-06-28 sam@gentoo.org python/Makefile.am: use *_LIBADD, not
+*_LDFLAGS for LIBS
+2022-01-16 wellnhofer@aevum.de Fix check for libtool in autogen.sh
+2022-01-16 wellnhofer@aevum.de Add myself to maintainers
+2022-01-15 wellnhofer@aevum.de Revert "Make schema validation fail with
+multiple top-level elements"
+2022-01-10 wellnhofer@aevum.de Different approach to fix quadratic
+behavior in HTML push parser
+2022-01-10 wellnhofer@aevum.de Fix regression when parsing invalid HTML
+tags in push mode
+2022-01-10 wellnhofer@aevum.de Fix regression parsing public IDs
+literals in HTML
+
+(cherry picked from commit c5dea7aa38a3e22e5990a5b0b398dcc3e8727b3a)
+
+Fixed: 1269999
+Bug: 934413
+Change-Id: I602a086b91d514cb80859237c48729d4c10cf83e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3422595
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#965736}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3448780
+Reviewed-by: Michael Ershov <miersh@google.com>
+Owners-Override: Michael Ershov <miersh@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1485}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+---
+
+diff --git a/third_party/libxml/README.chromium b/third_party/libxml/README.chromium
+index 1d1d773..ce03230 100644
+--- a/third_party/libxml/README.chromium
++++ b/third_party/libxml/README.chromium
+@@ -1,6 +1,6 @@
+ Name: libxml
+ URL: http://xmlsoft.org
+-Version: dea91c97debeac7c1aaf9c19f79029809e23a353
++Version: eab86522163ec52602a020f62baa9f6cf87ec870
+ CPEPrefix: cpe:/a:xmlsoft:libxml2:2.9.12
+ License: MIT
+ License File: src/Copyright
+diff --git a/third_party/libxml/linux/config.h b/third_party/libxml/linux/config.h
+index 25172b5..bccbf1e 100644
+--- a/third_party/libxml/linux/config.h
++++ b/third_party/libxml/linux/config.h
+@@ -22,7 +22,8 @@
+ /* Define to 1 if you have the <ctype.h> header file. */
+ #define HAVE_CTYPE_H 1
+ 
+-/* Define to 1 if you have the <dirent.h> header file. */
++/* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
++   */
+ #define HAVE_DIRENT_H 1
+ 
+ /* Define to 1 if you have the <dlfcn.h> header file. */
+@@ -61,18 +62,9 @@
+ /* Define to 1 if you have the `isascii' function. */
+ #define HAVE_ISASCII 1
+ 
+-/* Define if isinf is there */
+-#define HAVE_ISINF /**/
+-
+-/* Define if isnan is there */
+-#define HAVE_ISNAN /**/
+-
+ /* Define if history library is there (-lhistory) */
+ /* #undef HAVE_LIBHISTORY */
+ 
+-/* Define if pthread library is there (-lpthread) */
+-/* #undef HAVE_LIBPTHREAD */
+-
+ /* Define if readline library is there (-lreadline) */
+ /* #undef HAVE_LIBREADLINE */
+ 
+@@ -91,9 +83,6 @@
+ /* Define to 1 if you have the <math.h> header file. */
+ #define HAVE_MATH_H 1
+ 
+-/* Define to 1 if you have the <memory.h> header file. */
+-#define HAVE_MEMORY_H 1
+-
+ /* Define to 1 if you have the `mmap' function. */
+ #define HAVE_MMAP 1
+ 
+@@ -165,6 +154,9 @@
+ /* Define to 1 if you have the <stdint.h> header file. */
+ #define HAVE_STDINT_H 1
+ 
++/* Define to 1 if you have the <stdio.h> header file. */
++#define HAVE_STDIO_H 1
++
+ /* Define to 1 if you have the <stdlib.h> header file. */
+ #define HAVE_STDLIB_H 1
+ 
+@@ -263,7 +255,9 @@
+ /* Type cast for the send() function 2nd arg */
+ #define SEND_ARG2_CAST /**/
+ 
+-/* Define to 1 if you have the ANSI C header files. */
++/* Define to 1 if all of the C90 standard headers exist (not just the ones
++   required in a freestanding environment). This macro is provided for
++   backward compatibility; new code need not use it. */
+ #define STDC_HEADERS 1
+ 
+ /* Support for IPv6 */
+diff --git a/third_party/libxml/mac/config.h b/third_party/libxml/mac/config.h
+index 27a79ec..3341a76 100644
+--- a/third_party/libxml/mac/config.h
++++ b/third_party/libxml/mac/config.h
+@@ -22,7 +22,8 @@
+ /* Define to 1 if you have the <ctype.h> header file. */
+ #define HAVE_CTYPE_H 1
+ 
+-/* Define to 1 if you have the <dirent.h> header file. */
++/* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
++   */
+ #define HAVE_DIRENT_H 1
+ 
+ /* Define to 1 if you have the <dlfcn.h> header file. */
+@@ -61,18 +62,9 @@
+ /* Define to 1 if you have the `isascii' function. */
+ #define HAVE_ISASCII 1
+ 
+-/* Define if isinf is there */
+-#define HAVE_ISINF /**/
+-
+-/* Define if isnan is there */
+-#define HAVE_ISNAN /**/
+-
+ /* Define if history library is there (-lhistory) */
+ /* #undef HAVE_LIBHISTORY */
+ 
+-/* Define if pthread library is there (-lpthread) */
+-/* #undef HAVE_LIBPTHREAD */
+-
+ /* Define if readline library is there (-lreadline) */
+ /* #undef HAVE_LIBREADLINE */
+ 
+diff --git a/third_party/libxml/src/CMakeLists.txt b/third_party/libxml/src/CMakeLists.txt
+index 073869f..7e1aa08d 100644
+--- a/third_party/libxml/src/CMakeLists.txt
++++ b/third_party/libxml/src/CMakeLists.txt
+@@ -139,7 +139,10 @@
+ 		void __attribute__((destructor))
+ 		f(void) {}
+ 		int main(void) { return 0; }
+-	" ATTRIBUTE_DESTRUCTOR)
++	" HAVE_ATTRIBUTE_DESTRUCTOR)
++	if(HAVE_ATTRIBUTE_DESTRUCTOR)
++		set(ATTRIBUTE_DESTRUCTOR "__attribute__((destructor))")
++	endif()
+ 	check_c_source_compiles("
+ 		#include <netdb.h>
+ 		int main() { (void) gethostbyname((const char*) \"\"); return 0; }
+@@ -158,39 +161,27 @@
+ 	endif()
+ 	check_function_exists(class HAVE_CLASS)
+ 	check_include_files(ctype.h HAVE_CTYPE_H)
+-	check_include_files(dirent.h HAVE_DIRENT_H)
+ 	check_include_files(dlfcn.h HAVE_DLFCN_H)
+ 	check_library_exists(dl dlopen "" HAVE_DLOPEN)
+ 	check_include_files(dl.h HAVE_DL_H)
+ 	check_include_files(errno.h HAVE_ERRNO_H)
+ 	check_include_files(fcntl.h HAVE_FCNTL_H)
+-	check_function_exists(finite HAVE_FINITE)
+ 	check_include_files(float.h HAVE_FLOAT_H)
+ 	check_function_exists(fpclass HAVE_FPCLASS)
+ 	check_function_exists(fprintf HAVE_FPRINTF)
+-	check_function_exists(fp_class HAVE_FP_CLASS)
+ 	check_function_exists(ftime HAVE_FTIME)
+ 	check_function_exists(getaddrinfo HAVE_GETADDRINFO)
+ 	check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
+ 	check_include_files(inttypes.h HAVE_INTTYPES_H)
+ 	check_function_exists(isascii HAVE_ISASCII)
+-	check_function_exists(isinf HAVE_ISINF)
+-	check_function_exists(isnan HAVE_ISNAN)
+-	check_function_exists(isnand HAVE_ISNAND)
+ 	check_library_exists(history append_history "" HAVE_LIBHISTORY)
+-	check_library_exists(lzma lzma_code "" HAVE_LIBLZMA)
+-	check_library_exists(pthread pthread_join "" HAVE_LIBPTHREAD)
+ 	check_library_exists(readline readline "" HAVE_LIBREADLINE)
+-	check_library_exists(z gzread "" HAVE_LIBZ)
+ 	check_include_files(limits.h HAVE_LIMITS_H)
+ 	check_function_exists(localtime HAVE_LOCALTIME)
+-	check_include_files(lzma.h HAVE_LZMA_H)
+ 	check_include_files(malloc.h HAVE_MALLOC_H)
+ 	check_include_files(math.h HAVE_MATH_H)
+-	check_include_files(memory.h HAVE_MEMORY_H)
+ 	check_function_exists(mmap HAVE_MMAP)
+ 	check_function_exists(munmap HAVE_MUNMAP)
+-	check_symbol_exists(DIR ndir.h HAVE_NDIR_H)
+ 	check_include_files(netdb.h HAVE_NETDB_H)
+ 	check_include_files(netinet/in.h HAVE_NETINET_IN_H)
+ 	check_include_files(poll.h HAVE_POLL_H)
+@@ -201,7 +192,6 @@
+ 	check_function_exists(rand_r HAVE_RAND_R)
+ 	check_include_files(resolv.h HAVE_RESOLV_H)
+ 	check_library_exists(dld shl_load "" HAVE_SHLLOAD)
+-	check_function_exists(signal HAVE_SIGNAL)
+ 	check_include_files(signal.h HAVE_SIGNAL_H)
+ 	check_function_exists(snprintf HAVE_SNPRINTF)
+ 	check_function_exists(sprintf HAVE_SPRINTF)
+@@ -214,9 +204,7 @@
+ 	check_function_exists(strftime HAVE_STRFTIME)
+ 	check_include_files(strings.h HAVE_STRINGS_H)
+ 	check_include_files(string.h HAVE_STRING_H)
+-	check_symbol_exists(DIR sys/dir.h HAVE_SYS_DIR_H)
+ 	check_include_files(sys/mman.h HAVE_SYS_MMAN_H)
+-	check_symbol_exists(DIR sys/ndir.h HAVE_SYS_NDIR_H)
+ 	check_include_files(sys/select.h HAVE_SYS_SELECT_H)
+ 	check_include_files(sys/socket.h HAVE_SYS_SOCKET_H)
+ 	check_include_files(sys/stat.h HAVE_SYS_STAT_H)
+diff --git a/third_party/libxml/src/HTMLparser.c b/third_party/libxml/src/HTMLparser.c
+index b56363a..82859b0 100644
+--- a/third_party/libxml/src/HTMLparser.c
++++ b/third_party/libxml/src/HTMLparser.c
+@@ -3045,7 +3045,7 @@
+         NEXT;
+     }
+ 
+-    if (CUR != '"') {
++    if (CUR != quote) {
+         htmlParseErr(ctxt, XML_ERR_LITERAL_NOT_FINISHED,
+                      "Unfinished PubidLiteral\n", NULL, NULL);
+     } else {
+@@ -3958,13 +3958,25 @@
+ 	htmlParseErr(ctxt, XML_ERR_NAME_REQUIRED,
+ 	             "htmlParseStartTag: invalid element name\n",
+ 		     NULL, NULL);
++        /*
++         * The recovery code is disabled for now as it can result in
++         * quadratic behavior with the push parser. htmlParseStartTag
++         * must consume all content up to the final '>' in order to avoid
++         * rescanning for this terminator.
++         *
++         * For a proper fix in line with HTML5, htmlParseStartTag and
++         * htmlParseElement should only be called when there's an ASCII
++         * alpha character following the initial '<'. Otherwise, the '<'
++         * should be emitted as text (unless followed by '!', '/' or '?').
++         */
++#if 0
+ 	/* if recover preserve text on classic misconstructs */
+ 	if ((ctxt->recovery) && ((IS_BLANK_CH(CUR)) || (CUR == '<') ||
+ 	    (CUR == '=') || (CUR == '>') || (((CUR >= '0') && (CUR <= '9'))))) {
+ 	    htmlParseCharDataInternal(ctxt, '<');
+ 	    return(-1);
+ 	}
+-
++#endif
+ 
+ 	/* Dump the bogus tag like browsers do */
+ 	while ((CUR != 0) && (CUR != '>') &&
+@@ -5185,6 +5197,7 @@
+ 
+     input = xmlNewInputStream(ctxt);
+     if (input == NULL) {
++	xmlFreeParserInputBuffer(buf);
+ 	xmlFreeParserCtxt(ctxt);
+ 	return(NULL);
+     }
+@@ -5992,32 +6005,12 @@
+ 		    } else if (cur == '<') {
+                         if ((!terminate) && (next == 0))
+                             goto done;
+-                        /*
+-                         * Only switch to START_TAG if the next character
+-                         * starts a valid name. Otherwise, htmlParseStartTag
+-                         * might return without consuming all characters
+-                         * up to the final '>'.
+-                         */
+-                        if ((IS_ASCII_LETTER(next)) ||
+-                            (next == '_') || (next == ':') || (next == '.')) {
+-                            ctxt->instate = XML_PARSER_START_TAG;
+-                            ctxt->checkIndex = 0;
++                        ctxt->instate = XML_PARSER_START_TAG;
++                        ctxt->checkIndex = 0;
+ #ifdef DEBUG_PUSH
+-                            xmlGenericError(xmlGenericErrorContext,
+-                                    "HPP: entering START_TAG\n");
++                        xmlGenericError(xmlGenericErrorContext,
++                                "HPP: entering START_TAG\n");
+ #endif
+-                        } else {
+-                            htmlParseErr(ctxt, XML_ERR_NAME_REQUIRED,
+-                                         "htmlParseTryOrFinish: "
+-                                         "invalid element name\n",
+-                                         NULL, NULL);
+-                            htmlCheckParagraph(ctxt);
+-                            if ((ctxt->sax != NULL) &&
+-                                (ctxt->sax->characters != NULL))
+-                                ctxt->sax->characters(ctxt->userData,
+-                                                      in->cur, 1);
+-                            NEXT;
+-                        }
+ 			break;
+ 		    } else {
+ 		        /*
+@@ -6999,7 +6992,9 @@
+  * @encoding:  the document encoding, or NULL
+  * @options:  a combination of htmlParserOption(s)
+  *
+- * parse an XML from a file descriptor and build a tree.
++ * parse an HTML from a file descriptor and build a tree.
++ * NOTE that the file descriptor will not be closed when the
++ *      reader is closed or reset.
+  *
+  * Returns the resulting document tree
+  */
+@@ -7008,17 +7003,17 @@
+ {
+     htmlParserCtxtPtr ctxt;
+     xmlParserInputBufferPtr input;
+-    xmlParserInputPtr stream;
++    htmlParserInputPtr stream;
+ 
+     if (fd < 0)
+         return (NULL);
+-    xmlInitParser();
+ 
+     xmlInitParser();
+     input = xmlParserInputBufferCreateFd(fd, XML_CHAR_ENCODING_NONE);
+     if (input == NULL)
+         return (NULL);
+-    ctxt = xmlNewParserCtxt();
++    input->closecallback = NULL;
++    ctxt = htmlNewParserCtxt();
+     if (ctxt == NULL) {
+         xmlFreeParserInputBuffer(input);
+         return (NULL);
+@@ -7026,7 +7021,7 @@
+     stream = xmlNewIOInputStream(ctxt, input, XML_CHAR_ENCODING_NONE);
+     if (stream == NULL) {
+         xmlFreeParserInputBuffer(input);
+-	xmlFreeParserCtxt(ctxt);
++	htmlFreeParserCtxt(ctxt);
+         return (NULL);
+     }
+     inputPush(ctxt, stream);
+diff --git a/third_party/libxml/src/Makefile.am b/third_party/libxml/src/Makefile.am
+index a9284b9..eb906b0 100644
+--- a/third_party/libxml/src/Makefile.am
++++ b/third_party/libxml/src/Makefile.am
+@@ -1273,27 +1273,27 @@
+ #
+ # Install the tests program sources as examples 
+ #
+-BASE_DIR=$(datadir)/doc
+-DOC_MODULE=libxml2-$(VERSION)
+-EXAMPLES_DIR=$(BASE_DIR)/$(DOC_MODULE)/examples
++EXAMPLES_DIR=$(docdir)/examples
+ 
+ install-data-local: 
+-	$(MKDIR_P) $(DESTDIR)$(BASE_DIR)/$(DOC_MODULE)
+-	-$(INSTALL) -m 0644 $(srcdir)/Copyright $(DESTDIR)$(BASE_DIR)/$(DOC_MODULE)
++	$(MKDIR_P) $(DESTDIR)$(docdir)
++	-$(INSTALL) -m 0644 $(srcdir)/Copyright $(DESTDIR)$(docdir)
+ 	$(MKDIR_P) $(DESTDIR)$(EXAMPLES_DIR)
+ 	-$(INSTALL) -m 0644 $(srcdir)/xmllint.c $(DESTDIR)$(EXAMPLES_DIR)
+ 	-$(INSTALL) -m 0644 $(srcdir)/testSAX.c $(DESTDIR)$(EXAMPLES_DIR)
+ 	-$(INSTALL) -m 0644 $(srcdir)/testHTML.c $(DESTDIR)$(EXAMPLES_DIR)
+ 	-$(INSTALL) -m 0644 $(srcdir)/testXPath.c $(DESTDIR)$(EXAMPLES_DIR)
++	@echo "If the documentation is installed, please also look at html/examples for more." > $(DESTDIR)$(EXAMPLES_DIR)/README
+ 
+ uninstall-local:
++	rm -f $(DESTDIR)$(EXAMPLES_DIR)/README
+ 	rm -f $(DESTDIR)$(EXAMPLES_DIR)/testXPath.c
+ 	rm -f $(DESTDIR)$(EXAMPLES_DIR)/testHTML.c
+ 	rm -f $(DESTDIR)$(EXAMPLES_DIR)/testSAX.c
+ 	rm -f $(DESTDIR)$(EXAMPLES_DIR)/xmllint.c
+ 	rm -rf $(DESTDIR)$(EXAMPLES_DIR)
+-	rm -f $(DESTDIR)$(BASE_DIR)/$(DOC_MODULE)/Copyright
+-	rm -rf $(DESTDIR)$(BASE_DIR)/$(DOC_MODULE)
++	rm -f $(DESTDIR)$(docdir)/Copyright
++	rm -rf $(DESTDIR)$(docdir)
+ 
+ tst: tst.c
+ 	$(CC) $(CFLAGS) -Iinclude -o tst tst.c .libs/libxml2.a -lpthread -lm -lz -llzma
+diff --git a/third_party/libxml/src/SAX2.c b/third_party/libxml/src/SAX2.c
+index 99019a9..0319246 100644
+--- a/third_party/libxml/src/SAX2.c
++++ b/third_party/libxml/src/SAX2.c
+@@ -742,6 +742,7 @@
+         xmlFatalErrMsg(ctxt, XML_ERR_INTERNAL_ERROR,
+ 	     "SAX.xmlSAX2AttributeDecl(%s) called while not in subset\n",
+ 	               name, NULL);
++	xmlFree(name);
+ 	xmlFreeEnumeration(tree);
+ 	return;
+     }
+@@ -1622,10 +1623,10 @@
+     ctxt->nodemem = -1;
+     if (ctxt->linenumbers) {
+ 	if (ctxt->input != NULL) {
+-	    if (ctxt->input->line < 65535)
+-		ret->line = (short) ctxt->input->line;
++	    if (ctxt->input->line < USHRT_MAX)
++		ret->line = (unsigned short) ctxt->input->line;
+ 	    else
+-	        ret->line = 65535;
++	        ret->line = USHRT_MAX;
+ 	}
+     }
+ 
+@@ -1886,10 +1887,10 @@
+ 
+     if (ctxt->linenumbers) {
+ 	if (ctxt->input != NULL) {
+-	    if (ctxt->input->line < 65535)
+-		ret->line = (short) ctxt->input->line;
++	    if (ctxt->input->line < USHRT_MAX)
++		ret->line = (unsigned short) ctxt->input->line;
+ 	    else {
+-	        ret->line = 65535;
++	        ret->line = USHRT_MAX;
+ 		if (ctxt->options & XML_PARSE_BIG_LINES)
+ 		    ret->psvi = (void *) (ptrdiff_t) ctxt->input->line;
+ 	    }
+@@ -2266,10 +2267,10 @@
+     }
+     if (ctxt->linenumbers) {
+ 	if (ctxt->input != NULL) {
+-	    if (ctxt->input->line < 65535)
+-		ret->line = (short) ctxt->input->line;
++	    if (ctxt->input->line < USHRT_MAX)
++		ret->line = (unsigned short) ctxt->input->line;
+ 	    else
+-	        ret->line = 65535;
++	        ret->line = USHRT_MAX;
+ 	}
+     }
+ 
+@@ -2688,10 +2689,10 @@
+ 
+     if (ctxt->linenumbers) {
+ 	if (ctxt->input != NULL) {
+-	    if (ctxt->input->line < 65535)
+-		ret->line = (short) ctxt->input->line;
++	    if (ctxt->input->line < USHRT_MAX)
++		ret->line = (unsigned short) ctxt->input->line;
+ 	    else
+-	        ret->line = 65535;
++	        ret->line = USHRT_MAX;
+ 	}
+     }
+     if (ctxt->inSubset == 1) {
+@@ -2748,10 +2749,10 @@
+     if (ret == NULL) return;
+     if (ctxt->linenumbers) {
+ 	if (ctxt->input != NULL) {
+-	    if (ctxt->input->line < 65535)
+-		ret->line = (short) ctxt->input->line;
++	    if (ctxt->input->line < USHRT_MAX)
++		ret->line = (unsigned short) ctxt->input->line;
+ 	    else
+-	        ret->line = 65535;
++	        ret->line = USHRT_MAX;
+ 	}
+     }
+ 
+diff --git a/third_party/libxml/src/aclocal.m4 b/third_party/libxml/src/aclocal.m4
+index a671949..d6ebff5 100644
+--- a/third_party/libxml/src/aclocal.m4
++++ b/third_party/libxml/src/aclocal.m4
+@@ -1,6 +1,6 @@
+-# generated automatically by aclocal 1.16.3 -*- Autoconf -*-
++# generated automatically by aclocal 1.16.5 -*- Autoconf -*-
+ 
+-# Copyright (C) 1996-2020 Free Software Foundation, Inc.
++# Copyright (C) 1996-2021 Free Software Foundation, Inc.
+ 
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -296,7 +296,7 @@
+ AS_VAR_IF([$1], [""], [$5], [$4])dnl
+ ])dnl PKG_CHECK_VAR
+ 
+-# Copyright (C) 2002-2020 Free Software Foundation, Inc.
++# Copyright (C) 2002-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -311,7 +311,7 @@
+ [am__api_version='1.16'
+ dnl Some users find AM_AUTOMAKE_VERSION and mistake it for a way to
+ dnl require some minimum version.  Point them to the right macro.
+-m4_if([$1], [1.16.3], [],
++m4_if([$1], [1.16.5], [],
+       [AC_FATAL([Do not call $0, use AM_INIT_AUTOMAKE([$1]).])])dnl
+ ])
+ 
+@@ -327,14 +327,14 @@
+ # Call AM_AUTOMAKE_VERSION and AM_AUTOMAKE_VERSION so they can be traced.
+ # This function is AC_REQUIREd by AM_INIT_AUTOMAKE.
+ AC_DEFUN([AM_SET_CURRENT_AUTOMAKE_VERSION],
+-[AM_AUTOMAKE_VERSION([1.16.3])dnl
++[AM_AUTOMAKE_VERSION([1.16.5])dnl
+ m4_ifndef([AC_AUTOCONF_VERSION],
+   [m4_copy([m4_PACKAGE_VERSION], [AC_AUTOCONF_VERSION])])dnl
+ _AM_AUTOCONF_VERSION(m4_defn([AC_AUTOCONF_VERSION]))])
+ 
+ # AM_AUX_DIR_EXPAND                                         -*- Autoconf -*-
+ 
+-# Copyright (C) 2001-2020 Free Software Foundation, Inc.
++# Copyright (C) 2001-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -386,7 +386,7 @@
+ 
+ # AM_CONDITIONAL                                            -*- Autoconf -*-
+ 
+-# Copyright (C) 1997-2020 Free Software Foundation, Inc.
++# Copyright (C) 1997-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -417,7 +417,7 @@
+ Usually this means the macro was only invoked conditionally.]])
+ fi])])
+ 
+-# Copyright (C) 1999-2020 Free Software Foundation, Inc.
++# Copyright (C) 1999-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -608,7 +608,7 @@
+ 
+ # Generate code to set up dependency tracking.              -*- Autoconf -*-
+ 
+-# Copyright (C) 1999-2020 Free Software Foundation, Inc.
++# Copyright (C) 1999-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -676,7 +676,7 @@
+ 
+ # Do all the work for Automake.                             -*- Autoconf -*-
+ 
+-# Copyright (C) 1996-2020 Free Software Foundation, Inc.
++# Copyright (C) 1996-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -704,6 +704,10 @@
+ # release and drop the old call support.
+ AC_DEFUN([AM_INIT_AUTOMAKE],
+ [AC_PREREQ([2.65])dnl
++m4_ifdef([_$0_ALREADY_INIT],
++  [m4_fatal([$0 expanded multiple times
++]m4_defn([_$0_ALREADY_INIT]))],
++  [m4_define([_$0_ALREADY_INIT], m4_expansion_stack)])dnl
+ dnl Autoconf wants to disallow AM_ names.  We explicitly allow
+ dnl the ones we care about.
+ m4_pattern_allow([^AM_[A-Z]+FLAGS$])dnl
+@@ -740,7 +744,7 @@
+ [_AM_SET_OPTIONS([$1])dnl
+ dnl Diagnose old-style AC_INIT with new-style AM_AUTOMAKE_INIT.
+ m4_if(
+-  m4_ifdef([AC_PACKAGE_NAME], [ok]):m4_ifdef([AC_PACKAGE_VERSION], [ok]),
++  m4_ifset([AC_PACKAGE_NAME], [ok]):m4_ifset([AC_PACKAGE_VERSION], [ok]),
+   [ok:ok],,
+   [m4_fatal([AC_INIT should be called with package and version arguments])])dnl
+  AC_SUBST([PACKAGE], ['AC_PACKAGE_TARNAME'])dnl
+@@ -792,6 +796,20 @@
+ 		  [m4_define([AC_PROG_OBJCXX],
+ 			     m4_defn([AC_PROG_OBJCXX])[_AM_DEPENDENCIES([OBJCXX])])])dnl
+ ])
++# Variables for tags utilities; see am/tags.am
++if test -z "$CTAGS"; then
++  CTAGS=ctags
++fi
++AC_SUBST([CTAGS])
++if test -z "$ETAGS"; then
++  ETAGS=etags
++fi
++AC_SUBST([ETAGS])
++if test -z "$CSCOPE"; then
++  CSCOPE=cscope
++fi
++AC_SUBST([CSCOPE])
++
+ AC_REQUIRE([AM_SILENT_RULES])dnl
+ dnl The testsuite driver may need to know about EXEEXT, so add the
+ dnl 'am__EXEEXT' conditional if _AM_COMPILER_EXEEXT was seen.  This
+@@ -873,7 +891,7 @@
+ done
+ echo "timestamp for $_am_arg" >`AS_DIRNAME(["$_am_arg"])`/stamp-h[]$_am_stamp_count])
+ 
+-# Copyright (C) 2001-2020 Free Software Foundation, Inc.
++# Copyright (C) 2001-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -894,7 +912,7 @@
+ fi
+ AC_SUBST([install_sh])])
+ 
+-# Copyright (C) 2003-2020 Free Software Foundation, Inc.
++# Copyright (C) 2003-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -916,7 +934,7 @@
+ # Add --enable-maintainer-mode option to configure.         -*- Autoconf -*-
+ # From Jim Meyering
+ 
+-# Copyright (C) 1996-2020 Free Software Foundation, Inc.
++# Copyright (C) 1996-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -951,7 +969,7 @@
+ 
+ # Check to see how 'make' treats includes.	            -*- Autoconf -*-
+ 
+-# Copyright (C) 2001-2020 Free Software Foundation, Inc.
++# Copyright (C) 2001-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -994,7 +1012,7 @@
+ 
+ # Fake the existence of programs that GNU maintainers use.  -*- Autoconf -*-
+ 
+-# Copyright (C) 1997-2020 Free Software Foundation, Inc.
++# Copyright (C) 1997-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -1028,7 +1046,7 @@
+ 
+ # Helper functions for option handling.                     -*- Autoconf -*-
+ 
+-# Copyright (C) 2001-2020 Free Software Foundation, Inc.
++# Copyright (C) 2001-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -1057,7 +1075,7 @@
+ AC_DEFUN([_AM_IF_OPTION],
+ [m4_ifset(_AM_MANGLE_OPTION([$1]), [$2], [$3])])
+ 
+-# Copyright (C) 1999-2020 Free Software Foundation, Inc.
++# Copyright (C) 1999-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -1104,7 +1122,7 @@
+ # For backward compatibility.
+ AC_DEFUN_ONCE([AM_PROG_CC_C_O], [AC_REQUIRE([AC_PROG_CC])])
+ 
+-# Copyright (C) 2001-2020 Free Software Foundation, Inc.
++# Copyright (C) 2001-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -1123,7 +1141,7 @@
+ 
+ # Check to make sure that the build environment is sane.    -*- Autoconf -*-
+ 
+-# Copyright (C) 1996-2020 Free Software Foundation, Inc.
++# Copyright (C) 1996-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -1204,7 +1222,7 @@
+ rm -f conftest.file
+ ])
+ 
+-# Copyright (C) 2009-2020 Free Software Foundation, Inc.
++# Copyright (C) 2009-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -1264,7 +1282,7 @@
+ _AM_SUBST_NOTMAKE([AM_BACKSLASH])dnl
+ ])
+ 
+-# Copyright (C) 2001-2020 Free Software Foundation, Inc.
++# Copyright (C) 2001-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -1292,7 +1310,7 @@
+ INSTALL_STRIP_PROGRAM="\$(install_sh) -c -s"
+ AC_SUBST([INSTALL_STRIP_PROGRAM])])
+ 
+-# Copyright (C) 2006-2020 Free Software Foundation, Inc.
++# Copyright (C) 2006-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -1311,7 +1329,7 @@
+ 
+ # Check how to create a tarball.                            -*- Autoconf -*-
+ 
+-# Copyright (C) 2004-2020 Free Software Foundation, Inc.
++# Copyright (C) 2004-2021 Free Software Foundation, Inc.
+ #
+ # This file is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+diff --git a/third_party/libxml/src/config.h.cmake.in b/third_party/libxml/src/config.h.cmake.in
+index 22b3c92..e093563 100644
+--- a/third_party/libxml/src/config.h.cmake.in
++++ b/third_party/libxml/src/config.h.cmake.in
+@@ -2,7 +2,7 @@
+ /* config.h.in.  Generated from configure.ac by autoheader.  */
+ 
+ /* Define if __attribute__((destructor)) is accepted */
+-#cmakedefine ATTRIBUTE_DESTRUCTOR 1
++#cmakedefine ATTRIBUTE_DESTRUCTOR @ATTRIBUTE_DESTRUCTOR@
+ 
+ /* Type cast for the gethostbyname() argument */
+ #cmakedefine GETHOSTBYNAME_ARG_CAST @GETHOSTBYNAME_ARG_CAST@
+@@ -19,9 +19,6 @@
+ /* Define to 1 if you have the <ctype.h> header file. */
+ #cmakedefine HAVE_CTYPE_H 1
+ 
+-/* Define to 1 if you have the <dirent.h> header file. */
+-#cmakedefine HAVE_DIRENT_H 1
+-
+ /* Define to 1 if you have the <dlfcn.h> header file. */
+ #cmakedefine HAVE_DLFCN_H 1
+ 
+@@ -58,18 +55,9 @@
+ /* Define to 1 if you have the `isascii' function. */
+ #cmakedefine HAVE_ISASCII 1
+ 
+-/* Define if isinf is there */
+-#cmakedefine HAVE_ISINF 1
+-
+-/* Define if isnan is there */
+-#cmakedefine HAVE_ISNAN 1
+-
+ /* Define if history library is there (-lhistory) */
+ #cmakedefine HAVE_LIBHISTORY 1
+ 
+-/* Define if pthread library is there (-lpthread) */
+-#cmakedefine HAVE_LIBPTHREAD 1
+-
+ /* Define if readline library is there (-lreadline) */
+ #cmakedefine HAVE_LIBREADLINE 1
+ 
+@@ -79,18 +67,12 @@
+ /* Define to 1 if you have the `localtime' function. */
+ #cmakedefine HAVE_LOCALTIME 1
+ 
+-/* Define to 1 if you have the <lzma.h> header file. */
+-#cmakedefine HAVE_LZMA_H 1
+-
+ /* Define to 1 if you have the <malloc.h> header file. */
+ #cmakedefine HAVE_MALLOC_H 1
+ 
+ /* Define to 1 if you have the <math.h> header file. */
+ #cmakedefine HAVE_MATH_H 1
+ 
+-/* Define to 1 if you have the <memory.h> header file. */
+-#cmakedefine HAVE_MEMORY_H 1
+-
+ /* Define to 1 if you have the `mmap' function. */
+ #cmakedefine HAVE_MMAP 1
+ 
+@@ -102,9 +84,6 @@
+ #  undef /**/ HAVE_MMAP
+ #endif
+ 
+-/* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
+-#cmakedefine HAVE_NDIR_H 1
+-
+ /* Define to 1 if you have the <netdb.h> header file. */
+ #cmakedefine HAVE_NETDB_H 1
+ 
+@@ -135,9 +114,6 @@
+ /* Have shl_load based dso */
+ #cmakedefine HAVE_SHLLOAD 1
+ 
+-/* Define to 1 if you have the `signal' function. */
+-#cmakedefine HAVE_SIGNAL 1
+-
+ /* Define to 1 if you have the <signal.h> header file. */
+ #cmakedefine HAVE_SIGNAL_H 1
+ 
+@@ -174,17 +150,9 @@
+ /* Define to 1 if you have the <string.h> header file. */
+ #cmakedefine HAVE_STRING_H 1
+ 
+-/* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
+-   */
+-#cmakedefine HAVE_SYS_DIR_H 1
+-
+ /* Define to 1 if you have the <sys/mman.h> header file. */
+ #cmakedefine HAVE_SYS_MMAN_H 1
+ 
+-/* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
+-   */
+-#cmakedefine HAVE_SYS_NDIR_H 1
+-
+ /* Define to 1 if you have the <sys/select.h> header file. */
+ #cmakedefine HAVE_SYS_SELECT_H 1
+ 
+diff --git a/third_party/libxml/src/config.h.in b/third_party/libxml/src/config.h.in
+index a55d4e1..ed6ddec 100644
+--- a/third_party/libxml/src/config.h.in
++++ b/third_party/libxml/src/config.h.in
+@@ -21,7 +21,8 @@
+ /* Define to 1 if you have the <ctype.h> header file. */
+ #undef HAVE_CTYPE_H
+ 
+-/* Define to 1 if you have the <dirent.h> header file. */
++/* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
++   */
+ #undef HAVE_DIRENT_H
+ 
+ /* Define to 1 if you have the <dlfcn.h> header file. */
+@@ -60,18 +61,9 @@
+ /* Define to 1 if you have the `isascii' function. */
+ #undef HAVE_ISASCII
+ 
+-/* Define if isinf is there */
+-#undef HAVE_ISINF
+-
+-/* Define if isnan is there */
+-#undef HAVE_ISNAN
+-
+ /* Define if history library is there (-lhistory) */
+ #undef HAVE_LIBHISTORY
+ 
+-/* Define if pthread library is there (-lpthread) */
+-#undef HAVE_LIBPTHREAD
+-
+ /* Define if readline library is there (-lreadline) */
+ #undef HAVE_LIBREADLINE
+ 
+diff --git a/third_party/libxml/src/configure.ac b/third_party/libxml/src/configure.ac
+index 5b161a5..45e1df4 100644
+--- a/third_party/libxml/src/configure.ac
++++ b/third_party/libxml/src/configure.ac
+@@ -124,13 +124,12 @@
+ [  --with-html             add the HTML support (on)])
+ dnl Specific dir for HTML output ?
+ AC_ARG_WITH(html-dir, AS_HELP_STRING([--with-html-dir=path],
+-            [path to base html directory, default $datadir/doc/html]),
+-            [HTML_DIR=$withval], [HTML_DIR='$(datadir)/doc'])
++            [path to base html directory, default $docdir/html]),
++            [HTML_DIR=$withval], [HTML_DIR='$(docdir)/html'])
+ 
+ AC_ARG_WITH(html-subdir, AS_HELP_STRING([--with-html-subdir=path],
+-            [directory used under html-dir, default $PACKAGE-$VERSION/html]),
+-            [test "x$withval" != "x" && HTML_DIR="$HTML_DIR/$withval"],
+-            [HTML_DIR="$HTML_DIR/\$(PACKAGE)-\$(VERSION)/html"])
++            [directory used under html-dir, default '']),
++            [test "x$withval" != "x" && HTML_DIR="$HTML_DIR/$withval"])
+ AC_SUBST(HTML_DIR)
+ AC_ARG_WITH(http,
+ [  --with-http             add the HTTP support (on)])
+@@ -475,7 +474,6 @@
+ AC_CHECK_HEADERS([fcntl.h])
+ AC_CHECK_HEADERS([unistd.h])
+ AC_CHECK_HEADERS([ctype.h])
+-AC_CHECK_HEADERS([dirent.h])
+ AC_CHECK_HEADERS([errno.h])
+ AC_CHECK_HEADERS([malloc.h])
+ AC_CHECK_HEADERS([stdarg.h])
+@@ -741,13 +739,6 @@
+ 
+ dnl ******************************End IPv6 checks******************************
+ 
+-dnl Checks for isnan in libm if not in libc
+-AC_CHECK_FUNC(isnan, AC_DEFINE([HAVE_ISNAN],[], [Define if isnan is there]) , AC_CHECK_LIB(m, isnan,
+-  [AC_DEFINE([HAVE_ISNAN],[], [Define if isnan is there])]))
+-
+-AC_CHECK_FUNC(isinf, AC_DEFINE([HAVE_ISINF], [], [Define if isinf is there]) , AC_CHECK_LIB(m, isinf,
+-  [AC_DEFINE([HAVE_ISINF], [], [Define if isinf is there])]))
+-
+ XML_LIBDIR='-L${libdir}'
+ XML_INCLUDEDIR='-I${includedir}/libxml2'
+ 
+@@ -1063,7 +1054,6 @@
+             AC_CHECK_HEADER(pthread.h,
+                 AC_CHECK_LIB(pthread, pthread_join,[
+                 THREAD_LIBS="-lpthread"
+-                AC_DEFINE([HAVE_LIBPTHREAD], [], [Define if pthread library is there (-lpthread)])
+                 AC_DEFINE([HAVE_PTHREAD_H], [], [Define if <pthread.h> is there])
+                 WITH_THREADS="1"]))
+         fi
+@@ -1701,8 +1691,6 @@
+ AC_SUBST(ICU_LIBS)
+ AC_SUBST(XML_INCLUDEDIR)
+ AC_SUBST(HTML_DIR)
+-AC_SUBST(HAVE_ISNAN)
+-AC_SUBST(HAVE_ISINF)
+ AC_SUBST(PYTHON)
+ AC_SUBST(PYTHON_VERSION)
+ AC_SUBST(PYTHON_INCLUDES)
+diff --git a/third_party/libxml/src/encoding.c b/third_party/libxml/src/encoding.c
+index 5e50c15..3741c94 100644
+--- a/third_party/libxml/src/encoding.c
++++ b/third_party/libxml/src/encoding.c
+@@ -527,7 +527,7 @@
+ 	    in++;
+ 	}
+         if ((c & 0xFC00) == 0xD800) {    /* surrogates */
+-	    if (in >= inend) {           /* (in > inend) shouldn't happens */
++	    if (in >= inend) {           /* handle split mutli-byte characters */
+ 		break;
+ 	    }
+ 	    if (xmlLittleEndian) {
+@@ -744,38 +744,39 @@
+ {
+     unsigned char* outstart = out;
+     const unsigned char* processed = inb;
+-    unsigned char* outend = out + *outlen;
++    unsigned char* outend;
+     unsigned short* in = (unsigned short*) inb;
+     unsigned short* inend;
+     unsigned int c, d, inlen;
+     unsigned char *tmp;
+     int bits;
+ 
++    if (*outlen == 0) {
++        *inlenb = 0;
++        return(0);
++    }
++    outend = out + *outlen;
+     if ((*inlenb % 2) == 1)
+         (*inlenb)--;
+     inlen = *inlenb / 2;
+     inend= in + inlen;
+-    while (in < inend) {
++    while ((in < inend) && (out - outstart + 5 < *outlen)) {
+ 	if (xmlLittleEndian) {
+ 	    tmp = (unsigned char *) in;
+ 	    c = *tmp++;
+-	    c = c << 8;
+-	    c = c | (unsigned int) *tmp;
++	    c = (c << 8) | (unsigned int) *tmp;
+ 	    in++;
+ 	} else {
+ 	    c= *in++;
+ 	}
+         if ((c & 0xFC00) == 0xD800) {    /* surrogates */
+-	    if (in >= inend) {           /* (in > inend) shouldn't happens */
+-		*outlen = out - outstart;
+-		*inlenb = processed - inb;
+-	        return(-2);
++	    if (in >= inend) {           /* handle split mutli-byte characters */
++                break;
+ 	    }
+ 	    if (xmlLittleEndian) {
+ 		tmp = (unsigned char *) in;
+ 		d = *tmp++;
+-		d = d << 8;
+-		d = d | (unsigned int) *tmp;
++		d = (d << 8) | (unsigned int) *tmp;
+ 		in++;
+ 	    } else {
+ 		d= *in++;
+@@ -1822,7 +1823,7 @@
+     size_t icv_inlen, icv_outlen;
+     const char *icv_in = (const char *) in;
+     char *icv_out = (char *) out;
+-    int ret;
++    size_t ret;
+ 
+     if ((out == NULL) || (outlen == NULL) || (inlen == NULL) || (in == NULL)) {
+         if (outlen != NULL) *outlen = 0;
+@@ -1833,7 +1834,7 @@
+     ret = iconv(cd, (ICONV_CONST char **) &icv_in, &icv_inlen, &icv_out, &icv_outlen);
+     *inlen -= icv_inlen;
+     *outlen -= icv_outlen;
+-    if ((icv_inlen != 0) || (ret == -1)) {
++    if ((icv_inlen != 0) || (ret == (size_t) -1)) {
+ #ifdef EILSEQ
+         if (errno == EILSEQ) {
+             return -2;
+@@ -2495,7 +2496,7 @@
+      */
+     toconv = xmlBufUse(in);
+     if (toconv == 0)
+-        return (0);
++        return (writtentot);
+     if (toconv > 64 * 1024)
+         toconv = 64 * 1024;
+     if (toconv * 4 >= written) {
+diff --git a/third_party/libxml/src/fuzz/Makefile.in b/third_party/libxml/src/fuzz/Makefile.in
+index 47f1edb..8e724f7 100644
+--- a/third_party/libxml/src/fuzz/Makefile.in
++++ b/third_party/libxml/src/fuzz/Makefile.in
+@@ -1,7 +1,7 @@
+-# Makefile.in generated by automake 1.16.3 from Makefile.am.
++# Makefile.in generated by automake 1.16.5 from Makefile.am.
+ # @configure_input@
+ 
+-# Copyright (C) 1994-2020 Free Software Foundation, Inc.
++# Copyright (C) 1994-2021 Free Software Foundation, Inc.
+ 
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -250,8 +250,6 @@
+   unique=`for i in $$list; do \
+     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+   done | $(am__uniquify_input)`
+-ETAGS = etags
+-CTAGS = ctags
+ am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/depcomp README
+ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+ ACLOCAL = @ACLOCAL@
+@@ -270,6 +268,8 @@
+ CFLAGS = @CFLAGS@
+ CPP = @CPP@
+ CPPFLAGS = @CPPFLAGS@
++CSCOPE = @CSCOPE@
++CTAGS = @CTAGS@
+ CYGPATH_W = @CYGPATH_W@
+ CYGWIN_EXTRA_LDFLAGS = @CYGWIN_EXTRA_LDFLAGS@
+ CYGWIN_EXTRA_PYTHON_LIBADD = @CYGWIN_EXTRA_PYTHON_LIBADD@
+@@ -284,13 +284,12 @@
+ ECHO_N = @ECHO_N@
+ ECHO_T = @ECHO_T@
+ EGREP = @EGREP@
++ETAGS = @ETAGS@
+ EXEEXT = @EXEEXT@
+ EXTRA_CFLAGS = @EXTRA_CFLAGS@
+ FGREP = @FGREP@
+ FTP_OBJ = @FTP_OBJ@
+ GREP = @GREP@
+-HAVE_ISINF = @HAVE_ISINF@
+-HAVE_ISNAN = @HAVE_ISNAN@
+ HTML_DIR = @HTML_DIR@
+ HTML_OBJ = @HTML_OBJ@
+ HTTP_OBJ = @HTTP_OBJ@
+@@ -705,7 +704,6 @@
+ 
+ distclean-tags:
+ 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
+-
+ distdir: $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) distdir-am
+ 
+diff --git a/third_party/libxml/src/hash.c b/third_party/libxml/src/hash.c
+index afa094e..7b82d2f 100644
+--- a/third_party/libxml/src/hash.c
++++ b/third_party/libxml/src/hash.c
+@@ -86,7 +86,7 @@
+ xmlHashComputeKey(xmlHashTablePtr table, const xmlChar *name,
+ 	          const xmlChar *name2, const xmlChar *name3) {
+     unsigned long value = 0L;
+-    char ch;
++    unsigned long ch;
+ 
+ #ifdef HASH_RANDOMIZATION
+     value = table->random_seed;
+@@ -94,19 +94,19 @@
+     if (name != NULL) {
+ 	value += 30 * (*name);
+ 	while ((ch = *name++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+     }
+     value = value ^ ((value << 5) + (value >> 3));
+     if (name2 != NULL) {
+ 	while ((ch = *name2++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+     }
+     value = value ^ ((value << 5) + (value >> 3));
+     if (name3 != NULL) {
+ 	while ((ch = *name3++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+     }
+     return (value % table->size);
+@@ -121,7 +121,7 @@
+ 		   const xmlChar *prefix2, const xmlChar *name2,
+ 		   const xmlChar *prefix3, const xmlChar *name3) {
+     unsigned long value = 0L;
+-    char ch;
++    unsigned long ch;
+ 
+ #ifdef HASH_RANDOMIZATION
+     value = table->random_seed;
+@@ -133,37 +133,37 @@
+ 
+     if (prefix != NULL) {
+ 	while ((ch = *prefix++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+ 	value = value ^ ((value << 5) + (value >> 3) + (unsigned long)':');
+     }
+     if (name != NULL) {
+ 	while ((ch = *name++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+     }
+     value = value ^ ((value << 5) + (value >> 3));
+     if (prefix2 != NULL) {
+ 	while ((ch = *prefix2++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+ 	value = value ^ ((value << 5) + (value >> 3) + (unsigned long)':');
+     }
+     if (name2 != NULL) {
+ 	while ((ch = *name2++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+     }
+     value = value ^ ((value << 5) + (value >> 3));
+     if (prefix3 != NULL) {
+ 	while ((ch = *prefix3++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+ 	value = value ^ ((value << 5) + (value >> 3) + (unsigned long)':');
+     }
+     if (name3 != NULL) {
+ 	while ((ch = *name3++) != 0) {
+-	    value = value ^ ((value << 5) + (value >> 3) + (unsigned long)ch);
++	    value = value ^ ((value << 5) + (value >> 3) + ch);
+ 	}
+     }
+     return (value % table->size);
+diff --git a/third_party/libxml/src/libxml2.spec b/third_party/libxml/src/libxml2.spec
+index b3eca4f..8a8165b 100644
+--- a/third_party/libxml/src/libxml2.spec
++++ b/third_party/libxml/src/libxml2.spec
+@@ -204,6 +204,6 @@
+ %endif # with_python3
+ 
+ %changelog
+-* Tue Aug  3 2021 Daniel Veillard <veillard@redhat.com>
++* Mon Jan 31 2022 Daniel Veillard <veillard@redhat.com>
+ - upstream release 2.9.12 see http://xmlsoft.org/news.html
+ 
+diff --git a/third_party/libxml/src/macos/src/config-mac.h b/third_party/libxml/src/macos/src/config-mac.h
+index ca6f993..c82d2b9 100644
+--- a/third_party/libxml/src/macos/src/config-mac.h
++++ b/third_party/libxml/src/macos/src/config-mac.h
+@@ -9,15 +9,11 @@
+ #define PACKAGE
+ #define VERSION
+ 
+-#undef HAVE_LIBZ
+ #undef HAVE_LIBM
+-#undef HAVE_ISINF
+-#undef HAVE_ISNAN
+ #undef HAVE_LIBHISTORY
+ #undef HAVE_LIBREADLINE
+ 
+ #define XML_SOCKLEN_T socklen_t
+-#define HAVE_LIBPTHREAD
+ #define HAVE_PTHREAD_H
+ #define LIBXML_THREAD_ENABLED
+ 
+@@ -30,9 +26,6 @@
+ /* Define if you have the printf function.  */
+ #define HAVE_PRINTF
+ 
+-/* Define if you have the signal function.  */
+-#define HAVE_SIGNAL
+-
+ /* Define if you have the snprintf function.  */
+ #define HAVE_SNPRINTF
+ 
+@@ -63,9 +56,6 @@
+ /* Define if you have the <ctype.h> header file.  */
+ #define HAVE_CTYPE_H
+ 
+-/* Define if you have the <dirent.h> header file.  */
+-#define HAVE_DIRENT_H
+-
+ /* Define if you have the <dlfcn.h> header file.  */
+ #define HAVE_DLFCN_H
+ 
+@@ -84,9 +74,6 @@
+ /* Define if you have the <math.h> header file.  */
+ #define HAVE_MATH_H
+ 
+-/* Define if you have the <ndir.h> header file.  */
+-#define HAVE_NDIR_H
+-
+ /* Define if you have the <netdb.h> header file.  */
+ #define HAVE_NETDB_H
+ 
+@@ -105,15 +92,9 @@
+ /* Define if you have the <string.h> header file.  */
+ #define HAVE_STRING_H
+ 
+-/* Define if you have the <sys/dir.h> header file.  */
+-#define HAVE_SYS_DIR_H
+-
+ /* Define if you have the <sys/mman.h> header file.  */
+ #undef HAVE_SYS_MMAN_H
+ 
+-/* Define if you have the <sys/ndir.h> header file.  */
+-#undef HAVE_SYS_NDIR_H
+-
+ /* Define if you have the <sys/select.h> header file.  */
+ #define HAVE_SYS_SELECT_H
+ 
+diff --git a/third_party/libxml/src/parser.c b/third_party/libxml/src/parser.c
+index d5b72e4f..304f3be 100644
+--- a/third_party/libxml/src/parser.c
++++ b/third_party/libxml/src/parser.c
+@@ -2201,7 +2201,8 @@
+      * It's Okay to use CUR/NEXT here since all the blanks are on
+      * the ASCII range.
+      */
+-    if (ctxt->instate != XML_PARSER_DTD) {
++    if (((ctxt->inputNr == 1) && (ctxt->instate != XML_PARSER_DTD)) ||
++        (ctxt->instate == XML_PARSER_START)) {
+ 	const xmlChar *cur;
+ 	/*
+ 	 * if we are in the document content, go really fast
+@@ -4594,6 +4595,9 @@
+ 	    }
+ 	}
+ 	COPY_BUF(l,buf,nbchar,cur);
++	/* move current position before possible calling of ctxt->sax->characters */
++	NEXTL(l);
++	cur = CUR_CHAR(l);
+ 	if (nbchar >= XML_PARSER_BIG_BUFFER_SIZE) {
+ 	    buf[nbchar] = 0;
+ 
+@@ -4627,8 +4631,6 @@
+             if (ctxt->instate == XML_PARSER_EOF)
+ 		return;
+ 	}
+-	NEXTL(l);
+-	cur = CUR_CHAR(l);
+     }
+     if (nbchar != 0) {
+         buf[nbchar] = 0;
+@@ -12643,6 +12645,7 @@
+ 	    xmlFree(ctxt->sax);
+ 	ctxt->sax = (xmlSAXHandlerPtr) xmlMalloc(sizeof(xmlSAXHandler));
+ 	if (ctxt->sax == NULL) {
++	    xmlFreeParserInputBuffer(buf);
+ 	    xmlErrMemory(ctxt, NULL);
+ 	    xmlFreeParserCtxt(ctxt);
+ 	    return(NULL);
+diff --git a/third_party/libxml/src/parserInternals.c b/third_party/libxml/src/parserInternals.c
+index a731c16..08c6faf 100644
+--- a/third_party/libxml/src/parserInternals.c
++++ b/third_party/libxml/src/parserInternals.c
+@@ -1551,8 +1551,10 @@
+     }
+ 
+     inputStream = xmlNewInputStream(ctxt);
+-    if (inputStream == NULL)
++    if (inputStream == NULL) {
++	xmlFreeParserInputBuffer(buf);
+ 	return(NULL);
++    }
+ 
+     inputStream->buf = buf;
+     inputStream = xmlCheckHTTPInput(ctxt, inputStream);
+diff --git a/third_party/libxml/src/runtest.c b/third_party/libxml/src/runtest.c
+index 0f178cb..62b362d 100644
+--- a/third_party/libxml/src/runtest.c
++++ b/third_party/libxml/src/runtest.c
+@@ -1231,7 +1231,7 @@
+     if (quiet)
+ 	return;
+     for (i = 0;(i<len) && (i < 30);i++)
+-	output[i] = ch[i];
++	output[i] = (char) ch[i];
+     output[i] = 0;
+ 
+     fprintf(SAXdebug, "SAX.characters(%s, %d)\n", output, len);
+@@ -1273,7 +1273,7 @@
+     if (quiet)
+ 	return;
+     for (i = 0;(i<len) && (i < 30);i++)
+-	output[i] = ch[i];
++	output[i] = (char) ch[i];
+     output[i] = 0;
+     fprintf(SAXdebug, "SAX.ignorableWhitespace(%s, %d)\n", output, len);
+ }
+@@ -2132,6 +2132,75 @@
+     return(0);
+ }
+ 
++/**
++ * fdParseTest:
++ * @filename: the file to parse
++ * @result: the file with expected result
++ * @err: the file with error messages
++ *
++ * Parse a file using the xmlReadFd API and check for errors.
++ *
++ * Returns 0 in case of success, an error code otherwise
++ */
++static int
++fdParseTest(const char *filename, const char *result, const char *err,
++             int options) {
++    xmlDocPtr doc;
++    const char *base = NULL;
++    int size, res = 0;
++
++    nb_tests++;
++    int fd = open(filename, RD_FLAGS);
++#ifdef LIBXML_HTML_ENABLED
++    if (options & XML_PARSE_HTML) {
++        doc = htmlReadFd(fd, filename, NULL, options);
++    } else
++#endif
++    {
++	xmlGetWarningsDefaultValue = 1;
++	doc = xmlReadFd(fd, filename, NULL, options);
++    }
++    close(fd);
++    xmlGetWarningsDefaultValue = 0;
++    if (result) {
++	if (doc == NULL) {
++	    base = "";
++	    size = 0;
++	} else {
++#ifdef LIBXML_HTML_ENABLED
++	    if (options & XML_PARSE_HTML) {
++		htmlDocDumpMemory(doc, (xmlChar **) &base, &size);
++	    } else
++#endif
++	    xmlDocDumpMemory(doc, (xmlChar **) &base, &size);
++	}
++	res = compareFileMem(result, base, size);
++    }
++    if (doc != NULL) {
++	if (base != NULL)
++	    xmlFree((char *)base);
++	xmlFreeDoc(doc);
++    }
++    if (res != 0) {
++        fprintf(stderr, "Result for %s failed in %s\n", filename, result);
++        return(-1);
++    }
++    if (err != NULL) {
++	res = compareFileMem(err, testErrors, testErrorsSize);
++	if (res != 0) {
++	    fprintf(stderr, "Error for %s failed\n", filename);
++	    return(-1);
++	}
++    } else if (options & XML_PARSE_DTDVALID) {
++        if (testErrorsSize != 0)
++	    fprintf(stderr, "Validation for %s failed\n", filename);
++    }
++
++    return(0);
++}
++
++
++
+ #ifdef LIBXML_READER_ENABLED
+ /************************************************************************
+  *									*
+@@ -4249,6 +4318,9 @@
+     { "Error cases regression tests",
+       errParseTest, "./test/errors/*.xml", "result/errors/", "", ".err",
+       0 },
++    { "Error cases regression tests from file descriptor",
++      fdParseTest, "./test/errors/*.xml", "result/errors/", "", ".err",
++      0 },
+     { "Error cases regression tests with entity substitution",
+       errParseTest, "./test/errors/*.xml", "result/errors/", NULL, ".ent",
+       XML_PARSE_NOENT },
+@@ -4292,6 +4364,9 @@
+     { "HTML regression tests" ,
+       errParseTest, "./test/HTML/*", "result/HTML/", "", ".err",
+       XML_PARSE_HTML },
++    { "HTML regression tests from file descriptor",
++      fdParseTest, "./test/HTML/*", "result/HTML/", "", ".err",
++      XML_PARSE_HTML },
+ #ifdef LIBXML_PUSH_ENABLED
+     { "Push HTML regression tests" ,
+       pushParseTest, "./test/HTML/*", "result/HTML/", "", ".err",
+diff --git a/third_party/libxml/src/testchar.c b/third_party/libxml/src/testchar.c
+index 6866a17..51e4acf 100644
+--- a/third_party/libxml/src/testchar.c
++++ b/third_party/libxml/src/testchar.c
+@@ -32,7 +32,7 @@
+ 	lastError = 0;
+ 	xmlCtxtReset(ctxt);
+ 
+-        data[0] = i;
++        data[0] = (char) i;
+ 
+ 	res = xmlReadMemory(document, len, "test", NULL, 0);
+ 
+@@ -73,8 +73,8 @@
+ 	lastError = 0;
+ 	xmlCtxtReset(ctxt);
+ 
+-        data[0] = i;
+-        data[1] = j;
++        data[0] = (char) i;
++        data[1] = (char) j;
+ 
+ 	res = xmlReadMemory(document, len, "test", NULL, 0);
+ 
+@@ -248,7 +248,7 @@
+     data[2] = 0;
+     data[3] = 0;
+     for (i = 0;i <= 0xFF;i++) {
+-        data[0] = i;
++        data[0] = (char) i;
+ 	ctxt->charset = XML_CHAR_ENCODING_UTF8;
+ 
+ 	lastError = 0;
+@@ -275,8 +275,8 @@
+     data[3] = 0;
+     for (i = 0x80;i <= 0xFF;i++) {
+ 	for (j = 0;j <= 0xFF;j++) {
+-	    data[0] = i;
+-	    data[1] = j;
++	    data[0] = (char) i;
++	    data[1] = (char) j;
+ 	    ctxt->charset = XML_CHAR_ENCODING_UTF8;
+ 
+ 	    lastError = 0;
+@@ -353,8 +353,8 @@
+     for (i = 0xE0;i <= 0xFF;i++) {
+     for (j = 0;j <= 0xFF;j++) {
+     for (k = 0;k < 6;k++) {
+-	data[0] = i;
+-	data[1] = j;
++	data[0] = (char) i;
++	data[1] = (char) j;
+ 	K = lows[k];
+ 	data[2] = (char) K;
+ 	value = (K & 0x3F) + ((j & 0x3F) << 6) + ((i & 0xF) << 12);
+@@ -440,8 +440,8 @@
+     for (j = 0;j <= 0xFF;j++) {
+     for (k = 0;k < 6;k++) {
+     for (l = 0;l < 6;l++) {
+-	data[0] = i;
+-	data[1] = j;
++	data[0] = (char) i;
++	data[1] = (char) j;
+ 	K = lows[k];
+ 	data[2] = (char) K;
+ 	L = lows[l];
+diff --git a/third_party/libxml/src/tree.c b/third_party/libxml/src/tree.c
+index c707f59..50b6763 100644
+--- a/third_party/libxml/src/tree.c
++++ b/third_party/libxml/src/tree.c
+@@ -1596,6 +1596,10 @@
+ 			 */
+ 			if (!xmlBufIsEmpty(buf)) {
+ 			    node = xmlNewDocText(doc, NULL);
++			    if (node == NULL) {
++				if (val != NULL) xmlFree(val);
++				goto out;
++			    }
+ 			    node->content = xmlBufDetach(buf);
+ 
+ 			    if (last == NULL) {
+diff --git a/third_party/libxml/src/uri.c b/third_party/libxml/src/uri.c
+index 8204825..ccc26aa 100644
+--- a/third_party/libxml/src/uri.c
++++ b/third_party/libxml/src/uri.c
+@@ -1638,23 +1638,24 @@
+     out = ret;
+     while(len > 0) {
+ 	if ((len > 2) && (*in == '%') && (is_hex(in[1])) && (is_hex(in[2]))) {
++            int c = 0;
+ 	    in++;
+ 	    if ((*in >= '0') && (*in <= '9'))
+-	        *out = (*in - '0');
++	        c = (*in - '0');
+ 	    else if ((*in >= 'a') && (*in <= 'f'))
+-	        *out = (*in - 'a') + 10;
++	        c = (*in - 'a') + 10;
+ 	    else if ((*in >= 'A') && (*in <= 'F'))
+-	        *out = (*in - 'A') + 10;
++	        c = (*in - 'A') + 10;
+ 	    in++;
+ 	    if ((*in >= '0') && (*in <= '9'))
+-	        *out = *out * 16 + (*in - '0');
++	        c = c * 16 + (*in - '0');
+ 	    else if ((*in >= 'a') && (*in <= 'f'))
+-	        *out = *out * 16 + (*in - 'a') + 10;
++	        c = c * 16 + (*in - 'a') + 10;
+ 	    else if ((*in >= 'A') && (*in <= 'F'))
+-	        *out = *out * 16 + (*in - 'A') + 10;
++	        c = c * 16 + (*in - 'A') + 10;
+ 	    in++;
+ 	    len -= 3;
+-	    out++;
++	    *out++ = (char) c;
+ 	} else {
+ 	    *out++ = *in++;
+ 	    len--;
+diff --git a/third_party/libxml/src/win32/configure.js b/third_party/libxml/src/win32/configure.js
+index cec64c5..8f03b464 100644
+--- a/third_party/libxml/src/win32/configure.js
++++ b/third_party/libxml/src/win32/configure.js
+@@ -408,6 +408,14 @@
+ 			of.WriteLine(s.replace(/\@prefix\@/, buildPrefix));
+ 		} else if (s.search(/\@WITH_THREADS\@/) != -1) {
+ 			of.WriteLine(s.replace(/\@WITH_THREADS\@/, withThreads == "no"? "0" : "1"));
++		} else if (s.search(/\@WITH_ZLIB\@/) != -1) {
++			of.WriteLine(s.replace(/\@WITH_ZLIB\@/, withZlib? "1" : "0"));
++		} else if (s.search(/\@WITH_LZMA\@/) != -1) {
++			of.WriteLine(s.replace(/\@WITH_LZMA\@/, withLzma? "1" : "0"));
++		} else if (s.search(/\@WITH_ICONV\@/) != -1) {
++            of.WriteLine(s.replace(/\@WITH_ICONV\@/, withIconv? "1" : "0"));
++		} else if (s.search(/\@WITH_ICU\@/) != -1) {
++			of.WriteLine(s.replace(/\@WITH_ICU\@/, withIcu? "1" : "0"));
+ 		} else
+ 			of.WriteLine(ln);
+ 	}
+diff --git a/third_party/libxml/src/xmlIO.c b/third_party/libxml/src/xmlIO.c
+index f20c0fa0..007144c 100644
+--- a/third_party/libxml/src/xmlIO.c
++++ b/third_party/libxml/src/xmlIO.c
+@@ -2735,6 +2735,8 @@
+ 		    ret->writecallback = xmlGzfileWrite;
+ 		    ret->closecallback = xmlGzfileClose;
+ 		}
++		else
++		    xmlGzfileClose(context);
+ 		return(ret);
+ 	    }
+ 	}
+diff --git a/third_party/libxml/src/xmlmemory.c b/third_party/libxml/src/xmlmemory.c
+index c51f49a..e0b2531 100644
+--- a/third_party/libxml/src/xmlmemory.c
++++ b/third_party/libxml/src/xmlmemory.c
+@@ -78,7 +78,7 @@
+  * Each of the blocks allocated begin with a header containing information
+  */
+ 
+-#define MEMTAG 0x5aa5
++#define MEMTAG 0x5aa5U
+ 
+ #define MALLOC_TYPE 1
+ #define REALLOC_TYPE 2
+diff --git a/third_party/libxml/src/xmlstring.c b/third_party/libxml/src/xmlstring.c
+index 62d3053..245c751 100644
+--- a/third_party/libxml/src/xmlstring.c
++++ b/third_party/libxml/src/xmlstring.c
+@@ -18,6 +18,7 @@
+ 
+ #include <stdlib.h>
+ #include <string.h>
++#include <limits.h>
+ #include <libxml/xmlmemory.h>
+ #include <libxml/parserInternals.h>
+ #include <libxml/xmlstring.h>
+@@ -42,7 +43,7 @@
+     xmlChar *ret;
+ 
+     if ((cur == NULL) || (len < 0)) return(NULL);
+-    ret = (xmlChar *) xmlMallocAtomic((len + 1) * sizeof(xmlChar));
++    ret = (xmlChar *) xmlMallocAtomic(((size_t) len + 1) * sizeof(xmlChar));
+     if (ret == NULL) {
+         xmlErrMemory(NULL, NULL);
+         return(NULL);
+@@ -87,7 +88,7 @@
+     xmlChar *ret;
+ 
+     if ((cur == NULL) || (len < 0)) return(NULL);
+-    ret = (xmlChar *) xmlMallocAtomic((len + 1) * sizeof(xmlChar));
++    ret = (xmlChar *) xmlMallocAtomic(((size_t) len + 1) * sizeof(xmlChar));
+     if (ret == NULL) {
+         xmlErrMemory(NULL, NULL);
+         return(NULL);
+@@ -423,14 +424,14 @@
+ 
+ int
+ xmlStrlen(const xmlChar *str) {
+-    int len = 0;
++    size_t len = 0;
+ 
+     if (str == NULL) return(0);
+     while (*str != 0) { /* non input consuming */
+         str++;
+         len++;
+     }
+-    return(len);
++    return(len > INT_MAX ? 0 : len);
+ }
+ 
+ /**
+@@ -460,9 +461,9 @@
+         return(xmlStrndup(add, len));
+ 
+     size = xmlStrlen(cur);
+-    if (size < 0)
++    if ((size < 0) || (size > INT_MAX - len))
+         return(NULL);
+-    ret = (xmlChar *) xmlRealloc(cur, (size + len + 1) * sizeof(xmlChar));
++    ret = (xmlChar *) xmlRealloc(cur, ((size_t) size + len + 1) * sizeof(xmlChar));
+     if (ret == NULL) {
+         xmlErrMemory(NULL, NULL);
+         return(cur);
+@@ -500,9 +501,9 @@
+         return(xmlStrndup(str2, len));
+ 
+     size = xmlStrlen(str1);
+-    if (size < 0)
++    if ((size < 0) || (size > INT_MAX - len))
+         return(NULL);
+-    ret = (xmlChar *) xmlMalloc((size + len + 1) * sizeof(xmlChar));
++    ret = (xmlChar *) xmlMalloc(((size_t) size + len + 1) * sizeof(xmlChar));
+     if (ret == NULL) {
+         xmlErrMemory(NULL, NULL);
+         return(xmlStrndup(str1, size));
+@@ -667,7 +668,7 @@
+  */
+ int
+ xmlUTF8Strlen(const xmlChar *utf) {
+-    int ret = 0;
++    size_t ret = 0;
+ 
+     if (utf == NULL)
+         return(-1);
+@@ -694,7 +695,7 @@
+         }
+         ret++;
+     }
+-    return(ret);
++    return(ret > INT_MAX ? 0 : ret);
+ }
+ 
+ /**
+@@ -796,26 +797,28 @@
+      *    1110xxxx 10xxxxxx 10xxxxxx                    valid 3-byte
+      *    11110xxx 10xxxxxx 10xxxxxx 10xxxxxx           valid 4-byte
+      */
+-    for (ix = 0; (c = utf[ix]);) {      /* string is 0-terminated */
++    while ((c = utf[0])) {      /* string is 0-terminated */
++        ix = 0;
+         if ((c & 0x80) == 0x00) {	/* 1-byte code, starts with 10 */
+-            ix++;
++            ix = 1;
+ 	} else if ((c & 0xe0) == 0xc0) {/* 2-byte code, starts with 110 */
+-	    if ((utf[ix+1] & 0xc0 ) != 0x80)
++	    if ((utf[1] & 0xc0 ) != 0x80)
+ 	        return 0;
+-	    ix += 2;
++	    ix = 2;
+ 	} else if ((c & 0xf0) == 0xe0) {/* 3-byte code, starts with 1110 */
+-	    if (((utf[ix+1] & 0xc0) != 0x80) ||
+-	        ((utf[ix+2] & 0xc0) != 0x80))
++	    if (((utf[1] & 0xc0) != 0x80) ||
++	        ((utf[2] & 0xc0) != 0x80))
+ 		    return 0;
+-	    ix += 3;
++	    ix = 3;
+ 	} else if ((c & 0xf8) == 0xf0) {/* 4-byte code, starts with 11110 */
+-	    if (((utf[ix+1] & 0xc0) != 0x80) ||
+-	        ((utf[ix+2] & 0xc0) != 0x80) ||
+-		((utf[ix+3] & 0xc0) != 0x80))
++	    if (((utf[1] & 0xc0) != 0x80) ||
++	        ((utf[2] & 0xc0) != 0x80) ||
++		((utf[3] & 0xc0) != 0x80))
+ 		    return 0;
+-	    ix += 4;
++	    ix = 4;
+ 	} else				/* unknown encoding */
+ 	    return 0;
++        utf += ix;
+       }
+       return(1);
+ }
+@@ -834,8 +837,9 @@
+ 
+ int
+ xmlUTF8Strsize(const xmlChar *utf, int len) {
+-    const xmlChar   *ptr=utf;
+-    xmlChar         ch;
++    const xmlChar *ptr=utf;
++    int ch;
++    size_t ret;
+ 
+     if (utf == NULL)
+         return(0);
+@@ -857,7 +861,8 @@
+             }
+         }
+     }
+-    return (ptr - utf);
++    ret = ptr - utf;
++    return (ret > INT_MAX ? 0 : ret);
+ }
+ 
+ /**
+@@ -876,11 +881,8 @@
+ 
+     if ((utf == NULL) || (len < 0)) return(NULL);
+     i = xmlUTF8Strsize(utf, len);
+-    ret = (xmlChar *) xmlMallocAtomic((i + 1) * sizeof(xmlChar));
++    ret = (xmlChar *) xmlMallocAtomic(((size_t) i + 1) * sizeof(xmlChar));
+     if (ret == NULL) {
+-        xmlGenericError(xmlGenericErrorContext,
+-                "malloc of %ld byte failed\n",
+-                (len + 1) * (long)sizeof(xmlChar));
+         return(NULL);
+     }
+     memcpy(ret, utf, i * sizeof(xmlChar));
+@@ -900,7 +902,7 @@
+  */
+ const xmlChar *
+ xmlUTF8Strpos(const xmlChar *utf, int pos) {
+-    xmlChar ch;
++    int ch;
+ 
+     if (utf == NULL) return(NULL);
+     if (pos < 0)
+@@ -932,14 +934,15 @@
+  */
+ int
+ xmlUTF8Strloc(const xmlChar *utf, const xmlChar *utfchar) {
+-    int i, size;
+-    xmlChar ch;
++    size_t i;
++    int size;
++    int ch;
+ 
+     if (utf==NULL || utfchar==NULL) return -1;
+     size = xmlUTF8Strsize(utfchar, 1);
+         for(i=0; (ch=*utf) != 0; i++) {
+             if (xmlStrncmp(utf, utfchar, size)==0)
+-                return(i);
++                return(i > INT_MAX ? 0 : i);
+             utf++;
+             if ( ch & 0x80 ) {
+                 /* if not simple ascii, verify proper format */
+@@ -969,8 +972,8 @@
+ 
+ xmlChar *
+ xmlUTF8Strsub(const xmlChar *utf, int start, int len) {
+-    int            i;
+-    xmlChar ch;
++    int i;
++    int ch;
+ 
+     if (utf == NULL) return(NULL);
+     if (start < 0) return(NULL);
+@@ -1026,6 +1029,8 @@
+     if (count == 0)
+         return(*msg);
+ 
++    if ((count > INT_MAX) || (msgLen > INT_MAX - count))
++        return(NULL);
+     resultLen = msgLen + count + 1;
+     result = (xmlChar *) xmlMallocAtomic(resultLen * sizeof(xmlChar));
+     if (result == NULL) {
+diff --git a/third_party/libxml/src/xpath.c b/third_party/libxml/src/xpath.c
+index d9e9408..6735395 100644
+--- a/third_party/libxml/src/xpath.c
++++ b/third_party/libxml/src/xpath.c
+@@ -11120,7 +11120,9 @@
+ 	    name = NULL;
+ 	    if (CUR != ')') {
+ 		name = xmlXPathParseLiteral(ctxt);
+-		CHECK_ERROR NULL;
++                if (name == NULL) {
++	            XP_ERRORNULL(XPATH_EXPR_ERROR);
++                }
+ 		*test = NODE_TEST_PI;
+ 		SKIP_BLANKS;
+ 	    }
