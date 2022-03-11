@@ -1815,6 +1815,18 @@ describe('BrowserWindow module', () => {
       expect(BrowserWindow.fromWebContents(webviewContents)!.id).to.equal(w.id);
       await p;
     });
+
+    it('is usable immediately on browser-window-created', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.open(""); null');
+      const [win, winFromWebContents] = await new Promise((resolve) => {
+        app.once('browser-window-created', (e, win) => {
+          resolve([win, BrowserWindow.fromWebContents(win.webContents)]);
+        });
+      });
+      expect(winFromWebContents).to.equal(win);
+    });
   });
 
   describe('BrowserWindow.openDevTools()', () => {
