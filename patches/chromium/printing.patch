@@ -127,7 +127,7 @@ index 52a13c0c47f7f3f18c4f552806add67291ce8726..765bde402fec094b51faea68e67d3782
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index adcd00e8d557b6b94fd3fb88b4926b712699cb80..92896f2251ded0947cec8e535004ff87c48eb520 100644
+index 3e71a3f6e062a608d645c5fb4620ace2d083c592..0284d571a6a8a8ed7d5d9a5d1663c33985d957d4 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,10 +30,10 @@
@@ -260,11 +260,11 @@ index adcd00e8d557b6b94fd3fb88b4926b712699cb80..92896f2251ded0947cec8e535004ff87
  
  void PrintViewManagerBase::UpdatePrintingEnabled() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-   // The Unretained() is safe because ForEachFrame() is synchronous.
--  web_contents()->ForEachFrame(base::BindRepeating(
+   // The Unretained() is safe because ForEachRenderFrameHost() is synchronous.
+-  web_contents()->GetMainFrame()->ForEachRenderFrameHost(base::BindRepeating(
 -      &PrintViewManagerBase::SendPrintingEnabled, base::Unretained(this),
 -      printing_enabled_.GetValue()));
-+  web_contents()->ForEachFrame(
++  web_contents()->GetMainFrame()->ForEachRenderFrameHost(
 +      base::BindRepeating(&PrintViewManagerBase::SendPrintingEnabled,
 +                          base::Unretained(this), true));
  }
