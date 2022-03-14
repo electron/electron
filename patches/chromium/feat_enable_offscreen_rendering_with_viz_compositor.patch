@@ -108,7 +108,7 @@ index 77d463e683d8b8d3a202681a6884eacaab79d70d..05d51cb2637d34c073cd0025e3658036
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 8a277c6337d446890bb32814a68db2a9d3d3cd72..4c4e631d5a1476eaad6f54281e6d6899070d1a65 100644
+index 8a277c6337d446890bb32814a68db2a9d3d3cd72..7b97a7f8b78bea66ef4d3803f02448976aad9f66 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -26,6 +26,7 @@
@@ -159,9 +159,9 @@ index 8a277c6337d446890bb32814a68db2a9d3d3cd72..4c4e631d5a1476eaad6f54281e6d6899
 +#if !BUILDFLAG(IS_APPLE)
 +  if (offscreen) {
 +    DCHECK(display_client);
-+    mojom::LayeredWindowUpdaterPtr layered_window_updater;
++    mojo::PendingRemote<LayeredWindowUpdater> layered_window_updater;
 +    display_client->CreateLayeredWindowUpdater(
-+        mojo::MakeRequest(&layered_window_updater));
++        layered_window_updater.InitWithNewPipeAndPassReceiver());
 +    return std::make_unique<SoftwareOutputDeviceProxy>(
 +        std::move(layered_window_updater));
 +  }
