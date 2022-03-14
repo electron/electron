@@ -601,7 +601,7 @@ source_set("electron_lib") {
       "shell/renderer/pepper_helper.h",
     ]
   }
-  
+
   if (enable_run_as_node) {
     sources += [
       "shell/app/node_main.cc",
