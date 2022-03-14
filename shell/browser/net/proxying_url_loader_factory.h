@@ -32,8 +32,6 @@
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/browser/net/web_request_api_interface.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
-// #include
-// "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom.h"
 #include "url/gurl.h"
 
 namespace electron {
@@ -149,7 +147,6 @@ class ProxyingURLLoaderFactory
 
     mojo::Receiver<network::mojom::URLLoaderClient> proxied_client_receiver_{
         this};
-    // blink::mojom::TransferrableURLLoaderPtr target_loader_;
     mojo::Remote<network::mojom::URLLoader> target_loader_;
 
     network::mojom::URLResponseHeadPtr current_response_;
