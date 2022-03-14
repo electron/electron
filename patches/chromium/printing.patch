@@ -462,7 +462,7 @@ index 2661776307f773ac8f2c62529ec86349b045ee8f..4fa8f358ee59baed32ef4fd0684d0102
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 5afad24754e12554368a6619466ca025edc26180..0d91a0b1581d434c06ee6aa9db8958506e73eb3f 100644
+index 5afad24754e12554368a6619466ca025edc26180..e2e786692bd877d3b8bf7c31829496afa99ed539 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -274,7 +274,7 @@ interface PrintPreviewUI {
@@ -470,7 +470,7 @@ index 5afad24754e12554368a6619466ca025edc26180..0d91a0b1581d434c06ee6aa9db895850
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
 -  PrintRequestedPages();
-+  PrintRequestedPages(bool silent, mojo_base.mojom.DictionaryValue settings);
++  PrintRequestedPages(bool silent, mojo_base.mojom.DeprecatedDictionaryValue settings);
  
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
