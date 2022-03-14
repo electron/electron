@@ -186,7 +186,6 @@ void RendererClientBase::RenderThreadStarted() {
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 #endif
 
-
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   spellcheck_ = std::make_unique<SpellCheck>(this);
 #endif
@@ -369,7 +368,6 @@ bool RendererClientBase::IsPluginHandledExternally(
   return false;
 #endif
 }
-
 
 std::unique_ptr<blink::WebPrescientNetworking>
 RendererClientBase::CreatePrescientNetworking(

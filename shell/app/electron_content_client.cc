@@ -18,8 +18,8 @@
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
-#include "ppapi/buildflags/buildflags.h"
 #include "pdf/buildflags.h"
+#include "ppapi/buildflags/buildflags.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -35,18 +35,18 @@
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "pdf/pdf.h"        // nogncheck
 #include "chrome/renderer/pdf/chrome_pdf_internal_plugin_delegate.h"
 #include "components/pdf/common/internal_plugin_helpers.h"
 #include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
+#include "pdf/pdf.h"  // nogncheck
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
+#include "chrome/renderer/plugins/chrome_plugin_placeholder.h"
+#include "content/public/browser/plugin_service.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
-#include "content/public/browser/plugin_service.h"
-#include "chrome/renderer/plugins/chrome_plugin_placeholder.h"
 #include "ppapi/shared_impl/ppapi_switches.h"  // nogncheck crbug.com/1125897
 #else
 #include "components/plugins/renderer/plugin_placeholder.h"
@@ -111,8 +111,8 @@ bool IsWidevineAvailable(
 #if BUILDFLAG(ENABLE_PLUGINS)
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  // TODO(upstream/thestig): Figure out how to make the PDF Viewer work without this
-  // PPAPI plugin registration.
+  // TODO(upstream/thestig): Figure out how to make the PDF Viewer work without
+  // this PPAPI plugin registration.
   content::PepperPluginInfo pdf_info;
   pdf_info.is_internal = true;
   pdf_info.is_out_of_process = true;
