@@ -186,11 +186,6 @@ void RendererClientBase::RenderThreadStarted() {
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 #endif
 
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  // Enables printing from Chrome PDF viewer.
-  pdf_print_client_ = std::make_unique<ChromePDFPrintClient>();
-  pdf::PepperPDFHost::SetPrintClient(pdf_print_client_.get());
-#endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   spellcheck_ = std::make_unique<SpellCheck>(this);
@@ -375,11 +370,6 @@ bool RendererClientBase::IsPluginHandledExternally(
 #endif
 }
 
-bool RendererClientBase::IsOriginIsolatedPepperPlugin(
-    const base::FilePath& plugin_path) {
-  // Isolate all Pepper plugins, including the PDF plugin.
-  return true;
-}
 
 std::unique_ptr<blink::WebPrescientNetworking>
 RendererClientBase::CreatePrescientNetworking(

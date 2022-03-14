@@ -21,7 +21,9 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/renderer/pepper/chrome_pdf_print_client.h"  // nogncheck
+#include "chrome/renderer/pdf/chrome_pdf_internal_plugin_delegate.h"
+#include "components/pdf/common/internal_plugin_helpers.h"
+#include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -111,7 +113,6 @@ class RendererClientBase : public content::ContentRendererClient
                                  const blink::WebElement& plugin_element,
                                  const GURL& original_url,
                                  const std::string& mime_type) override;
-  bool IsOriginIsolatedPepperPlugin(const base::FilePath& plugin_path) override;
 
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
@@ -161,9 +162,6 @@ class RendererClientBase : public content::ContentRendererClient
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   std::unique_ptr<SpellCheck> spellcheck_;
-#endif
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  std::unique_ptr<ChromePDFPrintClient> pdf_print_client_;
 #endif
 };
 

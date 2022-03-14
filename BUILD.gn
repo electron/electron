@@ -698,7 +698,7 @@ source_set("electron_lib") {
       "//chrome/browser/resources/pdf:resources",
       "//components/pdf/browser",
       "//components/pdf/renderer",
-      "//pdf:pdf_ppapi",
+      "//pdf",
     ]
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",

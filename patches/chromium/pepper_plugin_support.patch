@@ -156,7 +156,7 @@ index 40fafdbed313800a3f420d9d5a3daf8bbbdb7d95..1367725e04455ba5f299b8341a28f222
  
  #endif  // CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_ISOLATED_FILE_SYSTEM_MESSAGE_FILTER_H_
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index e3ee403ec5d4d75f22f1853ec8637a0559ce3c43..714d64e5ff96c47b86d554d338f4b5123174559a 100644
+index e3ee403ec5d4d75f22f1853ec8637a0559ce3c43..76232286e02a20bcd578c5ba28af638dfc8f562c 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 @@ -5,7 +5,9 @@
@@ -169,7 +169,15 @@ index e3ee403ec5d4d75f22f1853ec8637a0559ce3c43..714d64e5ff96c47b86d554d338f4b512
  #include "content/public/renderer/renderer_ppapi_host.h"
  #include "ppapi/host/ppapi_host.h"
  #include "ppapi/host/resource_host.h"
-@@ -42,6 +44,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -33,6 +35,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+   if (!host_->IsValidInstance(instance))
+     return nullptr;
+ 
++#if 0
+   // Permissions for the following interfaces will be checked at the
+   // time of the corresponding instance's method calls.  Currently these
+   // interfaces are available only for whitelisted apps which may not have
+@@ -42,6 +45,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        return std::make_unique<PepperUMAHost>(host_, instance, resource);
      }
    }

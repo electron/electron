@@ -302,8 +302,6 @@ static_library("chrome") {
         "//chrome/browser/pdf/pdf_extension_util.h",
         "//chrome/browser/pdf/pdf_frame_util.cc",
         "//chrome/browser/pdf/pdf_frame_util.h",
-        "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
-        "//chrome/renderer/pepper/chrome_pdf_print_client.h",
       ]
     }
   }
@@ -346,8 +344,6 @@ source_set("plugins") {
   sources += [
     "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc",
     "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h",
-    "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
-    "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
   ]
