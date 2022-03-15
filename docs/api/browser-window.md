@@ -146,7 +146,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `useContentSize` boolean (optional) - The `width` and `height` would be used as web
     page's size, which means the actual window's size will include window
     frame's size and be slightly larger. Default is `false`.
-  * `center` boolean (optional) - Show window in the center of the screen.
+  * `center` boolean (optional) - Show window in the center of the screen. Default is `false`.
   * `minWidth` Integer (optional) - Window's minimum width. Default is `0`.
   * `minHeight` Integer (optional) - Window's minimum height. Default is `0`.
   * `maxWidth` Integer (optional) - Window's maximum width. Default is no limit.
