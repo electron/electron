@@ -5,6 +5,8 @@ const fs = require('fs');
 const got = require('got');
 const path = require('path');
 const { handleGitCall, ELECTRON_DIR } = require('./lib/utils.js');
+const { Octokit } = require('@octokit/rest');
+const octokit = new Octokit();
 
 const APPVEYOR_IMAGES_URL = 'https://ci.appveyor.com/api/build-clouds';
 const APPVEYOR_JOB_URL = 'https://ci.appveyor.com/api/builds';
@@ -17,8 +19,8 @@ const DEFAULT_BUILD_IMAGE = 'base-electron';
 // const DEFAULT_BUILD_IMAGE = 'electron-99.0.4767.0';
 
 const appVeyorJobs = {
+  // TODO: Disabling other jobs so I don't blast this across three jobs while testing
   'electron-x64': 'electron-ljo26' // 'electron-x64-testing'
-  // TODO: Disabling so I don't blast this across three jobs while testing
   // 'electron-woa': 'electron-ldhmv' // 'electron-woa-testing'
   // 'electron-ia32': 'electron-ia32-testing', // this has no alt slug
 };
@@ -58,11 +60,25 @@ async function checkAppVeyorImage (options) {
   };
 
   try {
-    const { settings } = await makeRequest(requestOpts, true);
+    const { settings } = await makeRequest(requestOpts);
     const { cloudSettings } = settings;
     return cloudSettings.images.find(image => image.name === `${options.imageVersion}`) || null;
   } catch (err) {
     console.log('Could not call AppVeyor: ', err);
+  }
+}
+
+async function getPullRequestId (targetBranch) {
+  const prsForBranch = await octokit.pulls.list({
+    owner: 'electron',
+    repo: 'electron',
+    state: 'open',
+    head: `electron:${targetBranch}`
+  });
+  if (prsForBranch.data.length === 1) {
+    return prsForBranch.data[0].number;
+  } else {
+    return null;
   }
 }
 
@@ -78,6 +94,7 @@ function useAppVeyorImage (targetBranch, options) {
 
 async function callAppVeyorBuildJobs (targetBranch, job, options) {
   console.log(`Using AppVeyor image ${options.version} for ${job}`);
+  const pullRequestId = await getPullRequestId(targetBranch);
   const environmentVariables = {
     APPVEYOR_BUILD_WORKER_CLOUD: DEFAULT_BUILD_CLOUD,
     APPVEYOR_BUILD_WORKER_IMAGE: options.version
@@ -95,6 +112,7 @@ async function callAppVeyorBuildJobs (targetBranch, job, options) {
       accountName: 'electron-bot',
       projectSlug: appVeyorJobs[job],
       branch: targetBranch,
+      pullRequestId: pullRequestId || undefined,
       commitId: options.commit || undefined,
       environmentVariables
     }),
@@ -102,7 +120,7 @@ async function callAppVeyorBuildJobs (targetBranch, job, options) {
   };
 
   try {
-    const { version } = await makeRequest(requestOpts, true);
+    const { version } = await makeRequest(requestOpts);
     const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
     console.log(`AppVeyor CI request for ${job} successful.  Check status at ${buildUrl}`);
   } catch (err) {
@@ -138,7 +156,7 @@ async function bakeAppVeyorImage (targetBranch, options) {
   };
 
   try {
-    const { version } = await makeRequest(requestOpts, true);
+    const { version } = await makeRequest(requestOpts);
     const bakeUrl = `https://ci.appveyor.com/project/electron-bot/${appveyorBakeJob}/build/${version}`;
     console.log(`AppVeyor image bake request for ${options.version} successful.  Check bake status at ${bakeUrl}`);
   } catch (err) {
@@ -158,7 +176,7 @@ async function prepareAppVeyorImage (opts) {
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    const imageVersion = opts.imageVersion || `electron-test-default-${CHROMIUM_VERSION}`;
+    const imageVersion = opts.imageVersion || `electron-${CHROMIUM_VERSION}`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
     if (image && image.name) {
