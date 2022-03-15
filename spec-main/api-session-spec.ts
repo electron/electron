@@ -1121,6 +1121,20 @@ describe('session module', () => {
     });
   });
 
+  describe('session.setCodeCachePath()', () => {
+    it('throws when relative or empty path is provided', () => {
+      expect(() => {
+        session.defaultSession.setCodeCachePath('../fixtures');
+      }).to.throw('Absolute path must be provided to store code cache.');
+      expect(() => {
+        session.defaultSession.setCodeCachePath('');
+      }).to.throw('Absolute path must be provided to store code cache.');
+      expect(() => {
+        session.defaultSession.setCodeCachePath(path.join(app.getPath('userData'), 'test-code-cache'));
+      }).to.not.throw();
+    });
+  });
+
   describe('ses.setSSLConfig()', () => {
     it('can disable cipher suites', async () => {
       const ses = session.fromPartition('' + Math.random());
