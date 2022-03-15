@@ -868,6 +868,20 @@ this session just before normal `preload` scripts run.
 Returns `string[]` an array of paths to preload scripts that have been
 registered.
 
+#### `ses.setCodeCachePath(path)`
+
+* `path` String - Absolute path to store the v8 generated JS code cache from the renderer.
+
+Sets the directory to store the generated JS [code cache](https://v8.dev/blog/code-caching-for-devs) for this session. The directory is not required to be created by the user before this call, the runtime will create if it does not exist otherwise will use the existing directory. If directory cannot be created, then code cache will not be used and all operations related to code cache will fail silently inside the runtime. By default, the directory will be `Code Cache` under the
+respective user data folder.
+
+#### `ses.clearCodeCaches(options)`
+
+* `options` Object
+  * `urls` String[] (optional) - An array of url corresponding to the resource whose generated code cache needs to be removed. If the list is empty then all entries in the cache directory will be removed.
+
+Returns `Promise<void>` - resolves when the code cache clear operation is complete.
+
 #### `ses.setSpellCheckerEnabled(enable)`
 
 * `enable` boolean
