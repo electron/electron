@@ -379,7 +379,7 @@ module that uses the `webContents.send` API to send an IPC message from the main
 target renderer.
 
 ```javascript {11-26} title='main.js (Main Process)'
-const {app, BrowserWindow, Menu} = require('electron')
+const {app, BrowserWindow, Menu, ipcMain} = require('electron')
 const path = require('path')
 
 function createWindow () {
@@ -519,7 +519,7 @@ window.electronAPI.onUpdateCounter((event, value) => {
   const oldValue = Number(counter.innerText)
   const newValue = oldValue + value
   counter.innerText = newValue
-  event.reply('counter-value', newValue)
+  event.sender.send('counter-value', newValue)
 })
 ```
 
