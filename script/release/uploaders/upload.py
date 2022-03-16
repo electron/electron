@@ -16,7 +16,7 @@ sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from zipfile import ZipFile
-from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
+from lib.config import PLATFORM, get_target_arch,s3_config, \
                        get_zip_name, enable_verbose_mode, get_platform_key
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      s3put, get_electron_exec, get_out_dir, \

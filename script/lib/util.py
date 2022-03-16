@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import atexit
 import contextlib
 import errno
 import json
 import os
 import shutil
-import ssl
-import stat
 import subprocess
 import sys
-import tarfile
-import tempfile
 # Python 3 / 2 compat import
 try:
   from urllib.request import urlopen
