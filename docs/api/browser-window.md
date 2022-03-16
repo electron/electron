@@ -1076,6 +1076,8 @@ Returns `string` - Gets the background color of the window in Hex (`#RRGGBB`) fo
 
 See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 
+**Note:** The alpha value is _not_ returned alongside the red, green, and blue values.
+
 #### `win.setContentBounds(bounds[, animate])`
 
 * `bounds` [Rectangle](structures/rectangle.md)
