@@ -70,7 +70,7 @@ The `bounds` of this BrowserView instance as `Object`.
 
 #### `view.setBackgroundColor(color)` _Experimental_
 
-* `color` string - Color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. The alpha channel is
+* `color` string - Color in Hex, RGB, ARGB, HSL, HSLA or named CSS color format. The alpha channel is
   optional for the hex type.
 
 Examples of valid `color` values:
