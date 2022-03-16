@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index ff8725cd50bb822538a1cec824b05cb9700aa8d0..eec7b9b4d73371560d0d866bb836230df7d766c3 100644
+index c99f176b7996936fba834be4b4f5bc2d903585c8..6c282fe775be7f571d24a1bc8c0833e83f18c255 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1893,6 +1893,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1900,6 +1900,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -240,7 +240,7 @@ index bd4e9ebcb03f8d643e1f09522b9178f832e13f2b..3652e0faac754021175565e1f75e9003
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index bbdef2ae55b94d09af32bed1cff7c39f1d2a9069..4cfb1f0da275cda06d4604b6fc430f14d6a6e0f0 100644
+index d3d34436cfa0505fa90b3067fffeb1e45cc9b26f..868fc6a7049e74e81fd67a49d7ce06cc363f5fef 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -196,6 +196,7 @@
@@ -357,7 +357,7 @@ index e36187917ecec5d9e40009d1c394a07e72281919..de9698d577ab48358d06362fc78575fd
    if (__builtin_available(macos 10.12, *)) {
      IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 67a798b5d902707df8d75fbc2b115eed329d91e1..d7c15ac155b3ee58fdb76bbfb49a56b87dfa6fa8 100644
+index 0e8044c6d87008c51fd165c6ef8bdc3687d6cc29..78015868927602b5225f252f0a9182f61b8431dc 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -11,6 +11,8 @@ namespace switches {

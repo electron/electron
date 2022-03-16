@@ -31,7 +31,7 @@ index b0e64049d411305d58802fd290bb0480e9b36fee..4afcf3b7a5b841409b0e1c4c2f32fd48
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 442b856f8bcfbcea7742188897f0ce0a25cd60f4..6165eb772901faa25514c9bbefd13ff6b45d6b33 100644
+index fd2c2d72ebc3cab0cc824bb091da32d4be635dd9..8bcd6a87c38413a5281d164e3c0fcfd23c3fa04b 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -81,10 +81,12 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -90,7 +90,7 @@ index f0d5ea365cf09d2dc06de88fc03e4bf5ddfdf4a6..b68666813ab231a3d4233d3ed2f9655b
          /*document_url=*/GURL(),
          notification_service_remote_.BindNewPipeAndPassReceiver());
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 8e23ab272000a1244959bf9164d6880660d4a843..ff89f2bdf07e91029841bab7ce7c7a92526c0132 100644
+index 5580c415a1e8a45327147861d7c71cebd1ecbd5a..d37711f83be7566ec5ad2078942aaca1948a77c5 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -281,13 +281,14 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -131,7 +131,7 @@ index 951075749b24814606f494c5a89ee2adf527f512..7036323ff8ee38ae92790dfd2e216df6
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 2afcba9d80290fcb603c99696b6a0ec5671a149e..eebdafa1966b15355a315d2dde24449a1a3c9618 100644
+index 653f625b334ef4ea45b4df99db09db4ea16d6377..0825e2d10e499e08f0153f5a0c0026dc2cb273ef 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2135,7 +2135,7 @@ void RenderProcessHostImpl::CreateNotificationService(

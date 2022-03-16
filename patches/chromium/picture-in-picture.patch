@@ -48,10 +48,10 @@ index 0c1fa8676d00240e60ddd037664a409d1c9619dd..64d21f1878c3433324fc61353a10ee21
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d42815d9f4 100644
+index 0202f9619cfb153c061c627f2123f4b168076c7d..3789bb2f8c9375b7be3722900906891129d1f684 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-@@ -20,6 +20,7 @@
+@@ -15,6 +15,7 @@
  #include "base/timer/timer.h"
  #include "build/build_config.h"
  #include "chrome/app/vector_icons/vector_icons.h"
@@ -59,8 +59,8 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  #include "chrome/browser/command_updater_delegate.h"
  #include "chrome/browser/command_updater_impl.h"
  #include "chrome/browser/profiles/profile.h"
-@@ -28,14 +29,15 @@
- #include "chrome/browser/ui/browser_finder.h"
+@@ -24,15 +25,16 @@
+ #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/toolbar/chrome_location_bar_model_delegate.h"
  #include "chrome/browser/ui/views/location_bar/location_bar_view.h"
 +#endif
@@ -71,6 +71,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  #include "components/omnibox/browser/location_bar_model_impl.h"
  #include "components/vector_icons/vector_icons.h"
  #include "content/public/browser/document_picture_in_picture_window_controller.h"
+ #include "content/public/browser/picture_in_picture_window_controller.h"
  #include "content/public/browser/web_contents.h"
 +#include "electron/grit/electron_resources.h"
  #include "content/public/common/content_constants.h"
@@ -85,7 +86,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -91,7 +93,7 @@ T* AddChildView(std::vector<std::unique_ptr<views::View>>* views,
+@@ -110,7 +112,7 @@ END_METADATA
  }  // namespace
  
  OverlayLocationBarViewProxy::~OverlayLocationBarViewProxy() = default;
@@ -94,7 +95,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
                                     public ChromeLocationBarModelDelegate,
                                     public LocationBarView::Delegate,
-@@ -149,7 +151,7 @@ class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
+@@ -168,7 +170,7 @@ class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
    const std::unique_ptr<LocationBarModelImpl> location_bar_model_;
    CommandUpdaterImpl command_updater_;
  };
@@ -103,7 +104,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  // static
  std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
      content::DocumentPictureInPictureWindowController* controller,
-@@ -185,7 +187,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
+@@ -204,7 +206,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -112,7 +113,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
    std::wstring app_user_model_id;
    Browser* browser =
        chrome::FindBrowserWithWebContents(controller->GetWebContents());
-@@ -260,12 +262,6 @@ views::View* DocumentOverlayWindowViews::GetControlsContainerView() const {
+@@ -279,12 +281,6 @@ views::View* DocumentOverlayWindowViews::GetControlsContainerView() const {
    return controls_container_view_;
  }
  
@@ -125,7 +126,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  void DocumentOverlayWindowViews::SetUpViews() {
    // The window content consists of the fixed-height controls_container_view at
    // the top which is a box layout, and the remainder of the view is filled with
-@@ -281,6 +277,7 @@ void DocumentOverlayWindowViews::SetUpViews() {
+@@ -300,6 +296,7 @@ void DocumentOverlayWindowViews::SetUpViews() {
    //   +-------------------------------------+
  
    content::WebContents* pip_contents = controller_->GetChildWebContents();
@@ -133,7 +134,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
    auto* profile =
        Profile::FromBrowserContext(pip_contents->GetBrowserContext());
    profile_for_theme_ = profile;
-@@ -291,8 +288,8 @@ void DocumentOverlayWindowViews::SetUpViews() {
+@@ -310,8 +307,8 @@ void DocumentOverlayWindowViews::SetUpViews() {
      location_bar_view_proxy_ = std::make_unique<OverlayLocationBarViewImpl>(
          profile, controller_->GetWebContents());
    }
@@ -278,7 +279,7 @@ index d5690233eb85d9f2992ae90461c0d1fd83730d84..d32ee40d1dc7a0004d534540189179b2
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index d25bffe434d866760d1efc4dd972b6ba4946acd0..2819bcefb83b6b4cb10114b7ad1df881ccade58d 100644
+index be0115ca2d649e1c38b7241afc1d94a931f0ca25..e15f5e18e38c2552656fded087e71c9f76056654 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -15,9 +15,11 @@
@@ -290,10 +291,10 @@ index d25bffe434d866760d1efc4dd972b6ba4946acd0..2819bcefb83b6b4cb10114b7ad1df881
  #include "chrome/browser/ui/browser.h"
  #include "chrome/browser/ui/browser_finder.h"
 +#endif
+ #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
- #include "chrome/browser/ui/views/overlay/close_image_button.h"
-@@ -28,10 +30,10 @@
+@@ -29,10 +31,10 @@
  #include "chrome/browser/ui/views/overlay/toggle_camera_button.h"
  #include "chrome/browser/ui/views/overlay/toggle_microphone_button.h"
  #include "chrome/browser/ui/views/overlay/track_image_button.h"
@@ -305,7 +306,7 @@ index d25bffe434d866760d1efc4dd972b6ba4946acd0..2819bcefb83b6b4cb10114b7ad1df881
  #include "media/base/media_switches.h"
  #include "media/base/video_util.h"
  #include "third_party/skia/include/core/SkColor.h"
-@@ -53,7 +55,7 @@
+@@ -56,7 +58,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -314,7 +315,7 @@ index d25bffe434d866760d1efc4dd972b6ba4946acd0..2819bcefb83b6b4cb10114b7ad1df881
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -127,7 +129,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -149,7 +151,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
