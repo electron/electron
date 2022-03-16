@@ -160,3 +160,4 @@ cherry-pick-62142d222a80.patch
 cherry-pick-1887414c016d.patch
 cherry-pick-6b2643846ae3.patch
 cherry-pick-246c10dede97.patch
+fix_imagebitmaprenderingcontext_interaction_with_software_compositor.patch
