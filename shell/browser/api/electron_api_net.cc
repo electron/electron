@@ -5,11 +5,15 @@
 #include <string>
 
 #include "gin/handle.h"
+#include "net/base/filename_util.h"
 #include "net/base/network_change_notifier.h"
 #include "net/http/http_util.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/api/electron_api_url_loader.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 
 #include "shell/common/node_includes.h"
@@ -28,6 +32,14 @@ bool IsValidHeaderValue(std::string header_value) {
   return net::HttpUtil::IsValidHeaderValue(header_value);
 }
 
+base::FilePath FileURLToFilePath(v8::Isolate* isolate, const GURL& url) {
+  base::FilePath path;
+  if (!net::FileURLToFilePath(url, &path))
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to convert URL to file path");
+  return path;
+}
+
 using electron::api::SimpleURLLoaderWrapper;
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -41,6 +53,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isValidHeaderName", &IsValidHeaderName);
   dict.SetMethod("isValidHeaderValue", &IsValidHeaderValue);
   dict.SetMethod("createURLLoader", &SimpleURLLoaderWrapper::Create);
+  dict.SetMethod("fileURLToFilePath", &FileURLToFilePath);
 }
 
 }  // namespace
