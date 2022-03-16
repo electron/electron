@@ -76,10 +76,10 @@ The `bounds` of this BrowserView instance as `Object`.
 Examples of valid `color` values:
 
 * Hex
-  * #fff (shorthand RGB)
-  * #ffff (shorthand ARGB)
-  * #ffffff (RGB)
-  * #ffffffff (ARGB)
+  * #fff (RGB)
+  * #ffff (ARGB)
+  * #ffffff (RRGGBB)
+  * #ffffffff (AARRGGBB)
 * RGB
   * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
     * e.g. rgb(255, 255, 255)
@@ -96,3 +96,5 @@ Examples of valid `color` values:
   * Options are listed in [SkParseColor.cpp](https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/src/utils/SkParseColor.cpp;l=11-152;drc=eea4bf52cb0d55e2a39c828b017c80a5ee054148)
   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
     * e.g. `blueviolet` or `red`
+
+**Note:** Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBA` or `RGA`.
