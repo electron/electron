@@ -132,3 +132,4 @@ cherry-pick-6b2643846ae3.patch
 cherry-pick-62142d222a80.patch
 fix_non-client_mouse_tracking_and_message_bubbling_on_windows.patch
 cherry-pick-246c10dede97.patch
+remove_incorrect_width_height_adjustments.patch
