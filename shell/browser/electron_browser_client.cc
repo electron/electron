@@ -1515,14 +1515,23 @@ void ElectronBrowserClient::
             render_frame_host,  // NOLINT(runtime/references)
         blink::AssociatedInterfaceRegistry&
             associated_registry) {  // NOLINT(runtime/references)
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>
-             receiver) {
-        ElectronBrowserHandlerImpl::Create(render_frame_host,
-                                           std::move(receiver));
-      },
-      &render_frame_host));
+  auto* contents =
+      content::WebContents::FromRenderFrameHost(&render_frame_host);
+  if (contents) {
+    auto* prefs = WebContentsPreferences::From(contents);
+    if (render_frame_host.IsInPrimaryMainFrame() ||
+        (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
+      associated_registry.AddInterface(base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>
+                 receiver) {
+            ElectronBrowserHandlerImpl::Create(render_frame_host,
+                                               std::move(receiver));
+          },
+          &render_frame_host));
+    }
+  }
+
   associated_registry.AddInterface(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
          mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
