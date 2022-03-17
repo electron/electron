@@ -1808,6 +1808,16 @@ with `addBrowserView` or `setBrowserView`.
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
+#### `win.setTitleBarOverlay(options)` _Windows_
+
+* `options` Object
+  * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled.
+  * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
+  * `height` Integer (optional) _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
+
+On a Window with Window Controls Overlay already enabled, this method updates
+the style of the title bar overlay.
+
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
