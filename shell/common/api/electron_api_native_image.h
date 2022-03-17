@@ -117,7 +117,7 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   float GetAspectRatio(const absl::optional<float> scale_factor);
   void AddRepresentation(const gin_helper::Dictionary& options);
 
-  void AdjustAmountOfExternalAllocatedMemory(bool add);
+  void UpdateExternalAllocatedMemoryUsage();
 
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);
@@ -132,6 +132,7 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   gfx::Image image_;
 
   v8::Isolate* isolate_;
+  int32_t memory_usage_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(NativeImage);
 };
