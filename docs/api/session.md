@@ -567,7 +567,7 @@ the original network configuration.
     * `errorCode` Integer - Error code.
   * `callback` Function
     * `verificationResult` Integer - Value can be one of certificate error codes
-    from [here](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
+    from [here](https://source.chromium.org/chromium/chromium/src/+/main:net/base/net_error_list.h).
     Apart from the certificate error codes, the following special codes can be used.
       * `0` - Indicates success and disables Certificate Transparency verification.
       * `-2` - Indicates failure.
