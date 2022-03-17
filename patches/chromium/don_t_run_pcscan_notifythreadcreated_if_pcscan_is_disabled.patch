@@ -6,10 +6,10 @@ Subject: Don't run PCScan functions if PCScan is disabled
 PCScan should not be invoked if PCScan is disabled.  Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/2916657.
 
 diff --git a/base/allocator/partition_allocator/memory_reclaimer.cc b/base/allocator/partition_allocator/memory_reclaimer.cc
-index 387be1cc48e02efc6a657c4f515989ddd14b65ea..7d14331d071d17ee69fa860c00ba344621adb8ad 100644
+index 60a33e1501b58d486217d934de6f5c2c392e01bb..3b9ccdf82c6be5b12d32f053bedc5c6d1cd4bc0e 100644
 --- a/base/allocator/partition_allocator/memory_reclaimer.cc
 +++ b/base/allocator/partition_allocator/memory_reclaimer.cc
-@@ -67,7 +67,7 @@ void PartitionAllocMemoryReclaimer::Reclaim(int flags) {
+@@ -66,7 +66,7 @@ void MemoryReclaimer::Reclaim(int flags) {
    //
    // Lastly decommit empty slot spans and lastly try to discard unused pages at
    // the end of the remaining active slots.

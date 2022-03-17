@@ -127,7 +127,7 @@ index 52a13c0c47f7f3f18c4f552806add67291ce8726..765bde402fec094b51faea68e67d3782
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 3e71a3f6e062a608d645c5fb4620ace2d083c592..0284d571a6a8a8ed7d5d9a5d1663c33985d957d4 100644
+index 1f37c11047d47bb2d65975fa69f33d822206dd08..d13ee6a81cd7edc5be99f595515ca521e01702ac 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,10 +30,10 @@
@@ -344,18 +344,20 @@ index 3e71a3f6e062a608d645c5fb4620ace2d083c592..0284d571a6a8a8ed7d5d9a5d1663c339
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -716,8 +743,10 @@ void PrintViewManagerBase::RenderFrameHostStateChanged(
+@@ -716,10 +743,12 @@ void PrintViewManagerBase::RenderFrameHostStateChanged(
      content::RenderFrameHost* render_frame_host,
      content::RenderFrameHost::LifecycleState /*old_state*/,
      content::RenderFrameHost::LifecycleState new_state) {
-+#if 0 // Printing is always enabled.
-   if (new_state == content::RenderFrameHost::LifecycleState::kActive)
++#if 0
+   if (new_state == content::RenderFrameHost::LifecycleState::kActive &&
+       render_frame_host->GetProcess()->IsPdf()) {
      SendPrintingEnabled(printing_enabled_.GetValue(), render_frame_host);
+   }
 +#endif
  }
  
  void PrintViewManagerBase::DidStartLoading() {
-@@ -777,6 +806,11 @@ void PrintViewManagerBase::OnJobDone() {
+@@ -779,6 +808,11 @@ void PrintViewManagerBase::OnJobDone() {
    ReleasePrintJob();
  }
  
@@ -367,7 +369,7 @@ index 3e71a3f6e062a608d645c5fb4620ace2d083c592..0284d571a6a8a8ed7d5d9a5d1663c339
  void PrintViewManagerBase::OnFailed() {
    TerminatePrintJob(true);
  }
-@@ -838,7 +872,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -840,7 +874,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
    // Disconnect the current |print_job_|.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
@@ -379,7 +381,7 @@ index 3e71a3f6e062a608d645c5fb4620ace2d083c592..0284d571a6a8a8ed7d5d9a5d1663c339
    if (!weak_this)
      return false;
  
-@@ -913,6 +950,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -915,6 +952,13 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -393,7 +395,7 @@ index 3e71a3f6e062a608d645c5fb4620ace2d083c592..0284d571a6a8a8ed7d5d9a5d1663c339
    if (!print_job_)
      return;
  
-@@ -962,7 +1006,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -964,7 +1008,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
