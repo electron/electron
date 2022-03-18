@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
 Date: Tue, 1 Mar 2022 14:55:00 -0500
-Subject: [M96-LTS] Fix base level changes not updating FBO completeness check.
+Subject: Fix base level changes not updating FBO completeness check.
 
 M96 merge issues:
   - RendererVk.cpp:
