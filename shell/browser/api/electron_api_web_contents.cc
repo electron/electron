@@ -1751,7 +1751,7 @@ void WebContents::Message(bool internal,
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", render_frame_host,
-                 electron::mojom::ElectronBrowser::InvokeCallback(), internal,
+                 electron::mojom::ElectronApiIPC::InvokeCallback(), internal,
                  channel, std::move(arguments));
 }
 
@@ -1759,7 +1759,7 @@ void WebContents::Invoke(
     bool internal,
     const std::string& channel,
     blink::CloneableMessage arguments,
-    electron::mojom::ElectronBrowser::InvokeCallback callback,
+    electron::mojom::ElectronApiIPC::InvokeCallback callback,
     content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
@@ -1785,7 +1785,7 @@ void WebContents::ReceivePostMessage(
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
   EmitWithSender("-ipc-ports", render_frame_host,
-                 electron::mojom::ElectronBrowser::InvokeCallback(), false,
+                 electron::mojom::ElectronApiIPC::InvokeCallback(), false,
                  channel, message_value, std::move(wrapped_ports));
 }
 
@@ -1793,7 +1793,7 @@ void WebContents::MessageSync(
     bool internal,
     const std::string& channel,
     blink::CloneableMessage arguments,
-    electron::mojom::ElectronBrowser::MessageSyncCallback callback,
+    electron::mojom::ElectronApiIPC::MessageSyncCallback callback,
     content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
@@ -1831,7 +1831,7 @@ void WebContents::MessageHost(const std::string& channel,
   TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", render_frame_host,
-                 electron::mojom::ElectronBrowser::InvokeCallback(), channel,
+                 electron::mojom::ElectronApiIPC::InvokeCallback(), channel,
                  std::move(arguments));
 }
 
@@ -3270,7 +3270,8 @@ void WebContents::SetTemporaryZoomLevel(double level) {
 }
 
 void WebContents::DoGetZoomLevel(
-    electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback) {
+    electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
+        callback) {
   std::move(callback).Run(GetZoomLevel());
 }
 
