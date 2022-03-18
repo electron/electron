@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index c99f176b7996936fba834be4b4f5bc2d903585c8..6c282fe775be7f571d24a1bc8c0833e83f18c255 100644
+index 50b5b29b6734aadc2ef7b70594c1ef0a72fc1b88..26bf6248dcef53c31724b2381f6a8ce3fb2519b3 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1900,6 +1900,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -240,10 +240,10 @@ index bd4e9ebcb03f8d643e1f09522b9178f832e13f2b..3652e0faac754021175565e1f75e9003
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index d3d34436cfa0505fa90b3067fffeb1e45cc9b26f..868fc6a7049e74e81fd67a49d7ce06cc363f5fef 100644
+index b71af5a023952804b7bcf6c93df80dd409d90bff..9b5ff83aff650432020db82ca2e59322716ddee5 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -196,6 +196,7 @@
+@@ -197,6 +197,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -251,7 +251,7 @@ index d3d34436cfa0505fa90b3067fffeb1e45cc9b26f..868fc6a7049e74e81fd67a49d7ce06cc
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3295,6 +3296,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3222,6 +3223,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
