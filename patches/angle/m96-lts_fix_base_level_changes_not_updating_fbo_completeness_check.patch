@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Tue, 1 Mar 2022 14:55:00 -0500
+Subject: [M96-LTS] Fix base level changes not updating FBO completeness check.
+
+M96 merge issues:
+  - RendererVk.cpp:
+  conflicting kSkippedSyncvalMessages entries
+  - vk_helpers.cpp
+  getRenderPassWriteCommandCount() not present in M96
+  - capture_replay_expectations.txt:
+  conflicting skipped test entries
+  - src/tests/gl_tests/FramebufferTest.cpp
+  RedefineLayerAttachment not present in M96
+
+Bug: chromium:1299264
+Change-Id: I0881a4916c3eeb9ee023d28d207795899417d530
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3498282
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+Auto-Submit: Jamie Madill <jmadill@chromium.org>
+(cherry picked from commit ea70300ba04404ba0c1cacf2173a0a1e3b443adf)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3516115
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp
+index 0c15d244343b70e418bf0927cf942f6ade46b272..58512ff3da88a8289cf715c34e485d6f428f4d23 100644
+--- a/src/libANGLE/Texture.cpp
++++ b/src/libANGLE/Texture.cpp
+@@ -1188,7 +1188,15 @@ void Texture::signalDirtyState(size_t dirtyBit)
+     mDirtyBits.set(dirtyBit);
+     invalidateCompletenessCache();
+     mState.mCachedSamplerFormatValid = false;
+-    onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
++
++    if (dirtyBit == DIRTY_BIT_BASE_LEVEL || dirtyBit == DIRTY_BIT_MAX_LEVEL)
++    {
++        onStateChange(angle::SubjectMessage::SubjectChanged);
++    }
++    else
++    {
++        onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
++    }
+ }
+ 
+ angle::Result Texture::setImage(Context *context,
+diff --git a/src/libANGLE/renderer/vulkan/RendererVk.cpp b/src/libANGLE/renderer/vulkan/RendererVk.cpp
+index d18fe88018cbca5fafbf19321340bb85e8e7ec9b..f513631f7b2170e72be17db93dc1437e681dbea9 100644
+--- a/src/libANGLE/renderer/vulkan/RendererVk.cpp
++++ b/src/libANGLE/renderer/vulkan/RendererVk.cpp
+@@ -351,6 +351,13 @@ constexpr SkippedSyncvalMessage kSkippedSyncvalMessages[] = {
+      "prior_usage: SYNC_COLOR_ATTACHMENT_OUTPUT_COLOR_ATTACHMENT_WRITE, write_barriers: 0, "
+      "command: vkCmdBeginRenderPass, seq_no: 11",
+      "", false},
++    // http://anglebug.com/7070
++    {"SYNC-HAZARD-READ_AFTER_WRITE",
++     "type: VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageLayout: VK_IMAGE_LAYOUT_GENERAL, "
++     "binding #0, index 0. Access info (usage: SYNC_FRAGMENT_SHADER_SHADER_STORAGE_READ, "
++     "prior_usage: SYNC_COLOR_ATTACHMENT_OUTPUT_COLOR_ATTACHMENT_WRITE, write_barriers: 0, "
++     "command: vkCmdBeginRenderPass",
++     "", false},
+ };
+ 
+ enum class DebugMessageReport
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index fd3dd35fbe78fa59b3d4537d0cdcb981ebc36f09..1838b18f48de7a7a2fca0ae9c4d7ad4367647756 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -1721,7 +1721,7 @@ void CommandBufferHelper::invalidateRenderPassDepthAttachment(const gl::DepthSte
+ {
+     ASSERT(mIsRenderPassCommandBuffer);
+     // Keep track of the size of commands in the command buffer.  If the size grows in the
+-    // future, that implies that drawing occured since invalidated.
++    // future, that implies that drawing occurred since invalidated.
+     mDepthCmdSizeInvalidated = mCommandBuffer.getCommandSize();
+ 
+     // Also track the size if the attachment is currently disabled.
+diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
+index d95f7b585f23af246cc65b1d68a1524c62f4024e..871612555c55f7d1ab9a96d05b4637b8cb928293 100644
+--- a/src/tests/gl_tests/FramebufferTest.cpp
++++ b/src/tests/gl_tests/FramebufferTest.cpp
+@@ -4000,6 +4000,38 @@ TEST_P(FramebufferTest_ES3, BindRenderbufferThenModifySize)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Covers a bug when changing a base level of a texture bound to a FBO.
++TEST_P(FramebufferTest_ES3, ReattachToInvalidBaseLevel)
++{
++    ANGLE_GL_PROGRAM(testProgram, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++    glUseProgram(testProgram);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++
++    for (int mip = 0; mip <= 2; ++mip)
++    {
++        int size = 10 >> mip;
++        glTexImage2D(GL_TEXTURE_2D, mip, GL_RGBA8, size, size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     nullptr);
++    }
++
++    GLFramebuffer fb;
++    glBindFramebuffer(GL_FRAMEBUFFER, fb);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    EXPECT_GL_NO_ERROR();
++
++    // Set base level 1 and draw.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glDrawArrays(GL_POINTS, 0, 1);
++    EXPECT_GL_NO_ERROR();
++    // Set base level 0. The FBO is incomplete because the FBO attachment binds to level 1.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glDrawArrays(GL_POINTS, 0, 1);
++    EXPECT_GL_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION);
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2(AddMockTextureNoRenderTargetTest);
+ ANGLE_INSTANTIATE_TEST_ES2(FramebufferTest);
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(FramebufferFormatsTest);
