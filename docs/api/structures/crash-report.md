@@ -2,3 +2,4 @@
 
 * `date` Date
 * `id` string
+* `name` string
