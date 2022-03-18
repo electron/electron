@@ -16,10 +16,6 @@
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
-#include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
-#endif
-
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -105,7 +101,6 @@ class RendererClientBase : public content::ContentRendererClient
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
   void GetSupportedKeySystems(media::GetSupportedKeySystemsCB cb) override;
-  bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
@@ -154,9 +149,6 @@ class RendererClientBase : public content::ContentRendererClient
   std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
-  ChromeKeySystemsProvider key_systems_provider_;
-#endif
   std::string renderer_client_id_;
   // An increasing ID used for identifying an V8 context in this process.
   int64_t next_context_id_ = 0;

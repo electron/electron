@@ -58,6 +58,10 @@
 #include <shlobj.h>
 #endif
 
+#if defined(WIDEVINE_CDM_AVAILABLE)
+#include "chrome/renderer/media/chrome_key_systems.h"
+#endif
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "components/spellcheck/renderer/spellcheck_provider.h"
@@ -349,15 +353,7 @@ bool RendererClientBase::OverrideCreatePlugin(
 void RendererClientBase::GetSupportedKeySystems(
     media::GetSupportedKeySystemsCB cb) {
 #if defined(WIDEVINE_CDM_AVAILABLE)
-  key_systems_provider_.GetSupportedKeySystems(std::move(cb));
-#endif
-}
-
-bool RendererClientBase::IsKeySystemsUpdateNeeded() {
-#if defined(WIDEVINE_CDM_AVAILABLE)
-  return key_systems_provider_.IsKeySystemsUpdateNeeded();
-#else
-  return false;
+  GetChromeKeySystems(std::move(cb));
 #endif
 }
 
