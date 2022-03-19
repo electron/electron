@@ -8,3 +8,4 @@ m96_validate_samplerformat.patch
 m98_vulkan_fix_vkcmdresolveimage_extents.patch
 m98_vulkan_fix_vkcmdresolveimage_offsets.patch
 cherry-pick-49e8ff16f1fe.patch
+m98_protect_against_deleting_a_current_xfb_buffer.patch
