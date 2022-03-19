@@ -149,9 +149,11 @@ void ElectronRenderFrameObserver::DraggableRegionsChanged() {
     regions.push_back(std::move(region));
   }
 
-  mojo::AssociatedRemote<mojom::ElectronBrowser> browser_remote;
-  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(&browser_remote);
-  browser_remote->UpdateDraggableRegions(std::move(regions));
+  mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
+      web_contents_utility_remote;
+  render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
+      &web_contents_utility_remote);
+  web_contents_utility_remote->UpdateDraggableRegions(std::move(regions));
 }
 
 void ElectronRenderFrameObserver::WillReleaseScriptContext(
@@ -168,10 +170,11 @@ void ElectronRenderFrameObserver::OnDestruct() {
 void ElectronRenderFrameObserver::DidMeaningfulLayout(
     blink::WebMeaningfulLayout layout_type) {
   if (layout_type == blink::WebMeaningfulLayout::kVisuallyNonEmpty) {
-    mojo::AssociatedRemote<mojom::ElectronBrowser> browser_remote;
+    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
+        web_contents_utility_remote;
     render_frame_->GetRemoteAssociatedInterfaces()->GetInterface(
-        &browser_remote);
-    browser_remote->OnFirstNonEmptyLayout();
+        &web_contents_utility_remote);
+    web_contents_utility_remote->OnFirstNonEmptyLayout();
   }
 }
 
