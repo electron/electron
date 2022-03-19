@@ -54,7 +54,7 @@ v8::Local<v8::Object> CreateNativeEvent(
     v8::Isolate* isolate,
     v8::Local<v8::Object> sender,
     content::RenderFrameHost* frame,
-    electron::mojom::ElectronBrowser::MessageSyncCallback callback) {
+    electron::mojom::ElectronApiIPC::MessageSyncCallback callback) {
   v8::Local<v8::Object> event;
   if (frame && callback) {
     gin::Handle<Event> native_event = Event::Create(isolate);
