@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Tue, 1 Mar 2022 16:14:47 -0500
+Subject: [M98] Protect against deleting a current XFB buffer.
+
+Bug: chromium:1295411
+Change-Id: I097f272c38e444e0af71aa55c0dc508a07aa0bd3
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3498262
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+(cherry picked from commit d9002eef2a5f27fc5d6b65d01d02afcfb9a35db1)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3514175
+Reviewed-by: Ian Elliott <ianelliott@google.com>
+
+diff --git a/src/libANGLE/State.cpp b/src/libANGLE/State.cpp
+index 24b9a460c7ecff24c1c3de48619aabc116727f9a..35a819ef635c25a7ff442d75e49ba89cd7ad84a9 100644
+--- a/src/libANGLE/State.cpp
++++ b/src/libANGLE/State.cpp
+@@ -2190,6 +2190,10 @@ angle::Result State::detachBuffer(Context *context, const Buffer *buffer)
+     if (curTransformFeedback)
+     {
+         ANGLE_TRY(curTransformFeedback->detachBuffer(context, bufferID));
++        if (isTransformFeedbackActiveUnpaused())
++        {
++            context->getStateCache().onActiveTransformFeedbackChange(context);
++        }
+     }
+ 
+     if (getVertexArray()->detachBuffer(context, bufferID))
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index a37ca3061faac60395613f0a4c238d20b00f366a..ccc1f17f8db2ef85ca3b80bfa35e175dd9434c49 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -3977,6 +3977,14 @@ const char *ValidateDrawStates(const Context *context)
+                     return kTessellationShaderRequiresBothControlAndEvaluation;
+                 }
+             }
++
++            if (state.isTransformFeedbackActiveUnpaused())
++            {
++                if (!ValidateProgramExecutableXFBBuffersPresent(context, executable))
++                {
++                    return kTransformFeedbackBufferMissing;
++                }
++            }
+         }
+ 
+         if (programIsYUVOutput != framebufferIsYUV)
+@@ -8055,4 +8063,21 @@ bool ValidateInvalidateTextureANGLE(const Context *context, TextureType target)
+     return true;
+ }
+ 
++bool ValidateProgramExecutableXFBBuffersPresent(const Context *context,
++                                                const ProgramExecutable *programExecutable)
++{
++    size_t programXfbCount = programExecutable->getTransformFeedbackBufferCount();
++    const TransformFeedback *transformFeedback = context->getState().getCurrentTransformFeedback();
++    for (size_t programXfbIndex = 0; programXfbIndex < programXfbCount; ++programXfbIndex)
++    {
++        const OffsetBindingPointer<Buffer> &buffer =
++            transformFeedback->getIndexedBuffer(programXfbIndex);
++        if (!buffer.get())
++        {
++            return false;
++        }
++    }
++
++    return true;
++}
+ }  // namespace gl
+diff --git a/src/libANGLE/validationES.h b/src/libANGLE/validationES.h
+index 5e531464d8d2239b5d2cb36bc9e23c031f23320f..f8796245178476c0ed4f5c2e611e968944bb6bb4 100644
+--- a/src/libANGLE/validationES.h
++++ b/src/libANGLE/validationES.h
+@@ -753,6 +753,9 @@ bool ValidateGetMultisamplefvBase(const Context *context,
+                                   const GLfloat *val);
+ bool ValidateSampleMaskiBase(const Context *context, GLuint maskNumber, GLbitfield mask);
+ 
++bool ValidateProgramExecutableXFBBuffersPresent(const Context *context,
++                                                const ProgramExecutable *programExecutable);
++
+ // We should check with Khronos if returning INVALID_FRAMEBUFFER_OPERATION is OK when querying
+ // implementation format info for incomplete framebuffers. It seems like these queries are
+ // incongruent with the other errors.
+diff --git a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp
+index ec44c916587fc2d31e7e0201b00753d5140bf580..f9dac542366b51c2431885e1bf4fb85040234ca9 100644
+--- a/src/libANGLE/validationES3.cpp
++++ b/src/libANGLE/validationES3.cpp
+@@ -2843,16 +2843,10 @@ bool ValidateBeginTransformFeedback(const Context *context, PrimitiveMode primit
+         return false;
+     }
+ 
+-    size_t programXfbCount = programExecutable->getTransformFeedbackBufferCount();
+-    for (size_t programXfbIndex = 0; programXfbIndex < programXfbCount; ++programXfbIndex)
++    if (!ValidateProgramExecutableXFBBuffersPresent(context, programExecutable))
+     {
+-        const OffsetBindingPointer<Buffer> &buffer =
+-            transformFeedback->getIndexedBuffer(programXfbIndex);
+-        if (!buffer.get())
+-        {
+-            context->validationError(GL_INVALID_OPERATION, kTransformFeedbackBufferMissing);
+-            return false;
+-        }
++        context->validationError(GL_INVALID_OPERATION, kTransformFeedbackBufferMissing);
++        return false;
+     }
+ 
+     return true;
