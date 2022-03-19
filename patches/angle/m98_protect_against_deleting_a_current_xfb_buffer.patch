@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
 Date: Tue, 1 Mar 2022 16:14:47 -0500
-Subject: [M98] Protect against deleting a current XFB buffer.
+Subject: Protect against deleting a current XFB buffer.
 
 Bug: chromium:1295411
 Change-Id: I097f272c38e444e0af71aa55c0dc508a07aa0bd3
