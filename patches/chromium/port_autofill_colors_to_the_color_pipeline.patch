@@ -8,13 +8,19 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 6db84aca6d9a205ddb5fd390614ca519dc88fa05..7b9d8e24a755b21963d7d84f930c1e9c9bd36ac5 100644
+index 2d16acd2d4d732dc5349f403c0a48483a23f895b..7b9d8e24a755b21963d7d84f930c1e9c9bd36ac5 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -122,6 +122,10 @@
-   E_CPONLY(kColorPwaSecurityChipForegroundSecure) \
-   E_CPONLY(kColorPwaToolbarBackground) \
-   E_CPONLY(kColorPwaToolbarForeground) \
+@@ -116,6 +116,16 @@
+   E_CPONLY(kColorOverlayScrollbarStrokeHoveredDark) \
+   E_CPONLY(kColorOverlayScrollbarStrokeHoveredLight) \
+   E_CPONLY(kColorProgressBar) \
++  E_CPONLY(kColorPwaSecurityChipForeground) \
++  E_CPONLY(kColorPwaSecurityChipForegroundDangerous) \
++  E_CPONLY(kColorPwaSecurityChipForegroundPolicyCert) \
++  E_CPONLY(kColorPwaSecurityChipForegroundSecure) \
++  E_CPONLY(kColorPwaToolbarBackground) \
++  E_CPONLY(kColorPwaToolbarForeground) \
 +  E_CPONLY(kColorResultsTableNormalBackground) \
 +  E_CPONLY(kColorResultsTableHoveredBackground) \
 +  E_CPONLY(kColorResultsTableNormalText) \
@@ -22,7 +28,7 @@ index 6db84aca6d9a205ddb5fd390614ca519dc88fa05..7b9d8e24a755b21963d7d84f930c1e9c
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -174,6 +178,7 @@
+@@ -168,6 +178,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,13 +37,13 @@ index 6db84aca6d9a205ddb5fd390614ca519dc88fa05..7b9d8e24a755b21963d7d84f930c1e9c
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 2c49e13b0e266be241ab2629f7c474ac54b5a020..9b5e0dfd80b08865fefc48c6542365b307c28e26 100644
+index b438c8f4ef1ba2c835240c996e6addabd9df5c35..247e1b7d333bfbd4aee7374d87515a1c09bd3cd4 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -142,6 +142,17 @@ void AddUiColorMixer(ColorProvider* provider,
-       kColorPwaSecurityChipForeground};
-   mixer[kColorPwaToolbarBackground] = {kColorEndpointBackground};
-   mixer[kColorPwaToolbarForeground] = {kColorEndpointForeground};
+@@ -135,6 +135,17 @@ void AddUiColorMixer(ColorProvider* provider,
+       SetAlpha(GetColorWithMaxContrast(kColorOverlayScrollbarFillHoveredLight),
+                gfx::kGoogleGreyAlpha500);
+   mixer[kColorProgressBar] = {kColorAccent};
 +  mixer[kColorResultsTableNormalBackground] = {SK_ColorWHITE};
 +  mixer[kColorResultsTableHoveredBackground] =
 +      SetAlpha(kColorResultsTableNormalText, 0x0D);
@@ -52,7 +58,7 @@ index 2c49e13b0e266be241ab2629f7c474ac54b5a020..9b5e0dfd80b08865fefc48c6542365b3
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -217,6 +228,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -210,6 +221,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};

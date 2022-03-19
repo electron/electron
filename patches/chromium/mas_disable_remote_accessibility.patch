@@ -167,7 +167,7 @@ index 441e1abe8798983a5001810084b55f7f518fda23..04ac6289bbb7580718ed91ae52e509da
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 85a49141d3c0ac3a4c615f6bc0ccd43e842aa0a1..14b78db11cbc3ba5fe0d7e7ca0a6702608c4f78e 100644
+index be753e5ea42cc8757b0e7f9a21aa12b40f1928f2..83f3ef36e17b484d838c9338ae6ad0073b42283c 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -319,6 +319,13 @@ component("base") {

@@ -8,17 +8,16 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 7bc658fa0af1e26411d4cd6ea7d074749deb72a0..6645b4f67729f603a20df7f0a14244562a19e663 100644
+index 4095ee0ef25226180acb35d320630f971305528e..fa3a6620ce84136476d0ac6e705515c13dc612ab 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -896,10 +896,7 @@ bool WebContentsViewAura::IsValidDragTarget(
-   // TODO(https://crbug.com/1266953): There are some known gaps caused by
-   // comparing `RenderViewHost` IDs, as `RenderViewHost` ID is not really a
-   // strong signal for page identity.
--  return !drag_start_ ||
--         target_rwh->GetProcess()->GetID() == drag_start_->process_id ||
--         GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
--             drag_start_->view_id;
+@@ -903,6 +903,10 @@ bool WebContentsViewAura::IsValidDragTarget(
+       GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
+       drag_start_->view_id;
+   return cross_tab_drag;
++  // TODO(https://crbug.com/1266953): There are some known gaps caused by
++  // comparing `RenderViewHost` IDs, as `RenderViewHost` ID is not really a
++  // strong signal for page identity.
 +  return true;
  }
  
