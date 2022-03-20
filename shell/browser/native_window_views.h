@@ -32,7 +32,7 @@ class GlobalMenuBarX11;
 class RootView;
 class WindowStateWatcher;
 
-#if defined(USE_X11)
+#if defined(USE_OZONE)
 class EventDisabler;
 #endif
 
@@ -260,10 +260,10 @@ class NativeWindowViews : public NativeWindow,
   extensions::SizeConstraints old_size_constraints_;
 
 #if defined(USE_OZONE)
-  std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
-#endif
+  const bool is_x11_;
 
-#if defined(USE_X11)
+  std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
+
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif

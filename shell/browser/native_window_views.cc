@@ -55,22 +55,16 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 
-#if defined(USE_X11)
+#if defined(USE_OZONE)
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/x_window_utils.h"
+#include "ui/base/ui_base_features.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
 #include "ui/gfx/x/xproto_util.h"
-#endif
-
-#if defined(USE_OZONE) || defined(USE_X11)
-#include "ui/base/ui_base_features.h"
-#endif
-
-#if defined(USE_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -160,6 +154,10 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
       root_view_(std::make_unique<RootView>(this)),
+      // It's hacky to use GetPlatformNameForTest to figure out if we run under
+      // X11 but that's the best worst way at the moment.
+      is_x11_(ui::OzonePlatform::GetInstance()->GetPlatformNameForTest() ==
+              "x11"),
       keyboard_event_handler_(
           std::make_unique<views::UnhandledKeyboardEventHandler>()) {
   options.Get(options::kTitle, &title_);
@@ -287,39 +285,41 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     SetParentWindow(parent);
 #endif
 
-#if defined(USE_X11)
-  // TODO(ckerr): remove in Electron v20.0.0
-  // Before the window is mapped the SetWMSpecState can not work, so we have
-  // to manually set the _NET_WM_STATE.
-  std::vector<x11::Atom> state_atom_list;
-  bool skip_taskbar = false;
-  if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
-    state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+#if defined(USE_OZONE)
+  if (is_x11_) {
+    // TODO(ckerr): remove in Electron v20.0.0
+    // Before the window is mapped the SetWMSpecState can not work, so we have
+    // to manually set the _NET_WM_STATE.
+    std::vector<x11::Atom> state_atom_list;
+    bool skip_taskbar = false;
+    if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
+      state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+    }
+
+    // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
+    if (fullscreen) {
+      state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_FULLSCREEN"));
+    }
+
+    if (parent) {
+      // Force using dialog type for child window.
+      window_type = "dialog";
+
+      // Modal window needs the _NET_WM_STATE_MODAL hint.
+      if (is_modal())
+        state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_MODAL"));
+    }
+
+    if (!state_atom_list.empty())
+      SetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                       x11::GetAtom("_NET_WM_STATE"), x11::Atom::ATOM,
+                       state_atom_list);
+
+    // Set the _NET_WM_WINDOW_TYPE.
+    if (!window_type.empty())
+      SetWindowType(static_cast<x11::Window>(GetAcceleratedWidget()),
+                    window_type);
   }
-
-  // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
-  if (fullscreen) {
-    state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_FULLSCREEN"));
-  }
-
-  if (parent) {
-    // Force using dialog type for child window.
-    window_type = "dialog";
-
-    // Modal window needs the _NET_WM_STATE_MODAL hint.
-    if (is_modal())
-      state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_MODAL"));
-  }
-
-  if (!state_atom_list.empty())
-    SetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                     x11::GetAtom("_NET_WM_STATE"), x11::Atom::ATOM,
-                     state_atom_list);
-
-  // Set the _NET_WM_WINDOW_TYPE.
-  if (!window_type.empty())
-    SetWindowType(static_cast<x11::Window>(GetAcceleratedWidget()),
-                  window_type);
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -417,11 +417,7 @@ NativeWindowViews::~NativeWindowViews() {
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 #if defined(USE_OZONE)
-  // It's a bit hacky to use `skia_can_fall_back_to_x11` propetry to figure out
-  // if we run under X11 but that's the best worst way at the moment.
-  // TODO: Improve this API to no depend on X11.
-  if (ui::OzonePlatform::GetInstance()->GetPlatformProperties()
-          .skia_can_fall_back_to_x11) {
+  if (is_x11_) {
     const std::string color = use_dark_theme ? "dark" : "light";
     x11::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
                            x11::GetAtom("_GTK_THEME_VARIANT"),
@@ -528,8 +524,8 @@ bool NativeWindowViews::IsEnabled() {
 #if BUILDFLAG(IS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif BUILDFLAG(IS_LINUX)
-#if defined(USE_X11)
-  return !event_disabler_.get();
+#if defined(USE_OZONE)
+  if (is_x11_) return !event_disabler_.get();
 #endif
   NOTIMPLEMENTED();
   return true;
@@ -568,16 +564,18 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 
 #if BUILDFLAG(IS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
-#elif defined(USE_X11)
-  views::DesktopWindowTreeHostPlatform* tree_host =
-      views::DesktopWindowTreeHostLinux::GetHostForWidget(
-          GetAcceleratedWidget());
-  if (enable) {
-    tree_host->RemoveEventRewriter(event_disabler_.get());
-    event_disabler_.reset();
-  } else {
-    event_disabler_ = std::make_unique<EventDisabler>();
-    tree_host->AddEventRewriter(event_disabler_.get());
+#elif defined(USE_OZONE)
+  if (is_x11_) {
+    views::DesktopWindowTreeHostPlatform* tree_host =
+        views::DesktopWindowTreeHostLinux::GetHostForWidget(
+            GetAcceleratedWidget());
+    if (enable) {
+      tree_host->RemoveEventRewriter(event_disabler_.get());
+      event_disabler_.reset();
+    } else {
+      event_disabler_ = std::make_unique<EventDisabler>();
+      tree_host->AddEventRewriter(event_disabler_.get());
+    }
   }
 #endif
 }
@@ -801,12 +799,14 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
   ::SetWindowPos(GetAcceleratedWidget(), GetWindow(otherWindow, GW_HWNDPREV), 0,
                  0, 0, 0,
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-#elif defined(USE_X11)
-  if (!IsWindowValid(static_cast<x11::Window>(id.id)))
-    return false;
+#elif defined(USE_OZONE)
+  if (is_x11_) {
+    if (!IsWindowValid(static_cast<x11::Window>(id.id)))
+      return false;
 
-  electron::MoveWindowAbove(static_cast<x11::Window>(GetAcceleratedWidget()),
-                            static_cast<x11::Window>(id.id));
+    electron::MoveWindowAbove(static_cast<x11::Window>(GetAcceleratedWidget()),
+                              static_cast<x11::Window>(id.id));
+  }
 #endif
 
   return true;
@@ -821,9 +821,10 @@ void NativeWindowViews::MoveTop() {
   ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP, pos.x(), pos.y(),
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-#elif defined(USE_X11)
-  electron::MoveWindowToForeground(
-      static_cast<x11::Window>(GetAcceleratedWidget()));
+#elif defined(USE_OZONE)
+  if (is_x11_)
+    electron::MoveWindowToForeground(
+        static_cast<x11::Window>(GetAcceleratedWidget()));
 #endif
 }
 
@@ -1005,9 +1006,10 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar->AddTab(GetAcceleratedWidget());
     taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
   }
-#elif defined(USE_X11)
-  SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
-                 x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+#elif defined(USE_OZONE)
+  if (is_x11_)
+    SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
+                   x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
 #endif
 }
 
@@ -1107,24 +1109,26 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
   } else {
     SetForwardMouseMessages(forward);
   }
-#elif defined(USE_X11)
-  auto* connection = x11::Connection::Get();
-  if (ignore) {
-    x11::Rectangle r{0, 0, 1, 1};
-    connection->shape().Rectangles({
-        .operation = x11::Shape::So::Set,
-        .destination_kind = x11::Shape::Sk::Input,
-        .ordering = x11::ClipOrdering::YXBanded,
-        .destination_window = static_cast<x11::Window>(GetAcceleratedWidget()),
-        .rectangles = {r},
-    });
-  } else {
-    connection->shape().Mask({
-        .operation = x11::Shape::So::Set,
-        .destination_kind = x11::Shape::Sk::Input,
-        .destination_window = static_cast<x11::Window>(GetAcceleratedWidget()),
-        .source_bitmap = x11::Pixmap::None,
-    });
+#elif defined(USE_OZONE)
+  if (is_x11_) {
+    auto* connection = x11::Connection::Get();
+    if (ignore) {
+      x11::Rectangle r{0, 0, 1, 1};
+      connection->shape().Rectangles({
+          .operation = x11::Shape::So::Set,
+          .destination_kind = x11::Shape::Sk::Input,
+          .ordering = x11::ClipOrdering::YXBanded,
+          .destination_window = static_cast<x11::Window>(GetAcceleratedWidget()),
+          .rectangles = {r},
+      });
+    } else {
+      connection->shape().Mask({
+          .operation = x11::Shape::So::Set,
+          .destination_kind = x11::Shape::Sk::Input,
+          .destination_window = static_cast<x11::Window>(GetAcceleratedWidget()),
+          .source_bitmap = x11::Pixmap::None,
+      });
+    }
   }
 #endif
 }
@@ -1268,12 +1272,13 @@ void NativeWindowViews::SetTopBrowserView(NativeBrowserView* view) {
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
-#if defined(USE_X11)
-  x11::SetProperty(
-      static_cast<x11::Window>(GetAcceleratedWidget()),
-      x11::Atom::WM_TRANSIENT_FOR, x11::Atom::WINDOW,
-      parent ? static_cast<x11::Window>(parent->GetAcceleratedWidget())
-             : ui::GetX11RootWindow());
+#if defined(USE_OZONE)
+  if (is_x11_)
+    x11::SetProperty(
+        static_cast<x11::Window>(GetAcceleratedWidget()),
+        x11::Atom::WM_TRANSIENT_FOR, x11::Atom::WINDOW,
+        parent ? static_cast<x11::Window>(parent->GetAcceleratedWidget())
+               : ui::GetX11RootWindow());
 #elif BUILDFLAG(IS_WIN)
   // To set parentship between windows into Windows is better to play with the
   //  owner instead of the parent, as Windows natively seems to do if a parent
@@ -1351,18 +1356,19 @@ void NativeWindowViews::SetVisibleOnAllWorkspaces(
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
-#if defined(USE_X11)
-  // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
-  // determine whether the current window is visible on all workspaces.
-  x11::Atom sticky_atom = x11::GetAtom("_NET_WM_STATE_STICKY");
-  std::vector<x11::Atom> wm_states;
-  GetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                   x11::GetAtom("_NET_WM_STATE"), &wm_states);
-  return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
-         wm_states.end();
-#else
-  return false;
+#if defined(USE_OZONE)
+  if (is_x11_) {
+    // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
+    // determine whether the current window is visible on all workspaces.
+    x11::Atom sticky_atom = x11::GetAtom("_NET_WM_STATE_STICKY");
+    std::vector<x11::Atom> wm_states;
+    GetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                     x11::GetAtom("_NET_WM_STATE"), &wm_states);
+    return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
+           wm_states.end();
+  }
 #endif
+  return false;
 }
 
 content::DesktopMediaID NativeWindowViews::GetDesktopMediaID() const {
