@@ -259,9 +259,11 @@ class NativeWindowViews : public NativeWindow,
   // events from resizing the window.
   extensions::SizeConstraints old_size_constraints_;
 
-#if defined(USE_X11)
+#if defined(USE_OZONE)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
+#endif
 
+#if defined(USE_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif

@@ -481,7 +481,7 @@ void NativeWindowViews::Show() {
 
   NotifyWindowShow();
 
-#if defined(USE_X11)
+#if defined(USE_OZONE)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
 #endif
@@ -492,7 +492,7 @@ void NativeWindowViews::ShowInactive() {
 
   NotifyWindowShow();
 
-#if defined(USE_X11)
+#if defined(USE_OZONE)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
 #endif
@@ -506,7 +506,7 @@ void NativeWindowViews::Hide() {
 
   NotifyWindowHide();
 
-#if defined(USE_X11)
+#if defined(USE_OZONE)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowUnmapped();
 #endif
@@ -1171,7 +1171,7 @@ bool NativeWindowViews::IsFocusable() {
 }
 
 void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
-#if defined(USE_X11)
+#if defined(USE_OZONE)
   // Remove global menu bar.
   if (global_menu_bar_ && menu_model == nullptr) {
     global_menu_bar_.reset();
@@ -1180,7 +1180,8 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   // Use global application menu bar when possible.
-  if (ShouldUseGlobalMenuBar()) {
+  if (ui::OzonePlatform::GetInstance()->GetPlatformProperties()
+          .supports_global_application_menus && ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
       global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
     if (global_menu_bar_->IsServerStarted()) {
