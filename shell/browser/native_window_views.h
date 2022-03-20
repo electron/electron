@@ -262,9 +262,6 @@ class NativeWindowViews : public NativeWindow,
 #if defined(USE_X11)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 
-  // Handles window state events.
-  std::unique_ptr<WindowStateWatcher> window_state_watcher_;
-
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif

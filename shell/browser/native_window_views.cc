@@ -58,7 +58,6 @@
 #if defined(USE_X11)
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
-#include "shell/browser/ui/x/window_state_watcher.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/shape.h"
@@ -261,12 +260,11 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
 
-  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
-    auto* native_widget = new views::DesktopNativeWidgetAura(widget());
-    params.native_widget = native_widget;
-    params.desktop_window_tree_host =
-        new ElectronDesktopWindowTreeHostLinux(this, native_widget);
-  }
+  auto* native_widget = new views::DesktopNativeWidgetAura(widget());
+  params.native_widget = native_widget;
+  params.desktop_window_tree_host =
+      new ElectronDesktopWindowTreeHostLinux(this, native_widget,
+          base::FeatureList::IsEnabled(features::kWaylandWindowDecorations));
 #endif
 
   widget()->Init(std::move(params));
@@ -278,18 +276,13 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   std::string window_type;
   options.Get(options::kType, &window_type);
 
-#if defined(USE_X11)
-  // Start monitoring window states.
-  window_state_watcher_ = std::make_unique<WindowStateWatcher>(this);
-
+#if BUILDFLAG(IS_LINUX)
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
   if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
     SetGTKDarkThemeEnabled(use_dark_theme);
   }
-#endif
 
-#if BUILDFLAG(IS_LINUX)
   if (parent)
     SetParentWindow(parent);
 #endif

@@ -24,10 +24,12 @@ namespace electron {
 
 ElectronDesktopWindowTreeHostLinux::ElectronDesktopWindowTreeHostLinux(
     NativeWindowViews* native_window_view,
-    views::DesktopNativeWidgetAura* desktop_native_widget_aura)
+    views::DesktopNativeWidgetAura* desktop_native_widget_aura,
+    bool wayland_window_decorations)
     : views::DesktopWindowTreeHostLinux(native_window_view->widget(),
                                         desktop_native_widget_aura),
-      native_window_view_(native_window_view) {}
+      native_window_view_(native_window_view),
+      wayland_window_decorations_(wayland_window_decorations) {}
 
 ElectronDesktopWindowTreeHostLinux::~ElectronDesktopWindowTreeHostLinux() =
     default;
@@ -46,6 +48,9 @@ void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
     const BoundsChange& change) {
   views::DesktopWindowTreeHostLinux::OnBoundsChanged(change);
   UpdateFrameHints();
+  // The OnWindowStateChanged should receive all updates but currently it
+  // doesn't receive changes to fullscreen status, so we catch them here.
+  UpdateWindowState(platform_window()->GetPlatformWindowState());
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
@@ -53,6 +58,42 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
     ui::PlatformWindowState new_state) {
   views::DesktopWindowTreeHostLinux::OnWindowStateChanged(old_state, new_state);
   UpdateFrameHints();
+  UpdateWindowState(new_state);
+}
+
+void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
+    ui::PlatformWindowState new_state) {
+  if (window_state_ == new_state) return;
+
+  switch (window_state_) {
+    case ui::PlatformWindowState::kMinimized:
+      native_window_view_->NotifyWindowRestore();
+      break;
+    case ui::PlatformWindowState::kMaximized:
+      native_window_view_->NotifyWindowUnmaximize();
+      break;
+    case ui::PlatformWindowState::kFullScreen:
+      native_window_view_->NotifyWindowLeaveFullScreen();
+      break;
+    case ui::PlatformWindowState::kUnknown:
+    case ui::PlatformWindowState::kNormal:
+      break;
+  }
+  switch (new_state) {
+    case ui::PlatformWindowState::kMinimized:
+      native_window_view_->NotifyWindowMinimize();
+      break;
+    case ui::PlatformWindowState::kMaximized:
+      native_window_view_->NotifyWindowMaximize();
+      break;
+    case ui::PlatformWindowState::kFullScreen:
+      native_window_view_->NotifyWindowEnterFullScreen();
+      break;
+    case ui::PlatformWindowState::kUnknown:
+    case ui::PlatformWindowState::kNormal:
+      break;
+  }
+  window_state_ = new_state;
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnNativeThemeUpdated(
@@ -65,13 +106,15 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
-  if (SupportsClientFrameShadow() && native_window_view_->has_frame() &&
-      native_window_view_->has_client_frame()) {
-    UpdateClientDecorationHints(static_cast<ClientFrameViewLinux*>(
-        native_window_view_->widget()->non_client_view()->frame_view()));
-  }
+  if (wayland_window_decorations_) {
+    if (SupportsClientFrameShadow() && native_window_view_->has_frame() &&
+        native_window_view_->has_client_frame()) {
+      UpdateClientDecorationHints(static_cast<ClientFrameViewLinux*>(
+          native_window_view_->widget()->non_client_view()->frame_view()));
+    }
 
-  SizeConstraintsChanged();
+    SizeConstraintsChanged();
+  }
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
