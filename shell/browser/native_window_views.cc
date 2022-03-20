@@ -71,6 +71,10 @@
 #include "ui/base/ui_base_features.h"
 #endif
 
+#if defined(USE_OZONE)
+#include "ui/ozone/public/ozone_platform.h"
+#endif
+
 #elif BUILDFLAG(IS_WIN)
 #include "base/win/win_util.h"
 #include "content/public/common/color_parser.h"
@@ -419,11 +423,17 @@ NativeWindowViews::~NativeWindowViews() {
 }
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
-#if defined(USE_X11)
-  const std::string color = use_dark_theme ? "dark" : "light";
-  x11::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
-                         x11::GetAtom("_GTK_THEME_VARIANT"),
-                         x11::GetAtom("UTF8_STRING"), color);
+#if defined(USE_OZONE)
+  // It's a bit hacky to use `skia_can_fall_back_to_x11` propetry to figure out
+  // if we run under X11 but that's the best worst way at the moment.
+  // TODO: Improve this API to no depend on X11.
+  if (ui::OzonePlatform::GetInstance()->GetPlatformProperties()
+          .skia_can_fall_back_to_x11) {
+    const std::string color = use_dark_theme ? "dark" : "light";
+    x11::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                           x11::GetAtom("_GTK_THEME_VARIANT"),
+                           x11::GetAtom("UTF8_STRING"), color);
+  }
 #endif
 }
 
