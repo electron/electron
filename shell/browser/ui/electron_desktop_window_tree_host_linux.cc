@@ -63,7 +63,8 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
 
 void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     ui::PlatformWindowState new_state) {
-  if (window_state_ == new_state) return;
+  if (window_state_ == new_state)
+    return;
 
   switch (window_state_) {
     case ui::PlatformWindowState::kMinimized:

@@ -260,9 +260,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   auto* native_widget = new views::DesktopNativeWidgetAura(widget());
   params.native_widget = native_widget;
-  params.desktop_window_tree_host =
-      new ElectronDesktopWindowTreeHostLinux(this, native_widget,
-          base::FeatureList::IsEnabled(features::kWaylandWindowDecorations));
+  params.desktop_window_tree_host = new ElectronDesktopWindowTreeHostLinux(
+      this, native_widget,
+      base::FeatureList::IsEnabled(features::kWaylandWindowDecorations));
 #endif
 
   widget()->Init(std::move(params));
@@ -525,7 +525,8 @@ bool NativeWindowViews::IsEnabled() {
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif BUILDFLAG(IS_LINUX)
 #if defined(USE_OZONE)
-  if (is_x11_) return !event_disabler_.get();
+  if (is_x11_)
+    return !event_disabler_.get();
 #endif
   NOTIMPLEMENTED();
   return true;
@@ -1118,14 +1119,16 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
           .operation = x11::Shape::So::Set,
           .destination_kind = x11::Shape::Sk::Input,
           .ordering = x11::ClipOrdering::YXBanded,
-          .destination_window = static_cast<x11::Window>(GetAcceleratedWidget()),
+          .destination_window =
+              static_cast<x11::Window>(GetAcceleratedWidget()),
           .rectangles = {r},
       });
     } else {
       connection->shape().Mask({
           .operation = x11::Shape::So::Set,
           .destination_kind = x11::Shape::Sk::Input,
-          .destination_window = static_cast<x11::Window>(GetAcceleratedWidget()),
+          .destination_window =
+              static_cast<x11::Window>(GetAcceleratedWidget()),
           .source_bitmap = x11::Pixmap::None,
       });
     }
@@ -1184,8 +1187,10 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   // Use global application menu bar when possible.
-  if (ui::OzonePlatform::GetInstance()->GetPlatformProperties()
-          .supports_global_application_menus && ShouldUseGlobalMenuBar()) {
+  if (ui::OzonePlatform::GetInstance()
+          ->GetPlatformProperties()
+          .supports_global_application_menus &&
+      ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
       global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
     if (global_menu_bar_->IsServerStarted()) {
