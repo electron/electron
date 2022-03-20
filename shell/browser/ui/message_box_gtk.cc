@@ -20,10 +20,6 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gtk/gtk_util.h"
 
-#if defined(USE_X11)
-#include "ui/events/platform/x11/x11_event_source.h"
-#endif
-
 #if defined(USE_OZONE) || defined(USE_X11)
 #include "ui/base/ui_base_features.h"
 #endif
@@ -161,14 +157,9 @@ class GtkMessageBox : public NativeWindowObserver {
 
   void Show() {
     gtk_widget_show(dialog_);
-
-#if defined(USE_X11)
     // We need to call gtk_window_present after making the widgets visible to
     // make sure window gets correctly raised and gets focus.
-    x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
-    gtk_window_present_with_time(GTK_WINDOW(dialog_),
-                                 static_cast<uint32_t>(time));
-#endif
+    gtk_window_present(GTK_WINDOW(dialog_));
   }
 
   int RunSynchronous() {
