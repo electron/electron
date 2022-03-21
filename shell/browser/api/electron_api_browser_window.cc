@@ -370,7 +370,7 @@ void BrowserWindow::Blur() {
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
-  SkColor color = ParseHexColor(color_name);
+  SkColor color = ParseCSSColor(color_name);
   web_contents()->SetPageBaseBackgroundColor(color);
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
   if (rwhv) {
@@ -384,7 +384,7 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {
-      web_preferences->SetBackgroundColor(ParseHexColor(color_name));
+      web_preferences->SetBackgroundColor(ParseCSSColor(color_name));
     }
   }
 }
