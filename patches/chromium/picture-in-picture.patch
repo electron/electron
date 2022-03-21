@@ -48,10 +48,10 @@ index d3400d7b02edc9cffba4cb53ec601b6e4cfea3b2..8e620ad6172a650ea96f80c0b4403593
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/base/models/image_model.h"
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed9b61c3a5 100644
+index 3309906bcae27ba89d73ce4fba49843a10cd31f6..9f828f70606238186b35b5e1ca8751134eaf3c33 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-@@ -15,6 +15,7 @@
+@@ -15,24 +15,28 @@
  #include "base/timer/timer.h"
  #include "build/build_config.h"
  #include "chrome/app/vector_icons/vector_icons.h"
@@ -59,8 +59,12 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed
  #include "chrome/browser/command_updater_delegate.h"
  #include "chrome/browser/command_updater_impl.h"
  #include "chrome/browser/profiles/profile.h"
-@@ -24,15 +25,16 @@
+ #include "chrome/browser/themes/theme_service.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/browser_finder.h"
++#endif
  #include "chrome/browser/ui/color/chrome_color_id.h"
++#if 0
  #include "chrome/browser/ui/toolbar/chrome_location_bar_model_delegate.h"
  #include "chrome/browser/ui/views/location_bar/location_bar_view.h"
 +#endif
@@ -77,7 +81,7 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed
  #include "content/public/common/content_constants.h"
  #include "media/base/media_switches.h"
  #include "media/base/video_util.h"
-@@ -57,7 +59,7 @@
+@@ -57,7 +61,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -86,7 +90,7 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -109,7 +111,7 @@ END_METADATA
+@@ -109,7 +113,7 @@ END_METADATA
  }  // namespace
  
  OverlayLocationBarViewProxy::~OverlayLocationBarViewProxy() = default;
@@ -95,7 +99,7 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed
  class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
                                     public ChromeLocationBarModelDelegate,
                                     public LocationBarView::Delegate,
-@@ -167,7 +169,7 @@ class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
+@@ -167,7 +171,7 @@ class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
    const std::unique_ptr<LocationBarModelImpl> location_bar_model_;
    CommandUpdaterImpl command_updater_;
  };
@@ -104,7 +108,7 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed
  // static
  std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
      content::DocumentPictureInPictureWindowController* controller,
-@@ -203,7 +205,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
+@@ -203,7 +207,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -113,7 +117,7 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed
    std::wstring app_user_model_id;
    Browser* browser =
        chrome::FindBrowserWithWebContents(controller->GetWebContents());
-@@ -278,12 +280,6 @@ views::View* DocumentOverlayWindowViews::GetControlsContainerView() const {
+@@ -278,12 +282,6 @@ views::View* DocumentOverlayWindowViews::GetControlsContainerView() const {
    return controls_container_view_;
  }
  
@@ -126,7 +130,7 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed
  void DocumentOverlayWindowViews::SetUpViews() {
    // The window content consists of the fixed-height controls_container_view at
    // the top which is a box layout, and the remainder of the view is filled with
-@@ -299,6 +295,7 @@ void DocumentOverlayWindowViews::SetUpViews() {
+@@ -299,6 +297,7 @@ void DocumentOverlayWindowViews::SetUpViews() {
    //   +-------------------------------------+
  
    content::WebContents* pip_contents = controller_->GetChildWebContents();
@@ -134,7 +138,7 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..5ce8e44fc30eac81b51e7cd1a4369aed
    auto* profile =
        Profile::FromBrowserContext(pip_contents->GetBrowserContext());
    profile_for_theme_ = profile;
-@@ -309,8 +306,8 @@ void DocumentOverlayWindowViews::SetUpViews() {
+@@ -309,8 +308,8 @@ void DocumentOverlayWindowViews::SetUpViews() {
      location_bar_view_proxy_ = std::make_unique<OverlayLocationBarViewImpl>(
          profile, controller_->GetWebContents());
    }
