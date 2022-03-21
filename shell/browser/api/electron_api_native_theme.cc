@@ -67,6 +67,10 @@ bool NativeTheme::ShouldUseHighContrastColors() {
   return ui_theme_->UserHasContrastPreference();
 }
 
+bool NativeTheme::InForcedColorsMode() {
+  return ui_theme_->InForcedColorsMode();
+}
+
 #if defined(OS_MAC)
 const CFStringRef WhiteOnBlack = CFSTR("whiteOnBlack");
 const CFStringRef UniversalAccessDomain = CFSTR("com.apple.universalaccess");
@@ -106,7 +110,8 @@ gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
       .SetProperty("shouldUseHighContrastColors",
                    &NativeTheme::ShouldUseHighContrastColors)
       .SetProperty("shouldUseInvertedColorScheme",
-                   &NativeTheme::ShouldUseInvertedColorScheme);
+                   &NativeTheme::ShouldUseInvertedColorScheme)
+      .SetProperty("inForcedColorsMode", &NativeTheme::InForcedColorsMode);
 }
 
 const char* NativeTheme::GetTypeName() {
