@@ -11,6 +11,7 @@ libGLESv2.so
 libffmpeg.so
 libvk_swiftshader.so
 libvulkan.so.1
+locales/af.pak
 locales/am.pak
 locales/ar.pak
 locales/bg.pak
@@ -61,6 +62,7 @@ locales/te.pak
 locales/th.pak
 locales/tr.pak
 locales/uk.pak
+locales/ur.pak
 locales/vi.pak
 locales/zh-CN.pak
 locales/zh-TW.pak
