@@ -7,6 +7,24 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors
 needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
 our autofill implementation to work like Chromium's.
 
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index fa3a6620ce84136476d0ac6e705515c13dc612ab..a0aff5ad93e7644211a2c15553b3d0988f380b7b 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -899,13 +899,6 @@ bool WebContentsViewAura::IsValidDragTarget(
+   // for the outermost view. Inner `WebContents` will have a
+   // `WebContentsViewChildFrame` so when dragging between an inner
+   // `WebContents` and its embedder the view IDs will be the same.
+-  bool cross_tab_drag =
+-      GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
+-      drag_start_->view_id;
+-  return cross_tab_drag;
+-  // TODO(https://crbug.com/1266953): There are some known gaps caused by
+-  // comparing `RenderViewHost` IDs, as `RenderViewHost` ID is not really a
+-  // strong signal for page identity.
+   return true;
+ }
+ 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
 index 2d16acd2d4d732dc5349f403c0a48483a23f895b..7b9d8e24a755b21963d7d84f930c1e9c9bd36ac5 100644
 --- a/ui/color/color_id.h
