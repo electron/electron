@@ -15,8 +15,7 @@ def copy_debug_from_binaries(directory, out_dir, target_cpu, compress):
       copy_debug_from_binary(binary_path, out_dir, target_cpu, compress)
 
 def copy_debug_from_binary(binary_path, out_dir, target_cpu, compress):
-  if PLATFORM == 'linux' and (target_cpu == 'x86' or target_cpu == 'arm' or
-     target_cpu == 'arm64'):
+  if PLATFORM == 'linux' and target_cpu in ('x86', 'arm', 'arm64'):
     # Skip because no objcopy binary on the given target.
     return    
   debug_name = get_debug_name(binary_path)
@@ -25,7 +24,6 @@ def copy_debug_from_binary(binary_path, out_dir, target_cpu, compress):
     cmd.extend(['--compress-debug-sections'])
   cmd.extend([binary_path, os.path.join(out_dir, debug_name)])
   execute(cmd)
-  return debug_name
 
 def get_debug_name(binary_path):
   return os.path.basename(binary_path) + '.debug'

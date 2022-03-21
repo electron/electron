@@ -186,9 +186,9 @@ def get_electron_exec():
 
   if sys.platform == 'darwin':
     return '{0}/Electron.app/Contents/MacOS/Electron'.format(out_dir)
-  elif sys.platform == 'win32':
+  if sys.platform == 'win32':
     return '{0}/electron.exe'.format(out_dir)
-  elif sys.platform == 'linux':
+  if sys.platform == 'linux':
     return '{0}/electron'.format(out_dir)
 
   raise Exception(
