@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tony Herre <toprice@chromium.org>
+Date: Fri, 18 Feb 2022 13:52:01 +0000
+Subject: Switch to new RequestPermissionsFromCurrentDocument API method for
+ Media Stream Devices
+
+Switch away from the deprecated RequestPermissions() API, as a part of removing a bug where the previously provided request.security_origin param might get destroyed during the method execution.
+
+(cherry picked from commit cb6778fb965e2b010922f157c68480de863c252e)
+
+Bug: 1283402
+Change-Id: I512ce910146ec60d4d35fa1a86a71a3b0983a5d1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3417436
+Reviewed-by: Florent Castelli <orphis@chromium.org>
+Commit-Queue: Tony Herre <toprice@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#964535}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3473365
+Cr-Commit-Position: refs/branch-heads/4844@{#655}
+Cr-Branched-From: 007241ce2e6c8e5a7b306cc36c730cd07cd38825-refs/heads/main@{#961656}
+
+diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
+index c818458f413ab2afc439ddabb547659b1def3c5a..9f6829c1520f5bf46981de8c9a8c99fc7b40ad34 100644
+--- a/components/webrtc/media_stream_devices_controller.cc
++++ b/components/webrtc/media_stream_devices_controller.cc
+@@ -138,9 +138,8 @@ void MediaStreamDevicesController::RequestPermissions(
+     }
+   }
+ 
+-  permission_manager->RequestPermissions(
+-      content_settings_types, rfh, request.security_origin,
+-      request.user_gesture,
++  permission_manager->RequestPermissionsFromCurrentDocument(
++      content_settings_types, rfh, request.user_gesture,
+       base::BindOnce(
+           &MediaStreamDevicesController::RequestAndroidPermissionsIfNeeded,
+           web_contents, std::move(controller), will_prompt_for_audio,
