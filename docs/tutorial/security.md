@@ -732,8 +732,10 @@ aren't performing actions or sending information to untrusted renderers.
 
 All Web Frames can in theory send IPC messages to the browser process, this includes
 iframes and child windows in some scenarios.  If you have an IPC message that returns
-user data to the sender via `event.reply` you should ensure you aren't sending that data
-to third party web frames.
+user data to the sender via `event.reply` or performs privileged actions that the renderer
+can't natively you should ensure you aren't listening to third party web frames.
+
+You should be validating the `sender` of **all** IPC messages by default.
 
 #### How?
 
