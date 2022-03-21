@@ -1571,6 +1571,15 @@ void App::SetBrowserClientNotificationsComServerCLSID(
 std::string App::GetBrowserClientNotificationsComServerCLSID() {
   return ElectronBrowserClient::Get()->GetNotificationsComServerCLSID();
 }
+// SAP-21094: Application name displays in incorrect format on notification
+void App::SetBrowserClientNotificationsComDisplayName(
+    const std::string& com_display_name) {
+  ElectronBrowserClient::Get()->SetNotificationsComDisplayName(
+      com_display_name);
+}
+std::string App::GetBrowserClientNotificationsComDisplayName() {
+  return ElectronBrowserClient::Get()->GetNotificationsComDisplayName();
+}
 #endif
 
 #if BUILDFLAG(IS_MAC)
@@ -1869,6 +1878,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("notificationsComServerCLSID",
                    &App::GetBrowserClientNotificationsComServerCLSID,
                    &App::SetBrowserClientNotificationsComServerCLSID)
+      .SetProperty("notificationsComDisplayName",
+                   &App::GetBrowserClientNotificationsComDisplayName,
+                   &App::SetBrowserClientNotificationsComDisplayName)
 #endif
       .SetMethod("enableSandbox", &App::EnableSandbox);
 }

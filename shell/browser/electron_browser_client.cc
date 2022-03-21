@@ -1788,6 +1788,15 @@ void ElectronBrowserClient::SetNotificationsComServerCLSID(
 std::string ElectronBrowserClient::GetNotificationsComServerCLSID() {
   return notifications_com_server_clsid_;
 }
+// SAP-21094: Application name displays in incorrect format on notification
+void ElectronBrowserClient::SetNotificationsComDisplayName(
+    const std::string& com_display_name) {
+  notifications_com_display_name_ = com_display_name;
+}
+
+std::string ElectronBrowserClient::GetNotificationsComDisplayName() {
+  return notifications_com_display_name_;
+}
 
 #endif
 
