@@ -730,10 +730,10 @@ aren't performing actions or sending information to untrusted renderers.
 
 #### Why?
 
-All Web Frames can in theory send IPC messages to the browser process, this includes
+All Web Frames can in theory send IPC messages to the main process, including
 iframes and child windows in some scenarios.  If you have an IPC message that returns
 user data to the sender via `event.reply` or performs privileged actions that the renderer
-can't natively you should ensure you aren't listening to third party web frames.
+can't natively, you should ensure you aren't listening to third party web frames.
 
 You should be validating the `sender` of **all** IPC messages by default.
 
