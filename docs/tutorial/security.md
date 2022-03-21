@@ -739,7 +739,7 @@ You should be validating the `sender` of **all** IPC messages by default.
 
 #### How?
 
-```js
+```js title='main.js (Main Process)'
 // Bad
 ipcMain.handle('get-secrets', () => {
   return getSecrets();
