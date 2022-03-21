@@ -225,6 +225,10 @@ class App : public ElectronBrowserClient::Delegate,
   void SetBrowserClientNotificationsComServerCLSID(
       const std::string& com_server_clsid);
   std::string GetBrowserClientNotificationsComServerCLSID();
+  // SAP-21094: Application name displays in incorrect format on notification
+  void SetBrowserClientNotificationsComDisplayName(
+      const std::string& com_display_name);
+  std::string GetBrowserClientNotificationsComDisplayName();
 #endif
 #if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,

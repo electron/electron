@@ -111,6 +111,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // SAP-15762: Support COM activation registration at runtime
   void SetNotificationsComServerCLSID(const std::string& com_server_clsid);
   std::string GetNotificationsComServerCLSID();
+  // SAP-21094: Application name displays in incorrect format on notification
+  void SetNotificationsComDisplayName(const std::string& com_display_name);
+  std::string GetNotificationsComDisplayName();
 #endif
 
   content::HidDelegate* GetHidDelegate() override;
@@ -333,6 +336,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // SAP-15762: To support COM activation registration at runtime
   std::string notifications_com_server_clsid_ =
       "";  // default empty i.e absence support for persistent notifications
+  // SAP-21094: Application name displays in incorrect format on notification
+  std::string notifications_com_display_name_ = "";
 #endif
 
   // Simple shared ID generator, used by ProxyingURLLoaderFactory and

@@ -143,7 +143,8 @@ class NotificationActivatorFactory;
 class NotificationRegistrator {
  public:
   bool RegisterAppForNotificationSupport(const std::wstring& appId,
-                                         const std::wstring& clsid);
+                                         const std::wstring& clsid,
+                                         const std::wstring& disp);
   bool SetRegistryKeyValue(HKEY hKey,
                            const std::wstring& subKey,
                            const std::wstring& valueName,
@@ -207,12 +208,19 @@ bool WindowsToastNotification::Initialize() {
       return false;
     // SAP-15762: Support COM activation registration at runtime
     std::wstring notificationsCOMServerCLSID;
+    // SAP-21094: Application name displays in incorrect format on notification
+    std::wstring notificationsCOMDisplayName;
     // SAP-15318: Make the com registration system activable
     auto* client = ElectronBrowserClient::Get();
     if (client) {
       const auto& clsid_str = client->GetNotificationsComServerCLSID();
       std::transform(clsid_str.begin(), clsid_str.end(),
                      std::back_inserter(notificationsCOMServerCLSID),
+                     [](const char ch) { return ch; });
+
+      const auto& disp_str = client->GetNotificationsComDisplayName();
+      std::transform(disp_str.begin(), disp_str.end(),
+                     std::back_inserter(notificationsCOMDisplayName),
                      [](const char ch) { return ch; });
     }
     GUID clsid{};
@@ -232,7 +240,7 @@ bool WindowsToastNotification::Initialize() {
       registrator_ = std::make_unique<NotificationRegistrator>();
       if (!registrator_->RegisterAppForNotificationSupport(
               WindowsGetStringRawBuffer((HSTRING)app_id, NULL),
-              notificationsCOMServerCLSID))
+              notificationsCOMServerCLSID, notificationsCOMDisplayName))
         return false;
     }
     return SUCCEEDED(
@@ -1311,7 +1319,8 @@ class NotificationActivatorFactory final
 
 bool NotificationRegistrator::RegisterAppForNotificationSupport(
     const std::wstring& appId,
-    const std::wstring& clsid) {
+    const std::wstring& clsid,
+    const std::wstring& disp) {
   if (app_path_.empty())
     return false;
 
@@ -1325,7 +1334,8 @@ bool NotificationRegistrator::RegisterAppForNotificationSupport(
   // Register via registry
   std::wstring subKey = LR"(SOFTWARE\Classes\AppUserModelId\)" + appId;
   // Set the display name
-  if (!SetRegistryKeyValue(HKEY_CURRENT_USER, subKey, L"DisplayName", appId))
+  if (!SetRegistryKeyValue(HKEY_CURRENT_USER, subKey, L"DisplayName",
+                           !disp.empty() ? disp : appId))
     return false;
   // Set up custom activator
   if (!SetRegistryKeyValue(HKEY_CURRENT_USER, subKey, L"CustomActivator",
