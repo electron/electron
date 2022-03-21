@@ -339,7 +339,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSColor*)colorFromHexColorString:(const std::string&)colorString {
-  SkColor color = electron::ParseHexColor(colorString);
+  SkColor color = electron::ParseCSSColor(colorString);
   return skia::SkColorToDeviceNSColor(color);
 }
 
