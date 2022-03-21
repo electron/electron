@@ -31,8 +31,8 @@ verbose_mode = False
 def get_platform_key():
   if 'MAS_BUILD' in os.environ:
     return 'mas'
-  else:
-    return PLATFORM
+
+  return PLATFORM
 
 
 def get_target_arch():

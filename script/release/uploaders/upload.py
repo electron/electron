@@ -160,6 +160,8 @@ def main():
         'toolchain_profile.json')
     upload_electron(release, toolchain_profile_zip, args)
 
+  return 0
+
 def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
   parser.add_argument('-v', '--version', help='Specify the version',
@@ -205,7 +207,7 @@ def zero_zip_date_time(fname):
   try:
     with open(fname, 'r+b') as f:
       _zero_zip_date_time(f)
-  except:
+  except Exception:
     raise NonZipFileError(fname)
 
 

@@ -233,8 +233,8 @@ def to_utf8(patch):
   """Python 2/3 compatibility: unicode has been renamed to str in Python3"""
   if sys.version_info[0] >= 3:
     return str(patch, "utf-8")
-  else:
-    return unicode(patch, "utf-8")
+
+  return unicode(patch, "utf-8")
 
 
 def export_patches(repo, out_dir, patch_range=None, dry_run=False):
@@ -268,7 +268,7 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
           out_dir, len(bad_patches), "\n-- ".join(bad_patches)
         )
       )
-      exit(1)
+      sys.exit(1)
   else:
     # Remove old patches so that deleted commits are correctly reflected in the
     # patch files (as a removed file)
@@ -291,4 +291,3 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
         ) as f:
           f.write(formatted_patch.encode('utf-8'))
         pl.write(filename + '\n')
-
