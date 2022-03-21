@@ -1,0 +1,17 @@
+<html>
+<body>
+<script>
+const fs = require('fs');
+const { ipcRenderer } = require('electron');
+
+async function readFile(path) {
+    await fs.promises.readFile(path);
+}
+
+ipcRenderer.on('reload', (_, path) => {
+    readFile(path);
+    window.location.reload();
+});
+</script>
+</body>
+</html>
