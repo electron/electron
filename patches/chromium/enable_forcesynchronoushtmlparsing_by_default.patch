@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Wed, 15 Dec 2021 01:51:28 +0000
+Subject: Enable ForceSynchronousHTMLParsing by default
+
+This feature is enabled at 100% (with 1% stable holdback) on all
+channels since M96. No unresolved problems have been reported,
+and overall metrics are improved [1]. This CL enables the
+ForceSynchronousHTMLParsing feature by default, and removes the
+LoaderDataPipeTuning feature entirely, replacing it with newly-
+hard-coded values from the launched experiment.
+
+[1] https://docs.google.com/document/d/13GewLNZ50nqs0OI7-rzofOXtjuAlD0R4PMLTUsr73dg/edit#heading=h.ctbltu75kgzp
+
+This part is cool:
+Fixed: 901056
+Fixed: 461877
+Fixed: 761992
+Fixed: 789124
+Fixed: 995660
+Fixed: 1038534
+Fixed: 1041006
+Fixed: 1128608
+Fixed: 1130290
+Fixed: 1149988
+Fixed: 1231037
+-> That's 85 stars worth of bugs, as of 12-13-21.
+
+Not sure this is "fixed" by this CL, but it should at least address
+comment #3:
+Bug: 1087177
+
+Change-Id: Icbf01ef6665362ae23f28657e5574ca705b82717
+Cq-Do-Not-Cancel-Tryjobs: true
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2798812
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Reviewed-by: John Abd-El-Malek <jam@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
+Commit-Queue: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#951773}
+
+diff --git a/services/network/public/cpp/features.cc b/services/network/public/cpp/features.cc
+index d109cac66b5ff947ff04088d023b24e13d73e826..4edc5236373164c1bbceeba54b94c4b448a88bd5 100644
+--- a/services/network/public/cpp/features.cc
++++ b/services/network/public/cpp/features.cc
+@@ -202,38 +202,41 @@ const base::Feature kSCTAuditingRetryAndPersistReports{
+ // This feature is used for tuning several loading-related data pipe
+ // parameters. See crbug.com/1041006.
+ const base::Feature kLoaderDataPipeTuningFeature{
+-    "LoaderDataPipeTuning", base::FEATURE_DISABLED_BY_DEFAULT};
++    "LoaderDataPipeTuning", base::FEATURE_ENABLED_BY_DEFAULT};
+ 
+ namespace {
+-// The default buffer size of DataPipe which is used to send the content body.
+-static constexpr uint32_t kDataPipeDefaultAllocationSize = 512 * 1024;
+-constexpr base::FeatureParam<int> kDataPipeAllocationSize{
+-    &kLoaderDataPipeTuningFeature, "allocation_size_bytes",
+-    base::saturated_cast<int>(kDataPipeDefaultAllocationSize)};
++// The default Mojo ring buffer size, used to send the content body.
++static constexpr uint32_t kDefaultDataPipeAllocationSize = 512 * 1024;
++// The larger ring buffer size, used primarily for network::URLLoader loads.
++// This value was optimized via Finch: see crbug.com/1041006.
++static constexpr uint32_t kLargerDataPipeAllocationSize = 2 * 1024 * 1024;
+ 
+ // The maximal number of bytes consumed in a loading task. When there are more
+ // bytes in the data pipe, they will be consumed in following tasks. Setting too
+ // small of a number will generate many tasks but setting a too large of a
+-// number will lead to thread janks.
+-static constexpr uint32_t kMaxNumConsumedBytesInTask = 64 * 1024;
+-constexpr base::FeatureParam<int> kLoaderChunkSize{
+-    &kLoaderDataPipeTuningFeature, "loader_chunk_size",
+-    base::saturated_cast<int>(kMaxNumConsumedBytesInTask)};
++// number will lead to thread janks. This value was optimized via Finch:
++// see crbug.com/1041006.
++static constexpr uint32_t kDefaultMaxNumConsumedBytesInTask = 64 * 1024;
++static constexpr uint32_t kLargerMaxNumConsumedBytesInTask = 1024 * 1024;
+ }  // namespace
+ 
+ // static
+ uint32_t GetDataPipeDefaultAllocationSize(DataPipeAllocationSize option) {
+   if (option == DataPipeAllocationSize::kDefaultSizeOnly)
+-    return kDataPipeDefaultAllocationSize;
++    return kDefaultDataPipeAllocationSize;
+   // For low-memory devices, always use the (smaller) default buffer size.
+   if (base::SysInfo::AmountOfPhysicalMemoryMB() <= 512)
+-    return kDataPipeDefaultAllocationSize;
+-  return base::saturated_cast<uint32_t>(kDataPipeAllocationSize.Get());
++    return kDefaultDataPipeAllocationSize;
++  if (!base::FeatureList::IsEnabled(features::kLoaderDataPipeTuningFeature))
++    return kDefaultDataPipeAllocationSize;
++  return kLargerDataPipeAllocationSize;
+ }
+ 
+ // static
+ uint32_t GetLoaderChunkSize() {
+-  return base::saturated_cast<uint32_t>(kLoaderChunkSize.Get());
++  if (!base::FeatureList::IsEnabled(features::kLoaderDataPipeTuningFeature))
++    return kDefaultMaxNumConsumedBytesInTask;
++  return kLargerMaxNumConsumedBytesInTask;
+ }
+ 
+ // Enable recording UMAs for network activities which can wake-up radio on
+diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
+index 35effca2b0365524a024a4bc2b352c8e12180d63..abe85d88f622553fdc80309fa410263014e86032 100644
+--- a/third_party/blink/common/features.cc
++++ b/third_party/blink/common/features.cc
+@@ -110,7 +110,7 @@ const base::Feature kJSONModules{"JSONModules",
+                                  base::FEATURE_ENABLED_BY_DEFAULT};
+ 
+ const base::Feature kForceSynchronousHTMLParsing{
+-    "ForceSynchronousHTMLParsing", base::FEATURE_DISABLED_BY_DEFAULT};
++    "ForceSynchronousHTMLParsing", base::FEATURE_ENABLED_BY_DEFAULT};
+ 
+ // Enables top-level await in modules.
+ const base::Feature kTopLevelAwait{"TopLevelAwait",
+diff --git a/third_party/blink/renderer/platform/loader/fetch/response_body_loader_test.cc b/third_party/blink/renderer/platform/loader/fetch/response_body_loader_test.cc
+index 88e4a9fdd359dfe63f2b932a7ddd401fc330d6fc..0e59a70e458ebf1a6a8e8c68e3086dde1ac3a55e 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/response_body_loader_test.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/response_body_loader_test.cc
+@@ -47,15 +47,6 @@ class ResponseBodyLoaderTest : public testing::Test {
+   using PublicState = BytesConsumer::PublicState;
+   using Result = BytesConsumer::Result;
+ 
+-  static constexpr uint32_t kMaxNumConsumedBytesInTaskForTesting = 512 * 1024;
+-  ResponseBodyLoaderTest() {
+-    base::FieldTrialParams params;
+-    params["loader_chunk_size"] =
+-        base::NumberToString(kMaxNumConsumedBytesInTaskForTesting);
+-    scoped_feature_list_.InitAndEnableFeatureWithParameters(
+-        network::features::kLoaderDataPipeTuningFeature, params);
+-  }
+-
+   class TestClient final : public GarbageCollected<TestClient>,
+                            public ResponseBodyLoaderClient {
+    public:
+@@ -361,7 +352,7 @@ TEST_F(ResponseBodyLoaderTest, Suspend) {
+ TEST_F(ResponseBodyLoaderTest, ReadTooBigBuffer) {
+   auto task_runner = base::MakeRefCounted<scheduler::FakeTaskRunner>();
+   auto* consumer = MakeGarbageCollected<ReplayingBytesConsumer>(task_runner);
+-  constexpr auto kMax = kMaxNumConsumedBytesInTaskForTesting;
++  const uint32_t kMax = network::features::GetLoaderChunkSize();
+ 
+   consumer->Add(Command(Command::kData, std::string(kMax - 1, 'a').data()));
+   consumer->Add(Command(Command::kData, std::string(2, 'b').data()));
+diff --git a/third_party/blink/web_tests/platform/fuchsia/external/wpt/html/semantics/interactive-elements/the-details-element/toggleEvent-expected.txt b/third_party/blink/web_tests/platform/fuchsia/external/wpt/html/semantics/interactive-elements/the-details-element/toggleEvent-expected.txt
+deleted file mode 100644
+index 5c808aa0a050a4ad866e65445b3fbd7c6807903d..0000000000000000000000000000000000000000
+--- a/third_party/blink/web_tests/platform/fuchsia/external/wpt/html/semantics/interactive-elements/the-details-element/toggleEvent-expected.txt
++++ /dev/null
+@@ -1,13 +0,0 @@
+-This is a testharness.js-based test.
+-PASS Adding open to 'details' should fire a toggle event at the 'details' element
+-PASS Removing open from 'details' should fire a toggle event at the 'details' element
+-PASS Adding open to 'details' (display:none) should fire a toggle event at the 'details' element
+-PASS Adding open from 'details' (no children) should fire a toggle event at the 'details' element
+-PASS Calling open twice on 'details' fires only one toggle event
+-PASS Calling setAttribute('open', '') to 'details' should fire a toggle event at the 'details' element
+-PASS Calling removeAttribute('open') to 'details' should fire a toggle event at the 'details' element
+-FAIL Setting open=true to opened 'details' element should not fire a toggle event at the 'details' element assert_true: expected true got false
+-PASS Setting open=false to closed 'details' element should not fire a toggle event at the 'details' element
+-PASS Adding open to 'details' (not in the document) should fire a toggle event at the 'details' element
+-Harness: the test ran to completion.
+-
