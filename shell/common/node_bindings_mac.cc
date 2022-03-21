@@ -19,7 +19,25 @@ NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env)
 
 NodeBindingsMac::~NodeBindingsMac() = default;
 
+void NodeBindingsMac::PrepareMessageLoop() {
+  int handle = uv_backend_fd(uv_loop_);
+
+  // If the backend fd hasn't changed, don't proceed.
+  if (handle == handle_)
+    return;
+
+  NodeBindings::PrepareMessageLoop();
+}
+
 void NodeBindingsMac::RunMessageLoop() {
+  int handle = uv_backend_fd(uv_loop_);
+
+  // If the backend fd hasn't changed, don't proceed.
+  if (handle == handle_)
+    return;
+
+  handle_ = handle;
+
   // Get notified when libuv's watcher queue changes.
   uv_loop_->data = this;
   uv_loop_->on_watcher_queue_updated = OnWatcherQueueChanged;
