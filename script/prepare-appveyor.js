@@ -110,9 +110,9 @@ async function callAppVeyorBuildJobs (targetBranch, job, options) {
     body: JSON.stringify({
       accountName: 'electron-bot',
       projectSlug: appVeyorJobs[job],
-      branch: targetBranch,
+      // branch: targetBranch,
       pullRequestId: pullRequestId || undefined,
-      commitId: options.commit || undefined,
+      // commitId: options.commit || undefined,
       environmentVariables
     }),
     method: 'POST'
