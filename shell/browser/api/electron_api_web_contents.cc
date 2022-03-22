@@ -773,7 +773,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     // and we then need to pull it back out and check it here.
     std::string background_color;
     options.GetHidden(options::kBackgroundColor, &background_color);
-    bool transparent = ParseHexColor(background_color) == SK_ColorTRANSPARENT;
+    bool transparent = ParseCSSColor(background_color) == SK_ColorTRANSPARENT;
 
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
