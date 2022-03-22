@@ -18,6 +18,7 @@
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/image/image_skia.h"
+#include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_util.h"
 
 #if defined(USE_OZONE) || defined(USE_X11)
@@ -157,9 +158,7 @@ class GtkMessageBox : public NativeWindowObserver {
 
   void Show() {
     gtk_widget_show(dialog_);
-    // We need to call gtk_window_present after making the widgets visible to
-    // make sure window gets correctly raised and gets focus.
-    gtk_window_present(GTK_WINDOW(dialog_));
+    gtk::GtkUi::GetPlatform()->ShowGtkWindow(GTK_WINDOW(dialog_));
   }
 
   int RunSynchronous() {
