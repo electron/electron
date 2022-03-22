@@ -463,6 +463,32 @@ index 2661776307f773ac8f2c62529ec86349b045ee8f..4fa8f358ee59baed32ef4fd0684d0102
    // Set while running an inner message loop inside RenderAllMissingPagesNow().
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
+diff --git a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
+index 879004c790d57b28e7a816ebf560971876c17168..334509d3ab45af4bb7877f656ca5aca7ee1bce00 100644
+--- a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
++++ b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
+@@ -20,7 +20,7 @@ FakePrintRenderFrame::FakePrintRenderFrame(
+ 
+ FakePrintRenderFrame::~FakePrintRenderFrame() = default;
+ 
+-void FakePrintRenderFrame::PrintRequestedPages() {}
++void FakePrintRenderFrame::PrintRequestedPages(bool /*silent*/, ::base::Value /*settings*/) {}
+ 
+ void FakePrintRenderFrame::PrintForSystemDialog() {}
+ 
+diff --git a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
+index 10f46664d8337d6be2fac24d9a6933429f3b2c2b..6de833f2da3ae85cf0752284146974f2026ab174 100644
+--- a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
++++ b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
+@@ -24,7 +24,7 @@ class FakePrintRenderFrame : public mojom::PrintRenderFrame {
+ 
+  private:
+   // printing::mojom::PrintRenderFrame:
+-  void PrintRequestedPages() override;
++  void PrintRequestedPages(bool silent, ::base::Value settings) override;
+   void PrintForSystemDialog() override;
+   void SetPrintPreviewUI(
+       mojo::PendingAssociatedRemote<mojom::PrintPreviewUI> preview) override;
 diff --git a/components/printing/browser/print_to_pdf/pdf_print_manager.cc b/components/printing/browser/print_to_pdf/pdf_print_manager.cc
 index 66810a2a5f0c77ba107c71d2abaef8692bda0fea..cd6103af4571f82f11652a3c7ecf0e534428dc49 100644
 --- a/components/printing/browser/print_to_pdf/pdf_print_manager.cc
