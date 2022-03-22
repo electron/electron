@@ -43,18 +43,20 @@ environment:
   DEPOT_TOOLS_WIN_TOOLCHAIN: 0
   PYTHONIOENCODING: UTF-8
 build_script:
+  - echo $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME
+  - echo $env:APPVEYOR_REPO_NAME
   - ps: >-
-      if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-        Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-      } else {
-        node script/yarn.js install --frozen-lockfile
+      # if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+      #   Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+      # } else {
+      #  node script/yarn.js install --frozen-lockfile
 
-        # $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-        # Write-Output $result
-        # if ($result.ExitCode -eq 0) {
-        #   Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
-        # }
-      }
+      #  $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+      #  Write-Output $result
+      #  if ($result.ExitCode -eq 0) {
+      #    Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+      #  }
+      # }
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..

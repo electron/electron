@@ -16,7 +16,6 @@ const DEFAULT_BUILD_CLOUD_ID = '1424';
 const DEFAULT_BUILD_CLOUD = 'electron-16-core2';
 const DEFAULT_BAKE_BASE_IMAGE = 'base-electron';
 const DEFAULT_BUILD_IMAGE = 'base-electron';
-// const DEFAULT_BUILD_IMAGE = 'electron-99.0.4767.0';
 
 const appVeyorJobs = {
   // TODO: Disabling other jobs so I don't blast this across three jobs while testing
