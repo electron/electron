@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Tue, 1 Mar 2022 15:40:38 -0500
+Subject: [M96-LTS] Vulkan: Fix issue with redefining a layered attachment.
+
+The fix ensures we complete level redefinition before we get the
+layer render target in TextureVk::getAttachmentRenderTarget.
+
+Bug: chromium:1296866
+Change-Id: Id7fa8e9fed5e766c30580b09336713c675c4e4f0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3498283
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+(cherry picked from commit 348ece42552a99cff88f79c80652b9dd3155ab22)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3513754
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 610f720b68d37aaddf142b0dca538749386cef7e..569118e7137e8ea6dc02cc6247980c2198bf92db 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -2174,6 +2174,15 @@ angle::Result TextureVk::getAttachmentRenderTarget(const gl::Context *context,
+ 
+     ContextVk *contextVk = vk::GetImpl(context);
+ 
++    if (mRedefinedLevels.any())
++    {
++        // If we have redefined levels, we must flush those out to fix the render targets.
++        ANGLE_TRY(respecifyImageStorage(contextVk));
++    }
++
++    // Otherwise, don't flush staged updates here. We'll handle that in FramebufferVk so we can
++    // defer clears.
++
+     if (!mImage->valid())
+     {
+         // Immutable texture must already have a valid image
+@@ -2217,8 +2226,6 @@ angle::Result TextureVk::getAttachmentRenderTarget(const gl::Context *context,
+             mState.getType(), samples, *mImage, useRobustInit));
+     }
+ 
+-    // Don't flush staged updates here. We'll handle that in FramebufferVk so it can defer clears.
+-
+     GLuint layerIndex = 0, layerCount = 0, imageLayerCount = 0;
+     GetRenderTargetLayerCountAndIndex(mImage, imageIndex, &layerIndex, &layerCount,
+                                       &imageLayerCount);
+@@ -2229,10 +2236,14 @@ angle::Result TextureVk::getAttachmentRenderTarget(const gl::Context *context,
+                                      gl::LevelIndex(imageIndex.getLevelIndex()),
+                                      renderToTextureIndex);
+ 
+-        ASSERT(imageIndex.getLevelIndex() <
+-               static_cast<int32_t>(mSingleLayerRenderTargets[renderToTextureIndex].size()));
+-        *rtOut = &mSingleLayerRenderTargets[renderToTextureIndex][imageIndex.getLevelIndex()]
+-                                           [layerIndex];
++        std::vector<RenderTargetVector> &levelRenderTargets =
++            mSingleLayerRenderTargets[renderToTextureIndex];
++        ASSERT(imageIndex.getLevelIndex() < static_cast<int32_t>(levelRenderTargets.size()));
++
++        RenderTargetVector &layerRenderTargets = levelRenderTargets[imageIndex.getLevelIndex()];
++        ASSERT(imageIndex.getLayerIndex() < static_cast<int32_t>(layerRenderTargets.size()));
++
++        *rtOut = &layerRenderTargets[layerIndex];
+     }
+     else
+     {
+diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
+index cd733be3ae5c179860d882e305ec84d093a283ed..c0b745978ae5d28d97bb833f7fe6278872d8d620 100644
+--- a/src/tests/gl_tests/FramebufferTest.cpp
++++ b/src/tests/gl_tests/FramebufferTest.cpp
+@@ -3427,6 +3427,25 @@ TEST_P(FramebufferTest_ES3, BindRenderbufferThenModifySize)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Tests redefining a layered framebuffer attachment.
++TEST_P(FramebufferTest_ES3, RedefineLayerAttachment)
++{
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    std::vector<uint8_t> imgData(20480, 0);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, 8, 8, 8, 0, GL_RED, GL_UNSIGNED_BYTE, imgData.data());
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 8);
++    glGenerateMipmap(GL_TEXTURE_3D);
++
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, 16, 16, 16, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
++                 imgData.data());
++    glCopyTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 2, 2, 15, 16, 16);
++    ASSERT_GL_NO_ERROR();
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2(AddMockTextureNoRenderTargetTest);
+ ANGLE_INSTANTIATE_TEST_ES2(FramebufferTest);
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(FramebufferFormatsTest);
