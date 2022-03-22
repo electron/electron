@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 6564e1dda47a9c5d25c3823a189f937e3f69a61f..6b3d968f4a1bbb76a3044ac0573fc295a51bd0b0 100644
+index 36e56f96878e5c2c9c47d2ca4d26340f6bc8bb96..91aae0b9e3703ae22525c4b16792ccf6623cd398 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -127,6 +127,11 @@
@@ -169,10 +169,10 @@ index 3fd4c43562aa5de00d8698096f154522420c8f24..eed05c05d1da28284af6ae0cef45dbbb
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 560fb1abef48690cb6b857846c2a88b611e9d7a1..124408c47eec5339da6cf1bcb094c2acd04871e8 100644
+index 64199b44316ab4671941c734444d207591512d0a..c929eb10af5b8856debdc0d665eac767e9730714 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -278,6 +278,17 @@ struct NetworkContextFilePaths {
+@@ -280,6 +280,17 @@ struct NetworkContextFilePaths {
    bool trigger_migration = false;
  };
  
@@ -190,7 +190,7 @@ index 560fb1abef48690cb6b857846c2a88b611e9d7a1..124408c47eec5339da6cf1bcb094c2ac
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -827,6 +838,9 @@ interface NetworkContext {
+@@ -829,6 +840,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

@@ -288,7 +288,7 @@ index a998c64237a7ffd6583a33cd54fe3229196300a6..4f57227a9033f905be13bc5166d0324d
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index ce83daee0eb44d72caaf1e7e250ce0c3fadb827c..ed0b508a5d6cdd4433a8117ef2032ce8e1d99273 100644
+index bddbd37ca73369adb82dad5bb8b25f0ab2a7f878..9bf28cd7f926f41041f40d4bc0a497c8b8730b86 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 @@ -213,8 +213,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
