@@ -140,7 +140,7 @@ class InspectableWebContents
                        const std::string& browser_id,
                        const std::string& url) override;
   void RegisterPreference(const std::string& name,
-                          const RegisterOptions& options) override;
+                          const RegisterOptions& options) override {}
   void GetPreferences(DispatchCallback callback) override;
   void SetPreference(const std::string& name,
                      const std::string& value) override;
@@ -195,9 +195,6 @@ class InspectableWebContents
                           const base::FilePath& path) override;
 
   void SendMessageAck(int request_id, const base::Value* arg1);
-
-  const char* GetDictionaryNameForSettingsName(const std::string& name) const;
-  const char* GetDictionaryNameForSyncedPrefs() const;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void AddDevToolsExtensionsToClient();

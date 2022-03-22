@@ -72,13 +72,14 @@
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/child_web_contents_tracker.h"
+#include "shell/browser/electron_api_ipc_handler_impl.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/browser/electron_browser_handler_impl.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_quota_permission_context.h"
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
+#include "shell/browser/electron_web_contents_utility_handler_impl.h"
 #include "shell/browser/font_defaults.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
@@ -1450,10 +1451,29 @@ bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
 }
 #endif  // defined(OS_WIN)
 
-void BindElectronBrowser(
-    mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser> receiver,
+bool BindElectronApiIPC(
+    mojo::PendingAssociatedReceiver<electron::mojom::ElectronApiIPC> receiver,
     content::RenderFrameHost* frame_host) {
-  ElectronBrowserHandlerImpl::Create(frame_host, std::move(receiver));
+  auto* contents = content::WebContents::FromRenderFrameHost(frame_host);
+  if (contents) {
+    auto* prefs = WebContentsPreferences::From(contents);
+    if (frame_host->GetFrameTreeNodeId() ==
+            contents->GetMainFrame()->GetFrameTreeNodeId() ||
+        (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
+      ElectronApiIPCHandlerImpl::Create(frame_host, std::move(receiver));
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void BindElectronWebContentsUtility(
+    mojo::PendingAssociatedReceiver<electron::mojom::ElectronWebContentsUtility>
+        receiver,
+    content::RenderFrameHost* frame_host) {
+  ElectronWebContentsUtilityHandlerImpl::Create(frame_host,
+                                                std::move(receiver));
 }
 
 bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
@@ -1467,13 +1487,21 @@ bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
         render_frame_host);
     return true;
   }
-  if (interface_name == electron::mojom::ElectronBrowser::Name_) {
-    BindElectronBrowser(
-        mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>(
+  if (interface_name == electron::mojom::ElectronApiIPC::Name_) {
+    return BindElectronApiIPC(
+        mojo::PendingAssociatedReceiver<electron::mojom::ElectronApiIPC>(
             std::move(*handle)),
+        render_frame_host);
+  }
+
+  if (interface_name == electron::mojom::ElectronWebContentsUtility::Name_) {
+    BindElectronWebContentsUtility(
+        mojo::PendingAssociatedReceiver<
+            electron::mojom::ElectronWebContentsUtility>(std::move(*handle)),
         render_frame_host);
     return true;
   }
+
 #if BUILDFLAG(ENABLE_PRINTING)
   if (interface_name == printing::mojom::PrintManagerHost::Name_) {
     mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost> receiver(

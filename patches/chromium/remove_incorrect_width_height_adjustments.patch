@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bruce Dawson <brucedawson@chromium.org>
+Date: Mon, 28 Feb 2022 19:07:41 +0000
+Subject: Remove incorrect width/height adjustments
+
+In late 2016 a change which fixed some problems around window sizing
+when attaching or detaching additional displays was landed, which fixed
+some genuine bugs. Unfortunately it included a subtraction of 1 from the
+width and height of the Chrome window. I couldn't find any discussion of
+this size adjustment and I think that it was just a misunderstanding of
+how window rectangles work (inclusive versus exclusive extents).
+
+This size adjustment causes non-maximized Chrome windows to shrink every
+time a monitor is added or removed. The problematic commit was found
+by the bug-filer through a bisect of more than four years of Chrome
+history - I'm just landing the fix that they suggested.
+
+Bug: 1300415
+Change-Id: Ief124f584a91aa9cc3f10704b0cc1e83356dea5b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3492658
+Reviewed-by: Allen Bauer <kylixrd@chromium.org>
+Commit-Queue: Bruce Dawson <brucedawson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#975872}
+
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 6507557bf5a47492343602607e0dbb7d8f88246d..783fde724396ee0dce8bbb25834e00c0da0d924b 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -2827,8 +2827,8 @@ void HWNDMessageHandler::OnWindowPosChanging(WINDOWPOS* window_pos) {
+       // (Win+Shift+Arrows). See crbug.com/656001.
+       window_rect.left = window_pos->x;
+       window_rect.top = window_pos->y;
+-      window_rect.right = window_pos->x + window_pos->cx - 1;
+-      window_rect.bottom = window_pos->y + window_pos->cy - 1;
++      window_rect.right = window_pos->x + window_pos->cx;
++      window_rect.bottom = window_pos->y + window_pos->cy;
+     }
+ 
+     HMONITOR monitor;
