@@ -463,6 +463,55 @@ index 2661776307f773ac8f2c62529ec86349b045ee8f..4fa8f358ee59baed32ef4fd0684d0102
    // Set while running an inner message loop inside RenderAllMissingPagesNow().
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
+diff --git a/components/printing/browser/print_to_pdf/pdf_print_manager.cc b/components/printing/browser/print_to_pdf/pdf_print_manager.cc
+index 66810a2a5f0c77ba107c71d2abaef8692bda0fea..cd6103af4571f82f11652a3c7ecf0e534428dc49 100644
+--- a/components/printing/browser/print_to_pdf/pdf_print_manager.cc
++++ b/components/printing/browser/print_to_pdf/pdf_print_manager.cc
+@@ -116,7 +116,8 @@ void PdfPrintManager::PrintToPdf(
+   set_cookie(print_pages_params_->params->document_cookie);
+   callback_ = std::move(callback);
+ 
+-  GetPrintRenderFrame(rfh)->PrintRequestedPages();
++  // TODO(electron-maintainers): do something with job_settings here?
++  GetPrintRenderFrame(rfh)->PrintRequestedPages(true/*silent*/, base::Value{}/*job_settings*/);
+ }
+ 
+ void PdfPrintManager::GetDefaultPrintSettings(
+@@ -138,14 +139,14 @@ void PdfPrintManager::ScriptedPrint(
+   if (!printing_rfh_) {
+     DLOG(ERROR) << "Unexpected message received before PrintToPdf is "
+                    "called: ScriptedPrint";
+-    std::move(callback).Run(std::move(default_param));
++    std::move(callback).Run(std::move(default_param), true/*canceled*/);
+     return;
+   }
+   if (params->is_scripted &&
+       GetCurrentTargetFrame()->IsNestedWithinFencedFrame()) {
+     DLOG(ERROR) << "Unexpected message received. Script Print is not allowed"
+                    " in a fenced frame.";
+-    std::move(callback).Run(std::move(default_param));
++    std::move(callback).Run(std::move(default_param), true/*canceled*/);
+     return;
+   }
+   absl::variant<printing::PageRanges, PageRangeError> page_ranges =
+@@ -162,7 +163,7 @@ void PdfPrintManager::ScriptedPrint(
+         break;
+     }
+     ReleaseJob(print_result);
+-    std::move(callback).Run(std::move(default_param));
++    std::move(callback).Run(std::move(default_param), true/*canceled*/);
+     return;
+   }
+ 
+@@ -170,7 +171,7 @@ void PdfPrintManager::ScriptedPrint(
+   print_pages_params_->pages = printing::PageRange::GetPages(
+       absl::get<printing::PageRanges>(page_ranges));
+ 
+-  std::move(callback).Run(print_pages_params_->Clone());
++  std::move(callback).Run(print_pages_params_->Clone(), false/*canceled*/);
+ }
+ 
+ void PdfPrintManager::ShowInvalidPrinterSettingsError() {
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
 index 5afad24754e12554368a6619466ca025edc26180..e2e786692bd877d3b8bf7c31829496afa99ed539 100644
 --- a/components/printing/common/print.mojom
