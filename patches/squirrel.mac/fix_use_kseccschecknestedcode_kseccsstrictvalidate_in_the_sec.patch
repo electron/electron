@@ -4,7 +4,7 @@ Date: Mon, 21 Mar 2022 15:14:19 -0700
 Subject: fix: use kSecCSCheckNestedCode | kSecCSStrictValidate in the Sec
  validate call
 
-This ensures that Squirrel.Mac validates the nestedd bundles (nested Frameworks) including the incoming Squirrel.Mac framework.
+This ensures that Squirrel.Mac validates the nested bundles (nested Frameworks) including the incoming Squirrel.Mac framework.
 
 diff --git a/Squirrel/SQRLCodeSignature.m b/Squirrel/SQRLCodeSignature.m
 index f8754dbd6a1490d2b50f1014e2daa5c1f71b2103..2f5e27c1ae5c5bd514abe33d4cd42c4724656c07 100644
