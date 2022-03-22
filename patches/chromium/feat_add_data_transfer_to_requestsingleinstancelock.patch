@@ -19,7 +19,7 @@ instance, but also so the second instance can send back additional
 data to the first instance if needed.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 5a64220aaf1309832dc0ad543e353de67fe0a779..a568dd10d1ef8679d66f4cdc6a471c251cbcd4eb 100644
+index 5a64220aaf1309832dc0ad543e353de67fe0a779..5b701b1361707b610ed60c344e441e67ca701362 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,7 @@
@@ -46,7 +46,7 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..a568dd10d1ef8679d66f4cdc6a471c25
        base::RepeatingCallback<bool(const base::CommandLine& command_line,
 -                                   const base::FilePath& current_directory)>;
 +                                   const base::FilePath& current_directory,
-+                                   const std::vector<const uint8_t> additional_data,
++                                   const std::vector<uint8_t> additional_data,
 +                                   const NotificationAckCallback& ack_callback)>;
  
  #if BUILDFLAG(IS_WIN)
@@ -96,7 +96,7 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..a568dd10d1ef8679d66f4cdc6a471c25
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65ddbfc332 100644
+index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..44d563e35efb318c5684c30fc441996a5a1f1424 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -148,7 +148,7 @@ const char kACKToken[] = "ACK";
@@ -112,7 +112,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
-+                     const std::vector<const uint8_t> additional_data,
++                     const std::vector<uint8_t> additional_data,
                       SocketReader* reader);
  
   private:
@@ -133,7 +133,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
 -    const std::string& current_dir, const std::vector<std::string>& argv,
 +    const std::string& current_dir,
 +    const std::vector<std::string>& argv,
-+    const std::vector<const uint8_t> additional_data,
++    const std::vector<uint8_t> additional_data,
      SocketReader* reader) {
    DCHECK(ui_task_runner_->BelongsToCurrentThread());
    DCHECK(reader);
@@ -195,7 +195,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
 +  base::StringToSizeT(tokens[0], &num_args);
 +  std::vector<std::string> command_line(tokens.begin() + 1, tokens.begin() + 1 + num_args);
 +
-+  std::vector<const uint8_t> additional_data;
++  std::vector<uint8_t> additional_data;
 +  if (tokens.size() >= 3 + num_args) {
 +    size_t additional_data_size;
 +    base::StringToSizeT(tokens[1 + num_args], &additional_data_size);
@@ -204,7 +204,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
 +        std::string(1, kTokenDelimiter));
 +    const uint8_t* additional_data_bits =
 +        reinterpret_cast<const uint8_t*>(remaining_args.c_str());
-+    additional_data = std::vector<const uint8_t>(additional_data_bits,
++    additional_data = std::vector<uint8_t>(additional_data_bits,
 +        additional_data_bits + additional_data_size);
 +  }
 +
@@ -282,7 +282,7 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..b23c16fde275fdba559abb1f30e42f65
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..268be8c0334a4bc051ff08792ea0dc3d0c912034 100644
+index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..1d393e6e161b896a47d3490d902f2ce82ad6abb2 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -21,6 +21,7 @@
@@ -301,7 +301,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..268be8c0334a4bc051ff08792ea0dc3d
 +const DWORD kPipeTimeout = 10000;
 +const DWORD kMaxMessageLength = 32 * 1024;
 +
-+std::unique_ptr<std::vector<const uint8_t>> g_ack_data;
++std::unique_ptr<std::vector<uint8_t>> g_ack_data;
 +base::OneShotTimer g_ack_timer;
 +HANDLE g_write_ack_pipe;
 +bool g_write_ack_callback_called = false;
@@ -314,7 +314,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..268be8c0334a4bc051ff08792ea0dc3d
                        base::CommandLine* parsed_command_line,
 -                      base::FilePath* current_directory) {
 +                      base::FilePath* current_directory,
-+                      std::vector<const uint8_t>* parsed_additional_data) {
++                      std::vector<uint8_t>* parsed_additional_data) {
    // We should have enough room for the shortest command (min_message_size)
    // and also be a multiple of wchar_t bytes. The shortest command
 -  // possible is L"START\0\0" (empty current directory and command line).
@@ -355,7 +355,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..268be8c0334a4bc051ff08792ea0dc3d
 +        msg.substr(fourth_null + 1, fifth_null - fourth_null);
 +    const uint8_t* additional_data_bytes =
 +        reinterpret_cast<const uint8_t*>(additional_data.c_str());
-+    *parsed_additional_data = std::vector<const uint8_t>(additional_data_bytes,
++    *parsed_additional_data = std::vector<uint8_t>(additional_data_bytes,
 +        additional_data_bytes + additional_data_length);
 +
      return true;
@@ -365,8 +365,8 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..268be8c0334a4bc051ff08792ea0dc3d
  
 +void StoreAck(const base::span<const uint8_t>* ack_data) {
 +  if (ack_data) {
-+    g_ack_data = std::make_unique<std::vector<const uint8_t>>(ack_data->begin(),
-+                                                              ack_data->end());
++    g_ack_data = std::make_unique<std::vector<uint8_t>>(ack_data->begin(),
++                                                        ack_data->end());
 +  } else {
 +    g_ack_data = nullptr;
 +  }
@@ -414,7 +414,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..268be8c0334a4bc051ff08792ea0dc3d
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
 -  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory)) {
-+  std::vector<const uint8_t> additional_data;
++  std::vector<uint8_t> additional_data;
 +  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory,
 +                        &additional_data)) {
      *result = TRUE;

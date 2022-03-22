@@ -21,6 +21,7 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/stl_util.h"
+#include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -63,6 +64,8 @@
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/is_potentially_trustworthy.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "shell/app/electron_crash_reporter_client.h"
@@ -74,13 +77,14 @@
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/child_web_contents_tracker.h"
+#include "shell/browser/electron_api_ipc_handler_impl.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/browser/electron_browser_handler_impl.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_quota_permission_context.h"
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
+#include "shell/browser/electron_web_contents_utility_handler_impl.h"
 #include "shell/browser/font_defaults.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
@@ -361,6 +365,21 @@ int GetCrashSignalFD(const base::CommandLine& command_line) {
 }
 #endif  // BUILDFLAG(IS_LINUX)
 
+void MaybeAppendSecureOriginsAllowlistSwitch(base::CommandLine* cmdline) {
+  // |allowlist| combines pref/policy + cmdline switch in the browser process.
+  // For renderer and utility (e.g. NetworkService) processes the switch is the
+  // only available source, so below the combined (pref/policy + cmdline)
+  // allowlist of secure origins is injected into |cmdline| for these other
+  // processes.
+  std::vector<std::string> allowlist =
+      network::SecureOriginAllowlist::GetInstance().GetCurrentAllowlist();
+  if (!allowlist.empty()) {
+    cmdline->AppendSwitchASCII(
+        network::switches::kUnsafelyTreatInsecureOriginAsSecure,
+        base::JoinString(allowlist, ","));
+  }
+}
+
 }  // namespace
 
 // static
@@ -602,6 +621,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames,
                                    base::size(kCommonSwitchNames));
+    if (process_type == ::switches::kUtilityProcess ||
+        content::RenderProcessHost::FromID(process_id)) {
+      MaybeAppendSecureOriginsAllowlistSwitch(command_line);
+    }
   }
 
   if (process_type == ::switches::kRendererProcess) {
@@ -1493,14 +1516,33 @@ void ElectronBrowserClient::
             render_frame_host,  // NOLINT(runtime/references)
         blink::AssociatedInterfaceRegistry&
             associated_registry) {  // NOLINT(runtime/references)
+  auto* contents =
+      content::WebContents::FromRenderFrameHost(&render_frame_host);
+  if (contents) {
+    auto* prefs = WebContentsPreferences::From(contents);
+    if (render_frame_host.GetFrameTreeNodeId() ==
+            contents->GetMainFrame()->GetFrameTreeNodeId() ||
+        (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
+      associated_registry.AddInterface(base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<electron::mojom::ElectronApiIPC>
+                 receiver) {
+            ElectronApiIPCHandlerImpl::Create(render_frame_host,
+                                              std::move(receiver));
+          },
+          &render_frame_host));
+    }
+  }
+
   associated_registry.AddInterface(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>
-             receiver) {
-        ElectronBrowserHandlerImpl::Create(render_frame_host,
-                                           std::move(receiver));
+         mojo::PendingAssociatedReceiver<
+             electron::mojom::ElectronWebContentsUtility> receiver) {
+        ElectronWebContentsUtilityHandlerImpl::Create(render_frame_host,
+                                                      std::move(receiver));
       },
       &render_frame_host));
+
   associated_registry.AddInterface(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
          mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>

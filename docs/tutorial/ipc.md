@@ -379,7 +379,7 @@ module that uses the `webContents.send` API to send an IPC message from the main
 target renderer.
 
 ```javascript {11-26} title='main.js (Main Process)'
-const {app, BrowserWindow, Menu} = require('electron')
+const {app, BrowserWindow, Menu, ipcMain} = require('electron')
 const path = require('path')
 
 function createWindow () {
@@ -413,7 +413,7 @@ function createWindow () {
 ```
 
 For the purposes of the tutorial, it's important to note that the `click` handler
-sends a message (either `1` or `-1`) to the renderer process through the `counter` channel.
+sends a message (either `1` or `-1`) to the renderer process through the `update-counter` channel.
 
 ```javascript
 click: () => mainWindow.webContents.send('update-counter', -1)
@@ -519,7 +519,7 @@ window.electronAPI.onUpdateCounter((event, value) => {
   const oldValue = Number(counter.innerText)
   const newValue = oldValue + value
   counter.innerText = newValue
-  event.reply('counter-value', newValue)
+  event.sender.send('counter-value', newValue)
 })
 ```
 

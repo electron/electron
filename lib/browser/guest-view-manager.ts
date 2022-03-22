@@ -15,6 +15,7 @@ interface GuestInstance {
 
 const webViewManager = process._linkedBinding('electron_browser_web_view_manager');
 const eventBinding = process._linkedBinding('electron_browser_event');
+const netBinding = process._linkedBinding('electron_browser_net');
 
 const supportedWebViewEvents = Object.keys(webViewEvents);
 
@@ -49,7 +50,7 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
   };
 
   if (params.preload) {
-    webPreferences.preloadURL = params.preload;
+    webPreferences.preload = netBinding.fileURLToFilePath(params.preload);
   }
 
   // Security options that guest will always inherit from embedder

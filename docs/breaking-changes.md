@@ -12,6 +12,36 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (20.0)
+
+### Default Changed: renderers without `nodeIntegration: true` are sandboxed by default
+
+Previously, renderers that specified a preload script defaulted to being
+unsandboxed. This meant that by default, preload scripts had access to Node.js.
+In Electron 20, this default has changed. Beginning in Electron 20, renderers
+will be sandboxed by default, unless `nodeIntegration: true` or `sandbox: false`
+is specified.
+
+If your preload scripts do not depend on Node, no action is needed. If your
+preload scripts _do_ depend on Node, either refactor them to remove Node usage
+from the renderer, or explicitly specify `sandbox: false` for the relevant
+renderers.
+
+### Removed: `skipTaskbar` on Linux
+
+See `skipTaskbar` discussion in 19.0 below. This feature is not available on
+Wayland. Since most modern Linux desktops are transitioning to Wayland, this
+feature will be removed for Linux.
+
+## Planned Breaking API Changes (19.0)
+
+### Unsupported: `skipTaskbar` on Linux
+
+On X11, `skipTaskbar` sends a `_NET_WM_STATE_SKIP_TASKBAR` message to the X11
+window manager. There is not a direct equivalent for Wayland, and the known
+workarounds have unacceptable tradeoffs (e.g. Window.is_skip_taskbar in GNOME
+requires unsafe mode), so Electron is unable to support this feature on Linux.
+
 ## Planned Breaking API Changes (18.0)
 
 ### Removed: `nativeWindowOpen`

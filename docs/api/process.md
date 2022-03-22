@@ -178,7 +178,6 @@ Returns an object with V8 heap statistics. Note that all statistics are reported
 Returns `Object`:
 
 * `allocated` Integer - Size of all allocated objects in Kilobytes.
-* `marked` Integer - Size of all marked objects in Kilobytes.
 * `total` Integer - Total allocated space in Kilobytes.
 
 Returns an object with Blink memory information.

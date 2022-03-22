@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+
 import contextlib
 import sys
 import os
@@ -67,12 +68,8 @@ def windows_installed_software():
 
     stdout, _ = proc.communicate(" ".join(powershell_command).encode("utf-8"))
 
-    print("Proc: ", stdout)
-    print("Proc: ", proc.returncode)
-
     if proc.returncode != 0:
-        # raise RuntimeError("Failed to get list of installed software")
-        print("Failed to get list of installed software")
+        raise RuntimeError("Failed to get list of installed software")
 
     # On AppVeyor there's other output related to PSReadline,
     # so grab only the JSON output and ignore everything else
