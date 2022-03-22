@@ -481,6 +481,7 @@ void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
   // Ensure WCO is already enabled on this window
   if (!window_->titlebar_overlay_enabled()) {
     args->ThrowError("Titlebar overlay is not enabled");
+    return;
   }
 
   auto* window = static_cast<NativeWindowViews*>(window_.get());
@@ -493,6 +494,7 @@ void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
     SkColor color;
     if (!content::ParseCssColorString(btn_color, &color)) {
       args->ThrowError("Could not parse color as CSS color");
+      return;
     }
 
     // Update the view
@@ -507,6 +509,7 @@ void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
     SkColor color;
     if (!content::ParseCssColorString(symbol_color, &color)) {
       args->ThrowError("Could not parse symbol color as CSS color");
+      return;
     }
 
     // Update the view
