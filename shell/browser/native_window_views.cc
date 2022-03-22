@@ -291,6 +291,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
 #if defined(USE_X11)
+  // TODO(ckerr): remove in Electron v20.0.0
   // Before the window is mapped the SetWMSpecState can not work, so we have
   // to manually set the _NET_WM_STATE.
   std::vector<x11::Atom> state_atom_list;
