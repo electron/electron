@@ -164,4 +164,3 @@ cherry-pick-246c10dede97.patch
 fix_imagebitmaprenderingcontext_interaction_with_software_compositor.patch
 remove_incorrect_width_height_adjustments.patch
 fix_non-client_mouse_tracking_and_message_bubbling_on_windows.patch
-
