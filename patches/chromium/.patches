@@ -135,3 +135,4 @@ cherry-pick-246c10dede97.patch
 cherry-pick-905302eb3a2b.patch
 enable_forcesynchronoushtmlparsing_by_default.patch
 remove_incorrect_width_height_adjustments.patch
+set_dpi_correctly_during_main_window_creation.patch
