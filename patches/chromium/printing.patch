@@ -405,7 +405,7 @@ index 1f37c11047d47bb2d65975fa69f33d822206dd08..d13ee6a81cd7edc5be99f595515ca521
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 2661776307f773ac8f2c62529ec86349b045ee8f..4fa8f358ee59baed32ef4fd0684d010256206a54 100644
+index 2661776307f773ac8f2c62529ec86349b045ee8f..cb41b271adbb02517a5e1ad222d0320000437dfb 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -37,6 +37,8 @@ namespace printing {
@@ -423,9 +423,9 @@ index 2661776307f773ac8f2c62529ec86349b045ee8f..4fa8f358ee59baed32ef4fd0684d0102
    // this function. Returns false if printing is impossible at the moment.
 -  virtual bool PrintNow(content::RenderFrameHost* rfh);
 +  virtual bool PrintNow(content::RenderFrameHost* rfh,
-+                        bool silent,
-+                        base::Value settings,
-+                        CompletionCallback callback);
++                        bool silent = true,
++                        base::Value settings = {},
++                        CompletionCallback callback = {});
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in `print_data` with settings specified in
