@@ -312,6 +312,15 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         NotifyWindowMoved();
         is_moving_ = false;
       }
+
+      // If the user dragged or moved the window during one or more
+      // calls to window.setBounds(), we want to apply the most recent
+      // one once they are done with the move or resize operation.
+      if (pending_bounds_change_.has_value()) {
+        SetBounds(pending_bounds_change_.value(), false /* animate */);
+        pending_bounds_change_.reset();
+      }
+
       return false;
     }
     case WM_MOVING: {
