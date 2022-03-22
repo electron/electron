@@ -1,2 +1,3 @@
 build_add_gn_config.patch
 fix_ensure_that_self_is_retained_until_the_racsignal_is_complete.patch
+fix_use_kseccschecknestedcode_kseccsstrictvalidate_in_the_sec.patch
