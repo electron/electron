@@ -469,6 +469,12 @@ node::Environment* NodeBindings::CreateEnvironment(
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
                    node::EnvironmentFlags::kHideConsoleWindows;
 
+  if (!electron::fuses::IsNodeCliInspectEnabled()) {
+    // If --inspect and friends are disabled we also shouldn't listen for
+    // SIGUSR1
+    flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
+  }
+
   if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
