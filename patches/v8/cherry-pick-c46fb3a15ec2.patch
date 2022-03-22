@@ -1,7 +1,10 @@
-From c46fb3a15ec24a626b403f7143c58e45cee8b2c7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clemens Backes <clemensb@chromium.org>
 Date: Thu, 24 Feb 2022 14:53:01 +0100
-Subject: [PATCH] [M96-LTS][liftoff][x64] Fix bug in i32.atomic.sub32
+Subject: Fix bug in i32.atomic.sub32
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 {AtomicSub} on x64 first negates the {value} register, then does an
 atomic addition. For that reason, {value} should be a unique register.
@@ -28,13 +31,12 @@ Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/9.6@{#52}
 Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
 Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
----
 
 diff --git a/src/wasm/baseline/arm/liftoff-assembler-arm.h b/src/wasm/baseline/arm/liftoff-assembler-arm.h
-index 211cf82..acc8555 100644
+index e2bd64c88fd445342dd7d878bdae4609e9ca6a0c..8328c13cce08c1d58160d94d54b88c689dc57b4e 100644
 --- a/src/wasm/baseline/arm/liftoff-assembler-arm.h
 +++ b/src/wasm/baseline/arm/liftoff-assembler-arm.h
-@@ -897,12 +897,9 @@
+@@ -871,12 +871,9 @@ inline void AtomicOp32(
    // the same register.
    Register temp = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
  
@@ -50,7 +52,7 @@ index 211cf82..acc8555 100644
  
    UseScratchRegisterScope temps(lasm);
    Register actual_addr = liftoff::CalculateActualAddress(
-@@ -911,15 +908,12 @@
+@@ -885,15 +882,12 @@ inline void AtomicOp32(
    __ dmb(ISH);
    Label retry;
    __ bind(&retry);
@@ -69,10 +71,10 @@ index 211cf82..acc8555 100644
  
  inline void Add(LiftoffAssembler* lasm, Register dst, Register lhs,
 diff --git a/src/wasm/baseline/arm64/liftoff-assembler-arm64.h b/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
-index e10a18a..8ac4c46 100644
+index a80c0d3c30457b2aefcb3868101b5a1fef7527c5..02ca936df1a1e1d6de9e9cea6239c5ffa2d82ee9 100644
 --- a/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
 +++ b/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
-@@ -641,12 +641,9 @@
+@@ -605,12 +605,9 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
        LiftoffRegList::ForRegs(dst_addr, offset_reg, value, result);
    Register store_result = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
  
@@ -88,7 +90,7 @@ index e10a18a..8ac4c46 100644
  
    UseScratchRegisterScope temps(lasm);
    Register actual_addr = liftoff::CalculateActualAddress(
-@@ -662,18 +659,18 @@
+@@ -626,18 +623,18 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
    switch (type.value()) {
      case StoreType::kI64Store8:
      case StoreType::kI32Store8:
@@ -111,7 +113,7 @@ index e10a18a..8ac4c46 100644
        break;
      default:
        UNREACHABLE();
-@@ -681,19 +678,19 @@
+@@ -645,19 +642,19 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
  
    switch (op) {
      case Binop::kAdd:
@@ -136,7 +138,7 @@ index e10a18a..8ac4c46 100644
        break;
      case Binop::kExchange:
        __ mov(temp, value.gp());
-@@ -721,10 +718,6 @@
+@@ -685,10 +682,6 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
    }
  
    __ Cbnz(store_result.W(), &retry);
@@ -148,10 +150,10 @@ index e10a18a..8ac4c46 100644
  
  #undef __
 diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
-index fc5684f..6835d8f 100644
+index 57b6457c77c8084a267cd216d92b15a1726e9b28..ae144d505de53cf5fd2b20c34903e9de98efb2dd 100644
 --- a/src/wasm/baseline/liftoff-compiler.cc
 +++ b/src/wasm/baseline/liftoff-compiler.cc
-@@ -2745,6 +2745,7 @@
+@@ -2737,6 +2737,7 @@ class LiftoffCompiler {
    void AlignmentCheckMem(FullDecoder* decoder, uint32_t access_size,
                           uintptr_t offset, Register index,
                           LiftoffRegList pinned) {
@@ -159,7 +161,7 @@ index fc5684f..6835d8f 100644
      Label* trap_label =
          AddOutOfLineTrap(decoder, WasmCode::kThrowWasmTrapUnalignedAccess, 0);
      Register address = __ GetUnusedRegister(kGpReg, pinned).gp();
-@@ -4377,9 +4378,9 @@
+@@ -4396,9 +4397,9 @@ class LiftoffCompiler {
      LiftoffRegister value = pinned.set(__ PopToRegister());
  #ifdef V8_TARGET_ARCH_IA32
      // We have to reuse the value register as the result register so that we
@@ -172,19 +174,19 @@ index fc5684f..6835d8f 100644
      LiftoffRegister result = value;
      if (__ cache_state()->is_used(value)) {
        result = pinned.set(__ GetUnusedRegister(value.reg_class(), pinned));
-@@ -4399,6 +4400,7 @@
+@@ -4418,6 +4419,7 @@ class LiftoffCompiler {
      pinned.set(index);
      AlignmentCheckMem(decoder, type.size(), imm.offset, index, pinned);
  
 +    CODE_COMMENT("atomic binop");
      uintptr_t offset = imm.offset;
+     index = AddMemoryMasking(index, &offset, &pinned);
      Register addr = pinned.set(GetMemoryStart(pinned));
- 
 diff --git a/src/wasm/baseline/x64/liftoff-assembler-x64.h b/src/wasm/baseline/x64/liftoff-assembler-x64.h
-index 890afa2..07986ce 100644
+index 0744d2e09b377ca563dcde14b0864db2691c24cf..f3076996d21dcc91788cea6a6de2ae4ea273ba7f 100644
 --- a/src/wasm/baseline/x64/liftoff-assembler-x64.h
 +++ b/src/wasm/baseline/x64/liftoff-assembler-x64.h
-@@ -601,8 +601,10 @@
+@@ -556,8 +556,10 @@ void LiftoffAssembler::AtomicAdd(Register dst_addr, Register offset_reg,
  void LiftoffAssembler::AtomicSub(Register dst_addr, Register offset_reg,
                                   uintptr_t offset_imm, LiftoffRegister value,
                                   LiftoffRegister result, StoreType type) {
@@ -199,7 +201,7 @@ index 890afa2..07986ce 100644
      // {result} register in the code below.
 diff --git a/test/mjsunit/regress/wasm/regress-1296876.js b/test/mjsunit/regress/wasm/regress-1296876.js
 new file mode 100644
-index 0000000..96ce17b
+index 0000000000000000000000000000000000000000..96ce17b56d3ea9ad5d5fcedea57de11549a4c454
 --- /dev/null
 +++ b/test/mjsunit/regress/wasm/regress-1296876.js
 @@ -0,0 +1,21 @@
