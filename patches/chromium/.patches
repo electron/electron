@@ -163,3 +163,4 @@ cherry-pick-905302eb3a2b.patch
 cherry-pick-246c10dede97.patch
 fix_imagebitmaprenderingcontext_interaction_with_software_compositor.patch
 remove_incorrect_width_height_adjustments.patch
+set_dpi_correctly_during_main_window_creation.patch
