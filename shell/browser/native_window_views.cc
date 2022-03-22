@@ -127,6 +127,16 @@ gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
 
 #endif
 
+#if defined(USE_OZONE)
+
+bool CreateGlobalMenuBar() {
+  return ui::OzonePlatform::GetInstance()
+      ->GetPlatformProperties()
+      .supports_global_application_menus;
+}
+
+#endif
+
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
@@ -1187,10 +1197,7 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   // Use global application menu bar when possible.
-  if (ui::OzonePlatform::GetInstance()
-          ->GetPlatformProperties()
-          .supports_global_application_menus &&
-      ShouldUseGlobalMenuBar()) {
+  if (CreateGlobalMenuBar() && ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
       global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
     if (global_menu_bar_->IsServerStarted()) {
