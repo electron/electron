@@ -19,7 +19,6 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
-#include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -59,7 +58,6 @@
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/x_window_utils.h"
-#include "ui/base/ui_base_features.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/x11_atom_cache.h"
@@ -270,9 +268,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   auto* native_widget = new views::DesktopNativeWidgetAura(widget());
   params.native_widget = native_widget;
-  params.desktop_window_tree_host = new ElectronDesktopWindowTreeHostLinux(
-      this, native_widget,
-      base::FeatureList::IsEnabled(features::kWaylandWindowDecorations));
+  params.desktop_window_tree_host =
+      new ElectronDesktopWindowTreeHostLinux(this, native_widget);
 #endif
 
   widget()->Init(std::move(params));

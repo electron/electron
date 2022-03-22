@@ -10,7 +10,9 @@
 
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/i18n/rtl.h"
+#include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/skia_conversions.h"
@@ -24,12 +26,10 @@ namespace electron {
 
 ElectronDesktopWindowTreeHostLinux::ElectronDesktopWindowTreeHostLinux(
     NativeWindowViews* native_window_view,
-    views::DesktopNativeWidgetAura* desktop_native_widget_aura,
-    bool wayland_window_decorations)
+    views::DesktopNativeWidgetAura* desktop_native_widget_aura)
     : views::DesktopWindowTreeHostLinux(native_window_view->widget(),
                                         desktop_native_widget_aura),
-      native_window_view_(native_window_view),
-      wayland_window_decorations_(wayland_window_decorations) {}
+      native_window_view_(native_window_view) {}
 
 ElectronDesktopWindowTreeHostLinux::~ElectronDesktopWindowTreeHostLinux() =
     default;
@@ -107,7 +107,7 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
-  if (wayland_window_decorations_) {
+  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
     if (SupportsClientFrameShadow() && native_window_view_->has_frame() &&
         native_window_view_->has_client_frame()) {
       UpdateClientDecorationHints(static_cast<ClientFrameViewLinux*>(

@@ -27,8 +27,7 @@ class ElectronDesktopWindowTreeHostLinux
  public:
   ElectronDesktopWindowTreeHostLinux(
       NativeWindowViews* native_window_view,
-      views::DesktopNativeWidgetAura* desktop_native_widget_aura,
-      bool wayland_window_decorations);
+      views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~ElectronDesktopWindowTreeHostLinux() override;
 
   // disable copy
@@ -68,7 +67,6 @@ class ElectronDesktopWindowTreeHostLinux
                           &views::LinuxUI::AddDeviceScaleFactorObserver,
                           &views::LinuxUI::RemoveDeviceScaleFactorObserver>
       scale_observation_{this};
-  bool wayland_window_decorations_;
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
 };
 
