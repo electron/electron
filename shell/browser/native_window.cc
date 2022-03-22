@@ -241,7 +241,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 #endif
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
-    SetBackgroundColor(ParseHexColor(color));
+    SetBackgroundColor(ParseCSSColor(color));
   } else if (!transparent()) {
     // For normal window, use white as default background.
     SetBackgroundColor(SK_ColorWHITE);

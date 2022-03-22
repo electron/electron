@@ -110,9 +110,11 @@ webFrame.setSpellCheckProvider('en-US', {
 })
 ```
 
-### `webFrame.insertCSS(css)`
+#### `webFrame.insertCSS(css[, options])`
 
-* `css` string - CSS source code.
+* `css` string
+* `options` Object (optional)
+  * `cssOrigin` string (optional) - Can be either 'user' or 'author'. Sets the [cascade origin](https://www.w3.org/TR/css3-cascade/#cascade-origin) of the inserted stylesheet. Default is 'author'.
 
 Returns `string` - A key for the inserted CSS that can later be used to remove
 the CSS via `webFrame.removeInsertedCSS(key)`.

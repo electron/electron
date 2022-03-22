@@ -222,6 +222,7 @@ declare namespace NodeJS {
       isOnline(): boolean;
       isValidHeaderName: (headerName: string) => boolean;
       isValidHeaderValue: (headerValue: string) => boolean;
+      fileURLToFilePath: (url: string) => string;
       Net: any;
       net: any;
       createURLLoader(options: CreateURLLoaderOptions): URLLoader;

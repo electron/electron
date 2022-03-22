@@ -31,7 +31,21 @@ struct DraggableRegion {
   gfx.mojom.Rect bounds;
 };
 
-interface ElectronBrowser {
+interface ElectronWebContentsUtility {
+  // Informs underlying WebContents that first non-empty layout was performed
+  // by compositor.
+  OnFirstNonEmptyLayout();
+
+  UpdateDraggableRegions(
+    array<DraggableRegion> regions);
+
+  SetTemporaryZoomLevel(double zoom_level);
+
+  [Sync]
+  DoGetZoomLevel() => (double result);
+};
+
+interface ElectronApiIPC {
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process.
   Message(
@@ -45,10 +59,6 @@ interface ElectronBrowser {
       bool internal,
       string channel,
       blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
-
-  // Informs underlying WebContents that first non-empty layout was performed
-  // by compositor.
-  OnFirstNonEmptyLayout();
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
@@ -70,12 +80,4 @@ interface ElectronBrowser {
   MessageHost(
     string channel,
     blink.mojom.CloneableMessage arguments);
-
-  UpdateDraggableRegions(
-    array<DraggableRegion> regions);
-
-  SetTemporaryZoomLevel(double zoom_level);
-
-  [Sync]
-  DoGetZoomLevel() => (double result);
 };

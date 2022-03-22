@@ -1076,6 +1076,25 @@ describe('BrowserWindow module', () => {
         w.setBackgroundColor(backgroundColor);
         expect(w.getBackgroundColor()).to.equal(backgroundColor);
       });
+      it('returns correct color with multiple passed formats', () => {
+        w.destroy();
+        w = new BrowserWindow({});
+
+        w.setBackgroundColor('#AABBFF');
+        expect(w.getBackgroundColor()).to.equal('#AABBFF');
+
+        w.setBackgroundColor('blueviolet');
+        expect(w.getBackgroundColor()).to.equal('#8A2BE2');
+
+        w.setBackgroundColor('rgb(255, 0, 185)');
+        expect(w.getBackgroundColor()).to.equal('#FF00B9');
+
+        w.setBackgroundColor('rgba(245, 40, 145, 0.8)');
+        expect(w.getBackgroundColor()).to.equal('#F52891');
+
+        w.setBackgroundColor('hsl(155, 100%, 50%)');
+        expect(w.getBackgroundColor()).to.equal('#00FF95');
+      });
     });
 
     describe('BrowserWindow.getNormalBounds()', () => {
@@ -1434,6 +1453,17 @@ describe('BrowserWindow module', () => {
       expect(hiddenImage.isEmpty()).to.equal(isEmpty);
     });
 
+    it('resolves after the window is hidden and capturer count is non-zero', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.setBackgroundThrottling(false);
+      w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await emittedOnce(w, 'ready-to-show');
+
+      w.webContents.incrementCapturerCount();
+      const image = await w.capturePage();
+      expect(image.isEmpty()).to.equal(false);
+    });
+
     it('preserves transparency', async () => {
       const w = new BrowserWindow({ show: false, transparent: true });
       w.loadFile(path.join(fixtures, 'pages', 'theme-color.html'));
@@ -1446,6 +1476,14 @@ describe('BrowserWindow module', () => {
       // Check the 25th byte in the PNG.
       // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
       expect(imgBuffer[25]).to.equal(6);
+    });
+
+    it('should increase the capturer count', () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.incrementCapturerCount();
+      expect(w.webContents.isBeingCaptured()).to.be.true();
+      w.webContents.decrementCapturerCount();
+      expect(w.webContents.isBeingCaptured()).to.be.false();
     });
   });
 
@@ -1815,6 +1853,18 @@ describe('BrowserWindow module', () => {
       const [, webviewContents] = await emittedOnce(app, 'web-contents-created');
       expect(BrowserWindow.fromWebContents(webviewContents)!.id).to.equal(w.id);
       await p;
+    });
+
+    it('is usable immediately on browser-window-created', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.open(""); null');
+      const [win, winFromWebContents] = await new Promise((resolve) => {
+        app.once('browser-window-created', (e, win) => {
+          resolve([win, BrowserWindow.fromWebContents(win.webContents)]);
+        });
+      });
+      expect(winFromWebContents).to.equal(win);
     });
   });
 

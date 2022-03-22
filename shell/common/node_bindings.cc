@@ -462,7 +462,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  isolate_data_ = node::CreateIsolateData(isolate, uv_loop_, platform);
+  if (!isolate_data_)
+    isolate_data_ = node::CreateIsolateData(isolate, uv_loop_, platform);
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
@@ -475,6 +476,12 @@ node::Environment* NodeBindings::CreateEnvironment(
     // not to register its handler (overriding blinks) in non-browser processes.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
              node::EnvironmentFlags::kNoInitializeInspector;
+  }
+
+  if (!electron::fuses::IsNodeCliInspectEnabled()) {
+    // If --inspect and friends are disabled we also shouldn't listen for
+    // SIGUSR1
+    flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
   }
 
   v8::TryCatch try_catch(isolate);
@@ -573,16 +580,6 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
-#if !BUILDFLAG(IS_WIN)
-  int handle = uv_backend_fd(uv_loop_);
-
-  // If the backend fd hasn't changed, don't proceed.
-  if (handle == handle_)
-    return;
-
-  handle_ = handle;
-#endif
-
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);

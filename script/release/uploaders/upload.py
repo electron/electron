@@ -16,7 +16,7 @@ sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from zipfile import ZipFile
-from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
+from lib.config import PLATFORM, get_target_arch,s3_config, \
                        get_zip_name, enable_verbose_mode, get_platform_key
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      s3put, get_electron_exec, get_out_dir, \
@@ -160,6 +160,8 @@ def main():
         'toolchain_profile.json')
     upload_electron(release, toolchain_profile_zip, args)
 
+  return 0
+
 def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
   parser.add_argument('-v', '--version', help='Specify the version',
@@ -205,7 +207,7 @@ def zero_zip_date_time(fname):
   try:
     with open(fname, 'r+b') as f:
       _zero_zip_date_time(f)
-  except:
+  except Exception:
     raise NonZipFileError(fname)
 
 

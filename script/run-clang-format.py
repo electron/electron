@@ -287,7 +287,7 @@ def main():
         extensions=args.extensions.split(','))
 
     if not files:
-        return
+        return 0
 
     njobs = args.j
     if njobs == 0:
