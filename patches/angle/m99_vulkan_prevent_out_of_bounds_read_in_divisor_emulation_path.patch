@@ -1,0 +1,304 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Roman Lavrov <romanl@google.com>
+Date: Tue, 18 Jan 2022 20:05:55 +0000
+Subject: M99: Vulkan: Prevent out of bounds read in divisor emulation path.
+
+Split the replicated part of StreamVertexData out to
+StreamVertexDataWithDivisor, there is only a partial argument
+overlap between the two.
+
+Bug: chromium:1285885
+Change-Id: Ibf6ab3efc6b12b430b1d391c6ae61bd9668b4407
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3398816
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Roman Lavrov <romanl@google.com>
+(cherry picked from commit 5f0badf4541ba52659c937cfe9190d3735a76c10)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3461414
+
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index 09cb058a612bfb62ece95b5a1bb7beb4df96e0e3..4e443ed34c29284739fbefb16a38feefed90b726 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -82,34 +82,63 @@ angle::Result StreamVertexData(ContextVk *contextVk,
+                                size_t destOffset,
+                                size_t vertexCount,
+                                size_t sourceStride,
+-                               size_t destStride,
+                                VertexCopyFunction vertexLoadFunction,
+                                vk::BufferHelper **bufferOut,
+-                               VkDeviceSize *bufferOffsetOut,
+-                               uint32_t replicateCount)
++                               VkDeviceSize *bufferOffsetOut)
+ {
+     uint8_t *dst = nullptr;
+     ANGLE_TRY(dynamicBuffer->allocate(contextVk, bytesToAllocate, &dst, nullptr, bufferOffsetOut,
+                                       nullptr));
+     *bufferOut = dynamicBuffer->getCurrentBuffer();
+     dst += destOffset;
+-    if (replicateCount == 1)
++    vertexLoadFunction(sourceData, sourceStride, vertexCount, dst);
++
++    ANGLE_TRY(dynamicBuffer->flush(contextVk));
++
++    return angle::Result::Continue;
++}
++
++angle::Result StreamVertexDataWithDivisor(ContextVk *contextVk,
++                                          vk::DynamicBuffer *dynamicBuffer,
++                                          const uint8_t *sourceData,
++                                          size_t bytesToAllocate,
++                                          size_t sourceStride,
++                                          size_t destStride,
++                                          VertexCopyFunction vertexLoadFunction,
++                                          vk::BufferHelper **bufferOut,
++                                          VkDeviceSize *bufferOffsetOut,
++                                          uint32_t divisor,
++                                          size_t numSrcVertices)
++{
++    uint8_t *dst = nullptr;
++    ANGLE_TRY(dynamicBuffer->allocate(contextVk, bytesToAllocate, &dst, nullptr, bufferOffsetOut,
++                                      nullptr));
++    *bufferOut = dynamicBuffer->getCurrentBuffer();
++
++    // Each source vertex is used `divisor` times before advancing. Clamp to avoid OOB reads.
++    size_t clampedSize = std::min(numSrcVertices * destStride * divisor, bytesToAllocate);
++
++    ASSERT(clampedSize % destStride == 0);
++    ASSERT(divisor > 0);
++
++    uint32_t sourceVertexUseCount = 0;
++    for (size_t dataCopied = 0; dataCopied < clampedSize; dataCopied += destStride, dst += destStride)
+     {
+-        vertexLoadFunction(sourceData, sourceStride, vertexCount, dst);
++        vertexLoadFunction(sourceData, sourceStride, 1, dst);
++        sourceVertexUseCount++;
++        if (sourceVertexUseCount == divisor)
++        {
++            sourceData += sourceStride;
++            sourceVertexUseCount = 0;
++        }
+     }
+-    else
++
++    // Satisfy robustness constraints (only if extension enabled)
++    if (contextVk->getExtensions().robustnessEXT)
+     {
+-        ASSERT(replicateCount > 1);
+-        uint32_t sourceRemainingCount = replicateCount - 1;
+-        for (size_t dataCopied = 0; dataCopied < bytesToAllocate;
+-             dataCopied += destStride, dst += destStride, sourceRemainingCount--)
++        if (clampedSize < bytesToAllocate)
+         {
+-            vertexLoadFunction(sourceData, sourceStride, 1, dst);
+-            if (sourceRemainingCount == 0)
+-            {
+-                sourceData += sourceStride;
+-                sourceRemainingCount = replicateCount;
+-            }
++            memset(dst + clampedSize, 0, bytesToAllocate - clampedSize);
+         }
+     }
+ 
+@@ -125,6 +154,7 @@ size_t GetVertexCount(BufferVk *srcBuffer, const gl::VertexBinding &binding, uin
+         return 0;
+ 
+     // Count the last vertex.  It may occupy less than a full stride.
++    // This is also correct if stride happens to be less than srcFormatSize.
+     size_t numVertices = 1;
+     bytes -= srcFormatSize;
+ 
+@@ -453,8 +483,8 @@ angle::Result VertexArrayVk::convertVertexBufferCPU(ContextVk *contextVk,
+     ASSERT(vertexFormat.getVertexInputAlignment(compressed) <= vk::kVertexBufferAlignment);
+     ANGLE_TRY(StreamVertexData(
+         contextVk, &conversion->data, srcBytes, numVertices * dstFormatSize, 0, numVertices,
+-        binding.getStride(), srcFormatSize, vertexFormat.getVertexLoadFunction(compressed),
+-        &mCurrentArrayBuffers[attribIndex], &conversion->lastAllocationOffset, 1));
++        binding.getStride(), vertexFormat.getVertexLoadFunction(compressed),
++        &mCurrentArrayBuffers[attribIndex], &conversion->lastAllocationOffset));
+     ANGLE_TRY(srcBuffer->unmapImpl(contextVk));
+ 
+     ASSERT(conversion->dirty);
+@@ -817,28 +847,41 @@ angle::Result VertexArrayVk::updateStreamedAttribs(const gl::Context *context,
+             // Instanced attrib
+             if (divisor > renderer->getMaxVertexAttribDivisor())
+             {
+-                // Emulated attrib
+-                BufferVk *bufferVk = nullptr;
++                // Divisor will be set to 1 & so update buffer to have 1 attrib per instance
++                size_t bytesToAllocate = instanceCount * stride;
++
+                 if (binding.getBuffer().get() != nullptr)
+                 {
+                     // Map buffer to expand attribs for divisor emulation
+-                    bufferVk      = vk::GetImpl(binding.getBuffer().get());
+-                    void *buffSrc = nullptr;
++                    BufferVk *bufferVk = vk::GetImpl(binding.getBuffer().get());
++                    void *buffSrc      = nullptr;
+                     ANGLE_TRY(bufferVk->mapImpl(contextVk, &buffSrc));
+                     src = reinterpret_cast<const uint8_t *>(buffSrc) + binding.getOffset();
+-                }
+-                // Divisor will be set to 1 & so update buffer to have 1 attrib per instance
+-                size_t bytesToAllocate = instanceCount * stride;
+ 
+-                ANGLE_TRY(StreamVertexData(contextVk, &mDynamicVertexData, src, bytesToAllocate, 0,
+-                                           instanceCount, binding.getStride(), stride,
+-                                           vertexFormat.getVertexLoadFunction(compressed),
+-                                           &mCurrentArrayBuffers[attribIndex],
+-                                           &mCurrentArrayBufferOffsets[attribIndex], divisor));
+-                if (bufferVk)
+-                {
++                    uint32_t srcAttributeSize =
++                        static_cast<uint32_t>(ComputeVertexAttributeTypeSize(attrib));
++
++                    size_t numVertices = GetVertexCount(bufferVk, binding, srcAttributeSize);
++
++                    ANGLE_TRY(StreamVertexDataWithDivisor(
++                        contextVk, &mDynamicVertexData, src, bytesToAllocate, binding.getStride(),
++                        stride, vertexFormat.getVertexLoadFunction(compressed),
++                        &mCurrentArrayBuffers[attribIndex],
++                        &mCurrentArrayBufferOffsets[attribIndex], divisor,
++                        numVertices));
++
+                     ANGLE_TRY(bufferVk->unmapImpl(contextVk));
+                 }
++                else
++                {
++                    size_t numVertices = instanceCount;
++                    ANGLE_TRY(StreamVertexDataWithDivisor(
++                        contextVk, &mDynamicVertexData, src, bytesToAllocate, binding.getStride(),
++                        stride, vertexFormat.getVertexLoadFunction(compressed),
++                        &mCurrentArrayBuffers[attribIndex],
++                        &mCurrentArrayBufferOffsets[attribIndex], divisor,
++                        numVertices));
++                }
+             }
+             else
+             {
+@@ -847,10 +890,10 @@ angle::Result VertexArrayVk::updateStreamedAttribs(const gl::Context *context,
+                 size_t bytesToAllocate = count * stride;
+ 
+                 ANGLE_TRY(StreamVertexData(contextVk, &mDynamicVertexData, src, bytesToAllocate, 0,
+-                                           count, binding.getStride(), stride,
++                                           count, binding.getStride(),
+                                            vertexFormat.getVertexLoadFunction(compressed),
+                                            &mCurrentArrayBuffers[attribIndex],
+-                                           &mCurrentArrayBufferOffsets[attribIndex], 1));
++                                           &mCurrentArrayBufferOffsets[attribIndex]));
+             }
+         }
+         else
+@@ -865,8 +908,8 @@ angle::Result VertexArrayVk::updateStreamedAttribs(const gl::Context *context,
+ 
+             ANGLE_TRY(StreamVertexData(
+                 contextVk, &mDynamicVertexData, src, bytesToAllocate, destOffset, vertexCount,
+-                binding.getStride(), stride, vertexFormat.getVertexLoadFunction(compressed),
+-                &mCurrentArrayBuffers[attribIndex], &mCurrentArrayBufferOffsets[attribIndex], 1));
++                binding.getStride(), vertexFormat.getVertexLoadFunction(compressed),
++                &mCurrentArrayBuffers[attribIndex], &mCurrentArrayBufferOffsets[attribIndex]));
+         }
+ 
+         mCurrentArrayBufferHandles[attribIndex] =
+diff --git a/src/tests/gl_tests/RobustBufferAccessBehaviorTest.cpp b/src/tests/gl_tests/RobustBufferAccessBehaviorTest.cpp
+index 08917a2de3385eb853bced1dd576aff46f34f709..db708b0a2a3ce90a370b43786af6884b2f992bef 100644
+--- a/src/tests/gl_tests/RobustBufferAccessBehaviorTest.cpp
++++ b/src/tests/gl_tests/RobustBufferAccessBehaviorTest.cpp
+@@ -564,6 +564,98 @@ TEST_P(RobustBufferAccessBehaviorTest, DynamicBuffer)
+     }
+ }
+ 
++// Tests out of bounds read by divisor emulation due to a user-provided offset.
++// Adapted from https://crbug.com/1285885.
++TEST_P(RobustBufferAccessBehaviorTest, IndexOutOfBounds)
++{
++    ANGLE_SKIP_TEST_IF(!initExtension());
++
++    constexpr char kVS[] = R"(precision highp float;
++attribute vec4 a_position;
++void main(void) {
++   gl_Position = a_position;
++})";
++
++    constexpr char kFS[] = R"(precision highp float;
++uniform sampler2D oTexture;
++uniform float oColor[3];
++void main(void) {
++   gl_FragData[0] = texture2DProj(oTexture, vec3(0.1,0.1,0.1));
++})";
++
++    GLfloat singleFloat = 1.0f;
++
++    GLBuffer buf;
++    glBindBuffer(GL_ARRAY_BUFFER, buf);
++    glBufferData(GL_ARRAY_BUFFER, 4, &singleFloat, GL_STATIC_DRAW);
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glBindAttribLocation(program, 0, "a_position");
++    glLinkProgram(program);
++    ASSERT_TRUE(CheckLinkStatusAndReturnProgram(program, true));
++
++    glEnableVertexAttribArray(0);
++
++    // Trying to exceed renderer->getMaxVertexAttribDivisor()
++    GLuint constexpr kDivisor = 4096;
++    glVertexAttribDivisor(0, kDivisor);
++
++    size_t outOfBoundsOffset = 0x50000000;
++    glVertexAttribPointer(0, 1, GL_FLOAT, false, 8, reinterpret_cast<void *>(outOfBoundsOffset));
++
++    glUseProgram(program);
++
++    glDrawArrays(GL_TRIANGLES, 0, 32);
++
++    // No assertions, just checking for crashes.
++}
++
++// Similar to the test above but index is first within bounds then goes out of bounds.
++TEST_P(RobustBufferAccessBehaviorTest, IndexGoingOutOfBounds)
++{
++    ANGLE_SKIP_TEST_IF(!initExtension());
++
++    constexpr char kVS[] = R"(precision highp float;
++attribute vec4 a_position;
++void main(void) {
++   gl_Position = a_position;
++})";
++
++    constexpr char kFS[] = R"(precision highp float;
++uniform sampler2D oTexture;
++uniform float oColor[3];
++void main(void) {
++   gl_FragData[0] = texture2DProj(oTexture, vec3(0.1,0.1,0.1));
++})";
++
++    GLBuffer buf;
++    glBindBuffer(GL_ARRAY_BUFFER, buf);
++    std::array<GLfloat, 2> buffer = {{0.2f, 0.2f}};
++    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * buffer.size(), buffer.data(), GL_STATIC_DRAW);
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glBindAttribLocation(program, 0, "a_position");
++    glLinkProgram(program);
++    ASSERT_TRUE(CheckLinkStatusAndReturnProgram(program, true));
++
++    glEnableVertexAttribArray(0);
++
++    // Trying to exceed renderer->getMaxVertexAttribDivisor()
++    GLuint constexpr kDivisor = 4096;
++    glVertexAttribDivisor(0, kDivisor);
++
++    // 6 bytes remaining in the buffer from offset so only a single vertex can be read
++    glVertexAttribPointer(0, 1, GL_FLOAT, false, 8, reinterpret_cast<void *>(2));
++
++    glUseProgram(program);
++
++    // Each vertex is read `kDivisor` times so the last read goes out of bounds
++    GLsizei instanceCount = kDivisor + 1;
++    glDrawArraysInstanced(GL_TRIANGLES, 0, 32, instanceCount);
++
++    // No assertions, just checking for crashes.
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND_ES31(RobustBufferAccessBehaviorTest);
+ 
+ }  // namespace

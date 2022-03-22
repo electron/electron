@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Lao <cclao@google.com>
+Date: Mon, 7 Feb 2022 15:08:15 -0800
+Subject: M99: Vulkan: StreamVertexDataWithDivisor write beyond buffer boundary
+
+StreamVertexDataWithDivisor() function is advancing dst with dstStride,
+but then later on it is treating dst as if it never advanced, thus
+result in write out of buffer boundary. This was hidden by VMA's memory
+suballocation, which means it may result in some rendering artifacts.
+
+Bug: angleproject:6990
+Change-Id: Ic91e917cedd247dfe85b12a69ae26b21b7a4e67a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3445528
+Reviewed-by: Roman Lavrov <romanl@google.com>
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Commit-Queue: Charlie Lao <cclao@google.com>
+(cherry picked from commit 5204587698099207ce8ae70779ef44ffae877996)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3461417
+Reviewed-by: Charlie Lao <cclao@google.com>
+Commit-Queue: Roman Lavrov <romanl@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index 4e443ed34c29284739fbefb16a38feefed90b726..9043afe17e84737d3e8c295bbc9597fc078f82f9 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -122,7 +122,7 @@ angle::Result StreamVertexDataWithDivisor(ContextVk *contextVk,
+     ASSERT(divisor > 0);
+ 
+     uint32_t sourceVertexUseCount = 0;
+-    for (size_t dataCopied = 0; dataCopied < clampedSize; dataCopied += destStride, dst += destStride)
++    for (size_t dataCopied = 0; dataCopied < clampedSize; dataCopied += destStride)
+     {
+         vertexLoadFunction(sourceData, sourceStride, 1, dst);
+         sourceVertexUseCount++;
+@@ -131,6 +131,7 @@ angle::Result StreamVertexDataWithDivisor(ContextVk *contextVk,
+             sourceData += sourceStride;
+             sourceVertexUseCount = 0;
+         }
++        dst += destStride;
+     }
+ 
+     // Satisfy robustness constraints (only if extension enabled)
+@@ -138,7 +139,7 @@ angle::Result StreamVertexDataWithDivisor(ContextVk *contextVk,
+     {
+         if (clampedSize < bytesToAllocate)
+         {
+-            memset(dst + clampedSize, 0, bytesToAllocate - clampedSize);
++            memset(dst, 0, bytesToAllocate - clampedSize);
+         }
+     }
+ 
