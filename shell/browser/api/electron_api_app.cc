@@ -519,12 +519,12 @@ bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
         void(const base::CommandLine& command_line,
              const base::FilePath& current_directory,
-             const std::vector<const uint8_t> additional_data,
+             const std::vector<uint8_t> additional_data,
              const ProcessSingleton::NotificationAckCallback& ack_callback)>&
         callback,
     const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const std::vector<const uint8_t> additional_data,
+    const std::vector<uint8_t> additional_data,
     const ProcessSingleton::NotificationAckCallback& ack_callback) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
@@ -1118,7 +1118,7 @@ static void AckCallbackWrapper(
 void App::OnSecondInstance(
     const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const std::vector<const uint8_t> additional_data,
+    const std::vector<uint8_t> additional_data,
     const ProcessSingleton::NotificationAckCallback& ack_callback) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
