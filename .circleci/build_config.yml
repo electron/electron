@@ -543,6 +543,7 @@ step-electron-build: &step-electron-build
         (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
         rm -rf out/Default/clang_x64_v8_arm64/gen
         rm -rf out/Default/clang_x64_v8_arm64/obj
+        rm -rf out/Default/clang_x64_v8_arm64/thinlto-cache
         rm -rf out/Default/clang_x64/obj
 
         # Regenerate because we just deleted some ninja files 
@@ -779,6 +780,7 @@ step-show-goma-stats: &step-show-goma-stats
 step-mksnapshot-build: &step-mksnapshot-build
   run:
     name: mksnapshot build
+    no_output_timeout: 30m
     command: |
       cd src
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
