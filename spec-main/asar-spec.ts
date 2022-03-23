@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import * as url from 'url';
+import { Worker } from 'worker_threads';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
@@ -106,6 +107,21 @@ describe('asar package', () => {
       });
       const result = await w.webContents.executeJavaScript(`loadSharedWorker('${workerUrl}')`);
       expect(result).to.equal('success');
+    });
+  });
+
+  describe('worker threads', function () {
+    it('should start worker thread from asar file', function (callback) {
+      const p = path.join(asarDir, 'worker_threads.asar', 'worker.js');
+      const w = new Worker(p);
+
+      w.on('error', (err) => callback(err));
+      w.on('message', (message) => {
+        expect(message).to.equal('ping');
+        w.terminate();
+
+        callback(null);
+      });
     });
   });
 });
