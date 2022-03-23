@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robin Ebert <ebertrobin2002@gmail.com>
+Date: Tue, 22 Feb 2022 18:12:22 +0100
+Subject: Follow wayland specification regarding xkb keymap.
+
+The wayland specification expects client to mmap the xkb keymap file descriptor with MAP_PRIVATE.
+This fixes mapping issues regarding file descriptor permissions.
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_keyboard.cc b/ui/ozone/platform/wayland/host/wayland_keyboard.cc
+index 272322210b59228e5faa606101957c48c6371249..1c661e1ed92428f7c810fe4c041e91a08a0901e5 100644
+--- a/ui/ozone/platform/wayland/host/wayland_keyboard.cc
++++ b/ui/ozone/platform/wayland/host/wayland_keyboard.cc
+@@ -4,11 +4,12 @@
+ 
+ #include "ui/ozone/platform/wayland/host/wayland_keyboard.h"
+ 
++#include <sys/mman.h>
++
+ #include <utility>
+ 
+ #include "base/files/scoped_file.h"
+ #include "base/logging.h"
+-#include "base/memory/unsafe_shared_memory_region.h"
+ #include "base/unguessable_token.h"
+ #include "ui/base/buildflags.h"
+ #include "ui/events/base_event_utils.h"
+@@ -111,26 +112,28 @@ WaylandKeyboard::~WaylandKeyboard() {
+ void WaylandKeyboard::Keymap(void* data,
+                              wl_keyboard* obj,
+                              uint32_t format,
+-                             int32_t keymap_fd,
++                             int32_t fd,
+                              uint32_t size) {
+   WaylandKeyboard* keyboard = static_cast<WaylandKeyboard*>(data);
+   DCHECK(keyboard);
+ 
+-  base::ScopedFD fd(keymap_fd);
+-  auto length = size - 1;
+-  auto shmen = base::subtle::PlatformSharedMemoryRegion::Take(
+-      std::move(fd), base::subtle::PlatformSharedMemoryRegion::Mode::kUnsafe,
+-      length, base::UnguessableToken::Create());
+-  auto mapped_memory =
+-      base::UnsafeSharedMemoryRegion::Deserialize(std::move(shmen)).Map();
+-  const char* keymap = mapped_memory.GetMemoryAs<char>();
++  if (!data || format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
++    return;
++  }
+ 
+-  if (!keymap || format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1)
++  void* keymap = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
++  if (keymap == MAP_FAILED) {
++    DPLOG(ERROR) << "Failed to map XKB keymap.";
+     return;
++  }
+ 
+-  bool success = keyboard->layout_engine_->SetCurrentLayoutFromBuffer(
+-      keymap, mapped_memory.size());
+-  DCHECK(success) << "Failed to set the XKB keyboard mapping.";
++  const char* keymap_string = static_cast<const char*>(keymap);
++  if (!keyboard->layout_engine_->SetCurrentLayoutFromBuffer(
++          keymap_string, strnlen(keymap_string, size))) {
++    DLOG(ERROR) << "Failed to set XKB keymap.";
++  }
++  munmap(keymap, size);
++  close(fd);
+ }
+ 
+ void WaylandKeyboard::Enter(void* data,
