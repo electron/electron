@@ -558,7 +558,7 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
     * `vertical` number (optional) - The vertical dpi.
   * `header` string (optional) - string to be printed as page header.
   * `footer` string (optional) - string to be printed as page footer.
-  * `pageSize` string | Size ([optional](structures/size.md)) - Specify page size of the printed document. Can be `A3`,
+  * `pageSize` string | [Size](structures/size.md) (optional) - Specify page size of the printed document. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`.
 
 Returns `Promise<void>`
