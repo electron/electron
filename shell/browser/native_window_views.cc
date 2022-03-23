@@ -162,10 +162,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
       root_view_(std::make_unique<RootView>(this)),
+#if defined(USE_OZONE)
       // It's hacky to use GetPlatformNameForTest to figure out if we run under
       // X11 but that's the best worst way at the moment.
       is_x11_(ui::OzonePlatform::GetInstance()->GetPlatformNameForTest() ==
               "x11"),
+#endif
       keyboard_event_handler_(
           std::make_unique<views::UnhandledKeyboardEventHandler>()) {
   options.Get(options::kTitle, &title_);
