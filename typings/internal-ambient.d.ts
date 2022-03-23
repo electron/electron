@@ -83,7 +83,7 @@ declare namespace NodeJS {
   }
 
   interface AsarBinding {
-    createArchive(path: string): AsarArchive;
+    Archive: { new(path: string): AsarArchive };
     splitPath(path: string): {
       isAsar: false;
     } | {
