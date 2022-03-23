@@ -18,7 +18,7 @@ Refs: https://github.com/libuv/libuv/pull/482
 Refs: https://github.com/libuv/libuv/pull/3405
 
 diff --git a/deps/uv/src/unix/stream.c b/deps/uv/src/unix/stream.c
-index 1af448e7691392c3f7794eed1905d9132394e207..9d22debf2bf5bd5912ade152e55a85ad652e3819 100644
+index c5cd6ddc0b627eeb047e0cb08677f65b4601b89b..b5b05a6a4a737f50b780b7c15717b4f465496fa8 100644
 --- a/deps/uv/src/unix/stream.c
 +++ b/deps/uv/src/unix/stream.c
 @@ -865,6 +865,20 @@ static int uv__try_write(uv_stream_t* stream,

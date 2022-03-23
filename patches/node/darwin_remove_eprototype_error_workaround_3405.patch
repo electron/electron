@@ -18,7 +18,7 @@ I'm opting to simply remove the workaround and have the error bubble up.
 Refs: https://github.com/libuv/libuv/pull/482
 
 diff --git a/deps/uv/src/unix/stream.c b/deps/uv/src/unix/stream.c
-index bc64fe8f44b26d9f4c0d4d0d282b65cdf11a531b..1af448e7691392c3f7794eed1905d9132394e207 100644
+index 5858258d2868c3352e0e9e3313045aa29ff4a873..c5cd6ddc0b627eeb047e0cb08677f65b4601b89b 100644
 --- a/deps/uv/src/unix/stream.c
 +++ b/deps/uv/src/unix/stream.c
 @@ -58,20 +58,6 @@ struct uv__stream_select_s {

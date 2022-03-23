@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index fe828bafa6422cc1f1717afddbd4b199055e9c43..74c56954e5e2d8efc3d8495860addc0138f39f3a 100644
+index f830da2cfba18ae2f7ad02fa862122780c956c80..51b26af969d5c84c741563297fda45426038d199 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -176,7 +176,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -66,7 +66,7 @@ index fe828bafa6422cc1f1717afddbd4b199055e9c43..74c56954e5e2d8efc3d8495860addc01
  }
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
-@@ -1117,14 +1124,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -1126,14 +1133,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -86,10 +86,10 @@ index fe828bafa6422cc1f1717afddbd4b199055e9c43..74c56954e5e2d8efc3d8495860addc01
      if (!Set(env->context(),
               obj,
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 7e99759654e8b9272c48e0e6c0637f4327dc1615..612ed87ce396e285719a9efc8c346adb6d29b366 100644
+index b6ef5e5b1e004e663fbfd2578b82644cb53051e0..1d48ea6d022304b1e6a4f703fea790437edcc876 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -144,13 +144,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+@@ -143,13 +143,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
  bool DiffieHellman::Init(const char* p, int p_len, int g) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -105,7 +105,7 @@ index 7e99759654e8b9272c48e0e6c0637f4327dc1615..612ed87ce396e285719a9efc8c346adb
      return false;
    }
    BIGNUM* bn_p =
-@@ -168,21 +166,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+@@ -167,21 +165,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -130,7 +130,7 @@ index 7e99759654e8b9272c48e0e6c0637f4327dc1615..612ed87ce396e285719a9efc8c346adb
      return false;
    }
    BIGNUM* bn_p =
-@@ -502,16 +497,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -501,16 +496,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      if (!BN_set_word(bn_g.get(), params->params.generator) ||
          !DH_set0_pqg(dh.get(), prime, nullptr, bn_g.get()))
        return EVPKeyCtxPointer();
@@ -152,7 +152,7 @@ index 7e99759654e8b9272c48e0e6c0637f4327dc1615..612ed87ce396e285719a9efc8c346adb
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -523,8 +522,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -522,8 +521,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
          EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0) {
        return EVPKeyCtxPointer();
      }
@@ -244,10 +244,10 @@ index ae4550e9fde8120c35409e495d5b763a95546509..188a7efe76df2a1aa2eb2746f4d74836
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index fec0a493c985f1fb716dd6222e438b430947f2a1..1a7d26ad134b094d02023c99934b8ac7a4bb18d7 100644
+index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba1e76ce0a 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -503,24 +503,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -508,24 +508,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -272,7 +272,7 @@ index fec0a493c985f1fb716dd6222e438b430947f2a1..1a7d26ad134b094d02023c99934b8ac7
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -680,7 +670,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -684,7 +674,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -281,7 +281,7 @@ index fec0a493c985f1fb716dd6222e438b430947f2a1..1a7d26ad134b094d02023c99934b8ac7
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -692,7 +682,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -696,7 +686,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -290,7 +290,7 @@ index fec0a493c985f1fb716dd6222e438b430947f2a1..1a7d26ad134b094d02023c99934b8ac7
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -700,10 +690,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -704,10 +694,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -304,7 +304,7 @@ index fec0a493c985f1fb716dd6222e438b430947f2a1..1a7d26ad134b094d02023c99934b8ac7
  }  // namespace
  
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 463a19f516d23fdb56eb83025f4a3f2b3f4a426b..86e66e29ee644f86cb8ac20f37061fc03dc3099b 100644
+index 5060fc3f2fbd67d8b33975f2512cbd7cf7fedf1a..4f86810f8366b490ca2293cd1a811e69a199f708 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
 @@ -16,7 +16,9 @@

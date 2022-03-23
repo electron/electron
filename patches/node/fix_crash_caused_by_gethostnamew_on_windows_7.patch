@@ -6,7 +6,7 @@ Subject: fix: crash caused by GetHostNameW on Windows 7
 Backported from https://github.com/libuv/libuv/pull/3285.
 
 diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
-index 88602c7ee8623f16f87398cf3ffd1f71555fc1a0..5ffde08e1aed041c4da679156ed10f7e54bfc386 100644
+index 33e874ac442f88b58d2b68c8ec9764f6f664552e..2d4cc0aaa02e61bf359e80eca27527efb49fd85e 100644
 --- a/deps/uv/src/win/util.c
 +++ b/deps/uv/src/win/util.c
 @@ -37,6 +37,7 @@
@@ -166,69 +166,3 @@ index 88602c7ee8623f16f87398cf3ffd1f71555fc1a0..5ffde08e1aed041c4da679156ed10f7e
  int uv_os_gethostname(char* buffer, size_t* size) {
    WCHAR buf[UV_MAXHOSTNAMESIZE];
    size_t len;
-@@ -1674,7 +1803,9 @@ int uv_os_gethostname(char* buffer, size_t* size) {
- 
-   uv__once_init(); /* Initialize winsock */
- 
--  if (GetHostNameW(buf, UV_MAXHOSTNAMESIZE) != 0)
-+  sGetHostNameW gethostnamew =
-+      pGetHostNameW == NULL ? uv__gethostnamew_nt60 : pGetHostNameW;
-+  if (gethostnamew(buf, UV_MAXHOSTNAMESIZE) != 0)
-     return uv_translate_sys_error(WSAGetLastError());
- 
-   convert_result = uv__convert_utf16_to_utf8(buf, -1, &utf8_str);
-diff --git a/deps/uv/src/win/winapi.c b/deps/uv/src/win/winapi.c
-index bb86ec8ceac8ba3fccd02b292aca7ddfab38e187..9d6effb10ddd1801f7411ee71a70575b7072ab7d 100644
---- a/deps/uv/src/win/winapi.c
-+++ b/deps/uv/src/win/winapi.c
-@@ -45,12 +45,15 @@ sPowerRegisterSuspendResumeNotification pPowerRegisterSuspendResumeNotification;
- /* User32.dll function pointer */
- sSetWinEventHook pSetWinEventHook;
- 
-+/* ws2_32.dll function pointer */
-+sGetHostNameW pGetHostNameW;
- 
- void uv_winapi_init(void) {
-   HMODULE ntdll_module;
-   HMODULE powrprof_module;
-   HMODULE user32_module;
-   HMODULE kernel32_module;
-+  HMODULE ws2_32_module;;
- 
-   ntdll_module = GetModuleHandleA("ntdll.dll");
-   if (ntdll_module == NULL) {
-@@ -134,4 +137,10 @@ void uv_winapi_init(void) {
-     pSetWinEventHook = (sSetWinEventHook)
-       GetProcAddress(user32_module, "SetWinEventHook");
-   }
-+
-+  ws2_32_module = LoadLibraryA("ws2_32.dll");
-+  if (ws2_32_module != NULL) {
-+    pGetHostNameW = (sGetHostNameW)
-+      GetProcAddress(ws2_32_module, "GetHostNameW");
-+  }
- }
-diff --git a/deps/uv/src/win/winapi.h b/deps/uv/src/win/winapi.h
-index 0b66b5634bca88cec65b1bf0c0193986f5ddd542..5951717ab9e21db274f956c44410cc03c1617eaf 100644
---- a/deps/uv/src/win/winapi.h
-+++ b/deps/uv/src/win/winapi.h
-@@ -4739,6 +4739,11 @@ typedef struct _TCP_INITIAL_RTO_PARAMETERS {
- # define  SIO_TCP_INITIAL_RTO _WSAIOW(IOC_VENDOR,17)
- #endif
- 
-+/* From winsock2.h */
-+typedef int (WSAAPI *sGetHostNameW)
-+            (PWSTR name,
-+             int   namelen);
-+
- /* Ntdll function pointers */
- extern sRtlGetVersion pRtlGetVersion;
- extern sRtlNtStatusToDosError pRtlNtStatusToDosError;
-@@ -4759,4 +4764,7 @@ extern sPowerRegisterSuspendResumeNotification pPowerRegisterSuspendResumeNotifi
- /* User32.dll function pointer */
- extern sSetWinEventHook pSetWinEventHook;
- 
-+/* ws2_32.dll function pointer */
-+extern sGetHostNameW pGetHostNameW;
-+
- #endif /* UV_WIN_WINAPI_H_ */

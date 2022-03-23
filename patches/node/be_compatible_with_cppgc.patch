@@ -83,7 +83,7 @@ index bb1e8d4b46bce3bf08f730ac5d43f7113d17ae39..6da0669943fc6465ffc47a1c8c3dadfe
  }
  
 diff --git a/src/base_object.h b/src/base_object.h
-index d46a0f216009c63f45c440fc352b54d1ac4a08d8..81913c0d7762bf499ee19aaa3b63b986ca370bb4 100644
+index 1c63da92fd80c042d5ea729bdd70049cae51a141..3b8127e884187b21cebeabb39b60bd3010b62217 100644
 --- a/src/base_object.h
 +++ b/src/base_object.h
 @@ -40,7 +40,7 @@ class TransferData;
