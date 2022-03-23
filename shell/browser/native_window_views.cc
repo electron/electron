@@ -63,6 +63,7 @@
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
 #include "ui/gfx/x/xproto_util.h"
+#include "ui/ozone/buildflags.h"
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -135,6 +136,16 @@ bool CreateGlobalMenuBar() {
 
 #endif
 
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+
+bool IsX11() {
+  return ui::OzonePlatform::GetInstance()
+      ->GetPlatformProperties()
+      .electron_can_call_x11;
+}
+
+#endif
+
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
@@ -162,12 +173,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
       root_view_(std::make_unique<RootView>(this)),
-#if defined(USE_OZONE)
-      // It's hacky to use GetPlatformNameForTest to figure out if we run under
-      // X11 but that's the best worst way at the moment.
-      is_x11_(ui::OzonePlatform::GetInstance()->GetPlatformNameForTest() ==
-              "x11"),
-#endif
       keyboard_event_handler_(
           std::make_unique<views::UnhandledKeyboardEventHandler>()) {
   options.Get(options::kTitle, &title_);
@@ -294,8 +299,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     SetParentWindow(parent);
 #endif
 
-#if defined(USE_OZONE)
-  if (is_x11_) {
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11()) {
     // TODO(ckerr): remove in Electron v20.0.0
     // Before the window is mapped the SetWMSpecState can not work, so we have
     // to manually set the _NET_WM_STATE.
@@ -425,8 +430,8 @@ NativeWindowViews::~NativeWindowViews() {
 }
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
-#if defined(USE_OZONE)
-  if (is_x11_) {
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11()) {
     const std::string color = use_dark_theme ? "dark" : "light";
     x11::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
                            x11::GetAtom("_GTK_THEME_VARIANT"),
@@ -533,8 +538,8 @@ bool NativeWindowViews::IsEnabled() {
 #if BUILDFLAG(IS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif BUILDFLAG(IS_LINUX)
-#if defined(USE_OZONE)
-  if (is_x11_)
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11())
     return !event_disabler_.get();
 #endif
   NOTIMPLEMENTED();
@@ -574,8 +579,8 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 
 #if BUILDFLAG(IS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
-#elif defined(USE_OZONE)
-  if (is_x11_) {
+#elif BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11()) {
     views::DesktopWindowTreeHostPlatform* tree_host =
         views::DesktopWindowTreeHostLinux::GetHostForWidget(
             GetAcceleratedWidget());
@@ -809,8 +814,8 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
   ::SetWindowPos(GetAcceleratedWidget(), GetWindow(otherWindow, GW_HWNDPREV), 0,
                  0, 0, 0,
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-#elif defined(USE_OZONE)
-  if (is_x11_) {
+#elif BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11()) {
     if (!IsWindowValid(static_cast<x11::Window>(id.id)))
       return false;
 
@@ -831,8 +836,8 @@ void NativeWindowViews::MoveTop() {
   ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP, pos.x(), pos.y(),
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-#elif defined(USE_OZONE)
-  if (is_x11_)
+#elif BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11())
     electron::MoveWindowToForeground(
         static_cast<x11::Window>(GetAcceleratedWidget()));
 #endif
@@ -1016,8 +1021,8 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar->AddTab(GetAcceleratedWidget());
     taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
   }
-#elif defined(USE_OZONE)
-  if (is_x11_)
+#elif BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11())
     SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
                    x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
 #endif
@@ -1119,8 +1124,8 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
   } else {
     SetForwardMouseMessages(forward);
   }
-#elif defined(USE_OZONE)
-  if (is_x11_) {
+#elif BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11()) {
     auto* connection = x11::Connection::Get();
     if (ignore) {
       x11::Rectangle r{0, 0, 1, 1};
@@ -1283,8 +1288,8 @@ void NativeWindowViews::SetTopBrowserView(NativeBrowserView* view) {
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
-#if defined(USE_OZONE)
-  if (is_x11_)
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11())
     x11::SetProperty(
         static_cast<x11::Window>(GetAcceleratedWidget()),
         x11::Atom::WM_TRANSIENT_FOR, x11::Atom::WINDOW,
@@ -1367,8 +1372,8 @@ void NativeWindowViews::SetVisibleOnAllWorkspaces(
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
-#if defined(USE_OZONE)
-  if (is_x11_) {
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+  if (IsX11()) {
     // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
     // determine whether the current window is visible on all workspaces.
     x11::Atom sticky_atom = x11::GetAtom("_NET_WM_STATE_STICKY");
