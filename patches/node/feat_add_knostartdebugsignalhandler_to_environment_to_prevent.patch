@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Mon, 7 Mar 2022 16:36:28 -0800
+Subject: feat: add kNoStartDebugSignalHandler to Environment to prevent
+ SIGUSR1 handling
+
+This patch should be upstreamed, it allows embedders to prevent the call to StartDebugSignalHandler which handles SIGUSR1 and starts the inspector agent.  Apps that have --inspect disabled also don't want SIGUSR1 to have this affect.
+
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 845e00208af4b12960ed8b3f3926323af7685185..1ebc33324907654d16e9c0e19b2955efbac7cac7 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -896,6 +896,10 @@ inline bool Environment::should_initialize_inspector() const {
+   return (flags_ & EnvironmentFlags::kNoInitializeInspector) == 0;
+ }
+ 
++inline bool Environment::should_start_debug_signal_handler() const {
++  return (flags_ & EnvironmentFlags::kNoStartDebugSignalHandler) == 0;
++}
++
+ bool Environment::filehandle_close_warning() const {
+   return emit_filehandle_warning_;
+ }
+diff --git a/src/env.h b/src/env.h
+index ab8334bf0e3405fee4d21a4b541bd1164d92ca89..b2537ebd44bc5b37dd97752735f84e87de1f24bf 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1207,6 +1207,7 @@ class Environment : public MemoryRetainer {
+   inline bool hide_console_windows() const;
+   inline bool no_global_search_paths() const;
+   inline bool should_initialize_inspector() const;
++  inline bool should_start_debug_signal_handler() const;
+   inline uint64_t thread_id() const;
+   inline worker::Worker* worker_context() const;
+   Environment* worker_parent_env() const;
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index c4a3322c6d972fc2052af75b79389c522924d9c5..39ff8df415be1908ba404fba34d9cedda04a88af 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -680,8 +680,10 @@ bool Agent::Start(const std::string& path,
+                               StartIoThreadAsyncCallback));
+     uv_unref(reinterpret_cast<uv_handle_t*>(&start_io_thread_async));
+     start_io_thread_async.data = this;
+-    // Ignore failure, SIGUSR1 won't work, but that should not block node start.
+-    StartDebugSignalHandler();
++    if (parent_env_->should_start_debug_signal_handler()) {
++      // Ignore failure, SIGUSR1 won't work, but that should not block node start.
++      StartDebugSignalHandler();
++    }
+ 
+     parent_env_->AddCleanupHook([](void* data) {
+       Environment* env = static_cast<Environment*>(data);
+diff --git a/src/node.h b/src/node.h
+index 4201c0d0460b032721ef42a26d79c38a9ee20c24..6873fc89406b046823db9e45234eb7f6b767099d 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -425,7 +425,11 @@ enum Flags : uint64_t {
+   // Controls whether or not the Environment should call InitializeInspector.
+   // This control is needed by embedders who may not want to initialize the V8
+   // inspector in situations where it already exists.
+-  kNoInitializeInspector = 1 << 8
++  kNoInitializeInspector = 1 << 8,
++  // Controls where or not the InspectorAgent for this Environment should
++  // call StartDebugSignalHandler.  This control is needed by embedders who may
++  // not want to allow other processes to start the V8 inspector.
++  kNoStartDebugSignalHandler = 1 << 9
+ };
+ }  // namespace EnvironmentFlags
+ 

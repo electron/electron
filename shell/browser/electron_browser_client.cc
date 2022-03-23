@@ -82,13 +82,14 @@
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/child_web_contents_tracker.h"
+#include "shell/browser/electron_api_ipc_handler_impl.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
-#include "shell/browser/electron_browser_handler_impl.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_quota_permission_context.h"
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
+#include "shell/browser/electron_web_contents_utility_handler_impl.h"
 #include "shell/browser/font_defaults.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
@@ -1552,14 +1553,33 @@ void ElectronBrowserClient::
             render_frame_host,  // NOLINT(runtime/references)
         blink::AssociatedInterfaceRegistry&
             associated_registry) {  // NOLINT(runtime/references)
+  auto* contents =
+      content::WebContents::FromRenderFrameHost(&render_frame_host);
+  if (contents) {
+    auto* prefs = WebContentsPreferences::From(contents);
+    if (render_frame_host.GetFrameTreeNodeId() ==
+            contents->GetMainFrame()->GetFrameTreeNodeId() ||
+        (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
+      associated_registry.AddInterface(base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<electron::mojom::ElectronApiIPC>
+                 receiver) {
+            ElectronApiIPCHandlerImpl::Create(render_frame_host,
+                                              std::move(receiver));
+          },
+          &render_frame_host));
+    }
+  }
+
   associated_registry.AddInterface(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<electron::mojom::ElectronBrowser>
-             receiver) {
-        ElectronBrowserHandlerImpl::Create(render_frame_host,
-                                           std::move(receiver));
+         mojo::PendingAssociatedReceiver<
+             electron::mojom::ElectronWebContentsUtility> receiver) {
+        ElectronWebContentsUtilityHandlerImpl::Create(render_frame_host,
+                                                      std::move(receiver));
       },
       &render_frame_host));
+
   associated_registry.AddInterface(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
          mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>

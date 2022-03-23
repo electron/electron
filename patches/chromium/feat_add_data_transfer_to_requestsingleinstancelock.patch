@@ -96,7 +96,7 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..5b701b1361707b610ed60c344e441e67
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190f7d1137d 100644
+index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..44d563e35efb318c5684c30fc441996a5a1f1424 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -146,7 +146,7 @@ const char kACKToken[] = "ACK";

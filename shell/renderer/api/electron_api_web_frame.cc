@@ -453,10 +453,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     if (!MaybeGetRenderFrame(isolate, "setZoomLevel", &render_frame))
       return;
 
-    mojo::AssociatedRemote<mojom::ElectronBrowser> browser_remote;
+    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
+        web_contents_utility_remote;
     render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
-        &browser_remote);
-    browser_remote->SetTemporaryZoomLevel(level);
+        &web_contents_utility_remote);
+    web_contents_utility_remote->SetTemporaryZoomLevel(level);
   }
 
   double GetZoomLevel(v8::Isolate* isolate) {
@@ -465,10 +466,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     if (!MaybeGetRenderFrame(isolate, "getZoomLevel", &render_frame))
       return result;
 
-    mojo::AssociatedRemote<mojom::ElectronBrowser> browser_remote;
+    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
+        web_contents_utility_remote;
     render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
-        &browser_remote);
-    browser_remote->DoGetZoomLevel(&result);
+        &web_contents_utility_remote);
+    web_contents_utility_remote->DoGetZoomLevel(&result);
     return result;
   }
 

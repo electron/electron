@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import atexit
 import contextlib
 import errno
 import json
 import os
 import shutil
-import ssl
-import stat
 import subprocess
 import sys
-import tarfile
-import tempfile
 # Python 3 / 2 compat import
 try:
   from urllib.request import urlopen
@@ -191,9 +186,9 @@ def get_electron_exec():
 
   if sys.platform == 'darwin':
     return '{0}/Electron.app/Contents/MacOS/Electron'.format(out_dir)
-  elif sys.platform == 'win32':
+  if sys.platform == 'win32':
     return '{0}/electron.exe'.format(out_dir)
-  elif sys.platform == 'linux':
+  if sys.platform == 'linux':
     return '{0}/electron'.format(out_dir)
 
   raise Exception(

@@ -109,7 +109,7 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
     : image_(image), isolate_(isolate) {
-  AdjustAmountOfExternalAllocatedMemory(true);
+  UpdateExternalAllocatedMemoryUsage();
 }
 
 #if BUILDFLAG(IS_WIN)
@@ -120,22 +120,27 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
   electron::util::ReadImageSkiaFromICO(&image_skia, GetHICON(256));
   image_ = gfx::Image(image_skia);
 
-  AdjustAmountOfExternalAllocatedMemory(true);
+  UpdateExternalAllocatedMemoryUsage();
 }
 #endif
 
 NativeImage::~NativeImage() {
-  AdjustAmountOfExternalAllocatedMemory(false);
+  isolate_->AdjustAmountOfExternalAllocatedMemory(-memory_usage_);
 }
 
-void NativeImage::AdjustAmountOfExternalAllocatedMemory(bool add) {
+void NativeImage::UpdateExternalAllocatedMemoryUsage() {
+  int32_t new_memory_usage = 0;
+
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
     auto* const image_skia = image_.ToImageSkia();
     if (!image_skia->isNull()) {
-      int64_t size = image_skia->bitmap()->computeByteSize();
-      isolate_->AdjustAmountOfExternalAllocatedMemory(add ? size : -size);
+      new_memory_usage = image_skia->bitmap()->computeByteSize();
     }
   }
+
+  isolate_->AdjustAmountOfExternalAllocatedMemory(new_memory_usage -
+                                                  memory_usage_);
+  memory_usage_ = new_memory_usage;
 }
 
 // static

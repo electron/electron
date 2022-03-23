@@ -157,7 +157,7 @@ versions of Electron, we do not make a guarantee that every fix will be
 backported. Your best chance at staying secure is to be on the latest stable
 version of Electron.
 
-[sandbox]: https://chromium.googlesource.com/chromium/src/+/master/docs/design/sandbox.md
+[sandbox]: https://chromium.googlesource.com/chromium/src/+/main/docs/design/sandbox.md
 [issue-28466]: https://github.com/electron/electron/issues/28466
 [browser-window]: ../api/browser-window.md
 [enable-sandbox]: ../api/app.md#appenablesandbox

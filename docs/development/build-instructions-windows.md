@@ -9,7 +9,7 @@ Follow the guidelines below for building **Electron itself** on Windows, for the
 * Windows 10 / Server 2012 R2 or higher
 * Visual Studio 2017 15.7.2 or higher - [download VS 2019 Community Edition for
   free](https://www.visualstudio.com/vs/)
-  * See [the Chromium build documentation](https://chromium.googlesource.com/chromium/src/+/master/docs/windows_build_instructions.md#visual-studio) for more details on which Visual Studio
+  * See [the Chromium build documentation](https://chromium.googlesource.com/chromium/src/+/main/docs/windows_build_instructions.md#visual-studio) for more details on which Visual Studio
   components are required.
   * If your Visual Studio is installed in a directory other than the default, you'll need to
   set a few environment variables to point the toolchains to your installation path.
