@@ -67,3 +67,8 @@ or is being instructed to show a high-contrast UI.
 
 A `Boolean` for if the OS / Chromium currently has an inverted color scheme
 or is being instructed to use an inverted color scheme.
+
+### `nativeTheme.inForcedColorsMode` _Windows_ _Readonly_
+
+A `boolean` indicating whether Chromium is in forced colors mode, controlled by system accessibility settings.
+Currently, Windows high contrast is the only system setting that triggers forced colors mode.
