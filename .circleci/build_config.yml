@@ -1612,11 +1612,12 @@ jobs:
           persist-checkout: true
 
   mac-checkout:
-    executor: macos
+    executor: linux-docker
     environment:
-      <<: *env-mac-large
+      <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
           persist: false
@@ -1626,11 +1627,12 @@ jobs:
           restore-src-cache: false
 
   mac-checkout-for-workspace:
-    executor: macos
+    executor: linux-docker
     environment:
-      <<: *env-mac-large
+      <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
           persist: false
@@ -1639,11 +1641,12 @@ jobs:
           persist-checkout: true
 
   mac-make-src-cache:
-    executor: macos
+    executor: linux-docker
     environment:
-      <<: *env-mac-large
+      <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
       - electron-build:
           persist: false
