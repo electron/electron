@@ -26,7 +26,7 @@ index fa3a6620ce84136476d0ac6e705515c13dc612ab..a0aff5ad93e7644211a2c15553b3d098
  }
  
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 2d16acd2d4d732dc5349f403c0a48483a23f895b..7b9d8e24a755b21963d7d84f930c1e9c9bd36ac5 100644
+index 7b21a40749283e42f3d69eb08d00109476f0567e..63751f12161d02dcda274099e66584029df63eaa 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -116,6 +116,16 @@

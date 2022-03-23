@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 15a66c6a1e761b8d9d9243210f64fb0ad05821b3..ea80b7c69df62f97c476b6860755e4b11b7ef679 100644
+index 002b3ddfb0f77b787b74ee088578e3eb813d0192..a9003a98546bbfe78e2d30457a032218cc263441 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -139,6 +139,8 @@ viz_component("service") {

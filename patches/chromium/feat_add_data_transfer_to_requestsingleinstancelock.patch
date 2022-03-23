@@ -96,7 +96,7 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..5b701b1361707b610ed60c344e441e67
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 79dde4f13109d61711ddd1ceea864dcdbaf572df..d0e8f5564c71c207e06d4e401e0f7a89880ddb86 100644
+index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190f7d1137d 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -146,7 +146,7 @@ const char kACKToken[] = "ACK";
@@ -282,7 +282,7 @@ index 79dde4f13109d61711ddd1ceea864dcdbaf572df..d0e8f5564c71c207e06d4e401e0f7a89
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..1d393e6e161b896a47d3490d902f2ce82ad6abb2 100644
+index ec725b44296266bea1a51aea889463a0bba8449c..a3d4dd1efc950033855a1f2783f941384b249a5d 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -21,6 +21,7 @@
@@ -434,7 +434,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..1d393e6e161b896a47d3490d902f2ce8
    return true;
  }
  
-@@ -254,9 +343,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -261,9 +350,13 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -449,7 +449,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..1d393e6e161b896a47d3490d902f2ce8
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -271,6 +364,37 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -278,6 +371,37 @@ ProcessSingleton::~ProcessSingleton() {
      ::CloseHandle(lock_file_);
  }
  
@@ -487,7 +487,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..1d393e6e161b896a47d3490d902f2ce8
  // Code roughly based on Mozilla.
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
    TRACE_EVENT0("startup", "ProcessSingleton::NotifyOtherProcess");
-@@ -283,8 +407,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -290,8 +414,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
@@ -498,7 +498,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..1d393e6e161b896a47d3490d902f2ce8
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
        remote_window_ = NULL;
-@@ -422,6 +547,18 @@ bool ProcessSingleton::Create() {
+@@ -429,6 +554,18 @@ bool ProcessSingleton::Create() {
            << "Lock file can not be created! Error code: " << error;
  
        if (lock_file_ != INVALID_HANDLE_VALUE) {
@@ -517,7 +517,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..1d393e6e161b896a47d3490d902f2ce8
          // Set the window's title to the path of our user data directory so
          // other Chrome instances can decide if they should forward to us.
          TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateWindow");
-@@ -449,6 +586,7 @@ bool ProcessSingleton::Create() {
+@@ -456,6 +593,7 @@ bool ProcessSingleton::Create() {
  }
  
  void ProcessSingleton::Cleanup() {
