@@ -46,17 +46,13 @@ build_script:
   - echo $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME
   - echo $env:APPVEYOR_REPO_NAME
   - ps: >-
-      # if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-      #   Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-      # } else {
-      #  node script/yarn.js install --frozen-lockfile
+    #  node script/yarn.js install --frozen-lockfile
 
-      #  $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-      #  Write-Output $result
-      #  if ($result.ExitCode -eq 0) {
-      #    Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
-      #  }
-      # }
+    #  $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+    #  Write-Output $result
+    #  if ($result.ExitCode -eq 0) {
+    #    Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+    #  }
   - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
@@ -114,9 +110,9 @@ build_script:
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
   - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
-  # Debug: No module named win32com.client / pywin32 doesn't seem to get installed?
-  - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
-  - appveyor PushArtifact out/Default/windows_toolchain_profile.json
+  # Debug: There's multiple issues with running this script
+  # - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+  # - appveyor PushArtifact out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
   - appveyor PushArtifact out/Default/chromedriver.zip
