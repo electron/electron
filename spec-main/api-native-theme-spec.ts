@@ -109,4 +109,10 @@ describe('nativeTheme module', () => {
       expect(nativeTheme.shouldUseHighContrastColors).to.be.a('boolean');
     });
   });
+
+  describe('nativeTheme.inForcedColorsMode', () => {
+    it('returns a boolean', () => {
+      expect(nativeTheme.inForcedColorsMode).to.be.a('boolean');
+    });
+  });
 });
