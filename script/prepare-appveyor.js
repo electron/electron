@@ -110,9 +110,9 @@ async function callAppVeyorBuildJobs (targetBranch, job, options) {
     body: JSON.stringify({
       accountName: 'electron-bot',
       projectSlug: appVeyorJobs[job],
-      // branch: targetBranch,
-      pullRequestId: pullRequestId || undefined,
-      // commitId: options.commit || undefined,
+      branch: targetBranch,
+      // pullRequestId: pullRequestId,
+      commitId: options.commit || undefined,
       environmentVariables
     }),
     method: 'POST'
@@ -175,7 +175,7 @@ async function prepareAppVeyorImage (opts) {
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    const imageVersion = opts.imageVersion || `electron-${CHROMIUM_VERSION}`;
+    const imageVersion = opts.imageVersion || `electron-test-${CHROMIUM_VERSION}`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
     if (image && image.name) {

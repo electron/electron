@@ -100,7 +100,7 @@ def windows_profile():
     # profile the current directory too
     return {
         'pwd': os.getcwd(),
-        'installed_software': windows_installed_software(),
+        # 'installed_software': windows_installed_software(),
         'sdks': [
             {'name': 'vs', 'path': path, 'hash': calculate_hash(path)},
             {
