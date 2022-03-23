@@ -59,7 +59,7 @@
 #endif
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
-#include "chrome/renderer/media/chrome_key_systems.h"
+#include "chrome/renderer/media/chrome_key_systems.h"  // nogncheck
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
