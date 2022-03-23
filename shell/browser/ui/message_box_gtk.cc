@@ -21,7 +21,7 @@
 #include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_util.h"
 
-#if defined(USE_OZONE) || defined(USE_X11)
+#if defined(USE_OZONE)
 #include "ui/base/ui_base_features.h"
 #endif
 
