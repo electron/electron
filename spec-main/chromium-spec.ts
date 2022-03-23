@@ -1421,20 +1421,46 @@ describe('chromium features', () => {
       protocol: 'file',
       slashes: true
     });
+    const redPdfSource = url.format({
+      pathname: path.join(__dirname, 'fixtures', 'red.pdf').replace(/\\/g, '/'),
+      protocol: 'file',
+      slashes: true
+    });
+
+    async function ensurePdfLoaded (webContents: WebContents) {
+      const result = await webContents.executeJavaScript(`new Promise(resolve => {
+        window.addEventListener('message', event => {
+          if (event.origin !==
+                  'chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai') {
+            return;
+          }
+          if (event.data.type === 'documentLoaded') {
+            resolve(event.data.load_state === 'success');
+          }
+        });
+        document.getElementsByTagName('embed')[0].postMessage({type: 'initialize'});
+      })`);
+      expect(result).to.be.true();
+    }
 
     it('successfully loads a PDF file', async () => {
       const w = new BrowserWindow({ show: false });
 
       w.loadURL(pdfSource);
-      await emittedOnce(w.webContents, 'did-finish-load');
+      await ensurePdfLoaded(w.webContents);
     });
 
-    it('opens when loading a pdf resource as top level navigation', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.loadURL(pdfSource);
-      const [, contents] = await emittedOnce(app, 'web-contents-created');
-      await emittedOnce(contents, 'did-navigate');
-      expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
+    it('renders a PDF', async () => {
+      const w = new BrowserWindow({ show: false, width: 1000, height: 1000 });
+
+      w.loadURL(redPdfSource);
+      await ensurePdfLoaded(w.webContents);
+      const image = await w.webContents.capturePage();
+      const bitmap = image.getBitmap();
+      const middleB = bitmap[(500 * 1000 + 500) * 4];
+      const middleG = bitmap[(500 * 1000 + 500) * 4 + 1];
+      const middleR = bitmap[(500 * 1000 + 500) * 4 + 2];
+      expect({ r: middleR, g: middleG, b: middleB }).to.deep.equal({ r: 255, g: 0, b: 0 });
     });
 
     it('opens when loading a pdf resource in a iframe', async () => {
@@ -1443,6 +1469,8 @@ describe('chromium features', () => {
       const [, contents] = await emittedOnce(app, 'web-contents-created');
       await emittedOnce(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
+      // TODO(nornagon): this doesn't actually check that the pdf in the iframe
+      // loaded.
     });
   });
 
