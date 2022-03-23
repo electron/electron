@@ -208,6 +208,7 @@ def zero_zip_date_time(fname):
     with open(fname, 'r+b') as f:
       _zero_zip_date_time(f)
   except Exception:
+    # pylint: disable=W0707
     raise NonZipFileError(fname)
 
 
