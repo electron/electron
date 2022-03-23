@@ -21,10 +21,6 @@
 #include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_util.h"
 
-#if defined(USE_OZONE) || defined(USE_X11)
-#include "ui/base/ui_base_features.h"
-#endif
-
 namespace file_dialog {
 
 static GModule* gtk_module;
