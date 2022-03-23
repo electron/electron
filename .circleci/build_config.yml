@@ -328,6 +328,10 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
       export GOMA_FALLBACK_ON_AUTH_FAILURE=true
       third_party/goma/goma_ctl.py ensure_start
+      if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`third_party/goma/goma_auth.py info`" != "Login as Fermi Planck" ]; then
+        echo "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token."
+        exit 1
+      fi
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
       echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
