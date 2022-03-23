@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/values.h"
+#include "content/browser/permissions/permission_util.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/permission_controller.h"
@@ -396,6 +397,15 @@ ElectronPermissionManager::GetPermissionStatusForFrame(
                                             requesting_origin, &details);
   return granted ? blink::mojom::PermissionStatus::GRANTED
                  : blink::mojom::PermissionStatus::DENIED;
+}
+
+blink::mojom::PermissionStatus
+ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
+    content::PermissionType permission,
+    content::RenderFrameHost* render_frame_host) {
+  return GetPermissionStatus(
+      permission, render_frame_host->GetLastCommittedOrigin().GetURL(),
+      content::PermissionUtil::GetLastCommittedOriginAsURL(render_frame_host));
 }
 
 }  // namespace electron
