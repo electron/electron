@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jameson Nash <vtjnash@gmail.com>
+Date: Mon, 7 Mar 2022 17:07:49 -0500
+Subject: process: simplify uv__write_int calls (#3519)
+
+Refs https://github.com/libuv/libuv/pull/3519
+
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index b6f9756c6a6710f5f10762b9299cc35047b98097..8cde389b826b6b167437845eccd5fed440dcadc4 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -216,16 +216,14 @@ static void uv__write_int(int fd, int val) {
+     n = write(fd, &val, sizeof(val));
+   while (n == -1 && errno == EINTR);
+ 
+-  if (n == -1 && errno == EPIPE)
+-    return; /* parent process has quit */
+-
+-  assert(n == sizeof(val));
++  /* The write might have failed (e.g. if the parent process has died),
++   * but we have nothing left but to _exit ourself now too. */
++  _exit(127);
+ }
+ 
+ 
+ static void uv__write_errno(int error_fd) {
+   uv__write_int(error_fd, UV__ERR(errno));
+-  _exit(127);
+ }
+ 
+ 
+@@ -284,10 +282,8 @@ static void uv__process_child_init(const uv_process_options_t* options,
+       uv__write_errno(error_fd);
+ #ifndef F_DUPFD_CLOEXEC /* POSIX 2008 */
+     n = uv__cloexec(pipes[fd][1], 1);
+-    if (n) {
++    if (n)
+       uv__write_int(error_fd, n);
+-      _exit(127);
+-    }
+ #endif
+   }
+ 
+@@ -313,10 +309,8 @@ static void uv__process_child_init(const uv_process_options_t* options,
+     if (fd == use_fd) {
+       if (close_fd == -1) {
+         n = uv__cloexec(use_fd, 0);
+-        if (n) {
++        if (n)
+           uv__write_int(error_fd, n);
+-          _exit(127);
+-        }
+       }
+     }
+     else {
+@@ -368,7 +362,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ #endif
+ 
+   uv__write_errno(error_fd);
+-  abort();
+ }
+ #endif
+ 
