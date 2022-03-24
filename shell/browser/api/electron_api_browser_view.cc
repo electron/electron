@@ -6,10 +6,13 @@
 
 #include <vector>
 
+#include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
+#include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/web_contents_preferences.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -154,11 +157,25 @@ gfx::Rect BrowserView::GetBounds() {
 }
 
 void BrowserView::SetBackgroundColor(const std::string& color_name) {
-  view_->SetBackgroundColor(ParseCSSColor(color_name));
+  SkColor color = ParseCSSColor(color_name);
+  view_->SetBackgroundColor(color);
 
   if (web_contents()) {
     auto* wc = web_contents()->web_contents();
     wc->SetPageBaseBackgroundColor(ParseCSSColor(color_name));
+
+    auto* const rwhv = wc->GetRenderWidgetHostView();
+    if (rwhv) {
+      rwhv->SetBackgroundColor(color);
+      static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+          ->SetContentBackgroundColor(color);
+    }
+
+    // Ensure new color is stored in webPreferences, otherwise
+    // the color will be reset on the next load via HandleNewRenderFrame.
+    auto* web_preferences = WebContentsPreferences::From(wc);
+    if (web_preferences)
+      web_preferences->SetBackgroundColor(color);
   }
 }
 

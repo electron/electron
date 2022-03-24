@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import { emittedOnce } from './events-helpers';
-import { BrowserView, BrowserWindow, webContents } from 'electron/main';
+import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './window-helpers';
 import { defer, startRemoteControlApp } from './spec-helpers';
+import { areColorsSimilar, captureScreen, getPixelColor } from './screen-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -59,6 +60,54 @@ describe('BrowserView module', () => {
       expect(() => {
         view.setBackgroundColor(null as any);
       }).to.throw(/conversion failure/);
+    });
+
+    it('sets the background color to transparent if none is set', async () => {
+      const display = screen.getPrimaryDisplay();
+      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
+
+      w.show();
+      w.setBounds(display.bounds);
+      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+      await w.loadURL('about:blank');
+
+      view = new BrowserView();
+      view.setBounds(display.bounds);
+      w.setBrowserView(view);
+      await view.webContents.loadURL('data:text/html,hello there');
+
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
+    });
+
+    it('successfully applies the background color', async () => {
+      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
+      const VIEW_BACKGROUND_COLOR = '#ff00ff';
+      const display = screen.getPrimaryDisplay();
+
+      w.show();
+      w.setBounds(display.bounds);
+      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+      await w.loadURL('about:blank');
+
+      view = new BrowserView();
+      view.setBounds(display.bounds);
+      w.setBrowserView(view);
+      w.setBackgroundColor(VIEW_BACKGROUND_COLOR);
+      await view.webContents.loadURL('data:text/html,hello there');
+
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(centerColor, VIEW_BACKGROUND_COLOR)).to.be.true();
     });
   });
 
