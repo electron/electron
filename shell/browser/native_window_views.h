@@ -18,6 +18,9 @@
 
 #if defined(USE_OZONE)
 #include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -36,7 +39,7 @@ class GlobalMenuBarX11;
 class RootView;
 class WindowStateWatcher;
 
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
 class EventDisabler;
 #endif
 
@@ -268,7 +271,7 @@ class NativeWindowViews : public NativeWindow,
 
 #endif
 
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif

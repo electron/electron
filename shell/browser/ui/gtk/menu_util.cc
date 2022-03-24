@@ -24,6 +24,9 @@
 
 #if defined(USE_OZONE)
 #include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -46,6 +49,8 @@ int EventFlagsFromGdkState(guint state) {
   return flags;
 }
 
+#if defined(USE_OZONE_PLATFORM_X11)
+
 guint GetGdkKeyCodeForAccelerator(const ui::Accelerator& accelerator) {
   // The second parameter is false because accelerator keys are expressed in
   // terms of the non-shift-modified key.
@@ -64,6 +69,8 @@ GdkModifierType GetGdkModifierForAccelerator(
     modifier |= GDK_MOD1_MASK;
   return static_cast<GdkModifierType>(modifier);
 }
+
+#endif
 
 }  // namespace
 
@@ -226,7 +233,7 @@ void BuildSubmenuFromModel(ui::MenuModel* model,
       connect_to_activate = false;
     }
 
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
     if (ui::OzonePlatform::GetInstance()
             ->GetPlatformProperties()
             .electron_can_call_x11) {

@@ -63,7 +63,6 @@
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
 #include "ui/gfx/x/xproto_util.h"
-#include "ui/ozone/buildflags.h"
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -136,7 +135,7 @@ bool CreateGlobalMenuBar() {
 
 #endif
 
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
 
 bool IsX11() {
   return ui::OzonePlatform::GetInstance()
@@ -299,7 +298,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     SetParentWindow(parent);
 #endif
 
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
     // TODO(ckerr): remove in Electron v20.0.0
     // Before the window is mapped the SetWMSpecState can not work, so we have
@@ -430,7 +429,7 @@ NativeWindowViews::~NativeWindowViews() {
 }
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
     const std::string color = use_dark_theme ? "dark" : "light";
     x11::SetStringProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
@@ -538,7 +537,7 @@ bool NativeWindowViews::IsEnabled() {
 #if BUILDFLAG(IS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif BUILDFLAG(IS_LINUX)
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11())
     return !event_disabler_.get();
 #endif
@@ -579,7 +578,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 
 #if BUILDFLAG(IS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
-#elif BUILDFLAG(OZONE_PLATFORM_X11)
+#elif defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
     views::DesktopWindowTreeHostPlatform* tree_host =
         views::DesktopWindowTreeHostLinux::GetHostForWidget(
@@ -814,7 +813,7 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
   ::SetWindowPos(GetAcceleratedWidget(), GetWindow(otherWindow, GW_HWNDPREV), 0,
                  0, 0, 0,
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-#elif BUILDFLAG(OZONE_PLATFORM_X11)
+#elif defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
     if (!IsWindowValid(static_cast<x11::Window>(id.id)))
       return false;
@@ -836,7 +835,7 @@ void NativeWindowViews::MoveTop() {
   ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP, pos.x(), pos.y(),
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-#elif BUILDFLAG(OZONE_PLATFORM_X11)
+#elif defined(USE_OZONE_PLATFORM_X11)
   if (IsX11())
     electron::MoveWindowToForeground(
         static_cast<x11::Window>(GetAcceleratedWidget()));
@@ -1021,7 +1020,7 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar->AddTab(GetAcceleratedWidget());
     taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
   }
-#elif BUILDFLAG(OZONE_PLATFORM_X11)
+#elif defined(USE_OZONE_PLATFORM_X11)
   if (IsX11())
     SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
                    x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
@@ -1124,7 +1123,7 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
   } else {
     SetForwardMouseMessages(forward);
   }
-#elif BUILDFLAG(OZONE_PLATFORM_X11)
+#elif defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
     auto* connection = x11::Connection::Get();
     if (ignore) {
@@ -1288,7 +1287,7 @@ void NativeWindowViews::SetTopBrowserView(NativeBrowserView* view) {
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11())
     x11::SetProperty(
         static_cast<x11::Window>(GetAcceleratedWidget()),
@@ -1372,7 +1371,7 @@ void NativeWindowViews::SetVisibleOnAllWorkspaces(
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
     // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
     // determine whether the current window is visible on all workspaces.
