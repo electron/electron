@@ -49,10 +49,10 @@ index da12f2f47f97628f1adeabc8900ffd16132afd7e..61d373f78520a063c7f86bde6869af9d
    // its owning reference back to our owning LocalFrame.
    client_->Detached(type);
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 06a3b4cd413b83512052057372abfa565a33ea04..e611668f56a33fe581bd936d0ee4f0c8d1a6de78 100644
+index 1efaff0e92061bc97dcbf3105f6b6c1dcefff17c..ec2e19c3ccf60f01b73259e1e6eff405ebf15f07 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -542,10 +542,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -545,10 +545,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -63,7 +63,7 @@ index 06a3b4cd413b83512052057372abfa565a33ea04..e611668f56a33fe581bd936d0ee4f0c8
    if (!Client())
      return false;
  
-@@ -591,6 +587,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -594,6 +590,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    DCHECK(!view_->IsAttached());
    Client()->WillBeDetached();
  

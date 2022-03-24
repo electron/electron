@@ -12,7 +12,7 @@ upstream a more durable approach to allowing us to do this, at which
 point this patch can be removed.
 
 diff --git a/front_end/entrypoints/shell/BUILD.gn b/front_end/entrypoints/shell/BUILD.gn
-index bf96adcaa42a2406cf1dd7cd2468802886aa4fd7..cd84442cab4a0da772dd37cd4e921041b3b6173a 100644
+index 848d6edb722a88aa2d1b42290e65d677f5107acf..86e1c70d7693db0f1a6df32f0413c45f4854e586 100644
 --- a/front_end/entrypoints/shell/BUILD.gn
 +++ b/front_end/entrypoints/shell/BUILD.gn
 @@ -31,6 +31,7 @@ devtools_entrypoint("shell") {

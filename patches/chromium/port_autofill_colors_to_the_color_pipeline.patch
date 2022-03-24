@@ -26,10 +26,10 @@ index fa3a6620ce84136476d0ac6e705515c13dc612ab..a0aff5ad93e7644211a2c15553b3d098
  }
  
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 7b21a40749283e42f3d69eb08d00109476f0567e..63751f12161d02dcda274099e66584029df63eaa 100644
+index d9db2d705c88e828383e81efd8f8c6d28e1520bb..7f0e1672af0fef134fc637324e366e9e8d985054 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -116,6 +116,16 @@
+@@ -122,6 +122,16 @@
    E_CPONLY(kColorOverlayScrollbarStrokeHoveredDark) \
    E_CPONLY(kColorOverlayScrollbarStrokeHoveredLight) \
    E_CPONLY(kColorProgressBar) \
@@ -46,7 +46,7 @@ index 7b21a40749283e42f3d69eb08d00109476f0567e..63751f12161d02dcda274099e6658402
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -168,6 +178,7 @@
+@@ -174,6 +184,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -55,10 +55,10 @@ index 7b21a40749283e42f3d69eb08d00109476f0567e..63751f12161d02dcda274099e6658402
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index b438c8f4ef1ba2c835240c996e6addabd9df5c35..247e1b7d333bfbd4aee7374d87515a1c09bd3cd4 100644
+index a89f393da6c06ba21d5303a925dd9e907bde5e03..e0106610831ca36544161672f3663e54b2585228 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -135,6 +135,17 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -138,6 +138,17 @@ void AddUiColorMixer(ColorProvider* provider,
        SetAlpha(GetColorWithMaxContrast(kColorOverlayScrollbarFillHoveredLight),
                 gfx::kGoogleGreyAlpha500);
    mixer[kColorProgressBar] = {kColorAccent};
@@ -76,7 +76,7 @@ index b438c8f4ef1ba2c835240c996e6addabd9df5c35..247e1b7d333bfbd4aee7374d87515a1c
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -210,6 +221,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -213,6 +224,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
