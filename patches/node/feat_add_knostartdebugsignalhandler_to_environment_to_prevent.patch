@@ -7,10 +7,10 @@ Subject: feat: add kNoStartDebugSignalHandler to Environment to prevent
 This patch should be upstreamed, it allows embedders to prevent the call to StartDebugSignalHandler which handles SIGUSR1 and starts the inspector agent.  Apps that have --inspect disabled also don't want SIGUSR1 to have this affect.
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 845e00208af4b12960ed8b3f3926323af7685185..1ebc33324907654d16e9c0e19b2955efbac7cac7 100644
+index 2da8174fe9e4209f4705af0a1cf8bca5928f088c..954602f3fc7c3344509bb57530840bb1dfeacab3 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -896,6 +896,10 @@ inline bool Environment::should_initialize_inspector() const {
+@@ -886,6 +886,10 @@ inline bool Environment::should_initialize_inspector() const {
    return (flags_ & EnvironmentFlags::kNoInitializeInspector) == 0;
  }
  
@@ -22,10 +22,10 @@ index 845e00208af4b12960ed8b3f3926323af7685185..1ebc33324907654d16e9c0e19b2955ef
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index ab8334bf0e3405fee4d21a4b541bd1164d92ca89..b2537ebd44bc5b37dd97752735f84e87de1f24bf 100644
+index 2554c530f2ca7078ed0cca03968b31f56027231b..1fbf965788f9c68d2999f38b40d39579f746d768 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1207,6 +1207,7 @@ class Environment : public MemoryRetainer {
+@@ -1216,6 +1216,7 @@ class Environment : public MemoryRetainer {
    inline bool hide_console_windows() const;
    inline bool no_global_search_paths() const;
    inline bool should_initialize_inspector() const;
@@ -34,7 +34,7 @@ index ab8334bf0e3405fee4d21a4b541bd1164d92ca89..b2537ebd44bc5b37dd97752735f84e87
    inline worker::Worker* worker_context() const;
    Environment* worker_parent_env() const;
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index c4a3322c6d972fc2052af75b79389c522924d9c5..39ff8df415be1908ba404fba34d9cedda04a88af 100644
+index fd9f514b9b6a7b7b1c1a6f5fe834f51266156596..14565f6885b3f88194b3b8efb340a4099ca1966c 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -680,8 +680,10 @@ bool Agent::Start(const std::string& path,
@@ -51,10 +51,10 @@ index c4a3322c6d972fc2052af75b79389c522924d9c5..39ff8df415be1908ba404fba34d9cedd
      parent_env_->AddCleanupHook([](void* data) {
        Environment* env = static_cast<Environment*>(data);
 diff --git a/src/node.h b/src/node.h
-index 4201c0d0460b032721ef42a26d79c38a9ee20c24..6873fc89406b046823db9e45234eb7f6b767099d 100644
+index b2b766f242e02593631be087fceaf63f71d74284..535df2d8dfb48ddc4d01e94565fdc527aed15ef7 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -425,7 +425,11 @@ enum Flags : uint64_t {
+@@ -444,7 +444,11 @@ enum Flags : uint64_t {
    // Controls whether or not the Environment should call InitializeInspector.
    // This control is needed by embedders who may not want to initialize the V8
    // inspector in situations where it already exists.
