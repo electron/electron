@@ -333,6 +333,7 @@ source_set("plugins") {
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
   ]
   deps += [
+    "//content/public/common",
     "//media:media_buildflags",
     "//ppapi/buildflags",
     "//ppapi/proxy:ipc",
@@ -353,9 +354,12 @@ source_set("plugins") {
   ]
   if (enable_pdf_viewer) {
     deps += [ "//components/pdf/renderer" ]
+  } else if (is_linux || is_chromeos) {
+    deps += [ "//pdf:font_table_linux" ]
   }
   deps += [
     "//components/strings",
+    "//content/public/common",
     "//media:media_buildflags",
     "//ppapi/host",
     "//ppapi/proxy",
