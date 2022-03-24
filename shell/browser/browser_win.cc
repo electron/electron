@@ -97,7 +97,7 @@ std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
     return std::wstring();
 
   wchar_t out_buffer[1024];
-  DWORD buffer_size = base::size(out_buffer);
+  DWORD buffer_size = std::size(out_buffer);
   HRESULT hr =
       AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(), NULL,
                        out_buffer, &buffer_size);

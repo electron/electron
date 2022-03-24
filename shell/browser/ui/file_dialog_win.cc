@@ -206,7 +206,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 
     wchar_t file_name[MAX_PATH];
     hr = GetFileNameFromShellItem(item, SIGDN_FILESYSPATH, file_name,
-                                  base::size(file_name));
+                                  std::size(file_name));
 
     if (FAILED(hr))
       return false;
