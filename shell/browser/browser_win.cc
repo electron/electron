@@ -41,6 +41,7 @@
 #include "shell/common/skia_util.h"
 #include "skia/ext/legacy_display_globals.h"
 #include "third_party/skia/include/core/SkFont.h"
+#include "third_party/skia/include/core/SkPaint.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 #include "ui/strings/grit/ui_strings.h"
