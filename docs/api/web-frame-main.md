@@ -195,3 +195,6 @@ have the same `routingId`.
 A `string` representing the [visibility state](https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilityState) of the frame.
 
 See also how the [Page Visibility API](browser-window.md#page-visibility) is affected by other Electron APIs.
+
+[SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
+[`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
