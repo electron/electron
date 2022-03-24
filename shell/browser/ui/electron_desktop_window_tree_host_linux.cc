@@ -22,6 +22,14 @@
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/non_client_view.h"
 
+#if defined(USE_OZONE)
+#include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
+#include "ui/ozone/public/ozone_platform.h"
+#endif
+
 namespace electron {
 
 ElectronDesktopWindowTreeHostLinux::ElectronDesktopWindowTreeHostLinux(
@@ -48,9 +56,18 @@ void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
     const BoundsChange& change) {
   views::DesktopWindowTreeHostLinux::OnBoundsChanged(change);
   UpdateFrameHints();
-  // The OnWindowStateChanged should receive all updates but currently it
-  // doesn't receive changes to fullscreen status, so we catch them here.
-  UpdateWindowState(platform_window()->GetPlatformWindowState());
+
+#if defined(USE_OZONE_PLATFORM_X11)
+  if (ui::OzonePlatform::GetInstance()
+          ->GetPlatformProperties()
+          .electron_can_call_x11) {
+    // The OnWindowStateChanged should receive all updates but currently under
+    // X11 it doesn't receive changes to the fullscreen status because chromium
+    // is handling the fullscreen state changes synchronously, see
+    // X11Window::ToggleFullscreen in ui/ozone/platform/x11/x11_window.cc.
+    UpdateWindowState(platform_window()->GetPlatformWindowState());
+  }
+#endif
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
