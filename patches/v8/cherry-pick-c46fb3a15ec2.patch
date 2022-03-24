@@ -1,0 +1,228 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Thu, 24 Feb 2022 14:53:01 +0100
+Subject: Fix bug in i32.atomic.sub32
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+{AtomicSub} on x64 first negates the {value} register, then does an
+atomic addition. For that reason, {value} should be a unique register.
+So far, we only checked that it's not used in the value stack, but we
+should also check for overlap with the destination address or the offset
+register.
+
+Drive-by: Remove unneeded handling of non-unique register index on arm,
+as that cannot happen (LiftoffCompiler ensures that the result register
+is unique).
+
+R=​thibaudm@chromium.org
+
+(cherry picked from commit b5003a3c631328bfbe3357dfea7aaebf46316c09)
+
+Bug: chromium:1296876
+Change-Id: Ie6b97eec8e8dea07b0bcc644d261f47467cc5b8e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3487987
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#79265}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3509394
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/9.6@{#52}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+
+diff --git a/src/wasm/baseline/arm/liftoff-assembler-arm.h b/src/wasm/baseline/arm/liftoff-assembler-arm.h
+index 211cf82398a20a16a42b5dd14464bd257d20d6ae..acc85556e1bc4810cb098c6d9c137bcf5cb5848a 100644
+--- a/src/wasm/baseline/arm/liftoff-assembler-arm.h
++++ b/src/wasm/baseline/arm/liftoff-assembler-arm.h
+@@ -897,12 +897,9 @@ inline void AtomicOp32(
+   // the same register.
+   Register temp = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+ 
+-  // Make sure that {result} is unique.
+-  Register result_reg = result.gp();
+-  if (result_reg == value.gp() || result_reg == dst_addr ||
+-      result_reg == offset_reg) {
+-    result_reg = __ GetUnusedRegister(kGpReg, pinned).gp();
+-  }
++  // {LiftoffCompiler::AtomicBinop} ensures that {result} is unique.
++  DCHECK(result.gp() != value.gp() && result.gp() != dst_addr &&
++         result.gp() != offset_reg);
+ 
+   UseScratchRegisterScope temps(lasm);
+   Register actual_addr = liftoff::CalculateActualAddress(
+@@ -911,15 +908,12 @@ inline void AtomicOp32(
+   __ dmb(ISH);
+   Label retry;
+   __ bind(&retry);
+-  (lasm->*load)(result_reg, actual_addr, al);
+-  op(lasm, temp, result_reg, value.gp());
++  (lasm->*load)(result.gp(), actual_addr, al);
++  op(lasm, temp, result.gp(), value.gp());
+   (lasm->*store)(store_result, temp, actual_addr, al);
+   __ cmp(store_result, Operand(0));
+   __ b(ne, &retry);
+   __ dmb(ISH);
+-  if (result_reg != result.gp()) {
+-    __ mov(result.gp(), result_reg);
+-  }
+ }
+ 
+ inline void Add(LiftoffAssembler* lasm, Register dst, Register lhs,
+diff --git a/src/wasm/baseline/arm64/liftoff-assembler-arm64.h b/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
+index e10a18a5607c0da96f469e32c27a35f963e36f68..8ac4c46eae543eaf301730ea927a0abbecfedb2e 100644
+--- a/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
++++ b/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
+@@ -641,12 +641,9 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
+       LiftoffRegList::ForRegs(dst_addr, offset_reg, value, result);
+   Register store_result = pinned.set(__ GetUnusedRegister(kGpReg, pinned)).gp();
+ 
+-  // Make sure that {result} is unique.
+-  Register result_reg = result.gp();
+-  if (result_reg == value.gp() || result_reg == dst_addr ||
+-      result_reg == offset_reg) {
+-    result_reg = __ GetUnusedRegister(kGpReg, pinned).gp();
+-  }
++  // {LiftoffCompiler::AtomicBinop} ensures that {result} is unique.
++  DCHECK(result.gp() != value.gp() && result.gp() != dst_addr &&
++         result.gp() != offset_reg);
+ 
+   UseScratchRegisterScope temps(lasm);
+   Register actual_addr = liftoff::CalculateActualAddress(
+@@ -662,18 +659,18 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
+   switch (type.value()) {
+     case StoreType::kI64Store8:
+     case StoreType::kI32Store8:
+-      __ ldaxrb(result_reg.W(), actual_addr);
++      __ ldaxrb(result.gp().W(), actual_addr);
+       break;
+     case StoreType::kI64Store16:
+     case StoreType::kI32Store16:
+-      __ ldaxrh(result_reg.W(), actual_addr);
++      __ ldaxrh(result.gp().W(), actual_addr);
+       break;
+     case StoreType::kI64Store32:
+     case StoreType::kI32Store:
+-      __ ldaxr(result_reg.W(), actual_addr);
++      __ ldaxr(result.gp().W(), actual_addr);
+       break;
+     case StoreType::kI64Store:
+-      __ ldaxr(result_reg.X(), actual_addr);
++      __ ldaxr(result.gp().X(), actual_addr);
+       break;
+     default:
+       UNREACHABLE();
+@@ -681,19 +678,19 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
+ 
+   switch (op) {
+     case Binop::kAdd:
+-      __ add(temp, result_reg, value.gp());
++      __ add(temp, result.gp(), value.gp());
+       break;
+     case Binop::kSub:
+-      __ sub(temp, result_reg, value.gp());
++      __ sub(temp, result.gp(), value.gp());
+       break;
+     case Binop::kAnd:
+-      __ and_(temp, result_reg, value.gp());
++      __ and_(temp, result.gp(), value.gp());
+       break;
+     case Binop::kOr:
+-      __ orr(temp, result_reg, value.gp());
++      __ orr(temp, result.gp(), value.gp());
+       break;
+     case Binop::kXor:
+-      __ eor(temp, result_reg, value.gp());
++      __ eor(temp, result.gp(), value.gp());
+       break;
+     case Binop::kExchange:
+       __ mov(temp, value.gp());
+@@ -721,10 +718,6 @@ inline void AtomicBinop(LiftoffAssembler* lasm, Register dst_addr,
+   }
+ 
+   __ Cbnz(store_result.W(), &retry);
+-
+-  if (result_reg != result.gp()) {
+-    __ mov(result.gp(), result_reg);
+-  }
+ }
+ 
+ #undef __
+diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
+index fc5684f42733c9c27c354bf8befc959dcef581c3..6835d8fe281ed8199404d53d2fc04a9721830504 100644
+--- a/src/wasm/baseline/liftoff-compiler.cc
++++ b/src/wasm/baseline/liftoff-compiler.cc
+@@ -2745,6 +2745,7 @@ class LiftoffCompiler {
+   void AlignmentCheckMem(FullDecoder* decoder, uint32_t access_size,
+                          uintptr_t offset, Register index,
+                          LiftoffRegList pinned) {
++    CODE_COMMENT("alignment check");
+     Label* trap_label =
+         AddOutOfLineTrap(decoder, WasmCode::kThrowWasmTrapUnalignedAccess, 0);
+     Register address = __ GetUnusedRegister(kGpReg, pinned).gp();
+@@ -4377,9 +4378,9 @@ class LiftoffCompiler {
+     LiftoffRegister value = pinned.set(__ PopToRegister());
+ #ifdef V8_TARGET_ARCH_IA32
+     // We have to reuse the value register as the result register so that we
+-    //  don't run out of registers on ia32. For this we use the value register
+-    //  as the result register if it has no other uses. Otherwise  we allocate
+-    //  a new register and let go of the value register to get spilled.
++    // don't run out of registers on ia32. For this we use the value register as
++    // the result register if it has no other uses. Otherwise we allocate a new
++    // register and let go of the value register to get spilled.
+     LiftoffRegister result = value;
+     if (__ cache_state()->is_used(value)) {
+       result = pinned.set(__ GetUnusedRegister(value.reg_class(), pinned));
+@@ -4399,6 +4400,7 @@ class LiftoffCompiler {
+     pinned.set(index);
+     AlignmentCheckMem(decoder, type.size(), imm.offset, index, pinned);
+ 
++    CODE_COMMENT("atomic binop");
+     uintptr_t offset = imm.offset;
+     Register addr = pinned.set(GetMemoryStart(pinned));
+ 
+diff --git a/src/wasm/baseline/x64/liftoff-assembler-x64.h b/src/wasm/baseline/x64/liftoff-assembler-x64.h
+index 890afa2eda9cded844b9a8de5081817bce5cf9ee..07986ceb62fd5a4d1a1847ec25fc7845191b3f32 100644
+--- a/src/wasm/baseline/x64/liftoff-assembler-x64.h
++++ b/src/wasm/baseline/x64/liftoff-assembler-x64.h
+@@ -601,8 +601,10 @@ void LiftoffAssembler::AtomicAdd(Register dst_addr, Register offset_reg,
+ void LiftoffAssembler::AtomicSub(Register dst_addr, Register offset_reg,
+                                  uintptr_t offset_imm, LiftoffRegister value,
+                                  LiftoffRegister result, StoreType type) {
+-  DCHECK(!cache_state()->is_used(result));
+-  if (cache_state()->is_used(value)) {
++  LiftoffRegList dont_overwrite = cache_state()->used_registers |
++                                  LiftoffRegList::ForRegs(dst_addr, offset_reg);
++  DCHECK(!dont_overwrite.has(result));
++  if (dont_overwrite.has(value)) {
+     // We cannot overwrite {value}, but the {value} register is changed in the
+     // code we generate. Therefore we copy {value} to {result} and use the
+     // {result} register in the code below.
+diff --git a/test/mjsunit/regress/wasm/regress-1296876.js b/test/mjsunit/regress/wasm/regress-1296876.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..96ce17b56d3ea9ad5d5fcedea57de11549a4c454
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-1296876.js
+@@ -0,0 +1,21 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --wasm-staging --experimental-wasm-gc
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++builder.addMemory(16, 32, false);
++builder.addFunction('main', kSig_i_iii)
++    .addBody([
++      kExprLocalGet, 1,                              // local.get
++      kExprLocalGet, 1,                              // local.get
++      kExprLocalGet, 0,                              // local.get
++      kExprLocalSet, 1,                              // local.set
++      kAtomicPrefix, kExprI32AtomicSub, 0x02, 0x26,  // i32.atomic.sub32
++    ])
++    .exportFunc();
++const instance = builder.instantiate();
++assertEquals(0, instance.exports.main(1, 2, 3));
