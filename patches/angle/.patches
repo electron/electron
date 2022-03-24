@@ -4,3 +4,4 @@ m98_vulkan_fix_vkcmdresolveimage_offsets.patch
 cherry-pick-49e8ff16f1fe.patch
 m99_vulkan_prevent_out_of_bounds_read_in_divisor_emulation_path.patch
 m99_vulkan_streamvertexdatawithdivisor_write_beyond_buffer_boundary.patch
+cherry-pick-2b75a29bf241.patch
