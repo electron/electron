@@ -3,7 +3,7 @@ import * as path from 'path';
 import { emittedOnce } from './events-helpers';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './window-helpers';
-import { defer, startRemoteControlApp } from './spec-helpers';
+import { defer, ifit, startRemoteControlApp } from './spec-helpers';
 import { areColorsSimilar, captureScreen, getPixelColor } from './screen-helpers';
 
 describe('BrowserView module', () => {
@@ -62,7 +62,7 @@ describe('BrowserView module', () => {
       }).to.throw(/conversion failure/);
     });
 
-    it('sets the background color to transparent if none is set', async () => {
+    ifit(process.platform !== 'linux')('sets the background color to transparent if none is set', async () => {
       const display = screen.getPrimaryDisplay();
       const WINDOW_BACKGROUND_COLOR = '#55ccbb';
 
@@ -85,7 +85,7 @@ describe('BrowserView module', () => {
       expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
     });
 
-    it('successfully applies the background color', async () => {
+    ifit(process.platform !== 'linux')('successfully applies the background color', async () => {
       const WINDOW_BACKGROUND_COLOR = '#55ccbb';
       const VIEW_BACKGROUND_COLOR = '#ff00ff';
       const display = screen.getPrimaryDisplay();
