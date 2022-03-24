@@ -1084,7 +1084,10 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('<webview>.capturePage()', () => {
+  // TODO(nornagon): this seems to have become much less reliable as of
+  // https://github.com/electron/electron/pull/32419. Tracked at
+  // https://github.com/electron/electron/issues/32705.
+  describe.skip('<webview>.capturePage()', () => {
     before(function () {
       // TODO(miniak): figure out why this is failing on windows
       if (process.platform === 'win32') {
