@@ -10,7 +10,7 @@ track exactly which processes have exited. Should also be a slight speed
 improvement for excessively large numbers of live children.
 
 diff --git a/deps/uv/src/unix/kqueue.c b/deps/uv/src/unix/kqueue.c
-index 071fe0ce0938657d0fb840af62a432352e938a8a..4c4d990ff5fa6c8ab937be2e4f79ccdaf90670c2 100644
+index 857eb1d54bfde99754ce2c6e92a287c288bd9f52..036055149fcabcb9ff8f43522120c82b3474ab99 100644
 --- a/deps/uv/src/unix/kqueue.c
 +++ b/deps/uv/src/unix/kqueue.c
 @@ -117,6 +117,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
