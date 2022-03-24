@@ -25,7 +25,7 @@ index 16be13b99f5db77741aa276e90a437ef4eb5ba32..2dcc8b32f5165dd75061a1b55cc1abd2
  
  /* flags of excluding ifaddr */
 diff --git a/deps/uv/src/unix/kqueue.c b/deps/uv/src/unix/kqueue.c
-index 35200f17495d80ed2d19ef9f6f76bbc92ee042f6..071fe0ce0938657d0fb840af62a432352e938a8a 100644
+index efbc561dee2574f06ebd9408d1e89e435c93cc5a..857eb1d54bfde99754ce2c6e92a287c288bd9f52 100644
 --- a/deps/uv/src/unix/kqueue.c
 +++ b/deps/uv/src/unix/kqueue.c
 @@ -285,7 +285,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
@@ -37,7 +37,7 @@ index 35200f17495d80ed2d19ef9f6f76bbc92ee042f6..071fe0ce0938657d0fb840af62a43235
          nevents++;
          continue;
        }
-@@ -383,6 +383,11 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
+@@ -382,6 +382,11 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
        nevents++;
      }
  
