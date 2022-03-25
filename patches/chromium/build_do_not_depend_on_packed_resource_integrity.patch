@@ -33,7 +33,7 @@ index a6e0a53d4ebbd585114bc0cda2e2d1caaab4a015..95a7e70eee0303471702b81c68f46a0f
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index fca255a2cd49f1f5d2bcb4418b04355c5befba38..2a0f3edc10a7ba48ee5a0efac0a6053f62b184e0 100644
+index 5bbb64d83e2024feeb7a2eae45f6b8e937fc927c..20004fb890e726d11dc672894cdba4645b0a3606 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4508,7 +4508,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index fca255a2cd49f1f5d2bcb4418b04355c5befba38..2a0f3edc10a7ba48ee5a0efac0a6053f
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 3a3318c9586c88af0333d1b7586cbb426c205e7d..183d0c8ceb42a23424c3aa6d21c72e0a197ae638 100644
+index 3d7606b8d7d5f1ec61c9c00be0cc530967985e4b..044b52e00d8b334e90a9f1126b5bc3df916a1af3 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5904,7 +5904,6 @@ test("unit_tests") {
+@@ -5907,7 +5907,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 3a3318c9586c88af0333d1b7586cbb426c205e7d..183d0c8ceb42a23424c3aa6d21c72e0a
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/browser:chrome_process_finder",
-@@ -5927,6 +5926,10 @@ test("unit_tests") {
+@@ -5930,6 +5929,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 3a3318c9586c88af0333d1b7586cbb426c205e7d..183d0c8ceb42a23424c3aa6d21c72e0a
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6616,7 +6619,6 @@ test("unit_tests") {
+@@ -6619,7 +6622,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 3a3318c9586c88af0333d1b7586cbb426c205e7d..183d0c8ceb42a23424c3aa6d21c72e0a
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6662,6 +6664,11 @@ test("unit_tests") {
+@@ -6664,6 +6666,11 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
