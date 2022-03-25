@@ -62,6 +62,14 @@ SkColor WinFrameView::GetReadableFeatureColor(SkColor background_color) {
                                                   : SK_ColorBLACK;
 }
 
+void WinFrameView::InvalidateCaptionButtons() {
+  // Ensure that the caption buttons container exists
+  DCHECK(caption_button_container_);
+
+  caption_button_container_->InvalidateLayout();
+  caption_button_container_->SchedulePaint();
+}
+
 gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
   return views::GetWindowBoundsForClientBounds(
