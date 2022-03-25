@@ -234,7 +234,7 @@ ElectronMainDelegate::~ElectronMainDelegate() = default;
 const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
     extensions::kExtensionScheme};
 const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
-    base::size(kNonWildcardDomainNonPortSchemes);
+    std::size(kNonWildcardDomainNonPortSchemes);
 
 bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();

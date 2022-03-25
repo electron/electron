@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "shell/common/api/api.mojom.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if BUILDFLAG(IS_WIN)

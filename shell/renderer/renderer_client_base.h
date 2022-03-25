@@ -16,12 +16,8 @@
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
-#include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
-#endif
-
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/renderer/pepper/chrome_pdf_print_client.h"  // nogncheck
+#include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -105,13 +101,14 @@ class RendererClientBase : public content::ContentRendererClient
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
   void GetSupportedKeySystems(media::GetSupportedKeySystemsCB cb) override;
-  bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
                                  const GURL& original_url,
                                  const std::string& mime_type) override;
-  bool IsOriginIsolatedPepperPlugin(const base::FilePath& plugin_path) override;
+  v8::Local<v8::Object> GetScriptableObject(
+      const blink::WebElement& plugin_element,
+      v8::Isolate* isolate) override;
 
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
@@ -152,18 +149,12 @@ class RendererClientBase : public content::ContentRendererClient
   std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
-  ChromeKeySystemsProvider key_systems_provider_;
-#endif
   std::string renderer_client_id_;
   // An increasing ID used for identifying an V8 context in this process.
   int64_t next_context_id_ = 0;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   std::unique_ptr<SpellCheck> spellcheck_;
-#endif
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  std::unique_ptr<ChromePDFPrintClient> pdf_print_client_;
 #endif
 };
 

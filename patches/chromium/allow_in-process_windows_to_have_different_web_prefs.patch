@@ -8,10 +8,10 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 30e237f886b41bdf528b2a0e81054d15fb323f1f..43f7920cf6ff12d8a48ddef5440814a42266e8c5 100644
+index effc18673a7f832352f427c9f4fb8b276fc28ad6..96b67b56002f88e0f4e2af9997aa6a78a1accd96 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -145,6 +145,20 @@ WebPreferences::WebPreferences()
+@@ -144,6 +144,20 @@ WebPreferences::WebPreferences()
        fake_no_alloc_direct_call_for_testing_enabled(false),
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
@@ -33,7 +33,7 @@ index 30e237f886b41bdf528b2a0e81054d15fb323f1f..43f7920cf6ff12d8a48ddef5440814a4
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index d278453a261fe2dd3bacce433e35d50879b555a7..140f8d6273d944bfe36831d27aef757d89240b56 100644
+index a62792e0d484dc133f1df34a2c67dde838db203c..ef77424fc6778b047ac98700a5e18a3b6b161aba 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -22,6 +22,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -47,7 +47,7 @@ index d278453a261fe2dd3bacce433e35d50879b555a7..140f8d6273d944bfe36831d27aef757d
        !data.ReadLazyFrameLoadingDistanceThresholdsPx(
            &out->lazy_frame_loading_distance_thresholds_px) ||
        !data.ReadLazyImageLoadingDistanceThresholdsPx(
-@@ -151,6 +155,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -150,6 +154,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
        data.fake_no_alloc_direct_call_for_testing_enabled();
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
@@ -68,7 +68,7 @@ index d278453a261fe2dd3bacce433e35d50879b555a7..140f8d6273d944bfe36831d27aef757d
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 8509f720c5afb816c6cbb2313dd566a24236a790..b9f0f79d96c58a7769939610bb72f8b2bcd3be94 100644
+index 27d0bcc02a57b1a8f8f8e25df7af383d0e9a8c00..1cb920f4d0b01df012bc9b60eb3d9caa555d4e9e 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -79,7 +79,7 @@ index 8509f720c5afb816c6cbb2313dd566a24236a790..b9f0f79d96c58a7769939610bb72f8b2
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -160,6 +161,22 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -159,6 +160,22 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
@@ -103,7 +103,7 @@ index 8509f720c5afb816c6cbb2313dd566a24236a790..b9f0f79d96c58a7769939610bb72f8b2
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index a6291be3e953ceaee1d996e4b30a6ae78916bc7a..c3baf95c5d9b6a6ace56bcde9e1dc8179f18eaa0 100644
+index 0f5ed102b071001acc566b258946b359d33f5d45..aac80b973e4622d2207b92fcd2537342a60c6909 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -114,7 +114,7 @@ index a6291be3e953ceaee1d996e4b30a6ae78916bc7a..c3baf95c5d9b6a6ace56bcde9e1dc817
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -441,6 +442,60 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -436,6 +437,60 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.record_whole_document;
    }
  
@@ -176,7 +176,7 @@ index a6291be3e953ceaee1d996e4b30a6ae78916bc7a..c3baf95c5d9b6a6ace56bcde9e1dc817
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 96dd9fd56e44e66c5ea24d9df7c6cbff25409d6c..e0d113b4dee6a72f350b8494448f516be01d0468 100644
+index 4feef4089d59cef252ba73f49d4e490875f657ff..db92219655b824ca630edb6afe85d85e017a4a06 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";
@@ -187,7 +187,7 @@ index 96dd9fd56e44e66c5ea24d9df7c6cbff25409d6c..e0d113b4dee6a72f350b8494448f516b
  
  enum PointerType {
    kPointerNone                              = 1,             // 1 << 0
-@@ -212,6 +213,22 @@ struct WebPreferences {
+@@ -211,6 +212,22 @@ struct WebPreferences {
    V8CacheOptions v8_cache_options;
    bool record_whole_document;
  

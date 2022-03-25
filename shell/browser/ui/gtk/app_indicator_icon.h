@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
 #include "base/nix/xdg_util.h"
+#include "third_party/skia/include/core/SkImage.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/views/linux_ui/status_icon_linux.h"
 

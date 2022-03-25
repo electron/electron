@@ -93,7 +93,7 @@ bool ConvertShellLinkToJumpListItem(IShellLink* shell_link,
 
   item->type = JumpListItem::Type::kTask;
   wchar_t path[MAX_PATH];
-  if (FAILED(shell_link->GetPath(path, base::size(path), nullptr, 0)))
+  if (FAILED(shell_link->GetPath(path, std::size(path), nullptr, 0)))
     return false;
 
   item->path = base::FilePath(path);
@@ -111,18 +111,18 @@ bool ConvertShellLinkToJumpListItem(IShellLink* shell_link,
     item->title = prop.get().pwszVal;
   }
 
-  if (SUCCEEDED(shell_link->GetWorkingDirectory(path, base::size(path))))
+  if (SUCCEEDED(shell_link->GetWorkingDirectory(path, std::size(path))))
     item->working_dir = base::FilePath(path);
 
   int icon_index;
   if (SUCCEEDED(
-          shell_link->GetIconLocation(path, base::size(path), &icon_index))) {
+          shell_link->GetIconLocation(path, std::size(path), &icon_index))) {
     item->icon_path = base::FilePath(path);
     item->icon_index = icon_index;
   }
 
   wchar_t item_desc[INFOTIPSIZE];
-  if (SUCCEEDED(shell_link->GetDescription(item_desc, base::size(item_desc))))
+  if (SUCCEEDED(shell_link->GetDescription(item_desc, std::size(item_desc))))
     item->description = item_desc;
 
   return true;
