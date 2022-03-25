@@ -181,7 +181,13 @@ class NativeWindowViews : public NativeWindow,
            titlebar_overlay_;
   }
   SkColor overlay_button_color() const { return overlay_button_color_; }
+  void set_overlay_button_color(SkColor color) {
+    overlay_button_color_ = color;
+  }
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+  void set_overlay_symbol_color(SkColor color) {
+    overlay_symbol_color_ = color;
+  }
 #endif
 
  private:

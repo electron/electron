@@ -30,6 +30,9 @@ class WinFrameView : public FramelessView {
 
   SkColor GetReadableFeatureColor(SkColor background_color);
 
+  // Tells the NonClientView to invalidate the WinFrameView's caption buttons.
+  void InvalidateCaptionButtons();
+
   // views::NonClientFrameView:
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
