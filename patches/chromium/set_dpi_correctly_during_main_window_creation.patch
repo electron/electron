@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bruce Dawson <brucedawson@chromium.org>
+Date: Tue, 11 Jan 2022 21:22:18 +0000
+Subject: Set dpi_ correctly during main window creation
+
+For some Chrome windows the dpi_ setting cannot be set during window
+creation because the window location is not yet known. For other windows
+the dpi_ setting _must_ be set during window creation. This change
+handles both cases by setting dpi_ if the window size/location is being
+specified. This then handles both the task manager and main window
+cases.
+
+Bug: 1282804
+Change-Id: Ic85dfb1646e9d063af324cc79736b660cea1acdc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3378579
+Reviewed-by: Robert Liao <robliao@chromium.org>
+Commit-Queue: Bruce Dawson <brucedawson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#957715}
+
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 76dcfa99e9958d66ccd17db914aaafa354a03682..de9eb9e059a1fcf4656687a74c171439be84c48c 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -444,6 +444,7 @@ void HWNDMessageHandler::Init(HWND parent, const gfx::Rect& bounds) {
+   GetMonitorAndRects(bounds.ToRECT(), &last_monitor_, &last_monitor_rect_,
+                      &last_work_area_);
+ 
++  initial_bounds_valid_ = !bounds.IsEmpty();
+   // Create the window.
+   WindowImpl::Init(parent, bounds);
+ 
+@@ -1667,6 +1668,12 @@ LRESULT HWNDMessageHandler::OnCreate(CREATESTRUCT* create_struct) {
+       std::make_unique<ui::SessionChangeObserver>(base::BindRepeating(
+           &HWNDMessageHandler::OnSessionChange, base::Unretained(this)));
+ 
++  // If the window was initialized with a specific size/location then we know
++  // the DPI and thus must initialize dpi_ now. See https://crbug.com/1282804
++  // for details.
++  if (initial_bounds_valid_)
++    dpi_ = display::win::ScreenWin::GetDPIForHWND(hwnd());
++
+   // TODO(beng): move more of NWW::OnCreate here.
+   return 0;
+ }
+diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
+index 36caa4704af99a6769cf359582a11b025a2b24a0..55e3d7cbc2787938a26230cddb5974133bf85a33 100644
+--- a/ui/views/win/hwnd_message_handler.h
++++ b/ui/views/win/hwnd_message_handler.h
+@@ -647,6 +647,10 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+   // The current DPI.
+   int dpi_;
+ 
++  // This is true if the window is created with a specific size/location, as
++  // opposed to having them set after window creation.
++  bool initial_bounds_valid_ = false;
++
+   // Whether EnableNonClientDpiScaling was called successfully with this window.
+   // This flag exists because EnableNonClientDpiScaling must be called during
+   // WM_NCCREATE and EnableChildWindowDpiMessage is called after window
