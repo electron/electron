@@ -1,21 +1,8 @@
-gclient_gn_args_file = 'src/build/config/gclient_args.gni'
-gclient_gn_args = [
-  'build_with_chromium',
-  'checkout_android',
-  'checkout_android_native_support',
-  'checkout_libaom',
-  'checkout_nacl',
-  'checkout_pgo_profiles',
-  'checkout_oculus_sdk',
-  'checkout_openxr',
-  'checkout_google_benchmark',
-  'mac_xcode_version',
-  'generate_location_tags',
-]
+gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '100.0.4894.0',
+    '102.0.4961.0',
   'node_version':
     'v16.14.2',
   'nan_version':

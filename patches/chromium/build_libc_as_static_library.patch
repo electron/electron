@@ -7,7 +7,7 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index 7915346430db72d18474d7a011b8dc7637c3f281..cd736d988f9c5e37dc24c724268fe115e00914d9 100644
+index dec348e235b1306cec50e0602fb910f21eaed925..0545e0ce5490df51088ca7a4cacd968e69fa0d09 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
 @@ -44,7 +44,11 @@ config("winver") {
@@ -32,7 +32,7 @@ index 7915346430db72d18474d7a011b8dc7637c3f281..cd736d988f9c5e37dc24c724268fe115
    ]
    if (is_linux && !is_chromeos) {
 diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
-index 1b0bea340d6e8aec153add6f184e382172916f8b..f5a8193e6b72f4cc039b95783be7d254b93911d8 100644
+index 40f1285f14c0843405e0ee51879b8742285a006d..5be895d3e36df53a5960006a1513f1322400fd23 100644
 --- a/buildtools/third_party/libc++abi/BUILD.gn
 +++ b/buildtools/third_party/libc++abi/BUILD.gn
 @@ -4,7 +4,7 @@

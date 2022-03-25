@@ -37,7 +37,8 @@ class ElectronMessagingDelegate : public MessagingDelegate {
       const std::string& extension_id,
       const PortId& receiver_port_id,
       content::WebContents* receiver_contents,
-      int receiver_frame_id) override;
+      int receiver_frame_id,
+      const std::string& receiver_document_id) override;
   std::unique_ptr<MessagePort> CreateReceiverForNativeApp(
       content::BrowserContext* browser_context,
       base::WeakPtr<MessagePort::ChannelDelegate> channel_delegate,

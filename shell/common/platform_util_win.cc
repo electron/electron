@@ -288,7 +288,7 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
     return;
 
   const ITEMIDLIST* highlight[] = {file_item};
-  hr = SHOpenFolderAndSelectItems(dir_item, base::size(highlight), highlight,
+  hr = SHOpenFolderAndSelectItems(dir_item, std::size(highlight), highlight,
                                   NULL);
   if (FAILED(hr)) {
     // On some systems, the above call mysteriously fails with "file not

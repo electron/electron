@@ -75,13 +75,40 @@ std::unique_ptr<MessagePort> ElectronMessagingDelegate::CreateReceiverForTab(
     const std::string& extension_id,
     const PortId& receiver_port_id,
     content::WebContents* receiver_contents,
-    int receiver_frame_id) {
+    int receiver_frame_id,
+    const std::string& receiver_document_id) {
   // Frame ID -1 is every frame in the tab.
-  bool include_child_frames = receiver_frame_id == -1;
-  content::RenderFrameHost* receiver_rfh =
-      include_child_frames ? receiver_contents->GetMainFrame()
-                           : ExtensionApiFrameIdMap::GetRenderFrameHostById(
-                                 receiver_contents, receiver_frame_id);
+  bool include_child_frames =
+      receiver_frame_id == -1 && receiver_document_id.empty();
+
+  content::RenderFrameHost* receiver_rfh = nullptr;
+  if (include_child_frames) {
+    // The target is the active outermost main frame of the WebContents.
+    receiver_rfh = receiver_contents->GetMainFrame();
+  } else if (!receiver_document_id.empty()) {
+    ExtensionApiFrameIdMap::DocumentId document_id =
+        ExtensionApiFrameIdMap::DocumentIdFromString(receiver_document_id);
+
+    // Return early for invalid documentIds.
+    if (!document_id)
+      return nullptr;
+
+    receiver_rfh =
+        ExtensionApiFrameIdMap::Get()->GetRenderFrameHostByDocumentId(
+            document_id);
+
+    // If both |document_id| and |receiver_frame_id| are provided they
+    // should find the same RenderFrameHost, if not return early.
+    if (receiver_frame_id != -1 &&
+        ExtensionApiFrameIdMap::GetRenderFrameHostById(
+            receiver_contents, receiver_frame_id) != receiver_rfh) {
+      return nullptr;
+    }
+  } else {
+    DCHECK_GT(receiver_frame_id, -1);
+    receiver_rfh = ExtensionApiFrameIdMap::GetRenderFrameHostById(
+        receiver_contents, receiver_frame_id);
+  }
   if (!receiver_rfh)
     return nullptr;
 

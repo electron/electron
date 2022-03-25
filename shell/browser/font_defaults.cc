@@ -103,7 +103,7 @@ const FontDefault kFontDefaults[] = {
      IDS_FIXED_FONT_FAMILY_TRADITIONAL_HAN},
 #endif
 };
-const size_t kFontDefaultsLength = base::size(kFontDefaults);
+const size_t kFontDefaultsLength = std::size(kFontDefaults);
 
 // ^^^^^ DO NOT EDIT ^^^^^
 

@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Tue, 22 Mar 2022 16:24:44 -0500
+Subject: build: make libcxx_abi_unstable false for electron
+
+https://nornagon.medium.com/a-libc-odyssey-973e51649063
+
+diff --git a/build/config/c++/BUILD.gn b/build/config/c++/BUILD.gn
+index 046792ac275853bf109537589b911cfada44ed24..e43daeaa8f8c8e23eea99b3f8f5f48f92012bbc1 100644
+--- a/build/config/c++/BUILD.gn
++++ b/build/config/c++/BUILD.gn
+@@ -8,6 +8,11 @@ assert(use_custom_libcxx, "should only be used if use_custom_libcxx is set")
+ 
+ libcxx_abi_unstable = true
+ 
++if (is_electron_build) {
++  # This breaks native node modules
++  libcxx_abi_unstable = false
++}
++
+ # TODO(xiaohuic): https://crbug/917533 Crashes on internal ChromeOS build.
+ # Do unconditionally once the underlying problem is fixed.
+ if (is_chromeos_ash && is_chrome_branded) {

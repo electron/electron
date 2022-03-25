@@ -79,17 +79,17 @@ struct Converter<blink::WebLocalFrame::ScriptExecutionType> {
 };
 
 template <>
-struct Converter<blink::WebDocument::CSSOrigin> {
+struct Converter<blink::WebCssOrigin> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     blink::WebDocument::CSSOrigin* out) {
+                     blink::WebCssOrigin* out) {
     std::string css_origin;
     if (!ConvertFromV8(isolate, val, &css_origin))
       return false;
     if (css_origin == "user") {
-      *out = blink::WebDocument::CSSOrigin::kUserOrigin;
+      *out = blink::WebCssOrigin::kUser;
     } else if (css_origin == "author") {
-      *out = blink::WebDocument::CSSOrigin::kAuthorOrigin;
+      *out = blink::WebCssOrigin::kAuthor;
     } else {
       return false;
     }
@@ -613,8 +613,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   std::u16string InsertCSS(v8::Isolate* isolate,
                            const std::string& css,
                            gin::Arguments* args) {
-    blink::WebDocument::CSSOrigin css_origin =
-        blink::WebDocument::CSSOrigin::kAuthorOrigin;
+    blink::WebCssOrigin css_origin = blink::WebCssOrigin::kAuthor;
 
     gin_helper::Dictionary options;
     if (args->GetNext(&options))
