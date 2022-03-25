@@ -29,7 +29,7 @@
 #include "shell/browser/native_window_views.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
+#if defined(OS_WIN)
 #include "shell/browser/ui/views/win_frame_view.h"
 #endif
 
@@ -476,7 +476,7 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
-#if BUILDFLAG(IS_WIN)
+#if defined(OS_WIN)
 void BrowserWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
                                        gin_helper::Arguments* args) {
   // Ensure WCO is already enabled on this window
@@ -593,7 +593,7 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
       .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
       .SetMethod("isWebViewFocused", &BrowserWindow::IsWebViewFocused)
-#if BUILDFLAG(IS_WIN)
+#if defined(OS_WIN)
       .SetMethod("setTitleBarOverlay", &BrowserWindow::SetTitleBarOverlay)
 #endif
       .SetProperty("webContents", &BrowserWindow::GetWebContents);
