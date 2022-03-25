@@ -13,7 +13,7 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index 8b196e1a10c96443a912eaaeb9327982618efa41..73105fbc3ce41cec821aa1b25006fcf202a4ae77 100644
+index 8b196e1a10c96443a912eaaeb9327982618efa41..2f6939a6af34b901a8d1743a8559d5c3bfdb2d04 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
 @@ -288,12 +288,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
@@ -31,19 +31,15 @@ index 8b196e1a10c96443a912eaaeb9327982618efa41..73105fbc3ce41cec821aa1b25006fcf2
        tme.hwndTrack = hwnd();
        tme.dwHoverTime = 0;
        TrackMouseEvent(&tme);
-@@ -319,12 +319,11 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
-         message, w_param, l_param, &msg_handled);
-     handled = msg_handled;
-     // If the parent did not handle non client mouse messages, we call
--    // DefWindowProc on the message with the parent window handle. This
--    // ensures that WM_SYSCOMMAND is generated for the parent and we are
--    // out of the picture.
-+    // DefWindowProc on the message. This ensures that WM_SYSCOMMAND is
-+    // generated.
+@@ -324,7 +324,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+     // out of the picture.
      if (!handled &&
           (message >= WM_NCMOUSEMOVE && message <= WM_NCXBUTTONDBLCLK)) {
 -      ret = ::DefWindowProc(GetParent(), message, w_param, l_param);
-+      ret = ::DefWindowProc(hwnd(), message, w_param, l_param);
++      // Send WM_NCMOUSEMOVE messages using the LegacyRenderWidgetHostHWND's
++      // handle so mouse tracking on non-client areas doesn't break.
++      HWND target = message == WM_NCMOUSEMOVE ? hwnd() : GetParent();
++      ret = ::DefWindowProc(target, message, w_param, l_param);
        handled = TRUE;
      }
    }
