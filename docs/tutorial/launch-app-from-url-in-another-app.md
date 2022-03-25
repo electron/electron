@@ -84,6 +84,7 @@ if (!gotTheLock) {
     createWindow()
   })
 
+  // Isn't this event mac only?
   // Handle the protocol. In this case, we choose to show an Error Box.
   app.on('open-url', (event, url) => {
     dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
