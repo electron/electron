@@ -108,10 +108,10 @@ index 6688ba8ba2fb7d930773144cdbc43f1f6fa2b685..22015c7b9b50e1264551ce226757f90e
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index ace0c593debb46c9238e5708634fc6088a1bc715..31d5c0f00ae43706f16fc8615761e96eab31f1f3 100644
+index 70ee9049e3cb73f55bed81c3e08037df2f4c9e07..8d230826aaf867d9046a6b9ac93a60f4750e52be 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1770,12 +1770,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1786,12 +1786,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -246,10 +246,10 @@ index c6bd5c19f8a7ceec17c9e32af5296a9617f3a619..02199b439fba7fdc617b7f7980d958b7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d69e028b34ab4407abcdea3ece93db39926c587e..a82b571fdabe90771bc8f8ed4ae40df3085592c7 100644
+index cdbdf2b824fb2643f4182c283a01410e682913e9..70831b3506a2b2711e3a465d542eda1bfeb0a287 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3879,8 +3879,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3885,8 +3885,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -274,10 +274,10 @@ index 7bb1680553c405a9016cfd67eca5fa3c6439b692..3aa2cca04340098859e1072eaa80a46a
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index a998c64237a7ffd6583a33cd54fe3229196300a6..4f57227a9033f905be13bc5166d0324d495a6531 100644
+index eeafde1fa6067804665954525eafdd482d8eb3f3..b17f371aa489a5b61c28fbcd316b19815f072df9 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -318,8 +318,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -317,8 +317,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

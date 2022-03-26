@@ -10,8 +10,6 @@ majority of changes originally come from these PRs:
 
 This patch also fixes callback for manual user cancellation and success.
 
-Patch-Filename: printing.patch
-
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
 index 8d40bbf98d4d58704f118cb42039b0956a9f6639..06196c0fa02012a5faa82471bd39fac087918f54 100644
 --- a/chrome/browser/printing/print_job.cc
