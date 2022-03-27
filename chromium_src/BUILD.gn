@@ -55,6 +55,8 @@ static_library("chrome") {
     "//chrome/browser/process_singleton.h",
     "//chrome/browser/process_singleton_internal.cc",
     "//chrome/browser/process_singleton_internal.h",
+    "//chrome/browser/ui/blocked_content/popunder_preventer.cc",
+    "//chrome/browser/ui/blocked_content/popunder_preventer.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.cc",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc",
