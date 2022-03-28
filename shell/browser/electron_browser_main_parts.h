@@ -36,12 +36,6 @@ class Screen;
 }
 #endif
 
-#if defined(USE_X11)
-namespace ui {
-class GtkUiPlatform;
-}
-#endif
-
 namespace device {
 class GeolocationManager;
 }
