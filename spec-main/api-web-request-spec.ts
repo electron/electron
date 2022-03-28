@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as url from 'url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
-import { AddressInfo } from 'net';
+import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -481,8 +481,8 @@ describe('webRequest module', () => {
       server.on('upgrade', function upgrade (request, socket, head) {
         const pathname = require('url').parse(request.url).pathname;
         if (pathname === '/websocket') {
-          reqHeaders[request.url] = request.headers;
-          wss.handleUpgrade(request, socket, head, function done (ws) {
+          reqHeaders[request.url!] = request.headers;
+          wss.handleUpgrade(request, socket as Socket, head, function done (ws) {
             wss.emit('connection', ws, request);
           });
         }
