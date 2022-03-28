@@ -1,7 +1,7 @@
-From 26b7ad6967b1d192ffffafb91e8f42e74aa40e55 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Thu, 24 Mar 2022 17:39:08 +0100
-Subject: [PATCH] [M96-LTS][runtime] Fix handling of interceptors
+Subject: Fix handling of interceptors
 
 (cherry picked from commit 0981e91a4f8692af337e2588562ad1504f4bffdc)
 
@@ -18,13 +18,12 @@ Commit-Queue: Lutz Vahl <vahl@chromium.org>
 Cr-Commit-Position: refs/branch-heads/9.6@{#54}
 Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
 Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
----
 
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index db5a905..8a86515 100644
+index db5a905f9c763c732770813a283ea02b0d121a2e..8a865151aeb5778a0fc4a0f16ac2707019e9e5d6 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
-@@ -2493,6 +2493,12 @@
+@@ -2493,6 +2493,12 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
            Maybe<bool> result =
                JSObject::SetPropertyWithInterceptor(it, should_throw, value);
            if (result.IsNothing() || result.FromJust()) return result;
@@ -37,7 +36,7 @@ index db5a905..8a86515 100644
          } else {
            Maybe<PropertyAttributes> maybe_attributes =
                JSObject::GetPropertyAttributesWithInterceptor(it);
-@@ -2513,10 +2519,8 @@
+@@ -2513,10 +2519,8 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
              // property to the receiver.
              it->NotFound();
            }
@@ -50,10 +49,10 @@ index db5a905..8a86515 100644
  
        case LookupIterator::ACCESSOR: {
 diff --git a/test/cctest/test-api-interceptors.cc b/test/cctest/test-api-interceptors.cc
-index 25a5bdd..3ba70e4 100644
+index 25a5bdd4f5831942819aedbaa2d56f0e6cdb6ea6..3ba70e41b1c48354ca038bc57452d4e50050a24e 100644
 --- a/test/cctest/test-api-interceptors.cc
 +++ b/test/cctest/test-api-interceptors.cc
-@@ -5636,10 +5636,10 @@
+@@ -5636,10 +5636,10 @@ void DatabaseGetter(Local<Name> name,
                      const v8::PropertyCallbackInfo<Value>& info) {
    ApiTestFuzzer::Fuzz();
    auto context = info.GetIsolate()->GetCurrentContext();
@@ -69,10 +68,10 @@ index 25a5bdd..3ba70e4 100644
    info.GetReturnValue().Set(db->Get(context, name).ToLocalChecked());
  }
 diff --git a/test/unittests/api/interceptor-unittest.cc b/test/unittests/api/interceptor-unittest.cc
-index a1f6cbd..635bf6a 100644
+index a1f6cbdc369e1d7b0eb38e96ce43e1dce9025b1e..635bf6a0b72f8d49591be333b1314846c9c47269 100644
 --- a/test/unittests/api/interceptor-unittest.cc
 +++ b/test/unittests/api/interceptor-unittest.cc
-@@ -174,8 +174,8 @@
+@@ -174,8 +174,8 @@ TEST_F(InterceptorLoggingTest, DispatchTest) {
    EXPECT_EQ(Run("obj.foo"), "named getter");
    EXPECT_EQ(Run("obj[42]"), "indexed getter");
  
