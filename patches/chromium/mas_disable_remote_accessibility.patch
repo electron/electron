@@ -44,7 +44,7 @@ index 9734fb620a9a4010083af41a9e5cea038556eef5..05c95fb9b15f5ccbfecaee29d360dd27
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index fedefafc9837f681ad1c3fc48d06a333fea893e2..f07a090c24382c9330e8bd8baa3de47ec76da956 100644
+index cb82b91eb2e62453bcf2e3dd47f1b44d927e37d9..a35a14928d63a25284768de2ef67f2de2bedd133 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -561,10 +561,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -167,7 +167,7 @@ index 09ada3b859e1862cbf365960422871a56af54983..58002d37ba340f84f47e2522c0d7bf7c
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 37f37c3a8e8a00cf9d4b8959ac2d97fe31629ad8..fa06bafbbaa69a20ce5a3260ca92947cb2bb9228 100644
+index 0d7d47d1260d47959b0fa9f116a039c8b8307c96..15cc28a9bbc7b33a727e7c172207262902835ccc 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -317,6 +317,13 @@ component("base") {
