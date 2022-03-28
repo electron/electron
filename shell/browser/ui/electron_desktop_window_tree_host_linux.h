@@ -13,6 +13,7 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "ui/native_theme/native_theme_observer.h"
+#include "ui/platform_window/platform_window.h"
 #include "ui/views/linux_ui/device_scale_factor_observer.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 
@@ -54,6 +55,7 @@ class ElectronDesktopWindowTreeHostLinux
  private:
   void UpdateFrameHints();
   void UpdateClientDecorationHints(ClientFrameViewLinux* view);
+  void UpdateWindowState(ui::PlatformWindowState new_state);
 
   NativeWindowViews* native_window_view_;  // weak ref
 
@@ -64,6 +66,7 @@ class ElectronDesktopWindowTreeHostLinux
                           &views::LinuxUI::AddDeviceScaleFactorObserver,
                           &views::LinuxUI::RemoveDeviceScaleFactorObserver>
       scale_observation_{this};
+  ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
 };
 
 }  // namespace electron
