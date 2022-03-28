@@ -253,7 +253,7 @@ declare namespace NodeJS {
     _firstFileName?: string;
 
     helperExecPath: string;
-    mainModule: NodeJS.Module;
+    mainModule?: NodeJS.Module | undefined;
   }
 }
 
