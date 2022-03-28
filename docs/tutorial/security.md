@@ -279,11 +279,12 @@ security-conscious developers might want to assume the very opposite.
 
 ```js title='main.js (Main Process)'
 const { session } = require('electron')
+const URL = require('url').URL
 
 session
   .fromPartition('some-partition')
   .setPermissionRequestHandler((webContents, permission, callback) => {
-    const url = webContents.getURL()
+    const parsedUrl = new URL(webContents.getURL())
 
     if (permission === 'notifications') {
       // Approves the permissions request
@@ -291,7 +292,7 @@ session
     }
 
     // Verify URL
-    if (!url.startsWith('https://example.com/')) {
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.host !== 'example.com') {
       // Denies the permissions request
       return callback(false)
     }
