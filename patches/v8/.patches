@@ -19,4 +19,5 @@ skip_non-compilation_functions_in_optimizeosr.patch
 merged_wasm_32-bit_platforms_lower_kv8maxwasmmemorypages_by_1.patch
 cherry-pick-27bc67f761e6.patch
 regexp_fix_uaf_in_regexpmacroassembler.patch
+cherry-pick-26b7ad6967b1.patch
 cherry-pick-c46fb3a15ec2.patch
