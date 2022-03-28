@@ -11,6 +11,7 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
@@ -233,7 +234,7 @@ ElectronMainDelegate::~ElectronMainDelegate() = default;
 const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
     extensions::kExtensionScheme};
 const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
-    base::size(kNonWildcardDomainNonPortSchemes);
+    std::size(kNonWildcardDomainNonPortSchemes);
 
 bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();

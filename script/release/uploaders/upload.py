@@ -16,7 +16,7 @@ sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
 from zipfile import ZipFile
-from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
+from lib.config import PLATFORM, get_target_arch,s3_config, \
                        get_zip_name, enable_verbose_mode, get_platform_key
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      s3put, get_electron_exec, get_out_dir, \
@@ -33,6 +33,8 @@ OUT_DIR = get_out_dir()
 DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
 SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
 DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
+DSYM_SNAPSHOT_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
+                                  'dsym-snapshot')
 PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 DEBUG_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'debug')
 TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
@@ -88,6 +90,10 @@ def main():
     dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
     upload_electron(release, dsym_zip, args)
+
+    dsym_snaphot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snaphot_zip)
+    upload_electron(release, dsym_snaphot_zip, args)    
   elif PLATFORM == 'win32':
     pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
@@ -154,6 +160,7 @@ def main():
         'toolchain_profile.json')
     upload_electron(release, toolchain_profile_zip, args)
 
+  return 0
 
 def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
@@ -200,7 +207,8 @@ def zero_zip_date_time(fname):
   try:
     with open(fname, 'r+b') as f:
       _zero_zip_date_time(f)
-  except:
+  except Exception:
+    # pylint: disable=W0707
     raise NonZipFileError(fname)
 
 

@@ -1,4 +1,11 @@
-# Dock (macOS)
+---
+title: Dock
+description: Configure your application's Dock presence on macOS.
+slug: macos-dock
+hide_title: true
+---
+
+# Dock
 
 Electron has APIs to configure the app's icon in the macOS Dock. A macOS-only
 API exists to create a custom dock menu, but Electron also uses the app dock
@@ -15,12 +22,6 @@ __Dock menu of Terminal.app:__
 To set your custom dock menu, you need to use the
 [`app.dock.setMenu`](../api/dock.md#docksetmenumenu-macos) API,
 which is only available on macOS.
-
-## Example
-
-Starting with a working application from the
- [Quick Start Guide](quick-start.md), update the `main.js` file with the
- following lines:
 
 ```javascript fiddle='docs/fiddles/features/macos-dock-menu'
 const { app, BrowserWindow, Menu } = require('electron')

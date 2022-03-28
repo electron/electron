@@ -40,7 +40,9 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
 #include "skia/ext/legacy_display_globals.h"
+#include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkFont.h"
+#include "third_party/skia/include/core/SkPaint.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 #include "ui/strings/grit/ui_strings.h"
@@ -67,7 +69,7 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty())
     *exe = base::StringPrintf(L"\"%ls\" \"%ls\" \"%%1\"", exe->c_str(),
-                              base::JoinString(launch_args, L" ").c_str());
+                              base::JoinString(launch_args, L"\"  \"").c_str());
   else
     *exe = base::StringPrintf(L"\"%ls\" \"%%1\"", exe->c_str());
   return true;
@@ -97,7 +99,7 @@ std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
     return std::wstring();
 
   wchar_t out_buffer[1024];
-  DWORD buffer_size = base::size(out_buffer);
+  DWORD buffer_size = std::size(out_buffer);
   HRESULT hr =
       AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(), NULL,
                        out_buffer, &buffer_size);

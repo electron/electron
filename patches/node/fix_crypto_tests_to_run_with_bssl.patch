@@ -590,7 +590,7 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 6893f0c0e6d49a8e171ec9f156f74656dab9fd06..4c8ccd10e0dcd64669cccca1e8c2e5279d683595 100644
+index b2c14b1efcd68bd20e9c946106f1ab5fb58627c5..eef0bfe638b641c68fdadd95226a74df044921cb 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,6 +29,7 @@ const keySize = 2048;
@@ -673,20 +673,19 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd55efd6605 100644
+index d1782359277dc52d7a60830a6dd958544d610e6b..4c781f062bc505b860b821773070551f4cd80067 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -104,7 +104,8 @@ const der = Buffer.from(
-     '84:AC:5B:08:9A:20:89:B6:8F:D6'
+@@ -110,7 +110,7 @@ const der = Buffer.from(
+     'A3:06:C5:CE:43:C1:7F:2D:7E:5F:44:A5:EE:A3:CB:97:05:A3:E3:68'
    );
    assert.strictEqual(x509.keyUsage, undefined);
 -  assert.strictEqual(x509.serialNumber, 'ECC9B856270DA9A8');
-+
 +  assert.match(x509.serialNumber, /ECC9B856270DA9A8/i);
  
    assert.deepStrictEqual(x509.raw, der);
  
-@@ -190,6 +191,12 @@ const der = Buffer.from(
+@@ -196,6 +196,12 @@ const der = Buffer.from(
    });
    mc.port2.postMessage(x509);
  
@@ -699,7 +698,7 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd5
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: 'C=US\n' +
-@@ -213,11 +220,7 @@ const der = Buffer.from(
+@@ -219,11 +225,7 @@ const der = Buffer.from(
          'CA Issuers - URI:http://ca.nodejs.org/ca.cert' :
          'OCSP - URI:http://ocsp.nodejs.org/\n' +
          'CA Issuers - URI:http://ca.nodejs.org/ca.cert\n',
@@ -712,16 +711,16 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd5
      bits: 1024,
      exponent: '0x10001',
      valid_from: 'Nov 16 18:42:21 2018 GMT',
-@@ -226,7 +229,7 @@ const der = Buffer.from(
-     fingerprint256:
-       'B0:BE:46:49:B8:29:63:E0:6F:63:C8:8A:57:9C:3F:9B:72:' +
-       'C6:F5:89:E3:0D:84:AC:5B:08:9A:20:89:B6:8F:D6',
+@@ -237,7 +239,7 @@ const der = Buffer.from(
+       'D0:39:97:54:B6:D0:B4:46:5B:DE:13:5B:68:86:B6:F2:A8:' +
+       '95:22:D5:6E:8B:35:DA:89:29:CA:A3:06:C5:CE:43:C1:7F:' +
+       '2D:7E:5F:44:A5:EE:A3:CB:97:05:A3:E3:68',
 -    serialNumber: 'ECC9B856270DA9A8'
 +    serialNumberPattern: /ECC9B856270DA9A8/i
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -235,7 +238,7 @@ const der = Buffer.from(
+@@ -246,7 +248,7 @@ const der = Buffer.from(
    assert.strictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.strictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.strictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
@@ -730,7 +729,7 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd5
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -244,7 +247,5 @@ const der = Buffer.from(
+@@ -255,7 +257,5 @@ const der = Buffer.from(
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);

@@ -25,7 +25,7 @@ index a771b1813731edf4f0dd60f3505799e389f1d876..b9461677e2d7d1df192e752496e62cca
    bench.start();
    for (let i = 0; i < n; i++)
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index 71a07a63a3636ab211746004ebab24a0058b08fc..e3ce67987ee3185a93750ebad72beab304c71e3a 100644
+index 65827ecd593ffb050484152fc6d31411fd3e4dcc..2e5d6b01d86e34549c1c7a3d3128350cad2b0c47 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
 @@ -9,7 +9,7 @@ const {

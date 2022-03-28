@@ -120,9 +120,6 @@ const char kPreloadScript[] = "preload";
 
 const char kPreloadScripts[] = "preloadScripts";
 
-// Like --preload, but the passed argument is an URL.
-const char kPreloadURL[] = "preloadURL";
-
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 

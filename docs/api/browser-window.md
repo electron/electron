@@ -64,7 +64,19 @@ win.loadURL('https://github.com')
 ```
 
 Note that even for apps that use `ready-to-show` event, it is still recommended
-to set `backgroundColor` to make app feel more native.
+to set `backgroundColor` to make the app feel more native.
+
+Some examples of valid `backgroundColor` values include:
+
+```js
+const win = new BrowserWindow()
+win.setBackgroundColor('hsl(230, 100%, 50%)')
+win.setBackgroundColor('rgb(255, 145, 145)')
+win.setBackgroundColor('#ff00a3')
+win.setBackgroundColor('blueviolet')
+```
+
+For more information about these color types see valid options in [win.setBackgroundColor](browser-window.md#winsetbackgroundcolorbackgroundcolor).
 
 ## Parent and child windows
 
@@ -146,7 +158,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `useContentSize` boolean (optional) - The `width` and `height` would be used as web
     page's size, which means the actual window's size will include window
     frame's size and be slightly larger. Default is `false`.
-  * `center` boolean (optional) - Show window in the center of the screen.
+  * `center` boolean (optional) - Show window in the center of the screen. Default is `false`.
   * `minWidth` Integer (optional) - Window's minimum width. Default is `0`.
   * `minHeight` Integer (optional) - Window's minimum height. Default is `0`.
   * `maxWidth` Integer (optional) - Window's maximum width. Default is no limit.
@@ -174,8 +186,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     mode. On macOS, also whether the maximize/zoom button should toggle full
     screen mode or maximize window. Default is `true`.
   * `simpleFullscreen` boolean (optional) - Use pre-Lion fullscreen on macOS. Default is `false`.
-  * `skipTaskbar` boolean (optional) - Whether to show the window in taskbar. Default is
-    `false`.
+  * `skipTaskbar` boolean (optional) _macOS_ _Windows_ - Whether to show the window in taskbar.
+    Default is `false`.
   * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
   * `title` string (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
   * `icon` ([NativeImage](native-image.md) | string) (optional) - The window icon. On Windows it is
@@ -199,9 +211,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` boolean (optional) - Enable the window to be resized larger
     than screen. Only relevant for macOS, as other OSes allow
     larger-than-screen windows by default. Default is `false`.
-  * `backgroundColor` string (optional) - Window's background color as a hexadecimal value,
-    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha in #AARRGGBB format is supported if
-    `transparent` is set to `true`). Default is `#FFF` (white).
+  * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #AARRGGBB format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](browser-window.md#winsetbackgroundcolorbackgroundcolor) for more information.
   * `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
   * `opacity` number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
@@ -992,12 +1002,33 @@ APIs like `win.setSize`.
 
 #### `win.setBackgroundColor(backgroundColor)`
 
-* `backgroundColor` string - Window's background color as a hexadecimal value,
-  like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported if `transparent`
-  is `true`). Default is `#FFF` (white).
+* `backgroundColor` string - Color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. The alpha channel is optional for the hex type.
 
-Sets the background color of the window. See [Setting
-`backgroundColor`](#setting-the-backgroundcolor-property).
+Examples of valid `backgroundColor` values:
+
+* Hex
+  * #fff (shorthand RGB)
+  * #ffff (shorthand ARGB)
+  * #ffffff (RGB)
+  * #ffffffff (ARGB)
+* RGB
+  * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
+    * e.g. rgb(255, 255, 255)
+* RGBA
+  * rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)
+    * e.g. rgba(255, 255, 255, 1.0)
+* HSL
+  * hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)
+    * e.g. hsl(200, 20%, 50%)
+* HSLA
+  * hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)
+    * e.g. hsla(200, 20%, 50%, 0.5)
+* Color name
+  * Options are listed in [SkParseColor.cpp](https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/src/utils/SkParseColor.cpp;l=11-152;drc=eea4bf52cb0d55e2a39c828b017c80a5ee054148)
+  * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
+    * e.g. `blueviolet` or `red`
+
+Sets the background color of the window. See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 
 #### `win.previewFile(path[, displayName])` _macOS_
 
@@ -1041,8 +1072,11 @@ Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `
 
 #### `win.getBackgroundColor()`
 
-Returns `string` - Gets the background color of the window. See [Setting
-`backgroundColor`](#setting-the-backgroundcolor-property).
+Returns `string` - Gets the background color of the window in Hex (`#RRGGBB`) format.
+
+See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
+
+**Note:** The alpha value is _not_ returned alongside the red, green, and blue values.
 
 #### `win.setContentBounds(bounds[, animate])`
 
@@ -1807,6 +1841,16 @@ with `addBrowserView` or `setBrowserView`.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
+
+#### `win.setTitleBarOverlay(options)` _Windows_
+
+* `options` Object
+  * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled.
+  * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
+  * `height` Integer (optional) _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
+
+On a Window with Window Controls Overlay already enabled, this method updates
+the style of the title bar overlay.
 
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API

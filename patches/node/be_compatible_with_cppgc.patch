@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Fri, 11 Mar 2022 11:17:29 -0800
+Subject: be compatible with cppgc
+
+This fixes a crash that happens sporadically when Node is used in the same V8
+Isolate as Blink. For example:
+
+#
+# Fatal error in ../../v8/src/objects/js-objects-inl.h, line 306
+# Debug check failed: static_cast<unsigned>(index) < static_cast<unsigned>(GetEmbedderFieldCount()) (1 vs. 1).
+#
+#
+#
+#FailureMessage Object: 0x7ffee46fd1c0
+0   Electron Framework                  0x00000001181c78d9 base::debug::CollectStackTrace(void**, unsigned long) + 9
+1   Electron Framework                  0x00000001180ea633 base::debug::StackTrace::StackTrace() + 19
+2   Electron Framework                  0x000000011a04decd gin::(anonymous namespace)::PrintStackTrace() + 45
+3   Electron Framework                  0x0000000119a9b416 V8_Fatal(char const*, int, char const*, ...) + 326
+4   Electron Framework                  0x0000000119a9aeb5 v8::base::(anonymous namespace)::DefaultDcheckHandler(char const*, int, char const*) + 21
+5   Electron Framework                  0x000000011530763f v8::internal::JSObject::GetEmbedderFieldOffset(int) + 207
+6   Electron Framework                  0x00000001155f68e6 v8::internal::LocalEmbedderHeapTracer::EmbedderWriteBarrier(v8::internal::Heap*, v8::internal::JSObject) + 150
+7   Electron Framework                  0x00000001152cd34f v8::Object::SetAlignedPointerInInternalField(int, void*) + 639
+8   Electron Framework                  0x000000011d18df35 node::BaseObject::BaseObject(node::Environment*, v8::Local<v8::Object>) + 101
+9   Electron Framework                  0x000000011d347b6e node::crypto::DiffieHellman::DiffieHellman(node::Environment*, v8::Local<v8::Object>) + 14
+10  Electron Framework                  0x000000011d348413 node::crypto::DiffieHellman::New(v8::FunctionCallbackInfo<v8::Value> const&) + 147
+[...]
+
+This crash happens because this V8 isolate has cppgc enabled. When cppgc is
+enabled, V8 assumes that the first embedder field is a "type" pointer, the
+first 16 bits of which are the embedder ID. Node did not adhere to this
+requirement. Sometimes--mostly, even--this worked _by accident_. If the first
+field in the BaseObject was a pointer to a bit of memory that happened to
+contain the two-byte little-endian value 0x0001, however, V8 would take that to
+mean that the object was a Blink object[1], and attempt to read the pointer in
+the second embedder slot, which would result in a CHECK.
+
+This change adds an "embedder id" pointer as the first embedder field in all
+Node-managed objects. This ensures that cppgc will always skip over Node
+objects.
+
+This patch should be upstreamed to Node.
+
+[1]: https://source.chromium.org/chromium/chromium/src/+/main:gin/public/gin_embedders.h;l=20;drc=5a758a97032f0b656c3c36a3497560762495501a
+
+See also: https://source.chromium.org/chromium/chromium/src/+/main:v8/include/v8-cppgc.h;l=70-76;drc=5a758a97032f0b656c3c36a3497560762495501a
+
+diff --git a/src/base_object-inl.h b/src/base_object-inl.h
+index bb1e8d4b46bce3bf08f730ac5d43f7113d17ae39..6da0669943fc6465ffc47a1c8c3dadfea6beb1c9 100644
+--- a/src/base_object-inl.h
++++ b/src/base_object-inl.h
+@@ -32,10 +32,21 @@
+ 
+ namespace node {
+ 
++namespace {
++// This just has to be different from the Chromium ones:
++// https://source.chromium.org/chromium/chromium/src/+/main:gin/public/gin_embedders.h;l=18-23;drc=5a758a97032f0b656c3c36a3497560762495501a
++// Otherwise, when Node is loaded in an isolate which uses cppgc, cppgc will
++// misinterpret the data stored in the embedder fields and try to garbage
++// collect them.
++static uint16_t kNodeEmbedderId = 0x90de;
++}
++
+ BaseObject::BaseObject(Environment* env, v8::Local<v8::Object> object)
+     : persistent_handle_(env->isolate(), object), env_(env) {
+   CHECK_EQ(false, object.IsEmpty());
+-  CHECK_GT(object->InternalFieldCount(), 0);
++  CHECK_GT(object->InternalFieldCount(), BaseObject::kSlot);
++  object->SetAlignedPointerInInternalField(BaseObject::kWrapperType,
++      &kNodeEmbedderId);
+   object->SetAlignedPointerInInternalField(
+       BaseObject::kSlot,
+       static_cast<void*>(this));
+@@ -151,7 +162,8 @@ bool BaseObject::IsWeakOrDetached() const {
+ void BaseObject::LazilyInitializedJSTemplateConstructor(
+     const v8::FunctionCallbackInfo<v8::Value>& args) {
+   DCHECK(args.IsConstructCall());
+-  DCHECK_GT(args.This()->InternalFieldCount(), 0);
++  DCHECK_GT(args.This()->InternalFieldCount(), BaseObject::kSlot);
++  args.This()->SetAlignedPointerInInternalField(BaseObject::kWrapperType, &kNodeEmbedderId);
+   args.This()->SetAlignedPointerInInternalField(BaseObject::kSlot, nullptr);
+ }
+ 
+diff --git a/src/base_object.h b/src/base_object.h
+index 1c63da92fd80c042d5ea729bdd70049cae51a141..3b8127e884187b21cebeabb39b60bd3010b62217 100644
+--- a/src/base_object.h
++++ b/src/base_object.h
+@@ -40,7 +40,7 @@ class TransferData;
+ 
+ class BaseObject : public MemoryRetainer {
+  public:
+-  enum InternalFields { kSlot, kInternalFieldCount };
++  enum InternalFields { kWrapperType, kSlot, kInternalFieldCount };
+ 
+   // Associates this object with `object`. It uses the 0th internal field for
+   // that, and in particular aborts if there is no such field.

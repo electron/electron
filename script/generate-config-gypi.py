@@ -15,7 +15,7 @@ def run_node_configure(target_cpu):
   configure = os.path.join(NODE_DIR, 'configure.py')
   args = ['--dest-cpu', target_cpu]
   # Enabled in Chromium's V8.
-  if target_cpu == 'arm64' or target_cpu == 'x64':
+  if target_cpu in ('arm64', 'x64'):
     args += ['--experimental-enable-pointer-compression']
 
   # Work around "No acceptable ASM compiler found" error on some System,
@@ -62,4 +62,4 @@ def main(target_file, target_cpu):
     f.write(pprint.pformat(config, indent=2))
 
 if __name__ == '__main__':
-  sys.exit(main(*sys.argv[1:]))
+  sys.exit(main(sys.argv[1], sys.argv[2]))

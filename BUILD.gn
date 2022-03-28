@@ -361,7 +361,12 @@ source_set("electron_lib") {
     "//components/network_hints/common:mojo_bindings",
     "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
+    "//components/omnibox/browser:buildflags",
     "//components/os_crypt",
+    "//components/pdf/browser",
+    "//components/pdf/browser:interceptors",
+    "//components/pdf/common",
+    "//components/pdf/renderer",
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
@@ -558,7 +563,6 @@ source_set("electron_lib") {
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
-      "USE_X11=1",
     ]
 
     sources += [
@@ -697,7 +701,7 @@ source_set("electron_lib") {
       "//chrome/browser/resources/pdf:resources",
       "//components/pdf/browser",
       "//components/pdf/renderer",
-      "//pdf:pdf_ppapi",
+      "//pdf",
     ]
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
@@ -1005,14 +1009,14 @@ if (is_mac) {
   action("electron_app_lproj_dirs") {
     outputs = []
 
-    foreach(locale, locales_as_mac_outputs) {
+    foreach(locale, locales_as_apple_outputs) {
       outputs += [ "$target_gen_dir/app_infoplist_strings/$locale.lproj" ]
     }
     script = "build/mac/make_locale_dirs.py"
     args = rebase_path(outputs)
   }
 
-  foreach(locale, locales_as_mac_outputs) {
+  foreach(locale, locales_as_apple_outputs) {
     bundle_data("electron_app_strings_${locale}_bundle_data") {
       sources = [ "$target_gen_dir/app_infoplist_strings/$locale.lproj" ]
       outputs = [ "{{bundle_resources_dir}}/$locale.lproj" ]
@@ -1021,7 +1025,7 @@ if (is_mac) {
   }
   group("electron_app_strings_bundle_data") {
     public_deps = []
-    foreach(locale, locales_as_mac_outputs) {
+    foreach(locale, locales_as_apple_outputs) {
       public_deps += [ ":electron_app_strings_${locale}_bundle_data" ]
     }
   }
@@ -1188,7 +1192,7 @@ if (is_mac) {
     if (enable_hidpi) {
       data += [ "$root_out_dir/chrome_200_percent.pak" ]
     }
-    foreach(locale, locales) {
+    foreach(locale, platform_pak_locales) {
       data += [ "$root_out_dir/locales/$locale.pak" ]
     }
 

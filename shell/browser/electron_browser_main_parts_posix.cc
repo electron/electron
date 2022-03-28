@@ -16,6 +16,7 @@
 #include "base/debug/leak_annotations.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/task/post_task.h"
+#include "base/threading/platform_thread.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/browser.h"

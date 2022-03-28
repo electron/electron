@@ -50,7 +50,7 @@ void ElectronRendererClient::RenderFrameCreated(
 void ElectronRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);
-  // Inform the document start pharse.
+  // Inform the document start phase.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
@@ -61,7 +61,7 @@ void ElectronRendererClient::RunScriptsAtDocumentStart(
 void ElectronRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
-  // Inform the document end pharse.
+  // Inform the document end phase.
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
@@ -151,16 +151,23 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (env == node_bindings_->uv_env())
     node_bindings_->set_uv_env(nullptr);
 
-  // Destroy the node environment.  We only do this if node support has been
-  // enabled for sub-frames to avoid a change-of-behavior / introduce crashes
-  // for existing users.
-  // We also do this if we have disable electron site instance overrides to
-  // avoid memory leaks
-  auto prefs = render_frame->GetBlinkPreferences();
-  gin_helper::MicrotasksScope microtasks_scope(env->isolate());
+  // Destroying the node environment will also run the uv loop,
+  // Node.js expects `kExplicit` microtasks policy and will run microtasks
+  // checkpoints after every call into JavaScript. Since we use a different
+  // policy in the renderer - switch to `kExplicit` and then drop back to the
+  // previous policy value.
+  v8::Isolate* isolate = context->GetIsolate();
+  auto old_policy = isolate->GetMicrotasksPolicy();
+  DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(isolate), 0);
+  isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+
   node::FreeEnvironment(env);
-  if (env == node_bindings_->uv_env())
+  if (node_bindings_->uv_env() == nullptr) {
     node::FreeIsolateData(node_bindings_->isolate_data());
+    node_bindings_->set_isolate_data(nullptr);
+  }
+
+  isolate->SetMicrotasksPolicy(old_policy);
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);

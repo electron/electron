@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 0cd4077a0b534f089318e1ebffb9eb25214c3a42..f1ea1dfd740f4b9cf5f7cb7fd6bd445fb06e0100 100644
+index 00190da513499e6275d19bd99b6502db246cd33d..f273749bd026abb287ba33e03208a286e80a57a1 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -117,9 +117,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -121,9 +121,10 @@ IsolateHolder::~IsolateHolder() {
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
                                 const intptr_t* reference_table,
@@ -24,10 +24,10 @@ index 0cd4077a0b534f089318e1ebffb9eb25214c3a42..f1ea1dfd740f4b9cf5f7cb7fd6bd445f
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 78133f9b34327c311c69620af621eba3d7f2cbf9..a965545de342811e468594fab4d792fc5c4daf32 100644
+index 1e36669dfb275b8a7c4913c8465bd299c548ed3a..178023d52c9e8ef716ee215e7a243b1800357818 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -100,7 +100,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -102,7 +102,8 @@ class GIN_EXPORT IsolateHolder {
    static void Initialize(ScriptMode mode,
                           v8::ArrayBuffer::Allocator* allocator,
                           const intptr_t* reference_table = nullptr,
@@ -38,10 +38,10 @@ index 78133f9b34327c311c69620af621eba3d7f2cbf9..a965545de342811e468594fab4d792fc
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 1447b3828da1e50bd00f4a4975a2b4ce76a2c6ac..abdc2d491cd317d38cb4e7608681ea97bb5b8aab 100644
+index b123e69bf6a57b1a4041c79c1cddd0117ed3851c..a8a23ccd0837866c1cb0657e0b8713d484042f38 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -342,12 +342,14 @@ void SetFlags(IsolateHolder::ScriptMode mode,
+@@ -348,7 +348,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
  
  // static
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
@@ -51,6 +51,9 @@ index 1447b3828da1e50bd00f4a4975a2b4ce76a2c6ac..abdc2d491cd317d38cb4e7608681ea97
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
+@@ -358,7 +359,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+   // See https://crbug.com/v8/11043
+   SetFlags(mode, js_command_line_flags);
  
 -  v8::V8::InitializePlatform(V8Platform::Get());
 +  if (create_v8_platform)

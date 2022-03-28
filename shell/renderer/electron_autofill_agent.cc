@@ -136,9 +136,10 @@ void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
                                     const ShowSuggestionsOptions& options) {
   if (!element.IsEnabled() || element.IsReadOnly())
     return;
-  const blink::WebInputElement* input_element = ToWebInputElement(&element);
-  if (input_element) {
-    if (!input_element->IsTextField())
+  const blink::WebInputElement input_element =
+      element.DynamicTo<blink::WebInputElement>();
+  if (!input_element.IsNull()) {
+    if (!input_element.IsTextField())
       return;
   }
 
@@ -154,9 +155,8 @@ void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
 
   std::vector<std::u16string> data_list_values;
   std::vector<std::u16string> data_list_labels;
-  if (input_element) {
-    GetDataListSuggestions(*input_element, &data_list_values,
-                           &data_list_labels);
+  if (!input_element.IsNull()) {
+    GetDataListSuggestions(input_element, &data_list_values, &data_list_labels);
     TrimStringVectorForIPC(&data_list_values);
     TrimStringVectorForIPC(&data_list_labels);
   }
@@ -191,8 +191,10 @@ void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
 void AutofillAgent::AcceptDataListSuggestion(const std::u16string& suggestion) {
   auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
   if (element.IsFormControlElement()) {
-    ToWebInputElement(&element)->SetAutofillValue(
-        blink::WebString::FromUTF16(suggestion));
+    blink::WebInputElement input_element =
+        element.DynamicTo<blink::WebInputElement>();
+    if (!input_element.IsNull())
+      input_element.SetAutofillValue(blink::WebString::FromUTF16(suggestion));
   }
 }
 
@@ -204,9 +206,10 @@ void AutofillAgent::DoFocusChangeComplete() {
   if (focused_node_was_last_clicked_ && was_focused_before_now_) {
     ShowSuggestionsOptions options;
     options.autofill_on_empty_values = true;
-    auto* input_element = ToWebInputElement(&element);
-    if (input_element)
-      ShowSuggestions(*input_element, options);
+    blink::WebInputElement input_element =
+        element.DynamicTo<blink::WebInputElement>();
+    if (!input_element.IsNull())
+      ShowSuggestions(input_element, options);
   }
 
   was_focused_before_now_ = true;

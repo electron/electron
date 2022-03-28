@@ -48,7 +48,7 @@ std::map<int, std::unique_ptr<HWND>>& GetDialogsMap() {
   return *dialogs;
 }
 
-// Speical HWND used by the dialogs map.
+// Special HWND used by the dialogs map.
 //
 // - ID is used but window has not been created yet.
 const HWND kHwndReserve = reinterpret_cast<HWND>(-1);

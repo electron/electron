@@ -62,10 +62,10 @@ index 9e351c7e80a135adf0ebe011763f5164e51981bb..b9fcb4d2a8c7a22ebc7cd8434636454e
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index a964910a3b7e3bd225a3b8dc35ef9dc57c77248d..9f791d9ba5f0b540f5e3a67f5e1abb318ddb7680 100644
+index ba604d33cc0601276320f3f81f20e98cb2811f74..1da667c66b75ab44727c5029c02d44379f924007 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
-@@ -54,14 +54,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+@@ -53,14 +53,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
    PRINTPAGERANGE ranges[32];
    dialog_options.nStartPage = START_PAGE_GENERAL;
    if (max_pages) {
@@ -74,7 +74,7 @@ index a964910a3b7e3bd225a3b8dc35ef9dc57c77248d..9f791d9ba5f0b540f5e3a67f5e1abb31
 -    ranges[0].nFromPage = 1;
 -    ranges[0].nToPage = max_pages;
 -    dialog_options.nPageRanges = 1;
--    dialog_options.nMaxPageRanges = base::size(ranges);
+-    dialog_options.nMaxPageRanges = std::size(ranges);
 +
 +    auto page_ranges = settings_->ranges();
 +    if (!page_ranges.empty()) {
@@ -95,7 +95,7 @@ index a964910a3b7e3bd225a3b8dc35ef9dc57c77248d..9f791d9ba5f0b540f5e3a67f5e1abb31
 +
      dialog_options.nMinPage = 1;
      dialog_options.nMaxPage = max_pages;
-+    dialog_options.nMaxPageRanges = base::size(ranges);
++    dialog_options.nMaxPageRanges = std::size(ranges);
      dialog_options.lpPageRanges = ranges;
    } else {
      // No need to bother, we don't know how many pages are available.

@@ -365,7 +365,6 @@ bool NodeBindings::IsInitialized() {
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
-  node::g_upstream_node_mode = false;
 
 #if BUILDFLAG(IS_LINUX)
   // Get real command line in renderer process forked by zygote.
@@ -381,14 +380,17 @@ void NodeBindings::Initialize() {
 
   auto env = base::Environment::Create();
   SetNodeOptions(env.get());
-  node::Environment::should_read_node_options_from_env_ =
-      fuses::IsNodeOptionsEnabled();
 
   std::vector<std::string> argv = {"electron"};
   std::vector<std::string> exec_argv;
   std::vector<std::string> errors;
+  uint64_t process_flags = node::ProcessFlags::kEnableStdioInheritance;
+  if (!fuses::IsNodeOptionsEnabled())
+    process_flags |= node::ProcessFlags::kDisableNodeOptionsEnv;
 
-  int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
+  int exit_code = node::InitializeNodeWithArgs(
+      &argv, &exec_argv, &errors,
+      static_cast<node::ProcessFlags::Flags>(process_flags));
 
   for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
@@ -462,8 +464,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  isolate_data_ =
-      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
+  if (!isolate_data_)
+    isolate_data_ = node::CreateIsolateData(isolate, uv_loop_, platform);
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
@@ -476,24 +478,30 @@ node::Environment* NodeBindings::CreateEnvironment(
     // not to register its handler (overriding blinks) in non-browser processes.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
              node::EnvironmentFlags::kNoInitializeInspector;
-    v8::TryCatch try_catch(context->GetIsolate());
-    env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
-    DCHECK(env);
-
-    // This will only be caught when something has gone terrible wrong as all
-    // electron scripts are wrapped in a try {} catch {} by webpack
-    if (try_catch.HasCaught()) {
-      LOG(ERROR) << "Failed to initialize node environment in process: "
-                 << process_type;
-    }
-  } else {
-    env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
-    DCHECK(env);
   }
+
+  if (!electron::fuses::IsNodeCliInspectEnabled()) {
+    // If --inspect and friends are disabled we also shouldn't listen for
+    // SIGUSR1
+    flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
+  }
+
+  v8::TryCatch try_catch(isolate);
+  env = node::CreateEnvironment(
+      isolate_data_, context, args, exec_args,
+      static_cast<node::EnvironmentFlags::Flags>(flags));
+
+  if (try_catch.HasCaught()) {
+    std::string err_msg =
+        "Failed to initialize node environment in process: " + process_type;
+    v8::Local<v8::Message> message = try_catch.Message();
+    std::string msg;
+    if (!message.IsEmpty() && gin::ConvertFromV8(isolate, message->Get(), &msg))
+      err_msg += " , with error: " + msg;
+    LOG(ERROR) << err_msg;
+  }
+
+  DCHECK(env);
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
@@ -574,16 +582,6 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
-#if !BUILDFLAG(IS_WIN)
-  int handle = uv_backend_fd(uv_loop_);
-
-  // If the backend fd hasn't changed, don't proceed.
-  if (handle == handle_)
-    return;
-
-  handle_ = handle;
-#endif
-
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);

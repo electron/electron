@@ -87,7 +87,7 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
   // Indenting the client area can fix this behavior.
   if (IsMaximized() && !native_window_view_->has_frame()) {
     // The insets would be eventually passed to WM_NCCALCSIZE, which takes
-    // the metrics under the DPI of _main_ monitor instead of current moniotr.
+    // the metrics under the DPI of _main_ monitor instead of current monitor.
     //
     // Please make sure you tested maximized frameless window under multiple
     // monitors with different DPIs before changing this code.
@@ -97,23 +97,6 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     return true;
   }
   return false;
-}
-
-bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
-  // Call the default implementation of this method to get the event to its
-  // proper handler.
-  bool handled = views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
-
-  // On WCO-enabled windows, we need to mark non-client mouse moved events as
-  // handled so they don't incorrectly propogate back to the OS.
-  if (native_window_view_->IsWindowControlsOverlayEnabled() &&
-      event->type() == ui::ET_MOUSE_MOVED &&
-      (event->flags() & ui::EF_IS_NON_CLIENT) != 0) {
-    event->SetHandled();
-    handled = true;
-  }
-
-  return handled;
 }
 
 }  // namespace electron

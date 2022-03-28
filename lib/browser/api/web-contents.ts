@@ -1,4 +1,4 @@
-import { app, ipcMain, session, webFrameMain } from 'electron/main';
+import { app, ipcMain, session, webFrameMain, deprecate } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
@@ -492,41 +492,51 @@ WebContents.prototype.loadURL = function (url, options) {
   return p;
 };
 
-WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'allow'} | {action: 'deny', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions})) {
+WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions, outlivesOpener?: boolean})) {
   this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): BrowserWindowConstructorOptions | null {
+WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean} {
+  const defaultResponse = {
+    browserWindowConstructorOptions: null,
+    outlivesOpener: false
+  };
   if (!this._windowOpenHandler) {
-    return null;
+    return defaultResponse;
   }
   const response = this._windowOpenHandler(details);
 
   if (typeof response !== 'object') {
     event.preventDefault();
     console.error(`The window open handler response must be an object, but was instead of type '${typeof response}'.`);
-    return null;
+    return defaultResponse;
   }
 
   if (response === null) {
     event.preventDefault();
     console.error('The window open handler response must be an object, but was instead null.');
-    return null;
+    return defaultResponse;
   }
 
   if (response.action === 'deny') {
     event.preventDefault();
-    return null;
+    return defaultResponse;
   } else if (response.action === 'allow') {
     if (typeof response.overrideBrowserWindowOptions === 'object' && response.overrideBrowserWindowOptions !== null) {
-      return response.overrideBrowserWindowOptions;
+      return {
+        browserWindowConstructorOptions: response.overrideBrowserWindowOptions,
+        outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
+      };
     } else {
-      return {};
+      return {
+        browserWindowConstructorOptions: {},
+        outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
+      };
     }
   } else {
     event.preventDefault();
     console.error('The window open handler response must be an object with an \'action\' property of \'allow\' or \'deny\'.');
-    return null;
+    return defaultResponse;
   }
 };
 
@@ -560,6 +570,10 @@ const loggingEnabled = () => {
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
+  const prefs = this.getLastWebPreferences() || {};
+  if (!prefs.nodeIntegration && prefs.preload != null && prefs.sandbox == null) {
+    deprecate.log('The default sandbox option for windows without nodeIntegration is changing. Presently, by default, when a window has a preload script, it defaults to being unsandboxed. In Electron 20, this default will be changing, and all windows that have nodeIntegration: false (which is the default) will be sandboxed by default. If your preload script doesn\'t use Node, no action is needed. If your preload script does use Node, either refactor it to move Node usage to the main process, or specify sandbox: false in your WebPreferences.');
+  }
   // Read off the ID at construction time, so that it's accessible even after
   // the underlying C++ WebContents is destroyed.
   const id = this.id;
@@ -651,7 +665,8 @@ WebContents.prototype._init = function () {
         postBody,
         disposition
       };
-      const options = this._callWindowOpenHandler(event, details);
+      const result = this._callWindowOpenHandler(event, details);
+      const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
           event,
@@ -660,12 +675,14 @@ WebContents.prototype._init = function () {
           referrer,
           postData,
           overrideBrowserWindowOptions: options || {},
-          windowOpenArgs: details
+          windowOpenArgs: details,
+          outlivesOpener: result.outlivesOpener
         });
       }
     });
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
+    let windowOpenOutlivesOpenerOption: boolean = false;
     this.on('-will-add-new-contents' as any, (event: ElectronInternal.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
       const postBody = postData ? {
         data: postData,
@@ -679,7 +696,9 @@ WebContents.prototype._init = function () {
         referrer,
         postBody
       };
-      windowOpenOverriddenOptions = this._callWindowOpenHandler(event, details);
+      const result = this._callWindowOpenHandler(event, details);
+      windowOpenOutlivesOpenerOption = result.outlivesOpener;
+      windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
           // Allow setting of backgroundColor as a webPreference even though
@@ -710,7 +729,10 @@ WebContents.prototype._init = function () {
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;
+      const outlivesOpener = windowOpenOutlivesOpenerOption;
       windowOpenOverriddenOptions = null;
+      // false is the default
+      windowOpenOutlivesOpenerOption = false;
 
       if ((disposition !== 'foreground-tab' && disposition !== 'new-window' &&
            disposition !== 'background-tab')) {
@@ -730,7 +752,8 @@ WebContents.prototype._init = function () {
           url,
           frameName,
           features: rawFeatures
-        }
+        },
+        outlivesOpener
       });
     });
   }

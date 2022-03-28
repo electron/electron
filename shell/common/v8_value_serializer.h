@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_V8_VALUE_SERIALIZER_H_
 
 #include "base/containers/span.h"
+#include "ui/gfx/image/image_skia_rep.h"
 
 namespace v8 {
 class Isolate;

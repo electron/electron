@@ -12,11 +12,11 @@ therefore causes unmapped page access crashes.
 This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
-diff --git a/chrome/browser/resources/pdf/pdf_viewer.js b/chrome/browser/resources/pdf/pdf_viewer.js
-index 4d45dfa892fec8857dabdd70e3c09c46b784ef44..d9b72b9298494df57e2ad53738a213226a7c45e4 100644
---- a/chrome/browser/resources/pdf/pdf_viewer.js
-+++ b/chrome/browser/resources/pdf/pdf_viewer.js
-@@ -959,25 +959,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
+diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
+index 2e370bf7fd61d75677cfc84798ba543a48f3bc19..fc8f471745c8daf30679df1ffb994febe62cfbea 100644
+--- a/chrome/browser/resources/pdf/pdf_viewer.ts
++++ b/chrome/browser/resources/pdf/pdf_viewer.ts
+@@ -855,26 +855,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
@@ -25,7 +25,8 @@ index 4d45dfa892fec8857dabdd70e3c09c46b784ef44..d9b72b9298494df57e2ad53738a21322
      const blob = new Blob(dataArray);
 -    const fileName = this.attachments_[index].name;
 -    chrome.fileSystem.chooseEntry(
--        {type: 'saveFile', suggestedName: fileName}, entry => {
+-        {type: 'saveFile', suggestedName: fileName},
+-        (entry?: FileSystemFileEntry) => {
 -          if (chrome.runtime.lastError) {
 -            if (chrome.runtime.lastError.message !== 'User cancelled') {
 -              console.error(
@@ -34,7 +35,7 @@ index 4d45dfa892fec8857dabdd70e3c09c46b784ef44..d9b72b9298494df57e2ad53738a21322
 -            }
 -            return;
 -          }
--          entry.createWriter(writer => {
+-          entry!.createWriter((writer: FileWriter) => {
 -            writer.write(blob);
 -            // Unblock closing the window now that the user has saved
 -            // successfully.
@@ -47,12 +48,11 @@ index 4d45dfa892fec8857dabdd70e3c09c46b784ef44..d9b72b9298494df57e2ad53738a21322
    }
  
    /**
-@@ -1104,30 +1091,13 @@ export class PDFViewerElement extends PDFViewerBaseElement {
-     if (!fileName.toLowerCase().endsWith('.pdf')) {
+@@ -982,30 +968,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
        fileName = fileName + '.pdf';
      }
+ 
 -    // Create blob before callback to avoid race condition.
-+
 +    const a = document.createElement('a');
 +    a.download = fileName;
      const blob = new Blob([result.dataToSave], {type: 'application/pdf'});
@@ -62,7 +62,7 @@ index 4d45dfa892fec8857dabdd70e3c09c46b784ef44..d9b72b9298494df57e2ad53738a21322
 -          accepts: [{description: '*.pdf', extensions: ['pdf']}],
 -          suggestedName: fileName
 -        },
--        entry => {
+-        (entry?: FileSystemFileEntry) => {
 -          if (chrome.runtime.lastError) {
 -            if (chrome.runtime.lastError.message !== 'User cancelled') {
 -              console.error(
@@ -71,7 +71,7 @@ index 4d45dfa892fec8857dabdd70e3c09c46b784ef44..d9b72b9298494df57e2ad53738a21322
 -            }
 -            return;
 -          }
--          entry.createWriter(writer => {
+-          entry!.createWriter((writer: FileWriter) => {
 -            writer.write(blob);
 -            // Unblock closing the window now that the user has saved
 -            // successfully.

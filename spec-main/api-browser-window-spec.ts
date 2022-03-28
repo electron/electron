@@ -12,6 +12,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
+import { areColorsSimilar, captureScreen, CHROMA_COLOR_HEX, getPixelColor } from './screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -735,6 +736,22 @@ describe('BrowserWindow module', () => {
         w.showInactive();
         expect(w.isFocused()).to.equal(false);
       });
+
+      // TODO(dsanders11): Enable for Linux once CI plays nice with these kinds of tests
+      ifit(process.platform !== 'linux')('should not restore maximized windows', async () => {
+        const maximize = emittedOnce(w, 'maximize');
+        const shown = emittedOnce(w, 'show');
+        w.maximize();
+        // TODO(dsanders11): The maximize event isn't firing on macOS for a window initially hidden
+        if (process.platform !== 'darwin') {
+          await maximize;
+        } else {
+          await delay(1000);
+        }
+        w.showInactive();
+        await shown;
+        expect(w.isMaximized()).to.equal(true);
+      });
     });
 
     describe('BrowserWindow.focus()', () => {
@@ -1058,6 +1075,25 @@ describe('BrowserWindow module', () => {
         w = new BrowserWindow({});
         w.setBackgroundColor(backgroundColor);
         expect(w.getBackgroundColor()).to.equal(backgroundColor);
+      });
+      it('returns correct color with multiple passed formats', () => {
+        w.destroy();
+        w = new BrowserWindow({});
+
+        w.setBackgroundColor('#AABBFF');
+        expect(w.getBackgroundColor()).to.equal('#AABBFF');
+
+        w.setBackgroundColor('blueviolet');
+        expect(w.getBackgroundColor()).to.equal('#8A2BE2');
+
+        w.setBackgroundColor('rgb(255, 0, 185)');
+        expect(w.getBackgroundColor()).to.equal('#FF00B9');
+
+        w.setBackgroundColor('rgba(245, 40, 145, 0.8)');
+        expect(w.getBackgroundColor()).to.equal('#F52891');
+
+        w.setBackgroundColor('hsl(155, 100%, 50%)');
+        expect(w.getBackgroundColor()).to.equal('#00FF95');
       });
     });
 
@@ -1417,6 +1453,17 @@ describe('BrowserWindow module', () => {
       expect(hiddenImage.isEmpty()).to.equal(isEmpty);
     });
 
+    it('resolves after the window is hidden and capturer count is non-zero', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.setBackgroundThrottling(false);
+      w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await emittedOnce(w, 'ready-to-show');
+
+      w.webContents.incrementCapturerCount();
+      const image = await w.capturePage();
+      expect(image.isEmpty()).to.equal(false);
+    });
+
     it('preserves transparency', async () => {
       const w = new BrowserWindow({ show: false, transparent: true });
       w.loadFile(path.join(fixtures, 'pages', 'theme-color.html'));
@@ -1429,6 +1476,14 @@ describe('BrowserWindow module', () => {
       // Check the 25th byte in the PNG.
       // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
       expect(imgBuffer[25]).to.equal(6);
+    });
+
+    it('should increase the capturer count', () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.incrementCapturerCount();
+      expect(w.webContents.isBeingCaptured()).to.be.true();
+      w.webContents.decrementCapturerCount();
+      expect(w.webContents.isBeingCaptured()).to.be.false();
     });
   });
 
@@ -1798,6 +1853,18 @@ describe('BrowserWindow module', () => {
       const [, webviewContents] = await emittedOnce(app, 'web-contents-created');
       expect(BrowserWindow.fromWebContents(webviewContents)!.id).to.equal(w.id);
       await p;
+    });
+
+    it('is usable immediately on browser-window-created', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.open(""); null');
+      const [win, winFromWebContents] = await new Promise((resolve) => {
+        app.once('browser-window-created', (e, win) => {
+          resolve([win, BrowserWindow.fromWebContents(win.webContents)]);
+        });
+      });
+      expect(winFromWebContents).to.equal(win);
     });
   });
 
@@ -3509,6 +3576,29 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  // TODO(dsanders11): Enable once maximize event works on Linux again on CI
+  ifdescribe(process.platform !== 'linux')('BrowserWindow.maximize()', () => {
+    afterEach(closeAllWindows);
+    // TODO(dsanders11): Disabled on macOS, see https://github.com/electron/electron/issues/32947
+    ifit(process.platform !== 'darwin')('should show the window if it is not currently shown', async () => {
+      const w = new BrowserWindow({ show: false });
+      const hidden = emittedOnce(w, 'hide');
+      const shown = emittedOnce(w, 'show');
+      const maximize = emittedOnce(w, 'maximize');
+      expect(w.isVisible()).to.be.false('visible');
+      w.maximize();
+      await maximize;
+      expect(w.isVisible()).to.be.true('visible');
+      // Even if the window is already maximized
+      w.hide();
+      await hidden;
+      expect(w.isVisible()).to.be.false('visible');
+      w.maximize();
+      await shown; // Ensure a 'show' event happens when it becomes visible
+      expect(w.isVisible()).to.be.true('visible');
+    });
+  });
+
   describe('BrowserWindow.unmaximize()', () => {
     afterEach(closeAllWindows);
     it('should restore the previous window position', () => {
@@ -4855,6 +4945,70 @@ describe('BrowserWindow module', () => {
       const newBounds = { width: 256, height: 256, x: 0, y: 0 };
       w.setBounds(newBounds);
       expect(w.getBounds()).to.deep.equal(newBounds);
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('should not display a visible background', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const backgroundWindow = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        backgroundColor: CHROMA_COLOR_HEX,
+        hasShadow: false
+      });
+
+      await backgroundWindow.loadURL('about:blank');
+
+      const foregroundWindow = new BrowserWindow({
+        ...display.bounds,
+        show: true,
+        transparent: true,
+        frame: false,
+        hasShadow: false
+      });
+
+      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html'));
+      await emittedOnce(foregroundWindow, 'ready-to-show');
+
+      const screenCapture = await captureScreen();
+      const leftHalfColor = getPixelColor(screenCapture, {
+        x: display.size.width / 4,
+        y: display.size.height / 2
+      });
+      const rightHalfColor = getPixelColor(screenCapture, {
+        x: display.size.width - (display.size.width / 4),
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(leftHalfColor, CHROMA_COLOR_HEX)).to.be.true();
+      expect(areColorsSimilar(rightHalfColor, '#ff0000')).to.be.true();
+    });
+  });
+
+  describe('"backgroundColor" option', () => {
+    afterEach(closeAllWindows);
+
+    // Linux/WOA doesn't return any capture sources.
+    ifit(process.platform !== 'linux' && (process.platform !== 'win32' || process.arch !== 'arm64'))('should display the set color', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        ...display.bounds,
+        show: true,
+        backgroundColor: CHROMA_COLOR_HEX
+      });
+
+      w.loadURL('about:blank');
+      await emittedOnce(w, 'ready-to-show');
+
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(centerColor, CHROMA_COLOR_HEX)).to.be.true();
     });
   });
 });

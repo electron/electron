@@ -35,7 +35,7 @@ for all windows, webviews, opened devtools, and devtools extension background pa
 
 ### `webContents.getFocusedWebContents()`
 
-Returns `WebContents` - The web contents that is focused in this application, otherwise
+Returns `WebContents` | null - The web contents that is focused in this application, otherwise
 returns `null`.
 
 ### `webContents.fromId(id)`
@@ -92,7 +92,7 @@ Returns:
 * `frameRoutingId` Integer
 
 This event is like `did-finish-load` but emitted when the load failed.
-The full list of error codes and their meaning is available [here](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
+The full list of error codes and their meaning is available [here](https://source.chromium.org/chromium/chromium/src/+/main:net/base/net_error_list.h).
 
 #### Event: 'did-fail-provisional-load'
 
@@ -819,9 +819,6 @@ contents. Calling `event.preventDefault()` will destroy the guest page.
 This event can be used to configure `webPreferences` for the `webContents`
 of a `<webview>` before it's loaded, and provides the ability to set settings
 that can't be set via `<webview>` attributes.
-
-**Note:** The specified `preload` script option will appear as `preloadURL`
-(not `preload`) in the `webPreferences` object emitted with this event.
 
 #### Event: 'did-attach-webview'
 

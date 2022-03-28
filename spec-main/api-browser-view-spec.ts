@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import { emittedOnce } from './events-helpers';
-import { BrowserView, BrowserWindow, webContents } from 'electron/main';
+import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './window-helpers';
-import { defer, startRemoteControlApp } from './spec-helpers';
+import { defer, ifit, startRemoteControlApp } from './spec-helpers';
+import { areColorsSimilar, captureScreen, getPixelColor } from './screen-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -59,6 +60,56 @@ describe('BrowserView module', () => {
       expect(() => {
         view.setBackgroundColor(null as any);
       }).to.throw(/conversion failure/);
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('sets the background color to transparent if none is set', async () => {
+      const display = screen.getPrimaryDisplay();
+      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
+
+      w.show();
+      w.setBounds(display.bounds);
+      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+      await w.loadURL('about:blank');
+
+      view = new BrowserView();
+      view.setBounds(display.bounds);
+      w.setBrowserView(view);
+      await view.webContents.loadURL('data:text/html,hello there');
+
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('successfully applies the background color', async () => {
+      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
+      const VIEW_BACKGROUND_COLOR = '#ff00ff';
+      const display = screen.getPrimaryDisplay();
+
+      w.show();
+      w.setBounds(display.bounds);
+      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+      await w.loadURL('about:blank');
+
+      view = new BrowserView();
+      view.setBounds(display.bounds);
+      w.setBrowserView(view);
+      w.setBackgroundColor(VIEW_BACKGROUND_COLOR);
+      await view.webContents.loadURL('data:text/html,hello there');
+
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(centerColor, VIEW_BACKGROUND_COLOR)).to.be.true();
     });
   });
 
@@ -300,6 +351,68 @@ describe('BrowserView module', () => {
         return { action: 'deny' };
       });
       view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+    });
+  });
+
+  describe('BrowserView.capturePage(rect)', () => {
+    it('returns a Promise with a Buffer', async () => {
+      view = new BrowserView({
+        webPreferences: {
+          backgroundThrottling: false
+        }
+      });
+      w.addBrowserView(view);
+      view.setBounds({
+        ...w.getBounds(),
+        x: 0,
+        y: 0
+      });
+      const image = await view.webContents.capturePage({
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100
+      });
+
+      expect(image.isEmpty()).to.equal(true);
+    });
+
+    xit('resolves after the window is hidden and capturer count is non-zero', async () => {
+      view = new BrowserView({
+        webPreferences: {
+          backgroundThrottling: false
+        }
+      });
+      w.setBrowserView(view);
+      view.setBounds({
+        ...w.getBounds(),
+        x: 0,
+        y: 0
+      });
+      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+      view.webContents.incrementCapturerCount();
+      const image = await view.webContents.capturePage();
+      expect(image.isEmpty()).to.equal(false);
+    });
+
+    it('should increase the capturer count', () => {
+      view = new BrowserView({
+        webPreferences: {
+          backgroundThrottling: false
+        }
+      });
+      w.setBrowserView(view);
+      view.setBounds({
+        ...w.getBounds(),
+        x: 0,
+        y: 0
+      });
+
+      view.webContents.incrementCapturerCount();
+      expect(view.webContents.isBeingCaptured()).to.be.true();
+      view.webContents.decrementCapturerCount();
+      expect(view.webContents.isBeingCaptured()).to.be.false();
     });
   });
 });

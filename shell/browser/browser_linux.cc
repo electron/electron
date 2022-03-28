@@ -207,7 +207,7 @@ void Browser::ShowAboutPanel() {
 
   if ((val = opts.FindListKey("authors"))) {
     std::vector<const char*> cstrs;
-    for (const auto& authorVal : val->GetList()) {
+    for (const auto& authorVal : val->GetListDeprecated()) {
       if (authorVal.is_string()) {
         cstrs.push_back(authorVal.GetString().c_str());
       }

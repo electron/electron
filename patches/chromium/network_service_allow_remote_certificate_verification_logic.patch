@@ -7,12 +7,12 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 3b2c642dbe29e55b6f9c4ce4a85e9aab332f3136..b3008accd63bd6694a44761c4d00a0927fad90ad 100644
+index 54b5a281161187f887032d9445f21c541b9691e5..4c8982a8ae3ae23fbeef244cd23b43c889d3fa94 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -123,6 +123,11 @@
- #include "services/network/web_transport.h"
+@@ -127,6 +127,11 @@
  #include "third_party/abseil-cpp/absl/types/optional.h"
+ #include "url/gurl.h"
  
 +// Electron
 +#include "net/cert/caching_cert_verifier.h"
@@ -22,12 +22,38 @@ index 3b2c642dbe29e55b6f9c4ce4a85e9aab332f3136..b3008accd63bd6694a44761c4d00a092
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -437,6 +442,79 @@ bool GetFullDataFilePath(
+@@ -434,6 +439,91 @@ bool GetFullDataFilePath(
  
  }  // namespace
  
 +class RemoteCertVerifier : public net::CertVerifier {
 + public:
++  class Request : public net::CertVerifier::Request {
++   public:
++    Request() {}
++    ~Request() override = default;
++    void OnRemoteResponse(
++        const RequestParams& params,
++        net::CertVerifyResult* verify_result,
++        int error_from_upstream,
++        net::CompletionOnceCallback callback,
++        int error_from_client,
++        const net::CertVerifyResult& verify_result_from_client) {
++      if (error_from_client == net::ERR_ABORTED) {
++        // use the default
++        std::move(callback).Run(error_from_upstream);
++      } else {
++        // use the override
++        verify_result->Reset();
++        verify_result->verified_cert = verify_result_from_client.verified_cert;
++        std::move(callback).Run(error_from_client);
++      }
++    }
++    base::WeakPtr<Request> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
++   private:
++    base::WeakPtrFactory<Request> weak_factory_{this};
++  };
++
 +  RemoteCertVerifier(std::unique_ptr<net::CertVerifier> upstream): upstream_(std::move(upstream)) {
 +  }
 +  ~RemoteCertVerifier() override = default;
@@ -44,20 +70,14 @@ index 3b2c642dbe29e55b6f9c4ce4a85e9aab332f3136..b3008accd63bd6694a44761c4d00a092
 +  int Verify(const RequestParams& params,
 +             net::CertVerifyResult* verify_result,
 +             net::CompletionOnceCallback callback,
-+             std::unique_ptr<Request>* out_req,
++             std::unique_ptr<CertVerifier::Request>* out_req,
 +             const net::NetLogWithSource& net_log) override {
 +    out_req->reset();
 +
 +    net::CompletionOnceCallback callback2 = base::BindOnce(
 +        &RemoteCertVerifier::OnRequestFinished, base::Unretained(this),
-+        params, std::move(callback), verify_result);
-+    int result = upstream_->Verify(params, verify_result,
-+                                   std::move(callback2), out_req, net_log);
-+    if (result != net::ERR_IO_PENDING) {
-+      // Synchronous completion
-+    }
-+
-+    return result;
++        params, std::move(callback), verify_result, out_req);
++    return upstream_->Verify(params, verify_result, std::move(callback2), out_req, net_log);
 +  }
 +
 +
@@ -65,35 +85,27 @@ index 3b2c642dbe29e55b6f9c4ce4a85e9aab332f3136..b3008accd63bd6694a44761c4d00a092
 +    upstream_->SetConfig(config);
 +  }
 +
-+  void OnRequestFinished(const RequestParams& params, net::CompletionOnceCallback callback, net::CertVerifyResult* verify_result, int error) {
++  void OnRequestFinished(const RequestParams& params,
++                         net::CompletionOnceCallback callback,
++                         net::CertVerifyResult* verify_result,
++                         std::unique_ptr<CertVerifier::Request>* out_req,
++                         int error) {
 +    if (client_.is_bound()) {
++      // We take a weak pointer to the request because deletion of the request
++      // is what signals cancellation. Thus if the request is cancelled, the
++      // callback won't be called, thus avoiding UAF, because |verify_result|
++      // is freed when the request is cancelled.
++      *out_req = std::make_unique<Request>();
++      base::WeakPtr<Request> weak_req = static_cast<Request*>(out_req->get())->GetWeakPtr();
 +      client_->Verify(error, *verify_result, params.certificate(),
 +          params.hostname(), params.flags(), params.ocsp_response(),
-+          base::BindOnce(&RemoteCertVerifier::OnRemoteResponse,
-+            base::Unretained(this), params, verify_result, error,
-+            std::move(callback)));
++          base::BindOnce(&Request::OnRemoteResponse,
++            weak_req, params, verify_result, error, std::move(callback)));
 +    } else {
 +      std::move(callback).Run(error);
 +    }
 +  }
 +
-+  void OnRemoteResponse(
-+      const RequestParams& params,
-+      net::CertVerifyResult* verify_result,
-+      int error,
-+      net::CompletionOnceCallback callback,
-+      int error2,
-+      const net::CertVerifyResult& verify_result2) {
-+    if (error2 == net::ERR_ABORTED) {
-+      // use the default
-+      std::move(callback).Run(error);
-+    } else {
-+      // use the override
-+      verify_result->Reset();
-+      verify_result->verified_cert = verify_result2.verified_cert;
-+      std::move(callback).Run(error2);
-+    }
-+  }
 + private:
 +  std::unique_ptr<net::CertVerifier> upstream_;
 +  mojo::Remote<mojom::CertVerifierClient> client_;
@@ -102,7 +114,7 @@ index 3b2c642dbe29e55b6f9c4ce4a85e9aab332f3136..b3008accd63bd6694a44761c4d00a092
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -674,6 +752,13 @@ void NetworkContext::SetClient(
+@@ -678,6 +768,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -116,7 +128,7 @@ index 3b2c642dbe29e55b6f9c4ce4a85e9aab332f3136..b3008accd63bd6694a44761c4d00a092
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2173,6 +2258,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2242,6 +2339,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -127,10 +139,10 @@ index 3b2c642dbe29e55b6f9c4ce4a85e9aab332f3136..b3008accd63bd6694a44761c4d00a092
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index f69a86f90a6a9055cfc7d4a613e82c0260582688..486a151f6923fd0069ce5aaaffe6559cb60a88ec 100644
+index 3fd4c43562aa5de00d8698096f154522420c8f24..eed05c05d1da28284af6ae0cef45dbbb47254058 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -101,6 +101,7 @@ class DomainReliabilityMonitor;
+@@ -105,6 +105,7 @@ class URLMatcher;
  
  namespace network {
  class CertVerifierWithTrustAnchors;
@@ -138,7 +150,7 @@ index f69a86f90a6a9055cfc7d4a613e82c0260582688..486a151f6923fd0069ce5aaaffe6559c
  class CookieManager;
  class ExpectCTReporter;
  class HostResolver;
-@@ -216,6 +217,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -221,6 +222,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -147,7 +159,7 @@ index f69a86f90a6a9055cfc7d4a613e82c0260582688..486a151f6923fd0069ce5aaaffe6559c
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -769,6 +772,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -796,6 +799,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    CertVerifierWithTrustAnchors* cert_verifier_with_trust_anchors_ = nullptr;
  #endif
  
@@ -157,10 +169,10 @@ index f69a86f90a6a9055cfc7d4a613e82c0260582688..486a151f6923fd0069ce5aaaffe6559c
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index d7c10e5a55bf0db67c113e0f46094de3c3b3d158..89c00d7ab1510ebdbce49876fcd5f94c5096b3c9 100644
+index 64199b44316ab4671941c734444d207591512d0a..c929eb10af5b8856debdc0d665eac767e9730714 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -277,6 +277,17 @@ struct NetworkContextFilePaths {
+@@ -280,6 +280,17 @@ struct NetworkContextFilePaths {
    bool trigger_migration = false;
  };
  
@@ -178,7 +190,7 @@ index d7c10e5a55bf0db67c113e0f46094de3c3b3d158..89c00d7ab1510ebdbce49876fcd5f94c
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -792,6 +803,9 @@ interface NetworkContext {
+@@ -829,6 +840,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

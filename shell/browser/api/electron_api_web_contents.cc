@@ -167,7 +167,7 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/browser/print_manager_utils.h"
 #include "printing/backend/print_backend.h"  // nogncheck
-#include "printing/mojom/print.mojom.h"
+#include "printing/mojom/print.mojom.h"      // nogncheck
 #include "shell/browser/printing/print_preview_message_handler.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 
@@ -390,9 +390,10 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
 
 absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
 #if BUILDFLAG(IS_MAC)
-  base::TimeDelta interval;
-  if (ui::TextInsertionCaretBlinkPeriod(&interval))
-    return interval;
+  absl::optional<base::TimeDelta> system_value(
+      ui::TextInsertionCaretBlinkPeriodFromDefaults());
+  if (system_value)
+    return *system_value;
 #elif BUILDFLAG(IS_LINUX)
   if (auto* linux_ui = views::LinuxUI::instance())
     return linux_ui->GetCursorBlinkInterval();
@@ -767,8 +768,12 @@ WebContents::WebContents(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_OSR)
     }
   } else if (IsOffScreen()) {
-    bool transparent = false;
-    options.Get(options::kTransparent, &transparent);
+    // webPreferences does not have a transparent option, so if the window needs
+    // to be transparent, that will be set at electron_api_browser_window.cc#L57
+    // and we then need to pull it back out and check it here.
+    std::string background_color;
+    options.GetHidden(options::kBackgroundColor, &background_color);
+    bool transparent = ParseCSSColor(background_color) == SK_ColorTRANSPARENT;
 
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
@@ -1082,7 +1087,7 @@ content::WebContents* WebContents::CreateCustomWebContents(
     const GURL& opener_url,
     const std::string& frame_name,
     const GURL& target_url,
-    const content::StoragePartitionId& partition_id,
+    const content::StoragePartitionConfig& partition_config,
     content::SessionStorageNamespace* session_storage_namespace) {
   return nullptr;
 }
@@ -1484,11 +1489,13 @@ void WebContents::HandleNewRenderFrame(
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
+    absl::optional<SkColor> maybe_color = web_preferences->GetBackgroundColor();
+    web_contents()->SetPageBaseBackgroundColor(maybe_color);
+
     bool guest = IsGuest() || type_ == Type::kBrowserView;
-    absl::optional<SkColor> color =
-        guest ? SK_ColorTRANSPARENT : web_preferences->GetBackgroundColor();
-    web_contents()->SetPageBaseBackgroundColor(color);
-    SetBackgroundColor(rwhv, color.value_or(SK_ColorWHITE));
+    SkColor color =
+        maybe_color.value_or(guest ? SK_ColorTRANSPARENT : SK_ColorWHITE);
+    SetBackgroundColor(rwhv, color);
   }
 
   if (!background_throttling_)
@@ -1746,7 +1753,7 @@ void WebContents::Message(bool internal,
   // webContents.emit('-ipc-message', new Event(), internal, channel,
   // arguments);
   EmitWithSender("-ipc-message", render_frame_host,
-                 electron::mojom::ElectronBrowser::InvokeCallback(), internal,
+                 electron::mojom::ElectronApiIPC::InvokeCallback(), internal,
                  channel, std::move(arguments));
 }
 
@@ -1754,7 +1761,7 @@ void WebContents::Invoke(
     bool internal,
     const std::string& channel,
     blink::CloneableMessage arguments,
-    electron::mojom::ElectronBrowser::InvokeCallback callback,
+    electron::mojom::ElectronApiIPC::InvokeCallback callback,
     content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
   // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
@@ -1780,7 +1787,7 @@ void WebContents::ReceivePostMessage(
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
   EmitWithSender("-ipc-ports", render_frame_host,
-                 electron::mojom::ElectronBrowser::InvokeCallback(), false,
+                 electron::mojom::ElectronApiIPC::InvokeCallback(), false,
                  channel, message_value, std::move(wrapped_ports));
 }
 
@@ -1788,7 +1795,7 @@ void WebContents::MessageSync(
     bool internal,
     const std::string& channel,
     blink::CloneableMessage arguments,
-    electron::mojom::ElectronBrowser::MessageSyncCallback callback,
+    electron::mojom::ElectronApiIPC::MessageSyncCallback callback,
     content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
   // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
@@ -1826,7 +1833,7 @@ void WebContents::MessageHost(const std::string& channel,
   TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
   // webContents.emit('ipc-message-host', new Event(), channel, args);
   EmitWithSender("ipc-message-host", render_frame_host,
-                 electron::mojom::ElectronBrowser::InvokeCallback(), channel,
+                 electron::mojom::ElectronApiIPC::InvokeCallback(), channel,
                  std::move(arguments));
 }
 
@@ -2769,7 +2776,7 @@ void WebContents::Print(gin::Arguments* args) {
         continue;
       }
     }
-    if (!page_range_list.GetList().empty())
+    if (!page_range_list.GetListDeprecated().empty())
       settings.SetPath(printing::kSettingPageRange, std::move(page_range_list));
   }
 
@@ -3122,8 +3129,9 @@ void WebContents::IncrementCapturerCount(gin::Arguments* args) {
   // get stayAwake arguments if they exist
   args->GetNext(&stay_awake);
 
-  std::ignore =
-      web_contents()->IncrementCapturerCount(size, stay_hidden, stay_awake);
+  std::ignore = web_contents()
+                    ->IncrementCapturerCount(size, stay_hidden, stay_awake)
+                    .Release();
 }
 
 void WebContents::DecrementCapturerCount(gin::Arguments* args) {
@@ -3265,7 +3273,8 @@ void WebContents::SetTemporaryZoomLevel(double level) {
 }
 
 void WebContents::DoGetZoomLevel(
-    electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback) {
+    electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
+        callback) {
   std::move(callback).Run(GetZoomLevel());
 }
 
@@ -3526,12 +3535,10 @@ bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
 }
 
 content::PictureInPictureResult WebContents::EnterPictureInPicture(
-    content::WebContents* web_contents,
-    const viz::SurfaceId& surface_id,
-    const gfx::Size& natural_size) {
+    content::WebContents* web_contents) {
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
-  return PictureInPictureWindowManager::GetInstance()->EnterPictureInPicture(
-      web_contents, surface_id, natural_size);
+  return PictureInPictureWindowManager::GetInstance()
+      ->EnterVideoPictureInPicture(web_contents);
 #else
   return content::PictureInPictureResult::kNotSupported;
 #endif
@@ -3683,7 +3690,8 @@ void WebContents::DevToolsIndexPath(
   std::unique_ptr<base::Value> parsed_excluded_folders =
       base::JSONReader::ReadDeprecated(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
-    for (const base::Value& folder_path : parsed_excluded_folders->GetList()) {
+    for (const base::Value& folder_path :
+         parsed_excluded_folders->GetListDeprecated()) {
       if (folder_path.is_string())
         excluded_folders.push_back(folder_path.GetString());
     }

@@ -78,12 +78,14 @@ def make_diff(diff_file, original, reformatted):
 
 class DiffError(Exception):
     def __init__(self, message, errs=None):
+        # pylint: disable=R1725
         super(DiffError, self).__init__(message)
         self.errs = errs or []
 
 
 class UnexpectedError(Exception):
     def __init__(self, message, exc=None):
+        # pylint: disable=R1725
         super(UnexpectedError, self).__init__(message)
         self.formatted_traceback = traceback.format_exc()
         self.exc = exc
@@ -96,6 +98,7 @@ def run_clang_format_diff_wrapper(args, file_name):
     except DiffError:
         raise
     except Exception as e:
+        # pylint: disable=W0707
         raise UnexpectedError('{}: {}: {}'.format(
             file_name, e.__class__.__name__, e), e)
 
@@ -105,6 +108,7 @@ def run_clang_format_diff(args, file_name):
         with io.open(file_name, 'r', encoding='utf-8') as f:
             original = f.readlines()
     except IOError as exc:
+        # pylint: disable=W0707
         raise DiffError(str(exc))
     invocation = [args.clang_format_executable, file_name]
     if args.fix:
@@ -117,6 +121,7 @@ def run_clang_format_diff(args, file_name):
             universal_newlines=True,
             shell=True)
     except OSError as exc:
+        # pylint: disable=W0707
         raise DiffError(str(exc))
     proc_stdout = proc.stdout
     proc_stderr = proc.stderr
@@ -287,7 +292,7 @@ def main():
         extensions=args.extensions.split(','))
 
     if not files:
-        return
+        return 0
 
     njobs = args.j
     if njobs == 0:

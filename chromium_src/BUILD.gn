@@ -53,8 +53,8 @@ static_library("chrome") {
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
     "//chrome/browser/predictors/resolve_host_client_impl.h",
     "//chrome/browser/process_singleton.h",
-    "//chrome/browser/ui/browser_dialogs.cc",
-    "//chrome/browser/ui/browser_dialogs.h",
+    "//chrome/browser/process_singleton_internal.cc",
+    "//chrome/browser/process_singleton_internal.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.cc",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc",
@@ -253,6 +253,8 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/close_image_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.h",
       "//chrome/browser/ui/views/overlay/constants.h",
+      "//chrome/browser/ui/views/overlay/document_overlay_window_views.cc",
+      "//chrome/browser/ui/views/overlay/document_overlay_window_views.h",
       "//chrome/browser/ui/views/overlay/hang_up_button.cc",
       "//chrome/browser/ui/views/overlay/hang_up_button.h",
       "//chrome/browser/ui/views/overlay/overlay_window_image_button.cc",
@@ -271,11 +273,14 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
       "//chrome/browser/ui/views/overlay/track_image_button.cc",
       "//chrome/browser/ui/views/overlay/track_image_button.h",
+      "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
+      "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
     ]
 
     deps += [
       "//chrome/app/vector_icons",
       "//components/vector_icons:vector_icons",
+      "//ui/views/controls/webview",
     ]
   }
 
@@ -293,12 +298,14 @@ static_library("chrome") {
 
     if (enable_pdf_viewer) {
       sources += [
+        "//chrome/browser/pdf/chrome_pdf_stream_delegate.cc",
+        "//chrome/browser/pdf/chrome_pdf_stream_delegate.h",
         "//chrome/browser/pdf/pdf_extension_util.cc",
         "//chrome/browser/pdf/pdf_extension_util.h",
         "//chrome/browser/pdf/pdf_frame_util.cc",
         "//chrome/browser/pdf/pdf_frame_util.h",
-        "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
-        "//chrome/renderer/pepper/chrome_pdf_print_client.h",
+        "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
+        "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]
     }
   }
@@ -341,8 +348,6 @@ source_set("plugins") {
   sources += [
     "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc",
     "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h",
-    "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
-    "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
   ]

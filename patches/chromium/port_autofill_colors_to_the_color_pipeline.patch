@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 14 Feb 2022 19:24:36 +0900
+Subject: Port autofill colors to the color pipeline.
+
+https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors as they are no longer
+needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
+our autofill implementation to work like Chromium's.
+
+diff --git a/ui/color/color_id.h b/ui/color/color_id.h
+index d9db2d705c88e828383e81efd8f8c6d28e1520bb..7f0e1672af0fef134fc637324e366e9e8d985054 100644
+--- a/ui/color/color_id.h
++++ b/ui/color/color_id.h
+@@ -122,6 +122,16 @@
+   E_CPONLY(kColorOverlayScrollbarStrokeHoveredDark) \
+   E_CPONLY(kColorOverlayScrollbarStrokeHoveredLight) \
+   E_CPONLY(kColorProgressBar) \
++  E_CPONLY(kColorPwaSecurityChipForeground) \
++  E_CPONLY(kColorPwaSecurityChipForegroundDangerous) \
++  E_CPONLY(kColorPwaSecurityChipForegroundPolicyCert) \
++  E_CPONLY(kColorPwaSecurityChipForegroundSecure) \
++  E_CPONLY(kColorPwaToolbarBackground) \
++  E_CPONLY(kColorPwaToolbarForeground) \
++  E_CPONLY(kColorResultsTableNormalBackground) \
++  E_CPONLY(kColorResultsTableHoveredBackground) \
++  E_CPONLY(kColorResultsTableNormalText) \
++  E_CPONLY(kColorResultsTableDimmedText) \
+   E_CPONLY(kColorSeparator) \
+   E_CPONLY(kColorShadowBase) \
+   E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
+@@ -174,6 +184,7 @@
+   E_CPONLY(kColorTreeNodeForeground) \
+   E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
+   E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
++  E_CPONLY(kColorUnfocusedBorder) \
+   E_CPONLY(kColorWindowBackground)
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
+index a89f393da6c06ba21d5303a925dd9e907bde5e03..e0106610831ca36544161672f3663e54b2585228 100644
+--- a/ui/color/ui_color_mixer.cc
++++ b/ui/color/ui_color_mixer.cc
+@@ -138,6 +138,17 @@ void AddUiColorMixer(ColorProvider* provider,
+       SetAlpha(GetColorWithMaxContrast(kColorOverlayScrollbarFillHoveredLight),
+                gfx::kGoogleGreyAlpha500);
+   mixer[kColorProgressBar] = {kColorAccent};
++  mixer[kColorResultsTableNormalBackground] = {SK_ColorWHITE};
++  mixer[kColorResultsTableHoveredBackground] =
++      SetAlpha(kColorResultsTableNormalText, 0x0D);
++  mixer[kColorResultsTableNormalText] = {SK_ColorBLACK};
++  mixer[kColorResultsTableDimmedText] = {SkColorSetRGB(0x64, 0x64, 0x64)};
++  if (dark_mode) {
++    mixer[kColorResultsTableNormalBackground] = {SkColorSetRGB(0x28, 0x28, 0x28)};
++    mixer[kColorResultsTableNormalText] = {SK_ColorWHITE};
++    mixer[kColorResultsTableDimmedText] =
++      SetAlpha(kColorResultsTableNormalText, 0x80);
++  }
+   mixer[kColorSeparator] = {kColorMidground};
+   mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
+   mixer[kColorShadowValueAmbientShadowElevationThree] =
+@@ -213,6 +224,7 @@ void AddUiColorMixer(ColorProvider* provider,
+   mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
+   mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
+       kColorTreeNodeForegroundSelectedFocused};
++  mixer[kColorUnfocusedBorder] = {kColorMidground};
+   mixer[kColorWindowBackground] = {kColorPrimaryBackground};
+ }
+ 
+diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
+index 0620a389750649218865de06ed5d66f9ffe71871..575dcd925807263a9a5657d5156a3772421a0ed5 100644
+--- a/ui/color/win/native_color_mixers_win.cc
++++ b/ui/color/win/native_color_mixers_win.cc
+@@ -136,6 +136,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+       SetAlpha(kColorNotificationInputForeground, gfx::kGoogleGreyAlpha700);
+   mixer[kColorSliderTrack] = AlphaBlend(
+       kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
++  mixer[kColorResultsTableHoveredBackground] = AlphaBlend(
++      kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
++  mixer[kColorResultsTableDimmedText] = AlphaBlend(
++      kColorNativeWindowText, kColorNativeWindow, gfx::kGoogleGreyAlpha600);
+ 
+   // Window Background
+   mixer[kColorBubbleFooterBackground] = {kColorNativeWindow};
+@@ -143,11 +147,13 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+   mixer[kColorFrameActive] = {ui::kColorNativeWindow};
+   mixer[kColorFrameInactive] = {ui::kColorNativeWindow};
+   mixer[kColorTooltipBackground] = {kColorNativeWindow};
++  mixer[kColorResultsTableNormalBackground] = {kColorNativeWindow};
+ 
+   // Window Text
+   mixer[kColorTableGroupingIndicator] = {kColorNativeWindowText};
+   mixer[kColorThrobber] = {kColorNativeWindowText};
+   mixer[kColorTooltipForeground] = {kColorNativeWindowText};
++  mixer[kColorResultsTableNormalText] = {kColorNativeWindowText};
+ 
+   // Hyperlinks
+   mixer[kColorLinkForeground] = {kColorNativeHotlight};
+@@ -181,6 +187,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+   mixer[kColorTextfieldForeground] = {kColorNativeBtnText};
+   mixer[kColorTextfieldForegroundPlaceholder] = {kColorNativeBtnText};
+   mixer[kColorTextfieldForegroundDisabled] = {kColorNativeBtnText};
++  mixer[kColorUnfocusedBorder] = {kColorNativeBtnText};
+ 
+   // Highlight/Selected Background
+   mixer[kColorButtonBorder] = {kColorNativeHighlight};

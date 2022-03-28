@@ -8,7 +8,7 @@
 * `enable_argument_filter` boolean (optional) - if true, filter event data
   according to a specific list of events that have been manually vetted to not
   include any PII. See [the implementation in
-  Chromium][trace_event_args_whitelist.cc] for specifics.
+  Chromium][trace_event_args_allowlist.cc] for specifics.
 * `included_categories` string[] (optional) - a list of tracing categories to
   include. Can include glob-like patterns using `*` at the end of the category
   name. See [tracing categories][] for the list of categories.
@@ -45,7 +45,7 @@ An example TraceConfig that roughly matches what Chrome DevTools records:
 }
 ```
 
-[tracing categories]: https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h
-[memory-infra docs]: https://chromium.googlesource.com/chromium/src/+/master/docs/memory-infra/memory_infra_startup_tracing.md#the-advanced-way
-[trace_event_args_whitelist.cc]: https://chromium.googlesource.com/chromium/src/+/master/services/tracing/public/cpp/trace_event_args_whitelist.cc
+[tracing categories]: https://chromium.googlesource.com/chromium/src/+/main/base/trace_event/builtin_categories.h
+[memory-infra docs]: https://chromium.googlesource.com/chromium/src/+/main/docs/memory-infra/memory_infra_startup_tracing.md#the-advanced-way
+[trace_event_args_allowlist.cc]: https://chromium.googlesource.com/chromium/src/+/main/services/tracing/public/cpp/trace_event_args_allowlist.cc
 [histogram]: https://chromium.googlesource.com/chromium/src.git/+/HEAD/tools/metrics/histograms/README.md

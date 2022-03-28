@@ -16,7 +16,7 @@ https://github.com/electron/electron/pull/18483#discussion_r292703588
 https://github.com/electron/electron/pull/18483#issuecomment-501090683
 
 diff --git a/third_party/crashpad/crashpad/util/win/exception_handler_server.cc b/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
-index 92d5c5d47cfa5bd70300bb8bbc16ab944cd93509..87c14718221a83d531d15abf1f1d2d1bbc020e77 100644
+index 6890a01cc4b333927be6c36ff3392706020f57a3..36da005deed5893989585427216fd1e16d5e9f0c 100644
 --- a/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
 +++ b/third_party/crashpad/crashpad/util/win/exception_handler_server.cc
 @@ -446,9 +446,16 @@ bool ExceptionHandlerServer::ServiceClientConnection(

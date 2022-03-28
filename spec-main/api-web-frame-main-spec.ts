@@ -6,7 +6,7 @@ import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain } from 'electron/mai
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
-import { waitUntil } from './spec-helpers';
+import { ifit, waitUntil } from './spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
@@ -201,7 +201,8 @@ describe('webFrameMain module', () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
     });
 
-    it('throws upon accessing properties when disposed', async () => {
+    // TODO(jkleinsc) fix this flaky test on linux
+    ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       const { mainFrame } = w.webContents;
       w.destroy();

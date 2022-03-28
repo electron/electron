@@ -52,11 +52,17 @@ executors:
     parameters:
       size:
         description: "macOS executor size"
-        default: large
+        default: macos.x86.medium.gen2
         type: enum
-        enum: ["medium", "large"]
+        enum: ["macos.x86.medium.gen2", "large"]
+      xcode:
+        description: "xcode version"
+        default: "12.4.0"
+        type: enum
+        enum: ["12.4.0", "13.2.1"]
+
     macos:
-      xcode: "12.4.0"
+      xcode: << parameters.xcode >>
     resource_class: << parameters.size >>
 
   # Electron Runners
@@ -322,6 +328,10 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
       export GOMA_FALLBACK_ON_AUTH_FAILURE=true
       third_party/goma/goma_ctl.py ensure_start
+      if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`third_party/goma/goma_auth.py info`" != "Login as Fermi Planck" ]; then
+        echo "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token."
+        exit 1
+      fi
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
       echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
@@ -349,10 +359,7 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo mkdir -p $TMPDIR/del-target
-        if [ "$TARGET_ARCH" == "arm64" ]; then
-          # Remount the root volume as writable, don't ask questions plz
-          sudo mount -uw /
-        fi
+
         tmpify() {
           if [ -d "$1" ]; then
             sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
@@ -394,33 +401,32 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         tmpify /usr/local/Homebrew
         sudo rm -rf $TMPDIR/del-target
 
-        if [ "$TARGET_ARCH" == "arm64" ]; then
-          sudo rm -rf "/System/Library/Desktop Pictures"
-          sudo rm -rf /System/Library/Templates/Data
-          sudo rm -rf /System/Library/Speech/Voices
-          sudo rm -rf "/System/Library/Screen Savers"
-          sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
-          sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
-          sudo rm -rf /System/Volumes/Data/Library/Java
-          sudo rm -rf /System/Volumes/Data/Library/Ruby
-          sudo rm -rf /System/Volumes/Data/Library/Printers
-          sudo rm -rf /System/iOSSupport
-          sudo rm -rf /System/Applications/*.app
-          sudo rm -rf /System/Applications/Utilities/*.app
-          sudo rm -rf /System/Library/LinguisticData
-          sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
-          # sudo rm -rf /System/Library/Fonts/*
-          # sudo rm -rf /System/Library/PreferencePanes
-          sudo rm -rf /System/Library/AssetsV2/*
-          sudo rm -rf /Applications/Safari.app
-          sudo rm -rf ~/project/src/build/linux
-          sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
-          sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
+        # sudo rm -rf "/System/Library/Desktop Pictures"
+        # sudo rm -rf /System/Library/Templates/Data
+        # sudo rm -rf /System/Library/Speech/Voices
+        # sudo rm -rf "/System/Library/Screen Savers"
+        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
+        # sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
+        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/
+        # sudo rm -rf /System/Volumes/Data/Library/Java
+        # sudo rm -rf /System/Volumes/Data/Library/Ruby
+        # sudo rm -rf /System/Volumes/Data/Library/Printers
+        # sudo rm -rf /System/iOSSupport
+        # sudo rm -rf /System/Applications/*.app
+        # sudo rm -rf /System/Applications/Utilities/*.app
+        # sudo rm -rf /System/Library/LinguisticData
+        # sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
+        # sudo rm -rf /System/Library/Fonts/*
+        # sudo rm -rf /System/Library/PreferencePanes
+        # sudo rm -rf /System/Library/AssetsV2/*
+        sudo rm -rf /Applications/Safari.app
+        sudo rm -rf ~/project/src/build/linux
+        sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
+        sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
 
-          # lipo off some huge binaries arm64 versions to save space
-          strip_arm_deep $(xcode-select -p)/../SharedFrameworks
-          strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-        fi
+        # lipo off some huge binaries arm64 versions to save space
+        strip_arm_deep $(xcode-select -p)/../SharedFrameworks
+        # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
       fi
     background: true
 
@@ -461,10 +467,18 @@ step-fix-sync: &step-fix-sync
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python3 src/tools/clang/scripts/update.py
+
+        # Fix esbuild (wrong binary)
+        echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep --deps-file=src/third_party/devtools-frontend/src/DEPS -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
+        cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
       fi
 
       cd src/third_party/angle
+      rm .git/objects/info/alternates
       git remote set-url origin https://chromium.googlesource.com/angle/angle.git
+      cp .git/config .git/config.backup
+      git remote remove origin
+      mv .git/config.backup .git/config
       git fetch
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
@@ -534,6 +548,7 @@ step-electron-build: &step-electron-build
         (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
         rm -rf out/Default/clang_x64_v8_arm64/gen
         rm -rf out/Default/clang_x64_v8_arm64/obj
+        rm -rf out/Default/clang_x64_v8_arm64/thinlto-cache
         rm -rf out/Default/clang_x64/obj
 
         # Regenerate because we just deleted some ninja files 
@@ -770,6 +785,7 @@ step-show-goma-stats: &step-show-goma-stats
 step-mksnapshot-build: &step-mksnapshot-build
   run:
     name: mksnapshot build
+    no_output_timeout: 30m
     command: |
       cd src
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
@@ -1542,11 +1558,9 @@ commands:
 jobs:
   # Layer 0: Docs. Standalone.
   ts-compile-doc-change:
-    executor:
-      name: linux-docker
-      size: medium
+    executor: linux-docker
     environment:
-      <<: *env-linux-medium
+      <<: *env-linux-2xlarge
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-ts-compile-for-doc-change
@@ -1893,7 +1907,9 @@ jobs:
                 checkout: true
 
   osx-testing-x64:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1910,14 +1926,16 @@ jobs:
   osx-testing-x64-gn-check:
     executor:
       name: macos
-      size: medium
+      xcode: "13.2.1"
     environment:
       <<: *env-machine-mac
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   osx-publish-x64-skip-checkout:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1936,7 +1954,9 @@ jobs:
                 checkout: false
 
   osx-publish-arm64-skip-checkout:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1956,7 +1976,9 @@ jobs:
                 checkout: false
 
   osx-testing-arm64:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1973,7 +1995,9 @@ jobs:
           attach: true
 
   mas-testing-x64:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large
       <<: *env-mas
@@ -1991,7 +2015,7 @@ jobs:
   mas-testing-x64-gn-check:
     executor:
       name: macos
-      size: medium
+      xcode: "13.2.1"
     environment:
       <<: *env-machine-mac
       <<: *env-mas
@@ -1999,7 +2023,9 @@ jobs:
     <<: *steps-electron-gn-check
 
   mas-publish-x64-skip-checkout:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large-release
       <<: *env-mas
@@ -2018,7 +2044,9 @@ jobs:
                 checkout: false
 
   mas-publish-arm64-skip-checkout:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2038,7 +2066,9 @@ jobs:
                 checkout: false
 
   mas-testing-arm64:
-    executor: macos
+    executor:
+      name: macos
+      xcode: "13.2.1"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2225,9 +2255,7 @@ jobs:
     <<: *steps-tests
 
   osx-testing-x64-tests:
-    executor:
-      name: macos
-      size: medium
+    executor: macos      
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2243,9 +2271,7 @@ jobs:
     <<: *steps-tests
 
   mas-testing-x64-tests:
-    executor:
-      name: macos
-      size: medium
+    executor: macos
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping

@@ -67,6 +67,31 @@ build_script:
   - mkdir src
   - update_depot_tools.bat
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
+  - ps: >-
+      if (Test-Path 'env:RAW_GOMA_AUTH') {
+        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
+        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
+      }
+  - git clone https://github.com/electron/build-tools.git
+  - cd build-tools
+  - npm install
+  - mkdir third_party
+  - ps: >-
+      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
+  - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
+  - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
+  - cd ..
+  - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
+  - ps: >-
+      if (Test-Path 'env:RAW_GOMA_AUTH') {
+        $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
+        if ($goma_login -eq 'Login as Fermi Planck') {
+          Write-warning "Goma authentication is correct";
+        } else {
+          Write-warning "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token.";
+          $host.SetShouldExit(1)
+        }
+      }
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: >-
       if ($env:GN_CONFIG -ne 'release') {
@@ -130,21 +155,6 @@ build_script:
           Write-warning "Failed to add third_party\angle\.git; continuing anyway"
         }
       }
-  - ps: >-
-      if (Test-Path 'env:RAW_GOMA_AUTH') {
-        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
-        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
-      }
-  - git clone https://github.com/electron/build-tools.git
-  - cd build-tools
-  - npm install
-  - mkdir third_party
-  - ps: >-
-      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
-  - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
-  - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
-  - cd ..
-  - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
@@ -210,7 +220,9 @@ test_script:
       }
   - cd electron
   # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
-  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --trace-uncaught --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
+  - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
+  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeperately --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
+  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )  
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"
@@ -218,6 +230,7 @@ test_script:
   - echo "Done verifying mksnapshot"
   - if "%RUN_TESTS%"=="true" ( echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd% )
   - echo "Done verifying chromedriver"
+  - if exist %cd%\electron.log ( appveyor-retry appveyor PushArtifact %cd%\electron.log )
 deploy_script:
   - cd electron
   - ps: >-
@@ -233,4 +246,4 @@ deploy_script:
         node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
       }
 on_finish:
-  - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
+  - if exist src\electron\electron.log ( appveyor-retry appveyor PushArtifact src\electron\electron.log )

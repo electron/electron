@@ -193,13 +193,13 @@ template("electron_paks") {
       "//ui/strings:ui_strings",
     ]
 
-    input_locales = locales
+    input_locales = platform_pak_locales
     output_dir = "${invoker.output_dir}/locales"
 
     if (is_mac) {
-      output_locales = locales_as_mac_outputs
+      output_locales = locales_as_apple_outputs
     } else {
-      output_locales = locales
+      output_locales = platform_pak_locales
     }
   }
 

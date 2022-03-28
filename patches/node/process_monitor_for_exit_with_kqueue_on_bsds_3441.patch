@@ -1,0 +1,170 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Mon, 31 Jan 2022 11:49:22 -0800
+Subject: process: monitor for exit with kqueue on BSDs (#3441)
+
+This adds a workaround for an xnu kernel bug that sometimes results in
+SIGCHLD not being delivered. The workaround is to use kevent to listen
+for EVFILT_PROC/NOTE_EXIT events instead of relying on SIGCHLD on *BSD.
+
+Apple rdar: FB9529664
+Refs: https://github.com/libuv/libuv/pull/3257
+
+diff --git a/deps/uv/src/unix/internal.h b/deps/uv/src/unix/internal.h
+index 12d4da93686e993830a7d09e74d08191fc808f4f..16be13b99f5db77741aa276e90a437ef4eb5ba32 100644
+--- a/deps/uv/src/unix/internal.h
++++ b/deps/uv/src/unix/internal.h
+@@ -282,6 +282,7 @@ uv_handle_type uv__handle_type(int fd);
+ FILE* uv__open_file(const char* path);
+ int uv__getpwuid_r(uv_passwd_t* pwd);
+ int uv__search_path(const char* prog, char* buf, size_t* buflen);
++void uv__wait_children(uv_loop_t* loop);
+ 
+ /* random */
+ int uv__random_devurandom(void* buf, size_t buflen);
+diff --git a/deps/uv/src/unix/kqueue.c b/deps/uv/src/unix/kqueue.c
+index 75e9110709da8d30628449311cb916a26c775ecf..efbc561dee2574f06ebd9408d1e89e435c93cc5a 100644
+--- a/deps/uv/src/unix/kqueue.c
++++ b/deps/uv/src/unix/kqueue.c
+@@ -284,6 +284,11 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
+     loop->watchers[loop->nwatchers + 1] = (void*) (uintptr_t) nfds;
+     for (i = 0; i < nfds; i++) {
+       ev = events + i;
++      if (ev->filter == EVFILT_PROC) {
++        uv__wait_children(loop);
++        nevents++;
++        continue;
++      }
+       fd = ev->ident;
+       /* Skip invalidated events, see uv__platform_invalidate_fd */
+       if (fd == -1)
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index 91bf3c507022b2eddc0d36f40d73a977bf731fbc..c1f6bd4b0076f0835caf83c45a6a896e7ae5def9 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -49,10 +49,20 @@ extern char **environ;
+ # include "zos-base.h"
+ #endif
+ 
++#if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
++#include <sys/event.h>
++#endif
++
+ 
++#if !(defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
+ static void uv__chld(uv_signal_t* handle, int signum) {
++  assert(signum == SIGCHLD);
++  uv__wait_children(handle->loop);
++}
++#endif
++
++void uv__wait_children(uv_loop_t* loop) {
+   uv_process_t* process;
+-  uv_loop_t* loop;
+   int exit_status;
+   int term_signal;
+   int status;
+@@ -61,10 +71,7 @@ static void uv__chld(uv_signal_t* handle, int signum) {
+   QUEUE* q;
+   QUEUE* h;
+ 
+-  assert(signum == SIGCHLD);
+-
+   QUEUE_INIT(&pending);
+-  loop = handle->loop;
+ 
+   h = &loop->process_handles;
+   q = QUEUE_HEAD(h);
+@@ -420,7 +427,9 @@ int uv_spawn(uv_loop_t* loop,
+   if (err)
+     goto error;
+ 
++#if !(defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
+   uv_signal_start(&loop->child_watcher, uv__chld, SIGCHLD);
++#endif
+ 
+   /* Acquire write lock to prevent opening new fds in worker threads */
+   uv_rwlock_wrlock(&loop->cloexec_lock);
+@@ -495,6 +504,13 @@ int uv_spawn(uv_loop_t* loop,
+ 
+   /* Only activate this handle if exec() happened successfully */
+   if (exec_errorno == 0) {
++#if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
++    struct kevent event;
++    EV_SET(&event, pid, EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, 0);
++    if (kevent(loop->backend_fd, &event, 1, NULL, 0, NULL))
++      abort();
++#endif
++
+     QUEUE_INSERT_TAIL(&loop->process_handles, &process->queue);
+     uv__handle_start(process);
+   }
+diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
+index 1f566861a0e2e9e29c925972155f49667bb7ce85..a43edf1a4a9b0932ec73b8edaca0f676ecf3ccfa 100644
+--- a/deps/uv/test/test-list.h
++++ b/deps/uv/test/test-list.h
+@@ -320,6 +320,7 @@ TEST_DECLARE   (spawn_reads_child_path)
+ TEST_DECLARE   (spawn_inherit_streams)
+ TEST_DECLARE   (spawn_quoted_path)
+ TEST_DECLARE   (spawn_tcp_server)
++TEST_DECLARE   (spawn_exercise_sigchld_issue)
+ TEST_DECLARE   (fs_poll)
+ TEST_DECLARE   (fs_poll_getpath)
+ TEST_DECLARE   (fs_poll_close_request)
+@@ -950,6 +951,7 @@ TASK_LIST_START
+   TEST_ENTRY  (spawn_inherit_streams)
+   TEST_ENTRY  (spawn_quoted_path)
+   TEST_ENTRY  (spawn_tcp_server)
++  TEST_ENTRY  (spawn_exercise_sigchld_issue)
+   TEST_ENTRY  (fs_poll)
+   TEST_ENTRY  (fs_poll_getpath)
+   TEST_ENTRY  (fs_poll_close_request)
+diff --git a/deps/uv/test/test-spawn.c b/deps/uv/test/test-spawn.c
+index 9f2eb24b2d6daf339bec12027134409cfc3b4a82..dfd5458ef37c664af9a55a8383bdb3121885db3b 100644
+--- a/deps/uv/test/test-spawn.c
++++ b/deps/uv/test/test-spawn.c
+@@ -1891,6 +1891,44 @@ TEST_IMPL(spawn_quoted_path) {
+ #endif
+ }
+ 
++TEST_IMPL(spawn_exercise_sigchld_issue) {
++  int r;
++  int i;
++  uv_process_options_t dummy_options = {0};
++  uv_process_t dummy_processes[100];
++  char* args[2];
++
++  init_process_options("spawn_helper1", exit_cb);
++
++  r = uv_spawn(uv_default_loop(), &process, &options);
++  ASSERT_EQ(r, 0);
++
++  // This test exercises a bug in the darwin kernel that causes SIGCHLD not to
++  // be delivered sometimes. Calling posix_spawn many times increases the
++  // likelihood of encountering this issue, so spin a few times to make this
++  // test more reliable.
++  dummy_options.file = args[0] = "program-that-had-better-not-exist";
++  args[1] = NULL;
++  dummy_options.args = args;
++  dummy_options.exit_cb = fail_cb;
++  dummy_options.flags = 0;
++  for (i = 0; i < 100; i++) {
++    r = uv_spawn(uv_default_loop(), &dummy_processes[i], &dummy_options);
++    if (r != UV_ENOENT)
++      ASSERT_EQ(r, UV_EACCES);
++    uv_close((uv_handle_t*) &dummy_processes[i], close_cb);
++  }
++
++  r = uv_run(uv_default_loop(), UV_RUN_DEFAULT);
++  ASSERT_EQ(r, 0);
++
++  ASSERT_EQ(exit_cb_called, 1);
++  ASSERT_EQ(close_cb_called, 101);
++
++  MAKE_VALGRIND_HAPPY();
++  return 0;
++}
++
+ /* Helper for child process of spawn_inherit_streams */
+ #ifndef _WIN32
+ void spawn_stdin_stdout(void) {

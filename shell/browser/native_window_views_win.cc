@@ -178,12 +178,13 @@ HHOOK NativeWindowViews::mouse_hook_ = NULL;
 void NativeWindowViews::Maximize() {
   // Only use Maximize() when window is NOT transparent style
   if (!transparent()) {
-    if (IsVisible())
+    if (IsVisible()) {
       widget()->Maximize();
-    else
+    } else {
       widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
                                               gfx::Rect());
-    return;
+      NotifyWindowShow();
+    }
   } else {
     restore_bounds_ = GetBounds();
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
@@ -313,6 +314,15 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         NotifyWindowMoved();
         is_moving_ = false;
       }
+
+      // If the user dragged or moved the window during one or more
+      // calls to window.setBounds(), we want to apply the most recent
+      // one once they are done with the move or resize operation.
+      if (pending_bounds_change_.has_value()) {
+        SetBounds(pending_bounds_change_.value(), false /* animate */);
+        pending_bounds_change_.reset();
+      }
+
       return false;
     }
     case WM_MOVING: {
@@ -473,7 +483,7 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
       // windows can occur due to rapidly entering and leaving forwarding mode.
       // By consuming and ignoring the message, we're essentially telling
       // Chromium that we have not left the window despite somebody else getting
-      // the messages. As to why this is catched for the legacy window and not
+      // the messages. As to why this is caught for the legacy window and not
       // the actual browser window is simply that the legacy window somehow
       // makes use of these events; posting to the main window didn't work.
       if (window->forwarding_mouse_messages_) {

@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 9 Feb 2022 10:55:54 +0100
+Subject: fix: expose globals to allow patching Devtools dock
+
+Electron calls into UI.DockController.instance().setDockSide(side) in
+order to allow users to set the devtools dock position via
+webContents.openDevTools({ mode }). In https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/3310870
+the globals which we used to enable this were removed, and so we need to
+re-expose them to fix this broken functionality. We should look to
+upstream a more durable approach to allowing us to do this, at which
+point this patch can be removed.
+
+diff --git a/front_end/entrypoints/shell/BUILD.gn b/front_end/entrypoints/shell/BUILD.gn
+index 848d6edb722a88aa2d1b42290e65d677f5107acf..86e1c70d7693db0f1a6df32f0413c45f4854e586 100644
+--- a/front_end/entrypoints/shell/BUILD.gn
++++ b/front_end/entrypoints/shell/BUILD.gn
+@@ -31,6 +31,7 @@ devtools_entrypoint("shell") {
+     "../../ui/legacy/components/perf_ui:meta",
+     "../../ui/legacy/components/quick_open:meta",
+     "../../ui/legacy/components/source_frame:meta",
++    "../../ui/legacy:legacy",
+   ]
+ 
+   visibility = [
+diff --git a/front_end/entrypoints/shell/shell.ts b/front_end/entrypoints/shell/shell.ts
+index 89255a0927a647ca32d1a9508853425a3207b441..f0e1e32f80d79e400ad139818edce60aff6aeb89 100644
+--- a/front_end/entrypoints/shell/shell.ts
++++ b/front_end/entrypoints/shell/shell.ts
+@@ -20,6 +20,7 @@ import '../../models/logs/logs-meta.js';
+ import '../main/main-meta.js';
+ import '../../ui/legacy/components/perf_ui/perf_ui-meta.js';
+ import '../../ui/legacy/components/quick_open/quick_open-meta.js';
++import '../../ui/legacy/legacy-legacy.js';
+ import '../../core/sdk/sdk-meta.js';
+ import '../../ui/legacy/components/source_frame/source_frame-meta.js';
+ import '../../panels/console_counters/console_counters-meta.js';
+diff --git a/front_end/ui/legacy/BUILD.gn b/front_end/ui/legacy/BUILD.gn
+index 8cefe7e1b0cd298ce52ea06186b43f3412115a4f..c03f52d42aef6e094a922d342276439f8628ff42 100644
+--- a/front_end/ui/legacy/BUILD.gn
++++ b/front_end/ui/legacy/BUILD.gn
+@@ -181,5 +181,6 @@ devtools_entrypoint("legacy") {
+   visibility = [
+     "../..:legacy_entrypoints",
+     "../../legacy_test_runner/*",
++    "../../entrypoints/shell/*",
+   ]
+ }
