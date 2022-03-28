@@ -75,10 +75,10 @@ index fd3dd35fbe78fa59b3d4537d0cdcb981ebc36f09..1838b18f48de7a7a2fca0ae9c4d7ad43
  
      // Also track the size if the attachment is currently disabled.
 diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
-index d95f7b585f23af246cc65b1d68a1524c62f4024e..871612555c55f7d1ab9a96d05b4637b8cb928293 100644
+index 46740cae77df7b6e9509093c02b79a332b4f106d..bb0d5db59f1126587c25f786e4f39461e34e4155 100644
 --- a/src/tests/gl_tests/FramebufferTest.cpp
 +++ b/src/tests/gl_tests/FramebufferTest.cpp
-@@ -4000,6 +4000,38 @@ TEST_P(FramebufferTest_ES3, BindRenderbufferThenModifySize)
+@@ -4019,6 +4019,38 @@ TEST_P(FramebufferTest_ES3, RedefineLayerAttachment)
      ASSERT_GL_NO_ERROR();
  }
  
