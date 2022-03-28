@@ -11,3 +11,4 @@ cherry-pick-27bc67f761e6.patch
 regexp_arm_fix_regexp_assembler_abortion.patch
 regexp_ensure_regress-1255368_runs_only_with_irregexp.patch
 cherry-pick-c46fb3a15ec2.patch
+cherry-pick-26b7ad6967b1.patch
