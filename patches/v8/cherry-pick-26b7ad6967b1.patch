@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Thu, 24 Mar 2022 17:39:08 +0100
+Subject: Fix handling of interceptors
+
+(cherry picked from commit 0981e91a4f8692af337e2588562ad1504f4bffdc)
+
+Bug: chromium:1309225
+Change-Id: Ifd62639a2aa18b633e7cf36632677ee16c977afd
+No-Try: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3548458
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#79613}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3550263
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Lutz Vahl <vahl@chromium.org>
+Commit-Queue: Lutz Vahl <vahl@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.6@{#54}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index d86438dde0fe659fb79f03c04a1d4ab4e45014e3..38c96cf78b04a56f65e745b18c56302322980a60 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -2487,6 +2487,12 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
+           Maybe<bool> result =
+               JSObject::SetPropertyWithInterceptor(it, should_throw, value);
+           if (result.IsNothing() || result.FromJust()) return result;
++          // Assuming that the callback have side effects, we use
++          // Object::SetSuperProperty() which works properly regardless on
++          // whether the property was present on the receiver or not when
++          // storing to the receiver.
++          // Proceed lookup from the next state.
++          it->Next();
+         } else {
+           Maybe<PropertyAttributes> maybe_attributes =
+               JSObject::GetPropertyAttributesWithInterceptor(it);
+@@ -2507,10 +2513,8 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
+             // property to the receiver.
+             it->NotFound();
+           }
+-          return Object::SetSuperProperty(it, value, store_origin,
+-                                          should_throw);
+         }
+-        break;
++        return Object::SetSuperProperty(it, value, store_origin, should_throw);
+       }
+ 
+       case LookupIterator::ACCESSOR: {
+diff --git a/test/cctest/test-api-interceptors.cc b/test/cctest/test-api-interceptors.cc
+index 815c538d227ae048d382798c9f99bebe054fb6d7..475003f73c49b8e462ef1896f3fad97857e24574 100644
+--- a/test/cctest/test-api-interceptors.cc
++++ b/test/cctest/test-api-interceptors.cc
+@@ -5636,10 +5636,10 @@ void DatabaseGetter(Local<Name> name,
+                     const v8::PropertyCallbackInfo<Value>& info) {
+   ApiTestFuzzer::Fuzz();
+   auto context = info.GetIsolate()->GetCurrentContext();
+-  Local<v8::Object> db = info.Holder()
+-                             ->GetRealNamedProperty(context, v8_str("db"))
+-                             .ToLocalChecked()
+-                             .As<v8::Object>();
++  v8::MaybeLocal<Value> maybe_db =
++      info.Holder()->GetRealNamedProperty(context, v8_str("db"));
++  if (maybe_db.IsEmpty()) return;
++  Local<v8::Object> db = maybe_db.ToLocalChecked().As<v8::Object>();
+   if (!db->Has(context, name).FromJust()) return;
+   info.GetReturnValue().Set(db->Get(context, name).ToLocalChecked());
+ }
+diff --git a/test/unittests/api/interceptor-unittest.cc b/test/unittests/api/interceptor-unittest.cc
+index 8a1db3f823e5d957907e193971d220853c2b2e91..bc00462a29d707ec296f72b82ee2992ea8c9031f 100644
+--- a/test/unittests/api/interceptor-unittest.cc
++++ b/test/unittests/api/interceptor-unittest.cc
+@@ -170,8 +170,8 @@ TEST_F(InterceptorLoggingTest, DispatchTest) {
+   EXPECT_EQ(Run("obj.foo"), "named getter");
+   EXPECT_EQ(Run("obj[42]"), "indexed getter");
+ 
+-  EXPECT_EQ(Run("obj.foo = null"), "named setter");
+-  EXPECT_EQ(Run("obj[42] = null"), "indexed setter");
++  EXPECT_EQ(Run("obj.foo = null"), "named setter, named descriptor");
++  EXPECT_EQ(Run("obj[42] = null"), "indexed setter, indexed descriptor");
+ 
+   EXPECT_EQ(Run("Object.getOwnPropertyDescriptor(obj, 'foo')"),
+             "named descriptor");
