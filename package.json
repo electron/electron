@@ -27,7 +27,7 @@
     "@types/temp": "^0.8.34",
     "@types/uuid": "^3.4.6",
     "@types/webpack": "^4.41.21",
-    "@types/webpack-env": "^1.15.2",
+    "@types/webpack-env": "^1.16.3",
     "@typescript-eslint/eslint-plugin": "^4.4.1",
     "@typescript-eslint/parser": "^4.4.1",
     "asar": "^3.1.0",
