@@ -53,7 +53,7 @@
     "lint-staged": "^10.2.11",
     "markdownlint": "^0.21.1",
     "markdownlint-cli": "^0.25.0",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "null-loader": "^4.0.0",
     "pre-flight": "^1.1.0",
     "remark-cli": "^10.0.0",
