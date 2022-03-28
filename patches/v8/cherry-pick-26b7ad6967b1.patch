@@ -19,7 +19,6 @@ Cr-Commit-Position: refs/branch-heads/9.6@{#54}
 Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
 Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
 
-
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
 index 2f16615536ae5d44bd55774a0282e5017100a9d0..99e9ccad058406370ee6666af787e74c9185e446 100644
 --- a/src/objects/objects.cc
