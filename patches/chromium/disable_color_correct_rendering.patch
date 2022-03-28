@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 61ab59e0d97a392ae18c1d7ad7dd606b5cd1c567..2a899818ebb67ba4fc06ccbcff3ee03f6b83c0e6 100644
+index 3824e500fd88105e9c6d459f23097b2b4f0686ed..927ede7608a5c6992e9f9fb05e4b8e43b7e10cf8 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1882,6 +1882,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1889,6 +1889,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -240,10 +240,10 @@ index f5d73922086b5b27907fd393d4d4204a574c3b25..5b09f5ef5f04b519ed4148498c82d003
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ac9570fa3d9cb3b0026f70465e5b21ac7778c3df..acc0e121e7746da397cfab07b3707de7ae9a3143 100644
+index 5f2451eefad211c85460eb457ad3d6e184540d59..d9d8352c6b1b8db8d86ad1ed1d4a3d300a999fa6 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -194,6 +194,7 @@
+@@ -196,6 +196,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -251,7 +251,7 @@ index ac9570fa3d9cb3b0026f70465e5b21ac7778c3df..acc0e121e7746da397cfab07b3707de7
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3283,6 +3284,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3293,6 +3294,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

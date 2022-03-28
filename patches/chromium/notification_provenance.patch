@@ -131,10 +131,10 @@ index 951075749b24814606f494c5a89ee2adf527f512..7036323ff8ee38ae92790dfd2e216df6
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index a1a3683b8da459a5859a2953536f3400a7fda213..602525302cfdd89bf2ddc2924076e7349de7562a 100644
+index a002e3972f1ed8ea8ff2a7febe1c6b7a8ffbe657..eebe90092c65dd9160a394b9b6eb2273b03de503 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2125,7 +2125,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2135,7 +2135,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      document_url = rfh->GetLastCommittedURL();
  
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
