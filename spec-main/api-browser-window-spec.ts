@@ -3517,6 +3517,31 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  // TODO(dsanders11): Enable once maximize event works on Linux again on CI
+  ifdescribe(process.platform !== 'linux')('BrowserWindow.maximize()', () => {
+    afterEach(closeAllWindows);
+    it('should show the window if it is not currently shown', async () => {
+      const w = new BrowserWindow({ show: false });
+      const hidden = emittedOnce(w, 'hide');
+      let shown = emittedOnce(w, 'show');
+      const maximize = emittedOnce(w, 'maximize');
+      expect(w.isVisible()).to.be.false('visible');
+      w.maximize();
+      await maximize;
+      await shown;
+      expect(w.isMaximized()).to.be.true('maximized');
+      expect(w.isVisible()).to.be.true('visible');
+      // Even if the window is already maximized
+      w.hide();
+      await hidden;
+      expect(w.isVisible()).to.be.false('visible');
+      shown = emittedOnce(w, 'show');
+      w.maximize();
+      await shown;
+      expect(w.isVisible()).to.be.true('visible');
+    });
+  });
+
   describe('BrowserWindow.unmaximize()', () => {
     afterEach(closeAllWindows);
     it('should restore the previous window position', () => {
