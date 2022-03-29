@@ -6,7 +6,7 @@ Subject: process: simplify uv__write_int calls (#3519)
 Refs https://github.com/libuv/libuv/pull/3519
 
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index a899d6af065975a50f4fec70383df5e399005645..87298282918530272656bc3b7f6ecc3eedfb4c34 100644
+index ef9db6cdb8bdd9867cfdc3e9a29573ea7b9a560a..d40e3f9bebcdfbc5051c9a6af2452c2421728c9e 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
 @@ -212,10 +212,9 @@ static void uv__write_int(int fd, int val) {
@@ -96,8 +96,8 @@ index a899d6af065975a50f4fec70383df5e399005645..87298282918530272656bc3b7f6ecc3e
    }
  
    if (options->env != NULL)
-@@ -368,8 +356,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
- #endif
+@@ -367,8 +355,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
+   execvp(options->file, options->args);
  
    uv__write_int(error_fd, UV__ERR(errno));
 -  _exit(127);

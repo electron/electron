@@ -50,10 +50,10 @@ index 35200f17495d80ed2d19ef9f6f76bbc92ee042f6..071fe0ce0938657d0fb840af62a43235
        timeout = user_timeout;
        reset_timeout = 0;
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index 71cfb9421de185d5e421baf80a4132489568fe6b..18448c19a3bb6840ffe84bf03de5ce0561dd5808 100644
+index 3ee298b473ae4fbc2fa2039ba7150740b6717b73..690f542520160c7314a92b3f452867e83ee34594 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
-@@ -508,8 +508,12 @@ int uv_spawn(uv_loop_t* loop,
+@@ -507,8 +507,12 @@ int uv_spawn(uv_loop_t* loop,
  #if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
      struct kevent event;
      EV_SET(&event, pid, EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, 0);

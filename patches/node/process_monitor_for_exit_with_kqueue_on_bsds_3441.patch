@@ -39,7 +39,7 @@ index bf183d5fdc0ba89913469a294322eef84bc4cee8..35200f17495d80ed2d19ef9f6f76bbc9
        /* Skip invalidated events, see uv__platform_invalidate_fd */
        if (fd == -1)
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index 4bd58b1763af86a02c5ebdc71914e1cf415b1749..71cfb9421de185d5e421baf80a4132489568fe6b 100644
+index a72660ec1c4e7a2734cc73da3766aa620099512f..3ee298b473ae4fbc2fa2039ba7150740b6717b73 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
 @@ -45,10 +45,20 @@ extern char **environ;
@@ -75,7 +75,7 @@ index 4bd58b1763af86a02c5ebdc71914e1cf415b1749..71cfb9421de185d5e421baf80a413248
  
    h = &loop->process_handles;
    q = QUEUE_HEAD(h);
-@@ -421,7 +428,9 @@ int uv_spawn(uv_loop_t* loop,
+@@ -420,7 +427,9 @@ int uv_spawn(uv_loop_t* loop,
    if (err)
      goto error;
  
@@ -85,7 +85,7 @@ index 4bd58b1763af86a02c5ebdc71914e1cf415b1749..71cfb9421de185d5e421baf80a413248
  
    /* Acquire write lock to prevent opening new fds in worker threads */
    uv_rwlock_wrlock(&loop->cloexec_lock);
-@@ -496,6 +505,13 @@ int uv_spawn(uv_loop_t* loop,
+@@ -495,6 +504,13 @@ int uv_spawn(uv_loop_t* loop,
  
    /* Only activate this handle if exec() happened successfully */
    if (exec_errorno == 0) {

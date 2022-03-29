@@ -6,10 +6,10 @@ Subject: macos: don't use thread-unsafe strtok() (#3524)
 Refs https://github.com/libuv/libuv/pull/3524
 
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index 87298282918530272656bc3b7f6ecc3eedfb4c34..ac754997fadf22ec85d4129459d3c489176e3921 100644
+index d40e3f9bebcdfbc5051c9a6af2452c2421728c9e..c0ec01c4b0ad32dcaa5438f5ca02030c31517095 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
-@@ -381,30 +381,22 @@ static void uv__spawn_init_posix_spawn_fncs(void) {
+@@ -380,30 +380,22 @@ static void uv__spawn_init_posix_spawn_fncs(void) {
  
  
  static void uv__spawn_init_can_use_setsid(void) {

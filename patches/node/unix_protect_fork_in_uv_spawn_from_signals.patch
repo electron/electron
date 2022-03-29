@@ -20,7 +20,7 @@ PR-URL: https://github.com/libuv/libuv/pull/3251
 Reviewed-By: Ben Noordhuis <info@bnoordhuis.nl>
 
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index 8f94c53b249978c8ce41dc2447facbbcf585120a..4bd58b1763af86a02c5ebdc71914e1cf415b1749 100644
+index 8f94c53b249978c8ce41dc2447facbbcf585120a..a72660ec1c4e7a2734cc73da3766aa620099512f 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
 @@ -26,6 +26,7 @@
@@ -67,7 +67,7 @@ index 8f94c53b249978c8ce41dc2447facbbcf585120a..4bd58b1763af86a02c5ebdc71914e1cf
    if (options->flags & UV_PROCESS_DETACHED)
      setsid();
  
-@@ -306,39 +327,17 @@ static void uv__process_child_init(const uv_process_options_t* options,
+@@ -306,39 +327,16 @@ static void uv__process_child_init(const uv_process_options_t* options,
      environ = options->env;
    }
  
@@ -79,17 +79,12 @@ index 8f94c53b249978c8ce41dc2447facbbcf585120a..4bd58b1763af86a02c5ebdc71914e1cf
 -  for (n = 1; n < 32; n += 1) {
 -    if (n == SIGKILL || n == SIGSTOP)
 -      continue;  /* Can't be changed. */
-+  /* Reset signal mask just before exec. */
-+  sigemptyset(&signewset);
-+  if (sigprocmask(SIG_SETMASK, &signewset, NULL) != 0)
-+    abort();
- 
+-
 -#if defined(__HAIKU__)
 -    if (n == SIGKILLTHR)
 -      continue;  /* Can't be changed. */
-+  execvp(options->file, options->args);
- #endif
- 
+-#endif
+-
 -    if (SIG_ERR != signal(n, SIG_DFL))
 -      continue;
 -
@@ -105,15 +100,20 @@ index 8f94c53b249978c8ce41dc2447facbbcf585120a..4bd58b1763af86a02c5ebdc71914e1cf
 -    uv__write_int(error_fd, UV__ERR(err));
 -    _exit(127);
 -  }
--
--  execvp(options->file, options->args);
++  /* Reset signal mask just before exec. */
++  sigemptyset(&signewset);
++  if (sigprocmask(SIG_SETMASK, &signewset, NULL) != 0)
++    abort();
+ 
+   execvp(options->file, options->args);
++
    uv__write_int(error_fd, UV__ERR(errno));
    _exit(127);
 +  abort();
  }
  #endif
  
-@@ -350,6 +349,8 @@ int uv_spawn(uv_loop_t* loop,
+@@ -350,6 +348,8 @@ int uv_spawn(uv_loop_t* loop,
    /* fork is marked __WATCHOS_PROHIBITED __TVOS_PROHIBITED. */
    return UV_ENOSYS;
  #else
@@ -122,7 +122,7 @@ index 8f94c53b249978c8ce41dc2447facbbcf585120a..4bd58b1763af86a02c5ebdc71914e1cf
    int signal_pipe[2] = { -1, -1 };
    int pipes_storage[8][2];
    int (*pipes)[2];
-@@ -424,25 +425,41 @@ int uv_spawn(uv_loop_t* loop,
+@@ -424,25 +424,41 @@ int uv_spawn(uv_loop_t* loop,
  
    /* Acquire write lock to prevent opening new fds in worker threads */
    uv_rwlock_wrlock(&loop->cloexec_lock);

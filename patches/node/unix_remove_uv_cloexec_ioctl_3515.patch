@@ -69,7 +69,7 @@ index 5bc9f36037594006e204dee31bc7d969bbf650d4..31c6d03bfff05559e23612865ea4ec74
  int uv__nonblock_fcntl(int fd, int set);
  int uv__close(int fd); /* preserves errno */
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index a953ca361563d29827328b4b3aa0b3c16cddf35a..a899d6af065975a50f4fec70383df5e399005645 100644
+index 44d9af9a17626a2f85e12f4983b0540b5993e290..ef9db6cdb8bdd9867cfdc3e9a29573ea7b9a560a 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
 @@ -276,7 +276,7 @@ static void uv__process_child_init(const uv_process_options_t* options,

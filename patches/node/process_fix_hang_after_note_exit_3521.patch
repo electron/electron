@@ -47,7 +47,7 @@ index 071fe0ce0938657d0fb840af62a432352e938a8a..4c4d990ff5fa6c8ab937be2e4f79ccda
        if (fd == -1)
          continue;
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index ac754997fadf22ec85d4129459d3c489176e3921..20858ff641fcdd8c3b2fea86ecf5514108fe3135 100644
+index c0ec01c4b0ad32dcaa5438f5ca02030c31517095..3b00fc272a27f65cbd026362f12a1099ff14da4f 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
 @@ -59,12 +59,18 @@ extern char **environ;
@@ -115,7 +115,7 @@ index ac754997fadf22ec85d4129459d3c489176e3921..20858ff641fcdd8c3b2fea86ecf55141
      process->status = status;
      QUEUE_REMOVE(&process->queue);
      QUEUE_INSERT_TAIL(&pending, &process->queue);
-@@ -959,7 +980,7 @@ int uv_spawn(uv_loop_t* loop,
+@@ -958,7 +979,7 @@ int uv_spawn(uv_loop_t* loop,
        goto error;
    }
  
@@ -124,7 +124,7 @@ index ac754997fadf22ec85d4129459d3c489176e3921..20858ff641fcdd8c3b2fea86ecf55141
    uv_signal_start(&loop->child_watcher, uv__chld, SIGCHLD);
  #endif
  
-@@ -978,13 +999,14 @@ int uv_spawn(uv_loop_t* loop,
+@@ -977,13 +998,14 @@ int uv_spawn(uv_loop_t* loop,
     * fail to open a stdio handle. This ensures we can eventually reap the child
     * with waitpid. */
    if (exec_errorno == 0) {

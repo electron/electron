@@ -45,7 +45,7 @@ There was a chance that when duplicating the fd's into stdio_count+fd we
 might be closing a currently opened fd with that value.
 
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index 18448c19a3bb6840ffe84bf03de5ce0561dd5808..dfb6bf2e97fade5b555653ae2634aea56a278149 100644
+index 690f542520160c7314a92b3f452867e83ee34594..6adcfabc7416f84cdcde865d21cf2727a4d3b5e1 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
 @@ -27,6 +27,7 @@
@@ -157,7 +157,7 @@ index 18448c19a3bb6840ffe84bf03de5ce0561dd5808..dfb6bf2e97fade5b555653ae2634aea5
  
    /* Reset signal mask just before exec. */
    sigemptyset(&signewset);
-@@ -349,6 +358,562 @@ static void uv__process_child_init(const uv_process_options_t* options,
+@@ -348,6 +357,562 @@ static void uv__process_child_init(const uv_process_options_t* options,
  #endif
  
  
@@ -720,7 +720,7 @@ index 18448c19a3bb6840ffe84bf03de5ce0561dd5808..dfb6bf2e97fade5b555653ae2634aea5
  int uv_spawn(uv_loop_t* loop,
               uv_process_t* process,
               const uv_process_options_t* options) {
-@@ -356,18 +921,13 @@ int uv_spawn(uv_loop_t* loop,
+@@ -355,18 +920,13 @@ int uv_spawn(uv_loop_t* loop,
    /* fork is marked __WATCHOS_PROHIBITED __TVOS_PROHIBITED. */
    return UV_ENOSYS;
  #else
@@ -739,7 +739,7 @@ index 18448c19a3bb6840ffe84bf03de5ce0561dd5808..dfb6bf2e97fade5b555653ae2634aea5
  
    assert(options->file != NULL);
    assert(!(options->flags & ~(UV_PROCESS_DETACHED |
-@@ -380,6 +940,7 @@ int uv_spawn(uv_loop_t* loop,
+@@ -379,6 +939,7 @@ int uv_spawn(uv_loop_t* loop,
  
    uv__handle_init(loop, (uv_handle_t*)process, UV_PROCESS);
    QUEUE_INIT(&process->queue);
@@ -747,7 +747,7 @@ index 18448c19a3bb6840ffe84bf03de5ce0561dd5808..dfb6bf2e97fade5b555653ae2634aea5
  
    stdio_count = options->stdio_count;
    if (stdio_count < 3)
-@@ -404,106 +965,24 @@ int uv_spawn(uv_loop_t* loop,
+@@ -403,106 +964,24 @@ int uv_spawn(uv_loop_t* loop,
        goto error;
    }
  
@@ -866,7 +866,7 @@ index 18448c19a3bb6840ffe84bf03de5ce0561dd5808..dfb6bf2e97fade5b555653ae2634aea5
    if (exec_errorno == 0) {
  #if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
      struct kevent event;
-@@ -516,12 +995,22 @@ int uv_spawn(uv_loop_t* loop,
+@@ -515,12 +994,22 @@ int uv_spawn(uv_loop_t* loop,
      }
  #endif
  

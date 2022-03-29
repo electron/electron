@@ -12,7 +12,7 @@ happened to pass a bad file descriptor to the same number fd (such that
 no other code happened to already fail on that).
 
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index dfb6bf2e97fade5b555653ae2634aea56a278149..a953ca361563d29827328b4b3aa0b3c16cddf35a 100644
+index 6adcfabc7416f84cdcde865d21cf2727a4d3b5e1..44d9af9a17626a2f85e12f4983b0540b5993e290 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
 @@ -266,11 +266,22 @@ static void uv__process_child_init(const uv_process_options_t* options,
