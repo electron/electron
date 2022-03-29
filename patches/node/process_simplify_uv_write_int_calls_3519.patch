@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jameson Nash <vtjnash@gmail.com>
+Date: Mon, 7 Mar 2022 17:07:49 -0500
+Subject: process: simplify uv__write_int calls (#3519)
+
+Refs https://github.com/libuv/libuv/pull/3519
+
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index ef9db6cdb8bdd9867cfdc3e9a29573ea7b9a560a..d40e3f9bebcdfbc5051c9a6af2452c2421728c9e 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -212,10 +212,9 @@ static void uv__write_int(int fd, int val) {
+     n = write(fd, &val, sizeof(val));
+   while (n == -1 && errno == EINTR);
+ 
+-  if (n == -1 && errno == EPIPE)
+-    return; /* parent process has quit */
+-
+-  assert(n == sizeof(val));
++  /* The write might have failed (e.g. if the parent process has died),
++   * but we have nothing left but to _exit ourself now too. */
++  _exit(127);
+ }
+ 
+ 
+@@ -252,7 +251,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
+       continue;
+ 
+     uv__write_int(error_fd, UV__ERR(errno));
+-    _exit(127);
+   }
+ 
+   if (options->flags & UV_PROCESS_DETACHED)
+@@ -273,14 +271,11 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ #endif
+     if (pipes[fd][1] == -1) {
+       uv__write_int(error_fd, UV__ERR(errno));
+-      _exit(127);
+     }
+ #ifndef F_DUPFD_CLOEXEC /* POSIX 2008 */
+     n = uv__cloexec(pipes[fd][1], 1);
+-    if (n) {
++    if (n)
+       uv__write_int(error_fd, n);
+-      _exit(127);
+-    }
+ #endif
+   }
+ 
+@@ -300,7 +295,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ 
+         if (use_fd < 0) {
+           uv__write_int(error_fd, UV__ERR(errno));
+-          _exit(127);
+         }
+       }
+     }
+@@ -308,10 +302,8 @@ static void uv__process_child_init(const uv_process_options_t* options,
+     if (fd == use_fd) {
+       if (close_fd == -1) {
+         n = uv__cloexec(use_fd, 0);
+-        if (n) {
++        if (n)
+           uv__write_int(error_fd, n);
+-          _exit(127);
+-        }
+       }
+     }
+     else {
+@@ -320,7 +312,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ 
+     if (fd == -1) {
+       uv__write_int(error_fd, UV__ERR(errno));
+-      _exit(127);
+     }
+ 
+     if (fd <= 2 && close_fd == -1)
+@@ -332,7 +323,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ 
+   if (options->cwd != NULL && chdir(options->cwd)) {
+     uv__write_int(error_fd, UV__ERR(errno));
+-    _exit(127);
+   }
+ 
+   if (options->flags & (UV_PROCESS_SETUID | UV_PROCESS_SETGID)) {
+@@ -348,12 +338,10 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ 
+   if ((options->flags & UV_PROCESS_SETGID) && setgid(options->gid)) {
+     uv__write_int(error_fd, UV__ERR(errno));
+-    _exit(127);
+   }
+ 
+   if ((options->flags & UV_PROCESS_SETUID) && setuid(options->uid)) {
+     uv__write_int(error_fd, UV__ERR(errno));
+-    _exit(127);
+   }
+ 
+   if (options->env != NULL)
+@@ -367,8 +355,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
+   execvp(options->file, options->args);
+ 
+   uv__write_int(error_fd, UV__ERR(errno));
+-  _exit(127);
+-  abort();
+ }
+ #endif
+ 

@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jameson Nash <vtjnash@gmail.com>
+Date: Wed, 23 Mar 2022 15:39:38 +0900
+Subject: process: fix hang after NOTE_EXIT (#3521)
+
+Bug #3504 seems to affect more platforms than just OpenBSD. As this
+seems to be a race condition in these kernels, we do not want to fail
+because of it. Instead, we remove the WNOHANG flag from waitpid, and
+track exactly which processes have exited. Should also be a slight speed
+improvement for excessively large numbers of live children.
+
+diff --git a/deps/uv/src/unix/kqueue.c b/deps/uv/src/unix/kqueue.c
+index 071fe0ce0938657d0fb840af62a432352e938a8a..4c4d990ff5fa6c8ab937be2e4f79ccdaf90670c2 100644
+--- a/deps/uv/src/unix/kqueue.c
++++ b/deps/uv/src/unix/kqueue.c
+@@ -117,6 +117,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
+   unsigned int revents;
+   QUEUE* q;
+   uv__io_t* w;
++  uv_process_t* process;
+   sigset_t* pset;
+   sigset_t set;
+   uint64_t base;
+@@ -284,12 +285,22 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
+     loop->watchers[loop->nwatchers + 1] = (void*) (uintptr_t) nfds;
+     for (i = 0; i < nfds; i++) {
+       ev = events + i;
++      fd = ev->ident;
++
++      /* Handle kevent NOTE_EXIT results */
+       if (ev->filter == EVFILT_PROC) {
+-        loop->flags |= UV_LOOP_REAP_CHILDREN;
++        QUEUE_FOREACH(q, &loop->process_handles) {
++          process = QUEUE_DATA(q, uv_process_t, queue);
++          if (process->pid == fd) {
++            process->flags |= UV_HANDLE_REAP;
++            loop->flags |= UV_LOOP_REAP_CHILDREN;
++            break;
++          }
++        }
+         nevents++;
+         continue;
+       }
+-      fd = ev->ident;
++
+       /* Skip invalidated events, see uv__platform_invalidate_fd */
+       if (fd == -1)
+         continue;
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index c0ec01c4b0ad32dcaa5438f5ca02030c31517095..3b00fc272a27f65cbd026362f12a1099ff14da4f 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -59,12 +59,18 @@ extern char **environ;
+ # include <grp.h>
+ #endif
+ 
+-#if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
++#if defined(__APPLE__) || \
++    defined(__DragonFly__) || \
++    defined(__FreeBSD__) || \
++    defined(__NetBSD__) || \
++    defined(__OpenBSD__)
+ #include <sys/event.h>
++#else
++#define UV_USE_SIGCHLD
+ #endif
+ 
+ 
+-#if !(defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
++#ifdef UV_USE_SIGCHLD
+ static void uv__chld(uv_signal_t* handle, int signum) {
+   assert(signum == SIGCHLD);
+   uv__wait_children(handle->loop);
+@@ -76,6 +82,7 @@ void uv__wait_children(uv_loop_t* loop) {
+   int exit_status;
+   int term_signal;
+   int status;
++  int options;
+   pid_t pid;
+   QUEUE pending;
+   QUEUE* q;
+@@ -89,19 +96,33 @@ void uv__wait_children(uv_loop_t* loop) {
+     process = QUEUE_DATA(q, uv_process_t, queue);
+     q = QUEUE_NEXT(q);
+ 
++#ifndef UV_USE_SIGCHLD
++    if ((process->flags & UV_HANDLE_REAP) == 0)
++      continue;
++    options = 0;
++    process->flags &= ~UV_HANDLE_REAP;
++#else
++    options = WNOHANG;
++#endif
++
+     do
+-      pid = waitpid(process->pid, &status, WNOHANG);
++      pid = waitpid(process->pid, &status, options);
+     while (pid == -1 && errno == EINTR);
+ 
+-    if (pid == 0)
++#ifdef UV_USE_SIGCHLD
++    if (pid == 0) /* Not yet exited */
+       continue;
++#endif
+ 
+     if (pid == -1) {
+       if (errno != ECHILD)
+         abort();
++      /* The child died, and we missed it. This probably means someone else
++       * stole the waitpid from us. Handle this by not handling it at all. */
+       continue;
+     }
+ 
++    assert(pid == process->pid);
+     process->status = status;
+     QUEUE_REMOVE(&process->queue);
+     QUEUE_INSERT_TAIL(&pending, &process->queue);
+@@ -958,7 +979,7 @@ int uv_spawn(uv_loop_t* loop,
+       goto error;
+   }
+ 
+-#if !(defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__))
++#ifdef UV_USE_SIGCHLD
+   uv_signal_start(&loop->child_watcher, uv__chld, SIGCHLD);
+ #endif
+ 
+@@ -977,13 +998,14 @@ int uv_spawn(uv_loop_t* loop,
+    * fail to open a stdio handle. This ensures we can eventually reap the child
+    * with waitpid. */
+   if (exec_errorno == 0) {
+-#if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
++#ifndef UV_USE_SIGCHLD
+     struct kevent event;
+     EV_SET(&event, pid, EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, 0);
+     if (kevent(loop->backend_fd, &event, 1, NULL, 0, NULL)) {
+       if (errno != ESRCH)
+         abort();
+       /* Process already exited. Call waitpid on the next loop iteration. */
++      process->flags |= UV_HANDLE_REAP;
+       loop->flags |= UV_LOOP_REAP_CHILDREN;
+     }
+ #endif
+diff --git a/deps/uv/src/uv-common.h b/deps/uv/src/uv-common.h
+index a92912fdb1a72ea54cc7ddd374cee5ec339a6a33..82cdb914f91dcf3bbd718fba6e39ce39648ea507 100644
+--- a/deps/uv/src/uv-common.h
++++ b/deps/uv/src/uv-common.h
+@@ -129,7 +129,10 @@ enum {
+   UV_SIGNAL_ONE_SHOT                    = 0x02000000,
+ 
+   /* Only used by uv_poll_t handles. */
+-  UV_HANDLE_POLL_SLOW                   = 0x01000000
++  UV_HANDLE_POLL_SLOW                   = 0x01000000,
++
++  /* Only used by uv_process_t handles. */
++  UV_HANDLE_REAP                        = 0x10000000
+ };
+ 
+ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap);

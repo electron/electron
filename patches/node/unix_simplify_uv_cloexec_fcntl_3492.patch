@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Noordhuis <info@bnoordhuis.nl>
+Date: Sat, 5 Mar 2022 18:55:49 +0100
+Subject: unix: simplify uv__cloexec_fcntl() (#3492)
+
+FD_CLOEXEC is the only defined flag for fcntl(F_SETFD) so don't bother
+getting the status of that flag first with fcntl(F_GETFD), just set it.
+
+diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
+index 2811f063eef7329f87fbe43b28729c6b25f0a75b..afa18856700a987a9b6cee0273572ae1bb2451fc 100644
+--- a/deps/uv/src/unix/core.c
++++ b/deps/uv/src/unix/core.c
+@@ -640,21 +640,9 @@ int uv__cloexec_fcntl(int fd, int set) {
+   int flags;
+   int r;
+ 
+-  do
+-    r = fcntl(fd, F_GETFD);
+-  while (r == -1 && errno == EINTR);
+-
+-  if (r == -1)
+-    return UV__ERR(errno);
+-
+-  /* Bail out now if already set/clear. */
+-  if (!!(r & FD_CLOEXEC) == !!set)
+-    return 0;
+-
++  flags = 0;
+   if (set)
+-    flags = r | FD_CLOEXEC;
+-  else
+-    flags = r & ~FD_CLOEXEC;
++    flags = FD_CLOEXEC;
+ 
+   do
+     r = fcntl(fd, F_SETFD, flags);
