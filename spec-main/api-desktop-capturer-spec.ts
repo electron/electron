@@ -23,8 +23,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
   after(closeAllWindows);
 
-  // TODO(nornagon): figure out why this test is failing on Linux and re-enable it.
-  ifit(process.platform !== 'linux')('should return a non-empty array of sources', async () => {
+  it('should return a non-empty array of sources', async () => {
     const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
     expect(sources).to.be.an('array').that.is.not.empty();
   });
@@ -34,8 +33,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     await expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options');
   });
 
-  // TODO(nornagon): figure out why this test is failing on Linux and re-enable it.
-  ifit(process.platform !== 'linux')('does not throw an error when called more than once (regression)', async () => {
+  it('does not throw an error when called more than once (regression)', async () => {
     const sources1 = await desktopCapturer.getSources({ types: ['window', 'screen'] });
     expect(sources1).to.be.an('array').that.is.not.empty();
 
@@ -43,7 +41,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     expect(sources2).to.be.an('array').that.is.not.empty();
   });
 
-  ifit(process.platform !== 'linux')('responds to subsequent calls of different options', async () => {
+  it('responds to subsequent calls of different options', async () => {
     const promise1 = desktopCapturer.getSources({ types: ['window'] });
     await expect(promise1).to.eventually.be.fulfilled();
 
@@ -52,7 +50,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   });
 
   // Linux doesn't return any window sources.
-  ifit(process.platform !== 'linux')('returns an empty display_id for window sources on Windows and Mac', async () => {
+  ifit(process.platform !== 'linux')('returns an empty display_id for window sources', async () => {
     const w = new BrowserWindow({ width: 200, height: 200 });
     await w.loadURL('about:blank');
 
@@ -64,7 +62,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     }
   });
 
-  ifit(process.platform !== 'linux')('returns display_ids matching the Screen API on Windows and Mac', async () => {
+  ifit(process.platform !== 'linux')('returns display_ids matching the Screen API', async () => {
     const displays = screen.getAllDisplays();
     const sources = await desktopCapturer.getSources({ types: ['screen'] });
     expect(sources).to.be.an('array').of.length(displays.length);
