@@ -7,7 +7,7 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..280cf63cfc1121528452d2095c8d345bb25fd873
+index 0000000000000000000000000000000000000000..4afca42d22ee702af50da92aa08c1de897891424
 --- /dev/null
 +++ b/BUILD.gn
 @@ -0,0 +1,403 @@
