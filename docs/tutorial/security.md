@@ -279,11 +279,12 @@ security-conscious developers might want to assume the very opposite.
 
 ```js title='main.js (Main Process)'
 const { session } = require('electron')
+const URL = require('url').URL
 
 session
   .fromPartition('some-partition')
   .setPermissionRequestHandler((webContents, permission, callback) => {
-    const url = webContents.getURL()
+    const parsedUrl = new URL(webContents.getURL())
 
     if (permission === 'notifications') {
       // Approves the permissions request
@@ -291,7 +292,7 @@ session
     }
 
     // Verify URL
-    if (!url.startsWith('https://example.com/')) {
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.host !== 'example.com') {
       // Denies the permissions request
       return callback(false)
     }
@@ -562,7 +563,6 @@ app.on('web-contents-created', (event, contents) => {
   contents.on('will-attach-webview', (event, webPreferences, params) => {
     // Strip away preload scripts if unused or verify their location is legitimate
     delete webPreferences.preload
-    delete webPreferences.preloadURL
 
     // Disable Node.js integration
     webPreferences.nodeIntegration = false
@@ -723,6 +723,41 @@ which potential security issues are not as widely known.
 Migrate your app one major version at a time, while referring to Electron's
 [Breaking Changes][breaking-changes] document to see if any code needs to
 be updated.
+
+### 17. Validate the `sender` of all IPC messages
+
+You should always validate incoming IPC messages `sender` property to ensure you
+aren't performing actions or sending information to untrusted renderers.
+
+#### Why?
+
+All Web Frames can in theory send IPC messages to the main process, including
+iframes and child windows in some scenarios.  If you have an IPC message that returns
+user data to the sender via `event.reply` or performs privileged actions that the renderer
+can't natively, you should ensure you aren't listening to third party web frames.
+
+You should be validating the `sender` of **all** IPC messages by default.
+
+#### How?
+
+```js title='main.js (Main Process)'
+// Bad
+ipcMain.handle('get-secrets', () => {
+  return getSecrets();
+});
+
+// Good
+ipcMain.handle('get-secrets', (e) => {
+  if (!validateSender(e.senderFrame)) return null;
+  return getSecrets();
+});
+
+function validateSender(frame) {
+  // Value the host of the URL using an actual URL parser and an allowlist
+  if ((new URL(frame.url)).host === 'electronjs.org') return true;
+  return false;
+}
+```
 
 [breaking-changes]: ../breaking-changes.md
 [browser-window]: ../api/browser-window.md

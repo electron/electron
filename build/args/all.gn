@@ -25,9 +25,6 @@ enable_basic_printing = true
 angle_enable_vulkan_validation_layers = false
 dawn_enable_vulkan_validation_layers = false
 
-# This breaks native node modules
-libcxx_abi_unstable = false
-
 # These are disabled because they cause the zip manifest to differ between
 # testing and release builds.
 # See https://chromium-review.googlesource.com/c/chromium/src/+/2774898.

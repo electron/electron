@@ -159,7 +159,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsKiosk();
   bool IsTabletMode() const;
   virtual void SetBackgroundColor(const std::string& color_name);
-  std::string GetBackgroundColor();
+  std::string GetBackgroundColor(gin_helper::Arguments* args);
   void InvalidateShadow();
   void SetHasShadow(bool has_shadow);
   bool HasShadow();

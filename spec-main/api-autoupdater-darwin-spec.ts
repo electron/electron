@@ -6,14 +6,14 @@ import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
 import { AddressInfo } from 'net';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, ifit } from './spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 // We can only test the auto updater on darwin non-component builds
-ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process.mas && !features.isComponentBuild())('autoUpdater behavior', function () {
+ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch === 'arm64') && !process.mas && !features.isComponentBuild())('autoUpdater behavior', function () {
   this.timeout(120000);
 
   let identity = '';
@@ -115,8 +115,11 @@ ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process
 
   const cachedZips: Record<string, string> = {};
 
-  const getOrCreateUpdateZipPath = async (version: string, fixture: string) => {
-    const key = `${version}-${fixture}`;
+  const getOrCreateUpdateZipPath = async (version: string, fixture: string, mutateAppPostSign?: {
+    mutate: (appPath: string) => Promise<void>,
+    mutationKey: string,
+  }) => {
+    const key = `${version}-${fixture}-${mutateAppPostSign?.mutationKey || 'no-mutation'}`;
     if (!cachedZips[key]) {
       let updateZipPath: string;
       await withTempDirectory(async (dir) => {
@@ -127,6 +130,7 @@ ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process
           (await fs.readFile(appPJPath, 'utf8')).replace('1.0.0', version)
         );
         await signApp(secondAppPath);
+        await mutateAppPostSign?.mutate(secondAppPath);
         updateZipPath = path.resolve(dir, 'update.zip');
         await spawn('zip', ['-r', '--symlinks', updateZipPath, './'], {
           cwd: dir
@@ -143,10 +147,12 @@ ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process
     }
   });
 
-  it('should fail to set the feed URL when the app is not signed', async () => {
+  // On arm64 builds the built app is self-signed by default so the setFeedURL call always works
+  ifit(process.arch !== 'arm64')('should fail to set the feed URL when the app is not signed', async () => {
     await withTempDirectory(async (dir) => {
       const appPath = await copyApp(dir);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
+      console.log(launchResult);
       expect(launchResult.code).to.equal(1);
       expect(launchResult.out).to.include('Could not get code signature for running application');
     });
@@ -259,12 +265,16 @@ ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process
       nextVersion: string;
       startFixture: string;
       endFixture: string;
+      mutateAppPostSign?: {
+        mutate: (appPath: string) => Promise<void>,
+        mutationKey: string,
+      }
     }, fn: (appPath: string, zipPath: string) => Promise<void>) => {
       await withTempDirectory(async (dir) => {
         const appPath = await copyApp(dir, opts.startFixture);
         await signApp(appPath);
 
-        const updateZipPath = await getOrCreateUpdateZipPath(opts.nextVersion, opts.endFixture);
+        const updateZipPath = await getOrCreateUpdateZipPath(opts.nextVersion, opts.endFixture, opts.mutateAppPostSign);
 
         await fn(appPath, updateZipPath);
       });
@@ -308,6 +318,121 @@ ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process
         expect(requests).to.have.lengthOf(3);
         expect(requests[2].url).to.equal('/update-check/updated/2.0.0');
         expect(requests[2].header('user-agent')).to.include('Electron/');
+      });
+    });
+
+    it('should hit the download endpoint when an update is available and fail when the zip signature is invalid', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update',
+        endFixture: 'update',
+        mutateAppPostSign: {
+          mutationKey: 'add-resource',
+          mutate: async (appPath) => {
+            const resourcesPath = path.resolve(appPath, 'Contents', 'Resources', 'app', 'injected.txt');
+            await fs.writeFile(resourcesPath, 'demo');
+          }
+        }
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            url: `http://localhost:${port}/update-file`,
+            name: 'My Release Name',
+            notes: 'Theses are some release notes innit',
+            pub_date: (new Date()).toString()
+          });
+        });
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 1);
+          expect(launchResult.out).to.include('Code signature at URL');
+          expect(launchResult.out).to.include('a sealed resource is missing or invalid');
+          expect(requests).to.have.lengthOf(2);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
+          expect(requests[1].header('user-agent')).to.include('Electron/');
+        });
+      });
+    });
+
+    it('should hit the download endpoint when an update is available and fail when the ShipIt binary is a symlink', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update',
+        endFixture: 'update',
+        mutateAppPostSign: {
+          mutationKey: 'modify-shipit',
+          mutate: async (appPath) => {
+            const shipItPath = path.resolve(appPath, 'Contents', 'Frameworks', 'Squirrel.framework', 'Resources', 'ShipIt');
+            await fs.remove(shipItPath);
+            await fs.symlink('/tmp/ShipIt', shipItPath, 'file');
+          }
+        }
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            url: `http://localhost:${port}/update-file`,
+            name: 'My Release Name',
+            notes: 'Theses are some release notes innit',
+            pub_date: (new Date()).toString()
+          });
+        });
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 1);
+          expect(launchResult.out).to.include('Code signature at URL');
+          expect(launchResult.out).to.include('a sealed resource is missing or invalid');
+          expect(requests).to.have.lengthOf(2);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
+          expect(requests[1].header('user-agent')).to.include('Electron/');
+        });
+      });
+    });
+
+    it('should hit the download endpoint when an update is available and fail when the Electron Framework is modified', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update',
+        endFixture: 'update',
+        mutateAppPostSign: {
+          mutationKey: 'modify-eframework',
+          mutate: async (appPath) => {
+            const shipItPath = path.resolve(appPath, 'Contents', 'Frameworks', 'Electron Framework.framework', 'Electron Framework');
+            await fs.appendFile(shipItPath, Buffer.from('123'));
+          }
+        }
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            url: `http://localhost:${port}/update-file`,
+            name: 'My Release Name',
+            notes: 'Theses are some release notes innit',
+            pub_date: (new Date()).toString()
+          });
+        });
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 1);
+          expect(launchResult.out).to.include('Code signature at URL');
+          expect(launchResult.out).to.include(' main executable failed strict validation');
+          expect(requests).to.have.lengthOf(2);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
+          expect(requests[1].header('user-agent')).to.include('Electron/');
+        });
       });
     });
 

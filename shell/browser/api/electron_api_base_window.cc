@@ -643,11 +643,11 @@ bool BaseWindow::IsTabletMode() const {
 }
 
 void BaseWindow::SetBackgroundColor(const std::string& color_name) {
-  SkColor color = ParseHexColor(color_name);
+  SkColor color = ParseCSSColor(color_name);
   window_->SetBackgroundColor(color);
 }
 
-std::string BaseWindow::GetBackgroundColor() {
+std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 

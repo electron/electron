@@ -40,7 +40,7 @@ ElectronExtensionMessageFilter::ElectronExtensionMessageFilter(
     int render_process_id,
     content::BrowserContext* browser_context)
     : BrowserMessageFilter(kExtensionFilteredMessageClasses,
-                           base::size(kExtensionFilteredMessageClasses)),
+                           std::size(kExtensionFilteredMessageClasses)),
       render_process_id_(render_process_id),
       browser_context_(browser_context) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);

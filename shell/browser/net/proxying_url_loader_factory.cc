@@ -523,8 +523,9 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
     if (has_any_extra_headers_listeners_)
       options |= network::mojom::kURLLoadOptionUseHeaderClient;
     factory_->target_factory_->CreateLoaderAndStart(
-        mojo::MakeRequest(&target_loader_), network_service_request_id_,
-        options, request_, proxied_client_receiver_.BindNewPipeAndPassRemote(),
+        target_loader_.BindNewPipeAndPassReceiver(),
+        network_service_request_id_, options, request_,
+        proxied_client_receiver_.BindNewPipeAndPassRemote(),
         traffic_annotation_);
   }
 
@@ -760,7 +761,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     uint64_t* request_id_generator,
     std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
     absl::optional<int64_t> navigation_id,
-    network::mojom::URLLoaderFactoryRequest loader_request,
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader_request,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote,
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         header_client_receiver,

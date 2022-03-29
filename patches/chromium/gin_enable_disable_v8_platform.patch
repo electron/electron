@@ -38,10 +38,10 @@ index 1e36669dfb275b8a7c4913c8465bd299c548ed3a..178023d52c9e8ef716ee215e7a243b18
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index f411bbde031d18bd3e0322ce154ccfd8eace930d..5db96b7402de70d1b4eba8b12a51fbc89fcb7fb6 100644
+index b123e69bf6a57b1a4041c79c1cddd0117ed3851c..a8a23ccd0837866c1cb0657e0b8713d484042f38 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -342,12 +342,14 @@ void SetFlags(IsolateHolder::ScriptMode mode,
+@@ -348,7 +348,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
  
  // static
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
@@ -51,6 +51,9 @@ index f411bbde031d18bd3e0322ce154ccfd8eace930d..5db96b7402de70d1b4eba8b12a51fbc8
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
+@@ -358,7 +359,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+   // See https://crbug.com/v8/11043
+   SetFlags(mode, js_command_line_flags);
  
 -  v8::V8::InitializePlatform(V8Platform::Get());
 +  if (create_v8_platform)

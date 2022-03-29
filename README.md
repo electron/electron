@@ -40,7 +40,7 @@ Each Electron release provides binaries for macOS, Windows, and Linux.
 
 * macOS (El Capitan and up): Electron provides 64-bit Intel and ARM binaries for macOS. Apple Silicon support was added in Electron 11.
 * Windows (Windows 7 and up): Electron provides `ia32` (`x86`), `x64` (`amd64`), and `arm64` binaries for Windows. Windows on ARM support was added in Electron 5.0.8.
-* Linux: The prebuilt binaries of Electron are built on Ubuntu 18.04. They have also been verified to work on:
+* Linux: The prebuilt binaries of Electron are built on Ubuntu 20.04. They have also been verified to work on:
   * Ubuntu 14.04 and newer
   * Fedora 24 and newer
   * Debian 8 and newer
@@ -89,7 +89,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-* [China](https://npm.taobao.org/mirrors/electron)
+* [China](https://npmmirror.com/mirrors/electron/)
 
 See the [Advanced Installation Instructions](https://www.electronjs.org/docs/latest/tutorial/installation#mirror) to learn how to use a custom mirror.
 

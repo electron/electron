@@ -63,7 +63,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
  public:
   static void CreateAndStart(
       const network::ResourceRequest& request,
-      network::mojom::URLLoaderRequest loader,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
     // Owns itself. Will live as long as its URLLoader and URLLoaderClientPtr
@@ -390,7 +390,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
 void CreateAsarURLLoader(
     const network::ResourceRequest& request,
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
   auto task_runner = base::ThreadPool::CreateSequencedTaskRunner(

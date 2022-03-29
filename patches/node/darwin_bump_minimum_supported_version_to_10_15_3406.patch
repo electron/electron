@@ -11,7 +11,7 @@ Refs: https://github.com/libuv/libuv/pull/482
 Refs: https://github.com/libuv/libuv/pull/3405
 
 diff --git a/deps/uv/SUPPORTED_PLATFORMS.md b/deps/uv/SUPPORTED_PLATFORMS.md
-index 30e0ea617a6fcaa5b4b7c7c5b117652e61f367d3..dc57dfb12dc7ddf8d29308ac44f46084a933d5ca 100644
+index 87e23823ad6424526fdbc2457e535875124b31cb..79509db5b17bb9e7fe245d8a0fd7fa25f8665426 100644
 --- a/deps/uv/SUPPORTED_PLATFORMS.md
 +++ b/deps/uv/SUPPORTED_PLATFORMS.md
 @@ -3,7 +3,7 @@

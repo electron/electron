@@ -329,6 +329,10 @@ class NativeWindow : public base::SupportsUserData,
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
   int titlebar_overlay_height() const { return titlebar_overlay_height_; }
+  void set_titlebar_overlay_height(int height) {
+    titlebar_overlay_height_ = height;
+  }
+  bool titlebar_overlay_enabled() const { return titlebar_overlay_; }
 
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }

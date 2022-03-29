@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jameson Nash <vtjnash@gmail.com>
+Date: Tue, 1 Feb 2022 15:27:12 -0500
+Subject: process,bsd: handle kevent NOTE_EXIT failure (#3451)
+
+The kernel may return ESRCH if the child has already exited here.
+This is rather annoying, and means we must indirectly handle
+notification to our event loop of the process exit.
+
+Refs: https://github.com/libuv/libuv/pull/3441
+Refs: https://github.com/libuv/libuv/pull/3257
+
+diff --git a/deps/uv/src/unix/internal.h b/deps/uv/src/unix/internal.h
+index 16be13b99f5db77741aa276e90a437ef4eb5ba32..2dcc8b32f5165dd75061a1b55cc1abd2ab93ccc9 100644
+--- a/deps/uv/src/unix/internal.h
++++ b/deps/uv/src/unix/internal.h
+@@ -145,7 +145,8 @@ typedef struct uv__stream_queued_fds_s uv__stream_queued_fds_t;
+ 
+ /* loop flags */
+ enum {
+-  UV_LOOP_BLOCK_SIGPROF = 1
++  UV_LOOP_BLOCK_SIGPROF = 0x1,
++  UV_LOOP_REAP_CHILDREN = 0x2
+ };
+ 
+ /* flags of excluding ifaddr */
+diff --git a/deps/uv/src/unix/kqueue.c b/deps/uv/src/unix/kqueue.c
+index efbc561dee2574f06ebd9408d1e89e435c93cc5a..857eb1d54bfde99754ce2c6e92a287c288bd9f52 100644
+--- a/deps/uv/src/unix/kqueue.c
++++ b/deps/uv/src/unix/kqueue.c
+@@ -285,7 +285,7 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
+     for (i = 0; i < nfds; i++) {
+       ev = events + i;
+       if (ev->filter == EVFILT_PROC) {
+-        uv__wait_children(loop);
++        loop->flags |= UV_LOOP_REAP_CHILDREN;
+         nevents++;
+         continue;
+       }
+@@ -382,6 +382,11 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
+       nevents++;
+     }
+ 
++    if (loop->flags & UV_LOOP_REAP_CHILDREN) {
++      loop->flags &= ~UV_LOOP_REAP_CHILDREN;
++      uv__wait_children(loop);
++    }
++
+     if (reset_timeout != 0) {
+       timeout = user_timeout;
+       reset_timeout = 0;
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index c1f6bd4b0076f0835caf83c45a6a896e7ae5def9..2920b942962357827bae9bcad23af8333e8b007f 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -507,8 +507,12 @@ int uv_spawn(uv_loop_t* loop,
+ #if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+     struct kevent event;
+     EV_SET(&event, pid, EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, 0);
+-    if (kevent(loop->backend_fd, &event, 1, NULL, 0, NULL))
+-      abort();
++    if (kevent(loop->backend_fd, &event, 1, NULL, 0, NULL)) {
++      if (errno != ESRCH)
++        abort();
++      /* Process already exited. Call waitpid on the next loop iteration. */
++      loop->flags |= UV_LOOP_REAP_CHILDREN;
++    }
+ #endif
+ 
+     QUEUE_INSERT_TAIL(&loop->process_handles, &process->queue);

@@ -8,17 +8,17 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index eff6616ef019ea8b661b878cc5fccd1e4b9217aa..9aff1848395dc41311df575dd7cbf0771271ed03 100644
+index 4095ee0ef25226180acb35d320630f971305528e..a0aff5ad93e7644211a2c15553b3d0988f380b7b 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -890,10 +890,7 @@ bool WebContentsViewAura::IsValidDragTarget(
-   // TODO(https://crbug.com/1266953): There are some known gaps caused by
-   // comparing `RenderViewHost` IDs, as `RenderViewHost` ID is not really a
-   // strong signal for page identity.
--  return !drag_start_ ||
--         target_rwh->GetProcess()->GetID() == drag_start_->process_id ||
--         GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
--             drag_start_->view_id;
+@@ -899,10 +899,7 @@ bool WebContentsViewAura::IsValidDragTarget(
+   // for the outermost view. Inner `WebContents` will have a
+   // `WebContentsViewChildFrame` so when dragging between an inner
+   // `WebContents` and its embedder the view IDs will be the same.
+-  bool cross_tab_drag =
+-      GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
+-      drag_start_->view_id;
+-  return cross_tab_drag;
 +  return true;
  }
  

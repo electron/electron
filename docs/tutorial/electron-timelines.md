@@ -22,23 +22,23 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 | 12.0.0 | -- | 2020-Nov-19 | 2021-Mar-02 | M89 | v14.16 | 🚫 |
 | 13.0.0 | -- | 2021-Mar-04 | 2021-May-25 | M91 | v14.16 | 🚫 |
 | 14.0.0 | -- | 2021-May-27 | 2021-Aug-31 | M93 | v14.17 | 🚫 |
-| 15.0.0 | 2021-Jul-20 | 2021-Sep-01 | 2021-Sep-21 | M94 | v16.5 | 🚫 |
+| 15.0.0 | 2021-Jul-20 | 2021-Sep-01 | 2021-Sep-21 | M94 | v16.5 | ✅ |
 | 16.0.0 | 2021-Sep-23 | 2021-Oct-20 | 2021-Nov-16 | M96 | v16.9 | ✅ |
 | 17.0.0 | 2021-Nov-18 | 2022-Jan-06 | 2022-Feb-01 | M98 | v16.13 | ✅ |
-| 18.0.0 | 2022-Feb-03 | 2022-Mar-03 | 2022-Mar-29 | M100 | TBD | ✅ |
-| 19.0.0 | 2022-Mar-31 | 2022-Apr-30 | 2022-May-24 | M102 | TBD | ✅ |
+| 18.0.0 | 2022-Feb-03 | 2022-Mar-03 | 2022-Mar-29 | M100 | v16.13 | ✅ |
+| 19.0.0 | 2022-Mar-31 | 2022-Apr-26 | 2022-May-24 | M102 | TBD | ✅ |
 
 **Notes:**
 
-* The `-beta.1` and `stable` dates are our solid release dates.
-* We strive for weekly beta releases, but we often release more betas than scheduled.
+* The `-alpha.1`, `-beta.1`, and `stable` dates are our solid release dates.
+* We strive for weekly alpha/beta releases, but we often release more than scheduled.
 * All dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.
 
 **Historical changes:**
 
 * Since Electron 5, Electron has been publicizing its release dates ([see blog post](https://electronjs.org/blog/electron-5-0-timeline)).
-* Since Electron 6, Electron major versions have been targeting every other Chromium major version. Each Electron stable should happen on the same day as Chrome stable ([see blog post](https://www.electronjs.org/blog/12-week-cadence)). When this was announced
-* Since Electron 16, Electron has been releasing major versions on an 8-week cadence in accordance to Chrome's change to a 4-week release cadence ([see blog post](https://www.electronjs.org/blog/8-week-cadence).
+* Since Electron 6, Electron major versions have been targeting every other Chromium major version. Each Electron stable should happen on the same day as Chrome stable ([see blog post](https://www.electronjs.org/blog/12-week-cadence)).
+* Since Electron 16, Electron has been releasing major versions on an 8-week cadence in accordance to Chrome's change to a 4-week release cadence ([see blog post](https://www.electronjs.org/blog/8-week-cadence)).
 
 :::info Chrome release dates
 

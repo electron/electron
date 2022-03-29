@@ -519,12 +519,12 @@ bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
         void(const base::CommandLine& command_line,
              const base::FilePath& current_directory,
-             const std::vector<const uint8_t> additional_data,
+             const std::vector<uint8_t> additional_data,
              const ProcessSingleton::NotificationAckCallback& ack_callback)>&
         callback,
     const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const std::vector<const uint8_t> additional_data,
+    const std::vector<uint8_t> additional_data,
     const ProcessSingleton::NotificationAckCallback& ack_callback) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
@@ -1118,7 +1118,7 @@ static void AckCallbackWrapper(
 void App::OnSecondInstance(
     const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const std::vector<const uint8_t> additional_data,
+    const std::vector<uint8_t> additional_data,
     const ProcessSingleton::NotificationAckCallback& ack_callback) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
@@ -1630,6 +1630,11 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
 void ConfigureHostResolver(v8::Isolate* isolate,
                            const gin_helper::Dictionary& opts) {
   gin_helper::ErrorThrower thrower(isolate);
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "configureHostResolver cannot be called before the app is ready");
+    return;
+  }
   net::SecureDnsMode secure_dns_mode = net::SecureDnsMode::kOff;
   std::string default_doh_templates;
   if (base::FeatureList::IsEnabled(features::kDnsOverHttps)) {

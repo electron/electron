@@ -328,6 +328,10 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
       export GOMA_FALLBACK_ON_AUTH_FAILURE=true
       third_party/goma/goma_ctl.py ensure_start
+      if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`third_party/goma/goma_auth.py info`" != "Login as Fermi Planck" ]; then
+        echo "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token."
+        exit 1
+      fi
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
       echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
@@ -466,6 +470,8 @@ step-fix-sync: &step-fix-sync
 
         # Fix esbuild (wrong binary)
         echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep --deps-file=src/third_party/devtools-frontend/src/DEPS -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
+        # Remove extra output from calling gclient getdep which always calls update_depot_tools
+        sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
       fi
 
@@ -544,6 +550,7 @@ step-electron-build: &step-electron-build
         (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
         rm -rf out/Default/clang_x64_v8_arm64/gen
         rm -rf out/Default/clang_x64_v8_arm64/obj
+        rm -rf out/Default/clang_x64_v8_arm64/thinlto-cache
         rm -rf out/Default/clang_x64/obj
 
         # Regenerate because we just deleted some ninja files 
@@ -780,6 +787,7 @@ step-show-goma-stats: &step-show-goma-stats
 step-mksnapshot-build: &step-mksnapshot-build
   run:
     name: mksnapshot build
+    no_output_timeout: 30m
     command: |
       cd src
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
@@ -1264,6 +1272,7 @@ commands:
             mv_if_exist src/out/Default/hunspell_dictionaries.zip
             mv_if_exist src/cross-arch-snapshots
             mv_if_exist src/out/electron_ninja_log
+            mv_if_exist src/out/Default/.ninja_log
           when: always
       - store_artifacts:
           path: generated_artifacts

@@ -23,7 +23,7 @@ def main():
           filepaths.append(os.path.join(root, f))
   except KeyboardInterrupt:
     print('Keyboard interruption. Please try again.')
-    return
+    return 0
 
   totalBrokenLinks = 0
   for path in filepaths:

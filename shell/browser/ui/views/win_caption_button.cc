@@ -100,6 +100,8 @@ void WinCaptionButton::SetSize(gfx::Size size) {
     base_width_ = width;
   if (height > 0)
     height_ = height;
+
+  InvalidateLayout();
 }
 
 int WinCaptionButton::GetBetweenButtonSpacing() const {

@@ -10,7 +10,7 @@ errors. This is remedied by adding a small timeout to the test.
 We'll either upstream this or figure out a better solution.
 
 diff --git a/test/parallel/test-debugger-address.js b/test/parallel/test-debugger-address.js
-index 95dd1c6e3f82835d5ccaf65544d654b71efaa392..ed8dccf91247068455dd593bb3e8c02bddc89ae5 100644
+index bffc28ac916e8d241465f1e2649ab8aa4a15a0c7..079e668a3d1c505fa0a540fb1df87b32e603db48 100644
 --- a/test/parallel/test-debugger-address.js
 +++ b/test/parallel/test-debugger-address.js
 @@ -59,6 +59,7 @@ function launchTarget(...args) {
@@ -22,7 +22,7 @@ index 95dd1c6e3f82835d5ccaf65544d654b71efaa392..ed8dccf91247068455dd593bb3e8c02b
      .then(() => cli.waitFor(/break/))
      .then(() => cli.waitForPrompt())
 diff --git a/test/sequential/test-debugger-pid.js b/test/sequential/test-debugger-pid.js
-index 402c1f86dd4ed99b413eca5fce8a2db47797b11a..74ef0a1618ccf1f6671bbe2a03548eee6cd0b88c 100644
+index 0056113ecaecd3a176ee9539b7fda0132ef59963..3228d0ecc220b5c8c8034fea0dce20f8c38ac68c 100644
 --- a/test/sequential/test-debugger-pid.js
 +++ b/test/sequential/test-debugger-pid.js
 @@ -41,6 +41,7 @@ function launchTarget(...args) {

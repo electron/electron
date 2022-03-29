@@ -6,10 +6,10 @@ Subject: Don't run PCScan functions if PCScan is disabled
 PCScan should not be invoked if PCScan is disabled.  Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/2916657.
 
 diff --git a/base/allocator/partition_allocator/memory_reclaimer.cc b/base/allocator/partition_allocator/memory_reclaimer.cc
-index 63819bf2593894bd763547d58cfae31d821bd7eb..a4ee9520cfc11125837e42955f8f6f6c3f21bf9e 100644
+index d871ceecd76e21b23c500643363ced2ca87e8013..e0a26a90ee38342aefdbdd76e9c56a932b214235 100644
 --- a/base/allocator/partition_allocator/memory_reclaimer.cc
 +++ b/base/allocator/partition_allocator/memory_reclaimer.cc
-@@ -67,7 +67,7 @@ void PartitionAllocMemoryReclaimer::Reclaim(int flags) {
+@@ -66,7 +66,7 @@ void MemoryReclaimer::Reclaim(int flags) {
    //
    // Lastly decommit empty slot spans and lastly try to discard unused pages at
    // the end of the remaining active slots.
@@ -17,9 +17,9 @@ index 63819bf2593894bd763547d58cfae31d821bd7eb..a4ee9520cfc11125837e42955f8f6f6c
 +#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM && defined(PA_ALLOW_PCSCAN)
    {
      using PCScan = internal::PCScan;
-     const auto invocation_mode = flags & PartitionPurgeAggressiveReclaim
+     const auto invocation_mode = flags & PurgeFlags::kAggressiveReclaim
 diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
-index 4bfe2501309e832dc9962d5f4642c6b7c782f83d..c45f1207be984fae9aee2cc5b9a7c405ed5ed96e 100644
+index d1b71673ca79ea0f2293cda46564ceb8a018f4e5..ca70bb8fdf7fec2e0d5e2b3bf0ece86def72e21b 100644
 --- a/base/threading/platform_thread_posix.cc
 +++ b/base/threading/platform_thread_posix.cc
 @@ -43,6 +43,7 @@

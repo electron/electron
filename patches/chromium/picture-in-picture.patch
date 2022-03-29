@@ -9,49 +9,49 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
-index 063cbf00a7ae871d426cef5cec00aa379c3ace11..444d3cc2e1b00a62f382232d3d2eccdd481abf11 100644
+index 7bc8d118f87b91baf1c3bd1d34374996ab1d3638..2d2c1c86f311b07f0c2b09d5a4c082cc5599600c 100644
 --- a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
  
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
- #include "ui/gfx/color_palette.h"
+ #include "ui/base/models/image_model.h"
 diff --git a/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
-index 648e199cb015155ba84cf1c846cf6d2a16858007..294bfb625d1155e640eeeb37bea597dc2d980e58 100644
+index 7d0e39968bf34cdc99549cb48f6bf0a11c182565..f21c1672abf34dc9d19cd39c5d09083a60ef6978 100644
 --- a/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
 +++ b/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
  
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "third_party/skia/include/core/SkColor.h"
  #include "ui/base/cursor/cursor.h"
  #include "ui/base/l10n/l10n_util.h"
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 0c1fa8676d00240e60ddd037664a409d1c9619dd..64d21f1878c3433324fc61353a10ee21d59c0b47 100644
+index d3400d7b02edc9cffba4cb53ec601b6e4cfea3b2..8e620ad6172a650ea96f80c0b44035932471d88b 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -6,7 +6,7 @@
  
  #include "build/chromeos_buildflags.h"
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
- #include "ui/gfx/color_palette.h"
+ #include "ui/base/models/image_model.h"
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d42815d9f4 100644
+index 3309906bcae27ba89d73ce4fba49843a10cd31f6..9f828f70606238186b35b5e1ca8751134eaf3c33 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-@@ -20,6 +20,7 @@
+@@ -15,24 +15,28 @@
  #include "base/timer/timer.h"
  #include "build/build_config.h"
  #include "chrome/app/vector_icons/vector_icons.h"
@@ -59,8 +59,12 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  #include "chrome/browser/command_updater_delegate.h"
  #include "chrome/browser/command_updater_impl.h"
  #include "chrome/browser/profiles/profile.h"
-@@ -28,14 +29,15 @@
+ #include "chrome/browser/themes/theme_service.h"
+ #include "chrome/browser/ui/browser.h"
  #include "chrome/browser/ui/browser_finder.h"
++#endif
+ #include "chrome/browser/ui/color/chrome_color_id.h"
++#if 0
  #include "chrome/browser/ui/toolbar/chrome_location_bar_model_delegate.h"
  #include "chrome/browser/ui/views/location_bar/location_bar_view.h"
 +#endif
@@ -71,12 +75,13 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  #include "components/omnibox/browser/location_bar_model_impl.h"
  #include "components/vector_icons/vector_icons.h"
  #include "content/public/browser/document_picture_in_picture_window_controller.h"
+ #include "content/public/browser/picture_in_picture_window_controller.h"
  #include "content/public/browser/web_contents.h"
 +#include "electron/grit/electron_resources.h"
  #include "content/public/common/content_constants.h"
  #include "media/base/media_switches.h"
  #include "media/base/video_util.h"
-@@ -57,7 +59,7 @@
+@@ -57,7 +61,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -85,7 +90,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -91,7 +93,7 @@ T* AddChildView(std::vector<std::unique_ptr<views::View>>* views,
+@@ -109,7 +113,7 @@ END_METADATA
  }  // namespace
  
  OverlayLocationBarViewProxy::~OverlayLocationBarViewProxy() = default;
@@ -94,7 +99,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
                                     public ChromeLocationBarModelDelegate,
                                     public LocationBarView::Delegate,
-@@ -149,7 +151,7 @@ class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
+@@ -167,7 +171,7 @@ class OverlayLocationBarViewImpl : public OverlayLocationBarViewProxy,
    const std::unique_ptr<LocationBarModelImpl> location_bar_model_;
    CommandUpdaterImpl command_updater_;
  };
@@ -103,7 +108,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  // static
  std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
      content::DocumentPictureInPictureWindowController* controller,
-@@ -185,7 +187,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
+@@ -203,7 +207,7 @@ std::unique_ptr<DocumentOverlayWindowViews> DocumentOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -112,7 +117,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
    std::wstring app_user_model_id;
    Browser* browser =
        chrome::FindBrowserWithWebContents(controller->GetWebContents());
-@@ -260,12 +262,6 @@ views::View* DocumentOverlayWindowViews::GetControlsContainerView() const {
+@@ -278,12 +282,6 @@ views::View* DocumentOverlayWindowViews::GetControlsContainerView() const {
    return controls_container_view_;
  }
  
@@ -125,7 +130,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
  void DocumentOverlayWindowViews::SetUpViews() {
    // The window content consists of the fixed-height controls_container_view at
    // the top which is a box layout, and the remainder of the view is filled with
-@@ -281,6 +277,7 @@ void DocumentOverlayWindowViews::SetUpViews() {
+@@ -299,6 +297,7 @@ void DocumentOverlayWindowViews::SetUpViews() {
    //   +-------------------------------------+
  
    content::WebContents* pip_contents = controller_->GetChildWebContents();
@@ -133,7 +138,7 @@ index d12f196f2e7b1a4b3936af2cb16d872e91785fe4..4a015d21cf27b975c87d91d2149555d4
    auto* profile =
        Profile::FromBrowserContext(pip_contents->GetBrowserContext());
    profile_for_theme_ = profile;
-@@ -291,8 +288,8 @@ void DocumentOverlayWindowViews::SetUpViews() {
+@@ -309,8 +308,8 @@ void DocumentOverlayWindowViews::SetUpViews() {
      location_bar_view_proxy_ = std::make_unique<OverlayLocationBarViewImpl>(
          profile, controller_->GetWebContents());
    }
@@ -157,20 +162,20 @@ index 86d385842501d28b5eb42f841822294eb597e6ed..43c19dfa6ec6b48f8694636cc184dd61
    // OverlayWindowViews
    bool ControlsHitTestContainsPoint(const gfx::Point& point) override;
 diff --git a/chrome/browser/ui/views/overlay/hang_up_button.cc b/chrome/browser/ui/views/overlay/hang_up_button.cc
-index 8e54570ea4c83483eedee4c781f0498ba07bc3dd..b1eb0b2f1a3dfb71e1f5d3917c67e66ac2b27d22 100644
+index 26f8f5ffa444d874b229b5e8debf087e4469dfd1..10149e812a43e3d5c92701e9b2ae8d68ed8395c7 100644
 --- a/chrome/browser/ui/views/overlay/hang_up_button.cc
 +++ b/chrome/browser/ui/views/overlay/hang_up_button.cc
-@@ -4,7 +4,7 @@
- 
+@@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/hang_up_button.h"
  
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "components/vector_icons/vector_icons.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index d96a4937e6ff6bbf4311673b4c91e9f0e957832a..a06cae5f50eb671fc05bd3d41ae4d218a649e991 100644
+index 850b34e3b40f7ff1848c66158976db079e0853bd..105dbc3661eb2710b2f10ca6584e85c36ad14705 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -14,13 +14,15 @@
@@ -200,85 +205,85 @@ index d96a4937e6ff6bbf4311673b4c91e9f0e957832a..a06cae5f50eb671fc05bd3d41ae4d218
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
 diff --git a/chrome/browser/ui/views/overlay/playback_image_button.cc b/chrome/browser/ui/views/overlay/playback_image_button.cc
-index ad413df822af98f4f80a460c6e464cf5237d5ac4..821b75400a7a4921e59a414516739c6de5a66df7 100644
+index bcd3b2e1038786b660a4b91fbc20d9d8b4afffb4..a953c9d0ee0b49d6cc096e3eb236296b57cbc6c0 100644
 --- a/chrome/browser/ui/views/overlay/playback_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/playback_image_button.cc
 @@ -6,7 +6,7 @@
  
  #include "chrome/app/vector_icons/vector_icons.h"
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "components/vector_icons/vector_icons.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/resize_handle_button.cc b/chrome/browser/ui/views/overlay/resize_handle_button.cc
-index 90c9dbbfa741da8cf72594738c1686b14e277663..34063436a7e8e36f624c1b86765fe886434df54a 100644
+index 8bf217b9b0c2bd22d6940c24c58eccb9865c5286..91f061a1243135db475371dda00c2fe054f4e8e3 100644
 --- a/chrome/browser/ui/views/overlay/resize_handle_button.cc
 +++ b/chrome/browser/ui/views/overlay/resize_handle_button.cc
 @@ -6,7 +6,7 @@
  
  #include "chrome/app/vector_icons/vector_icons.h"
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "ui/base/hit_test.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
-index ae3b37b13498d63b0bc8d7d66e228f974e1c4b4a..9a4e7de29921209a5a7807efeecb02e05f38692d 100644
+index 51c7db1bfbd3c03b9cb2786c8c7482b33e3aca0b..2890f7420d2fd258f84019963eab6c9606e228db 100644
 --- a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 +++ b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/skip_ad_label_button.h"
  
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/toggle_camera_button.cc b/chrome/browser/ui/views/overlay/toggle_camera_button.cc
-index c5254509559fd89a8831d69498e2f120416b08df..711490193ac7a9a122fe2b85661dd1a63d3a06ac 100644
+index 46ec4441ddb227325b319359f9d33a80aa856d85..57957d72310c0a232c78489fba5a07cdf475dc53 100644
 --- a/chrome/browser/ui/views/overlay/toggle_camera_button.cc
 +++ b/chrome/browser/ui/views/overlay/toggle_camera_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/toggle_camera_button.h"
  
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "components/vector_icons/vector_icons.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/toggle_microphone_button.cc b/chrome/browser/ui/views/overlay/toggle_microphone_button.cc
-index 98d653475bf2aaa57bd11961df3697882a9a40d7..3870cad08c531a2a8b3f6ba84088065a0d31f033 100644
+index 59b9a5442185bfb9efd8ed571ec63d56e3bc3326..34d58bf54019e0b8001c29cb301861d045c60214 100644
 --- a/chrome/browser/ui/views/overlay/toggle_microphone_button.cc
 +++ b/chrome/browser/ui/views/overlay/toggle_microphone_button.cc
 @@ -5,7 +5,7 @@
  #include "chrome/browser/ui/views/overlay/toggle_microphone_button.h"
  
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "components/vector_icons/vector_icons.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/track_image_button.cc b/chrome/browser/ui/views/overlay/track_image_button.cc
-index d5690233eb85d9f2992ae90461c0d1fd83730d84..d32ee40d1dc7a0004d534540189179b240964888 100644
+index 5e136488b37887e9523ac04a9ff4ccdfaf96c104..24899f4c2b6fe66b96a6728bf747f1aad66f20a9 100644
 --- a/chrome/browser/ui/views/overlay/track_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/track_image_button.cc
 @@ -6,7 +6,7 @@
  
  #include "chrome/app/vector_icons/vector_icons.h"
- #include "chrome/browser/ui/views/overlay/constants.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
  #include "components/vector_icons/vector_icons.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index d25bffe434d866760d1efc4dd972b6ba4946acd0..2819bcefb83b6b4cb10114b7ad1df881ccade58d 100644
+index b2e281840f48592eb773c16042fb6b56a0fa132b..d5156bab0c81ca508733a8d3ba95f052ff6d83e6 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -15,9 +15,11 @@
@@ -290,10 +295,10 @@ index d25bffe434d866760d1efc4dd972b6ba4946acd0..2819bcefb83b6b4cb10114b7ad1df881
  #include "chrome/browser/ui/browser.h"
  #include "chrome/browser/ui/browser_finder.h"
 +#endif
+ #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
- #include "chrome/browser/ui/views/overlay/close_image_button.h"
-@@ -28,10 +30,10 @@
+@@ -29,10 +31,10 @@
  #include "chrome/browser/ui/views/overlay/toggle_camera_button.h"
  #include "chrome/browser/ui/views/overlay/toggle_microphone_button.h"
  #include "chrome/browser/ui/views/overlay/track_image_button.h"
@@ -305,7 +310,7 @@ index d25bffe434d866760d1efc4dd972b6ba4946acd0..2819bcefb83b6b4cb10114b7ad1df881
  #include "media/base/media_switches.h"
  #include "media/base/video_util.h"
  #include "third_party/skia/include/core/SkColor.h"
-@@ -53,7 +55,7 @@
+@@ -56,7 +58,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -314,7 +319,7 @@ index d25bffe434d866760d1efc4dd972b6ba4946acd0..2819bcefb83b6b4cb10114b7ad1df881
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -127,7 +129,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -148,7 +150,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

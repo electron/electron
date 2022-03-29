@@ -18,6 +18,7 @@
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
+#include "pdf/buildflags.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
@@ -34,8 +35,8 @@
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "pdf/pdf.h"        // nogncheck
-#include "pdf/pdf_ppapi.h"  // nogncheck
+#include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
+#include "pdf/pdf.h"  // nogncheck
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
@@ -43,7 +44,8 @@
 #include "content/public/browser/plugin_service.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
-#endif  // BUILDFLAG(ENABLE_PLUGINS)
+#include "ppapi/shared_impl/ppapi_switches.h"  // nogncheck crbug.com/1125897
+#endif                                         // BUILDFLAG(ENABLE_PLUGINS)
 
 namespace electron {
 
@@ -104,6 +106,8 @@ bool IsWidevineAvailable(
 #if BUILDFLAG(ENABLE_PLUGINS)
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+  // TODO(upstream/thestig): Figure out how to make the PDF Viewer work without
+  // this PPAPI plugin registration.
   content::PepperPluginInfo pdf_info;
   pdf_info.is_internal = true;
   pdf_info.is_out_of_process = true;
@@ -114,12 +118,6 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   content::WebPluginMimeType pdf_mime_type(kPdfPluginMimeType, "pdf",
                                            "Portable Document Format");
   pdf_info.mime_types.push_back(pdf_mime_type);
-  pdf_info.internal_entry_points.get_interface = chrome_pdf::PPP_GetInterface;
-  pdf_info.internal_entry_points.initialize_module =
-      chrome_pdf::PPP_InitializeModule;
-  pdf_info.internal_entry_points.shutdown_module =
-      chrome_pdf::PPP_ShutdownModule;
-  pdf_info.permissions = ppapi::PERMISSION_PDF | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
 
   // NB. in Chrome, this plugin isn't registered until the PDF extension is

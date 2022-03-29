@@ -178,12 +178,13 @@ HHOOK NativeWindowViews::mouse_hook_ = NULL;
 void NativeWindowViews::Maximize() {
   // Only use Maximize() when window is NOT transparent style
   if (!transparent()) {
-    if (IsVisible())
+    if (IsVisible()) {
       widget()->Maximize();
-    else
+    } else {
       widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
                                               gfx::Rect());
-    return;
+      NotifyWindowShow();
+    }
   } else {
     restore_bounds_ = GetBounds();
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
@@ -313,6 +314,15 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         NotifyWindowMoved();
         is_moving_ = false;
       }
+
+      // If the user dragged or moved the window during one or more
+      // calls to window.setBounds(), we want to apply the most recent
+      // one once they are done with the move or resize operation.
+      if (pending_bounds_change_.has_value()) {
+        SetBounds(pending_bounds_change_.value(), false /* animate */);
+        pending_bounds_change_.reset();
+      }
+
       return false;
     }
     case WM_MOVING: {

@@ -13,7 +13,15 @@
 #include <vector>
 
 #include "shell/common/api/api.mojom.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/views/widget/widget_observer.h"
+
+#if defined(USE_OZONE)
+#include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
+#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
@@ -31,7 +39,7 @@ class GlobalMenuBarX11;
 class RootView;
 class WindowStateWatcher;
 
-#if defined(USE_X11)
+#if defined(USE_OZONE_PLATFORM_X11)
 class EventDisabler;
 #endif
 
@@ -181,7 +189,13 @@ class NativeWindowViews : public NativeWindow,
            titlebar_overlay_;
   }
   SkColor overlay_button_color() const { return overlay_button_color_; }
+  void set_overlay_button_color(SkColor color) {
+    overlay_button_color_ = color;
+  }
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+  void set_overlay_symbol_color(SkColor color) {
+    overlay_symbol_color_ = color;
+  }
 #endif
 
  private:
@@ -252,12 +266,12 @@ class NativeWindowViews : public NativeWindow,
   // events from resizing the window.
   extensions::SizeConstraints old_size_constraints_;
 
-#if defined(USE_X11)
+#if defined(USE_OZONE)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 
-  // Handles window state events.
-  std::unique_ptr<WindowStateWatcher> window_state_watcher_;
+#endif
 
+#if defined(USE_OZONE_PLATFORM_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
@@ -302,6 +316,8 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether the window is currently being moved.
   bool is_moving_ = false;
+
+  absl::optional<gfx::Rect> pending_bounds_change_;
 
   // The color to use as the theme and symbol colors respectively for Window
   // Controls Overlay if enabled on Windows.

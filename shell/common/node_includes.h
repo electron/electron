@@ -23,6 +23,7 @@
 #include "node_errors.h"
 #include "node_internals.h"
 #include "node_native_module_env.h"
+#include "node_object_wrap.h"
 #include "node_options-inl.h"
 #include "node_options.h"
 #include "node_platform.h"

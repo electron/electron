@@ -83,7 +83,7 @@ declare namespace NodeJS {
   }
 
   interface AsarBinding {
-    createArchive(path: string): AsarArchive;
+    Archive: { new(path: string): AsarArchive };
     splitPath(path: string): {
       isAsar: false;
     } | {
@@ -222,6 +222,7 @@ declare namespace NodeJS {
       isOnline(): boolean;
       isValidHeaderName: (headerName: string) => boolean;
       isValidHeaderValue: (headerValue: string) => boolean;
+      fileURLToFilePath: (url: string) => string;
       Net: any;
       net: any;
       createURLLoader(options: CreateURLLoaderOptions): URLLoader;
@@ -253,7 +254,7 @@ declare namespace NodeJS {
     _firstFileName?: string;
 
     helperExecPath: string;
-    mainModule: NodeJS.Module;
+    mainModule?: NodeJS.Module | undefined;
   }
 }
 
