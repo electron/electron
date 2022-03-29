@@ -177,16 +177,7 @@ build_script:
   - ninja -C out/Default third_party/electron_node:headers
   - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
   - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
-  - appveyor PushArtifact out/Default/windows_toolchain_profile.json
-  - appveyor PushArtifact out/Default/dist.zip
-  - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
-  - appveyor PushArtifact out/Default/chromedriver.zip
-  - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
   - 7z a node_headers.zip out\Default\gen\node_headers
-  - appveyor PushArtifact node_headers.zip
-  - appveyor PushArtifact out/Default/mksnapshot.zip
-  - appveyor PushArtifact out/Default/hunspell_dictionaries.zip
-  - appveyor PushArtifact out/Default/electron.lib
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         # Needed for msdia140.dll on 64-bit windows
@@ -201,7 +192,6 @@ build_script:
         # It's useful to have pdb files when debugging testing builds that are
         # built on CI.
         7z a pdb.zip out\Default\*.pdb
-        appveyor-retry appveyor PushArtifact pdb.zip
       }
   - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
 test_script:
@@ -230,7 +220,6 @@ test_script:
   - echo "Done verifying mksnapshot"
   - if "%RUN_TESTS%"=="true" ( echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd% )
   - echo "Done verifying chromedriver"
-  - if exist %cd%\electron.log ( appveyor-retry appveyor PushArtifact %cd%\electron.log )
 deploy_script:
   - cd electron
   - ps: >-
@@ -246,4 +235,19 @@ deploy_script:
         node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
       }
 on_finish:
-  - if exist src\electron\electron.log ( appveyor-retry appveyor PushArtifact src\electron\electron.log )
+  - cd ..
+  - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
+  - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
+  - if exist out\Default\shell_browser_ui_unittests.exe (appveyor-retry appveyor PushArtifact out\Default\shell_browser_ui_unittests.exe)
+  - if exist out\Default\chromedriver.zip (appveyor-retry appveyor PushArtifact out\Default\chromedriver.zip)
+  - if exist out\ffmpeg\ffmpeg.zip (appveyor-retry appveyor PushArtifact out\ffmpeg\ffmpeg.zip)
+  - if exist node_headers.zip (appveyor-retry appveyor PushArtifact node_headers.zip)
+  - if exist out\Default\mksnapshot.zip (appveyor-retry appveyor PushArtifact out\Default\mksnapshot.zip)
+  - if exist out\Default\hunspell_dictionaries.zip (appveyor-retry appveyor PushArtifact out\Default\hunspell_dictionaries.zip)
+  - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)
+  - ps: >-
+      if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
+        appveyor-retry appveyor PushArtifact pdb.zip
+      }
+
+  - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
