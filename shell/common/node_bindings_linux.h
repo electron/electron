@@ -19,9 +19,6 @@ class NodeBindingsLinux : public NodeBindings {
   void RunMessageLoop() override;
 
  private:
-  // Called when uv's watcher queue changes.
-  static void OnWatcherQueueChanged(uv_loop_t* loop);
-
   void PollEvents() override;
 
   // Epoll to poll for uv's backend fd.

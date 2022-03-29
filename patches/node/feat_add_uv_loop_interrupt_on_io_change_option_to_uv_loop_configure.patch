@@ -1,0 +1,503 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Mon, 31 Jan 2022 20:56:58 +0900
+Subject: feat: add UV_LOOP_INTERRUPT_ON_IO_CHANGE option to uv_loop_configure
+
+https://github.com/libuv/libuv/pull/3308
+
+diff --git a/deps/uv/docs/src/loop.rst b/deps/uv/docs/src/loop.rst
+index 0f5ddfb3ca21b7e5b38d0a4ce4b9e77387597199..ba815202fb157aa82859ec0518523cf6f2ec6ba1 100644
+--- a/deps/uv/docs/src/loop.rst
++++ b/deps/uv/docs/src/loop.rst
+@@ -73,7 +73,15 @@ API
+ 
+       This option is necessary to use :c:func:`uv_metrics_idle_time`.
+ 
++    - UV_LOOP_INTERRUPT_ON_IO_CHANGE: Interrupt the loop whenever a new IO
++      event has been added or changed.
++
++      This option is usually when implementing event loop integration, to make
++      the polling of backend fd interrupt to recognize the changes of IO events.
++
+     .. versionchanged:: 1.39.0 added the UV_METRICS_IDLE_TIME option.
++    .. versionchanged:: 1.43.0 added the UV_LOOP_INTERRUPT_ON_IO_CHANGE option.
++
+ 
+ .. c:function:: int uv_loop_close(uv_loop_t* loop)
+ 
+diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
+index 606083c87de5790d7e66fc34aeaae9a58acb8ef4..824b0b77cf5f0a46dcb3855c44ac73faaba2055f 100644
+--- a/deps/uv/include/uv.h
++++ b/deps/uv/include/uv.h
+@@ -252,7 +252,8 @@ typedef struct uv_statfs_s uv_statfs_t;
+ 
+ typedef enum {
+   UV_LOOP_BLOCK_SIGNAL = 0,
+-  UV_METRICS_IDLE_TIME
++  UV_METRICS_IDLE_TIME,
++  UV_LOOP_INTERRUPT_ON_IO_CHANGE
+ } uv_loop_option;
+ 
+ typedef enum {
+diff --git a/deps/uv/src/unix/async.c b/deps/uv/src/unix/async.c
+index e1805c323795e5b0c465d80100eebeb7bf838caa..dd4358c0cdaa97ba8fadf4d9755993803beddd18 100644
+--- a/deps/uv/src/unix/async.c
++++ b/deps/uv/src/unix/async.c
+@@ -38,7 +38,6 @@
+ #include <sys/eventfd.h>
+ #endif
+ 
+-static void uv__async_send(uv_loop_t* loop);
+ static int uv__async_start(uv_loop_t* loop);
+ 
+ 
+@@ -70,7 +69,7 @@ int uv_async_send(uv_async_t* handle) {
+     return 0;
+ 
+   /* Wake up the other thread's event loop. */
+-  uv__async_send(handle->loop);
++  uv__loop_interrupt(handle->loop);
+ 
+   /* Tell the other thread we're done. */
+   if (cmpxchgi(&handle->pending, 1, 2) != 1)
+@@ -165,40 +164,6 @@ static void uv__async_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+ }
+ 
+ 
+-static void uv__async_send(uv_loop_t* loop) {
+-  const void* buf;
+-  ssize_t len;
+-  int fd;
+-  int r;
+-
+-  buf = "";
+-  len = 1;
+-  fd = loop->async_wfd;
+-
+-#if defined(__linux__)
+-  if (fd == -1) {
+-    static const uint64_t val = 1;
+-    buf = &val;
+-    len = sizeof(val);
+-    fd = loop->async_io_watcher.fd;  /* eventfd */
+-  }
+-#endif
+-
+-  do
+-    r = write(fd, buf, len);
+-  while (r == -1 && errno == EINTR);
+-
+-  if (r == len)
+-    return;
+-
+-  if (r == -1)
+-    if (errno == EAGAIN || errno == EWOULDBLOCK)
+-      return;
+-
+-  abort();
+-}
+-
+-
+ static int uv__async_start(uv_loop_t* loop) {
+   int pipefd[2];
+   int err;
+diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
+index 7cd3a2a954ff7d70e6ba7a6f7538648841bc54b2..f89b7158218be60ac10e61484a2d5e5e28a3182f 100644
+--- a/deps/uv/src/unix/core.c
++++ b/deps/uv/src/unix/core.c
+@@ -887,6 +887,9 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+     loop->watchers[w->fd] = w;
+     loop->nfds++;
+   }
++
++  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
++    uv__loop_interrupt(loop);
+ }
+ 
+ 
+@@ -918,6 +921,9 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+   }
+   else if (QUEUE_EMPTY(&w->watcher_queue))
+     QUEUE_INSERT_TAIL(&loop->watcher_queue, &w->watcher_queue);
++
++  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
++    uv__loop_interrupt(loop);
+ }
+ 
+ 
+@@ -934,6 +940,9 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
+ void uv__io_feed(uv_loop_t* loop, uv__io_t* w) {
+   if (QUEUE_EMPTY(&w->pending_queue))
+     QUEUE_INSERT_TAIL(&loop->pending_queue, &w->pending_queue);
++
++  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
++    uv__loop_interrupt(loop);
+ }
+ 
+ 
+diff --git a/deps/uv/src/unix/loop.c b/deps/uv/src/unix/loop.c
+index a88e71c339351f2ebcdd6c3f933fc3b1122910ed..353143e5ebecae598425dc036f4458bb7c43bb0b 100644
+--- a/deps/uv/src/unix/loop.c
++++ b/deps/uv/src/unix/loop.c
+@@ -217,6 +217,11 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
+     return 0;
+   }
+ 
++  if (option == UV_LOOP_INTERRUPT_ON_IO_CHANGE) {
++    lfields->flags |= UV_LOOP_INTERRUPT_ON_IO_CHANGE;
++    return 0;
++  }
++
+   if (option != UV_LOOP_BLOCK_SIGNAL)
+     return UV_ENOSYS;
+ 
+@@ -226,3 +231,37 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
+   loop->flags |= UV_LOOP_BLOCK_SIGPROF;
+   return 0;
+ }
++
++
++void uv__loop_interrupt(uv_loop_t* loop) {
++  const void* buf;
++  ssize_t len;
++  int fd;
++  int r;
++
++  buf = "";
++  len = 1;
++  fd = loop->async_wfd;
++
++#if defined(__linux__)
++  if (fd == -1) {
++    static const uint64_t val = 1;
++    buf = &val;
++    len = sizeof(val);
++    fd = loop->async_io_watcher.fd;  /* eventfd */
++  }
++#endif
++
++  do
++    r = write(fd, buf, len);
++  while (r == -1 && errno == EINTR);
++
++  if (r == len)
++    return;
++
++  if (r == -1)
++    if (errno == EAGAIN || errno == EWOULDBLOCK)
++      return;
++
++  abort();
++}
+diff --git a/deps/uv/src/uv-common.h b/deps/uv/src/uv-common.h
+index 6001b0cf68d0b0268b578218b664a737f43c9521..5d2212571f4bcb648ab332f0c5650d0fdb37c03a 100644
+--- a/deps/uv/src/uv-common.h
++++ b/deps/uv/src/uv-common.h
+@@ -140,6 +140,8 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap);
+ 
+ void uv__loop_close(uv_loop_t* loop);
+ 
++void uv__loop_interrupt(uv_loop_t* loop);
++
+ int uv__read_start(uv_stream_t* stream,
+                    uv_alloc_cb alloc_cb,
+                    uv_read_cb read_cb);
+@@ -268,6 +270,10 @@ void uv__threadpool_cleanup(void);
+     if (((h)->flags & UV_HANDLE_ACTIVE) != 0) break;                          \
+     (h)->flags |= UV_HANDLE_ACTIVE;                                           \
+     if (((h)->flags & UV_HANDLE_REF) != 0) uv__active_handle_add(h);          \
++    int loop_flags = uv__get_internal_fields((h)->loop)->flags;               \
++    if (loop_flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE) {                        \
++      uv__loop_interrupt((h)->loop);                                          \
++    }                                                                         \
+   }                                                                           \
+   while (0)
+ 
+diff --git a/deps/uv/src/win/core.c b/deps/uv/src/win/core.c
+index e53a0f8e28637a58ceec7852d1a79874fc1a9548..dd4065c1cc68763bfe258492e3119669311394dc 100644
+--- a/deps/uv/src/win/core.c
++++ b/deps/uv/src/win/core.c
+@@ -381,10 +381,20 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
+     return 0;
+   }
+ 
++  if (option == UV_LOOP_INTERRUPT_ON_IO_CHANGE) {
++    lfields->flags |= UV_LOOP_INTERRUPT_ON_IO_CHANGE;
++    return 0;
++  }
++
+   return UV_ENOSYS;
+ }
+ 
+ 
++void uv__loop_interrupt(uv_loop_t* loop) {
++  PostQueuedCompletionStatus(loop->iocp, 0, 0, NULL);
++}
++
++
+ int uv_backend_fd(const uv_loop_t* loop) {
+   return -1;
+ }
+diff --git a/deps/uv/test/test-embed.c b/deps/uv/test/test-embed.c
+index c6ddceb149d9c1d68b0dd17b6dac0d4c3c3e9dbc..f6572c5dc2b6ef39bd11889ad1f7873007a6437d 100644
+--- a/deps/uv/test/test-embed.c
++++ b/deps/uv/test/test-embed.c
+@@ -25,115 +25,179 @@
+ #include <stdlib.h>
+ #include <errno.h>
+ 
+-#ifndef HAVE_KQUEUE
+-# if defined(__APPLE__) ||                                                    \
+-     defined(__DragonFly__) ||                                                \
+-     defined(__FreeBSD__) ||                                                  \
+-     defined(__FreeBSD_kernel__) ||                                           \
+-     defined(__OpenBSD__) ||                                                  \
+-     defined(__NetBSD__)
+-#  define HAVE_KQUEUE 1
+-# endif
+-#endif
+-
+ #ifndef HAVE_EPOLL
+ # if defined(__linux__)
+ #  define HAVE_EPOLL 1
+ # endif
+ #endif
+ 
+-#if defined(HAVE_KQUEUE) || defined(HAVE_EPOLL)
++#if defined(HAVE_EPOLL)
++# include <sys/epoll.h>
++#endif
+ 
+-#if defined(HAVE_KQUEUE)
++#if !defined(_WIN32)
+ # include <sys/types.h>
+-# include <sys/event.h>
+ # include <sys/time.h>
+ #endif
+ 
+-#if defined(HAVE_EPOLL)
+-# include <sys/epoll.h>
+-#endif
+-
++static uv_loop_t main_loop;
++static uv_loop_t external_loop;
+ static uv_thread_t embed_thread;
+ static uv_sem_t embed_sem;
+-static uv_timer_t embed_timer;
+ static uv_async_t embed_async;
++static uv_async_t main_async;
+ static volatile int embed_closed;
+ 
+-static int embed_timer_called;
++static uv_timer_t main_timer;
++static int main_timer_called;
+ 
+ 
+-static void embed_thread_runner(void* arg) {
++#if defined(_WIN32)
++static void embed_thread_poll_win(HANDLE iocp, int timeout) {
++  DWORD bytes;
++  ULONG_PTR key;
++  OVERLAPPED* overlapped;
++
++  GetQueuedCompletionStatus(iocp,
++                            &bytes,
++                            &key,
++                            &overlapped,
++                            timeout >= 0 ? timeout : INFINITE);
++
++  /* Give the event back so the loop can deal with it. */
++  if (overlapped != NULL)
++    PostQueuedCompletionStatus(iocp,
++                               bytes,
++                               key,
++                               overlapped);
++}
++#else
++static void embed_thread_poll_unix(int fd, int timeout) {
+   int r;
+-  int fd;
++  do {
++#if defined(HAVE_EPOLL)
++    struct epoll_event ev;
++    r = epoll_wait(fd, &ev, 1, timeout);
++#else
++    struct timeval tv;
++    if (timeout >= 0) {
++      tv.tv_sec = timeout / 1000;
++      tv.tv_usec = (timeout % 1000) * 1000;
++    }
++    fd_set readset;
++    FD_ZERO(&readset);
++    FD_SET(fd, &readset);
++    r = select(fd + 1, &readset, NULL, NULL, timeout >= 0 ? &tv : NULL);
++#endif
++  } while (r == -1 && errno == EINTR);
++}
++#endif /* !_WIN32 */
++
++
++static void embed_thread_runner(void* arg) {
+   int timeout;
+ 
+-  while (!embed_closed) {
+-    fd = uv_backend_fd(uv_default_loop());
+-    timeout = uv_backend_timeout(uv_default_loop());
+-
+-    do {
+-#if defined(HAVE_KQUEUE)
+-      struct timespec ts;
+-      ts.tv_sec = timeout / 1000;
+-      ts.tv_nsec = (timeout % 1000) * 1000000;
+-      r = kevent(fd, NULL, 0, NULL, 0, &ts);
+-#elif defined(HAVE_EPOLL)
+-      {
+-        struct epoll_event ev;
+-        r = epoll_wait(fd, &ev, 1, timeout);
+-      }
++  do {
++    timeout = uv_backend_timeout(&main_loop);
++
++#if defined(_WIN32)
++    embed_thread_poll_win(main_loop.iocp, timeout);
++#else
++    embed_thread_poll_unix(uv_backend_fd(&main_loop), timeout);
+ #endif
+-    } while (r == -1 && errno == EINTR);
++
+     uv_async_send(&embed_async);
++
+     uv_sem_wait(&embed_sem);
+-  }
++  } while (!embed_closed);
+ }
+ 
+ 
+ static void embed_cb(uv_async_t* async) {
+-  uv_run(uv_default_loop(), UV_RUN_ONCE);
++  /* Run tasks in main loop */
++  uv_run(&main_loop, UV_RUN_NOWAIT);
+ 
++  /* Tell embed thread to continue polling */
+   uv_sem_post(&embed_sem);
+ }
+ 
+ 
+-static void embed_timer_cb(uv_timer_t* timer) {
+-  embed_timer_called++;
++static void main_timer_cb(uv_timer_t* timer) {
++  main_timer_called++;
+   embed_closed = 1;
+ 
+   uv_close((uv_handle_t*) &embed_async, NULL);
++  uv_close((uv_handle_t*) &main_async, NULL);
+ }
+-#endif
+ 
+ 
+-TEST_IMPL(embed) {
+-#if defined(HAVE_KQUEUE) || defined(HAVE_EPOLL)
+-  uv_loop_t external;
+-
+-  ASSERT(0 == uv_loop_init(&external));
++static void init_loops(void) {
++  ASSERT_EQ(0, uv_loop_init(&main_loop));
++  ASSERT_EQ(0, uv_loop_init(&external_loop));
+ 
+-  embed_timer_called = 0;
++  main_timer_called = 0;
+   embed_closed = 0;
+ 
+-  uv_async_init(&external, &embed_async, embed_cb);
++  uv_async_init(&external_loop, &embed_async, embed_cb);
+ 
+-  /* Start timer in default loop */
+-  uv_timer_init(uv_default_loop(), &embed_timer);
+-  uv_timer_start(&embed_timer, embed_timer_cb, 250, 0);
++  /* Create a dummy async for main loop otherwise backend timeout will
++     always be 0 */
++  uv_async_init(&main_loop, &main_async, embed_cb);
+ 
+-  /* Start worker that will interrupt external loop */
++  /* Start worker that will poll main loop and interrupt external loop */
+   uv_sem_init(&embed_sem, 0);
+   uv_thread_create(&embed_thread, embed_thread_runner, NULL);
++}
+ 
+-  /* But run external loop */
+-  uv_run(&external, UV_RUN_DEFAULT);
++
++static void run_loop(void) {
++  /* Run external loop */
++  uv_run(&external_loop, UV_RUN_DEFAULT);
+ 
+   uv_thread_join(&embed_thread);
+-  uv_loop_close(&external);
++  uv_sem_destroy(&embed_sem);
++  uv_loop_close(&external_loop);
++  uv_loop_close(&main_loop);
++}
+ 
+-  ASSERT(embed_timer_called == 1);
+-#endif
++
++TEST_IMPL(embed) {
++  init_loops();
++
++  /* Start timer in main loop */
++  uv_timer_init(&main_loop, &main_timer);
++  uv_timer_start(&main_timer, main_timer_cb, 250, 0);
++
++  run_loop();
++  ASSERT_EQ(main_timer_called, 1);
++
++  return 0;
++}
++
++
++static uv_timer_t external_timer;
++
++
++static void external_timer_cb(uv_timer_t* timer) {
++  /* Start timer in main loop */
++  uv_timer_init(&main_loop, &main_timer);
++  uv_timer_start(&main_timer, main_timer_cb, 250, 0);
++}
++
++
++TEST_IMPL(embed_with_external_timer) {
++  init_loops();
++
++  /* Interrupt embed polling when a handle is started */
++  ASSERT_EQ(0, uv_loop_configure(&main_loop, UV_LOOP_INTERRUPT_ON_IO_CHANGE));
++
++  /* Start timer in external loop, whose callback will not interrupt the
++     polling in embed thread */
++  uv_timer_init(&external_loop, &external_timer);
++  uv_timer_start(&external_timer, external_timer_cb, 100, 0);
++
++  run_loop();
++  ASSERT_EQ(main_timer_called, 1);
+ 
+   return 0;
+ }
+diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
+index a43edf1a4a9b0932ec73b8edaca0f676ecf3ccfa..199402e31406cf8ba360d54769461bb5285011ee 100644
+--- a/deps/uv/test/test-list.h
++++ b/deps/uv/test/test-list.h
+@@ -263,6 +263,7 @@ TEST_DECLARE   (process_priority)
+ TEST_DECLARE   (has_ref)
+ TEST_DECLARE   (active)
+ TEST_DECLARE   (embed)
++TEST_DECLARE   (embed_with_external_timer)
+ TEST_DECLARE   (async)
+ TEST_DECLARE   (async_null_cb)
+ TEST_DECLARE   (eintr_handling)
+@@ -860,6 +861,7 @@ TASK_LIST_START
+   TEST_ENTRY  (active)
+ 
+   TEST_ENTRY  (embed)
++  TEST_ENTRY  (embed_with_external_timer)
+ 
+   TEST_ENTRY  (async)
+   TEST_ENTRY  (async_null_cb)
