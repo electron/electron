@@ -25,7 +25,7 @@
 #include "ui/display/win/screen_win.h"
 #endif
 
-#if defined(USE_OZONE) || defined(USE_X11)
+#if defined(USE_OZONE)
 #include "ui/base/ui_base_features.h"
 #include "ui/ozone/public/ozone_platform.h"
 #endif
