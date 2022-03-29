@@ -22,7 +22,7 @@ index 7bc8d118f87b91baf1c3bd1d34374996ab1d3638..2d2c1c86f311b07f0c2b09d5a4c082cc
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/base/models/image_model.h"
 diff --git a/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
-index 7d0e39968bf34cdc99549cb48f6bf0a11c182565..f21c1672abf34dc9d19cd39c5d09083a60ef6978 100644
+index d566dbf99ea1164c6a8407026a9839218a6ba1fb..239cd53d70c547c79214988a82efdc8c472d553c 100644
 --- a/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
 +++ b/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
 @@ -5,7 +5,7 @@
@@ -150,10 +150,10 @@ index 3309906bcae27ba89d73ce4fba49843a10cd31f6..9f828f70606238186b35b5e1ca875113
    web_view->SetWebContents(pip_contents);
  
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.h b/chrome/browser/ui/views/overlay/document_overlay_window_views.h
-index 86d385842501d28b5eb42f841822294eb597e6ed..43c19dfa6ec6b48f8694636cc184dd616e5d6aca 100644
+index b2b178ccadce82f8d4ec8e5a6dafe1c67bcecd74..603d82a461c4c443ac26c85a46fbd866a42237e6 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.h
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.h
-@@ -55,7 +55,6 @@ class DocumentOverlayWindowViews : public OverlayWindowViews,
+@@ -56,7 +56,6 @@ class DocumentOverlayWindowViews : public OverlayWindowViews,
    bool IsVisible() const override;
    void OnNativeWidgetMove() override;
    void OnNativeWidgetDestroyed() override;

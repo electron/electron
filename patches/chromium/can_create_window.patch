@@ -21,7 +21,7 @@ index be7895586d64b0f8e7f122561d86f49479400a2b..5ad53ce87d8757b18e5ecedbd7ec9aec
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 143dc4bd1561fb3b0423ecb01c09547844bfbf90..42ebfe6570acb972055b3971817ae68fd92e073b 100644
+index 88266830511440e51e47166c66f80e9956bcef5a..3fa51ecee644055db44bd4dd54c27ec224ff46d6 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3937,6 +3937,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -81,7 +81,7 @@ index fbf6817479cace0ca06065eef3aa70aae2a0ebe1..cef6a18df7cfb8528ea07e808c3e5397
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f5c434fd7080faf5000c5d260bf66fcb2b7b868b..5b49830578b996fb1b6ed8cbe4d66085220213d0 100644
+index a0f2f002b51c6061fe509d13b2286faaec721936..1b7e71e12d01929b8bfacf8c7c8950922bdd3d59 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -170,6 +170,7 @@ class NetworkService;
@@ -220,10 +220,10 @@ index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index b48d3dbf9868d12412a34a6430d4e6bf2d4b27f3..d0d1ada0300163c8be4c9fb7cc7fb2f43efcc355 100644
+index dcacde03e5889d7347aadb2cfde10da767c9f9ca..3ccb2700c97d1297b8482e1b7b324cfa4002e21e 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2069,6 +2069,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2068,6 +2068,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
  
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, incumbent_window);
