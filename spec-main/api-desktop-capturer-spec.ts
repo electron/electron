@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
+import { delay, ifdescribe, ifit } from './spec-helpers';
 import { emittedOnce } from './events-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+
 import { closeAllWindows } from './window-helpers';
 
 const features = process._linkedBinding('electron_common_features');
@@ -156,26 +157,37 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     }
   });
 
-  // TODO(deepak1556): currently fails on all ci, enable it after upgrade.
-  it.skip('moveAbove should move the window at the requested place', async () => {
+  it('moveAbove should move the window at the requested place', async () => {
     // DesktopCapturer.getSources() is guaranteed to return in the correct
     // z-order from foreground to background.
     const MAX_WIN = 4;
-    const mainWindow = w;
-    const wList = [mainWindow];
+    const wList: BrowserWindow[] = [];
+
+    const destroyWindows = () => {
+      for (const w of wList) {
+        w.destroy();
+      }
+    };
+
     try {
-      for (let i = 0; i < MAX_WIN - 1; i++) {
-        const w = new BrowserWindow({ show: true, width: 100, height: 100 });
+      for (let i = 0; i < MAX_WIN; i++) {
+        const w = new BrowserWindow({ show: false, width: 100, height: 100 });
         wList.push(w);
       }
       expect(wList.length).to.equal(MAX_WIN);
 
       // Show and focus all the windows.
-      wList.forEach(async (w) => {
+      for (const w of wList) {
+        const wShown = emittedOnce(w, 'show');
         const wFocused = emittedOnce(w, 'focus');
+
+        w.show();
         w.focus();
+
+        await wShown;
         await wFocused;
-      });
+      }
+
       // At this point our windows should be showing from bottom to top.
 
       // DesktopCapturer.getSources() returns sources sorted from foreground to
@@ -189,11 +201,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       // bots while it is not on my workstation, as expected, with and without
       // the --ci parameter.
       if (process.platform === 'linux' && sources.length === 0) {
-        wList.forEach((w) => {
-          if (w !== mainWindow) {
-            w.destroy();
-          }
-        });
+        destroyWindows();
         it.skip('desktopCapturer.getSources returned an empty source list');
         return;
       }
@@ -207,44 +215,40 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       expect(sources.length).to.equal(wList.length);
 
       // Check that the sources and wList are sorted in the reverse order.
-      const wListReversed = wList.slice(0).reverse();
-      const canGoFurther = sources.every(
+      // If they're not, skip remaining checks because either focus or
+      // window placement are not reliable in the running test environment.
+      const wListReversed = wList.slice().reverse();
+      const proceed = sources.every(
         (source, index) => source.id === wListReversed[index].getMediaSourceId());
-      if (!canGoFurther) {
-        // Skip remaining checks because either focus or window placement are
-        // not reliable in the running test environment. So there is no point
-        // to go further to test moveAbove as requirements are not met.
-        return;
-      }
+      if (!proceed) return;
 
-      // Do the real work, i.e. move each window above the next one so that
-      // wList is sorted from foreground to background.
-      wList.forEach(async (w, index) => {
-        if (index < (wList.length - 1)) {
-          const wNext = wList[index + 1];
-          w.moveAbove(wNext.getMediaSourceId());
+      // Move windows so wList is sorted from foreground to background.
+      for (const [i, w] of wList.entries()) {
+        if (i < wList.length - 1) {
+          const next = wList[wList.length - 1];
+          w.focus();
+          w.moveAbove(next.getMediaSourceId());
+          // Ensure the window has time to move.
+          await delay(2000);
         }
-      });
+      }
 
       sources = await desktopCapturer.getSources({
         types: ['window'],
         thumbnailSize: { width: 0, height: 0 }
       });
-      // Only keep our windows again.
-      sources.splice(MAX_WIN, sources.length - MAX_WIN);
+
+      sources.splice(MAX_WIN, sources.length);
       expect(sources.length).to.equal(MAX_WIN);
       expect(sources.length).to.equal(wList.length);
 
       // Check that the sources and wList are sorted in the same order.
-      sources.forEach((source, index) => {
-        expect(source.id).to.equal(wList[index].getMediaSourceId());
-      });
+      for (const [index, source] of sources.entries()) {
+        const wID = wList[index].getMediaSourceId();
+        expect(source.id).to.equal(wID);
+      }
     } finally {
-      wList.forEach((w) => {
-        if (w !== mainWindow) {
-          w.destroy();
-        }
-      });
+      destroyWindows();
     }
   });
 });
