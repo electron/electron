@@ -177,11 +177,11 @@ Some popular `key` and `type`s are:
 * `NSPreferredWebServices`: `dictionary`
 * `NSUserDictionaryReplacementItems`: `array`
 
-### `systemPreferences.setUserDefault(key, type, value)` _macOS_
+### `systemPreferences.setUserDefault<Type extends keyof UserDefaultTypes>(key, type, value)` _macOS_
 
 * `key` string
-* `type` string - Can be `string`, `boolean`, `integer`, `float`, `double`, `url`, `array` or `dictionary`.
-* `value` string
+* `type` Type - Can be `string`, `boolean`, `integer`, `float`, `double`, `url`, `array` or `dictionary`.
+* `value` UserDefaultTypes[Type]
 
 Set the value of `key` in `NSUserDefaults`.
 
