@@ -328,6 +328,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
       [](NativeWindowMac* window) {
         if (window->window_)
           window->window_ = nil;
+        if (window->buttons_proxy_)
+          window->buttons_proxy_.reset();
       },
       this));
 
