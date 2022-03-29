@@ -603,6 +603,12 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
   return file_system_paths.find(file_system_path) != file_system_paths.end();
 }
 
+void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
+  rwhv->SetBackgroundColor(color);
+  static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+      ->SetContentBackgroundColor(color);
+}
+
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1395,23 +1401,11 @@ void WebContents::HandleNewRenderFrame(
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      web_contents()->SetPageBaseBackgroundColor(ParseHexColor(color_name));
-    } else {
-      bool guest = IsGuest() || type_ == Type::kBrowserView;
-      web_contents()->SetPageBaseBackgroundColor(
-          guest ? absl::make_optional(SK_ColorTRANSPARENT) : absl::nullopt);
-    }
-
-    // When a page base background color is set, transparency needs to be
-    // explicitly set by calling
-    // RenderWidgetHostOwnerDelegate::SetBackgroundOpaque(false).
-    // RenderWidgetHostViewBase::SetBackgroundColor() will do this for us.
-    if (web_preferences->IsEnabled(options::kTransparent) || IsGuest()) {
-      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
+    bool guest = IsGuest() || type_ == Type::kBrowserView;
+    absl::optional<SkColor> color =
+        guest ? SK_ColorTRANSPARENT : web_preferences->GetBackgroundColor();
+    web_contents()->SetPageBaseBackgroundColor(color);
+    SetBackgroundColor(rwhv, color.value_or(SK_ColorWHITE));
   }
 
   if (!background_throttling_)
@@ -1425,6 +1419,15 @@ void WebContents::HandleNewRenderFrame(
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
     web_frame->Connect();
+}
+
+void WebContents::OnBackgroundColorChanged() {
+  absl::optional<SkColor> color = web_contents()->GetBackgroundColor();
+  if (color.has_value()) {
+    auto* const view = web_contents()->GetRenderWidgetHostView();
+    static_cast<content::RenderWidgetHostViewBase*>(view)
+        ->SetContentBackgroundColor(color.value());
+  }
 }
 
 void WebContents::RenderFrameCreated(
@@ -3986,8 +3989,15 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     base::DictionaryValue web_preferences_dict;
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
+      existing_preferences->SetFromDictionary(web_preferences_dict);
+      absl::optional<SkColor> color =
+          existing_preferences->GetBackgroundColor();
+      web_contents->web_contents()->SetPageBaseBackgroundColor(color);
+      // Because web preferences don't recognize transparency,
+      // only set rwhv background color if a color exists
+      auto* rwhv = web_contents->web_contents()->GetRenderWidgetHostView();
+      if (rwhv && color.has_value())
+        SetBackgroundColor(rwhv, color.value());
     }
   } else {
     // Create one if not.

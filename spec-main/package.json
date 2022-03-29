@@ -16,6 +16,7 @@
   "dependencies": {
     "chai-as-promised": "^7.1.1",
     "dirty-chai": "^2.0.1",
+    "get-image-colors": "^4.0.0",
     "pdfjs-dist": "^2.2.228"
   }
 }
