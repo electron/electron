@@ -1,5 +1,4 @@
 refactor_alter_child_process_fork_to_use_execute_script_with.patch
-feat_add_uv_loop_watcher_queue_code.patch
 feat_initialize_asar_support.patch
 expose_get_builtin_module_function.patch
 build_add_gn_build_files.patch
@@ -42,3 +41,4 @@ unix_remove_uv_cloexec_ioctl_3515.patch
 process_simplify_uv_write_int_calls_3519.patch
 macos_don_t_use_thread-unsafe_strtok_3524.patch
 process_fix_hang_after_note_exit_3521.patch
+feat_add_uv_loop_interrupt_on_io_change_option_to_uv_loop_configure.patch
