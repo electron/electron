@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 3f9990b36dcd0a1e8956dc3f390ed289b6166024..829fb27d568c4e556182523fa5cd9e69f1458916 100644
+index 473af396e95a4e67242c3775866fdcd4ce1f4d41..8fa395626b972e53a4c7abaef94609e5a662eaab 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -171,11 +171,16 @@ if (!is_android && !is_mac) {
@@ -33,7 +33,7 @@ index 3f9990b36dcd0a1e8956dc3f390ed289b6166024..829fb27d568c4e556182523fa5cd9e69
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 0982cfa1db7233153af8b2ab7cd1c18dfb4dea49..b0f575de4c9dc6e23da5822a1591d78478aeece8 100644
+index 834601238cf5f62f7a43b5a2ccc7a743b85efbfe..d032c1b60fdff2d000f497399ea287a09afd97f0 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4522,7 +4522,7 @@ static_library("browser") {
