@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marek Rusinowski <marekrusinowski@gmail.com>
+Date: Wed, 23 Mar 2022 21:09:37 +0100
+Subject: introduce OzonePlatform::electron_can_call_x11 property
+
+We expose this additonal property in the OzonePlatform to be able to easily
+determine whatever we can call X11 functions without crashing the application
+at rutime. It would be best if eventually all usages of this property were
+replaced with clean ozone native implementations.
+
+diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
+index 013abeeea0bb9c52bb52cb6bf3972f78d21eef9a..88668a14e38b4391a7951ed16072b4c85a2cb6cb 100644
+--- a/ui/ozone/platform/x11/ozone_platform_x11.cc
++++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
+@@ -200,6 +200,7 @@ class OzonePlatformX11 : public OzonePlatform,
+       properties->supports_vulkan_swap_chain = true;
+       properties->uses_external_vulkan_image_factory = true;
+       properties->skia_can_fall_back_to_x11 = true;
++      properties->electron_can_call_x11 = true;
+       properties->platform_shows_drag_image = false;
+       properties->supports_global_application_menus = true;
+       properties->app_modal_dialogs_use_event_blocker = true;
+diff --git a/ui/ozone/public/ozone_platform.h b/ui/ozone/public/ozone_platform.h
+index 4af0f65265b6402031f0f6a25660cb850b9ec1ed..a425243b7c67fbec28a5704b5e953b417fbdfa0f 100644
+--- a/ui/ozone/public/ozone_platform.h
++++ b/ui/ozone/public/ozone_platform.h
+@@ -132,6 +132,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
+     // Linux only: determines if Skia can fall back to the X11 output device.
+     bool skia_can_fall_back_to_x11 = false;
+ 
++    // Linux only: determines is Electron can call selected X11 functions while
++    // it migrates to pure ozone abstractions.
++    bool electron_can_call_x11 = false;
++
+     // Wayland only: determines whether BufferQueue needs a background image to
+     // be stacked below an AcceleratedWidget to make a widget opaque.
+     bool needs_background_image = false;

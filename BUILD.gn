@@ -556,7 +556,6 @@ source_set("electron_lib") {
     defines += [
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
-      "USE_X11=1",
     ]
 
     sources += [

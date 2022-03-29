@@ -10,7 +10,9 @@
 
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/i18n/rtl.h"
+#include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/skia_conversions.h"
@@ -19,6 +21,14 @@
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/non_client_view.h"
+
+#if defined(USE_OZONE)
+#include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
+#include "ui/ozone/public/ozone_platform.h"
+#endif
 
 namespace electron {
 
@@ -46,6 +56,18 @@ void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
     const BoundsChange& change) {
   views::DesktopWindowTreeHostLinux::OnBoundsChanged(change);
   UpdateFrameHints();
+
+#if defined(USE_OZONE_PLATFORM_X11)
+  if (ui::OzonePlatform::GetInstance()
+          ->GetPlatformProperties()
+          .electron_can_call_x11) {
+    // The OnWindowStateChanged should receive all updates but currently under
+    // X11 it doesn't receive changes to the fullscreen status because chromium
+    // is handling the fullscreen state changes synchronously, see
+    // X11Window::ToggleFullscreen in ui/ozone/platform/x11/x11_window.cc.
+    UpdateWindowState(platform_window()->GetPlatformWindowState());
+  }
+#endif
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
@@ -53,6 +75,43 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
     ui::PlatformWindowState new_state) {
   views::DesktopWindowTreeHostLinux::OnWindowStateChanged(old_state, new_state);
   UpdateFrameHints();
+  UpdateWindowState(new_state);
+}
+
+void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
+    ui::PlatformWindowState new_state) {
+  if (window_state_ == new_state)
+    return;
+
+  switch (window_state_) {
+    case ui::PlatformWindowState::kMinimized:
+      native_window_view_->NotifyWindowRestore();
+      break;
+    case ui::PlatformWindowState::kMaximized:
+      native_window_view_->NotifyWindowUnmaximize();
+      break;
+    case ui::PlatformWindowState::kFullScreen:
+      native_window_view_->NotifyWindowLeaveFullScreen();
+      break;
+    case ui::PlatformWindowState::kUnknown:
+    case ui::PlatformWindowState::kNormal:
+      break;
+  }
+  switch (new_state) {
+    case ui::PlatformWindowState::kMinimized:
+      native_window_view_->NotifyWindowMinimize();
+      break;
+    case ui::PlatformWindowState::kMaximized:
+      native_window_view_->NotifyWindowMaximize();
+      break;
+    case ui::PlatformWindowState::kFullScreen:
+      native_window_view_->NotifyWindowEnterFullScreen();
+      break;
+    case ui::PlatformWindowState::kUnknown:
+    case ui::PlatformWindowState::kNormal:
+      break;
+  }
+  window_state_ = new_state;
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnNativeThemeUpdated(
@@ -65,13 +124,15 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
-  if (SupportsClientFrameShadow() && native_window_view_->has_frame() &&
-      native_window_view_->has_client_frame()) {
-    UpdateClientDecorationHints(static_cast<ClientFrameViewLinux*>(
-        native_window_view_->widget()->non_client_view()->frame_view()));
-  }
+  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
+    if (SupportsClientFrameShadow() && native_window_view_->has_frame() &&
+        native_window_view_->has_client_frame()) {
+      UpdateClientDecorationHints(static_cast<ClientFrameViewLinux*>(
+          native_window_view_->widget()->non_client_view()->frame_view()));
+    }
 
-  SizeConstraintsChanged();
+    SizeConstraintsChanged();
+  }
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
