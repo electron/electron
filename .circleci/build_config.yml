@@ -246,7 +246,6 @@ step-depot-tools-get: &step-depot-tools-get
     name: Get depot tools
     command: |
       git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-      ./depot_tools/update_depot_tools
       # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
       if [ "`uname`" == "Darwin" ]; then
         sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
@@ -471,6 +470,8 @@ step-fix-sync: &step-fix-sync
 
         # Fix esbuild (wrong binary)
         echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep --deps-file=src/third_party/devtools-frontend/src/DEPS -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
+        # Remove extra output from calling gclient getdep which always calls update_depot_tools
+        sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
       fi
 
