@@ -12,10 +12,10 @@ happened to pass a bad file descriptor to the same number fd (such that
 no other code happened to already fail on that).
 
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index d208f99be40df9f36447552daf2772c1cab1ce79..7705068730cb0536998bad7d304cb87df99b72e8 100644
+index dfb6bf2e97fade5b555653ae2634aea56a278149..a953ca361563d29827328b4b3aa0b3c16cddf35a 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
-@@ -275,9 +275,20 @@ static void uv__process_child_init(const uv_process_options_t* options,
+@@ -266,11 +266,22 @@ static void uv__process_child_init(const uv_process_options_t* options,
      use_fd = pipes[fd][1];
      if (use_fd < 0 || use_fd >= fd)
        continue;
@@ -24,8 +24,10 @@ index d208f99be40df9f36447552daf2772c1cab1ce79..7705068730cb0536998bad7d304cb87d
 +#else
 +    pipes[fd][1] = fcntl(use_fd, F_DUPFD, stdio_count);
 +#endif
-     if (pipes[fd][1] == -1)
-       uv__write_errno(error_fd);
+     if (pipes[fd][1] == -1) {
+       uv__write_int(error_fd, UV__ERR(errno));
+       _exit(127);
+     }
 +#ifndef F_DUPFD_CLOEXEC /* POSIX 2008 */
 +    n = uv__cloexec_fcntl(pipes[fd][1], 1);
 +    if (n) {
@@ -36,7 +38,7 @@ index d208f99be40df9f36447552daf2772c1cab1ce79..7705068730cb0536998bad7d304cb87d
    }
  
    for (fd = 0; fd < stdio_count; fd++) {
-@@ -300,8 +311,13 @@ static void uv__process_child_init(const uv_process_options_t* options,
+@@ -295,8 +306,13 @@ static void uv__process_child_init(const uv_process_options_t* options,
      }
  
      if (fd == use_fd) {

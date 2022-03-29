@@ -11,10 +11,10 @@ Apple rdar: FB9529664
 Refs: https://github.com/libuv/libuv/pull/3257
 
 diff --git a/deps/uv/src/unix/internal.h b/deps/uv/src/unix/internal.h
-index 12d4da93686e993830a7d09e74d08191fc808f4f..16be13b99f5db77741aa276e90a437ef4eb5ba32 100644
+index 3bdf7283bd4fd87da3fbad82711ad703f1b4accc..cc15596f431aa42c30bc0510e38c0d5879a47c85 100644
 --- a/deps/uv/src/unix/internal.h
 +++ b/deps/uv/src/unix/internal.h
-@@ -282,6 +282,7 @@ uv_handle_type uv__handle_type(int fd);
+@@ -267,6 +267,7 @@ uv_handle_type uv__handle_type(int fd);
  FILE* uv__open_file(const char* path);
  int uv__getpwuid_r(uv_passwd_t* pwd);
  int uv__search_path(const char* prog, char* buf, size_t* buflen);
@@ -39,11 +39,11 @@ index bf183d5fdc0ba89913469a294322eef84bc4cee8..35200f17495d80ed2d19ef9f6f76bbc9
        /* Skip invalidated events, see uv__platform_invalidate_fd */
        if (fd == -1)
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index f4aebb0490e198cd9adcadfeb6b006de479cc993..cfcba341e0e380ecd595e4b59e39c08a7b374a48 100644
+index 4bd58b1763af86a02c5ebdc71914e1cf415b1749..71cfb9421de185d5e421baf80a4132489568fe6b 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
-@@ -48,10 +48,20 @@ extern char **environ;
- # include "zos-base.h"
+@@ -45,10 +45,20 @@ extern char **environ;
+ # include <grp.h>
  #endif
  
 +#if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
@@ -64,7 +64,7 @@ index f4aebb0490e198cd9adcadfeb6b006de479cc993..cfcba341e0e380ecd595e4b59e39c08a
    int exit_status;
    int term_signal;
    int status;
-@@ -60,10 +70,7 @@ static void uv__chld(uv_signal_t* handle, int signum) {
+@@ -57,10 +67,7 @@ static void uv__chld(uv_signal_t* handle, int signum) {
    QUEUE* q;
    QUEUE* h;
  
@@ -75,7 +75,7 @@ index f4aebb0490e198cd9adcadfeb6b006de479cc993..cfcba341e0e380ecd595e4b59e39c08a
  
    h = &loop->process_handles;
    q = QUEUE_HEAD(h);
-@@ -419,7 +426,9 @@ int uv_spawn(uv_loop_t* loop,
+@@ -421,7 +428,9 @@ int uv_spawn(uv_loop_t* loop,
    if (err)
      goto error;
  
@@ -85,7 +85,7 @@ index f4aebb0490e198cd9adcadfeb6b006de479cc993..cfcba341e0e380ecd595e4b59e39c08a
  
    /* Acquire write lock to prevent opening new fds in worker threads */
    uv_rwlock_wrlock(&loop->cloexec_lock);
-@@ -478,6 +487,13 @@ int uv_spawn(uv_loop_t* loop,
+@@ -496,6 +505,13 @@ int uv_spawn(uv_loop_t* loop,
  
    /* Only activate this handle if exec() happened successfully */
    if (exec_errorno == 0) {
@@ -100,10 +100,10 @@ index f4aebb0490e198cd9adcadfeb6b006de479cc993..cfcba341e0e380ecd595e4b59e39c08a
      uv__handle_start(process);
    }
 diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
-index 59b95da9ebe3464bd1f9ce1c534122b1f9e06636..58489c4be7b3a7b36d5b01a1f07d411ef3d99ae3 100644
+index 74588407cfbd8d9430d1d6e675361de3db420ab9..e9b79b1b62dc2409a9173f59029fedf22b5acb2b 100644
 --- a/deps/uv/test/test-list.h
 +++ b/deps/uv/test/test-list.h
-@@ -318,6 +318,7 @@ TEST_DECLARE   (spawn_reads_child_path)
+@@ -317,6 +317,7 @@ TEST_DECLARE   (spawn_reads_child_path)
  TEST_DECLARE   (spawn_inherit_streams)
  TEST_DECLARE   (spawn_quoted_path)
  TEST_DECLARE   (spawn_tcp_server)
@@ -111,7 +111,7 @@ index 59b95da9ebe3464bd1f9ce1c534122b1f9e06636..58489c4be7b3a7b36d5b01a1f07d411e
  TEST_DECLARE   (fs_poll)
  TEST_DECLARE   (fs_poll_getpath)
  TEST_DECLARE   (fs_poll_close_request)
-@@ -944,6 +945,7 @@ TASK_LIST_START
+@@ -936,6 +937,7 @@ TASK_LIST_START
    TEST_ENTRY  (spawn_inherit_streams)
    TEST_ENTRY  (spawn_quoted_path)
    TEST_ENTRY  (spawn_tcp_server)
@@ -120,7 +120,7 @@ index 59b95da9ebe3464bd1f9ce1c534122b1f9e06636..58489c4be7b3a7b36d5b01a1f07d411e
    TEST_ENTRY  (fs_poll_getpath)
    TEST_ENTRY  (fs_poll_close_request)
 diff --git a/deps/uv/test/test-spawn.c b/deps/uv/test/test-spawn.c
-index 9f2eb24b2d6daf339bec12027134409cfc3b4a82..dfd5458ef37c664af9a55a8383bdb3121885db3b 100644
+index 886ddaf63b509deb310afb9d7ab1826bea495552..3791201992db3e0d31141ac40b24adb58e2dc556 100644
 --- a/deps/uv/test/test-spawn.c
 +++ b/deps/uv/test/test-spawn.c
 @@ -1891,6 +1891,44 @@ TEST_IMPL(spawn_quoted_path) {

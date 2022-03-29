@@ -11,10 +11,10 @@ Refs: https://github.com/libuv/libuv/pull/3441
 Refs: https://github.com/libuv/libuv/pull/3257
 
 diff --git a/deps/uv/src/unix/internal.h b/deps/uv/src/unix/internal.h
-index 16be13b99f5db77741aa276e90a437ef4eb5ba32..2dcc8b32f5165dd75061a1b55cc1abd2ab93ccc9 100644
+index cc15596f431aa42c30bc0510e38c0d5879a47c85..5bc9f36037594006e204dee31bc7d969bbf650d4 100644
 --- a/deps/uv/src/unix/internal.h
 +++ b/deps/uv/src/unix/internal.h
-@@ -145,7 +145,8 @@ typedef struct uv__stream_queued_fds_s uv__stream_queued_fds_t;
+@@ -134,7 +134,8 @@ typedef struct uv__stream_queued_fds_s uv__stream_queued_fds_t;
  
  /* loop flags */
  enum {
@@ -50,10 +50,10 @@ index 35200f17495d80ed2d19ef9f6f76bbc92ee042f6..071fe0ce0938657d0fb840af62a43235
        timeout = user_timeout;
        reset_timeout = 0;
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index c1f6bd4b0076f0835caf83c45a6a896e7ae5def9..2920b942962357827bae9bcad23af8333e8b007f 100644
+index 71cfb9421de185d5e421baf80a4132489568fe6b..18448c19a3bb6840ffe84bf03de5ce0561dd5808 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
-@@ -507,8 +507,12 @@ int uv_spawn(uv_loop_t* loop,
+@@ -508,8 +508,12 @@ int uv_spawn(uv_loop_t* loop,
  #if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
      struct kevent event;
      EV_SET(&event, pid, EVFILT_PROC, EV_ADD | EV_ONESHOT, NOTE_EXIT, 0, 0);

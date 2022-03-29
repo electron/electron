@@ -8,15 +8,14 @@ Now that uv__cloexec_fcntl() is simplified
 maintaining duplicate code paths for the same thing.
 
 diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
-index 6cd519ad5b3e7af8f5c71b18a59b88458a233f15..8c30802ad15316a8ec20ecedfb5123174d74276b 100644
+index afa18856700a987a9b6cee0273572ae1bb2451fc..18e5cc19593bbf40ef6a2d4ced363de48da43992 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -597,20 +597,6 @@ int uv__nonblock_ioctl(int fd, int set) {
- 
-   return 0;
+@@ -589,22 +589,6 @@ int uv__nonblock_ioctl(int fd, int set) {
  }
--
--
+ 
+ 
+-#if !defined(__CYGWIN__) && !defined(__MSYS__) && !defined(__HAIKU__)
 -int uv__cloexec_ioctl(int fd, int set) {
 -  int r;
 -
@@ -29,10 +28,13 @@ index 6cd519ad5b3e7af8f5c71b18a59b88458a233f15..8c30802ad15316a8ec20ecedfb512317
 -
 -  return 0;
 -}
- #endif
- 
- 
-@@ -645,7 +631,7 @@ int uv__nonblock_fcntl(int fd, int set) {
+-#endif
+-
+-
+ int uv__nonblock_fcntl(int fd, int set) {
+   int flags;
+   int r;
+@@ -636,7 +620,7 @@ int uv__nonblock_fcntl(int fd, int set) {
  }
  
  
@@ -42,22 +44,21 @@ index 6cd519ad5b3e7af8f5c71b18a59b88458a233f15..8c30802ad15316a8ec20ecedfb512317
    int r;
  
 diff --git a/deps/uv/src/unix/internal.h b/deps/uv/src/unix/internal.h
-index 2dcc8b32f5165dd75061a1b55cc1abd2ab93ccc9..543993989b8765247e140e9d950a25192e5e1ca5 100644
+index 5bc9f36037594006e204dee31bc7d969bbf650d4..31c6d03bfff05559e23612865ea4ec74334a90ab 100644
 --- a/deps/uv/src/unix/internal.h
 +++ b/deps/uv/src/unix/internal.h
-@@ -175,11 +175,9 @@ struct uv__stream_queued_fds_s {
+@@ -164,10 +164,8 @@ struct uv__stream_queued_fds_s {
      defined(__linux__) || \
      defined(__OpenBSD__) || \
      defined(__NetBSD__)
 -#define uv__cloexec uv__cloexec_ioctl
  #define uv__nonblock uv__nonblock_ioctl
- #define UV__NONBLOCK_IS_IOCTL 1
  #else
 -#define uv__cloexec uv__cloexec_fcntl
  #define uv__nonblock uv__nonblock_fcntl
- #define UV__NONBLOCK_IS_IOCTL 0
  #endif
-@@ -197,8 +195,7 @@ struct uv__stream_queued_fds_s {
+ 
+@@ -184,8 +182,7 @@ struct uv__stream_queued_fds_s {
  #endif
  
  /* core */
@@ -68,19 +69,19 @@ index 2dcc8b32f5165dd75061a1b55cc1abd2ab93ccc9..543993989b8765247e140e9d950a2519
  int uv__nonblock_fcntl(int fd, int set);
  int uv__close(int fd); /* preserves errno */
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index 7705068730cb0536998bad7d304cb87df99b72e8..b6f9756c6a6710f5f10762b9299cc35047b98097 100644
+index a953ca361563d29827328b4b3aa0b3c16cddf35a..a899d6af065975a50f4fec70383df5e399005645 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
-@@ -283,7 +283,7 @@ static void uv__process_child_init(const uv_process_options_t* options,
-     if (pipes[fd][1] == -1)
-       uv__write_errno(error_fd);
+@@ -276,7 +276,7 @@ static void uv__process_child_init(const uv_process_options_t* options,
+       _exit(127);
+     }
  #ifndef F_DUPFD_CLOEXEC /* POSIX 2008 */
 -    n = uv__cloexec_fcntl(pipes[fd][1], 1);
 +    n = uv__cloexec(pipes[fd][1], 1);
      if (n) {
        uv__write_int(error_fd, n);
        _exit(127);
-@@ -312,7 +312,7 @@ static void uv__process_child_init(const uv_process_options_t* options,
+@@ -307,7 +307,7 @@ static void uv__process_child_init(const uv_process_options_t* options,
  
      if (fd == use_fd) {
        if (close_fd == -1) {

@@ -47,11 +47,11 @@ index 071fe0ce0938657d0fb840af62a432352e938a8a..4c4d990ff5fa6c8ab937be2e4f79ccda
        if (fd == -1)
          continue;
 diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
-index 147164e7ea25abbf655452930d78ee0a714cce36..c8816b85b7e531648064e739fb89257565ad64bb 100644
+index ac754997fadf22ec85d4129459d3c489176e3921..20858ff641fcdd8c3b2fea86ecf5514108fe3135 100644
 --- a/deps/uv/src/unix/process.c
 +++ b/deps/uv/src/unix/process.c
-@@ -63,12 +63,18 @@ extern char **environ;
- # include "zos-base.h"
+@@ -59,12 +59,18 @@ extern char **environ;
+ # include <grp.h>
  #endif
  
 -#if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
@@ -71,7 +71,7 @@ index 147164e7ea25abbf655452930d78ee0a714cce36..c8816b85b7e531648064e739fb892575
  static void uv__chld(uv_signal_t* handle, int signum) {
    assert(signum == SIGCHLD);
    uv__wait_children(handle->loop);
-@@ -80,6 +86,7 @@ void uv__wait_children(uv_loop_t* loop) {
+@@ -76,6 +82,7 @@ void uv__wait_children(uv_loop_t* loop) {
    int exit_status;
    int term_signal;
    int status;
@@ -79,7 +79,7 @@ index 147164e7ea25abbf655452930d78ee0a714cce36..c8816b85b7e531648064e739fb892575
    pid_t pid;
    QUEUE pending;
    QUEUE* q;
-@@ -93,19 +100,33 @@ void uv__wait_children(uv_loop_t* loop) {
+@@ -89,19 +96,33 @@ void uv__wait_children(uv_loop_t* loop) {
      process = QUEUE_DATA(q, uv_process_t, queue);
      q = QUEUE_NEXT(q);
  
@@ -115,7 +115,7 @@ index 147164e7ea25abbf655452930d78ee0a714cce36..c8816b85b7e531648064e739fb892575
      process->status = status;
      QUEUE_REMOVE(&process->queue);
      QUEUE_INSERT_TAIL(&pending, &process->queue);
-@@ -964,7 +985,7 @@ int uv_spawn(uv_loop_t* loop,
+@@ -959,7 +980,7 @@ int uv_spawn(uv_loop_t* loop,
        goto error;
    }
  
@@ -124,7 +124,7 @@ index 147164e7ea25abbf655452930d78ee0a714cce36..c8816b85b7e531648064e739fb892575
    uv_signal_start(&loop->child_watcher, uv__chld, SIGCHLD);
  #endif
  
-@@ -983,13 +1004,14 @@ int uv_spawn(uv_loop_t* loop,
+@@ -978,13 +999,14 @@ int uv_spawn(uv_loop_t* loop,
     * fail to open a stdio handle. This ensures we can eventually reap the child
     * with waitpid. */
    if (exec_errorno == 0) {
@@ -141,10 +141,10 @@ index 147164e7ea25abbf655452930d78ee0a714cce36..c8816b85b7e531648064e739fb892575
      }
  #endif
 diff --git a/deps/uv/src/uv-common.h b/deps/uv/src/uv-common.h
-index 8a190bf8fa8c5a282feaf251aec2a30c95776888..6001b0cf68d0b0268b578218b664a737f43c9521 100644
+index a92912fdb1a72ea54cc7ddd374cee5ec339a6a33..82cdb914f91dcf3bbd718fba6e39ce39648ea507 100644
 --- a/deps/uv/src/uv-common.h
 +++ b/deps/uv/src/uv-common.h
-@@ -130,7 +130,10 @@ enum {
+@@ -129,7 +129,10 @@ enum {
    UV_SIGNAL_ONE_SHOT                    = 0x02000000,
  
    /* Only used by uv_poll_t handles. */

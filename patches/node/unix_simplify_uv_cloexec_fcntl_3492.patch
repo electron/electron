@@ -7,10 +7,10 @@ FD_CLOEXEC is the only defined flag for fcntl(F_SETFD) so don't bother
 getting the status of that flag first with fcntl(F_GETFD), just set it.
 
 diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
-index a6425294086ff2f1435fdd6866380d3aaaf68200..6cd519ad5b3e7af8f5c71b18a59b88458a233f15 100644
+index 2811f063eef7329f87fbe43b28729c6b25f0a75b..afa18856700a987a9b6cee0273572ae1bb2451fc 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -649,21 +649,9 @@ int uv__cloexec_fcntl(int fd, int set) {
+@@ -640,21 +640,9 @@ int uv__cloexec_fcntl(int fd, int set) {
    int flags;
    int r;
  
