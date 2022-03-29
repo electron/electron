@@ -470,6 +470,8 @@ step-fix-sync: &step-fix-sync
 
         # Fix esbuild (wrong binary)
         echo 'infra/3pp/tools/esbuild/${platform}' `gclient getdep --deps-file=src/third_party/devtools-frontend/src/DEPS -r 'third_party/esbuild:infra/3pp/tools/esbuild/${platform}'` > esbuild_ensure_file
+        # Remove extra output from calling gclient getdep which always calls update_depot_tools
+        sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
       fi
 
