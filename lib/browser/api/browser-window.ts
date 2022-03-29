@@ -72,7 +72,8 @@ BrowserWindow.getAllWindows = () => {
 
 BrowserWindow.getFocusedWindow = () => {
   for (const window of BrowserWindow.getAllWindows()) {
-    if (!window.webContents.isDestroyed()) {
+    const hasWC = window.webContents && !window.webContents.isDestroyed();
+    if (!window.isDestroyed() && hasWC) {
       if (window.isFocused() || window.isDevToolsFocused()) return window;
     }
   }
