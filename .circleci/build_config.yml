@@ -647,6 +647,13 @@ step-nodejs-headers-build: &step-nodejs-headers-build
       cd src
       ninja -C out/Default third_party/electron_node:headers
 
+step-nodejs-build-test-executable: &step-nodejs-build-test-executable
+  run:
+    name: Build Node.js Test Executables
+    command: |
+      cd src
+      ninja -C out/default third_party/electron_node:overlapped-checker
+
 step-electron-publish: &step-electron-publish
   run:
     name: Publish Electron Dist
@@ -1206,6 +1213,7 @@ steps-test-node: &steps-test-node
     - *step-electron-dist-unzip
     - *step-setup-linux-for-headless-testing
     - *step-fix-known-hosts-linux
+    - *step-nodejs-build-test-executable
     - run:
         name: Run Node Tests
         command: |
