@@ -418,8 +418,8 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
-  node_bindings_->PrepareMessageLoop();
-  node_bindings_->RunMessageLoop();
+  node_bindings_->PrepareEmbedThread();
+  node_bindings_->StartPolling();
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();

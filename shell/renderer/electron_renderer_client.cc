@@ -93,9 +93,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
-    node_bindings_->PrepareMessageLoop();
-  } else {
-    node_bindings_->PrepareMessageLoop();
+    node_bindings_->PrepareEmbedThread();
   }
 
   // Setup node tracing controller.
@@ -131,7 +129,7 @@ void ElectronRendererClient::DidCreateScriptContext(
     node_bindings_->set_uv_env(env);
 
     // Give the node loop a run to make sure everything is ready.
-    node_bindings_->RunMessageLoop();
+    node_bindings_->StartPolling();
   }
 }
 
