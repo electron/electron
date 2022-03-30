@@ -152,6 +152,13 @@ void MediaStreamDevicesController::Accept() {
         NOTREACHED();
         break;
       }
+      case blink::MEDIA_GET_OPEN_DEVICE: {
+        // Transferred tracks, that use blink::MEDIA_GET_OPEN_DEVICE type, do
+        // not need to get permissions for MediaStreamDevice as those are
+        // controlled by the original context.
+        NOTREACHED();
+        break;
+      }
     }
   }
 
