@@ -687,6 +687,33 @@ Emitted when the window has closed a sheet.
 
 Emitted when the native new tab button is clicked.
 
+#### Event: 'registered-for-remote-notifications' _macOS_
+
+Returns:
+
+* `token` String - A token that identifies the device to Apple Push Notification Service (APNS)
+
+Emitted when the app successfully registers to receive remote notifications from APNS.
+See: https://developer.apple.com/documentation/appkit/nsapplicationdelegate/1428766-application?language=objc
+
+#### Event: 'failed-to-register-for-remote-notifications' _macOS_
+
+Returns:
+
+* `error` String
+
+Emitted when the app fails to register to receive remote notifications from APNS.
+See: https://developer.apple.com/documentation/appkit/nsapplicationdelegate/1428554-application?language=objc
+
+#### Event: 'received-remote-notification' _macOS_
+
+Returns:
+
+* `userInfo` Record<String, any>
+
+Emitted when the app receives a remote notification while running.
+See: https://developer.apple.com/documentation/appkit/nsapplicationdelegate/1428430-application?language=objc
+
 #### Event: 'system-context-menu' _Windows_
 
 Returns:

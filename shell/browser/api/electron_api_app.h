@@ -118,6 +118,12 @@ class App : public ElectronBrowserClient::Delegate,
       const base::DictionaryValue& user_info) override;
   void OnNewWindowForTab() override;
   void OnDidBecomeActive() override;
+  void OnDidRegisterForRemoteNotificationsWithDeviceToken(
+      const std::string& token) override;
+  void OnDidFailToRegisterForRemoteNotificationsWithError(
+      const std::string& error) override;
+  void OnDidReceiveRemoteNotification(
+      const base::DictionaryValue& user_info) override;
 #endif
 
   // content::ContentBrowserClient:

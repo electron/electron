@@ -1442,6 +1442,16 @@ details.
 
 **Note:** Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
 
+### `app.registerForRemoteNotifications()` _macOS_
+
+Registers this app with Apple Push Notification service (APNS) to receive [Badge, Sound, and Alert](https://developer.apple.com/documentation/appkit/sremotenotificationtype?language=objc) notifications. If registration is successful, the BrowserWindow event `registered-for-remote-notifications` will be emitted with the APNS device token. Otherwise, the event `failed-to-register-for-remote-notifications` will be emitted.
+See: https://developer.apple.com/documentation/appkit/nsapplication/1428476-registerforremotenotificationtyp?language=objc
+
+### `app.unregisterForRemoteNotifications()` _macOS_
+
+Unregisters the app for notifications received from APNS.
+See: https://developer.apple.com/documentation/appkit/nsapplication/1428747-unregisterforremotenotifications?language=objc
+
 ## Properties
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_

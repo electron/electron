@@ -783,6 +783,21 @@ void App::OnNewWindowForTab() {
 void App::OnDidBecomeActive() {
   Emit("did-become-active");
 }
+
+void App::OnDidRegisterForRemoteNotificationsWithDeviceToken(
+    const std::string& token) {
+  Emit("registered-for-remote-notifications", token);
+}
+
+void App::OnDidFailToRegisterForRemoteNotificationsWithError(
+    const std::string& error) {
+  Emit("failed-to-register-for-remote-notifications", error);
+}
+
+void App::OnDidReceiveRemoteNotification(
+    const base::DictionaryValue& user_info) {
+  Emit("received-remote-notification", user_info);
+}
 #endif
 
 bool App::CanCreateWindow(
