@@ -21,3 +21,4 @@ cherry-pick-27bc67f761e6.patch
 regexp_fix_uaf_in_regexpmacroassembler.patch
 cherry-pick-26b7ad6967b1.patch
 cherry-pick-c46fb3a15ec2.patch
+cherry-pick-a1427aad7cef.patch
