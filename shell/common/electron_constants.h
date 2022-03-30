@@ -30,8 +30,8 @@ extern const char kRunAsNode[];
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-// The MIME type used for the PDF plugin.
-extern const char kPdfPluginMimeType[];
+extern const char kPDFExtensionPluginName[];
+extern const char kPDFInternalPluginName[];
 extern const base::FilePath::CharType kPdfPluginPath[];
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
