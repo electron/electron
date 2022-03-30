@@ -316,7 +316,8 @@ bool WebContentsPreferences::IsSandboxed() const {
   if (sandbox_)
     return *sandbox_;
   bool sandbox_disabled_by_default =
-      node_integration_ || node_integration_in_worker_ || node_integration_in_subframes_ || preload_path_ ||
+      node_integration_ || node_integration_in_worker_ ||
+      node_integration_in_sub_frames_ || preload_path_ ||
       !SessionPreferences::GetValidPreloads(web_contents_->GetBrowserContext())
            .empty();
   return !sandbox_disabled_by_default;
