@@ -3846,6 +3846,44 @@ describe('BrowserWindow module', () => {
         c2.destroy();
         expect(w.isEnabled()).to.be.true('w.isEnabled');
       });
+
+      ifit(process.platform !== 'darwin')(
+        'can be cleaned up by the parent BrowserView after detaching from the parent window',
+        async () => {
+          const parentWindow = new BrowserWindow({ show: true });
+          const parentBrowserView = new BrowserView();
+          parentWindow.addBrowserView(parentBrowserView);
+          // Make window opened from the BrowserView a modal one.
+          parentBrowserView.webContents.setWindowOpenHandler(() => ({
+            action: 'allow',
+            overrideBrowserWindowOptions: {
+              modal: true,
+              parent: parentWindow
+            }
+          }));
+
+          // Open window
+          await parentBrowserView.webContents.loadFile(
+            path.join(fixtures, 'pages', 'window-open.html'));
+          const modalWindow = parentWindow.getChildWindows()[0];
+
+          const parentClosed = emittedOnce(parentWindow, 'closed');
+          parentWindow.on('close', () => {
+          // Detach modal from parent in order to prevent being destroyed by
+          // parent BrowserWindow cleanup.
+            modalWindow.setParentWindow(null);
+          });
+          parentWindow.close();
+          await parentClosed;
+          expect(modalWindow.isDestroyed()).to.be.false();
+
+          // Destroying parent BrowserView should cleanup via embedder/guest
+          // liftime handling.
+          const modalWebContentsDestroyed = emittedOnce(modalWindow.webContents,
+            'destroyed');
+          parentBrowserView.webContents.destroy();
+          await modalWebContentsDestroyed;
+        });
     });
   });
 

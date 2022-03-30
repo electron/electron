@@ -1725,7 +1725,8 @@ Returns whether the window can be focused.
 * `parent` BrowserWindow | null
 
 Sets `parent` as current window's parent window, passing `null` will turn
-current window into a top-level window.
+current window into a top-level window. If the current window is a modal one
+then it can be only called with `null` for detaching it from the parent.
 
 #### `win.getParentWindow()`
 
