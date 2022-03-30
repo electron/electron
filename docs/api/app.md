@@ -606,6 +606,10 @@ You should seek to use the `steal` option as sparingly as possible.
 
 Hides all application windows without minimizing them.
 
+### `app.isHidden()` _macOS_
+
+Returns `boolean` - `true` if the application—including all of its windows—is hidden (e.g. with `Command-H`), `false` otherwise.
+
 ### `app.show()` _macOS_
 
 Shows application windows after they were hidden. Does not automatically focus
