@@ -1,7 +1,7 @@
-From a1427aad7cefbe952c9db37a4a46d9b0af672943 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Patrick Thier <pthier@chromium.org>
 Date: Fri, 15 Oct 2021 15:04:15 +0000
-Subject: [PATCH] Assert that we never copy properties from an object itself
+Subject: Assert that we never copy properties from an object itself
 
 When copying properties, it should never happen that source == target.
 Add a CHECK to assert this assumption.
@@ -12,13 +12,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3226779
 Commit-Queue: Patrick Thier <pthier@chromium.org>
 Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#77418}
----
 
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 26b32ea..dcb7a36 100644
+index 008036b11f2c7a82595b3997135947ac398ba900..72ef3532a760ce7b33f69221fa63f605db5722ed 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -230,6 +230,9 @@
+@@ -229,6 +229,9 @@ V8_WARN_UNUSED_RESULT Maybe<bool> FastAssign(
      return Just(false);
    }
  
