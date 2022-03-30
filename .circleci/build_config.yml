@@ -59,7 +59,7 @@ executors:
         description: "xcode version"
         default: "12.4.0"
         type: enum
-        enum: ["12.4.0", "13.2.1"]
+        enum: ["12.4.0", "13.3.0"]
 
     macos:
       xcode: << parameters.xcode >>
@@ -1923,7 +1923,7 @@ jobs:
   osx-testing-x64:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1940,7 +1940,7 @@ jobs:
   osx-testing-x64-gn-check:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-machine-mac
       <<: *env-testing-build
@@ -1949,7 +1949,7 @@ jobs:
   osx-publish-x64-skip-checkout:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1970,7 +1970,7 @@ jobs:
   osx-publish-arm64-skip-checkout:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1992,7 +1992,7 @@ jobs:
   osx-testing-arm64:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2011,7 +2011,7 @@ jobs:
   mas-testing-x64:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large
       <<: *env-mas
@@ -2029,7 +2029,7 @@ jobs:
   mas-testing-x64-gn-check:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-machine-mac
       <<: *env-mas
@@ -2039,7 +2039,7 @@ jobs:
   mas-publish-x64-skip-checkout:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large-release
       <<: *env-mas
@@ -2060,7 +2060,7 @@ jobs:
   mas-publish-arm64-skip-checkout:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2082,7 +2082,7 @@ jobs:
   mas-testing-arm64:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build

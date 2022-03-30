@@ -38,7 +38,6 @@ ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
     uint64_t web_request_id,
-    int32_t view_routing_id,
     int32_t frame_routing_id,
     int32_t network_service_request_id,
     uint32_t options,
@@ -51,7 +50,6 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       original_initiator_(request.request_initiator),
       request_id_(web_request_id),
       network_service_request_id_(network_service_request_id),
-      view_routing_id_(view_routing_id),
       frame_routing_id_(frame_routing_id),
       options_(options),
       traffic_annotation_(traffic_annotation),
@@ -120,7 +118,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
       request_id_, factory_->render_process_id_, frame_routing_id_,
       factory_->navigation_ui_data_ ? factory_->navigation_ui_data_->DeepCopy()
                                     : nullptr,
-      view_routing_id_, request_for_info, false,
+      request_for_info, false,
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
       factory_->IsForServiceWorkerScript(), factory_->navigation_id_,
       ukm::kInvalidSourceIdObj));
@@ -757,7 +755,6 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     const HandlersMap& intercepted_handlers,
     int render_process_id,
     int frame_routing_id,
-    int view_routing_id,
     uint64_t* request_id_generator,
     std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
     absl::optional<int64_t> navigation_id,
@@ -770,7 +767,6 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
       intercepted_handlers_(intercepted_handlers),
       render_process_id_(render_process_id),
       frame_routing_id_(frame_routing_id),
-      view_routing_id_(view_routing_id),
       request_id_generator_(request_id_generator),
       navigation_ui_data_(std::move(navigation_ui_data)),
       navigation_id_(std::move(navigation_id)),
@@ -866,9 +862,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   auto result = requests_.emplace(
       web_request_id,
       std::make_unique<InProgressRequest>(
-          this, web_request_id, view_routing_id_, frame_routing_id_, request_id,
-          options, request, traffic_annotation, std::move(loader),
-          std::move(client)));
+          this, web_request_id, frame_routing_id_, request_id, options, request,
+          traffic_annotation, std::move(loader), std::move(client)));
   result.first->second->Restart();
 }
 
