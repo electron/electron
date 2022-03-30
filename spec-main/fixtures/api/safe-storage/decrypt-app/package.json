@@ -1,4 +1,4 @@
 {
-    "name": "electron-safe-storage",
+    "name": "electron-test-safe-storage",
     "main": "main.js"
 }
