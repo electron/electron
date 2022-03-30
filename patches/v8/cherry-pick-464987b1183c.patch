@@ -1,0 +1,81 @@
+From 464987b1183c54d8c7039ffe8a8c464c69e43912 Mon Sep 17 00:00:00 2001
+From: Marja Hölttä <marja@chromium.org>
+Date: Thu, 24 Mar 2022 17:30:16 +0100
+Subject: [PATCH] [super IC] Turn off super ICs
+
+They make assumptions which don't hold for API handlers.
+
+Bug: v8:9237,chromium:1308360
+Change-Id: I9f122c4e75a24d83ef3653cbf7a223ed522e4d13
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3548899
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#79614}
+(cherry picked from commit c6b68cbfbd49a24bd9d343d718132125370da729)
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3550658
+Reviewed-by: Shu-yu Guo <syg@chromium.org>
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+---
+
+diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
+index 4dee4d9..7222b33 100644
+--- a/src/flags/flag-definitions.h
++++ b/src/flags/flag-definitions.h
+@@ -1669,7 +1669,7 @@
+ DEFINE_BOOL(native_code_counters, DEBUG_BOOL,
+             "generate extra code for manipulating stats counters")
+ 
+-DEFINE_BOOL(super_ic, true, "use an IC for super property loads")
++DEFINE_BOOL(super_ic, false, "use an IC for super property loads")
+ 
+ DEFINE_BOOL(enable_mega_dom_ic, false, "use MegaDOM IC state for API objects")
+ 
+diff --git a/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden b/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
+index f45da46..7581b0f 100644
+--- a/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
++++ b/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
+@@ -20,14 +20,18 @@
+     test();
+   })();
+ "
+-frame size: 1
++frame size: 5
+ parameter count: 1
+-bytecode array length: 16
++bytecode array length: 24
+ bytecodes: [
+   /*  104 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
+-  /*  117 E> */ B(GetNamedPropertyFromSuper), R(this), U8(0), U8(1),
++                B(Star3),
++                B(LdaConstant), U8(0),
++                B(Star4),
++                B(Mov), R(this), R(2),
++  /*  117 E> */ B(CallRuntime), U16(Runtime::kLoadFromSuper), R(2), U8(3),
+                 B(Star0),
+-  /*  117 E> */ B(CallAnyReceiver), R(0), R(this), U8(1), U8(3),
++  /*  117 E> */ B(CallAnyReceiver), R(0), R(this), U8(1), U8(1),
+   /*  126 E> */ B(AddSmi), I8(1), U8(0),
+   /*  130 S> */ B(Return),
+ ]
+@@ -54,7 +58,7 @@
+ "
+ frame size: 4
+ parameter count: 1
+-bytecode array length: 24
++bytecode array length: 32
+ bytecodes: [
+   /*  130 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
+                 B(Star1),
+@@ -65,7 +69,11 @@
+                 B(Mov), R(this), R(0),
+   /*  138 E> */ B(CallRuntime), U16(Runtime::kStoreToSuper), R(0), U8(4),
+   /*  143 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
+-  /*  156 E> */ B(GetNamedPropertyFromSuper), R(this), U8(0), U8(0),
++                B(Star1),
++                B(LdaConstant), U8(0),
++                B(Star2),
++                B(Mov), R(this), R(0),
++  /*  156 E> */ B(CallRuntime), U16(Runtime::kLoadFromSuper), R(0), U8(3),
+   /*  158 S> */ B(Return),
+ ]
+ constant pool: [
