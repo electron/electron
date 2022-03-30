@@ -674,6 +674,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/out/Default/chromedriver.zip
       - src/out/Default/shell_browser_ui_unittests
       - src/out/Default/gen/node_headers
+      - src/out/Default/overlapped-checker
       - src/out/ffmpeg/ffmpeg.zip
       - src/electron
       - src/third_party/electron_node
@@ -810,6 +811,13 @@ step-mksnapshot-build: &step-mksnapshot-build
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
+
+step-nodejs-build-test-executable: &step-nodejs-build-test-executable
+  run:
+    name: Build Node.js Test Executables
+    command: |
+      cd src
+      ninja -C out/Default third_party/electron_node:overlapped-checker
 
 step-hunspell-build: &step-hunspell-build
   run:
@@ -1432,6 +1440,9 @@ commands:
 
             # Node.js headers
             - *step-nodejs-headers-build
+
+            # Node.js test executable
+            - *step-nodejs-build-test-executable
 
             - *step-show-goma-stats
 
