@@ -3634,6 +3634,22 @@ describe('BrowserWindow module', () => {
       expectBoundsEqual(w.getSize(), initialSize);
       expectBoundsEqual(w.getPosition(), initialPosition);
     });
+
+    ifit(process.platform === 'darwin')('should not change size or position of a window which is functionally maximized', async () => {
+      const { workArea } = screen.getPrimaryDisplay();
+
+      const bounds = {
+        x: workArea.x,
+        y: workArea.y,
+        width: workArea.width,
+        height: workArea.height
+      };
+
+      const w = new BrowserWindow(bounds);
+      w.unmaximize();
+      await delay(1000);
+      expectBoundsEqual(w.getBounds(), bounds);
+    });
   });
 
   describe('setFullScreen(false)', () => {
