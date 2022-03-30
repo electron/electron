@@ -13,3 +13,4 @@ regexp_ensure_regress-1255368_runs_only_with_irregexp.patch
 cherry-pick-c46fb3a15ec2.patch
 cherry-pick-26b7ad6967b1.patch
 cherry-pick-464987b1183c.patch
+cherry-pick-a1427aad7cef.patch
