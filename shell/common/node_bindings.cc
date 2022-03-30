@@ -322,6 +322,9 @@ NodeBindings::NodeBindings(BrowserEnvironment browser_env)
   } else {
     uv_loop_ = uv_default_loop();
   }
+
+  // Interrupt embed polling when a handle is started.
+  uv_loop_configure(uv_loop_, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
 }
 
 NodeBindings::~NodeBindings() {
