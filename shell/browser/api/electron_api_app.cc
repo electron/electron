@@ -1799,6 +1799,12 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)
+      .SetMethod("registerForRemoteNotifications",
+                 base::BindRepeating(&Browser::RegisterForRemoteNotifications,
+                                     browser))
+      .SetMethod("unregisterForRemoteNotifications",
+                 base::BindRepeating(&Browser::UnregisterForRemoteNotifications,
+                                     browser))
 #endif
       .SetMethod("setAboutPanelOptions",
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
