@@ -228,7 +228,7 @@ def _zero_zip_date_time(zip_):
     ZIP64_EXTRA_HEADER = 0x0001
     zip64_extra_struct = Struct("<HHQQ")
     # ZIP64.
-    # When a ZIP64 extra field is present his 8byte length
+    # When a ZIP64 extra field is present their 8byte length
     # will override the 4byte length defined in canonical zips.
     # This is in the form:
     # - 0x0001 (header_id)

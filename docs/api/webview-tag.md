@@ -533,7 +533,7 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
   * `silent` boolean (optional) - Don't ask user for print settings. Default is `false`.
   * `printBackground` boolean (optional) - Prints the background color and image of
     the web page. Default is `false`.
-  * `deviceName` string (optional) - Set the printer device name to use. Must be the system-defined name and not the 'friendly' name, e.g 'Brother_QL_820NWB' and not 'Brother QL-820NWB'.
+  * `deviceName` string (optional) - Set the printer device name to use. Must be the system-defined name and not the 'friendly' name, e.g 'Brother_QL_820NWB' and not 'Sibling QL-820NWB'.
   * `color` boolean (optional) - Set whether the printed web page will be in color or grayscale. Default is `true`.
   * `margins` Object (optional)
     * `marginType` string (optional) - Can be `default`, `none`, `printableArea`, or `custom`. If `custom` is chosen, you will also need to specify `top`, `bottom`, `left`, and `right`.
