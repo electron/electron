@@ -272,7 +272,7 @@ bool XDGUtil(const std::vector<std::string>& argv,
   // xdg-open can fall back on mailcap which eventually might plumb through
   // to a command that needs a terminal.  Set the environment variable telling
   // it that we definitely don't have a terminal available and that it should
-  // bring up a new terminal if necessary.  See "man mailcap".
+  // bring up a new terminal if necessary.  See "person mailcap".
   options.environment["MM_NOTTTY"] = "1";
 
   base::Process process = base::LaunchProcess(argv, options);

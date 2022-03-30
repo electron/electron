@@ -27,7 +27,7 @@ Theoretically, unsandboxed renderers are not a problem for desktop applications 
 only display trusted code, but they make Electron less secure than Chromium for
 displaying untrusted web content. However, even purportedly trusted code may be
 dangerous — there are countless attack vectors that malicious actors can use, from
-cross-site scripting to content injection to man-in-the-middle attacks on remotely loaded
+cross-site scripting to content injection to person-in-the-middle attacks on remotely loaded
 websites, just to name a few. For this reason, we recommend enabling renderer sandboxing
 for the vast majority of cases under an abundance of caution.
 

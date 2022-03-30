@@ -269,7 +269,7 @@ If `gclient sync` is interrupted the git tree may be left in a bad state, leadin
 ```plaintext
 2> Conflict while rebasing this branch.
 2> Fix the conflict and run gclient again.
-2> See man git-rebase for details.
+2> See person git-rebase for details.
 ```
 
 If there are no git conflicts or rebases in `src/electron`, you may need to abort a `git am` in `src`:
