@@ -90,9 +90,9 @@ describe('app module', () => {
 
       it('overrides the name', () => {
         expect(app.name).to.equal('Electron Test Main');
-        app.name = 'test-name';
+        app.name = 'electron-test-name';
 
-        expect(app.name).to.equal('test-name');
+        expect(app.name).to.equal('electron-test-name');
         app.name = 'Electron Test Main';
       });
     });
@@ -104,9 +104,9 @@ describe('app module', () => {
 
       it('overrides the name', () => {
         expect(app.getName()).to.equal('Electron Test Main');
-        app.setName('test-name');
+        app.setName('electron-test-name');
 
-        expect(app.getName()).to.equal('test-name');
+        expect(app.getName()).to.equal('electron-test-name');
         app.setName('Electron Test Main');
       });
     });

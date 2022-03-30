@@ -1,5 +1,5 @@
 {
-  "name": "electron-test-initial-app",
+  "name": "electron-test-check-with-headers",
   "version": "1.0.0",
   "main": "./index.js"
 }
