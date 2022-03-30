@@ -1,5 +1,5 @@
 {
-  "name": "initial-app",
+  "name": "electron-test-update-json",
   "version": "1.0.0",
   "main": "./index.js"
 }
