@@ -91,10 +91,10 @@ const char kBrowserCloseMethod[] = "Browser.close";
 
 // static
 void DevToolsManagerDelegate::StartHttpHandler() {
-  base::FilePath user_dir;
-  base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
+  base::FilePath browser_data;
+  base::PathService::Get(DIR_BROWSER_DATA, &browser_data);
   content::DevToolsAgentHost::StartRemoteDebuggingServer(
-      CreateSocketFactory(), user_dir, base::FilePath());
+      CreateSocketFactory(), browser_data, base::FilePath());
 }
 
 DevToolsManagerDelegate::DevToolsManagerDelegate() = default;
