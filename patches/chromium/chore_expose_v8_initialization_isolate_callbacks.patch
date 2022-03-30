@@ -9,7 +9,7 @@ we're running with contextIsolation enabled, we should be falling back
 to Blink's logic. This will be upstreamed in some form.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 5040ec838c64ffa8aa58ba43f51df649443b2f81..7a7a87d00fa392b7bd07267d9059664d5d472252 100644
+index 66dddc124ca48024cb9539529b787f6e9aa1fd5c..fd6dc712df185724ae88a40e643a26126e54d712 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -446,8 +446,9 @@ CodeGenerationCheckCallbackInMainThread(v8::Local<v8::Context> context,

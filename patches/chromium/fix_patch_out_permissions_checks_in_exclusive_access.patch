@@ -14,10 +14,67 @@ but it's not strictly necessary for this API to work to spec.
 Profile check has been upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3247196
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 8d6f8aedab475c1a553949bfcba3753ebed87778..e379e4995b0812be5970cf9741a00e4f99dea3f1 100644
+index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d54a5b39da 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-@@ -384,13 +384,9 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -16,12 +16,16 @@
+ #include "build/build_config.h"
+ #include "chrome/browser/app_mode/app_mode_utils.h"
+ #include "chrome/browser/profiles/profile.h"
++#if 0
+ #include "chrome/browser/ui/blocked_content/popunder_preventer.h"
++#endif
+ #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"
+ #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
+ #include "chrome/browser/ui/exclusive_access/fullscreen_within_tab_helper.h"
++#if 0
+ #include "chrome/browser/ui/status_bubble.h"
+ #include "chrome/browser/ui/tabs/tab_strip_model.h"
++#endif
+ #include "chrome/common/chrome_switches.h"
+ #include "content/public/browser/navigation_details.h"
+ #include "content/public/browser/navigation_entry.h"
+@@ -161,6 +165,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+     return;
+   }
+ 
++#if 0
+   if (base::FeatureList::IsEnabled(
+           blink::features::kWindowPlacementFullscreenCompanionWindow)) {
+     if (!popunder_preventer_)
+@@ -168,6 +173,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+     else
+       popunder_preventer_->WillActivateWebContents(web_contents);
+   }
++#endif
+ 
+   SetTabWithExclusiveAccess(web_contents);
+   requesting_origin_ =
+@@ -203,7 +209,9 @@ void FullscreenController::EnterFullscreenModeForTab(
+ }
+ 
+ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
++#if 0
+   popunder_preventer_.reset();
++#endif
+ 
+   if (MaybeToggleFullscreenWithinTab(web_contents, false)) {
+     // During tab capture of fullscreen-within-tab views, the browser window
+@@ -248,11 +256,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+ void FullscreenController::FullscreenTabOpeningPopup(
+     content::WebContents* opener,
+     content::WebContents* popup) {
++#if 0
+   DCHECK(base::FeatureList::IsEnabled(
+       blink::features::kWindowPlacementFullscreenCompanionWindow));
+   DCHECK_EQ(exclusive_access_tab(), opener);
+   DCHECK(popunder_preventer_);
+   popunder_preventer_->AddPotentialPopunder(popup);
++#endif
+ }
+ 
+ void FullscreenController::OnTabDeactivated(
+@@ -402,13 +412,9 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -33,7 +90,7 @@ index 8d6f8aedab475c1a553949bfcba3753ebed87778..e379e4995b0812be5970cf9741a00e4f
  #endif
  
    toggled_into_fullscreen_ = true;
-@@ -403,6 +399,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -421,6 +427,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        url = extension_caused_fullscreen_;
    }
  
@@ -41,7 +98,7 @@ index 8d6f8aedab475c1a553949bfcba3753ebed87778..e379e4995b0812be5970cf9741a00e4f
    if (display_id != display::kInvalidDisplayId) {
      // Check, but do not prompt, for permission to request a specific screen.
      // Sites generally need permission to get the display id in the first place.
-@@ -415,6 +412,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -434,6 +441,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        display_id = display::kInvalidDisplayId;
      }
    }
@@ -49,3 +106,20 @@ index 8d6f8aedab475c1a553949bfcba3753ebed87778..e379e4995b0812be5970cf9741a00e4f
  
    if (option == BROWSER)
      base::RecordAction(base::UserMetricsAction("ToggleFullscreen"));
+diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
+index 7bd40f52ef5f6b04a7ea114ec4d18c8a98ec6d42..fb04fed5cc1e2e255c9e67c180fababe1fbb3fe0 100644
+--- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
++++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
+@@ -222,10 +222,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+   // Used in testing to set the state to tab fullscreen.
+   bool is_tab_fullscreen_for_testing_ = false;
+ 
++#if 0
+   // Tracks related popups that lost activation or were shown without activation
+   // during content fullscreen sessions. This also activates the popups when
+   // fullscreen exits, to prevent sites from creating persisent popunders.
+   std::unique_ptr<PopunderPreventer> popunder_preventer_;
++#endif
+ 
+   base::ObserverList<FullscreenObserver> observer_list_;
+ 
