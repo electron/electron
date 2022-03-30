@@ -27,16 +27,11 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/pdf/chrome_pdf_stream_delegate.h"
-#include "chrome/browser/plugins/pdf_iframe_navigation_throttle.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
-#include "components/pdf/browser/pdf_navigation_throttle.h"
-#include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
-#include "components/pdf/common/internal_plugin_helpers.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/site_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_main_runner.h"
@@ -52,6 +47,7 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/tts_controller.h"
 #include "content/public/browser/tts_platform.h"
+#include "content/public/browser/url_loader_request_interceptor.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -212,7 +208,12 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/browser/pdf/chrome_pdf_stream_delegate.h"
+#include "chrome/browser/plugins/pdf_iframe_navigation_throttle.h"  // nogncheck
+#include "components/pdf/browser/pdf_navigation_throttle.h"
+#include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
 #include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
+#include "components/pdf/common/internal_plugin_helpers.h"
 #endif
 
 using content::BrowserThread;
