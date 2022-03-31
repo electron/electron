@@ -116,7 +116,7 @@ inAppPurchase.getProducts(PRODUCT_IDS).then(products => {
     console.log(`The price of ${product.localizedTitle} is ${product.formattedPrice}.`)
   })
 
-  // Ask the user which product they/they wants to purchase.
+  // Ask the user which product they want to purchase.
   const selectedProduct = products[0]
   const selectedQuantity = 1
 
