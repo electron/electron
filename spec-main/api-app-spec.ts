@@ -3,7 +3,7 @@ import * as cp from 'child_process';
 import * as https from 'https';
 import * as http from 'http';
 import * as net from 'net';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
@@ -1077,6 +1077,40 @@ describe('app module', () => {
       expect(fs.existsSync(badPath)).to.be.false();
 
       expect(() => { app.getPath(badPath as any); }).to.throw();
+    });
+
+    describe('browserData', () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
+      const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
+      const userDataPath = path.join(app.getPath('appData'), appName);
+      const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
+      const defaultBrowserFile = path.join(userDataPath, 'Preferences');
+      const changedBrowserFile = path.join(tempBrowserDataPath, 'Preferences');
+
+      beforeEach(() => {
+        fs.removeSync(userDataPath);
+        fs.removeSync(tempBrowserDataPath);
+      });
+
+      it('writes to userData by default', () => {
+        expect(fs.existsSync(defaultBrowserFile)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath]);
+        expect(fs.existsSync(defaultBrowserFile)).to.equal(true);
+      });
+
+      it('can be changed', () => {
+        expect(fs.existsSync(changedBrowserFile)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath, 'browserData', tempBrowserDataPath]);
+        expect(fs.existsSync(defaultBrowserFile)).to.equal(false);
+        expect(fs.existsSync(changedBrowserFile)).to.equal(true);
+      });
+
+      it('changing userData affects default browserData', () => {
+        expect(fs.existsSync(changedBrowserFile)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
+        expect(fs.existsSync(defaultBrowserFile)).to.equal(false);
+        expect(fs.existsSync(changedBrowserFile)).to.equal(true);
+      });
     });
   });
 
