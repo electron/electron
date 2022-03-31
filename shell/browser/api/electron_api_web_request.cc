@@ -164,8 +164,8 @@ void ToDictionary(gin_helper::Dictionary* details,
                  HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
-  auto* render_frame_host =
-      content::RenderFrameHost::FromID(info->render_process_id, info->frame_id);
+  auto* render_frame_host = content::RenderFrameHost::FromID(
+      info->render_process_id, info->frame_routing_id);
   if (render_frame_host) {
     details->SetGetter("frame", render_frame_host);
     auto* web_contents =

@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-index 7a6503d4a4ad33290d97078336c18d81839a8675..0f162b8e681ebb67c5f3b23a40fe3b6ec97cec49 100644
+index a4d74f8e59673d4734ef338235c027bd1c77e92e..6969d1c69ee215055bd49a2bf830416c9e8b62c8 100644
 --- a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
 +++ b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-@@ -506,8 +506,7 @@ void MobileFriendlinessChecker::NotifyInvalidatePaint(
+@@ -515,8 +515,7 @@ void MobileFriendlinessChecker::NotifyInvalidatePaint(
                                 ->GetPageScaleConstraintsSet()
                                 .FinalConstraints()
                                 .initial_scale;
