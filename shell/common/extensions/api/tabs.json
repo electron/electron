@@ -121,6 +121,27 @@
     ],
     "functions": [
       {
+        "name": "reload",
+        "type": "function",
+        "description": "Reload a tab.",
+        "parameters": [
+          {"type": "integer", "name": "tabId", "minimum": 0, "optional": true, "description": "The ID of the tab to reload; defaults to the selected tab of the current window."},
+          {
+            "type": "object",
+            "name": "reloadProperties",
+            "optional": true,
+            "properties": {
+              "bypassCache": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether using any local cache. Default is false."
+              }
+            }
+          },
+          {"type": "function", "name": "callback", "optional": true, "parameters": []}
+        ]
+      },
+      {
         "name": "get",
         "type": "function",
         "description": "Retrieves details about the specified tab.",
