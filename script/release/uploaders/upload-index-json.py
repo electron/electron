@@ -9,8 +9,8 @@ import urllib2
 sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
-from lib.config import s3_config
-from lib.util import s3put, scoped_cwd, safe_mkdir, get_out_dir, ELECTRON_DIR
+from lib.util import store_artifact, scoped_cwd, safe_mkdir, get_out_dir, \
+  ELECTRON_DIR
 
 OUT_DIR     = get_out_dir()
 
@@ -59,9 +59,7 @@ def main():
     with open(index_json, "w") as f:
       f.write(new_content)
 
-    bucket, access_key, secret_key = s3_config()
-    s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
-          [index_json])
+    store_artifact(OUT_DIR, 'atom-shell/dist', [index_json])
 
 
 if __name__ == '__main__':
