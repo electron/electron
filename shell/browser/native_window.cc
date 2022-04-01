@@ -479,7 +479,7 @@ void NativeWindow::SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect) {
   overlay_rect_ = overlay_rect;
 }
 
-void NativeWindow::NotifyWindowRequestPreferredWith(int* width) {
+void NativeWindow::NotifyWindowRequestPreferredWidth(int* width) {
   for (NativeWindowObserver& observer : observers_)
     observer.RequestPreferredWidth(width);
 }
