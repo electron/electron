@@ -177,6 +177,7 @@ def s3put(prefix, key_prefix, files):
   print(output)
 
 def azput(prefix, key_prefix, files):
+  env = os.environ.copy()
   output = execute([
     'node',
     os.path.join(os.path.dirname(__file__), 'azput.js'),
