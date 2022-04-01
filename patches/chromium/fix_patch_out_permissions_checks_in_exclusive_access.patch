@@ -14,7 +14,7 @@ but it's not strictly necessary for this API to work to spec.
 Profile check has been upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3247196
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d54a5b39da 100644
+index 41cd193087f8d4f246993e96da96ea0523ab50ed..96cd17afad81037ce94ca3ea3583ebbbdd7f157b 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -34,7 +34,7 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
  #include "chrome/common/chrome_switches.h"
  #include "content/public/browser/navigation_details.h"
  #include "content/public/browser/navigation_entry.h"
-@@ -161,6 +165,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -159,6 +163,7 @@ void FullscreenController::EnterFullscreenModeForTab(
      return;
    }
  
@@ -42,15 +42,15 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
    if (base::FeatureList::IsEnabled(
            blink::features::kWindowPlacementFullscreenCompanionWindow)) {
      if (!popunder_preventer_)
-@@ -168,6 +173,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -166,6 +171,7 @@ void FullscreenController::EnterFullscreenModeForTab(
      else
        popunder_preventer_->WillActivateWebContents(web_contents);
    }
 +#endif
  
-   SetTabWithExclusiveAccess(web_contents);
-   requesting_origin_ =
-@@ -203,7 +209,9 @@ void FullscreenController::EnterFullscreenModeForTab(
+   // Keep the current state. |SetTabWithExclusiveAccess| may change the return
+   // value of |IsWindowFullscreenForTabOrPending|.
+@@ -218,7 +224,9 @@ void FullscreenController::EnterFullscreenModeForTab(
  }
  
  void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
@@ -60,7 +60,7 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
  
    if (MaybeToggleFullscreenWithinTab(web_contents, false)) {
      // During tab capture of fullscreen-within-tab views, the browser window
-@@ -248,11 +256,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -263,11 +271,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
@@ -74,7 +74,7 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -402,13 +412,9 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -417,13 +427,9 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -90,7 +90,7 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
  #endif
  
    toggled_into_fullscreen_ = true;
-@@ -421,6 +427,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -436,6 +442,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        url = extension_caused_fullscreen_;
    }
  
@@ -98,7 +98,7 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
    if (display_id != display::kInvalidDisplayId) {
      // Check, but do not prompt, for permission to request a specific screen.
      // Sites generally need permission to get the display id in the first place.
-@@ -434,6 +441,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -449,6 +456,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        display_id = display::kInvalidDisplayId;
      }
    }

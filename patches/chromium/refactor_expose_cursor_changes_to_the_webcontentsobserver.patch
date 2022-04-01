@@ -30,10 +30,10 @@ index 059ff2b47e7aa8b9707e71ae9a1793bfdd86d319..529637f8b6af6b8b45f9de61d27b5e9c
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index ed56e947fa137cbaddaa12503ae983d7acd4463f..e1d77416991bac0178935b1bd255947d20db6210 100644
+index ff0616a8e873ad1f44c50f0a036e36eeace5c16b..245d73aada2f0f6dfd220f2a1399ec281d6057e4 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2073,6 +2073,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
+@@ -2067,6 +2067,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
  void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_)
      view_->UpdateCursor(WebCursor(cursor));
@@ -43,10 +43,10 @@ index ed56e947fa137cbaddaa12503ae983d7acd4463f..e1d77416991bac0178935b1bd255947d
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3fa51ecee644055db44bd4dd54c27ec224ff46d6..cc6afdef869470136c2cec392911742a289f6339 100644
+index b595abc9dc0ecf550dd8b2904e417b3e2f1831e9..af3d75341227cf21b1effcea39dc3d47840324d1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4500,6 +4500,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4497,6 +4497,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -59,7 +59,7 @@ index 3fa51ecee644055db44bd4dd54c27ec224ff46d6..cc6afdef869470136c2cec392911742a
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index fdb4a26de507f260466a7bc22c5cadc64190c342..55224f960151b0cae23b2a49d755eace630e9e3a 100644
+index 2a13ee84104367ea85e982c539de2a26577dbbda..3716c929e9aa5ffc38e01d888cbc04e298305be6 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -961,6 +961,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -71,7 +71,7 @@ index fdb4a26de507f260466a7bc22c5cadc64190c342..55224f960151b0cae23b2a49d755eace
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index b68d706fe204c3e8d65b2bf523950840c0398db2..8852a8da29bc9b7f9b832ad392741751f46e3fd7 100644
+index 9ee3b74460c009c92fb811787250270ea13233b3..802d02e825d98f103f48e3134d6b9dd7e99aa2c5 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -13,6 +13,7 @@

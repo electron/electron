@@ -7,10 +7,10 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 225609e52130d4113c8ae667f3ffa565bbde5b73..b33d27ce4fc6222146255cf4c0e7342751c75c9b 100644
+index 83b33e3f521aa79942ba3446a8b161a4e4e23da1..24f409f673797b6e8bb1da680343ea1ddc083e4f 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
-@@ -196,6 +196,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
+@@ -195,6 +195,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
  
  // TODO(awdf): Rename to DisplayNonPersistentNotification (Similar for Close)
  void PlatformNotificationServiceImpl::DisplayNotification(
@@ -31,10 +31,10 @@ index b0e64049d411305d58802fd290bb0480e9b36fee..4afcf3b7a5b841409b0e1c4c2f32fd48
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index fd2c2d72ebc3cab0cc824bb091da32d4be635dd9..8bcd6a87c38413a5281d164e3c0fcfd23c3fa04b 100644
+index 54f1f291b4d681f114276768daadcdfc203c4152..73747d13d6e4f66dc4376bbcde5048b23e779b2d 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
-@@ -81,10 +81,12 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
+@@ -80,10 +80,12 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
      PlatformNotificationContextImpl* notification_context,
      BrowserContext* browser_context,
      scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
@@ -47,7 +47,7 @@ index fd2c2d72ebc3cab0cc824bb091da32d4be635dd9..8bcd6a87c38413a5281d164e3c0fcfd2
        browser_context_(browser_context),
        service_worker_context_(std::move(service_worker_context)),
        origin_(origin),
-@@ -147,7 +149,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
+@@ -146,7 +148,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
        notification_id, std::move(event_listener_remote));
  
    browser_context_->GetPlatformNotificationService()->DisplayNotification(
@@ -131,7 +131,7 @@ index 951075749b24814606f494c5a89ee2adf527f512..7036323ff8ee38ae92790dfd2e216df6
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index a188b1282e7ceca3fe24cb2d82c644bf0c21bc6f..f0b6fa61bb24d5b5fc4cf9cb8fc2f635f515f3f6 100644
+index 6445dba8f9d02e17e97680fc4f28a7c4278b70e2..6f2a2a5d0b69979d0581a051498e7b20fdf66f53 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2083,7 +2083,7 @@ void RenderProcessHostImpl::CreateNotificationService(

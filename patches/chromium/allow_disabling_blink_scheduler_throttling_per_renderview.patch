@@ -6,10 +6,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 8ee02135efb64c57d0779faa96640aa8e7775b58..66007d67da1230740eb00e31b220ddb02fbf37d9 100644
+index c1e7240f0f32b7951e5f5472c2049b49b10ff149..10277d827ac02769c1e3c1539f522bfffdfdacdd 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -650,6 +650,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -649,6 +649,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -85,10 +85,10 @@ index 560b72dfbc70172bc668229b29fe0c9da139f320..13ec73b9d627259625d64f5b97838033
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index dc63c0ba0cc8625ed5efb961a1c7f1d07fc72f5d..13a16ae577130d7520b47eb046b504ccd6796979 100644
+index 2a5341a7303a9112d70f6e191748fd72b0b12432..f12a22f8fbaebb4e1e4a3d1cea0d6af7fddb67ed 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3669,6 +3669,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3676,6 +3676,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index dc63c0ba0cc8625ed5efb961a1c7f1d07fc72f5d..13a16ae577130d7520b47eb046b504cc
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3680,7 +3687,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3687,7 +3694,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(

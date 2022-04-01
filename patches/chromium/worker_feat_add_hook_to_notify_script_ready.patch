@@ -35,10 +35,10 @@ index 025ef3f70a5ae34faf8c6013fbfba171c7f501ac..cea3f3dc05f91927f4ee8be5eec85ec2
    // from the worker thread.
    virtual void WillDestroyWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 998fe8b45959b8cfd91a1ed4f75f5946adf61537..30d22188daed7f0b451ae75655e12bac3c4f10ac 100644
+index d9ac035817d4f86f2a7d3891b7189c1030517652..c57455b384cb3ff7b94a1d6e9990882cb2684437 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -962,6 +962,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
+@@ -961,6 +961,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
        worker);
  }
  
