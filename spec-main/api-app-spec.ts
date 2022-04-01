@@ -228,7 +228,7 @@ describe('app module', () => {
       expect(code1).to.equal(0);
     });
 
-    it.only('returns true when setting non-existent user data folder', async function () {
+    it('returns true when setting non-existent user data folder', async function () {
       const appPath = path.join(fixturesPath, 'api', 'singleton-userdata');
       const instance = cp.spawn(process.execPath, [appPath]);
       const [code] = await emittedOnce(instance, 'exit');
