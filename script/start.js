@@ -14,3 +14,4 @@ const handleTerminationSignal = (signal) =>
 
 handleTerminationSignal('SIGINT');
 handleTerminationSignal('SIGTERM');
+handleTerminationSignal('SIGUSR2');
