@@ -1155,7 +1155,7 @@ steps-tests: &steps-tests
             export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
             export MOCHA_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
-            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
+            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --force-color-profile=srgb --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
             (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
           else
             if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
@@ -1166,7 +1166,7 @@ steps-tests: &steps-tests
               if [ "$TARGET_ARCH" == "ia32" ]; then
                 npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
               fi
-              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split --split-by=timings))
+              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --force-color-profile=srgb --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split --split-by=timings))
               (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split --split-by=timings))
             fi
           fi
