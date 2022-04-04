@@ -12,6 +12,8 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 
 namespace content {
