@@ -348,8 +348,6 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   params->disable_web_security = false;
 
   auto* storage_partition = GetDefaultStoragePartition();
-  params->url_loader_network_observer =
-      storage_partition->CreateURLLoaderNetworkObserverForNavigationRequest(-1);
   storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
       std::move(factory_receiver), std::move(params));
   url_loader_factory_ =
