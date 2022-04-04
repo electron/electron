@@ -1104,6 +1104,8 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
   base::FilePath user_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
+  // The user_dir may not have been created yet.
+  base::CreateDirectoryAndGetError(user_dir, nullptr);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
