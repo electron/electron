@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..bd5788caa61305fd9af8f9d7f8f1937a224fda83
+index 0000000000000000000000000000000000000000..4afca42d22ee702af50da92aa08c1de897891424
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,394 @@
+@@ -0,0 +1,403 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -189,6 +189,15 @@ index 0000000000000000000000000000000000000000..bd5788caa61305fd9af8f9d7f8f1937a
 +      "NODE_OPENSSL_SYSTEM_CERT_PATH=\"$node_openssl_system_ca_path\"",
 +      "EVP_CTRL_CCM_SET_TAG=EVP_CTRL_GCM_SET_TAG",
 +    ]
++  }
++}
++
++executable("overlapped-checker") {
++  sources = []
++  if (is_win) {
++    sources += [ "test/overlapped-checker/main_win.c" ]
++  } else {
++    sources += [ "test/overlapped-checker/main_unix.c" ]
 +  }
 +}
 +

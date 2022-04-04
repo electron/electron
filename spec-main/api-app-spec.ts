@@ -9,7 +9,7 @@ import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit, waitUntil } from './spec-helpers';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
@@ -90,9 +90,9 @@ describe('app module', () => {
 
       it('overrides the name', () => {
         expect(app.name).to.equal('Electron Test Main');
-        app.name = 'test-name';
+        app.name = 'electron-test-name';
 
-        expect(app.name).to.equal('test-name');
+        expect(app.name).to.equal('electron-test-name');
         app.name = 'Electron Test Main';
       });
     });
@@ -104,9 +104,9 @@ describe('app module', () => {
 
       it('overrides the name', () => {
         expect(app.getName()).to.equal('Electron Test Main');
-        app.setName('test-name');
+        app.setName('electron-test-name');
 
-        expect(app.getName()).to.equal('test-name');
+        expect(app.getName()).to.equal('electron-test-name');
         app.setName('Electron Test Main');
       });
     });
@@ -226,6 +226,13 @@ describe('app module', () => {
       expect(code2).to.equal(1);
       const [code1] = await firstExited;
       expect(code1).to.equal(0);
+    });
+
+    it('returns true when setting non-existent user data folder', async function () {
+      const appPath = path.join(fixturesPath, 'api', 'singleton-userdata');
+      const instance = cp.spawn(process.execPath, [appPath]);
+      const [code] = await emittedOnce(instance, 'exit');
+      expect(code).to.equal(0);
     });
 
     async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
@@ -1572,6 +1579,23 @@ describe('app module', () => {
       expect(() => {
         app.disableDomainBlockingFor3DAPIs();
       }).to.throw(/before app is ready/);
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
+    describe('app.isHidden', () => {
+      it('returns true when the app is hidden', async () => {
+        app.hide();
+        await expect(
+          waitUntil(() => app.isHidden())
+        ).to.eventually.be.fulfilled();
+      });
+      it('returns false when the app is shown', async () => {
+        app.show();
+        await expect(
+          waitUntil(() => !app.isHidden())
+        ).to.eventually.be.fulfilled();
+      });
     });
   });
 

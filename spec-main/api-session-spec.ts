@@ -1130,7 +1130,7 @@ describe('session module', () => {
         session.defaultSession.setCodeCachePath('');
       }).to.throw('Absolute path must be provided to store code cache.');
       expect(() => {
-        session.defaultSession.setCodeCachePath(path.join(app.getPath('userData'), 'test-code-cache'));
+        session.defaultSession.setCodeCachePath(path.join(app.getPath('userData'), 'electron-test-code-cache'));
       }).to.not.throw();
     });
   });

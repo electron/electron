@@ -2,10 +2,9 @@ is_electron_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/master/doc/abi_version_registry.json
-node_module_version = 106
+node_module_version = 107
 
 v8_promise_internal_field_count = 1
-v8_typed_array_max_size_in_heap = 0
 v8_embedder_string = "-electron.0"
 
 # TODO: this breaks mksnapshot

@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 19c936be477f944d62e85cec81359a71bbcfa45d..b02bb1cd67488f996b6142058c52c34dfe523fff 100644
+index d55a1b4f71224a2156eb5f3b0b32f41643b3dc28..f41c8f3d74f72d6e2220af527500749ef7409d77 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -132,6 +132,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
+@@ -131,6 +131,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}
@@ -23,10 +23,10 @@ index 19c936be477f944d62e85cec81359a71bbcfa45d..b02bb1cd67488f996b6142058c52c34d
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c9296960c76e34646bf7cb3195b80c0cbc483b58..bc8bdba3facba81c572d43b85881ec02ad7d2f00 100644
+index e0d4faf86b7afe7f29da5e5c8babc78a40e72ae1..1fbf6abed9c7d1bbec4478d022e1763ea8bfed8e 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4423,6 +4423,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4444,6 +4444,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -92,7 +92,7 @@ index bca4cbb2b2ba84fe58b5cfeaf190add5803e27c9..b6c9dd3a2a1c9b6667c563d5da86ccb4
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index e06c96c068139e829af7bd99ebb111507b2bddb0..a98bc22fc5c96ad1fd2071ea1c9e1aab2fb4d5ff 100644
+index b690ada2d46146b6da38cbb2c688f249ae558464..b03774140883c5bb7de6358f3df95ab8774b9dc7 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -275,6 +275,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(

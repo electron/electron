@@ -59,7 +59,7 @@ executors:
         description: "xcode version"
         default: "12.4.0"
         type: enum
-        enum: ["12.4.0", "13.2.1"]
+        enum: ["12.4.0", "13.3.0"]
 
     macos:
       xcode: << parameters.xcode >>
@@ -674,6 +674,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/out/Default/chromedriver.zip
       - src/out/Default/shell_browser_ui_unittests
       - src/out/Default/gen/node_headers
+      - src/out/Default/overlapped-checker
       - src/out/ffmpeg/ffmpeg.zip
       - src/electron
       - src/third_party/electron_node
@@ -810,6 +811,13 @@ step-mksnapshot-build: &step-mksnapshot-build
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
+
+step-nodejs-build-test-executable: &step-nodejs-build-test-executable
+  run:
+    name: Build Node.js Test Executables
+    command: |
+      cd src
+      ninja -C out/Default third_party/electron_node:overlapped-checker
 
 step-hunspell-build: &step-hunspell-build
   run:
@@ -1433,6 +1441,9 @@ commands:
             # Node.js headers
             - *step-nodejs-headers-build
 
+            # Node.js test executable
+            - *step-nodejs-build-test-executable
+
             - *step-show-goma-stats
 
             # mksnapshot
@@ -1912,7 +1923,7 @@ jobs:
   osx-testing-x64:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1929,7 +1940,7 @@ jobs:
   osx-testing-x64-gn-check:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-machine-mac
       <<: *env-testing-build
@@ -1938,7 +1949,7 @@ jobs:
   osx-publish-x64-skip-checkout:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1959,7 +1970,7 @@ jobs:
   osx-publish-arm64-skip-checkout:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1981,7 +1992,7 @@ jobs:
   osx-testing-arm64:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2000,7 +2011,7 @@ jobs:
   mas-testing-x64:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large
       <<: *env-mas
@@ -2018,7 +2029,7 @@ jobs:
   mas-testing-x64-gn-check:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-machine-mac
       <<: *env-mas
@@ -2028,7 +2039,7 @@ jobs:
   mas-publish-x64-skip-checkout:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large-release
       <<: *env-mas
@@ -2049,7 +2060,7 @@ jobs:
   mas-publish-arm64-skip-checkout:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2071,7 +2082,7 @@ jobs:
   mas-testing-arm64:
     executor:
       name: macos
-      xcode: "13.2.1"
+      xcode: "13.3.0"
     environment:
       <<: *env-mac-large
       <<: *env-testing-build

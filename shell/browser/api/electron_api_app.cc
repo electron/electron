@@ -1148,6 +1148,8 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
   base::FilePath user_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
+  // The user_dir may not have been created yet.
+  base::CreateDirectoryAndGetError(user_dir, nullptr);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
   auto wrapped_cb = base::BindRepeating(NotificationCallbackWrapper, cb);
@@ -1769,6 +1771,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::IsEmojiPanelSupported, browser))
 #if BUILDFLAG(IS_MAC)
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
+      .SetMethod("isHidden", base::BindRepeating(&Browser::IsHidden, browser))
       .SetMethod("show", base::BindRepeating(&Browser::Show, browser))
       .SetMethod("setUserActivity",
                  base::BindRepeating(&Browser::SetUserActivity, browser))

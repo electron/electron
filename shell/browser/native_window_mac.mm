@@ -602,17 +602,38 @@ void NativeWindowMac::SetEnabled(bool enable) {
 }
 
 void NativeWindowMac::Maximize() {
-  if (IsMaximized())
+  const bool is_visible = [window_ isVisible];
+
+  if (IsMaximized()) {
+    if (!is_visible)
+      ShowInactive();
     return;
+  }
 
   // Take note of the current window size
   if (IsNormal())
     original_frame_ = [window_ frame];
   [window_ zoom:nil];
+
+  if (!is_visible) {
+    ShowInactive();
+    NotifyWindowMaximize();
+  }
 }
 
 void NativeWindowMac::Unmaximize() {
-  if (!IsMaximized())
+  // Bail if the last user set bounds were the same size as the window
+  // screen (e.g. the user set the window to maximized via setBounds)
+  //
+  // Per docs during zoom:
+  // > If there’s no saved user state because there has been no previous
+  // > zoom,the size and location of the window don’t change.
+  //
+  // However, in classic Apple fashion, this is not the case in practice,
+  // and the frame inexplicably becomes very tiny. We should prevent
+  // zoom from being called if the window is being unmaximized and its
+  // unmaximized window bounds are themselves functionally maximized.
+  if (!IsMaximized() || user_set_bounds_maximized_)
     return;
 
   [window_ zoom:nil];
@@ -714,6 +735,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
   cocoa_bounds.origin.y = NSHeight([screen frame]) - size.height() - bounds.y();
 
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
+  user_set_bounds_maximized_ = IsMaximized() ? true : false;
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
