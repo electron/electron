@@ -882,7 +882,7 @@ void App::OnGpuInfoUpdate() {
 }
 
 void App::OnGpuProcessCrashed() {
-  Emit("gpu-process-crashed");
+  Emit("gpu-process-crashed", true);
 }
 
 void App::BrowserChildProcessLaunchedAndConnected(
