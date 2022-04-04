@@ -8,7 +8,7 @@ Now that uv__cloexec_fcntl() is simplified
 maintaining duplicate code paths for the same thing.
 
 diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
-index 6cd519ad5b3e7af8f5c71b18a59b88458a233f15..8c30802ad15316a8ec20ecedfb5123174d74276b 100644
+index a87b96cfc1dfdc88fa712a4fa991320ff28f2dcd..7cd3a2a954ff7d70e6ba7a6f7538648841bc54b2 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
 @@ -597,20 +597,6 @@ int uv__nonblock_ioctl(int fd, int set) {

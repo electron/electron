@@ -72,7 +72,10 @@ BrowserWindow.getAllWindows = () => {
 
 BrowserWindow.getFocusedWindow = () => {
   for (const window of BrowserWindow.getAllWindows()) {
-    if (window.isFocused() || window.isDevToolsFocused()) return window;
+    const hasWC = window.webContents && !window.webContents.isDestroyed();
+    if (!window.isDestroyed() && hasWC) {
+      if (window.isFocused() || window.isDevToolsFocused()) return window;
+    }
   }
   return null;
 };

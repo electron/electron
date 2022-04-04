@@ -117,6 +117,10 @@ void Browser::Hide() {
   [[AtomApplication sharedApplication] hide:nil];
 }
 
+bool Browser::IsHidden() {
+  return [[AtomApplication sharedApplication] isHidden];
+}
+
 void Browser::Show() {
   [[AtomApplication sharedApplication] unhide:nil];
 }

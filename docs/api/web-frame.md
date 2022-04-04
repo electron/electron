@@ -110,7 +110,7 @@ webFrame.setSpellCheckProvider('en-US', {
 })
 ```
 
-#### `webFrame.insertCSS(css[, options])`
+### `webFrame.insertCSS(css[, options])`
 
 * `css` string
 * `options` Object (optional)

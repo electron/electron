@@ -3579,22 +3579,24 @@ describe('BrowserWindow module', () => {
   // TODO(dsanders11): Enable once maximize event works on Linux again on CI
   ifdescribe(process.platform !== 'linux')('BrowserWindow.maximize()', () => {
     afterEach(closeAllWindows);
-    // TODO(dsanders11): Disabled on macOS, see https://github.com/electron/electron/issues/32947
-    ifit(process.platform !== 'darwin')('should show the window if it is not currently shown', async () => {
+    it('should show the window if it is not currently shown', async () => {
       const w = new BrowserWindow({ show: false });
       const hidden = emittedOnce(w, 'hide');
-      const shown = emittedOnce(w, 'show');
+      let shown = emittedOnce(w, 'show');
       const maximize = emittedOnce(w, 'maximize');
       expect(w.isVisible()).to.be.false('visible');
       w.maximize();
       await maximize;
+      await shown;
+      expect(w.isMaximized()).to.be.true('maximized');
       expect(w.isVisible()).to.be.true('visible');
       // Even if the window is already maximized
       w.hide();
       await hidden;
       expect(w.isVisible()).to.be.false('visible');
+      shown = emittedOnce(w, 'show');
       w.maximize();
-      await shown; // Ensure a 'show' event happens when it becomes visible
+      await shown;
       expect(w.isVisible()).to.be.true('visible');
     });
   });
@@ -3631,6 +3633,22 @@ describe('BrowserWindow module', () => {
       await delay(1000);
       expectBoundsEqual(w.getSize(), initialSize);
       expectBoundsEqual(w.getPosition(), initialPosition);
+    });
+
+    ifit(process.platform === 'darwin')('should not change size or position of a window which is functionally maximized', async () => {
+      const { workArea } = screen.getPrimaryDisplay();
+
+      const bounds = {
+        x: workArea.x,
+        y: workArea.y,
+        width: workArea.width,
+        height: workArea.height
+      };
+
+      const w = new BrowserWindow(bounds);
+      w.unmaximize();
+      await delay(1000);
+      expectBoundsEqual(w.getBounds(), bounds);
     });
   });
 
@@ -3723,6 +3741,25 @@ describe('BrowserWindow module', () => {
         // The child window list is not immediately cleared, so wait a tick until it's ready.
         await delay();
         expect(w.getChildWindows().length).to.equal(0);
+      });
+
+      it('closes a grandchild window when a middle child window is destroyed', (done) => {
+        const w = new BrowserWindow();
+
+        w.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
+        w.webContents.executeJavaScript('window.open("")');
+
+        w.webContents.on('did-create-window', async (window) => {
+          const childWindow = new BrowserWindow({ parent: window });
+
+          await delay();
+          window.close();
+
+          childWindow.on('closed', () => {
+            expect(() => { BrowserWindow.getFocusedWindow(); }).to.not.throw();
+            done();
+          });
+        });
       });
 
       it('should not affect the show option', () => {

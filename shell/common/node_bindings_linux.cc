@@ -17,43 +17,6 @@ NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env)
   epoll_ctl(epoll_, EPOLL_CTL_ADD, backend_fd, &ev);
 }
 
-NodeBindingsLinux::~NodeBindingsLinux() = default;
-
-void NodeBindingsLinux::PrepareMessageLoop() {
-  int handle = uv_backend_fd(uv_loop_);
-
-  // If the backend fd hasn't changed, don't proceed.
-  if (handle == handle_)
-    return;
-
-  NodeBindings::PrepareMessageLoop();
-}
-
-void NodeBindingsLinux::RunMessageLoop() {
-  int handle = uv_backend_fd(uv_loop_);
-
-  // If the backend fd hasn't changed, don't proceed.
-  if (handle == handle_)
-    return;
-
-  handle_ = handle;
-
-  // Get notified when libuv's watcher queue changes.
-  uv_loop_->data = this;
-  uv_loop_->on_watcher_queue_updated = OnWatcherQueueChanged;
-
-  NodeBindings::RunMessageLoop();
-}
-
-// static
-void NodeBindingsLinux::OnWatcherQueueChanged(uv_loop_t* loop) {
-  NodeBindingsLinux* self = static_cast<NodeBindingsLinux*>(loop->data);
-
-  // We need to break the io polling in the epoll thread when loop's watcher
-  // queue changes, otherwise new events cannot be notified.
-  self->WakeupEmbedThread();
-}
-
 void NodeBindingsLinux::PollEvents() {
   int timeout = uv_backend_timeout(uv_loop_);
 

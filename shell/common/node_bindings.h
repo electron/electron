@@ -92,11 +92,11 @@ class NodeBindings {
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
 
-  // Prepare for message loop integration.
-  virtual void PrepareMessageLoop();
+  // Prepare embed thread for message loop integration.
+  void PrepareEmbedThread();
 
-  // Do message loop integration.
-  virtual void RunMessageLoop();
+  // Notify embed thread to start polling after environment is loaded.
+  void StartPolling();
 
   // Gets/sets the per isolate data.
   void set_isolate_data(node::IsolateData* isolate_data) {
@@ -143,6 +143,9 @@ class NodeBindings {
  private:
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);
+
+  // Indicates whether polling thread has been created.
+  bool initialized_ = false;
 
   // Whether the libuv loop has ended.
   bool embed_closed_ = false;

@@ -164,14 +164,14 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `maxWidth` Integer (optional) - Window's maximum width. Default is no limit.
   * `maxHeight` Integer (optional) - Window's maximum height. Default is no limit.
   * `resizable` boolean (optional) - Whether window is resizable. Default is `true`.
-  * `movable` boolean (optional) - Whether window is movable. This is not implemented
-    on Linux. Default is `true`.
-  * `minimizable` boolean (optional) - Whether window is minimizable. This is not
-    implemented on Linux. Default is `true`.
-  * `maximizable` boolean (optional) - Whether window is maximizable. This is not
-    implemented on Linux. Default is `true`.
-  * `closable` boolean (optional) - Whether window is closable. This is not implemented
-    on Linux. Default is `true`.
+  * `movable` boolean (optional) _macOS_ _Windows_ - Whether window is
+    movable. This is not implemented on Linux. Default is `true`.
+  * `minimizable` boolean (optional) _macOS_ _Windows_ - Whether window is
+    minimizable. This is not implemented on Linux. Default is `true`.
+  * `maximizable` boolean (optional) _macOS_ _Windows_ - Whether window is
+    maximizable. This is not implemented on Linux. Default is `true`.
+  * `closable` boolean (optional) _macOS_ _Windows_ - Whether window is
+    closable. This is not implemented on Linux. Default is `true`.
   * `focusable` boolean (optional) - Whether the window can be focused. Default is
     `true`. On Windows setting `focusable: false` also implies setting
     `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
@@ -185,7 +185,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `fullscreenable` boolean (optional) - Whether the window can be put into fullscreen
     mode. On macOS, also whether the maximize/zoom button should toggle full
     screen mode or maximize window. Default is `true`.
-  * `simpleFullscreen` boolean (optional) - Use pre-Lion fullscreen on macOS. Default is `false`.
+  * `simpleFullscreen` boolean (optional) _macOS_ - Use pre-Lion fullscreen on
+    macOS. Default is `false`.
   * `skipTaskbar` boolean (optional) _macOS_ _Windows_ - Whether to show the window in taskbar.
     Default is `false`.
   * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
@@ -201,27 +202,30 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
   * `modal` boolean (optional) - Whether this is a modal window. This only works when the
     window is a child window. Default is `false`.
-  * `acceptFirstMouse` boolean (optional) - Whether clicking an inactive window will also
-  click through to the web contents. Default is `false` on macOS. This option is not
-  configurable on other platforms.
+  * `acceptFirstMouse` boolean (optional) _macOS_ - Whether clicking an
+    inactive window will also click through to the web contents. Default is
+    `false` on macOS. This option is not configurable on other platforms.
   * `disableAutoHideCursor` boolean (optional) - Whether to hide cursor when typing.
     Default is `false`.
   * `autoHideMenuBar` boolean (optional) - Auto hide the menu bar unless the `Alt`
     key is pressed. Default is `false`.
-  * `enableLargerThanScreen` boolean (optional) - Enable the window to be resized larger
-    than screen. Only relevant for macOS, as other OSes allow
-    larger-than-screen windows by default. Default is `false`.
+  * `enableLargerThanScreen` boolean (optional) _macOS_ - Enable the window to
+    be resized larger than screen. Only relevant for macOS, as other OSes
+    allow larger-than-screen windows by default. Default is `false`.
   * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #AARRGGBB format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](browser-window.md#winsetbackgroundcolorbackgroundcolor) for more information.
   * `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
-  * `opacity` number (optional) - Set the initial opacity of the window, between 0.0 (fully
-    transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
+  * `opacity` number (optional) _macOS_ _Windows_ - Set the initial opacity of
+    the window, between 0.0 (fully transparent) and 1.0 (fully opaque). This
+    is only implemented on Windows and macOS.
   * `darkTheme` boolean (optional) - Forces using dark theme for the window, only works on
     some GTK+3 desktop environments. Default is `false`.
   * `transparent` boolean (optional) - Makes the window [transparent](../tutorial/window-customization.md#create-transparent-windows).
     Default is `false`. On Windows, does not work unless the window is frameless.
   * `type` string (optional) - The type of window, default is normal window. See more about
     this below.
-  * `visualEffectState` string (optional) - Specify how the material appearance should reflect window activity state on macOS. Must be used with the `vibrancy` property. Possible values are:
+  * `visualEffectState` string (optional) _macOS_ - Specify how the material
+    appearance should reflect window activity state on macOS. Must be used
+    with the `vibrancy` property. Possible values are:
     * `followWindow` - The backdrop should automatically appear active when the window is active, and inactive when it is not. This is the default.
     * `active` - The backdrop should always appear active.
     * `inactive` - The backdrop should always appear inactive.
@@ -229,36 +233,41 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     Default is `default`. Possible values are:
     * `default` - Results in the standard title bar for macOS or Windows respectively.
     * `hidden` - Results in a hidden title bar and a full size content window. On macOS, the window still has the standard window controls (“traffic lights”) in the top left. On Windows, when combined with `titleBarOverlay: true` it will activate the Window Controls Overlay (see `titleBarOverlay` for more information), otherwise no window controls will be shown.
-    * `hiddenInset` - Only on macOS, results in a hidden title bar with an alternative look
-      where the traffic light buttons are slightly more inset from the window edge.
-    * `customButtonsOnHover` - Only on macOS, results in a hidden title bar and a full size
-      content window, the traffic light buttons will display when being hovered
-      over in the top left of the window.  **Note:** This option is currently
-      experimental.
-  * `trafficLightPosition` [Point](structures/point.md) (optional) - Set a
-    custom position for the traffic light buttons in frameless windows.
-  * `roundedCorners` boolean (optional) - Whether frameless window should have
-    rounded corners on macOS. Default is `true`.
-  * `fullscreenWindowTitle` boolean (optional) _Deprecated_ - Shows the title in
-    the title bar in full screen mode on macOS for `hiddenInset` titleBarStyle.
-    Default is `false`.
+    * `hiddenInset` _macOS_ - Only on macOS, results in a hidden title bar
+      with an alternative look where the traffic light buttons are slightly
+      more inset from the window edge.
+    * `customButtonsOnHover` _macOS_ - Only on macOS, results in a hidden
+      title bar and a full size content window, the traffic light buttons will
+      display when being hovered over in the top left of the window.
+      **Note:** This option is currently experimental.
+  * `trafficLightPosition` [Point](structures/point.md) (optional) _macOS_ -
+    Set a custom position for the traffic light buttons in frameless windows.
+  * `roundedCorners` boolean (optional) _macOS_ - Whether frameless window
+    should have rounded corners on macOS. Default is `true`.
+  * `fullscreenWindowTitle` boolean (optional) _macOS_ _Deprecated_ - Shows
+    the title in the title bar in full screen mode on macOS for `hiddenInset`
+    titleBarStyle. Default is `false`.
   * `thickFrame` boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
     window shadow and window animations. Default is `true`.
-  * `vibrancy` string (optional) - Add a type of vibrancy effect to the window, only on
-    macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
-    `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. Please note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` are deprecated and have been removed in macOS Catalina (10.15).
-  * `zoomToPageWidth` boolean (optional) - Controls the behavior on macOS when
-    option-clicking the green stoplight button on the toolbar or by clicking the
-    Window > Zoom menu item. If `true`, the window will grow to the preferred
-    width of the web page when zoomed, `false` will cause it to zoom to the
-    width of the screen. This will also affect the behavior when calling
-    `maximize()` directly. Default is `false`.
-  * `tabbingIdentifier` string (optional) - Tab group name, allows opening the
-    window as a native tab on macOS 10.12+. Windows with the same tabbing
-    identifier will be grouped together. This also adds a native new tab button
-    to your window's tab bar and allows your `app` and window to receive the
-    `new-window-for-tab` event.
+  * `vibrancy` string (optional) _macOS_ - Add a type of vibrancy effect to
+    the window, only on macOS. Can be `appearance-based`, `light`, `dark`,
+    `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `medium-light`,
+    `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`,
+    `tooltip`, `content`, `under-window`, or `under-page`. Please note that
+    `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` are
+    deprecated and have been removed in macOS Catalina (10.15).
+  * `zoomToPageWidth` boolean (optional) _macOS_ - Controls the behavior on
+    macOS when option-clicking the green stoplight button on the toolbar or by
+    clicking the Window > Zoom menu item. If `true`, the window will grow to
+    the preferred width of the web page when zoomed, `false` will cause it to
+    zoom to the width of the screen. This will also affect the behavior when
+    calling `maximize()` directly. Default is `false`.
+  * `tabbingIdentifier` string (optional) _macOS_ - Tab group name, allows
+    opening the window as a native tab on macOS 10.12+. Windows with the same
+    tabbing identifier will be grouped together. This also adds a native new
+    tab button to your window's tab bar and allows your `app` and window to
+    receive the `new-window-for-tab` event.
   * `webPreferences` Object (optional) - Settings of web page's features.
     * `devTools` boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
     * `nodeIntegration` boolean (optional) - Whether node integration is enabled.
@@ -310,8 +319,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `plugins` boolean (optional) - Whether plugins should be enabled. Default is `false`.
     * `experimentalFeatures` boolean (optional) - Enables Chromium's experimental features.
       Default is `false`.
-    * `scrollBounce` boolean (optional) - Enables scroll bounce (rubber banding) effect on
-      macOS. Default is `false`.
+    * `scrollBounce` boolean (optional) _macOS_ - Enables scroll bounce
+      (rubber banding) effect on macOS. Default is `false`.
     * `enableBlinkFeatures` string (optional) - A list of feature strings separated by `,`, like
       `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
       strings can be found in the [RuntimeEnabledFeatures.json5][runtime-enabled-features]
@@ -774,7 +783,7 @@ A `boolean` property that determines whether the window is in fullscreen mode.
 
 A `boolean` property that determines whether the window is focusable.
 
-#### `win.visibleOnAllWorkspaces`
+#### `win.visibleOnAllWorkspaces` _macOS_ _Linux_
 
 A `boolean` property that determines whether the window is visible on all workspaces.
 
@@ -811,13 +820,13 @@ A `string` property that determines the title of the native window.
 
 **Note:** The title of the web page can be different from the title of the native window.
 
-#### `win.minimizable`
+#### `win.minimizable` _macOS_ _Windows_
 
 A `boolean` property that determines whether the window can be manually minimized by user.
 
 On Linux the setter is a no-op, although the getter returns `true`.
 
-#### `win.maximizable`
+#### `win.maximizable` _macOS_ _Windows_
 
 A `boolean` property that determines whether the window can be manually maximized by user.
 
@@ -832,13 +841,13 @@ maximizes the window.
 
 A `boolean` property that determines whether the window can be manually resized by user.
 
-#### `win.closable`
+#### `win.closable` _macOS_ _Windows_
 
 A `boolean` property that determines whether the window can be manually closed by user.
 
 On Linux the setter is a no-op, although the getter returns `true`.
 
-#### `win.movable`
+#### `win.movable` _macOS_ _Windows_
 
 A `boolean` property that determines Whether the window can be moved by user.
 
@@ -1635,7 +1644,7 @@ Changes window icon.
 
 Sets whether the window traffic light buttons should be visible.
 
-#### `win.setAutoHideMenuBar(hide)`
+#### `win.setAutoHideMenuBar(hide)` _Windows_ _Linux_
 
 * `hide` boolean
 
@@ -1644,7 +1653,7 @@ menu bar will only show when users press the single `Alt` key.
 
 If the menu bar is already visible, calling `setAutoHideMenuBar(true)` won't hide it immediately.
 
-#### `win.isMenuBarAutoHide()`
+#### `win.isMenuBarAutoHide()` _Windows_ _Linux_
 
 Returns `boolean` - Whether menu bar automatically hides itself.
 
@@ -1654,11 +1663,11 @@ Returns `boolean` - Whether menu bar automatically hides itself.
 
 Sets whether the menu bar should be visible. If the menu bar is auto-hide, users can still bring up the menu bar by pressing the single `Alt` key.
 
-#### `win.isMenuBarVisible()`
+#### `win.isMenuBarVisible()` _Windows_ _Linux_
 
 Returns `boolean` - Whether the menu bar is visible.
 
-#### `win.setVisibleOnAllWorkspaces(visible[, options])`
+#### `win.setVisibleOnAllWorkspaces(visible[, options])` _macOS_ _Linux_
 
 * `visible` boolean
 * `options` Object (optional)
@@ -1676,7 +1685,7 @@ Sets whether the window should be visible on all workspaces.
 
 **Note:** This API does nothing on Windows.
 
-#### `win.isVisibleOnAllWorkspaces()`
+#### `win.isVisibleOnAllWorkspaces()` _macOS_ _Linux_
 
 Returns `boolean` - Whether the window is visible on all workspaces.
 
