@@ -24,8 +24,8 @@
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 
 # Uncomment these lines to enable RDP
-#on_finish:
-#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+on_finish:
+ - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 version: 1.0.{build}
 build_cloud: electron-16-core
