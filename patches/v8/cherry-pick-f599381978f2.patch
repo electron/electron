@@ -1,7 +1,7 @@
-From f599381978f2f9463afdb154146ad210e89dad0a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
-Date: Mon, 04 Apr 2022 14:42:56 +0200
-Subject: [PATCH] [M96-LTS][runtime] Fix handling of interceptors, pt.3
+Date: Mon, 4 Apr 2022 14:42:56 +0200
+Subject: Fix handling of interceptors, pt.3
 
 ... in JSObject::DefineOwnPropertyIgnoreAttributes().
 Don't execute interceptor again if it declined to handle the operation.
@@ -20,13 +20,12 @@ Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Cr-Commit-Position: refs/branch-heads/9.6@{#56}
 Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
 Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
----
 
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 008036b..4b6d9c9 100644
+index e329cba144b271e2e35af67deb324bc7834e7a2a..91c4949b136ac74d55e4ce4cfb929aacd9828dcc 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -3352,13 +3352,24 @@
+@@ -3348,13 +3348,24 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
        // TODO(verwaest): JSProxy afterwards verify the attributes that the
        // JSProxy claims it has, and verifies that they are compatible. If not,
        // they throw. Here we should do the same.
@@ -54,10 +53,10 @@ index 008036b..4b6d9c9 100644
        case LookupIterator::ACCESSOR: {
          Handle<Object> accessors = it->GetAccessors();
 diff --git a/test/cctest/test-api-interceptors.cc b/test/cctest/test-api-interceptors.cc
-index 3ba70e4..d9c2683 100644
+index 475003f73c49b8e462ef1896f3fad97857e24574..393dd7192542d299dfa4fe332c5fcff2dff79903 100644
 --- a/test/cctest/test-api-interceptors.cc
 +++ b/test/cctest/test-api-interceptors.cc
-@@ -60,6 +60,16 @@
+@@ -60,6 +60,16 @@ void EmptyInterceptorDeleter(
  void EmptyInterceptorEnumerator(
      const v8::PropertyCallbackInfo<v8::Array>& info) {}
  
@@ -74,7 +73,7 @@ index 3ba70e4..d9c2683 100644
  void SimpleAccessorGetter(Local<String> name,
                            const v8::PropertyCallbackInfo<v8::Value>& info) {
    Local<Object> self = info.This().As<Object>();
-@@ -869,13 +879,17 @@
+@@ -869,13 +879,17 @@ THREADED_TEST(InterceptorHasOwnPropertyCausingGC) {
  namespace {
  
  void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
@@ -94,7 +93,7 @@ index 3ba70e4..d9c2683 100644
    LocalContext context;
    context->Global()
        ->Set(context.local(), v8_str("o"),
-@@ -885,9 +899,17 @@
+@@ -885,9 +899,17 @@ void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
    CHECK_EQ(expected, value->Int32Value(context.local()).FromJust());
  }
  
@@ -113,7 +112,7 @@ index 3ba70e4..d9c2683 100644
  }
  
  void InterceptorLoadICGetter(Local<Name> name,
-@@ -1581,6 +1603,38 @@
+@@ -1581,6 +1603,38 @@ THREADED_TEST(InterceptorStoreICWithSideEffectfulCallbacks) {
                       19);
  }
  
