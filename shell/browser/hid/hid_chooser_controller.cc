@@ -295,7 +295,6 @@ bool HidChooserController::DisplayDevice(
   }
 
   return FilterMatchesAny(device) && !IsExcluded(device);
-  ;
 }
 
 bool HidChooserController::FilterMatchesAny(
