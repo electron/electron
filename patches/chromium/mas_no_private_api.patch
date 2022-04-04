@@ -6,6 +6,33 @@ Subject: mas: avoid some private APIs
 Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
+diff --git a/base/process/process_info_mac.cc b/base/process/process_info_mac.cc
+index 368405f29313d51a6eee16517b634c6d0ea95281..2553a7fbf1e8b4dea796dec3b3e906d265d3ad76 100644
+--- a/base/process/process_info_mac.cc
++++ b/base/process/process_info_mac.cc
+@@ -5,18 +5,22 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ 
++#ifndef MAS_BUILD
+ extern "C" {
+ pid_t responsibility_get_pid_responsible_for_pid(pid_t)
+     API_AVAILABLE(macosx(10.12));
+ }
++#endif
+ 
+ namespace base {
+ 
+ bool IsProcessSelfResponsible() {
++#ifndef MAS_BUILD
+   if (__builtin_available(macOS 10.14, *)) {
+     const pid_t pid = getpid();
+     return responsibility_get_pid_responsible_for_pid(pid) == pid;
+   }
++#endif
+   return true;
+ }
+ 
 diff --git a/content/common/pseudonymization_salt.cc b/content/common/pseudonymization_salt.cc
 index 28e003bef910abff022def659fe18d4cd0549f8a..530bcbdb5d350f6486dc1e8536f7b279be69e241 100644
 --- a/content/common/pseudonymization_salt.cc
