@@ -166,7 +166,7 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/browser/print_manager_utils.h"
 #include "printing/backend/print_backend.h"  // nogncheck
-#include "printing/mojom/print.mojom.h"
+#include "printing/mojom/print.mojom.h"      // nogncheck
 #include "shell/browser/printing/print_preview_message_handler.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 
