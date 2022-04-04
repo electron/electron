@@ -1,0 +1,154 @@
+From f599381978f2f9463afdb154146ad210e89dad0a Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Mon, 04 Apr 2022 14:42:56 +0200
+Subject: [PATCH] [M96-LTS][runtime] Fix handling of interceptors, pt.3
+
+... in JSObject::DefineOwnPropertyIgnoreAttributes().
+Don't execute interceptor again if it declined to handle the operation.
+
+(cherry picked from commit c4e66b89b4ecd0e90b31e9e4ed08d38085a84c49)
+
+Bug: chromium:1311641
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: Ie9aef5a98959403f6a26e6bef7f4a77d312bd62a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3568921
+Reviewed-by: Lutz Vahl <vahl@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.6@{#56}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+---
+
+diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
+index 008036b..4b6d9c9 100644
+--- a/src/objects/js-objects.cc
++++ b/src/objects/js-objects.cc
+@@ -3352,13 +3352,24 @@
+       // TODO(verwaest): JSProxy afterwards verify the attributes that the
+       // JSProxy claims it has, and verifies that they are compatible. If not,
+       // they throw. Here we should do the same.
+-      case LookupIterator::INTERCEPTOR:
++      case LookupIterator::INTERCEPTOR: {
+         if (handling == DONT_FORCE_FIELD) {
+           Maybe<bool> result =
+               JSObject::SetPropertyWithInterceptor(it, should_throw, value);
+           if (result.IsNothing() || result.FromJust()) return result;
+         }
+-        break;
++
++        // The interceptor declined to handle the operation, so proceed defining
++        // own property without the interceptor.
++        Isolate* isolate = it->isolate();
++        Handle<Object> receiver = it->GetReceiver();
++        LookupIterator::Configuration c = LookupIterator::OWN_SKIP_INTERCEPTOR;
++        LookupIterator own_lookup =
++            it->IsElement() ? LookupIterator(isolate, receiver, it->index(), c)
++                            : LookupIterator(isolate, receiver, it->name(), c);
++        return JSObject::DefineOwnPropertyIgnoreAttributes(
++            &own_lookup, value, attributes, should_throw, handling);
++      }
+ 
+       case LookupIterator::ACCESSOR: {
+         Handle<Object> accessors = it->GetAccessors();
+diff --git a/test/cctest/test-api-interceptors.cc b/test/cctest/test-api-interceptors.cc
+index 3ba70e4..d9c2683 100644
+--- a/test/cctest/test-api-interceptors.cc
++++ b/test/cctest/test-api-interceptors.cc
+@@ -60,6 +60,16 @@
+ void EmptyInterceptorEnumerator(
+     const v8::PropertyCallbackInfo<v8::Array>& info) {}
+ 
++void EmptyInterceptorDefinerWithSideEffect(
++    Local<Name> name, const v8::PropertyDescriptor& desc,
++    const v8::PropertyCallbackInfo<v8::Value>& info) {
++  ApiTestFuzzer::Fuzz();
++  v8::Local<v8::Value> result = CompileRun("interceptor_definer_side_effect()");
++  if (!result->IsNull()) {
++    info.GetReturnValue().Set(result);
++  }
++}
++
+ void SimpleAccessorGetter(Local<String> name,
+                           const v8::PropertyCallbackInfo<v8::Value>& info) {
+   Local<Object> self = info.This().As<Object>();
+@@ -869,13 +879,17 @@
+ namespace {
+ 
+ void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
++                        v8::GenericNamedPropertySetterCallback setter,
+                         v8::GenericNamedPropertyQueryCallback query,
+-                        const char* source, int expected) {
++                        v8::GenericNamedPropertyDefinerCallback definer,
++                        v8::PropertyHandlerFlags flags, const char* source,
++                        int expected) {
+   v8::Isolate* isolate = CcTest::isolate();
+   v8::HandleScope scope(isolate);
+   v8::Local<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
+   templ->SetHandler(v8::NamedPropertyHandlerConfiguration(
+-      getter, nullptr, query, nullptr, nullptr, v8_str("data")));
++      getter, setter, query, nullptr /* deleter */, nullptr /* enumerator */,
++      definer, nullptr /* descriptor */, v8_str("data"), flags));
+   LocalContext context;
+   context->Global()
+       ->Set(context.local(), v8_str("o"),
+@@ -885,9 +899,17 @@
+   CHECK_EQ(expected, value->Int32Value(context.local()).FromJust());
+ }
+ 
++void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
++                        v8::GenericNamedPropertyQueryCallback query,
++                        const char* source, int expected) {
++  CheckInterceptorIC(getter, nullptr, query, nullptr,
++                     v8::PropertyHandlerFlags::kNone, source, expected);
++}
++
+ void CheckInterceptorLoadIC(v8::GenericNamedPropertyGetterCallback getter,
+                             const char* source, int expected) {
+-  CheckInterceptorIC(getter, nullptr, source, expected);
++  CheckInterceptorIC(getter, nullptr, nullptr, nullptr,
++                     v8::PropertyHandlerFlags::kNone, source, expected);
+ }
+ 
+ void InterceptorLoadICGetter(Local<Name> name,
+@@ -1581,6 +1603,38 @@
+                      19);
+ }
+ 
++THREADED_TEST(InterceptorDefineICWithSideEffectfulCallbacks) {
++  CheckInterceptorIC(EmptyInterceptorGetter, EmptyInterceptorSetter,
++                     EmptyInterceptorQuery,
++                     EmptyInterceptorDefinerWithSideEffect,
++                     v8::PropertyHandlerFlags::kNonMasking,
++                     "let inside_side_effect = false;"
++                     "let interceptor_definer_side_effect = function() {"
++                     "  if (!inside_side_effect) {"
++                     "    inside_side_effect = true;"
++                     "    o.y = 153;"
++                     "    inside_side_effect = false;"
++                     "  }"
++                     "  return null;"
++                     "};"
++                     "class Base {"
++                     "  constructor(arg) {"
++                     "    return arg;"
++                     "  }"
++                     "}"
++                     "class ClassWithField extends Base {"
++                     "  y = (() => {"
++                     "    return 42;"
++                     "  })();"
++                     "  constructor(arg) {"
++                     "    super(arg);"
++                     "  }"
++                     "}"
++                     "new ClassWithField(o);"
++                     "o.y",
++                     42);
++}
++
+ static void InterceptorStoreICSetter(
+     Local<Name> key, Local<Value> value,
+     const v8::PropertyCallbackInfo<v8::Value>& info) {
