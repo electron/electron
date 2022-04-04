@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index e5c84f91da05bb87952ada8607a734d387d9f75a..51662e5ba3609ca39ee79a4b730adcc480d91071 100644
+index bc4c88b824a604050b30cfc50e7eb36d82c43f33..51216ce2b16f7dc7c2762cdea0f4e37c43023a32 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6918,6 +6918,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6929,6 +6929,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index e5c84f91da05bb87952ada8607a734d387d9f75a..51662e5ba3609ca39ee79a4b730adcc4
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d9fb954ad59399d7e937c41d68dcaa624851a083..b595abc9dc0ecf550dd8b2904e417b3e2f1831e9 100644
+index 25f5b3615aac2f21ff4e27ceed9696082f943da6..ce249fc4183237edd0f57a5df7fe4316494d539b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3934,6 +3934,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -53,10 +53,10 @@ index d9fb954ad59399d7e937c41d68dcaa624851a083..b595abc9dc0ecf550dd8b2904e417b3e
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 037e4c688b2e4b877b23233d9b36bd3e745df250..f14e4b94881facc0424725961ed2ef2c6e844695 100644
+index 504063dbe3a05ea7f7fea728812855891fe9d8ce..ae3634a61e4b0582da12681d3fe130c0baf54667 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -555,6 +555,10 @@ struct CreateNewWindowParams {
+@@ -561,6 +561,10 @@ struct CreateNewWindowParams {
  
    // Governs how downloads are handled if `target_url` results in a download.
    blink.mojom.NavigationDownloadPolicy download_policy;

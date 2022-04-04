@@ -36,7 +36,7 @@ diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
 index 2ff5b977457dca803de5a104dc2d8c528ac78f61..b818564e97e1a77cc769d9b5fcbe9f8b5a5435ce 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4524,7 +4524,7 @@ static_library("browser") {
+@@ -4529,7 +4529,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 2ff5b977457dca803de5a104dc2d8c528ac78f61..b818564e97e1a77cc769d9b5fcbe9f8b
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index ff64a68292d44dcb95f6c47203541bba19b5489e..c07c40e09a64967a2af5f76449a1ba2016d27270 100644
+index 1ec0c40436ced97e830411ce352b601f9723718a..ad2eccbabd1fcdbf4a9b3f5c95ecc6fcbbbf5f40 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5969,7 +5969,6 @@ test("unit_tests") {
+@@ -5984,7 +5984,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index ff64a68292d44dcb95f6c47203541bba19b5489e..c07c40e09a64967a2af5f76449a1ba20
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/browser:chrome_process_finder",
-@@ -5992,6 +5991,10 @@ test("unit_tests") {
+@@ -6007,6 +6006,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index ff64a68292d44dcb95f6c47203541bba19b5489e..c07c40e09a64967a2af5f76449a1ba20
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6683,7 +6686,6 @@ test("unit_tests") {
+@@ -6698,7 +6701,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index ff64a68292d44dcb95f6c47203541bba19b5489e..c07c40e09a64967a2af5f76449a1ba20
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6731,6 +6733,11 @@ test("unit_tests") {
+@@ -6746,6 +6748,11 @@ test("unit_tests") {
      if (is_chromeos) {
        deps += [ "//ui/chromeos" ]
      }
