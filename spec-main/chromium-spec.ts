@@ -1450,7 +1450,8 @@ describe('chromium features', () => {
       await ensurePdfLoaded(w.webContents);
     });
 
-    it('renders a PDF', async () => {
+    // TODO(nornagon): enable this test on win/linux
+    ifit(process.platform === 'darwin')('renders a PDF', async () => {
       const w = new BrowserWindow({ show: false, width: 1000, height: 1000 });
 
       w.loadURL(redPdfSource);
