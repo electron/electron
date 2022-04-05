@@ -79,14 +79,14 @@
     "generate-version-json": "node script/generate-version-json.js",
     "lint": "node ./script/lint.js && npm run lint:clang-format && npm run lint:docs",
     "lint:js": "node ./script/lint.js --js",
-    "lint:clang-format": "python script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
+    "lint:clang-format": "python3 script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:clang-tidy": "ts-node ./script/run-clang-tidy.ts",
     "lint:cpp": "node ./script/lint.js --cc",
     "lint:objc": "node ./script/lint.js --objc",
     "lint:py": "node ./script/lint.js --py",
     "lint:gn": "node ./script/lint.js --gn",
     "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links && npm run lint:markdownlint",
-    "lint:docs-relative-links": "python ./script/check-relative-doc-links.py",
+    "lint:docs-relative-links": "python3 ./script/check-relative-doc-links.py",
     "lint:markdownlint": "markdownlint \"*.md\" \"docs/**/*.md\"",
     "lint:js-in-markdown": "standard-markdown docs",
     "create-api-json": "electron-docs-parser --dir=./",
@@ -117,7 +117,7 @@
       "ts-node script/gen-filenames.ts"
     ],
     "*.{cc,mm,c,h}": [
-      "python script/run-clang-format.py -r -c --fix"
+      "python3 script/run-clang-format.py -r -c --fix"
     ],
     "*.md": [
       "npm run lint:docs"
