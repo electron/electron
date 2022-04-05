@@ -25,7 +25,7 @@
 
 version: 1.0.{build}
 build_cloud: electron-16-core
-image: vs2019bt-16.6.2
+image: vs2019bt-16.16.11
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   ELECTRON_OUT_DIR: Default
