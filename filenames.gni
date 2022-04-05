@@ -105,6 +105,8 @@ filenames = {
     "shell/browser/ui/win/notify_icon.h",
     "shell/browser/ui/win/taskbar_host.cc",
     "shell/browser/ui/win/taskbar_host.h",
+    "shell/browser/win/dark_mode.cc",
+    "shell/browser/win/dark_mode.h",
     "shell/browser/win/scoped_hstring.cc",
     "shell/browser/win/scoped_hstring.h",
     "shell/common/api/electron_api_native_image_win.cc",
