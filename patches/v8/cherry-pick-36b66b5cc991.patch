@@ -1,7 +1,7 @@
-From 36b66b5cc99147edc594a69f4b94f7828fc94750 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
-Date: Fri, 01 Apr 2022 17:41:24 +0200
-Subject: [PATCH] Merged: [runtime] Fix handling of interceptors, pt.3
+Date: Fri, 1 Apr 2022 17:41:24 +0200
+Subject: Merged: [runtime] Fix handling of interceptors, pt.3
 
 ... in JSObject::DefineOwnPropertyIgnoreAttributes().
 Don't execute interceptor again if it declined to handle the operation.
@@ -15,13 +15,12 @@ Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.0@{#16}
 Cr-Branched-From: 6ea73a738c467dc26abbbe84e27a36aac1c6e119-refs/heads/10.0.139@{#1}
 Cr-Branched-From: ccc689011280419901e6ee42cae39980c0e96030-refs/heads/main@{#79131}
----
 
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index b68ab7c..f3dc3ff 100644
+index 1df13df72c29f804168ab1f57117650922378a07..d823bba604936c1c99b4e3aea694afc8fa267d83 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -3456,9 +3456,18 @@
+@@ -3451,9 +3451,18 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
            if (can_define.IsNothing() || !can_define.FromJust()) {
              return can_define;
            }
@@ -43,10 +42,10 @@ index b68ab7c..f3dc3ff 100644
  
        case LookupIterator::ACCESSOR: {
 diff --git a/test/cctest/test-api-interceptors.cc b/test/cctest/test-api-interceptors.cc
-index 909795e..7eb96a5 100644
+index 909795ece407ac2089f15e562d308733371fbb65..7eb96a54f77519a8b968d40fab4d01070e0ed179 100644
 --- a/test/cctest/test-api-interceptors.cc
 +++ b/test/cctest/test-api-interceptors.cc
-@@ -60,6 +60,16 @@
+@@ -60,6 +60,16 @@ void EmptyInterceptorDeleter(
  void EmptyInterceptorEnumerator(
      const v8::PropertyCallbackInfo<v8::Array>& info) {}
  
@@ -63,7 +62,7 @@ index 909795e..7eb96a5 100644
  void SimpleAccessorGetter(Local<String> name,
                            const v8::PropertyCallbackInfo<v8::Value>& info) {
    Local<Object> self = info.This().As<Object>();
-@@ -869,13 +879,17 @@
+@@ -869,13 +879,17 @@ THREADED_TEST(InterceptorHasOwnPropertyCausingGC) {
  namespace {
  
  void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
@@ -83,7 +82,7 @@ index 909795e..7eb96a5 100644
    LocalContext context;
    context->Global()
        ->Set(context.local(), v8_str("o"),
-@@ -885,9 +899,17 @@
+@@ -885,9 +899,17 @@ void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
    CHECK_EQ(expected, value->Int32Value(context.local()).FromJust());
  }
  
@@ -102,7 +101,7 @@ index 909795e..7eb96a5 100644
  }
  
  void InterceptorLoadICGetter(Local<Name> name,
-@@ -1581,6 +1603,38 @@
+@@ -1581,6 +1603,38 @@ THREADED_TEST(InterceptorStoreICWithSideEffectfulCallbacks) {
                       19);
  }
  
