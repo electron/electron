@@ -123,7 +123,7 @@
     ],
     "*.{gn,gni}": [
       "npm run gn-check",
-      "python script/run-gn-format.py"
+      "python3 script/run-gn-format.py"
     ],
     "*.py": [
       "node script/lint.js --py --fix --only --"
