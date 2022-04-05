@@ -145,4 +145,16 @@
   </message>
   <message name="IDS_HID_CHOOSER_ITEM_WITHOUT_NAME" desc="User option displaying the device IDs for a Human Interface Device (HID) without a device name.">
         Unknown Device (<ph name="DEVICE_ID">$1<ex>1234:abcd</ex></ph>) </message>
+  <if expr="is_win">
+    <then>
+      <message name="IDS_AX_UNLABELED_IMAGE_ROLE_DESCRIPTION" desc="Accessibility role description for a graphic (image) on a web page or PDF that does not have a description for blind users." is_accessibility_with_no_ui="true">
+        Unlabeled graphic
+      </message>
+    </then>
+    <else>
+      <message name="IDS_AX_UNLABELED_IMAGE_ROLE_DESCRIPTION" desc="Accessibility role description for an image on a web page or PDF that does not have a description for blind users." is_accessibility_with_no_ui="true">
+        Unlabeled image
+      </message>
+    </else>
+  </if>
 </grit-part>
