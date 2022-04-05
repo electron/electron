@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nico Weber <thakis@chromium.org>
+Date: Thu, 24 Feb 2022 18:15:16 +0000
+Subject: Revert "[motionmark] Avoid unnecessary IPC on mac."
+
+This reverts
+https://chromium-review.googlesource.com/c/chromium/src/+/2923689
+
+It caused us to never hit 120 Hz on ProMotion displays. Revert until
+we can figure out a fix.
+
+Bug: 1274172
+Change-Id: Ia09bb0fdaf63509e08755346844dc58b59d8bb6a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3488608
+Commit-Queue: Nico Weber <thakis@chromium.org>
+Auto-Submit: Nico Weber <thakis@chromium.org>
+Reviewed-by: Sadrul Chowdhury <sadrul@chromium.org>
+Commit-Queue: Sadrul Chowdhury <sadrul@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#974729}
+
+diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
+index 6efcb84af529a78e9ebc1234ef4d0c8834270c29..94bef837cb6b4c2ac379f6cab6fdcc8599c7e0c2 100644
+--- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
++++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
+@@ -510,13 +510,10 @@ base::ScopedClosureRunner RootCompositorFrameSinkImpl::GetCacheBackBufferCb() {
+ 
+ void RootCompositorFrameSinkImpl::DisplayDidReceiveCALayerParams(
+     const gfx::CALayerParams& ca_layer_params) {
+-  if (last_ca_layer_params_ == ca_layer_params)
+-    return;
+ #if defined(OS_APPLE)
+   // If |ca_layer_params| should have content only when there exists a client
+   // to send it to.
+   DCHECK(ca_layer_params.is_empty || display_client_);
+-  last_ca_layer_params_ = ca_layer_params;
+   if (display_client_)
+     display_client_->OnDisplayReceivedCALayerParams(ca_layer_params);
+ #else
+diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.h b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.h
+index cd3ed5baba3198d4f827cebf7ba89a5fefdf7087..ddb31074f8dbdbf88e4a1126f414b1afbdd589db 100644
+--- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.h
++++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.h
+@@ -193,8 +193,6 @@ class VIZ_SERVICE_EXPORT RootCompositorFrameSinkImpl
+   gfx::Size last_swap_pixel_size_;
+ #endif
+ 
+-  gfx::CALayerParams last_ca_layer_params_;
+-
+ #if defined(OS_ANDROID)
+   // Let client control whether it wants `DidCompleteSwapWithSize`.
+   bool enable_swap_competion_callback_ = false;
+diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
+index ba5767a80d13e848b7281f55307f6569a1524ce3..dcee2ec9de0e759b868b0de2c7106b2cf084c41c 100644
+--- a/ui/gfx/ca_layer_params.h
++++ b/ui/gfx/ca_layer_params.h
+@@ -26,16 +26,6 @@ struct GFX_EXPORT CALayerParams {
+   CALayerParams& operator=(const CALayerParams& params);
+   ~CALayerParams();
+ 
+-  bool operator==(const CALayerParams& params) const {
+-    return is_empty == params.is_empty &&
+-           ca_context_id == params.ca_context_id &&
+-#if defined(OS_MAC)
+-           io_surface_mach_port == params.io_surface_mach_port &&
+-#endif
+-           pixel_size == params.pixel_size &&
+-           scale_factor == params.scale_factor;
+-  }
+-
+   // The |is_empty| flag is used to short-circuit code to handle CALayerParams
+   // on non-macOS platforms.
+   bool is_empty = true;
