@@ -6,6 +6,7 @@
 
 #include "base/win/windows_version.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
 #include "ui/base/win/hwnd_metrics.h"

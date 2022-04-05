@@ -55,7 +55,7 @@ bool IsPictureInPictureEnabled() {
 }
 
 bool IsWindowsImmersiveDarkModeEnabled() {
-  return electron::fuses::IsWindowsImmersiveDarkModeEnabled()
+  return electron::fuses::IsWindowsImmersiveDarkModeEnabled();
 }
 
 bool IsComponentBuild() {
