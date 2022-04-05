@@ -31,7 +31,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
-#include "electron/grit/electron_resources.h"
+#include "chrome/grit/generated_resources.h"
 #include "net/base/filename_util.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/api/electron_api_web_contents.h"

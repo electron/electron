@@ -16,7 +16,7 @@
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/device_service.h"
-#include "electron/grit/electron_resources.h"
+#include "chrome/grit/generated_resources.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
 #include "shell/browser/web_contents_permission_helper.h"

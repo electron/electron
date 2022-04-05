@@ -23,7 +23,7 @@
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/notification_source.h"
 #include "electron/buildflags/buildflags.h"
-#include "electron/grit/electron_resources.h"
+#include "chrome/grit/browser_resources.h"
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/info_map.h"
