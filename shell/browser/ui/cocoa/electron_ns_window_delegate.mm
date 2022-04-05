@@ -75,7 +75,7 @@ using FullScreenTransitionState =
 
   // Get preferred width from observers. Usually the page width.
   int preferred_width = 0;
-  shell_->NotifyWindowRequestPreferredWith(&preferred_width);
+  shell_->NotifyWindowRequestPreferredWidth(&preferred_width);
 
   // Never shrink from the current size on zoom.
   NSRect window_frame = [window frame];
