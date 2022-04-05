@@ -251,7 +251,8 @@ std::string OpenExternalOnWorkerThread(
           ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
                         working_dir.empty() ? nullptr : working_dir.c_str(),
                         SW_SHOWNORMAL)) <= 32) {
-    return "Failed to open";
+    return "Failed to open: " +
+           logging::SystemErrorCodeToString(logging::GetLastSystemErrorCode());
   }
   return "";
 }
