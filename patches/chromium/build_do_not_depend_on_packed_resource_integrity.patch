@@ -33,7 +33,7 @@ index ff2e479125f1a6d7cbb52e4f674cb836d4f6596c..f334b0b4fd4a6550c3b2baba870c5997
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 5745028b36c8654a3e90295e7d9d7f2beaceb326..a9feabb67c21a3d2491b1fa589e48b8329b10a2c 100644
+index 39c2f3f41ea24bc989a2fd9f341966721f34b300..714f52916491cf8191af29dba2e8ac45eec7c5b8 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4535,7 +4535,7 @@ static_library("browser") {
