@@ -165,11 +165,11 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/browser/print_manager_utils.h"
-#include "printing/page_range.h"
+#include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 #include "printing/backend/print_backend.h"  // nogncheck
 #include "printing/mojom/print.mojom.h"      // nogncheck
+#include "printing/page_range.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
-#include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
@@ -615,8 +615,9 @@ printing::mojom::PrintParamsPtr GetPrintParams() {
   params->dpi = gfx::Size(72, 72);
   params->document_cookie = 1234;
   params->pages_per_sheet = 4;
-  params->printed_doc_type = printing::IsOopifEnabled() ? printing::mojom::SkiaDocumentType::kMSKP
-                                              : printing::mojom::SkiaDocumentType::kPDF;
+  params->printed_doc_type = printing::IsOopifEnabled()
+                                 ? printing::mojom::SkiaDocumentType::kMSKP
+                                 : printing::mojom::SkiaDocumentType::kPDF;
   return params;
 }
 
@@ -2825,7 +2826,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* manager = print_to_pdf::PdfPrintManager::FromWebContents(web_contents());
+  auto* manager =
+      print_to_pdf::PdfPrintManager::FromWebContents(web_contents());
   if (!manager) {
     promise.RejectWithErrorMessage("Failed to find print manager");
     return handle;
@@ -2837,19 +2839,30 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
   params->params = printing::mojom::PrintParams::New();
   params->params = GetPrintParams();
 
-  manager->PrintToPdf(
-          web_contents()->GetMainFrame(), "-", false,
-          std::move(params),
-          base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(), std::move(promise)));
+  manager->PrintToPdf(web_contents()->GetMainFrame(), "-", false,
+                      std::move(params),
+                      base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
+                                     std::move(promise)));
 
   return handle;
 }
 
 void WebContents::OnPDFCreated(
-  gin_helper::Promise<v8::Local<v8::Value>> promise,
-  print_to_pdf::PdfPrintManager::PrintResult print_result,
-  scoped_refptr<base::RefCountedMemory> data) {
-  LOG(INFO) << "WebContents::OnPDFCreated";
+    gin_helper::Promise<v8::Local<v8::Value>> promise,
+    print_to_pdf::PdfPrintManager::PrintResult print_result,
+    scoped_refptr<base::RefCountedMemory> data) {
+  v8::Isolate* isolate = promise.isolate();
+  gin_helper::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(
+      v8::Local<v8::Context>::New(isolate, promise.GetContext()));
+
+  v8::Local<v8::Value> buffer =
+      node::Buffer::Copy(isolate, reinterpret_cast<const char*>(data->front()),
+                         data->size())
+          .ToLocalChecked();
+
+  promise.Resolve(buffer);
 }
 #endif
 
