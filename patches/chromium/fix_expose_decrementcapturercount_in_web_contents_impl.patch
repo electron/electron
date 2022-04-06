@@ -21,7 +21,7 @@ index 3716c929e9aa5ffc38e01d888cbc04e298305be6..e1eb7efec3ac61556815d141d618ef6d
    // Calculates the PageVisibilityState for |visibility|, taking the capturing
    // state into account.
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index d159f44dc855fee799f7b97b59a2a4e64631e7b4..b583fb7ff191d5dfce4b8fee5f06e074b3a6ea4f 100644
+index 2f14f906b51ce73a69cd780d70ad6264285138ac..b14695646fe75d213b4affa60a6d775ce2474238 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -673,6 +673,10 @@ class WebContents : public PageNavigator,
