@@ -69,7 +69,7 @@ index 650c78f16c812170aeda99d75300ff88f47347a0..c33ce445a23f97a744db3a4ac30ef471
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index b11b8f34cf7e252a8d22e167d6555f3aa432e5c4..a5950a9d4c823e3df145c365bb499c0163fe3e77 100644
+index b11b8f34cf7e252a8d22e167d6555f3aa432e5c4..3a42aa2a6cde698a75349e573a34b1328fc9c11c 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,7 +20,6 @@
@@ -84,7 +84,7 @@ index b11b8f34cf7e252a8d22e167d6555f3aa432e5c4..a5950a9d4c823e3df145c365bb499c01
  #include "content/public/browser/global_routing_id.h"
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/browser/web_contents.h"
-+#include "electron/grit/electron_resources.h"
++#include "chrome/grit/generated_resources.h"
  #include "printing/backend/print_backend.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/mojom/print.mojom.h"
@@ -127,7 +127,7 @@ index 56232bf979e90a01bb580c0a1972ae0860d994e9..96e05b5cd4b556a6ddb41664b5ff999b
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 2eb81c133b94fd237e4eaa60472c08515fd6d01e..abd7e5e5832919cbd06b3b337f54d79d284a4247 100644
+index 2eb81c133b94fd237e4eaa60472c08515fd6d01e..e641ba582e01bc02b6f3d6f28cfcd91a89f5489f 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,10 +30,10 @@
@@ -147,7 +147,7 @@ index 2eb81c133b94fd237e4eaa60472c08515fd6d01e..abd7e5e5832919cbd06b3b337f54d79d
  #include "content/public/browser/render_process_host.h"
  #include "content/public/browser/render_view_host.h"
  #include "content/public/browser/web_contents.h"
-+#include "electron/grit/electron_resources.h"
++#include "chrome/grit/generated_resources.h"
  #include "mojo/public/cpp/system/buffer.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/metafile_skia.h"
