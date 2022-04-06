@@ -24,6 +24,9 @@
   <message name="IDS_DEFAULT_PRINT_DOCUMENT_TITLE" desc="Default title for a print document">
     Untitled Document
   </message>
+  <message name="IDS_UTILITY_PROCESS_PRINT_BACKEND_SERVICE_NAME" desc="The name of the utility process used for backend interactions with printer drivers.">
+    Print Backend Service
+  </message>
 
   <!-- Desktop Capturer API -->
   <message name="IDS_DESKTOP_MEDIA_PICKER_SINGLE_SCREEN_NAME" desc="Name for screens in the desktop media picker UI when there is only one monitor.">
