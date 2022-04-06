@@ -351,6 +351,7 @@ source_set("electron_lib") {
     "shell/common/api:mojo",
     "//base:base_static",
     "//base/allocator:buildflags",
+    "//chrome:strings",
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
     "//components/autofill/core/common:features",
