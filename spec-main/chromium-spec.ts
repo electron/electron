@@ -1450,18 +1450,38 @@ describe('chromium features', () => {
       await ensurePdfLoaded(w.webContents);
     });
 
-    // TODO(nornagon): enable this test on win/linux
-    ifit(process.platform === 'darwin')('renders a PDF', async () => {
-      const w = new BrowserWindow({ show: false, width: 1000, height: 1000 });
+    it('renders a PDF', async () => {
+      const w = new BrowserWindow({ show: true, width: 600, height: 600 });
 
       w.loadURL(redPdfSource);
       await ensurePdfLoaded(w.webContents);
-      const image = await w.webContents.capturePage();
-      const bitmap = image.getBitmap();
-      const middleB = bitmap[(500 * 1000 + 500) * 4];
-      const middleG = bitmap[(500 * 1000 + 500) * 4 + 1];
-      const middleR = bitmap[(500 * 1000 + 500) * 4 + 2];
-      expect({ r: middleR, g: middleG, b: middleB }).to.deep.equal({ r: 255, g: 0, b: 0 });
+      // Try a few times to allow rendering to settle.
+      const numRetries = 100;
+      for (let i = 1; i <= numRetries; i++) {
+        const image = await w.webContents.capturePage();
+        const bitmap = image.getBitmap();
+
+        // Compensate for high-dpi displays.
+        const { width, height } = image.getSize();
+        const [windowWidth, windowHeight] = w.getContentSize();
+        const x = (445 * width / windowWidth) | 0;
+        const y = (145 * height / windowHeight) | 0;
+        const color = {
+          b: bitmap[(y * 1000 + x) * 4],
+          g: bitmap[(y * 1000 + x) * 4 + 1],
+          r: bitmap[(y * 1000 + x) * 4 + 2]
+        };
+        try {
+          expect(color).to.deep.equal({ r: 255, g: 0, b: 0 });
+        } catch (e) {
+          if (i < numRetries) {
+            await delay(100);
+            continue;
+          }
+          throw e;
+        }
+        break;
+      }
     });
 
     it('opens when loading a pdf resource in a iframe', async () => {
