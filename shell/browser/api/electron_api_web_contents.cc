@@ -2851,6 +2851,11 @@ void WebContents::OnPDFCreated(
     gin_helper::Promise<v8::Local<v8::Value>> promise,
     print_to_pdf::PdfPrintManager::PrintResult print_result,
     scoped_refptr<base::RefCountedMemory> data) {
+  if (print_result != print_to_pdf::PdfPrintManager::PRINT_SUCCESS) {
+    promise.RejectWithErrorMessage("Failed to generate PDF");
+    return;
+  }
+
   v8::Isolate* isolate = promise.isolate();
   gin_helper::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
