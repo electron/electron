@@ -84,7 +84,7 @@ that contains the user information dictionary sent along with the notification.
 
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
-* `event` string
+* `event` string | null
 * `callback` Function
   * `event` string
   * `userInfo` Record<string, unknown>
@@ -111,7 +111,7 @@ example values of `event` are:
 
 ### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
 
-* `event` string
+* `event` string | null
 * `callback` Function
   * `event` string
   * `userInfo` Record<string, unknown>
@@ -124,7 +124,7 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 
 ### `systemPreferences.subscribeWorkspaceNotification(event, callback)` _macOS_
 
-* `event` string
+* `event` string | null
 * `callback` Function
   * `event` string
   * `userInfo` Record<string, unknown>
