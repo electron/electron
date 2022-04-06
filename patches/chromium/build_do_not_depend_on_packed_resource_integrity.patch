@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 0cf38ad237727254c77472f73d82d6f65fe14bde..83d9746bd6f5b4b9a87d2e9ee185e0e8a8300490 100644
+index f2c4feac76e96575de3627b7e8f2373b4fb30411..f5fa6b21594c97a08d1aefd790a4846d9b3e1a45 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -171,11 +171,16 @@ if (!is_android && !is_mac) {
@@ -46,10 +46,10 @@ index 492cd8e11e28e0b427aca227665295a3052af765..760d2171c5083820fbbf66ce5d7d3c80
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 768da31eb760ed382465f65bf34589f7e8dd794d..be82ce60faebd0846d65334110e7a92fe239b6d6 100644
+index 028d269850e66db444591cda7005a0f8434193e9..cc0d14cd9798c6bbee80581c95eb8281ce7fb6ba 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5721,7 +5721,6 @@ test("unit_tests") {
+@@ -5722,7 +5722,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 768da31eb760ed382465f65bf34589f7e8dd794d..be82ce60faebd0846d65334110e7a92f
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/browser:chrome_process_finder",
-@@ -5744,6 +5743,10 @@ test("unit_tests") {
+@@ -5745,6 +5744,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 768da31eb760ed382465f65bf34589f7e8dd794d..be82ce60faebd0846d65334110e7a92f
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6437,7 +6440,6 @@ test("unit_tests") {
+@@ -6438,7 +6441,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 768da31eb760ed382465f65bf34589f7e8dd794d..be82ce60faebd0846d65334110e7a92f
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6482,6 +6484,11 @@ test("unit_tests") {
+@@ -6483,6 +6485,11 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
