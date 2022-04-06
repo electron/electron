@@ -29,7 +29,7 @@ Style](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/stylegui
 [clang-format](clang-format.md) to format the C++ code automatically. There is
 also a script `script/cpplint.py` to check whether all files conform.
 
-The Python version we are using now is Python 2.7.
+The Python version we are using now is Python 3.9.
 
 The C++ code uses a lot of Chromium's abstractions and types, so it's
 recommended to get acquainted with them. A good place to start is
