@@ -116,6 +116,39 @@ describe('systemPreferences module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('systemPreferences.subscribeNotification(event, callback)', () => {
+    it('throws an error if invalid arguments are passed', () => {
+      const badArgs = [123, {}, ['hi', 'bye'], new Date()];
+      for (const bad of badArgs) {
+        expect(() => {
+          systemPreferences.subscribeNotification(bad as any, () => {});
+        }).to.throw('Must pass null or a string');
+      }
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.subscribeLocalNotification(event, callback)', () => {
+    it('throws an error if invalid arguments are passed', () => {
+      const badArgs = [123, {}, ['hi', 'bye'], new Date()];
+      for (const bad of badArgs) {
+        expect(() => {
+          systemPreferences.subscribeNotification(bad as any, () => {});
+        }).to.throw('Must pass null or a string');
+      }
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('systemPreferences.subscribeWorkspaceNotification(event, callback)', () => {
+    it('throws an error if invalid arguments are passed', () => {
+      const badArgs = [123, {}, ['hi', 'bye'], new Date()];
+      for (const bad of badArgs) {
+        expect(() => {
+          systemPreferences.subscribeWorkspaceNotification(bad as any, () => {});
+        }).to.throw('Must pass null or a string');
+      }
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('systemPreferences.getSystemColor(color)', () => {
     it('throws on invalid system colors', () => {
       const color = 'bad-color';
