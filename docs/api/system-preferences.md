@@ -109,6 +109,8 @@ example values of `event` are:
 * `AppleColorPreferencesChangedNotification`
 * `AppleShowScrollBarsSettingChanged`
 
+If `event` is null, the `NSDistributedNotificationCenter` doesn’t use it as criteria for delivery to the observer. See [docs](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname?language=objc)  for more information.
+
 ### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
 
 * `event` string | null
@@ -122,6 +124,8 @@ Returns `number` - The ID of this subscription
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
 This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 
+If `event` is null, the `NSNotificationCenter` doesn’t use it as criteria for delivery to the observer. See [docs](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname?language=objc) for more information.
+
 ### `systemPreferences.subscribeWorkspaceNotification(event, callback)` _macOS_
 
 * `event` string | null
@@ -134,6 +138,8 @@ Returns `number` - The ID of this subscription
 
 Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
 This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
+
+If `event` is null, the `NSWorkspaceNotificationCenter` doesn’t use it as criteria for delivery to the observer. See [docs](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname?language=objc) for more information.
 
 ### `systemPreferences.unsubscribeNotification(id)` _macOS_
 
