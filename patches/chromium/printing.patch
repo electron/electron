@@ -10,6 +10,19 @@ majority of changes originally come from these PRs:
 
 This patch also fixes callback for manual user cancellation and success.
 
+diff --git a/chrome/browser/printing/print_backend_service_manager.cc b/chrome/browser/printing/print_backend_service_manager.cc
+index 7df299afaa8c243b2aa913c8b5daa67efb18ebd2..feacf7ef13ebc1053702d5cb9e56955d397b7da9 100644
+--- a/chrome/browser/printing/print_backend_service_manager.cc
++++ b/chrome/browser/printing/print_backend_service_manager.cc
+@@ -18,7 +18,7 @@
+ #include "base/unguessable_token.h"
+ #include "build/build_config.h"
+ #include "chrome/browser/browser_process.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "chrome/services/printing/public/mojom/print_backend_service.mojom.h"
+ #include "components/crash/core/common/crash_keys.h"
+ #include "content/public/browser/browser_thread.h"
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
 index 8d40bbf98d4d58704f118cb42039b0956a9f6639..06196c0fa02012a5faa82471bd39fac087918f54 100644
 --- a/chrome/browser/printing/print_job.cc
