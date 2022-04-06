@@ -631,12 +631,12 @@ Returns `string` - The current application directory.
 
 * `name` string - You can request the following paths by the name:
   * `home` User's home directory.
-  * `appData` Per-user application data directory, which by default points to:
+  * `userData` Per-user application data directory, which by default points to:
     * `%APPDATA%` on Windows
     * `$XDG_CONFIG_HOME` or `~/.config` on Linux
     * `~/Library/Application Support` on macOS
-  * `userData` The directory for storing your app's configuration files, which by
-    default it is the `appData` directory appended with your app's name.
+  * `appData` The directory for storing your app's configuration files, which by
+    default it is the `userData` directory appended with your app's name.
   * `temp` Temporary directory.
   * `exe` The current executable file.
   * `module` The `libchromiumcontent` library.
