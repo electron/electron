@@ -165,10 +165,11 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/browser/print_manager_utils.h"
+#include "printing/page_range.h"
 #include "printing/backend/print_backend.h"  // nogncheck
 #include "printing/mojom/print.mojom.h"      // nogncheck
-#include "shell/browser/printing/print_preview_message_handler.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
+#include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
@@ -606,6 +607,19 @@ void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
       ->SetContentBackgroundColor(color);
 }
 
+printing::mojom::PrintParamsPtr GetPrintParams() {
+  auto params = printing::mojom::PrintParams::New();
+  params->page_size = gfx::Size(612, 792);
+  params->content_size = gfx::Size(540, 720);
+  params->printable_area = gfx::Rect(612, 792);
+  params->dpi = gfx::Size(72, 72);
+  params->document_cookie = 1234;
+  params->pages_per_sheet = 4;
+  params->printed_doc_type = printing::IsOopifEnabled() ? printing::mojom::SkiaDocumentType::kMSKP
+                                              : printing::mojom::SkiaDocumentType::kPDF;
+  return params;
+}
+
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -919,7 +933,7 @@ void WebContents::InitWithWebContents(
   web_contents->SetDelegate(this);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  PrintPreviewMessageHandler::CreateForWebContents(web_contents.get());
+  print_to_pdf::PdfPrintManager::CreateForWebContents(web_contents.get());
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
   printing::CreateCompositeClientIfNeeded(web_contents.get(),
                                           browser_context->GetUserAgent());
@@ -2810,9 +2824,32 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
-  PrintPreviewMessageHandler::FromWebContents(web_contents())
-      ->PrintToPDF(std::move(settings), std::move(promise));
+
+  auto* manager = print_to_pdf::PdfPrintManager::FromWebContents(web_contents());
+  if (!manager) {
+    promise.RejectWithErrorMessage("Failed to find print manager");
+    return handle;
+  }
+
+  auto params = printing::mojom::PrintPagesParams::New();
+  printing::PageRanges ranges;
+  params->pages = printing::PageRange::GetPages(ranges);
+  params->params = printing::mojom::PrintParams::New();
+  params->params = GetPrintParams();
+
+  manager->PrintToPdf(
+          web_contents()->GetMainFrame(), "-", false,
+          std::move(params),
+          base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(), std::move(promise)));
+
   return handle;
+}
+
+void WebContents::OnPDFCreated(
+  gin_helper::Promise<v8::Local<v8::Value>> promise,
+  print_to_pdf::PdfPrintManager::PrintResult print_result,
+  scoped_refptr<base::RefCountedMemory> data) {
+  LOG(INFO) << "WebContents::OnPDFCreated";
 }
 #endif
 

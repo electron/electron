@@ -47,8 +47,8 @@
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "shell/browser/printing/print_preview_message_handler.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
+#include "components/printing/browser/print_to_pdf/pdf_print_manager.h"
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -95,6 +95,10 @@ class OffScreenWebContentsView;
 #endif
 
 namespace api {
+
+using PrintToPDFCallback =
+    base::OnceCallback<void(print_to_pdf::PdfPrintManager::PrintResult,
+                            scoped_refptr<base::RefCountedMemory>)>;
 
 using DevicePermissionMap = std::map<
     int,
@@ -232,6 +236,10 @@ class WebContents : public ExclusiveAccessContext,
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
+  void OnPDFCreated(
+    gin_helper::Promise<v8::Local<v8::Value>> promise,
+    print_to_pdf::PdfPrintManager::PrintResult print_result,
+    scoped_refptr<base::RefCountedMemory> data);
 #endif
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
