@@ -608,17 +608,42 @@ void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
       ->SetContentBackgroundColor(color);
 }
 
-printing::mojom::PrintParamsPtr GetPrintParams() {
+printing::mojom::PrintParamsPtr GetPrintParamsFromSettings(
+    const base::Value& settings) {
   auto params = printing::mojom::PrintParams::New();
+
   params->page_size = gfx::Size(612, 792);
   params->content_size = gfx::Size(540, 720);
   params->printable_area = gfx::Rect(612, 792);
   params->dpi = gfx::Size(72, 72);
   params->document_cookie = 1234;
-  params->pages_per_sheet = 4;
-  params->printed_doc_type = printing::IsOopifEnabled()
-                                 ? printing::mojom::SkiaDocumentType::kMSKP
-                                 : printing::mojom::SkiaDocumentType::kPDF;
+  params->printed_doc_type = printing::mojom::SkiaDocumentType::kPDF;
+
+  auto should_print_backgrounds =
+      settings.GetDict().FindBool("shouldPrintBackgrounds");
+  params->should_print_backgrounds = should_print_backgrounds.value_or(false);
+
+  auto pages_per_sheet = settings.GetDict().FindInt("pagesPerSheet");
+  params->pages_per_sheet = pages_per_sheet.value_or(1);
+
+  auto scale_factor = settings.GetDict().FindDouble("scaleFactor");
+  params->scale_factor = scale_factor.value_or(1.0);
+
+  auto print_selection_only = settings.GetDict().FindBool("printSelectionOnly");
+  params->selection_only = print_selection_only.value_or(false);
+
+  const base::Value::Dict* header_footer =
+      settings.GetDict().FindDict("headerFooter");
+  if (header_footer) {
+    params->display_header_footer = true;
+
+    auto* title = header_footer->FindString("title");
+    params->title = base::UTF8ToUTF16(*title);
+
+    auto* url = header_footer->FindString("url");
+    params->url = base::UTF8ToUTF16(*url);
+  }
+
   return params;
 }
 
@@ -2821,13 +2846,12 @@ void WebContents::Print(gin::Arguments* args) {
                      std::move(callback), device_name, silent));
 }
 
-v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
+v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* manager =
-      PrintViewManagerElectron::FromWebContents(web_contents());
+  auto* manager = PrintViewManagerElectron::FromWebContents(web_contents());
   if (!manager) {
     promise.RejectWithErrorMessage("Failed to find print manager");
     return handle;
@@ -2837,9 +2861,9 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
   printing::PageRanges ranges;
   params->pages = printing::PageRange::GetPages(ranges);
   params->params = printing::mojom::PrintParams::New();
-  params->params = GetPrintParams();
+  params->params = GetPrintParamsFromSettings(std::move(settings));
 
-  manager->PrintToPdf(web_contents()->GetMainFrame(), "-", false,
+  manager->PrintToPdf(web_contents()->GetMainFrame(), "", false,
                       std::move(params),
                       base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
                                      std::move(promise)));
@@ -2851,8 +2875,10 @@ void WebContents::OnPDFCreated(
     gin_helper::Promise<v8::Local<v8::Value>> promise,
     PrintViewManagerElectron::PrintResult print_result,
     scoped_refptr<base::RefCountedMemory> data) {
-  if (print_result !=  PrintViewManagerElectron::PrintResult::PRINT_SUCCESS) {
-    promise.RejectWithErrorMessage("Failed to generate PDF");
+  if (print_result != PrintViewManagerElectron::PrintResult::PRINT_SUCCESS) {
+    promise.RejectWithErrorMessage(
+        "Failed to generate PDF: " +
+        PrintViewManagerElectron::PrintResultToString(print_result));
     return;
   }
 
