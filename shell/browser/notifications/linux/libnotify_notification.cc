@@ -16,7 +16,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 
 namespace electron {
 
