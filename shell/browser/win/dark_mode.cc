@@ -32,6 +32,11 @@ HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
       return result;
   }
 
+  // Toggle the nonclient area active state to force a redraw
+  HWND activeWindow = GetActiveWindow();
+  SendMessage(hWnd, WM_NCACTIVATE, hWnd != activeWindow, 0);
+  SendMessage(hWnd, WM_NCACTIVATE, hWnd == activeWindow, 0);
+
   return S_OK;
 }
 
