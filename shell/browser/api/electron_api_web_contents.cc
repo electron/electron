@@ -25,6 +25,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/printing/print_view_manager_base.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
@@ -934,7 +935,6 @@ void WebContents::InitWithWebContents(
   web_contents->SetDelegate(this);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  print_to_pdf::PdfPrintManager::CreateForWebContents(web_contents.get());
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
   printing::CreateCompositeClientIfNeeded(web_contents.get(),
                                           browser_context->GetUserAgent());
@@ -2602,7 +2602,7 @@ bool WebContents::IsCurrentlyAudible() {
 #if BUILDFLAG(ENABLE_PRINTING)
 void WebContents::OnGetDefaultPrinter(
     base::Value::Dict print_settings,
-    printing::CompletionCallback print_callback,
+    PrintingCompletionCallback print_callback,
     std::u16string device_name,
     bool silent,
     // <error, default_printer>
@@ -2658,7 +2658,7 @@ void WebContents::Print(gin::Arguments* args) {
     return;
   }
 
-  printing::CompletionCallback callback;
+  PrintingCompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError("webContents.print(): Invalid optional callback provided.");
@@ -2827,7 +2827,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* manager =
-      print_to_pdf::PdfPrintManager::FromWebContents(web_contents());
+      PrintViewManagerElectron::FromWebContents(web_contents());
   if (!manager) {
     promise.RejectWithErrorMessage("Failed to find print manager");
     return handle;
@@ -2849,9 +2849,9 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(base::DictionaryValue settings) {
 
 void WebContents::OnPDFCreated(
     gin_helper::Promise<v8::Local<v8::Value>> promise,
-    print_to_pdf::PdfPrintManager::PrintResult print_result,
+    PrintViewManagerElectron::PrintResult print_result,
     scoped_refptr<base::RefCountedMemory> data) {
-  if (print_result != print_to_pdf::PdfPrintManager::PRINT_SUCCESS) {
+  if (print_result !=  PrintViewManagerElectron::PrintResult::PRINT_SUCCESS) {
     promise.RejectWithErrorMessage("Failed to generate PDF");
     return;
   }
