@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brian Ryner <bryner@google.com>
+Date: Thu, 14 Oct 2021 21:15:11 +0000
+Subject: Use numpy 1.2x.supported.1 for vpython
+
+Use a special version of numpy to auto select version based on platform.
+
+Bug: 1295840
+Change-Id: Ic3943a2c022cd4de9d39d9b84d2af55873373e76
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3459767
+Auto-Submit: Chenlin Fan <fancl@chromium.org>
+Reviewed-by: Brian Ryner <bryner@google.com>
+Reviewed-by: Robbie Iannucci <iannucci@chromium.org>
+Commit-Queue: Chenlin Fan <fancl@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#971577}
+
+diff --git a/.vpython3 b/.vpython3
+index 7ce6dc723da1dee4e64971d7c7556560ad86928a..78a87bd28d3c76ac44b4eff15ff8b07551582db8 100644
+--- a/.vpython3
++++ b/.vpython3
+@@ -58,7 +58,7 @@ wheel: <
+ # Chromium tests using Telemetry function properly.
+ wheel: <
+   name: "infra/python/wheels/numpy/${vpython_platform}"
+-  version: "version:1.20.3"
++  version: "version:1.2x.supported.1"
+ >
+ wheel: <
+   name: "infra/python/wheels/psutil/${vpython_platform}"
