@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 7 Apr 2022 11:07:10 +0200
+Subject: fix: preserve "proper method names" as-is in error.stack
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/3565724.
+
+This patch can be removed when Node.js updates to V8 10.2.60 or higher,
+which includes the above CL.
+
+The above CL removes prepended Function. and Object. from
+stack traces, and so we need to remove them from the comparison output.
+
+diff --git a/test/message/source_map_throw_icu.out b/test/message/source_map_throw_icu.out
+index 78482d73ddf0376de2443321c426fc6c84a1c29a..c5f699f80a9be862772ae5af8884d85bec72ebe3 100644
+--- a/test/message/source_map_throw_icu.out
++++ b/test/message/source_map_throw_icu.out
+@@ -6,9 +6,9 @@ Error: an error
+     at *icu.jsx:3:23*
+     at *icu.jsx:9:5*
+     at Module._compile (node:internal/modules/cjs/loader:*
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*
++    at Module._extensions..js (node:internal/modules/cjs/loader:*
+     at Module.load (node:internal/modules/cjs/loader:*
+-    at Function.Module._load (node:internal/modules/cjs/loader:*
++    at Module._load (node:internal/modules/cjs/loader:*
+     at Module.require (node:internal/modules/cjs/loader:*
+     at require (node:internal/modules/cjs/helpers:*
+     at Object.<anonymous> (*source_map_throw_icu.js:*
