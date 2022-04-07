@@ -150,6 +150,12 @@ build_script:
         if ($LASTEXITCODE -ne 0) {
           Write-warning "Failed to add third_party\angle\.git; continuing anyway"
         }
+        # build time generation of file dawn/common/Version_autogen.h depends on third_party/dawn/.git/HEAD
+        # https://dawn-review.googlesource.com/c/dawn/+/83901        
+        $(7z a $zipfile src\third_party\dawn\.git)
+        if ($LASTEXITCODE -ne 0) {
+          Write-warning "Failed to add third_party\dawn\.git; continuing anyway"
+        }
       }
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
