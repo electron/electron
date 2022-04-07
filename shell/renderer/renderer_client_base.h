@@ -112,6 +112,9 @@ class RendererClientBase : public content::ContentRendererClient
                                  const GURL& original_url,
                                  const std::string& mime_type) override;
   bool IsOriginIsolatedPepperPlugin(const base::FilePath& plugin_path) override;
+  v8::Local<v8::Object> GetScriptableObject(
+      const blink::WebElement& plugin_element,
+      v8::Isolate* isolate) override;
 
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;

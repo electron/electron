@@ -298,12 +298,16 @@ static_library("chrome") {
 
     if (enable_pdf_viewer) {
       sources += [
+        "//chrome/browser/pdf/chrome_pdf_stream_delegate.cc",
+        "//chrome/browser/pdf/chrome_pdf_stream_delegate.h",
         "//chrome/browser/pdf/pdf_extension_util.cc",
         "//chrome/browser/pdf/pdf_extension_util.h",
         "//chrome/browser/pdf/pdf_frame_util.cc",
         "//chrome/browser/pdf/pdf_frame_util.h",
         "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
         "//chrome/renderer/pepper/chrome_pdf_print_client.h",
+        "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
+        "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]
     }
   }

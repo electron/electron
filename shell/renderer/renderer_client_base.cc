@@ -12,7 +12,10 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
+#include "chrome/common/pdf_util.h"
 #include "components/network_hints/renderer/web_prescient_networking_impl.h"
+#include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
+#include "components/pdf/renderer/pdf_internal_plugin_delegate.h"
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
@@ -311,14 +314,47 @@ void RendererClientBase::DidClearWindowObject(
   render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
 }
 
+class ChromePdfInternalPluginDelegate final
+    : public pdf::PdfInternalPluginDelegate {
+ public:
+  ChromePdfInternalPluginDelegate() = default;
+  ChromePdfInternalPluginDelegate(const ChromePdfInternalPluginDelegate&) =
+      delete;
+  ChromePdfInternalPluginDelegate& operator=(
+      const ChromePdfInternalPluginDelegate&) = delete;
+  ~ChromePdfInternalPluginDelegate() override = default;
+
+  // `pdf::PdfInternalPluginDelegate`:
+  bool IsAllowedOrigin(const url::Origin& origin) const override {
+    return origin.scheme() == extensions::kExtensionScheme &&
+           origin.host() == extension_misc::kPdfExtensionId;
+  }
+};
+
 bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
-  if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-      params.mime_type.Utf8() == kPdfPluginMimeType ||
+  if (params.mime_type.Utf8() == kPdfPluginMimeType) {
+    
+    content::WebPluginInfo info;
+    info.type = content::WebPluginInfo::PLUGIN_TYPE_PEPPER_OUT_OF_PROCESS;
+    const char16_t kPDFExtensionPluginName[] = u"Chromium PDF Viewer";
+    info.name = kPDFExtensionPluginName;
+    info.path = base::FilePath::FromUTF8Unsafe("internal-pdf-viewer");
+    info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
+    info.mime_types.emplace_back("application/x-google-chrome-pdf", "pdf",
+                                 "Portable Document Format");
+    *plugin = pdf::CreateInternalPlugin(
+        info, std::move(params), render_frame,
+        std::make_unique<ChromePdfInternalPluginDelegate>());
+    return true;
+  }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+  if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
+      params.mime_type.Utf8() == kPdfPluginMimeType ||
       render_frame->GetBlinkPreferences().enable_plugins)
     return false;
 
@@ -355,6 +391,27 @@ bool RendererClientBase::IsPluginHandledExternally(
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   DCHECK(plugin_element.HasHTMLTagName("object") ||
          plugin_element.HasHTMLTagName("embed"));
+  if (mime_type == "application/x-google-chrome-pdf") {
+    if (IsPdfInternalPluginAllowedOrigin(
+            render_frame->GetWebFrame()->GetSecurityOrigin())) {
+      return true;
+    }
+
+    content::WebPluginInfo info;
+    info.type = content::WebPluginInfo::PLUGIN_TYPE_PEPPER_OUT_OF_PROCESS;
+    const char16_t kPDFExtensionPluginName[] = u"Chromium PDF Viewer";
+    info.name = kPDFExtensionPluginName;
+    info.path = base::FilePath::FromUTF8Unsafe("internal-pdf-viewer");
+    info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
+    info.mime_types.emplace_back("application/x-google-chrome-pdf", "pdf",
+                                 "Portable Document Format");
+    return extensions::MimeHandlerViewContainerManager::Get(
+               content::RenderFrame::FromWebFrame(
+                   plugin_element.GetDocument().GetFrame()),
+               true /* create_if_does_not_exist */)
+        ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
+  }
+
   // TODO(nornagon): this info should be shared with the data in
   // electron_content_client.cc / ComputeBuiltInPlugins.
   content::WebPluginInfo info;
@@ -379,6 +436,21 @@ bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
   // Isolate all Pepper plugins, including the PDF plugin.
   return true;
+}
+
+v8::Local<v8::Object> RendererClientBase::GetScriptableObject(
+    const blink::WebElement& plugin_element,
+    v8::Isolate* isolate) {
+  // If there is a MimeHandlerView that can provide the scriptable object then
+  // MaybeCreateMimeHandlerView must have been called before and a container
+  // manager should exist.
+  auto* container_manager = extensions::MimeHandlerViewContainerManager::Get(
+      content::RenderFrame::FromWebFrame(
+          plugin_element.GetDocument().GetFrame()),
+      false /* create_if_does_not_exist */);
+  if (container_manager)
+    return container_manager->GetScriptableObject(plugin_element, isolate);
+  return v8::Local<v8::Object>();
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>
