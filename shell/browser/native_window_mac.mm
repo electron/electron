@@ -555,15 +555,6 @@ void NativeWindowMac::Hide() {
     return;
   }
 
-  // Hide all children of the current window before hiding the window.
-  // components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-  // expects this when window visibility changes.
-  if ([window_ childWindows]) {
-    for (NSWindow* child in [window_ childWindows]) {
-      [child orderOut:nil];
-    }
-  }
-
   // Detach the window from the parent before.
   if (parent())
     InternalSetParentWindow(parent(), false);
