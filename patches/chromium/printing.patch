@@ -809,7 +809,7 @@ index cd26f9ecf888c2a321890edd378ee0f8843a7f6c..958794f95fe8830b7e494340fbd53b0e
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index aacb466db20c0a317dba16301231e84b26a427d5..43e081ae292d7145d5366d2b3606a8ca91c7d0d1 100644
+index c4cdb402bc0aaa25b9118bad33a84b7f04cc94c4..8022f3599ec38d614272cde3109a7be2d9b2840e 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -120,7 +120,6 @@ mojom::ResultCode PrintingContext::UsePdfSettings() {

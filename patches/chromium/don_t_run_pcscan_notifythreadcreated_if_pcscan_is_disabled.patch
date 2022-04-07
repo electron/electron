@@ -49,10 +49,10 @@ index d51b37c8a2df11f71fa6056193100d00883db43d..b44002788cf4d4f5d754dd35dd193be2
  #endif
  
 diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thread_win.cc
-index c965c9764ad38a8b52b727ca98fe41f00ab6707d..7d44c4e63b2b4ccf595b5e2a0212fb6c4eb2b5bd 100644
+index 8542c0d0d49511298cca800a59796b1e4271a3d8..1d0eeff5800f2ccf3f1fb6b1356c8cd067cfd945 100644
 --- a/base/threading/platform_thread_win.cc
 +++ b/base/threading/platform_thread_win.cc
-@@ -29,6 +29,7 @@
+@@ -30,6 +30,7 @@
  #include <windows.h>
  
  #if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
@@ -60,7 +60,7 @@ index c965c9764ad38a8b52b727ca98fe41f00ab6707d..7d44c4e63b2b4ccf595b5e2a0212fb6c
  #include "base/allocator/partition_allocator/starscan/pcscan.h"
  #include "base/allocator/partition_allocator/starscan/stack/stack.h"
  #endif
-@@ -105,7 +106,7 @@ DWORD __stdcall ThreadFunc(void* params) {
+@@ -113,7 +114,7 @@ DWORD __stdcall ThreadFunc(void* params) {
                                  FALSE,
                                  DUPLICATE_SAME_ACCESS);
  
@@ -69,7 +69,7 @@ index c965c9764ad38a8b52b727ca98fe41f00ab6707d..7d44c4e63b2b4ccf595b5e2a0212fb6c
    internal::PCScan::NotifyThreadCreated(internal::GetStackPointer());
  #endif
  
-@@ -125,7 +126,7 @@ DWORD __stdcall ThreadFunc(void* params) {
+@@ -133,7 +134,7 @@ DWORD __stdcall ThreadFunc(void* params) {
                                                     PlatformThread::CurrentId());
    }
  
