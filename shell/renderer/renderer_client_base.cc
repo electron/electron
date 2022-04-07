@@ -337,7 +337,6 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (params.mime_type.Utf8() == kPdfPluginMimeType) {
-    
     content::WebPluginInfo info;
     info.type = content::WebPluginInfo::PLUGIN_TYPE_PEPPER_OUT_OF_PROCESS;
     const char16_t kPDFExtensionPluginName[] = u"Chromium PDF Viewer";
