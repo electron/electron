@@ -47,7 +47,6 @@
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "components/printing/browser/print_to_pdf/pdf_print_manager.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
