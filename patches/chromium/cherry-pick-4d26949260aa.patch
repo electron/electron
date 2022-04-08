@@ -1,7 +1,7 @@
-From 4d26949260aa9961ee5f3154b6290e1e72495063 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yutaka Hirano <yhirano@chromium.org>
-Date: Fri, 04 Feb 2022 10:16:05 +0000
-Subject: [PATCH] Don't interpret informational response body as HTTP/0.9 response
+Date: Fri, 4 Feb 2022 10:16:05 +0000
+Subject: Don't interpret informational response body as HTTP/0.9 response
 
 An informational (1xx) response with body can be interpreted as an
 informational response followed by an HTTP/0.9 response. It is confusing
@@ -15,13 +15,12 @@ Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
 Reviewed-by: Mike West <mkwst@chromium.org>
 Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#967169}
----
 
 diff --git a/net/http/http_stream_parser.cc b/net/http/http_stream_parser.cc
-index a5f7bb1..aaa22ac 100644
+index 8fe9a4e507aa5b081af4b48fe80ee38275dee84e..8ec7bbc1ed065b84afd22a4223e2359344876c47 100644
 --- a/net/http/http_stream_parser.cc
 +++ b/net/http/http_stream_parser.cc
-@@ -1014,15 +1014,23 @@
+@@ -1013,15 +1013,23 @@ int HttpStreamParser::ParseResponseHeaders(int end_offset) {
          base::StringPiece(read_buf_->StartOfBuffer(), end_offset));
      if (!headers)
        return net::ERR_INVALID_HTTP_RESPONSE;
@@ -48,10 +47,10 @@ index a5f7bb1..aaa22ac 100644
        // on HTTP/0.9 on weird ports to work.
        // See
 diff --git a/net/http/http_stream_parser.h b/net/http/http_stream_parser.h
-index 508b5296..0c0619b 100644
+index 6141af9a4d3500e7821f1b43ef536bc130eaf9f0..064bde38a206722f39aa035f2fabb86cdfc1a23f 100644
 --- a/net/http/http_stream_parser.h
 +++ b/net/http/http_stream_parser.h
-@@ -275,6 +275,11 @@
+@@ -275,6 +275,11 @@ class NET_EXPORT_PRIVATE HttpStreamParser {
    // True if reading a keep-alive response. False if not, or if don't yet know.
    bool response_is_keep_alive_;
  
@@ -64,10 +63,10 @@ index 508b5296..0c0619b 100644
    int64_t response_body_read_;
  
 diff --git a/net/http/http_stream_parser_unittest.cc b/net/http/http_stream_parser_unittest.cc
-index 3a394e62..e25b785 100644
+index 3a394e629874d8ffff6eec02609e6009571a6733..e25b78539dfec4b27e6ddf2052967cab91141770 100644
 --- a/net/http/http_stream_parser_unittest.cc
 +++ b/net/http/http_stream_parser_unittest.cc
-@@ -1399,6 +1399,25 @@
+@@ -1399,6 +1399,25 @@ TEST(HttpStreamParser, Http09PortTests) {
    }
  }
  
@@ -95,7 +94,7 @@ index 3a394e62..e25b785 100644
        "HTTP/1.1 200 OK\r\n"
 diff --git a/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any-expected.txt b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any-expected.txt
 new file mode 100644
-index 0000000..6ac06836
+index 0000000000000000000000000000000000000000..6ac068363a83816939013bbde88a7584aca4f307
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any-expected.txt
 @@ -0,0 +1,7 @@
@@ -108,7 +107,7 @@ index 0000000..6ac06836
 +
 diff --git a/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.js b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.js
 new file mode 100644
-index 0000000..df4dafc
+index 0000000000000000000000000000000000000000..df4dafcd80b38af93b688dcb318cfaf1978a939f
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.js
 @@ -0,0 +1,28 @@
@@ -142,7 +141,7 @@ index 0000000..df4dafc
 +}, 'Status(199) should be ignored.');
 diff --git a/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.worker-expected.txt b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.worker-expected.txt
 new file mode 100644
-index 0000000..6ac06836
+index 0000000000000000000000000000000000000000..6ac068363a83816939013bbde88a7584aca4f307
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.worker-expected.txt
 @@ -0,0 +1,7 @@
