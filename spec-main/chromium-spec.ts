@@ -1996,4 +1996,44 @@ describe('navigator.hid', () => {
       expect(device).to.equal('');
     }
   });
+
+  it('returns excludes a device when a exclusionFilter is specified', async () => {
+    const exclusionFilters = <any>[];
+    let haveDevices = false;
+    let checkForExcludedDevice = false;
+
+    w.webContents.session.on('select-hid-device', (event, details, callback) => {
+      if (details.deviceList.length > 0) {
+        details.deviceList.find((device) => {
+          if (device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '') {
+            console.log('device is: ', device);
+            if (checkForExcludedDevice) {
+              const compareDevice = {
+                vendorId: device.vendorId,
+                productId: device.productId
+              };
+              expect(compareDevice).to.not.equal(exclusionFilters[0], 'excluded device should not be returned');
+            } else {
+              haveDevices = true;
+              exclusionFilters.push({
+                vendorId: device.vendorId,
+                productId: device.productId
+              });
+              return true;
+            }
+          }
+        });
+      }
+      callback();
+    });
+
+    await getDevices();
+    if (haveDevices) {
+      // We have devices to exclude, so check if exculsionFilters work
+      checkForExcludedDevice = true;
+      await w.webContents.executeJavaScript(`
+        navigator.hid.requestDevice({filters: [], exclusionFilters: ${JSON.stringify(exclusionFilters)}}).then(device => device.toString()).catch(err => err.toString());
+      `, true);
+    }
+  });
 });
