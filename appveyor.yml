@@ -176,17 +176,15 @@ build_script:
   - 7z a node_headers.zip out\Default\gen\node_headers
   - ps: >-
       # Temporarily disable symbol generation on 32-bit Windows due to failures  
-      if (($env:GN_CONFIG -eq 'release') -And ($env:TARGET_ARCH -ne 'ia32')) {
+      if ($env:GN_CONFIG -eq 'release' -And $env:TARGET_ARCH -ne 'ia32') {
         # Needed for msdia140.dll on 64-bit windows
         $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
         ninja -C out/Default electron:electron_symbols
       }
   - ps: >-
-      if ($env:GN_CONFIG -eq 'release') {
-        if ($env:TARGET_ARCH -ne 'ia32') {
-          python electron\script\zip-symbols.py
-          appveyor-retry appveyor PushArtifact out/Default/symbols.zip
-        }
+      if ($env:GN_CONFIG -eq 'release' -And $env:TARGET_ARCH -ne 'ia32') {
+        python electron\script\zip-symbols.py
+        appveyor-retry appveyor PushArtifact out/Default/symbols.zip
       } else {
         # It's useful to have pdb files when debugging testing builds that are
         # built on CI.
