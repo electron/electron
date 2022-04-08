@@ -11,6 +11,294 @@ which includes the above CL.
 The above CL removes prepended Function. and Object. from
 stack traces, and so we need to remove them from the comparison output.
 
+diff --git a/test/message/async_error_nexttick_main.out b/test/message/async_error_nexttick_main.out
+index 8d11dea63d4191d4e492d42cad499e9e6f277bd4..9669e9b5102ff9ce8dfffbc45dadc60dab578458 100644
+--- a/test/message/async_error_nexttick_main.out
++++ b/test/message/async_error_nexttick_main.out
+@@ -1,7 +1,7 @@
+ Error: test
+     at one (*fixtures*async-error.js:4:9)
+     at two (*fixtures*async-error.js:17:9)
+-    at processTicksAndRejections (node:internal/process/task_queues:*:*)
++    at process.processTicksAndRejections (node:internal/process/task_queues:*:*)
+     at async three (*fixtures*async-error.js:20:3)
+     at async four (*fixtures*async-error.js:24:3)
+     at async main (*message*async_error_nexttick_main.js:7:5)
+diff --git a/test/message/core_line_numbers.out b/test/message/core_line_numbers.out
+index 97b017f66e2395ca90fc7562b9043579911ddc62..1d21462c8cf63ddbbf9e3b785b553a3104710132 100644
+--- a/test/message/core_line_numbers.out
++++ b/test/message/core_line_numbers.out
+@@ -7,8 +7,8 @@ RangeError: Invalid input
+     at Object.decode (node:punycode:*:*)
+     at Object.<anonymous> (*test*message*core_line_numbers.js:*:*)
+     at Module._compile (node:internal/modules/cjs/loader:*:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+     at Module.load (node:internal/modules/cjs/loader:*:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+     at node:internal/main/run_main_module:*:*
+diff --git a/test/message/error_aggregateTwoErrors.out b/test/message/error_aggregateTwoErrors.out
+index d1dc13eacc303cc52003bd5820e7eeec8d48822b..5f1f75a42f16b495bdb7141b094ce2ded61d5218 100644
+--- a/test/message/error_aggregateTwoErrors.out
++++ b/test/message/error_aggregateTwoErrors.out
+@@ -4,9 +4,9 @@ throw aggregateTwoErrors(err, originalError);
+ AggregateError: original
+     at Object.<anonymous> (*test*message*error_aggregateTwoErrors.js:*:*)
+     at Module._compile (node:internal/modules/cjs/loader:*:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions.js (node:internal/modules/cjs/loader:*:*)
+     at Module.load (node:internal/modules/cjs/loader:*:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+     at node:internal/main/run_main_module:*:* {
+   code: 'ERR0'
+diff --git a/test/message/error_exit.out b/test/message/error_exit.out
+index 2ef95b535dafe7b0a918b8d6a844e4c4a617818d..dc5e6e7d28cef3a23ca7ba2cfb1435cad55e2aeb 100644
+--- a/test/message/error_exit.out
++++ b/test/message/error_exit.out
+@@ -9,9 +9,9 @@ AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+ 
+     at Object.<anonymous> (*test*message*error_exit.js:*:*)
+     at Module._compile (node:internal/modules/cjs/loader:*:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+     at Module.load (node:internal/modules/cjs/loader:*:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+     at node:internal/main/run_main_module:*:* {
+   generatedMessage: true,
+diff --git a/test/message/error_with_nul.out b/test/message/error_with_nul.out
+index 7fbb33f08e8dc342b9efc899e66f5e3350e9489b..a359999420fa76bd09b401a732acb7dcdfaa2198 100644
+GIT binary patch
+delta 13
+VcmdnUvXEuMi;3^+Czmts0st)*2A2Q;
+
+delta 31
+ncmZ3;vXN!N3wHmctkmQZy@@aCIo(S0l1no4^YkXCGwuQa$o~w9
+
+diff --git a/test/message/events_unhandled_error_common_trace.out b/test/message/events_unhandled_error_common_trace.out
+index 19e89869ba74fae3f447e299904939da5a683280..2bdbe3df1b4c7e13ba33f099ae89f88365e6b690 100644
+--- a/test/message/events_unhandled_error_common_trace.out
++++ b/test/message/events_unhandled_error_common_trace.out
+@@ -7,9 +7,9 @@ Error: foo:bar
+     at foo (*events_unhandled_error_common_trace.js:*:*)
+     at Object.<anonymous> (*events_unhandled_error_common_trace.js:*:*)
+     at Module._compile (node:internal/modules/cjs/loader:*:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+     at Module.load (node:internal/modules/cjs/loader:*:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+     at node:internal/main/run_main_module:*:*
+ Emitted 'error' event at:
+diff --git a/test/message/events_unhandled_error_nexttick.out b/test/message/events_unhandled_error_nexttick.out
+index 3e0d4697504e49eaae5ce1807a3794cccbcd6eec..87bb2fbb91a66e6dde9dfc61427682cba90f529c 100644
+--- a/test/message/events_unhandled_error_nexttick.out
++++ b/test/message/events_unhandled_error_nexttick.out
+@@ -5,11 +5,11 @@ node:events:*
+ Error
+     at Object.<anonymous> (*events_unhandled_error_nexttick.js:*:*)
+     at Module._compile (node:internal/modules/cjs/loader:*:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+     at Module.load (node:internal/modules/cjs/loader:*:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+     at node:internal/main/run_main_module:*:*
+ Emitted 'error' event at:
+     at *events_unhandled_error_nexttick.js:*:*
+-    at processTicksAndRejections (node:internal/process/task_queues:*:*)
++    at process.processTicksAndRejections (node:internal/process/task_queues:*:*)
+diff --git a/test/message/events_unhandled_error_sameline.out b/test/message/events_unhandled_error_sameline.out
+index c027275033941df96d6ab24c1647f110a0436d9a..872556a3b393e737adb4ed3b613f2c0cf20b1d2c 100644
+--- a/test/message/events_unhandled_error_sameline.out
++++ b/test/message/events_unhandled_error_sameline.out
+@@ -5,9 +5,9 @@ node:events:*
+ Error
+     at Object.<anonymous> (*events_unhandled_error_sameline.js:*:*)
+     at Module._compile (node:internal/modules/cjs/loader:*:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+     at Module.load (node:internal/modules/cjs/loader:*:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+     at node:internal/main/run_main_module:*:*
+ Emitted 'error' event at:
+diff --git a/test/message/events_unhandled_error_subclass.out b/test/message/events_unhandled_error_subclass.out
+index 5b8131970d50d50971184ccad0e2159c52fb0afd..073ab348a96f2e24efc2a661009287e4b7acda77 100644
+--- a/test/message/events_unhandled_error_subclass.out
++++ b/test/message/events_unhandled_error_subclass.out
+@@ -5,9 +5,9 @@ node:events:*
+ Error
+     at Object.<anonymous> (*events_unhandled_error_subclass.js:*:*)
+     at Module._compile (node:internal/modules/cjs/loader:*:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+     at Module.load (node:internal/modules/cjs/loader:*:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+     at node:internal/main/run_main_module:*:*
+ Emitted 'error' event on Foo instance at:
+diff --git a/test/message/if-error-has-good-stack.out b/test/message/if-error-has-good-stack.out
+index d87581cd7675346d51261efa4e0e28c57f9652eb..c5188137124d38f48989d6774a177795617b4974 100644
+--- a/test/message/if-error-has-good-stack.out
++++ b/test/message/if-error-has-good-stack.out
+@@ -12,9 +12,9 @@ AssertionError [ERR_ASSERTION]: ifError got unwanted exception: test error
+     at a (*if-error-has-good-stack.js:*:*)
+     at Object.<anonymous> (*if-error-has-good-stack.js:*:*)
+     at Module._compile (node:internal/modules/cjs/loader:*:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+     at Module.load (node:internal/modules/cjs/loader:*:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+     at node:internal/main/run_main_module:*:* {
+   generatedMessage: false,
+@@ -25,9 +25,9 @@ AssertionError [ERR_ASSERTION]: ifError got unwanted exception: test error
+       at a (*if-error-has-good-stack.js:*:*)
+       at Object.<anonymous> (*if-error-has-good-stack.js:*:*)
+       at Module._compile (node:internal/modules/cjs/loader:*:*)
+-      at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++      at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+       at Module.load (node:internal/modules/cjs/loader:*:*)
+-      at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++      at Module._load (node:internal/modules/cjs/loader:*:*)
+       at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+       at node:internal/main/run_main_module:*:*
+   expected: null,
+diff --git a/test/message/nexttick_throw.out b/test/message/nexttick_throw.out
+index 955bcda6a26da019c9954c80ef9db24ea3094bef..3180f9a7de5df66f30c9dcee697ddfbb97df3725 100644
+--- a/test/message/nexttick_throw.out
++++ b/test/message/nexttick_throw.out
+@@ -4,4 +4,4 @@
+         ^
+ ReferenceError: undefined_reference_error_maker is not defined
+     at *test*message*nexttick_throw.js:*:*
+-    at processTicksAndRejections (node:internal/process/task_queues:*:*)
++    at process.processTicksAndRejections (node:internal/process/task_queues:*:*)
+diff --git a/test/message/source_map_disabled_by_api.out b/test/message/source_map_disabled_by_api.out
+index d2cca7da5297e3772ae1acf7b8901eada6c21112..bbe017b05a20edd736ea13e2b501f8d9fdc7d0e6 100644
+--- a/test/message/source_map_disabled_by_api.out
++++ b/test/message/source_map_disabled_by_api.out
+@@ -5,9 +5,9 @@ Error: an error!
+     at functionA (*enclosing-call-site-min.js:1:26)
+     at Object.<anonymous> (*enclosing-call-site-min.js:1:199)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Module.require (node:internal/modules/cjs/loader:*)
+ *enclosing-call-site.js:16
+       throw new Error('an error!')
+@@ -20,7 +20,7 @@ Error: an error!
+     at functionA (*enclosing-call-site.js:2:3)
+     at Object.<anonymous> (*enclosing-call-site.js:24:3)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Module.require (node:internal/modules/cjs/loader:*)
+diff --git a/test/message/source_map_enabled_by_api.out b/test/message/source_map_enabled_by_api.out
+index 525ceccec12e4bdb8a08964ade461692ee99beca..e85ecee7f14a8ba1a599aeaf1d9f5f4855c42c5d 100644
+--- a/test/message/source_map_enabled_by_api.out
++++ b/test/message/source_map_enabled_by_api.out
+@@ -9,9 +9,9 @@ Error: an error!
+     at functionA (*enclosing-call-site.js:2:3)
+     at Object.<anonymous> (*enclosing-call-site.js:24:3)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Module.require (node:internal/modules/cjs/loader:*)
+ *enclosing-call-site-min.js:1
+ var functionA=function(){functionB()};function functionB(){functionC()}var functionC=function(){functionD()},functionD=function(){if(0<Math.random())throw Error("an error!");},thrower=functionA;try{functionA()}catch(a){throw a;};
+@@ -24,7 +24,7 @@ Error: an error!
+     at functionA (*enclosing-call-site-min.js:1:26)
+     at Object.<anonymous> (*enclosing-call-site-min.js:1:199)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Module.require (node:internal/modules/cjs/loader:*)
+diff --git a/test/message/source_map_enclosing_function.out b/test/message/source_map_enclosing_function.out
+index 3eb76ecbbef31cd224e27001b825bce210f4e170..1babe95e398c61cdd3a4e1fd82fe418e4fbcd238 100644
+--- a/test/message/source_map_enclosing_function.out
++++ b/test/message/source_map_enclosing_function.out
+@@ -9,7 +9,7 @@ Error: an error!
+     at functionA (*enclosing-call-site.js:2:3)
+     at Object.<anonymous> (*enclosing-call-site.js:24:3)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Module.require (node:internal/modules/cjs/loader:*)
+diff --git a/test/message/source_map_reference_error_tabs.out b/test/message/source_map_reference_error_tabs.out
+index bce1b5f8911d4b34d3165d7a4bc5195cbe29211d..d56ef13b20bf9ca333e8806e3905059583c1f991 100644
+--- a/test/message/source_map_reference_error_tabs.out
++++ b/test/message/source_map_reference_error_tabs.out
+@@ -6,9 +6,9 @@ ReferenceError: alert is not defined
+     at *tabs.coffee:26:2*
+     at *tabs.coffee:1:14*
+     at Module._compile (node:internal/modules/cjs/loader:*
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*
++    at Module._extensions..js (node:internal/modules/cjs/loader:*
+     at Module.load (node:internal/modules/cjs/loader:*
+-    at Function.Module._load (node:internal/modules/cjs/loader:*
++    at Module._load (node:internal/modules/cjs/loader:*
+     at Module.require (node:internal/modules/cjs/loader:*
+     at require (node:internal/modules/cjs/helpers:*
+     at Object.<anonymous> (*source_map_reference_error_tabs.js:*
+diff --git a/test/message/source_map_throw_catch.out b/test/message/source_map_throw_catch.out
+index 95bba5eee3e9dc6415ab44b7c842fc05b5d5dec2..9a98aa59e767592c04153c2a6d349710d7f28a2e 100644
+--- a/test/message/source_map_throw_catch.out
++++ b/test/message/source_map_throw_catch.out
+@@ -6,9 +6,9 @@ Error: an exception
+     at *typescript-throw.ts:18:11*
+     at *typescript-throw.ts:24:1*
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Module.require (node:internal/modules/cjs/loader:*)
+     at require (node:internal/modules/cjs/helpers:*)
+     at Object.<anonymous> (*source_map_throw_catch.js:6:3)
+diff --git a/test/message/source_map_throw_first_tick.out b/test/message/source_map_throw_first_tick.out
+index efa97a1d9f56ddbaf87422fa14d1f14f07a33061..1d76129d0c3506824d22be17711b1351285af937 100644
+--- a/test/message/source_map_throw_first_tick.out
++++ b/test/message/source_map_throw_first_tick.out
+@@ -6,9 +6,9 @@ Error: an exception
+     at *typescript-throw.ts:18:11*
+     at *typescript-throw.ts:24:1*
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Module.require (node:internal/modules/cjs/loader:*)
+     at require (node:internal/modules/cjs/helpers:*)
+     at Object.<anonymous> (*source_map_throw_first_tick.js:5:1)
 diff --git a/test/message/source_map_throw_icu.out b/test/message/source_map_throw_icu.out
 index 78482d73ddf0376de2443321c426fc6c84a1c29a..c5f699f80a9be862772ae5af8884d85bec72ebe3 100644
 --- a/test/message/source_map_throw_icu.out
@@ -27,3 +315,118 @@ index 78482d73ddf0376de2443321c426fc6c84a1c29a..c5f699f80a9be862772ae5af8884d85b
      at Module.require (node:internal/modules/cjs/loader:*
      at require (node:internal/modules/cjs/helpers:*
      at Object.<anonymous> (*source_map_throw_icu.js:*
+diff --git a/test/message/source_map_throw_set_immediate.out b/test/message/source_map_throw_set_immediate.out
+index c735e23cb955c5cb733ae766bd019848764b7ff1..21349d4c4598c0abac50b2b90e3bbf9b439257f5 100644
+--- a/test/message/source_map_throw_set_immediate.out
++++ b/test/message/source_map_throw_set_immediate.out
+@@ -5,4 +5,4 @@
+ Error: goodbye
+     at Hello *uglify-throw-original.js:5:9*
+     at *uglify-throw-original.js:9:3*
+-    at processImmediate (node:internal/timers:*)
++    at process.processImmediate (node:internal/timers:*)
+diff --git a/test/message/timeout_throw.out b/test/message/timeout_throw.out
+index 66e495eb84d0bda0c3f6b5f085aa2061f0e1b59a..968a5e4e4117713e4bf347e56ff84001ec86bb31 100644
+--- a/test/message/timeout_throw.out
++++ b/test/message/timeout_throw.out
+@@ -4,4 +4,4 @@
+ ReferenceError: undefined_reference_error_maker is not defined
+     at Timeout._onTimeout (*test*message*timeout_throw.js:*:*)
+     at listOnTimeout (node:internal/timers:*:*)
+-    at processTimers (node:internal/timers:*:*)
++    at process.processTimers (node:internal/timers:*:*)
+diff --git a/test/message/undefined_reference_in_new_context.out b/test/message/undefined_reference_in_new_context.out
+index 61dee9f6d4fba3696b91333c5fbdc20cf8e819fe..b06dc02a4861bd0eae89c682db0dce426b7409f3 100644
+--- a/test/message/undefined_reference_in_new_context.out
++++ b/test/message/undefined_reference_in_new_context.out
+@@ -12,5 +12,5 @@ ReferenceError: foo is not defined
+     at Module._compile (node:internal/modules/cjs/loader:*)
+     at *..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++    at Module._load (node:internal/modules/cjs/loader:*:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+diff --git a/test/message/vm_display_runtime_error.out b/test/message/vm_display_runtime_error.out
+index 8f1e9c37967f253071ad20c5a4f2b81f7b65b8cc..d7a39915f999101d4f2bfcc5f7bc9ba77eab8f0d 100644
+--- a/test/message/vm_display_runtime_error.out
++++ b/test/message/vm_display_runtime_error.out
+@@ -9,9 +9,9 @@ Error: boo!
+     at Object.runInThisContext (node:vm:*)
+     at Object.<anonymous> (*test*message*vm_display_runtime_error.js:*)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*)
+     at node:internal/main/run_main_module:*:*
+ test.vm:1
+@@ -24,8 +24,8 @@ Error: spooky!
+     at Object.runInThisContext (node:vm:*)
+     at Object.<anonymous> (*test*message*vm_display_runtime_error.js:*)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*)
+     at node:internal/main/run_main_module:*:*
+diff --git a/test/message/vm_display_syntax_error.out b/test/message/vm_display_syntax_error.out
+index b0b70fcd75966825e0ff1893ff984a3e20edc926..ce82fb366e0375eeea8ced2320a3662584411160 100644
+--- a/test/message/vm_display_syntax_error.out
++++ b/test/message/vm_display_syntax_error.out
+@@ -8,9 +8,9 @@ SyntaxError: Unexpected number
+     at Object.runInThisContext (node:vm:*)
+     at Object.<anonymous> (*test*message*vm_display_syntax_error.js:*)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*)
+     at node:internal/main/run_main_module:*:*
+ test.vm:1
+@@ -22,8 +22,8 @@ SyntaxError: Unexpected number
+     at Object.runInThisContext (node:vm:*)
+     at Object.<anonymous> (*test*message*vm_display_syntax_error.js:*)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*)
+     at node:internal/main/run_main_module:*:*
+diff --git a/test/message/vm_dont_display_runtime_error.out b/test/message/vm_dont_display_runtime_error.out
+index 2ff2e8355ab90c8d9d00aaa6bf743c4f3b7d0de0..72ef73d628e10f600e5e3e90691587f2f63b1a69 100644
+--- a/test/message/vm_dont_display_runtime_error.out
++++ b/test/message/vm_dont_display_runtime_error.out
+@@ -10,8 +10,8 @@ Error: boo!
+     at Object.runInThisContext (node:vm:*)
+     at Object.<anonymous> (*test*message*vm_dont_display_runtime_error.js:*)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*)
+     at node:internal/main/run_main_module:*:*
+diff --git a/test/message/vm_dont_display_syntax_error.out b/test/message/vm_dont_display_syntax_error.out
+index d46dce2993f863622d2764d816adda548e568121..2ce14fe4013df2aa37c0339880294ba804c4f0c3 100644
+--- a/test/message/vm_dont_display_syntax_error.out
++++ b/test/message/vm_dont_display_syntax_error.out
+@@ -10,8 +10,8 @@ SyntaxError: Unexpected number
+     at Object.runInThisContext (node:vm:*)
+     at Object.<anonymous> (*test*message*vm_dont_display_syntax_error.js:*)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*)
+     at node:internal/main/run_main_module:*:*
