@@ -20,17 +20,17 @@ namespace electron {
 
 namespace {
 
-// #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-// constexpr char kInvalidUpdatePrintSettingsCall[] =
-//     "Invalid UpdatePrintSettings Call";
-// constexpr char kInvalidSetupScriptedPrintPreviewCall[] =
-//     "Invalid SetupScriptedPrintPreview Call";
-// constexpr char kInvalidShowScriptedPrintPreviewCall[] =
-//     "Invalid ShowScriptedPrintPreview Call";
-// constexpr char kInvalidRequestPrintPreviewCall[] =
-//     "Invalid RequestPrintPreview Call";
-// constexpr char kInvalidCheckForCancelCall[] = "Invalid CheckForCancel Call";
-// #endif
+#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+constexpr char kInvalidUpdatePrintSettingsCall[] =
+    "Invalid UpdatePrintSettings Call";
+constexpr char kInvalidSetupScriptedPrintPreviewCall[] =
+    "Invalid SetupScriptedPrintPreview Call";
+constexpr char kInvalidShowScriptedPrintPreviewCall[] =
+    "Invalid ShowScriptedPrintPreview Call";
+constexpr char kInvalidRequestPrintPreviewCall[] =
+    "Invalid RequestPrintPreview Call";
+constexpr char kInvalidCheckForCancelCall[] = "Invalid CheckForCancel Call";
+#endif
 
 }  // namespace
 
@@ -198,28 +198,28 @@ void PrintViewManagerElectron::UpdatePrintSettings(
     return;
   }
 
-  // mojo::ReportBadMessage(kInvalidUpdatePrintSettingsCall);
+  mojo::ReportBadMessage(kInvalidUpdatePrintSettingsCall);
 }
 
 void PrintViewManagerElectron::SetupScriptedPrintPreview(
     SetupScriptedPrintPreviewCallback callback) {
-  // mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
+  mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
 }
 
 void PrintViewManagerElectron::ShowScriptedPrintPreview(
     bool source_is_modifiable) {
-  // mojo::ReportBadMessage(kInvalidShowScriptedPrintPreviewCall);
+  mojo::ReportBadMessage(kInvalidShowScriptedPrintPreviewCall);
 }
 
 void PrintViewManagerElectron::RequestPrintPreview(
     printing::mojom::RequestPrintPreviewParamsPtr params) {
-  // mojo::ReportBadMessage(kInvalidRequestPrintPreviewCall);
+  mojo::ReportBadMessage(kInvalidRequestPrintPreviewCall);
 }
 
 void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
                                               int32_t request_id,
                                               CheckForCancelCallback callback) {
-  std::move(callback).Run(false);
+  mojo::ReportBadMessage(kInvalidCheckForCancelCall);
 }
 #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
 
@@ -253,7 +253,7 @@ void PrintViewManagerElectron::DidPrintDocument(
                          params->document_cookie);
   if (entry == headless_jobs_.end()) {
     PrintViewManagerBase::DidPrintDocument(std::move(params),
-                                               std::move(callback));
+                                           std::move(callback));
     return;
   }
 
