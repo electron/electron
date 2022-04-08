@@ -1,7 +1,7 @@
-From 1665a1d16d46fc39da7bf220a85c4ee38cd99d25 Mon Sep 17 00:00:00 2001
-From: msw@chromium.org <msw@chromium.org>
-Date: Tue, 01 Feb 2022 21:16:10 +0000
-Subject: [PATCH] Reland "Make web cursor size limits match on browser and renderer"
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "msw@chromium.org" <msw@chromium.org>
+Date: Tue, 1 Feb 2022 21:16:10 +0000
+Subject: Reland "Make web cursor size limits match on browser and renderer"
 
 This reverts commit 38a8343085e53889eba48fcff78a6c2295927333.
 
@@ -47,13 +47,12 @@ Reviewed-by: Charlie Harrison <csharrison@chromium.org>
 Commit-Queue: Mike Wasserman <msw@chromium.org>
 Reviewed-by: Henrique Ferreiro <hferreiro@igalia.com>
 Cr-Commit-Position: refs/heads/main@{#965857}
----
 
 diff --git a/content/common/cursors/webcursor.cc b/content/common/cursors/webcursor.cc
-index c8b6b9d..4c80616 100644
+index c8b6b9d3f75d0cac98cc4ab8e71b68117837c1dc..4c80616e41e6ba5b171ae09d06d7f4110589f70a 100644
 --- a/content/common/cursors/webcursor.cc
 +++ b/content/common/cursors/webcursor.cc
-@@ -22,16 +22,19 @@
+@@ -22,16 +22,19 @@ WebCursor::WebCursor(const ui::Cursor& cursor) {
  WebCursor::WebCursor(const WebCursor& other) = default;
  
  bool WebCursor::SetCursor(const ui::Cursor& cursor) {
@@ -79,10 +78,10 @@ index c8b6b9d..4c80616 100644
    }
  
 diff --git a/content/common/cursors/webcursor_mac.mm b/content/common/cursors/webcursor_mac.mm
-index f85c421f..fdc70bd 100644
+index f85c421f8581abe191738eaee133004b729a817d..fdc70bdff2ddc517f3e341dd16263ae89d8b153f 100644
 --- a/content/common/cursors/webcursor_mac.mm
 +++ b/content/common/cursors/webcursor_mac.mm
-@@ -265,6 +265,7 @@
+@@ -265,6 +265,7 @@ - (CrCoreCursorType)_coreCursorType {
      case ui::mojom::CursorType::kCustom:
        return CreateCustomCursor(cursor_);
      case ui::mojom::CursorType::kNull:
@@ -91,10 +90,10 @@ index f85c421f..fdc70bd 100644
      case ui::mojom::CursorType::kDndMove:
      case ui::mojom::CursorType::kDndCopy:
 diff --git a/content/common/cursors/webcursor_unittest.cc b/content/common/cursors/webcursor_unittest.cc
-index 9601f15a..d778630 100644
+index 9c9216de35c862d45970120140f27cd99c1d44eb..6e050e7494e8eb72da903a2cd8e3739d3d9fb6e6 100644
 --- a/content/common/cursors/webcursor_unittest.cc
 +++ b/content/common/cursors/webcursor_unittest.cc
-@@ -122,11 +122,11 @@
+@@ -122,11 +122,11 @@ TEST(WebCursorTest, SetCursor) {
  
    // SetCursor should return false when the image width is too large.
    cursor.set_image_scale_factor(1.f);
@@ -108,7 +107,7 @@ index 9601f15a..d778630 100644
    EXPECT_FALSE(webcursor.SetCursor(cursor));
  
    // SetCursor should return false when the scaled image width is too large.
-@@ -136,7 +136,7 @@
+@@ -136,7 +136,7 @@ TEST(WebCursorTest, SetCursor) {
  
    // SetCursor should return false when the scaled image height is too large.
    cursor.set_image_scale_factor(0.1f);
