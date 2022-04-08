@@ -178,7 +178,7 @@ build_script:
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
   - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
-  - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+  - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - 7z a node_headers.zip out\Default\gen\node_headers
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
