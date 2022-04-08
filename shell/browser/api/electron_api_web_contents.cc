@@ -616,20 +616,27 @@ printing::mojom::PrintParamsPtr GetPrintParamsFromSettings(
   params->content_size = gfx::Size(540, 720);
   params->printable_area = gfx::Rect(612, 792);
   params->dpi = gfx::Size(72, 72);
-  params->document_cookie = 1234;
   params->printed_doc_type = printing::mojom::SkiaDocumentType::kPDF;
 
+  // Set a unique ID as the document cookie for each call to printToPDF.
+  // This allows us to track headless printing calls.
+  auto unique_id = settings.GetDict().FindInt(printing::kPreviewRequestID);
+  params->document_cookie = unique_id.value_or(0);
+
   auto should_print_backgrounds =
-      settings.GetDict().FindBool("shouldPrintBackgrounds");
+      settings.GetDict().FindBool(printing::kSettingShouldPrintBackgrounds);
   params->should_print_backgrounds = should_print_backgrounds.value_or(false);
 
-  auto pages_per_sheet = settings.GetDict().FindInt("pagesPerSheet");
+  auto pages_per_sheet =
+      settings.GetDict().FindInt(printing::kSettingPagesPerSheet);
   params->pages_per_sheet = pages_per_sheet.value_or(1);
 
-  auto scale_factor = settings.GetDict().FindDouble("scaleFactor");
+  auto scale_factor =
+      settings.GetDict().FindDouble(printing::kSettingScaleFactor);
   params->scale_factor = scale_factor.value_or(1.0);
 
-  auto print_selection_only = settings.GetDict().FindBool("printSelectionOnly");
+  auto print_selection_only =
+      settings.GetDict().FindBool(printing::kSettingShouldPrintSelectionOnly);
   params->selection_only = print_selection_only.value_or(false);
 
   const base::Value::Dict* header_footer =
