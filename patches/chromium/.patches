@@ -138,3 +138,4 @@ enable_forcesynchronoushtmlparsing_by_default.patch
 remove_incorrect_width_height_adjustments.patch
 set_dpi_correctly_during_main_window_creation.patch
 use_numpy_1_2x_supported_1_for_vpython.patch
+cherry-pick-4d26949260aa.patch
