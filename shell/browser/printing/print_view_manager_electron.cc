@@ -230,7 +230,7 @@ void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
 
 void PrintViewManagerElectron::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
-  PrintManager::RenderFrameDeleted(render_frame_host);
+  PrintViewManagerBase::RenderFrameDeleted(render_frame_host);
 
   if (printing_rfh_ != render_frame_host)
     return;
