@@ -1,7 +1,7 @@
-From a1dc371d6680c19f978ea6c20f3ef8c70d2bad59 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jack Hsieh <chengweih@chromium.org>
 Date: Fri, 21 Jan 2022 00:01:43 +0000
-Subject: [PATCH] usb: Fix OOB access with non-sequential interfaces
+Subject: usb: Fix OOB access with non-sequential interfaces
 
 When accessing a usb device with non-sequential interface number or
 alternative setting value, it might end up using index out of the
@@ -17,13 +17,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3384715
 Reviewed-by: Reilly Grant <reillyg@chromium.org>
 Commit-Queue: Jack Hsieh <chengweih@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#961679}
----
 
 diff --git a/third_party/blink/renderer/modules/webusb/usb_device.cc b/third_party/blink/renderer/modules/webusb/usb_device.cc
-index 139377e..197951d 100644
+index aef73449348e4636be9f8fc90bfc07ac65b03326..82da58974c51c3a593d5c2a272d0a0f05361dfdb 100644
 --- a/third_party/blink/renderer/modules/webusb/usb_device.cc
 +++ b/third_party/blink/renderer/modules/webusb/usb_device.cc
-@@ -132,9 +132,9 @@
+@@ -132,9 +132,9 @@ bool USBDevice::IsInterfaceClaimed(wtf_size_t configuration_index,
           claimed_interfaces_[interface_index];
  }
  
@@ -35,7 +34,7 @@ index 139377e..197951d 100644
  }
  
  USBConfiguration* USBDevice::configuration() const {
-@@ -302,7 +302,7 @@
+@@ -302,7 +302,7 @@ ScriptPromise USBDevice::selectAlternateInterface(ScriptState* script_state,
        device_->SetInterfaceAlternateSetting(
            interface_number, alternate_setting,
            WTF::Bind(&USBDevice::AsyncSelectAlternateInterface,
@@ -44,7 +43,7 @@ index 139377e..197951d 100644
                      WrapPersistent(resolver)));
      }
    }
-@@ -744,7 +744,7 @@
+@@ -744,7 +744,7 @@ void USBDevice::SetEndpointsForInterface(wtf_size_t interface_index, bool set) {
    const auto& configuration = *Info().configurations[configuration_index_];
    const auto& interface = *configuration.interfaces[interface_index];
    const auto& alternate =
@@ -53,7 +52,7 @@ index 139377e..197951d 100644
    for (const auto& endpoint : alternate.endpoints) {
      uint8_t endpoint_number = endpoint->endpoint_number;
      if (endpoint_number == 0 || endpoint_number >= kEndpointsBitsNumber)
-@@ -792,7 +792,7 @@
+@@ -792,7 +792,7 @@ void USBDevice::OnDeviceOpenedOrClosed(bool opened) {
    opened_ = opened;
    if (!opened_) {
      claimed_interfaces_.Fill(false);
@@ -62,7 +61,7 @@ index 139377e..197951d 100644
      in_endpoints_.reset();
      out_endpoints_.reset();
    }
-@@ -825,8 +825,8 @@
+@@ -825,8 +825,8 @@ void USBDevice::OnConfigurationSelected(bool success,
      claimed_interfaces_.Fill(false);
      interface_state_change_in_progress_.resize(num_interfaces);
      interface_state_change_in_progress_.Fill(false);
@@ -73,7 +72,7 @@ index 139377e..197951d 100644
      in_endpoints_.reset();
      out_endpoints_.reset();
    }
-@@ -887,7 +887,7 @@
+@@ -887,7 +887,7 @@ void USBDevice::OnInterfaceClaimedOrUnclaimed(bool claimed,
      claimed_interfaces_[interface_index] = true;
    } else {
      claimed_interfaces_[interface_index] = false;
@@ -82,7 +81,7 @@ index 139377e..197951d 100644
    }
    SetEndpointsForInterface(interface_index, claimed);
    interface_state_change_in_progress_[interface_index] = false;
-@@ -901,7 +901,7 @@
+@@ -901,7 +901,7 @@ void USBDevice::AsyncSelectAlternateInterface(wtf_size_t interface_index,
      return;
  
    if (success)
@@ -92,10 +91,10 @@ index 139377e..197951d 100644
    interface_state_change_in_progress_[interface_index] = false;
  
 diff --git a/third_party/blink/renderer/modules/webusb/usb_device.h b/third_party/blink/renderer/modules/webusb/usb_device.h
-index 38f01a6d..9f71466 100644
+index 21231db5f4d6f949b4d371143c631a6f33dcb1e4..cb199d2f2ac4c27f2db7f153d51408e604b5f6f0 100644
 --- a/third_party/blink/renderer/modules/webusb/usb_device.h
 +++ b/third_party/blink/renderer/modules/webusb/usb_device.h
-@@ -40,7 +40,7 @@
+@@ -40,7 +40,7 @@ class USBDevice : public ScriptWrappable,
    }
    bool IsInterfaceClaimed(wtf_size_t configuration_index,
                            wtf_size_t interface_index) const;
@@ -104,7 +103,7 @@ index 38f01a6d..9f71466 100644
  
    // USBDevice.idl
    uint8_t usbVersionMajor() const { return Info().usb_version_major; }
-@@ -179,7 +179,7 @@
+@@ -179,7 +179,7 @@ class USBDevice : public ScriptWrappable,
    // configured. Use the index returned by FindInterfaceIndex().
    WTF::Vector<bool> claimed_interfaces_;
    WTF::Vector<bool> interface_state_change_in_progress_;
@@ -114,10 +113,10 @@ index 38f01a6d..9f71466 100644
    // These bit sets have one entry for each endpoint. Index using the endpoint
    // number (lower 4 bits of the endpoint address).
 diff --git a/third_party/blink/renderer/modules/webusb/usb_interface.cc b/third_party/blink/renderer/modules/webusb/usb_interface.cc
-index bba6f5e..2ecc280 100644
+index bba6f5eb58d56e9372f9cef8e38e2f1493a94678..2ecc28054831e076f85832d97bd95a738d6657b2 100644
 --- a/third_party/blink/renderer/modules/webusb/usb_interface.cc
 +++ b/third_party/blink/renderer/modules/webusb/usb_interface.cc
-@@ -53,7 +53,7 @@
+@@ -53,7 +53,7 @@ const device::mojom::blink::UsbInterfaceInfo& USBInterface::Info() const {
  USBAlternateInterface* USBInterface::alternate() const {
    if (device_->IsInterfaceClaimed(configuration_index_, interface_index_)) {
      return USBAlternateInterface::Create(
@@ -127,10 +126,10 @@ index bba6f5e..2ecc280 100644
    return USBAlternateInterface::Create(this, 0);
  }
 diff --git a/third_party/blink/web_tests/external/wpt/webusb/resources/fake-devices.js b/third_party/blink/web_tests/external/wpt/webusb/resources/fake-devices.js
-index 975d224..c5c5cad 100644
+index 975d2242c949740217c050beea72db908ef46fc7..c5c5cadaa6af48f676565775d1dc8e27efffc3a2 100644
 --- a/third_party/blink/web_tests/external/wpt/webusb/resources/fake-devices.js
 +++ b/third_party/blink/web_tests/external/wpt/webusb/resources/fake-devices.js
-@@ -16,75 +16,160 @@
+@@ -16,75 +16,160 @@ let fakeDeviceInit = {
    productName: 'The amazing imaginary printer',
    serialNumber: '4',
    activeConfigurationValue: 0,
@@ -362,10 +361,10 @@ index 975d224..c5c5cad 100644
 +  ]
  };
 diff --git a/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js b/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
-index 5bfd841..527d238 100644
+index 5bfd841d5248e91a5cabf10d00d78db23d11f0e5..527d238d69b703b1fcf5d8a001d02e9f87b5689a 100644
 --- a/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
 +++ b/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
-@@ -236,10 +236,11 @@
+@@ -236,10 +236,11 @@ usb_test(() => {
    return getFakeDevice().then(({ device }) => {
      assert_equals(device.configuration, null);
      return device.open()
@@ -381,7 +380,7 @@ index 5bfd841..527d238 100644
    });
  }, 'selectConfiguration rejects on invalid configurations');
  
-@@ -431,6 +432,30 @@
+@@ -431,6 +432,30 @@ usb_test(() => {
    });
  }, 'can select an alternate interface');
  
