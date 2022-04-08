@@ -120,3 +120,4 @@ set_dpi_correctly_during_main_window_creation.patch
 ui_gtk_public_header.patch
 introduce_ozoneplatform_electron_can_call_x11_property.patch
 revert_motionmark_avoid_unnecessary_ipc_on_mac.patch
+cherry-pick-1665a1d16d46.patch
