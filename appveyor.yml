@@ -174,8 +174,8 @@ build_script:
   - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
   - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - 7z a node_headers.zip out\Default\gen\node_headers
+  # Temporarily disable symbol generation on 32-bit Windows due to failures  
   - ps: >-
-      # Temporarily disable symbol generation on 32-bit Windows due to failures  
       if ($env:GN_CONFIG -eq 'release' -And $env:TARGET_ARCH -ne 'ia32') {
         # Needed for msdia140.dll on 64-bit windows
         $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
