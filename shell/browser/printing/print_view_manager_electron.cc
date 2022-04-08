@@ -20,27 +20,23 @@ namespace electron {
 
 namespace {
 
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-constexpr char kInvalidUpdatePrintSettingsCall[] =
-    "Invalid UpdatePrintSettings Call";
-constexpr char kInvalidSetupScriptedPrintPreviewCall[] =
-    "Invalid SetupScriptedPrintPreview Call";
-constexpr char kInvalidShowScriptedPrintPreviewCall[] =
-    "Invalid ShowScriptedPrintPreview Call";
-constexpr char kInvalidRequestPrintPreviewCall[] =
-    "Invalid RequestPrintPreview Call";
-constexpr char kInvalidCheckForCancelCall[] = "Invalid CheckForCancel Call";
-#endif
-
-#if BUILDFLAG(ENABLE_TAGGED_PDF)
-constexpr char kInvalidSetAccessibilityTreeCall[] =
-    "Invalid SetAccessibilityTree Call";
-#endif
+// #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+// constexpr char kInvalidUpdatePrintSettingsCall[] =
+//     "Invalid UpdatePrintSettings Call";
+// constexpr char kInvalidSetupScriptedPrintPreviewCall[] =
+//     "Invalid SetupScriptedPrintPreview Call";
+// constexpr char kInvalidShowScriptedPrintPreviewCall[] =
+//     "Invalid ShowScriptedPrintPreview Call";
+// constexpr char kInvalidRequestPrintPreviewCall[] =
+//     "Invalid RequestPrintPreview Call";
+// constexpr char kInvalidCheckForCancelCall[] = "Invalid CheckForCancel Call";
+// #endif
 
 }  // namespace
 
-PrintViewManagerElectron::PrintViewManagerElectron(content::WebContents* web_contents)
-    : printing::PrintManager(web_contents),
+PrintViewManagerElectron::PrintViewManagerElectron(
+    content::WebContents* web_contents)
+    : printing::PrintViewManagerBase(web_contents),
       content::WebContentsUserData<PrintViewManagerElectron>(*web_contents) {}
 
 PrintViewManagerElectron::~PrintViewManagerElectron() = default;
@@ -58,13 +54,6 @@ void PrintViewManagerElectron::BindPrintManagerHost(
     return;
 
   print_manager->BindReceiver(std::move(receiver), rfh);
-}
-
-bool PrintViewManagerElectron::PrintNow(content::RenderFrameHost* rfh,
-                                        bool silent,
-                                        base::Value settings,
-                                        base::OnceCallback<void(bool, const std::string&)> callback ) {
-  return false;
 }
 
 // static
@@ -120,7 +109,11 @@ void PrintViewManagerElectron::PrintToPdf(
   page_ranges_ = page_ranges;
   ignore_invalid_page_ranges_ = ignore_invalid_page_ranges;
   print_pages_params_ = std::move(print_pages_params);
-  set_cookie(print_pages_params_->params->document_cookie);
+
+  int32_t cookie = print_pages_params_->params->document_cookie;
+  headless_jobs_.emplace_back(cookie);
+  set_cookie(cookie);
+
   callback_ = std::move(callback);
 
   base::Value dict(base::Value::Type::DICTIONARY);
@@ -129,18 +122,19 @@ void PrintViewManagerElectron::PrintToPdf(
 
 void PrintViewManagerElectron::GetDefaultPrintSettings(
     GetDefaultPrintSettingsCallback callback) {
-  if (!printing_rfh_) {
-    DLOG(ERROR) << "Unexpected message received before PrintToPdf is "
-                   "called: GetDefaultPrintSettings";
-    std::move(callback).Run(printing::mojom::PrintParams::New());
-    return;
-  }
   std::move(callback).Run(print_pages_params_->params->Clone());
 }
 
 void PrintViewManagerElectron::ScriptedPrint(
     printing::mojom::ScriptedPrintParamsPtr params,
     ScriptedPrintCallback callback) {
+  auto entry =
+      std::find(headless_jobs_.begin(), headless_jobs_.end(), params->cookie);
+  if (entry == headless_jobs_.end()) {
+    PrintViewManagerBase::ScriptedPrint(std::move(params), std::move(callback));
+    return;
+  }
+
   auto default_param = printing::mojom::PrintPagesParams::New();
   default_param->params = printing::mojom::PrintParams::New();
   if (!printing_rfh_) {
@@ -149,6 +143,7 @@ void PrintViewManagerElectron::ScriptedPrint(
     std::move(callback).Run(std::move(default_param), true);
     return;
   }
+
   if (params->is_scripted &&
       GetCurrentTargetFrame()->IsNestedWithinFencedFrame()) {
     DLOG(ERROR) << "Unexpected message received. Script Print is not allowed"
@@ -156,9 +151,11 @@ void PrintViewManagerElectron::ScriptedPrint(
     std::move(callback).Run(std::move(default_param), true);
     return;
   }
-  absl::variant<printing::PageRanges, print_to_pdf::PageRangeError> page_ranges =
-      print_to_pdf::TextPageRangesToPageRanges(page_ranges_, ignore_invalid_page_ranges_,
-                                 params->expected_pages_count);
+
+  absl::variant<printing::PageRanges, print_to_pdf::PageRangeError>
+      page_ranges = print_to_pdf::TextPageRangesToPageRanges(
+          page_ranges_, ignore_invalid_page_ranges_,
+          params->expected_pages_count);
   if (absl::holds_alternative<print_to_pdf::PageRangeError>(page_ranges)) {
     PrintResult print_result;
     switch (absl::get<print_to_pdf::PageRangeError>(page_ranges)) {
@@ -194,61 +191,44 @@ void PrintViewManagerElectron::UpdatePrintSettings(
     int32_t cookie,
     base::Value job_settings,
     UpdatePrintSettingsCallback callback) {
-  // UpdatePrintSettingsCallback() should never be called on
-  // PrintViewManagerElectron, since it is only triggered by Print Preview.
-  mojo::ReportBadMessage(kInvalidUpdatePrintSettingsCall);
+  auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(), cookie);
+  if (entry == headless_jobs_.end()) {
+    PrintViewManagerBase::UpdatePrintSettings(cookie, std::move(job_settings),
+                                              std::move(callback));
+    return;
+  }
+
+  // mojo::ReportBadMessage(kInvalidUpdatePrintSettingsCall);
 }
 
 void PrintViewManagerElectron::SetupScriptedPrintPreview(
     SetupScriptedPrintPreviewCallback callback) {
-  // SetupScriptedPrintPreview() should never be called on
-  // PrintViewManagerElectron, since it is only triggered by Print Preview.
-  mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
+  // mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
 }
 
-void PrintViewManagerElectron::ShowScriptedPrintPreview(bool source_is_modifiable) {
-  // ShowScriptedPrintPreview() should never be called on
-  // PrintViewManagerElectron, since it is only triggered by Print Preview.
-  mojo::ReportBadMessage(kInvalidShowScriptedPrintPreviewCall);
+void PrintViewManagerElectron::ShowScriptedPrintPreview(
+    bool source_is_modifiable) {
+  // mojo::ReportBadMessage(kInvalidShowScriptedPrintPreviewCall);
 }
 
 void PrintViewManagerElectron::RequestPrintPreview(
     printing::mojom::RequestPrintPreviewParamsPtr params) {
-  // RequestPrintPreview() should never be called on PrintViewManagerElectron,
-  // since it is only triggered by Print Preview.
-  mojo::ReportBadMessage(kInvalidRequestPrintPreviewCall);
+  // mojo::ReportBadMessage(kInvalidRequestPrintPreviewCall);
 }
 
 void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
-                                     int32_t request_id,
-                                     CheckForCancelCallback callback) {
-  // CheckForCancel() should never be called on PrintViewManagerElectron, since it
-  // is only triggered by Print Preview.
-  mojo::ReportBadMessage(kInvalidCheckForCancelCall);
+                                              int32_t request_id,
+                                              CheckForCancelCallback callback) {
+  std::move(callback).Run(false);
 }
 #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
-
-#if BUILDFLAG(ENABLE_TAGGED_PDF)
-void PrintViewManagerElectron::SetAccessibilityTree(
-    int32_t cookie,
-    const ui::AXTreeUpdate& accessibility_tree) {
-  // SetAccessibilityTree() should never be called on PrintViewManagerElectron,
-  // since it is only triggered by Print Preview.
-  mojo::ReportBadMessage(kInvalidSetAccessibilityTreeCall);
-}
-#endif
-
-#if BUILDFLAG(IS_ANDROID)
-void PrintViewManagerElectron::PdfWritingDone(int page_count) {}
-#endif
 
 void PrintViewManagerElectron::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
   PrintManager::RenderFrameDeleted(render_frame_host);
 
-  if (printing_rfh_ != render_frame_host) {
+  if (printing_rfh_ != render_frame_host)
     return;
-  }
 
   if (callback_) {
     std::move(callback_).Run(PRINTING_FAILED,
@@ -258,21 +238,39 @@ void PrintViewManagerElectron::RenderFrameDeleted(
   Reset();
 }
 
+void PrintViewManagerElectron::DidGetPrintedPagesCount(int32_t cookie,
+                                                       uint32_t number_pages) {
+  auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(), cookie);
+  if (entry == headless_jobs_.end()) {
+    PrintViewManagerBase::DidGetPrintedPagesCount(cookie, number_pages);
+  }
+}
+
 void PrintViewManagerElectron::DidPrintDocument(
     printing::mojom::DidPrintDocumentParamsPtr params,
     DidPrintDocumentCallback callback) {
+  auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(),
+                         params->document_cookie);
+  if (entry == headless_jobs_.end()) {
+    PrintViewManagerBase::DidPrintDocument(std::move(params),
+                                               std::move(callback));
+    return;
+  }
+
   auto& content = *params->content;
   if (!content.metafile_data_region.IsValid()) {
     ReleaseJob(INVALID_MEMORY_HANDLE);
     std::move(callback).Run(false);
     return;
   }
+
   base::ReadOnlySharedMemoryMapping map = content.metafile_data_region.Map();
   if (!map.IsValid()) {
     ReleaseJob(METAFILE_MAP_ERROR);
     std::move(callback).Run(false);
     return;
   }
+
   data_ = std::string(static_cast<const char*>(map.memory()), map.size());
   std::move(callback).Run(true);
   ReleaseJob(PRINT_SUCCESS);
@@ -286,24 +284,16 @@ void PrintViewManagerElectron::Reset() {
 }
 
 void PrintViewManagerElectron::ReleaseJob(PrintResult result) {
-  if (!callback_) {
-    DLOG(ERROR) << "ReleaseJob is called when callback_ is null. Check whether "
-                   "ReleaseJob is called more than once.";
-    return;
-  }
+  if (callback_) {
+    DCHECK(result == PRINT_SUCCESS || data_.empty());
+    std::move(callback_).Run(result,
+                             base::RefCountedString::TakeString(&data_));
+    if (printing_rfh_ && printing_rfh_->IsRenderFrameLive()) {
+      GetPrintRenderFrame(printing_rfh_)->PrintingDone(result == PRINT_SUCCESS);
+    }
 
-  DCHECK(result == PRINT_SUCCESS || data_.empty());
-  std::move(callback_).Run(result, base::RefCountedString::TakeString(&data_));
-  // TODO(https://crbug.com/1286556): In theory, this should not be needed. In
-  // practice, nothing seems to restrict receiving incoming Mojo method calls
-  // for reporting the printing state to `printing_rfh_`.
-  //
-  // This should probably be changed so that the browser pushes endpoints to the
-  // renderer rather than the renderer connecting on-demand to the browser...
-  if (printing_rfh_ && printing_rfh_->IsRenderFrameLive()) {
-    GetPrintRenderFrame(printing_rfh_)->PrintingDone(result == PRINT_SUCCESS);
+    Reset();
   }
-  Reset();
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintViewManagerElectron);

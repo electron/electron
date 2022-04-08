@@ -12,7 +12,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted_memory.h"
 #include "build/build_config.h"
-#include "components/printing/browser/print_manager.h"
+#include "chrome/browser/printing/print_view_manager_base.h"
 #include "components/printing/common/print.mojom.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -21,8 +21,9 @@
 
 namespace electron {
 
-class PrintViewManagerElectron : public printing::PrintManager,
-                        public content::WebContentsUserData<PrintViewManagerElectron> {
+class PrintViewManagerElectron
+    : public printing::PrintViewManagerBase,
+      public content::WebContentsUserData<PrintViewManagerElectron> {
  public:
   enum PrintResult {
     PRINT_SUCCESS,
@@ -53,11 +54,6 @@ class PrintViewManagerElectron : public printing::PrintManager,
 
   static std::string PrintResultToString(PrintResult result);
 
-  bool PrintNow(content::RenderFrameHost* rfh,
-                bool silent = true,
-                base::Value settings = {},
-                base::OnceCallback<void(bool, const std::string&)> callback = {});
-
   void PrintToPdf(content::RenderFrameHost* rfh,
                   const std::string& page_ranges,
                   bool ignore_invalid_page_ranges,
@@ -74,6 +70,7 @@ class PrintViewManagerElectron : public printing::PrintManager,
   // printing::mojom::PrintManagerHost:
   void DidPrintDocument(printing::mojom::DidPrintDocumentParamsPtr params,
                         DidPrintDocumentCallback callback) override;
+  void DidGetPrintedPagesCount(int32_t cookie, uint32_t number_pages) override;
   void GetDefaultPrintSettings(
       GetDefaultPrintSettingsCallback callback) override;
   void ScriptedPrint(printing::mojom::ScriptedPrintParamsPtr params,
@@ -93,11 +90,6 @@ class PrintViewManagerElectron : public printing::PrintManager,
                       int32_t request_id,
                       CheckForCancelCallback callback) override;
 #endif
-#if BUILDFLAG(ENABLE_TAGGED_PDF)
-  void SetAccessibilityTree(
-      int32_t cookie,
-      const ui::AXTreeUpdate& accessibility_tree) override;
-#endif
 
   void Reset();
   void ReleaseJob(PrintResult result);
@@ -108,6 +100,7 @@ class PrintViewManagerElectron : public printing::PrintManager,
   printing::mojom::PrintPagesParamsPtr print_pages_params_;
   PrintToPDFCallback callback_;
   std::string data_;
+  std::vector<int32_t> headless_jobs_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 };
