@@ -40,7 +40,7 @@ index 97b017f66e2395ca90fc7562b9043579911ddc62..1d21462c8cf63ddbbf9e3b785b553a31
      at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
      at node:internal/main/run_main_module:*:*
 diff --git a/test/message/error_aggregateTwoErrors.out b/test/message/error_aggregateTwoErrors.out
-index d1dc13eacc303cc52003bd5820e7eeec8d48822b..5f1f75a42f16b495bdb7141b094ce2ded61d5218 100644
+index d1dc13eacc303cc52003bd5820e7eeec8d48822b..eb85c92e63c850bbf8fbbe2c1600e783e0cd6066 100644
 --- a/test/message/error_aggregateTwoErrors.out
 +++ b/test/message/error_aggregateTwoErrors.out
 @@ -4,9 +4,9 @@ throw aggregateTwoErrors(err, originalError);
@@ -48,7 +48,7 @@ index d1dc13eacc303cc52003bd5820e7eeec8d48822b..5f1f75a42f16b495bdb7141b094ce2de
      at Object.<anonymous> (*test*message*error_aggregateTwoErrors.js:*:*)
      at Module._compile (node:internal/modules/cjs/loader:*:*)
 -    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
-+    at Module._extensions.js (node:internal/modules/cjs/loader:*:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
      at Module.load (node:internal/modules/cjs/loader:*:*)
 -    at Function.Module._load (node:internal/modules/cjs/loader:*:*)
 +    at Module._load (node:internal/modules/cjs/loader:*:*)
