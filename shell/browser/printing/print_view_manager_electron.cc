@@ -122,7 +122,12 @@ void PrintViewManagerElectron::PrintToPdf(
 
 void PrintViewManagerElectron::GetDefaultPrintSettings(
     GetDefaultPrintSettingsCallback callback) {
-  std::move(callback).Run(print_pages_params_->params->Clone());
+  if (print_pages_params_) {
+    std::move(callback).Run(print_pages_params_->params->Clone());
+  } else {
+    auto params = printing::mojom::PrintParams::New();
+    std::move(callback).Run(std::move(params));
+  }
 }
 
 void PrintViewManagerElectron::ScriptedPrint(
