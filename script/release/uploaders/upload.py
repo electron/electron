@@ -76,9 +76,10 @@ def main():
   shutil.copy2(os.path.join(OUT_DIR, 'dist.zip'), electron_zip)
   upload_electron(release, electron_zip, args)
   if get_target_arch() != 'mips64el':
-    symbols_zip = os.path.join(OUT_DIR, SYMBOLS_NAME)
-    shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
-    upload_electron(release, symbols_zip, args)
+    if get_target_arch() != 'ia32' and PLATFORM != 'win32':
+      symbols_zip = os.path.join(OUT_DIR, SYMBOLS_NAME)
+      shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
+      upload_electron(release, symbols_zip, args)
   if PLATFORM == 'darwin':
     if get_platform_key() == 'darwin' and get_target_arch() == 'x64':
       api_path = os.path.join(ELECTRON_DIR, 'electron-api.json')
