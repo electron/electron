@@ -76,7 +76,7 @@ def main():
   shutil.copy2(os.path.join(OUT_DIR, 'dist.zip'), electron_zip)
   upload_electron(release, electron_zip, args)
   if get_target_arch() != 'mips64el':
-    if get_target_arch() != 'ia32' and PLATFORM != 'win32':
+    if (get_target_arch() != 'ia32' or PLATFORM != 'win32'):
       symbols_zip = os.path.join(OUT_DIR, SYMBOLS_NAME)
       shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
       upload_electron(release, symbols_zip, args)
@@ -96,10 +96,9 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snaphot_zip)
     upload_electron(release, dsym_snaphot_zip, args)    
   elif PLATFORM == 'win32':
-    if get_target_arch() != 'ia32':
-      pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
-      shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
-      upload_electron(release, pdb_zip, args)
+    pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
+    upload_electron(release, pdb_zip, args)
   elif PLATFORM == 'linux':
     debug_zip = os.path.join(OUT_DIR, DEBUG_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'debug.zip'), debug_zip)
