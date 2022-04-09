@@ -88,7 +88,6 @@ std::string PrintViewManagerElectron::PrintResultToString(PrintResult result) {
 void PrintViewManagerElectron::PrintToPdf(
     content::RenderFrameHost* rfh,
     const std::string& page_ranges,
-    bool ignore_invalid_page_ranges,
     printing::mojom::PrintPagesParamsPtr print_pages_params,
     PrintToPDFCallback callback) {
   DCHECK(callback);
@@ -107,7 +106,6 @@ void PrintViewManagerElectron::PrintToPdf(
 
   printing_rfh_ = rfh;
   page_ranges_ = page_ranges;
-  ignore_invalid_page_ranges_ = ignore_invalid_page_ranges;
   print_pages_params_ = std::move(print_pages_params);
 
   int32_t cookie = print_pages_params_->params->document_cookie;
@@ -125,8 +123,7 @@ void PrintViewManagerElectron::GetDefaultPrintSettings(
   if (print_pages_params_) {
     std::move(callback).Run(print_pages_params_->params->Clone());
   } else {
-    auto params = printing::mojom::PrintParams::New();
-    std::move(callback).Run(std::move(params));
+    PrintViewManagerBase::GetDefaultPrintSettings(std::move(callback));
   }
 }
 
@@ -159,8 +156,7 @@ void PrintViewManagerElectron::ScriptedPrint(
 
   absl::variant<printing::PageRanges, print_to_pdf::PageRangeError>
       page_ranges = print_to_pdf::TextPageRangesToPageRanges(
-          page_ranges_, ignore_invalid_page_ranges_,
-          params->expected_pages_count);
+          page_ranges_, false, params->expected_pages_count);
   if (absl::holds_alternative<print_to_pdf::PageRangeError>(page_ranges)) {
     PrintResult print_result;
     switch (absl::get<print_to_pdf::PageRangeError>(page_ranges)) {

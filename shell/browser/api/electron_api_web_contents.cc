@@ -2870,8 +2870,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   params->params = printing::mojom::PrintParams::New();
   params->params = GetPrintParamsFromSettings(std::move(settings));
 
-  manager->PrintToPdf(web_contents()->GetMainFrame(), "", false,
-                      std::move(params),
+  manager->PrintToPdf(web_contents()->GetMainFrame(), "", std::move(params),
                       base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
                                      std::move(promise)));
 
