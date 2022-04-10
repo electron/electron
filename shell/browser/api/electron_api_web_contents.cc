@@ -2586,7 +2586,7 @@ bool WebContents::IsCurrentlyAudible() {
 #if BUILDFLAG(ENABLE_PRINTING)
 void WebContents::OnGetDefaultPrinter(
     base::Value::Dict print_settings,
-    PrintingCompletionCallback print_callback,
+    printing::CompletionCallback print_callback,
     std::u16string device_name,
     bool silent,
     // <error, default_printer>
@@ -2642,7 +2642,7 @@ void WebContents::Print(gin::Arguments* args) {
     return;
   }
 
-  PrintingCompletionCallback callback;
+  printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError("webContents.print(): Invalid optional callback provided.");
