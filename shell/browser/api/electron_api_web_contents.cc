@@ -608,52 +608,6 @@ void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
       ->SetContentBackgroundColor(color);
 }
 
-printing::mojom::PrintParamsPtr GetPrintParamsFromSettings(
-    const base::Value& settings) {
-  auto params = printing::mojom::PrintParams::New();
-
-  params->page_size = gfx::Size(612, 792);
-  params->content_size = gfx::Size(540, 720);
-  params->printable_area = gfx::Rect(612, 792);
-  params->dpi = gfx::Size(72, 72);
-  params->printed_doc_type = printing::mojom::SkiaDocumentType::kPDF;
-
-  // Set a unique ID as the document cookie for each call to printToPDF.
-  // This allows us to track headless printing calls.
-  auto unique_id = settings.GetDict().FindInt(printing::kPreviewRequestID);
-  params->document_cookie = unique_id.value_or(0);
-
-  auto should_print_backgrounds =
-      settings.GetDict().FindBool(printing::kSettingShouldPrintBackgrounds);
-  params->should_print_backgrounds = should_print_backgrounds.value_or(false);
-
-  auto pages_per_sheet =
-      settings.GetDict().FindInt(printing::kSettingPagesPerSheet);
-  params->pages_per_sheet = pages_per_sheet.value_or(1);
-
-  auto scale_factor =
-      settings.GetDict().FindDouble(printing::kSettingScaleFactor);
-  params->scale_factor = scale_factor.value_or(1.0);
-
-  auto print_selection_only =
-      settings.GetDict().FindBool(printing::kSettingShouldPrintSelectionOnly);
-  params->selection_only = print_selection_only.value_or(false);
-
-  const base::Value::Dict* header_footer =
-      settings.GetDict().FindDict("headerFooter");
-  if (header_footer) {
-    params->display_header_footer = true;
-
-    auto* title = header_footer->FindString("title");
-    params->title = base::UTF8ToUTF16(*title);
-
-    auto* url = header_footer->FindString("url");
-    params->url = base::UTF8ToUTF16(*url);
-  }
-
-  return params;
-}
-
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -2858,19 +2812,45 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  auto landscape = settings.GetDict().FindBool("landscape");
+  auto display_header_footer =
+      settings.GetDict().FindBool("displayHeaderFooter");
+  auto print_background = settings.GetDict().FindBool("shouldPrintBackgrounds");
+  auto scale = settings.GetDict().FindDouble("scale");
+  auto paper_width = settings.GetDict().FindInt("paperWidth");
+  auto paper_height = settings.GetDict().FindInt("paperHeight");
+  auto margin_top = settings.GetDict().FindIntByDottedPath("margins.top");
+  auto margin_bottom = settings.GetDict().FindIntByDottedPath("margins.bottom");
+  auto margin_left = settings.GetDict().FindIntByDottedPath("margins.left");
+  auto margin_right = settings.GetDict().FindIntByDottedPath("margins.right");
+  auto header_template = *settings.GetDict().FindString("headerTemplate");
+  auto footer_template = *settings.GetDict().FindString("footerTemplate");
+  auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
+  auto page_ranges = *settings.GetDict().FindString("pageRanges");
+
+  absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
+      print_pages_params = print_to_pdf::GetPrintPagesParams(
+          web_contents()->GetMainFrame()->GetLastCommittedURL(), landscape,
+          display_header_footer, print_background, scale, paper_width,
+          paper_height, margin_top, margin_bottom, margin_left, margin_right,
+          absl::make_optional(header_template),
+          absl::make_optional(footer_template), prefer_css_page_size);
+
+  if (absl::holds_alternative<std::string>(print_pages_params)) {
+    auto error = absl::get<std::string>(print_pages_params);
+    promise.RejectWithErrorMessage("Invalid print parameters: " + error);
+    return handle;
+  }
+
   auto* manager = PrintViewManagerElectron::FromWebContents(web_contents());
   if (!manager) {
     promise.RejectWithErrorMessage("Failed to find print manager");
     return handle;
   }
 
-  auto params = printing::mojom::PrintPagesParams::New();
-  printing::PageRanges ranges;
-  params->pages = printing::PageRange::GetPages(ranges);
-  params->params = printing::mojom::PrintParams::New();
-  params->params = GetPrintParamsFromSettings(std::move(settings));
-
-  manager->PrintToPdf(web_contents()->GetMainFrame(), "", std::move(params),
+  manager->PrintToPdf(web_contents()->GetMainFrame(), page_ranges,
+                      std::move(absl::get<printing::mojom::PrintPagesParamsPtr>(
+                          print_pages_params)),
                       base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
                                      std::move(promise)));
 

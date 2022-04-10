@@ -565,21 +565,27 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
 ### `<webview>.printToPDF(options)`
 
 * `options` Object
-  * `headerFooter` Record<string, string> (optional) - the header and footer for the PDF.
-    * `title` string - The title for the PDF header.
-    * `url` string - the url for the PDF footer.
-  * `landscape` boolean (optional) - `true` for landscape, `false` for portrait.
-  * `marginsType` Integer (optional) - Specifies the type of margins to use. Uses 0 for
-    default margin, 1 for no margin, and 2 for minimum margin.
-    and `width` in microns.
-  * `scaleFactor` number (optional) - The scale factor of the web page. Can range from 0 to 100.
-  * `pageRanges` Record<string, number> (optional) - The page range to print. On macOS, only the first range is honored.
-    * `from` number - Index of the first page to print (0-based).
-    * `to` number - Index of the last page to print (inclusive) (0-based).
-  * `pageSize` string | Size (optional) - Specify page size of the generated PDF. Can be `A3`,
-  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`
-  * `printBackground` boolean (optional) - Whether to print CSS backgrounds.
-  * `printSelectionOnly` boolean (optional) - Whether to print selection only.
+  * `landscape` boolean (optional) - Paper orientation.`true` for landscape, `false` for portrait. Defaults to false.
+  * `displayHeaderFooter` boolean (optional) - Whether to display header and footer. Defaults to false.
+  * `printBackground` boolean (optional) - Whether to print background graphics. Defaults to false.
+  * `scale` number(optional)  - Scale of the webpage rendering. Defaults to 1.
+  * `paperWidth` number (optional) - Paper width in inches. Defaults to 8.5 inches.
+  * `paperHeight` number (optional) - Paper height in inches. Defaults to 11 inches.
+  * `margins` Object (optional)
+    * `top` number (optional) - Top margin in inches. Defaults to 1cm (~0.4 inches).
+    * `bottom` number (optional) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
+    * `left` number (optional) - Left margin in inches. Defaults to 1cm (~0.4 inches).
+    * `right` number (optional) - Right margin in inches. Defaults to 1cm (~0.4 inches).
+  * `pageRanges` string (optional) - Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
+  * `ignoreInvalidPageRanges` boolean (optional) - Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
+  * `headerTemplate` string (optional) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them:
+    * `date`: formatted print date
+    * `title`: document title
+    * `url`: document location
+    * `pageNumber`: current page number
+    * `totalPages`: total pages in the document
+  * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
+  * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
 
 Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 
