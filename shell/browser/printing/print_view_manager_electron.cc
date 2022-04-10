@@ -29,7 +29,6 @@ constexpr char kInvalidShowScriptedPrintPreviewCall[] =
     "Invalid ShowScriptedPrintPreview Call";
 constexpr char kInvalidRequestPrintPreviewCall[] =
     "Invalid RequestPrintPreview Call";
-constexpr char kInvalidCheckForCancelCall[] = "Invalid CheckForCancel Call";
 #endif
 
 }  // namespace
@@ -220,7 +219,7 @@ void PrintViewManagerElectron::RequestPrintPreview(
 void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
                                               int32_t request_id,
                                               CheckForCancelCallback callback) {
-  mojo::ReportBadMessage(kInvalidCheckForCancelCall);
+  std::move(callback).Run(false);
 }
 #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
 
