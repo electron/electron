@@ -63,6 +63,20 @@ const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
   }
 } as const;
 
+const paperFormats: Record<string, ElectronInternal.PageSize> = {
+  letter: { width: 8.5, height: 11 },
+  legal: { width: 8.5, height: 14 },
+  tabloid: { width: 11, height: 17 },
+  ledger: { width: 17, height: 11 },
+  a0: { width: 33.1, height: 46.8 },
+  a1: { width: 23.4, height: 33.1 },
+  a2: { width: 16.54, height: 23.4 },
+  a3: { width: 11.7, height: 16.54 },
+  a4: { width: 8.27, height: 11.7 },
+  a5: { width: 5.83, height: 8.27 },
+  a6: { width: 4.13, height: 5.83 }
+} as const;
+
 // The minimum micron size Chromium accepts is that where:
 // Per printing/units.h:
 //  * kMicronsPerInch - Length of an inch in 0.001mm unit.
@@ -175,33 +189,53 @@ WebContents.prototype.printToPDF = async function (options) {
   };
 
   if (options.landscape !== undefined) {
-    if (typeof options.landscape !== 'boolean') { return Promise.reject(new Error('landscape must be a Boolean')); }
+    if (typeof options.landscape !== 'boolean') {
+      return Promise.reject(new Error('landscape must be a Boolean'));
+    }
     printSettings.landscape = options.landscape;
   }
 
   if (options.displayHeaderFooter !== undefined) {
-    if (typeof options.displayHeaderFooter !== 'boolean') { return Promise.reject(new Error('displayHeaderFooter must be a Boolean')); }
+    if (typeof options.displayHeaderFooter !== 'boolean') {
+      return Promise.reject(new Error('displayHeaderFooter must be a Boolean'));
+    }
     printSettings.displayHeaderFooter = options.displayHeaderFooter;
   }
 
   if (options.printBackground !== undefined) {
-    if (typeof options.printBackground !== 'boolean') { return Promise.reject(new Error('printBackground must be a Boolean')); }
+    if (typeof options.printBackground !== 'boolean') {
+      return Promise.reject(new Error('printBackground must be a Boolean'));
+    }
     printSettings.shouldPrintBackgrounds = options.printBackground;
   }
 
   if (options.scale !== undefined) {
-    if (typeof options.scale !== 'number') { return Promise.reject(new Error('scale must be a Number')); }
+    if (typeof options.scale !== 'number') {
+      return Promise.reject(new Error('scale must be a Number'));
+    }
     printSettings.scaleFactor = options.scale;
   }
 
-  if (options.paperWidth !== undefined) {
-    if (typeof options.paperWidth !== 'number') { return Promise.reject(new Error('paperWidth must be a Number')); }
-    printSettings.paperWidth = options.paperWidth;
-  }
+  const { pageSize } = options;
+  if (pageSize !== undefined) {
+    if (typeof pageSize === 'string') {
+      const format = paperFormats[pageSize.toLowerCase()];
+      if (!format) {
+        return Promise.reject(new Error(`Invalid pageSize ${pageSize}`));
+      }
 
-  if (options.paperHeight !== undefined) {
-    if (typeof options.paperHeight !== 'number') { return Promise.reject(new Error('paperHeight must be a Number')); }
-    printSettings.paperHeight = options.paperHeight;
+      printSettings.paperWidth = format.width;
+      printSettings.paperHeight = format.height;
+    } else if (typeof options.pageSize === 'object') {
+      if (!pageSize.height || !pageSize.width) {
+        return Promise.reject(new Error('height and width properties are required for pageSize'));
+      }
+
+      printSettings.paperWidth = pageSize.width;
+      printSettings.paperHeight = pageSize.height;
+    } else {
+      return Promise.reject(new Error('pageSize must be a String or Object'));
+    }
   }
 
   const { margins } = options;
@@ -211,48 +245,66 @@ WebContents.prototype.printToPDF = async function (options) {
     }
 
     if (margins.top !== undefined) {
-      if (typeof margins.top !== 'number') { return Promise.reject(new Error('margins.top must be a Number')); }
+      if (typeof margins.top !== 'number') {
+        return Promise.reject(new Error('margins.top must be a Number'));
+      }
       printSettings.marginTop = margins.top;
     }
 
     if (margins.bottom !== undefined) {
-      if (typeof margins.bottom !== 'number') { return Promise.reject(new Error('margins.bottom must be a Number')); }
+      if (typeof margins.bottom !== 'number') {
+        return Promise.reject(new Error('margins.bottom must be a Number'));
+      }
       printSettings.marginBottom = margins.bottom;
     }
 
     if (margins.left !== undefined) {
-      if (typeof margins.left !== 'number') { return Promise.reject(new Error('margins.left must be a Number')); }
+      if (typeof margins.left !== 'number') {
+        return Promise.reject(new Error('margins.left must be a Number'));
+      }
       printSettings.marginLeft = margins.left;
     }
 
     if (margins.right !== undefined) {
-      if (typeof margins.right !== 'number') { return Promise.reject(new Error('margins.right must be a Number')); }
+      if (typeof margins.right !== 'number') {
+        return Promise.reject(new Error('margins.right must be a Number'));
+      }
       printSettings.marginRight = margins.right;
     }
   }
 
   if (options.pageRanges !== undefined) {
-    if (typeof options.pageRanges !== 'string') { return Promise.reject(new Error('printBackground must be a String')); }
+    if (typeof options.pageRanges !== 'string') {
+      return Promise.reject(new Error('printBackground must be a String'));
+    }
     printSettings.pageRanges = options.pageRanges;
   }
 
   if (options.ignoreInvalidPageRanges !== undefined) {
-    if (typeof options.ignoreInvalidPageRanges !== 'boolean') { return Promise.reject(new Error('ignoreInvalidPageRanges must be Boolean')); }
+    if (typeof options.ignoreInvalidPageRanges !== 'boolean') {
+      return Promise.reject(new Error('ignoreInvalidPageRanges must be Boolean'));
+    }
     printSettings.ignoreInvalidPageRanges = options.ignoreInvalidPageRanges;
   }
 
   if (options.headerTemplate !== undefined) {
-    if (typeof options.headerTemplate !== 'string') { return Promise.reject(new Error('headerTemplate must be a String')); }
+    if (typeof options.headerTemplate !== 'string') {
+      return Promise.reject(new Error('headerTemplate must be a String'));
+    }
     printSettings.headerTemplate = options.headerTemplate;
   }
 
   if (options.footerTemplate !== undefined) {
-    if (typeof options.footerTemplate !== 'string') { return Promise.reject(new Error('footerTemplate must be a String')); }
+    if (typeof options.footerTemplate !== 'string') {
+      return Promise.reject(new Error('footerTemplate must be a String'));
+    }
     printSettings.footerTemplate = options.footerTemplate;
   }
 
   if (options.preferCSSPageSize !== undefined) {
-    if (typeof options.preferCSSPageSize !== 'string') { return Promise.reject(new Error('footerTemplate must be a String')); }
+    if (typeof options.preferCSSPageSize !== 'string') {
+      return Promise.reject(new Error('footerTemplate must be a String'));
+    }
     printSettings.preferCSSPageSize = options.preferCSSPageSize;
   }
 

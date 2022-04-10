@@ -264,6 +264,11 @@ declare namespace ElectronInternal {
     is_default?: 'true',
   }
 
+  type PageSize = {
+    width: number,
+    height: number,
+  }
+
   type ModuleLoader = () => any;
 
   interface ModuleEntry {
