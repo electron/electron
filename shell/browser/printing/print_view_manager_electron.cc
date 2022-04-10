@@ -273,6 +273,7 @@ void PrintViewManagerElectron::DidPrintDocument(
   }
 
   data_ = std::string(static_cast<const char*>(map.memory()), map.size());
+  headless_jobs_.erase(entry);
   std::move(callback).Run(true);
   ReleaseJob(PRINT_SUCCESS);
 }

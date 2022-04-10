@@ -2812,6 +2812,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  // This allows us to track headless printing calls.
+  auto unique_id = settings.GetDict().FindInt(printing::kPreviewRequestID);
   auto landscape = settings.GetDict().FindBool("landscape");
   auto display_header_footer =
       settings.GetDict().FindBool("displayHeaderFooter");
@@ -2848,9 +2850,12 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
     return handle;
   }
 
+  auto params = std::move(
+      absl::get<printing::mojom::PrintPagesParamsPtr>(print_pages_params));
+  params->params->document_cookie = unique_id.value_or(0);
+
   manager->PrintToPdf(web_contents()->GetMainFrame(), page_ranges,
-                      std::move(absl::get<printing::mojom::PrintPagesParamsPtr>(
-                          print_pages_params)),
+                      std::move(params),
                       base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
                                      std::move(promise)));
 
