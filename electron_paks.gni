@@ -54,6 +54,8 @@ template("electron_extra_paks") {
                            ])
     output = "${invoker.output_dir}/resources.pak"
     sources = [
+      "$root_gen_dir/chrome/browser_resources.pak",
+      "$root_gen_dir/chrome/common_resources.pak",
       "$root_gen_dir/chrome/dev_ui_browser_resources.pak",
       "$root_gen_dir/components/components_resources.pak",
       "$root_gen_dir/content/browser/resources/media/media_internals_resources.pak",
@@ -70,6 +72,8 @@ template("electron_extra_paks") {
     ]
     deps = [
       "//chrome/browser:dev_ui_browser_resources",
+      "//chrome/browser:resources",
+      "//chrome/common:resources",
       "//components/resources",
       "//content:content_resources",
       "//content:dev_ui_content_resources",
@@ -173,17 +177,23 @@ template("electron_paks") {
     }
 
     source_patterns = [
+      "${root_gen_dir}/chrome/locale_settings_",
       "${root_gen_dir}/chrome/platform_locale_settings_",
+      "${root_gen_dir}/chrome/generated_resources_",
+      "${root_gen_dir}/components/strings/components_locale_settings_",
       "${root_gen_dir}/components/strings/components_strings_",
-      "${root_gen_dir}/third_party/blink/public/strings/blink_strings_",
       "${root_gen_dir}/device/bluetooth/strings/bluetooth_strings_",
       "${root_gen_dir}/services/strings/services_strings_",
+      "${root_gen_dir}/third_party/blink/public/strings/blink_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
       "${root_gen_dir}/ui/strings/ax_strings_",
       "${root_gen_dir}/ui/strings/ui_strings_",
     ]
     deps = [
+      "//chrome/app:generated_resources",
+      "//chrome/app/resources:locale_settings",
       "//chrome/app/resources:platform_locale_settings",
+      "//components/strings:components_locale_settings",
       "//components/strings:components_strings",
       "//device/bluetooth/strings",
       "//services/strings",
