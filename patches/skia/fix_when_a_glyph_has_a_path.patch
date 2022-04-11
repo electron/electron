@@ -1,0 +1,1312 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Wagner <bungeman@google.com>
+Date: Wed, 1 Dec 2021 17:27:08 -0500
+Subject: Fix when a glyph has a path
+
+Always call generateMetrics before generatePath so that generateMetrics
+can determine which glyph representation to use and if that glyph
+representation can be modeled as a path.
+
+Pass an allocator into generateMetrics so that it can set the path to
+not existing. This allows generatePath to continue to work as it used
+to, creating a path if any path is available. However, generateMetrics
+may first set the path to not existing.
+
+Update getPath and internalGetPath to use the path on the glyph if it
+has already been set. Update makeGlyph and internalMakeGlyph to always
+call generateMetrics first (which is now more like initGlyph).
+
+Update the SkGlyph::PathData to indicate that it is a dev-path and not a
+user-path. A user-path will have effects applied to it. A dev-path is
+always a resolved path which is always filled -- unless it is hairline.
+
+Update everything else for the knock on effects and to take advantage of
+this information.
+
+Bug: chromium:1266022
+Change-Id: Id3f3cf5a534ab99f3a5779c910c1d1e191e68b1e
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/478658
+Reviewed-by: Herb Derby <herb@google.com>
+Cherry-Pick: 668995122fdcbd2be11e9d92e8da842a07ead299
+Merge-Approved: https://crbug.com/1266022#c46
+Commit-Queue: Ben Wagner <bungeman@google.com>
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/482076
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 865a7c6ffd78c39cf247b047e8b55c2e7e67f96a..2791c558878cf1ec3f19de54699cf65900b69db4 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -552,7 +552,9 @@ optional("fontmgr_win") {
+     "src/fonts/SkFontMgr_indirect.cpp",
+     "src/ports/SkFontMgr_win_dw.cpp",
+     "src/ports/SkScalerContext_win_dw.cpp",
++    "src/ports/SkScalerContext_win_dw.h",
+     "src/ports/SkTypeface_win_dw.cpp",
++    "src/ports/SkTypeface_win_dw.h",
+   ]
+ }
+ optional("fontmgr_win_factory") {
+diff --git a/bench/PathTextBench.cpp b/bench/PathTextBench.cpp
+index 369f4a079bf70848a84ec3e1fa8a8bef22b3a5e0..75267c406b5fc3c5285df95a51fc2f85289f6407 100644
+--- a/bench/PathTextBench.cpp
++++ b/bench/PathTextBench.cpp
+@@ -49,9 +49,14 @@ private:
+         SkFont defaultFont;
+         SkStrikeSpec strikeSpec = SkStrikeSpec::MakeWithNoDevice(defaultFont);
+         auto strike = strikeSpec.findOrCreateStrike();
++        SkArenaAlloc alloc(1 << 12); // This is a mock SkStrikeCache.
+         for (int i = 0; i < kNumGlyphs; ++i) {
+             SkPackedGlyphID id(defaultFont.unicharToGlyph(kGlyphs[i]));
+-            sk_ignore_unused_variable(strike->getScalerContext()->getPath(id, &fGlyphs[i]));
++            SkGlyph glyph = strike->getScalerContext()->makeGlyph(id, &alloc);
++            strike->getScalerContext()->getPath(glyph, &alloc);
++            if (glyph.path()) {
++                fGlyphs[i] = *glyph.path();
++            }
+             fGlyphs[i].setIsVolatile(fUncached);
+         }
+ 
+diff --git a/gm/scaledemoji_rendering.cpp b/gm/scaledemoji_rendering.cpp
+index f1f710377e03e2324998f15454ff198dab6d6eaa..51dec98fa694667f3d4d545f269a9ab5fc54a9d7 100644
+--- a/gm/scaledemoji_rendering.cpp
++++ b/gm/scaledemoji_rendering.cpp
+@@ -48,13 +48,14 @@ protected:
+     void onDraw(SkCanvas* canvas) override {
+ 
+         canvas->drawColor(SK_ColorGRAY);
+-        SkScalar y = 0;
++        SkPaint paint;
++        paint.setColor(SK_ColorCYAN);
+ 
++        SkScalar y = 0;
+         for (const auto& typeface: typefaces) {
+             SkFont font(typeface);
+             font.setEdging(SkFont::Edging::kAlias);
+ 
+-            SkPaint paint;
+             const char*   text = ToolUtils::emoji_sample_text();
+             SkFontMetrics metrics;
+ 
+@@ -63,11 +64,20 @@ protected:
+                 font.getMetrics(&metrics);
+                 // All typefaces should support subpixel mode
+                 font.setSubpixel(true);
++
+                 y += -metrics.fAscent;
+ 
+-                canvas->drawSimpleText(text, strlen(text), SkTextEncoding::kUTF8,
+-                                       10, y, font, paint);
++                SkScalar x = 0;
++                for (bool fakeBold : { false, true }) {
++                    font.setEmbolden(fakeBold);
++                    SkRect bounds;
++                    font.measureText(text, strlen(text), SkTextEncoding::kUTF8, &bounds, &paint);
++                    canvas->drawSimpleText(text, strlen(text), SkTextEncoding::kUTF8,
++                                           x + bounds.left(), y, font, paint);
++                    x += bounds.width() * 1.2;
++                }
+                 y += metrics.fDescent + metrics.fLeading;
++                x = 0;
+             }
+         }
+     }
+diff --git a/samplecode/SamplePathText.cpp b/samplecode/SamplePathText.cpp
+index 20fb5f99933b14c5346cec44a108d8cdcc8b6fd7..1f5cd82897f62e35185e90517bfb1583e240fd60 100644
+--- a/samplecode/SamplePathText.cpp
++++ b/samplecode/SamplePathText.cpp
+@@ -37,12 +37,17 @@ public:
+         SkFont defaultFont;
+         SkStrikeSpec strikeSpec = SkStrikeSpec::MakeWithNoDevice(defaultFont);
+         auto strike = strikeSpec.findOrCreateStrike();
++        SkArenaAlloc alloc(1 << 12); // This is a mock SkStrikeCache.
+         SkPath glyphPaths[52];
+         for (int i = 0; i < 52; ++i) {
+             // I and l are rects on OS X ...
+             char c = "aQCDEFGH7JKLMNOPBRZTUVWXYSAbcdefghijk1mnopqrstuvwxyz"[i];
+             SkPackedGlyphID id(defaultFont.unicharToGlyph(c));
+-            sk_ignore_unused_variable(strike->getScalerContext()->getPath(id, &glyphPaths[i]));
++            SkGlyph glyph = strike->getScalerContext()->makeGlyph(id, &alloc);
++            strike->getScalerContext()->getPath(glyph, &alloc);
++            if (glyph.path()) {
++                glyphPaths[i] = *glyph.path();
++            }
+         }
+ 
+         for (int i = 0; i < kNumPaths; ++i) {
+diff --git a/src/core/SkGlyph.cpp b/src/core/SkGlyph.cpp
+index ae2b284c0ed8df6a2162ad689497971ef460f8e4..126ffd7923380df7408335d5e48d1ce159c84a0e 100644
+--- a/src/core/SkGlyph.cpp
++++ b/src/core/SkGlyph.cpp
+@@ -119,6 +119,10 @@ size_t SkGlyph::setMetricsAndImage(SkArenaAlloc* alloc, const SkGlyph& from) {
+         if (from.fImage != nullptr && this->setImage(alloc, from.image())) {
+             return this->imageSize();
+         }
++
++        SkDEBUGCODE(
++            fAdvancesBoundsFormatAndInitialPathDone = from.fAdvancesBoundsFormatAndInitialPathDone;
++        )
+     }
+     return 0;
+ }
+@@ -143,7 +147,7 @@ size_t SkGlyph::imageSize() const {
+     return size;
+ }
+ 
+-void SkGlyph::installPath(SkArenaAlloc* alloc, const SkPath* path) {
++void SkGlyph::installPath(SkArenaAlloc* alloc, const SkPath* path, bool hairline) {
+     SkASSERT(fPathData == nullptr);
+     SkASSERT(!this->setPathHasBeenCalled());
+     fPathData = alloc->make<SkGlyph::PathData>();
+@@ -152,26 +156,23 @@ void SkGlyph::installPath(SkArenaAlloc* alloc, const SkPath* path) {
+         fPathData->fPath.updateBoundsCache();
+         fPathData->fPath.getGenerationID();
+         fPathData->fHasPath = true;
++        fPathData->fHairline = hairline;
+     }
+ }
+ 
+ bool SkGlyph::setPath(SkArenaAlloc* alloc, SkScalerContext* scalerContext) {
+     if (!this->setPathHasBeenCalled()) {
+-        SkPath path;
+-        if (scalerContext->getPath(this->getPackedID(), &path)) {
+-            this->installPath(alloc, &path);
+-        } else {
+-            this->installPath(alloc, nullptr);
+-        }
++        scalerContext->getPath(*this, alloc);
++        SkASSERT(this->setPathHasBeenCalled());
+         return this->path() != nullptr;
+     }
+ 
+     return false;
+ }
+ 
+-bool SkGlyph::setPath(SkArenaAlloc* alloc, const SkPath* path) {
++bool SkGlyph::setPath(SkArenaAlloc* alloc, const SkPath* path, bool hairline) {
+     if (!this->setPathHasBeenCalled()) {
+-        this->installPath(alloc, path);
++        this->installPath(alloc, path, hairline);
+         return this->path() != nullptr;
+     }
+     return false;
+@@ -186,6 +187,12 @@ const SkPath* SkGlyph::path() const {
+     return nullptr;
+ }
+ 
++bool SkGlyph::pathIsHairline() const {
++    // setPath must have been called previously.
++    SkASSERT(this->setPathHasBeenCalled());
++    return fPathData->fHairline;
++}
++
+ static std::tuple<SkScalar, SkScalar> calculate_path_gap(
+         SkScalar topOffset, SkScalar bottomOffset, const SkPath& path) {
+ 
+diff --git a/src/core/SkGlyph.h b/src/core/SkGlyph.h
+index 5c3911f151cf1f76c0f13388b52507d0e1613dab..aeb8017ad114f4aab0ebe435783b5a6f7a31dd74 100644
+--- a/src/core/SkGlyph.h
++++ b/src/core/SkGlyph.h
+@@ -290,7 +290,7 @@ public:
+     // Returns true if this is the first time you called setPath()
+     // and there actually is a path; call path() to get it.
+     bool setPath(SkArenaAlloc* alloc, SkScalerContext* scalerContext);
+-    bool setPath(SkArenaAlloc* alloc, const SkPath* path);
++    bool setPath(SkArenaAlloc* alloc, const SkPath* path, bool hairline);
+ 
+     // Returns true if that path has been set.
+     bool setPathHasBeenCalled() const { return fPathData != nullptr; }
+@@ -298,6 +298,7 @@ public:
+     // Return a pointer to the path if it exists, otherwise return nullptr. Only works if the
+     // path was previously set.
+     const SkPath* path() const;
++    bool pathIsHairline() const;
+ 
+     // Format
+     bool isColor() const { return fMaskFormat == SkMask::kARGB32_Format; }
+@@ -370,12 +371,17 @@ private:
+         Intercept* fIntercept{nullptr};
+         SkPath     fPath;
+         bool       fHasPath{false};
++        // A normal user-path will have patheffects applied to it and eventually become a dev-path.
++        // A dev-path is always a fill-path, except when it is hairline.
++        // The fPath is a dev-path, so sidecar the paths hairline status.
++        // This allows the user to avoid filling paths which should not be filled.
++        bool       fHairline{false};
+     };
+ 
+     size_t allocImage(SkArenaAlloc* alloc);
+ 
+     // path == nullptr indicates that there is no path.
+-    void installPath(SkArenaAlloc* alloc, const SkPath* path);
++    void installPath(SkArenaAlloc* alloc, const SkPath* path, bool hairline);
+ 
+     // The width and height of the glyph mask.
+     uint16_t  fWidth  = 0,
+@@ -402,6 +408,10 @@ private:
+     // Used by the DirectWrite scaler to track state.
+     int8_t    fForceBW = 0;
+ 
++    // An SkGlyph can be created with just a packedID, but generally speaking some glyph factory
++    // needs to actually fill out the glyph before it can be used as part of that system.
++    SkDEBUGCODE(bool fAdvancesBoundsFormatAndInitialPathDone{false};)
++
+     SkPackedGlyphID fID;
+ };
+ 
+diff --git a/src/core/SkRemoteGlyphCache.cpp b/src/core/SkRemoteGlyphCache.cpp
+index 9c2e7bb05b41611151c630323570c3589ab11bf0..a67a8ee0ed5451e0fd3a867ab27a11f4574d7f83 100644
+--- a/src/core/SkRemoteGlyphCache.cpp
++++ b/src/core/SkRemoteGlyphCache.cpp
+@@ -309,19 +309,19 @@ private:
+     // Same thing as MaskSummary, but for paths.
+     struct PathSummary {
+         constexpr static uint16_t kIsPath = 0;
+-        SkGlyphID glyphID;
++        SkPackedGlyphID packedID;
+         // If drawing glyphID can be done with a path, this is 0, otherwise it is the max
+         // dimension of the glyph.
+         uint16_t maxDimensionOrPath;
+     };
+ 
+     struct PathSummaryTraits {
+-        static SkGlyphID GetKey(PathSummary summary) {
+-            return summary.glyphID;
++        static SkPackedGlyphID GetKey(PathSummary summary) {
++            return summary.packedID;
+         }
+ 
+-        static uint32_t Hash(SkGlyphID packedID) {
+-            return SkChecksum::CheapMix(packedID);
++        static uint32_t Hash(SkPackedGlyphID packedID) {
++            return SkChecksum::CheapMix(packedID.value());
+         }
+     };
+ 
+@@ -348,7 +348,7 @@ private:
+ 
+     // The masks and paths that currently reside in the GPU process.
+     SkTHashTable<MaskSummary, SkPackedGlyphID, MaskSummaryTraits> fSentGlyphs;
+-    SkTHashTable<PathSummary, SkGlyphID, PathSummaryTraits> fSentPaths;
++    SkTHashTable<PathSummary, SkPackedGlyphID, PathSummaryTraits> fSentPaths;
+ 
+     // The Masks, SDFT Mask, and Paths that need to be sent to the GPU task for the processed
+     // TextBlobs. Cleared after diffs are serialized.
+@@ -462,6 +462,8 @@ void RemoteStrike::writeGlyphPath(
+     size_t pathSize = path->writeToMemory(nullptr);
+     serializer->write<uint64_t>(pathSize);
+     path->writeToMemory(serializer->allocate(pathSize, kPathAlignment));
++
++    serializer->write<bool>(glyph.pathIsHairline());
+ }
+ 
+ template <typename Rejector>
+@@ -473,7 +475,7 @@ void RemoteStrike::commonMaskLoop(
+                 if (summary == nullptr) {
+                     // Put the new SkGlyph in the glyphs to send.
+                     this->ensureScalerContext();
+-                    fMasksToSend.emplace_back(fContext->makeGlyph(packedID));
++                    fMasksToSend.emplace_back(fContext->makeGlyph(packedID, &fPathAlloc));
+                     SkGlyph* glyph = &fMasksToSend.back();
+ 
+                     MaskSummary newSummary =
+@@ -506,7 +508,7 @@ void RemoteStrike::prepareForMaskDrawing(
+ 
+             // Put the new SkGlyph in the glyphs to send.
+             this->ensureScalerContext();
+-            fMasksToSend.emplace_back(fContext->makeGlyph(packedID));
++            fMasksToSend.emplace_back(fContext->makeGlyph(packedID, &fPathAlloc));
+             SkGlyph* glyph = &fMasksToSend.back();
+ 
+             MaskSummary newSummary =
+@@ -536,25 +538,21 @@ void RemoteStrike::prepareForPathDrawing(
+         SkDrawableGlyphBuffer* drawables, SkSourceGlyphBuffer* rejects) {
+     drawables->forEachGlyphID(
+             [&](size_t i, SkPackedGlyphID packedID, SkPoint position) {
+-                SkGlyphID glyphID = packedID.glyphID();
+-                PathSummary* summary = fSentPaths.find(glyphID);
++                PathSummary* summary = fSentPaths.find(packedID);
+                 if (summary == nullptr) {
+ 
+                     // Put the new SkGlyph in the glyphs to send.
+                     this->ensureScalerContext();
+-                    fPathsToSend.emplace_back(fContext->makeGlyph(SkPackedGlyphID{glyphID}));
++                    fPathsToSend.emplace_back(fContext->makeGlyph(packedID, &fPathAlloc));
+                     SkGlyph* glyph = &fPathsToSend.back();
+ 
+                     uint16_t maxDimensionOrPath = glyph->maxDimension();
+-                    // Only try to get the path if the glyphs is not color.
+-                    if (!glyph->isColor() && !glyph->isEmpty()) {
+-                        glyph->setPath(&fPathAlloc, fContext.get());
+-                        if (glyph->path() != nullptr) {
+-                            maxDimensionOrPath = PathSummary::kIsPath;
+-                        }
++                    glyph->setPath(&fPathAlloc, fContext.get());
++                    if (glyph->path() != nullptr) {
++                        maxDimensionOrPath = PathSummary::kIsPath;
+                     }
+ 
+-                    PathSummary newSummary = {glyph->getGlyphID(), maxDimensionOrPath};
++                    PathSummary newSummary = {packedID, maxDimensionOrPath};
+                     summary = fSentPaths.set(newSummary);
+                 }
+ 
+@@ -952,6 +950,7 @@ bool SkStrikeClientImpl::ReadGlyph(SkTLazy<SkGlyph>& glyph, Deserializer* deseri
+     if (!deserializer->read<uint8_t>(&maskFormat)) return false;
+     if (!SkMask::IsValidFormat(maskFormat)) return false;
+     glyph->fMaskFormat = static_cast<SkMask::Format>(maskFormat);
++    SkDEBUGCODE(glyph->fAdvancesBoundsFormatAndInitialPathDone = true;)
+ 
+     return true;
+ }
+@@ -1067,6 +1066,7 @@ bool SkStrikeClientImpl::readStrikeData(const volatile void* memory, size_t memo
+             SkPath* pathPtr = nullptr;
+             SkPath path;
+             uint64_t pathSize = 0u;
++            bool hairline = false;
+             if (!deserializer.read<uint64_t>(&pathSize)) READ_FAILURE
+ 
+             if (pathSize > 0) {
+@@ -1074,9 +1074,10 @@ bool SkStrikeClientImpl::readStrikeData(const volatile void* memory, size_t memo
+                 if (!pathData) READ_FAILURE
+                 if (!path.readFromMemory(const_cast<const void*>(pathData), pathSize)) READ_FAILURE
+                 pathPtr = &path;
++                if (!deserializer.read<bool>(&hairline)) READ_FAILURE
+             }
+ 
+-            strike->mergePath(allocatedGlyph, pathPtr);
++            strike->mergePath(allocatedGlyph, pathPtr, hairline);
+         }
+     }
+ 
+diff --git a/src/core/SkScalerCache.cpp b/src/core/SkScalerCache.cpp
+index f949446018959f0b34ed6fb118042cee55dab59c..c687644cff695d6e5164a769445be119a14052bd 100644
+--- a/src/core/SkScalerCache.cpp
++++ b/src/core/SkScalerCache.cpp
+@@ -48,7 +48,7 @@ std::tuple<SkGlyphDigest, size_t> SkScalerCache::digest(SkPackedGlyphID packedGl
+         return {*digest, 0};
+     }
+ 
+-    SkGlyph* glyph = fAlloc.make<SkGlyph>(fScalerContext->makeGlyph(packedGlyphID));
++    SkGlyph* glyph = fAlloc.make<SkGlyph>(fScalerContext->makeGlyph(packedGlyphID, &fAlloc));
+     return {this->addGlyph(glyph), sizeof(SkGlyph)};
+ }
+ 
+@@ -68,10 +68,11 @@ std::tuple<const SkPath*, size_t> SkScalerCache::preparePath(SkGlyph* glyph) {
+     return {glyph->path(), delta};
+ }
+ 
+-std::tuple<const SkPath*, size_t> SkScalerCache::mergePath(SkGlyph* glyph, const SkPath* path) {
++std::tuple<const SkPath*, size_t> SkScalerCache::mergePath(
++        SkGlyph* glyph, const SkPath* path, bool hairline) {
+     SkAutoMutexExclusive lock{fMu};
+     size_t pathDelta = 0;
+-    if (glyph->setPath(&fAlloc, path)) {
++    if (glyph->setPath(&fAlloc, path, hairline)) {
+         pathDelta = glyph->path()->approximateBytesUsed();
+     }
+     return {glyph->path(), pathDelta};
+diff --git a/src/core/SkScalerCache.h b/src/core/SkScalerCache.h
+index 5a5123d06002e0ad619c96bd8257fd0453c90cc9..bf5ad0bccb34a33b725fd54820afc56388e4085e 100644
+--- a/src/core/SkScalerCache.h
++++ b/src/core/SkScalerCache.h
+@@ -65,7 +65,7 @@ public:
+ 
+     // If the path has never been set, then add a path to glyph.
+     std::tuple<const SkPath*, size_t> mergePath(
+-            SkGlyph* glyph, const SkPath* path) SK_EXCLUDES(fMu);
++            SkGlyph* glyph, const SkPath* path, bool hairline) SK_EXCLUDES(fMu);
+ 
+     /** Return the number of glyphs currently cached. */
+     int countCachedGlyphs() const SK_EXCLUDES(fMu);
+diff --git a/src/core/SkScalerContext.cpp b/src/core/SkScalerContext.cpp
+index f53699c8e34d7643d43f635e9601a9f8ca8a5a7d..3ba7a25f4ea6c8d80e3c54f4de5e5b7f4582e2bd 100644
+--- a/src/core/SkScalerContext.cpp
++++ b/src/core/SkScalerContext.cpp
+@@ -177,33 +177,35 @@ bool SkScalerContext::GetGammaLUTData(SkScalar contrast, SkScalar paintGamma, Sk
+     return true;
+ }
+ 
+-SkGlyph SkScalerContext::makeGlyph(SkPackedGlyphID packedID) {
+-    return internalMakeGlyph(packedID, fRec.fMaskFormat);
++SkGlyph SkScalerContext::makeGlyph(SkPackedGlyphID packedID, SkArenaAlloc* alloc) {
++    return internalMakeGlyph(packedID, fRec.fMaskFormat, alloc);
+ }
+ 
+-SkGlyph SkScalerContext::internalMakeGlyph(SkPackedGlyphID packedID, SkMask::Format format) {
++SkGlyph SkScalerContext::internalMakeGlyph(SkPackedGlyphID packedID, SkMask::Format format,
++                                           SkArenaAlloc* alloc) {
+     SkGlyph glyph{packedID};
+     glyph.fMaskFormat = format;
+-    bool generatingImageFromPath = fGenerateImageFromPath;
+-    if (!generatingImageFromPath) {
+-        generateMetrics(&glyph);
+-    } else {
+-        SkPath devPath;
+-        bool hairline;
+-        generatingImageFromPath = this->internalGetPath(glyph.getPackedID(), &devPath, &hairline);
+-        if (!generatingImageFromPath) {
+-            generateMetrics(&glyph);
+-        } else {
+-            if (!generateAdvance(&glyph)) {
+-                generateMetrics(&glyph);
+-            }
++    // Must call to allow the subclass to determine the glyph representation to use.
++    this->generateMetrics(&glyph, alloc);
++    SkDEBUGCODE(glyph.fAdvancesBoundsFormatAndInitialPathDone = true;)
++    if (fGenerateImageFromPath) {
++        this->internalGetPath(glyph, alloc);
++        const SkPath* devPath = glyph.path();
++        if (devPath) {
++            bool hairline = glyph.pathIsHairline();
++
++            // generateMetrics may have modified the glyph fMaskFormat.
++            glyph.fMaskFormat = format;
+ 
+-            // If we are going to create the mask, then we cannot keep the color
+-            if (SkMask::kARGB32_Format == glyph.fMaskFormat) {
++            // Only BW, A8, and LCD16 can be produced from paths.
++            if (glyph.fMaskFormat != SkMask::kBW_Format &&
++                glyph.fMaskFormat != SkMask::kA8_Format &&
++                glyph.fMaskFormat != SkMask::kLCD16_Format)
++            {
+                 glyph.fMaskFormat = SkMask::kA8_Format;
+             }
+ 
+-            const SkIRect ir = devPath.getBounds().roundOut();
++            const SkIRect ir = devPath->getBounds().roundOut();
+             if (ir.isEmpty() || !SkRectPriv::Is16Bit(ir)) {
+                 goto SK_ERROR;
+             }
+@@ -548,15 +550,18 @@ static void generateMask(const SkMask& mask, const SkPath& path,
+ }
+ 
+ void SkScalerContext::getImage(const SkGlyph& origGlyph) {
++    SkASSERT(origGlyph.fAdvancesBoundsFormatAndInitialPathDone);
++
+     const SkGlyph* unfilteredGlyph = &origGlyph;
+     // in case we need to call generateImage on a mask-format that is different
+     // (i.e. larger) than what our caller allocated by looking at origGlyph.
+     SkAutoMalloc tmpGlyphImageStorage;
+     SkGlyph tmpGlyph;
++    SkSTArenaAlloc<sizeof(SkGlyph::PathData)> tmpGlyphPathDataStorage;
+     if (fMaskFilter) {
+         // need the original bounds, sans our maskfilter
+         sk_sp<SkMaskFilter> mf = std::move(fMaskFilter);
+-        tmpGlyph = this->internalMakeGlyph(origGlyph.getPackedID(), fRec.fMaskFormat);
++        tmpGlyph = this->makeGlyph(origGlyph.getPackedID(), &tmpGlyphPathDataStorage);
+         fMaskFilter = std::move(mf);
+ 
+         // Use the origGlyph storage for the temporary unfiltered mask if it will fit.
+@@ -574,11 +579,12 @@ void SkScalerContext::getImage(const SkGlyph& origGlyph) {
+     if (!fGenerateImageFromPath) {
+         generateImage(*unfilteredGlyph);
+     } else {
+-        SkPath devPath;
++        SkASSERT(origGlyph.setPathHasBeenCalled());
++        const SkPath* devPath = origGlyph.path();
++        bool hairline = origGlyph.pathIsHairline();
+         SkMask mask = unfilteredGlyph->mask();
+-        bool hairline;
+ 
+-        if (!this->internalGetPath(unfilteredGlyph->getPackedID(), &devPath, &hairline)) {
++        if (!devPath) {
+             generateImage(*unfilteredGlyph);
+         } else {
+             SkASSERT(SkMask::kARGB32_Format != origGlyph.fMaskFormat);
+@@ -586,7 +592,7 @@ void SkScalerContext::getImage(const SkGlyph& origGlyph) {
+             const bool doBGR = SkToBool(fRec.fFlags & SkScalerContext::kLCD_BGROrder_Flag);
+             const bool doVert = SkToBool(fRec.fFlags & SkScalerContext::kLCD_Vertical_Flag);
+             const bool a8LCD = SkToBool(fRec.fFlags & SkScalerContext::kGenA8FromLCD_Flag);
+-            generateMask(mask, devPath, fPreBlend, doBGR, doVert, a8LCD, hairline);
++            generateMask(mask, *devPath, fPreBlend, doBGR, doVert, a8LCD, hairline);
+         }
+     }
+ 
+@@ -686,10 +692,8 @@ void SkScalerContext::getImage(const SkGlyph& origGlyph) {
+     }
+ }
+ 
+-bool SkScalerContext::getPath(SkPackedGlyphID glyphID, SkPath* path) {
+-    // TODO: return hairline so user knows to stroke.
+-    // Most users get the fill path without path effect and then draw that, so don't need this.
+-    return this->internalGetPath(glyphID, path, nullptr);
++void SkScalerContext::getPath(SkGlyph& glyph, SkArenaAlloc* alloc) {
++    this->internalGetPath(glyph, alloc);
+ }
+ 
+ void SkScalerContext::getFontMetrics(SkFontMetrics* fm) {
+@@ -699,10 +703,21 @@ void SkScalerContext::getFontMetrics(SkFontMetrics* fm) {
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+ 
+-bool SkScalerContext::internalGetPath(SkPackedGlyphID glyphID, SkPath* devPath, bool* hairline) {
+-    SkPath  path;
+-    if (!generatePath(glyphID.glyphID(), &path)) {
+-        return false;
++void SkScalerContext::internalGetPath(SkGlyph& glyph, SkArenaAlloc* alloc) {
++    SkASSERT(glyph.fAdvancesBoundsFormatAndInitialPathDone);
++
++    if (glyph.setPathHasBeenCalled()) {
++        return;
++    }
++
++    SkPath path;
++    SkPath devPath;
++    bool hairline = false;
++
++    SkPackedGlyphID glyphID = glyph.getPackedID();
++    if (!generatePath(glyph, &path)) {
++        glyph.setPath(alloc, (SkPath*)nullptr, hairline);
++        return;
+     }
+ 
+     if (fRec.fFlags & SkScalerContext::kSubpixelPositioning_Flag) {
+@@ -713,22 +728,20 @@ bool SkScalerContext::internalGetPath(SkPackedGlyphID glyphID, SkPath* devPath,
+         }
+     }
+ 
+-    if (hairline) {
+-        *hairline = false;
+-    }
+-
+-    if (fRec.fFrameWidth >= 0 || fPathEffect != nullptr) {
++    if (fRec.fFrameWidth < 0 && fPathEffect == nullptr) {
++        devPath.swap(path);
++    } else {
+         // need the path in user-space, with only the point-size applied
+         // so that our stroking and effects will operate the same way they
+         // would if the user had extracted the path themself, and then
+         // called drawPath
+-        SkPath      localPath;
+-        SkMatrix    matrix, inverse;
++        SkPath localPath;
++        SkMatrix matrix;
++        SkMatrix inverse;
+ 
+         fRec.getMatrixFrom2x2(&matrix);
+         if (!matrix.invert(&inverse)) {
+-            // assume devPath is already empty.
+-            return true;
++            glyph.setPath(alloc, &devPath, hairline);
+         }
+         path.transform(inverse, &localPath);
+         // now localPath is only affected by the paint settings, and not the canvas matrix
+@@ -760,24 +773,13 @@ bool SkScalerContext::internalGetPath(SkPackedGlyphID glyphID, SkPath* devPath,
+         }
+ 
+         // The path effect may have modified 'rec', so wait to here to check hairline status.
+-        if (hairline && rec.isHairlineStyle()) {
+-            *hairline = true;
++        if (rec.isHairlineStyle()) {
++            hairline = true;
+         }
+ 
+-        // now return stuff to the caller
+-        if (devPath) {
+-            localPath.transform(matrix, devPath);
+-        }
+-    } else {   // nothing tricky to do
+-        if (devPath) {
+-            devPath->swap(path);
+-        }
++        localPath.transform(matrix, &devPath);
+     }
+-
+-    if (devPath) {
+-        devPath->updateBoundsCache();
+-    }
+-    return true;
++    glyph.setPath(alloc, &devPath, hairline);
+ }
+ 
+ 
+@@ -1237,12 +1239,12 @@ std::unique_ptr<SkScalerContext> SkScalerContext::MakeEmpty(
+             glyph->zeroMetrics();
+             return true;
+         }
+-        void generateMetrics(SkGlyph* glyph) override {
++        void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) override {
+             glyph->fMaskFormat = fRec.fMaskFormat;
+             glyph->zeroMetrics();
+         }
+         void generateImage(const SkGlyph& glyph) override {}
+-        bool generatePath(SkGlyphID glyph, SkPath* path) override {
++        bool generatePath(const SkGlyph& glyph, SkPath* path) override {
+             path->reset();
+             return false;
+         }
+diff --git a/src/core/SkScalerContext.h b/src/core/SkScalerContext.h
+index 694fa56179fbaa1f9fe7932ee1885ff26204bcc9..99605b48be2cfec240b8dd51bfad932d9b5c5e44 100644
+--- a/src/core/SkScalerContext.h
++++ b/src/core/SkScalerContext.h
+@@ -284,9 +284,9 @@ public:
+     // DEPRECATED
+     bool isVertical() const { return false; }
+ 
+-    SkGlyph     makeGlyph(SkPackedGlyphID);
++    SkGlyph     makeGlyph(SkPackedGlyphID, SkArenaAlloc*);
+     void        getImage(const SkGlyph&);
+-    bool SK_WARN_UNUSED_RESULT getPath(SkPackedGlyphID, SkPath*);
++    void        getPath(SkGlyph&, SkArenaAlloc*);
+     void        getFontMetrics(SkFontMetrics*);
+ 
+     /** Return the size in bytes of the associated gamma lookup table
+@@ -370,7 +370,7 @@ protected:
+      *
+      *  TODO: fMaskFormat is set by internalMakeGlyph later; cannot be set here.
+      */
+-    virtual void generateMetrics(SkGlyph* glyph) = 0;
++    virtual void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) = 0;
+ 
+     /** Generates the contents of glyph.fImage.
+      *  When called, glyph.fImage will be pointing to a pre-allocated,
+@@ -385,9 +385,10 @@ protected:
+ 
+     /** Sets the passed path to the glyph outline.
+      *  If this cannot be done the path is set to empty;
++     *  Does not apply subpixel positioning to the path.
+      *  @return false if this glyph does not have any path.
+      */
+-    virtual bool SK_WARN_UNUSED_RESULT generatePath(SkGlyphID glyphId, SkPath* path) = 0;
++    virtual bool SK_WARN_UNUSED_RESULT generatePath(const SkGlyph&, SkPath*) = 0;
+ 
+     /** Retrieves font metrics. */
+     virtual void generateFontMetrics(SkFontMetrics*) = 0;
+@@ -396,11 +397,13 @@ protected:
+     void forceOffGenerateImageFromPath() { fGenerateImageFromPath = false; }
+ 
+ private:
++    friend class PathText;  // For debug purposes
++    friend class PathTextBench;  // For debug purposes
+     friend class RandomScalerContext;  // For debug purposes
+ 
+-    static SkScalerContextRec PreprocessRec(const SkTypeface& typeface,
+-                                            const SkScalerContextEffects& effects,
+-                                            const SkDescriptor& desc);
++    static SkScalerContextRec PreprocessRec(const SkTypeface&,
++                                            const SkScalerContextEffects&,
++                                            const SkDescriptor&);
+ 
+     // never null
+     sk_sp<SkTypeface> fTypeface;
+@@ -414,8 +417,8 @@ private:
+     bool fGenerateImageFromPath;
+ 
+     /** Returns false if the glyph has no path at all. */
+-    bool internalGetPath(SkPackedGlyphID id, SkPath* devPath, bool* hairline);
+-    SkGlyph internalMakeGlyph(SkPackedGlyphID packedID, SkMask::Format format);
++    void internalGetPath(SkGlyph&, SkArenaAlloc*);
++    SkGlyph internalMakeGlyph(SkPackedGlyphID, SkMask::Format, SkArenaAlloc*);
+ 
+     // SkMaskGamma::PreBlend converts linear masks to gamma correcting masks.
+ protected:
+diff --git a/src/core/SkStrikeCache.h b/src/core/SkStrikeCache.h
+index dbd9eae47b1de9cc15cdf85ec1b3be5285975e6a..cf93e118cd0fbd985e964474e5e3af6060aa6365 100644
+--- a/src/core/SkStrikeCache.h
++++ b/src/core/SkStrikeCache.h
+@@ -55,8 +55,8 @@ public:
+             return glyph;
+         }
+ 
+-        const SkPath* mergePath(SkGlyph* glyph, const SkPath* path) {
+-            auto [glyphPath, increase] = fScalerCache.mergePath(glyph, path);
++        const SkPath* mergePath(SkGlyph* glyph, const SkPath* path, bool hairline) {
++            auto [glyphPath, increase] = fScalerCache.mergePath(glyph, path, hairline);
+             this->updateDelta(increase);
+             return glyphPath;
+         }
+diff --git a/src/core/SkTypeface_remote.cpp b/src/core/SkTypeface_remote.cpp
+index 954a24f68add2b8f5f0e3fe549ff1ff025240060..a59d214e4bcd45fc9c80d968156a313800145fb7 100644
+--- a/src/core/SkTypeface_remote.cpp
++++ b/src/core/SkTypeface_remote.cpp
+@@ -23,7 +23,7 @@ bool SkScalerContextProxy::generateAdvance(SkGlyph* glyph) {
+     return false;
+ }
+ 
+-void SkScalerContextProxy::generateMetrics(SkGlyph* glyph) {
++void SkScalerContextProxy::generateMetrics(SkGlyph* glyph, SkArenaAlloc*) {
+     TRACE_EVENT1("skia", "generateMetrics", "rec", TRACE_STR_COPY(this->getRec().dump().c_str()));
+     if (this->getProxyTypeface()->isLogging()) {
+         SkDebugf("GlyphCacheMiss generateMetrics: %s\n", this->getRec().dump().c_str());
+@@ -47,7 +47,7 @@ void SkScalerContextProxy::generateImage(const SkGlyph& glyph) {
+             SkStrikeClient::CacheMissType::kGlyphImage, fRec.fTextSize);
+ }
+ 
+-bool SkScalerContextProxy::generatePath(SkGlyphID glyphID, SkPath* path) {
++bool SkScalerContextProxy::generatePath(const SkGlyph& glyph, SkPath* path) {
+     TRACE_EVENT1("skia", "generatePath", "rec", TRACE_STR_COPY(this->getRec().dump().c_str()));
+     if (this->getProxyTypeface()->isLogging()) {
+         SkDebugf("GlyphCacheMiss generatePath: %s\n", this->getRec().dump().c_str());
+diff --git a/src/core/SkTypeface_remote.h b/src/core/SkTypeface_remote.h
+index c07daa9a3803a557100f3f6a54b93c485100a454..07c24b6947fdc355b0fb0593da23f5806444f62b 100644
+--- a/src/core/SkTypeface_remote.h
++++ b/src/core/SkTypeface_remote.h
+@@ -29,9 +29,9 @@ public:
+ 
+ protected:
+     bool generateAdvance(SkGlyph* glyph) override;
+-    void generateMetrics(SkGlyph* glyph) override;
++    void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) override;
+     void generateImage(const SkGlyph& glyph) override;
+-    bool generatePath(SkGlyphID glyphID, SkPath* path) override;
++    bool generatePath(const SkGlyph& glyphID, SkPath* path) override;
+     void generateFontMetrics(SkFontMetrics* metrics) override;
+     SkTypefaceProxy* getProxyTypeface() const;
+ 
+diff --git a/src/ports/SkFontHost_FreeType.cpp b/src/ports/SkFontHost_FreeType.cpp
+index 6fc99eb5aaf7997d85aab6d25fe104b5b3937b66..7acf92a5bf478655773305c8a3b50d04604a6c3a 100644
+--- a/src/ports/SkFontHost_FreeType.cpp
++++ b/src/ports/SkFontHost_FreeType.cpp
+@@ -369,9 +369,9 @@ public:
+ 
+ protected:
+     bool generateAdvance(SkGlyph* glyph) override;
+-    void generateMetrics(SkGlyph* glyph) override;
++    void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) override;
+     void generateImage(const SkGlyph& glyph) override;
+-    bool generatePath(SkGlyphID glyphID, SkPath* path) override;
++    bool generatePath(const SkGlyph& glyph, SkPath* path) override;
+     void generateFontMetrics(SkFontMetrics*) override;
+ 
+ private:
+@@ -1071,11 +1071,9 @@ bool SkScalerContext_FreeType::shouldSubpixelBitmap(const SkGlyph& glyph, const
+     return mechanism && policy;
+ }
+ 
+-void SkScalerContext_FreeType::generateMetrics(SkGlyph* glyph) {
++void SkScalerContext_FreeType::generateMetrics(SkGlyph* glyph, SkArenaAlloc* alloc) {
+     SkAutoMutexExclusive  ac(f_t_mutex());
+ 
+-    glyph->fMaskFormat = fRec.fMaskFormat;
+-
+     if (this->setupSize()) {
+         glyph->zeroMetrics();
+         return;
+@@ -1191,6 +1189,7 @@ void SkScalerContext_FreeType::generateMetrics(SkGlyph* glyph) {
+ 
+         if (haveLayers) {
+             glyph->fMaskFormat = SkMask::kARGB32_Format;
++            glyph->setPath(alloc, nullptr, false);
+             if (!(bounds.xMin < bounds.xMax && bounds.yMin < bounds.yMax)) {
+                 bounds = { 0, 0, 0, 0 };
+             }
+@@ -1320,11 +1319,12 @@ void SkScalerContext_FreeType::generateImage(const SkGlyph& glyph) {
+ }
+ 
+ 
+-bool SkScalerContext_FreeType::generatePath(SkGlyphID glyphID, SkPath* path) {
++bool SkScalerContext_FreeType::generatePath(const SkGlyph& glyph, SkPath* path) {
+     SkASSERT(path);
+ 
+     SkAutoMutexExclusive  ac(f_t_mutex());
+ 
++    SkGlyphID glyphID = glyph.getGlyphID();
+     // FT_IS_SCALABLE is documented to mean the face contains outline glyphs.
+     if (!FT_IS_SCALABLE(fFace) || this->setupSize()) {
+         path->reset();
+diff --git a/src/ports/SkFontHost_win.cpp b/src/ports/SkFontHost_win.cpp
+index 1b47a0bbee6a1b60f9f051ede4bc77ce63a6d4bf..8dfa8ac625aff6ec4f37b58de9d59b4d86a2d709 100644
+--- a/src/ports/SkFontHost_win.cpp
++++ b/src/ports/SkFontHost_win.cpp
+@@ -564,9 +564,9 @@ public:
+ 
+ protected:
+     bool generateAdvance(SkGlyph* glyph) override;
+-    void generateMetrics(SkGlyph* glyph) override;
++    void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) override;
+     void generateImage(const SkGlyph& glyph) override;
+-    bool generatePath(SkGlyphID glyph, SkPath* path) override;
++    bool generatePath(const SkGlyph& glyph, SkPath* path) override;
+     void generateFontMetrics(SkFontMetrics*) override;
+ 
+ private:
+@@ -801,7 +801,7 @@ bool SkScalerContext_GDI::generateAdvance(SkGlyph* glyph) {
+     return false;
+ }
+ 
+-void SkScalerContext_GDI::generateMetrics(SkGlyph* glyph) {
++void SkScalerContext_GDI::generateMetrics(SkGlyph* glyph, SkArenaAlloc* alloc) {
+     SkASSERT(fDDC);
+ 
+     glyph->fMaskFormat = fRec.fMaskFormat;
+@@ -844,6 +844,9 @@ void SkScalerContext_GDI::generateMetrics(SkGlyph* glyph) {
+         glyph->fAdvanceY = -SkFIXEDToFloat(fMat22.eM12) * glyph->fAdvanceX;
+         glyph->fAdvanceX *= SkFIXEDToFloat(fMat22.eM11);
+ 
++        // These do not have an outline path at all.
++        glyph->setPath(alloc, nullptr, false);
++
+         return;
+     }
+ 
+@@ -1530,12 +1533,14 @@ DWORD SkScalerContext_GDI::getGDIGlyphPath(SkGlyphID glyph, UINT flags,
+     return total_size;
+ }
+ 
+-bool SkScalerContext_GDI::generatePath(SkGlyphID glyph, SkPath* path) {
++bool SkScalerContext_GDI::generatePath(const SkGlyph& glyph, SkPath* path) {
+     SkASSERT(path);
+     SkASSERT(fDDC);
+ 
+     path->reset();
+ 
++    SkGlyphID glyphID = glyph.getGlyphID();
++
+     // Out of all the fonts on a typical Windows box,
+     // 25% of glyphs require more than 2KB.
+     // 1% of glyphs require more than 4KB.
+@@ -1550,7 +1555,7 @@ bool SkScalerContext_GDI::generatePath(SkGlyphID glyph, SkPath* path) {
+         format |= GGO_UNHINTED;
+     }
+     SkAutoSTMalloc<BUFFERSIZE, uint8_t> glyphbuf(BUFFERSIZE);
+-    DWORD total_size = getGDIGlyphPath(glyph, format, &glyphbuf);
++    DWORD total_size = getGDIGlyphPath(glyphID, format, &glyphbuf);
+     if (0 == total_size) {
+         return false;
+     }
+@@ -1561,7 +1566,7 @@ bool SkScalerContext_GDI::generatePath(SkGlyphID glyph, SkPath* path) {
+     } else {
+         SkAutoSTMalloc<BUFFERSIZE, uint8_t> hintedGlyphbuf(BUFFERSIZE);
+         //GDI only uses hinted outlines when axis aligned.
+-        DWORD hinted_total_size = getGDIGlyphPath(glyph, GGO_NATIVE | GGO_GLYPH_INDEX,
++        DWORD hinted_total_size = getGDIGlyphPath(glyphID, GGO_NATIVE | GGO_GLYPH_INDEX,
+                                                   &hintedGlyphbuf);
+         if (0 == hinted_total_size) {
+             return false;
+diff --git a/src/ports/SkScalerContext_mac_ct.cpp b/src/ports/SkScalerContext_mac_ct.cpp
+index 14e3016928cb12277a323a8b574dce985e2d2765..c373492f2d351af21e4e94b2128144a59c8e3e4a 100644
+--- a/src/ports/SkScalerContext_mac_ct.cpp
++++ b/src/ports/SkScalerContext_mac_ct.cpp
+@@ -269,7 +269,7 @@ bool SkScalerContext_Mac::generateAdvance(SkGlyph* glyph) {
+     return false;
+ }
+ 
+-void SkScalerContext_Mac::generateMetrics(SkGlyph* glyph) {
++void SkScalerContext_Mac::generateMetrics(SkGlyph* glyph, SkArenaAlloc* alloc) {
+     glyph->fMaskFormat = fRec.fMaskFormat;
+ 
+     const CGGlyph cgGlyph = (CGGlyph) glyph->getGlyphID();
+@@ -609,7 +609,7 @@ public:
+  */
+ #define kScaleForSubPixelPositionHinting (4.0f)
+ 
+-bool SkScalerContext_Mac::generatePath(SkGlyphID glyph, SkPath* path) {
++bool SkScalerContext_Mac::generatePath(const SkGlyph& glyph, SkPath* path) {
+     SkScalar scaleX = SK_Scalar1;
+     SkScalar scaleY = SK_Scalar1;
+ 
+@@ -643,7 +643,7 @@ bool SkScalerContext_Mac::generatePath(SkGlyphID glyph, SkPath* path) {
+         xform = CGAffineTransformConcat(fTransform, scale);
+     }
+ 
+-    CGGlyph cgGlyph = SkTo<CGGlyph>(glyph);
++    CGGlyph cgGlyph = SkTo<CGGlyph>(glyph.getGlyphID());
+     SkUniqueCFRef<CGPathRef> cgPath(CTFontCreatePathForGlyph(fCTFont.get(), cgGlyph, &xform));
+ 
+     path->reset();
+diff --git a/src/ports/SkScalerContext_mac_ct.h b/src/ports/SkScalerContext_mac_ct.h
+index a11a76b9b5745c2385f792b254bfc082e22a8800..f9c9c9717c63262c6bee46daacafce885ce6ddcb 100644
+--- a/src/ports/SkScalerContext_mac_ct.h
++++ b/src/ports/SkScalerContext_mac_ct.h
+@@ -45,9 +45,9 @@ public:
+ 
+ protected:
+     bool generateAdvance(SkGlyph* glyph) override;
+-    void generateMetrics(SkGlyph* glyph) override;
++    void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) override;
+     void generateImage(const SkGlyph& glyph) override;
+-    bool generatePath(SkGlyphID glyph, SkPath* path) override;
++    bool generatePath(const SkGlyph& glyph, SkPath* path) override;
+     void generateFontMetrics(SkFontMetrics*) override;
+ 
+ private:
+diff --git a/src/ports/SkScalerContext_win_dw.cpp b/src/ports/SkScalerContext_win_dw.cpp
+index d2a45e115056bb40483aac58d88a5195e504a4c5..53a93d4d6e5e2915e6a2b02ce79310a57538f99d 100644
+--- a/src/ports/SkScalerContext_win_dw.cpp
++++ b/src/ports/SkScalerContext_win_dw.cpp
+@@ -548,6 +548,9 @@ HRESULT SkScalerContext_DW::getBoundingBox(SkGlyph* glyph,
+ }
+ 
+ bool SkScalerContext_DW::isColorGlyph(const SkGlyph& glyph) {
++    // One would think that with newer DirectWrite that this could be like isPngGlyph
++    // except test for DWRITE_GLYPH_IMAGE_FORMATS_COLR, but that doesn't seem to work.
++
+     SkTScopedComPtr<IDWriteColorGlyphRunEnumerator> colorLayer;
+     return getColorGlyphRun(glyph, &colorLayer);
+ }
+@@ -593,10 +596,10 @@ bool SkScalerContext_DW::getColorGlyphRun(const SkGlyph& glyph,
+     return true;
+ }
+ 
+-void SkScalerContext_DW::generateColorMetrics(SkGlyph* glyph) {
++bool SkScalerContext_DW::generateColorMetrics(SkGlyph* glyph) {
+     SkTScopedComPtr<IDWriteColorGlyphRunEnumerator> colorLayers;
+     if (!getColorGlyphRun(*glyph, &colorLayers)) {
+-        return;
++        return false;
+     }
+     SkASSERT(colorLayers.get());
+ 
+@@ -604,15 +607,15 @@ void SkScalerContext_DW::generateColorMetrics(SkGlyph* glyph) {
+     BOOL hasNextRun = FALSE;
+     while (SUCCEEDED(colorLayers->MoveNext(&hasNextRun)) && hasNextRun) {
+         const DWRITE_COLOR_GLYPH_RUN* colorGlyph;
+-        HRVM(colorLayers->GetCurrentRun(&colorGlyph), "Could not get current color glyph run");
++        HRBM(colorLayers->GetCurrentRun(&colorGlyph), "Could not get current color glyph run");
+ 
+         SkPath path;
+         SkTScopedComPtr<IDWriteGeometrySink> geometryToPath;
+-        HRVM(SkDWriteGeometrySink::Create(&path, &geometryToPath),
++        HRBM(SkDWriteGeometrySink::Create(&path, &geometryToPath),
+             "Could not create geometry to path converter.");
+         {
+             Exclusive l(maybe_dw_mutex(*this->getDWriteTypeface()));
+-            HRVM(colorGlyph->glyphRun.fontFace->GetGlyphRunOutline(
++            HRBM(colorGlyph->glyphRun.fontFace->GetGlyphRunOutline(
+                     colorGlyph->glyphRun.fontEmSize,
+                     colorGlyph->glyphRun.glyphIndices,
+                     colorGlyph->glyphRun.glyphAdvances,
+@@ -638,6 +641,7 @@ void SkScalerContext_DW::generateColorMetrics(SkGlyph* glyph) {
+     glyph->fHeight = ibounds.fBottom - ibounds.fTop;
+     glyph->fLeft = ibounds.fLeft;
+     glyph->fTop = ibounds.fTop;
++    return true;
+ }
+ 
+ namespace {
+@@ -657,15 +661,14 @@ static void ReleaseProc(const void* ptr, void* context) {
+ }
+ }
+ 
+-void SkScalerContext_DW::generatePngMetrics(SkGlyph* glyph) {
++bool SkScalerContext_DW::generatePngMetrics(SkGlyph* glyph) {
+     SkASSERT(isPngGlyph(*glyph));
+-    SkASSERT(glyph->fMaskFormat == SkMask::Format::kARGB32_Format);
+     SkASSERT(this->getDWriteTypeface()->fDWriteFontFace4);
+ 
+     IDWriteFontFace4* fontFace4 = this->getDWriteTypeface()->fDWriteFontFace4.get();
+     DWRITE_GLYPH_IMAGE_DATA glyphData;
+     void* glyphDataContext;
+-    HRVM(fontFace4->GetGlyphImageData(glyph->getGlyphID(),
++    HRBM(fontFace4->GetGlyphImageData(glyph->getGlyphID(),
+                                       fTextSizeRender,
+                                       DWRITE_GLYPH_IMAGE_FORMATS_PNG,
+                                       &glyphData,
+@@ -680,7 +683,7 @@ void SkScalerContext_DW::generatePngMetrics(SkGlyph* glyph) {
+ 
+     std::unique_ptr<SkCodec> codec = SkCodec::MakeFromData(std::move(data));
+     if (!codec) {
+-        return;
++        return false;
+     }
+ 
+     SkImageInfo info = codec->getInfo();
+@@ -704,10 +707,10 @@ void SkScalerContext_DW::generatePngMetrics(SkGlyph* glyph) {
+     glyph->fHeight = bounds.height();
+     glyph->fLeft = bounds.left();
+     glyph->fTop = bounds.top();
+-    return;
++    return true;
+ }
+ 
+-void SkScalerContext_DW::generateMetrics(SkGlyph* glyph) {
++void SkScalerContext_DW::generateMetrics(SkGlyph* glyph, SkArenaAlloc* alloc) {
+ 
+      // GetAlphaTextureBounds succeeds but sometimes returns empty bounds like
+      // { 0x80000000, 0x80000000, 0x80000000, 0x80000000 }
+@@ -736,21 +739,20 @@ void SkScalerContext_DW::generateMetrics(SkGlyph* glyph) {
+     glyph->fHeight = 0;
+     glyph->fLeft = 0;
+     glyph->fTop = 0;
+-    glyph->fMaskFormat = fRec.fMaskFormat;
+ 
+     if (!this->generateAdvance(glyph)) {
+         return;
+     }
+ 
+-    if (fIsColorFont && isColorGlyph(*glyph)) {
++    if (fIsColorFont && isColorGlyph(*glyph) && generateColorMetrics(glyph)) {
+         glyph->fMaskFormat = SkMask::kARGB32_Format;
+-        generateColorMetrics(glyph);
++        glyph->setPath(alloc, nullptr, false);
+         return;
+     }
+ 
+-    if (fIsColorFont && isPngGlyph(*glyph)) {
++    if (fIsColorFont && isPngGlyph(*glyph) && generatePngMetrics(glyph)) {
+         glyph->fMaskFormat = SkMask::kARGB32_Format;
+-        generatePngMetrics(glyph);
++        glyph->setPath(alloc, nullptr, false);
+         return;
+     }
+ 
+@@ -1229,20 +1231,22 @@ void SkScalerContext_DW::generateImage(const SkGlyph& glyph) {
+     }
+ }
+ 
+-bool SkScalerContext_DW::generatePath(SkGlyphID glyph, SkPath* path) {
++bool SkScalerContext_DW::generatePath(const SkGlyph& glyph, SkPath* path) {
+     SkASSERT(path);
+     path->reset();
+ 
++    SkGlyphID glyphID = glyph.getGlyphID();
++
+     // DirectWrite treats all out of bounds glyph ids as having the same data as glyph 0.
+     // For consistency with all other backends, treat out of range glyph ids as an error.
+-    if (fGlyphCount <= glyph) {
++    if (fGlyphCount <= glyphID) {
+         return false;
+     }
+ 
+     SkTScopedComPtr<IDWriteGeometrySink> geometryToPath;
+     HRBM(SkDWriteGeometrySink::Create(path, &geometryToPath),
+          "Could not create geometry to path converter.");
+-    UINT16 glyphId = SkTo<UINT16>(glyph);
++    UINT16 glyphId = SkTo<UINT16>(glyphID);
+     {
+         Exclusive l(maybe_dw_mutex(*this->getDWriteTypeface()));
+         //TODO: convert to<->from DIUs? This would make a difference if hinting.
+diff --git a/src/ports/SkScalerContext_win_dw.h b/src/ports/SkScalerContext_win_dw.h
+index 8090003f60e3356c38adc81ed0626e03644801fa..8ed5cf9a5233b6a878556675cf1ec91c28d158f8 100644
+--- a/src/ports/SkScalerContext_win_dw.h
++++ b/src/ports/SkScalerContext_win_dw.h
+@@ -28,9 +28,9 @@ public:
+ 
+ protected:
+     bool generateAdvance(SkGlyph* glyph) override;
+-    void generateMetrics(SkGlyph* glyph) override;
++    void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) override;
+     void generateImage(const SkGlyph& glyph) override;
+-    bool generatePath(SkGlyphID glyph, SkPath* path) override;
++    bool generatePath(const SkGlyph&, SkPath*) override;
+     void generateFontMetrics(SkFontMetrics*) override;
+ 
+ private:
+@@ -69,11 +69,11 @@ private:
+ 
+     bool getColorGlyphRun(const SkGlyph& glyph, IDWriteColorGlyphRunEnumerator** colorGlyph);
+ 
+-    void generateColorMetrics(SkGlyph* glyph);
++    bool generateColorMetrics(SkGlyph* glyph);
+ 
+     void generateColorGlyphImage(const SkGlyph& glyph);
+ 
+-    void generatePngMetrics(SkGlyph* glyph);
++    bool generatePngMetrics(SkGlyph* glyph);
+ 
+     void generatePngGlyphImage(const SkGlyph& glyph);
+ 
+diff --git a/src/utils/SkCustomTypeface.cpp b/src/utils/SkCustomTypeface.cpp
+index bc2913f105ef961e77d1f3eea7b90dde9d39c212..ba170605103504b5eb5d72ebfe02085292a433b3 100644
+--- a/src/utils/SkCustomTypeface.cpp
++++ b/src/utils/SkCustomTypeface.cpp
+@@ -210,7 +210,7 @@ protected:
+         return true;
+     }
+ 
+-    void generateMetrics(SkGlyph* glyph) override {
++    void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) override {
+         glyph->zeroMetrics();
+         this->generateAdvance(glyph);
+         // Always generates from paths, so SkScalerContext::makeGlyph will figure the bounds.
+@@ -218,8 +218,8 @@ protected:
+ 
+     void generateImage(const SkGlyph&) override { SK_ABORT("Should have generated from path."); }
+ 
+-    bool generatePath(SkGlyphID glyph, SkPath* path) override {
+-        this->userTF()->fPaths[glyph].transform(fMatrix, path);
++    bool generatePath(const SkGlyph& glyph, SkPath* path) override {
++        this->userTF()->fPaths[glyph.getGlyphID()].transform(fMatrix, path);
+         return true;
+     }
+ 
+diff --git a/tools/fonts/RandomScalerContext.cpp b/tools/fonts/RandomScalerContext.cpp
+index 023f789e0ef55a63f2ba1ca2d102d858bd7e47b6..813d7a582e7828d0c8eae2311d812d7a252bfe66 100644
+--- a/tools/fonts/RandomScalerContext.cpp
++++ b/tools/fonts/RandomScalerContext.cpp
+@@ -24,9 +24,9 @@ public:
+ 
+ protected:
+     bool     generateAdvance(SkGlyph*) override;
+-    void     generateMetrics(SkGlyph*) override;
++    void     generateMetrics(SkGlyph*, SkArenaAlloc*) override;
+     void     generateImage(const SkGlyph&) override;
+-    bool     generatePath(SkGlyphID, SkPath*) override;
++    bool     generatePath(const SkGlyph&, SkPath*) override;
+     void     generateFontMetrics(SkFontMetrics*) override;
+ 
+ private:
+@@ -34,6 +34,9 @@ private:
+         return static_cast<SkRandomTypeface*>(this->getTypeface());
+     }
+     std::unique_ptr<SkScalerContext> fProxy;
++    // Many of the SkGlyphs returned are the same as those created by the fProxy.
++    // When they are not, the originals are kept here.
++    SkTHashMap<SkPackedGlyphID, SkGlyph> fProxyGlyphs;
+     bool                             fFakeIt;
+ };
+ 
+@@ -49,7 +52,7 @@ RandomScalerContext::RandomScalerContext(sk_sp<SkRandomTypeface>       face,
+ 
+ bool RandomScalerContext::generateAdvance(SkGlyph* glyph) { return fProxy->generateAdvance(glyph); }
+ 
+-void RandomScalerContext::generateMetrics(SkGlyph* glyph) {
++void RandomScalerContext::generateMetrics(SkGlyph* glyph, SkArenaAlloc* alloc) {
+     // Here we will change the mask format of the glyph
+     // NOTE: this may be overridden by the base class (e.g. if a mask filter is applied).
+     SkMask::Format format = SkMask::kA8_Format;
+@@ -60,22 +63,32 @@ void RandomScalerContext::generateMetrics(SkGlyph* glyph) {
+         case 3: format = SkMask::kBW_Format; break;
+     }
+ 
+-    *glyph = fProxy->internalMakeGlyph(glyph->getPackedID(), format);
++    *glyph = fProxy->internalMakeGlyph(glyph->getPackedID(), format, alloc);
+ 
+     if (fFakeIt || (glyph->getGlyphID() % 4) != 2) {
+         return;
+     }
+ 
+-    SkPath path;
+-    if (!fProxy->getPath(glyph->getPackedID(), &path)) {
++    fProxy->getPath(*glyph, alloc);
++    if (!glyph->path()) {
+         return;
+     }
++
++    // The proxy glyph has a path, but this glyph does not.
++    // Stash the proxy glyph so it can be used later.
++    const SkGlyph* proxyGlyph = fProxyGlyphs.set(glyph->getPackedID(), std::move(*glyph));
++    const SkPath& proxyPath = *proxyGlyph->path();
++
++    *glyph = SkGlyph(glyph->getPackedID());
++    glyph->setPath(alloc, nullptr, false);
+     glyph->fMaskFormat = SkMask::kARGB32_Format;
++    glyph->fAdvanceX = proxyGlyph->fAdvanceX;
++    glyph->fAdvanceY = proxyGlyph->fAdvanceY;
+ 
+     SkRect         storage;
+     const SkPaint& paint = this->getRandomTypeface()->paint();
+     const SkRect&  newBounds =
+-            paint.doComputeFastBounds(path.getBounds(), &storage, SkPaint::kFill_Style);
++            paint.doComputeFastBounds(proxyPath.getBounds(), &storage, SkPaint::kFill_Style);
+     SkIRect ibounds;
+     newBounds.roundOut(&ibounds);
+     glyph->fLeft   = ibounds.fLeft;
+@@ -85,34 +98,18 @@ void RandomScalerContext::generateMetrics(SkGlyph* glyph) {
+ }
+ 
+ void RandomScalerContext::generateImage(const SkGlyph& glyph) {
+-    // TODO: can force down but not up
+-    /*
+-    SkMask::Format format = (SkMask::Format)glyph.fMaskFormat;
+-    switch (glyph.getGlyphID() % 4) {
+-        case 0: format = SkMask::kLCD16_Format; break;
+-        case 1: format = SkMask::kA8_Format; break;
+-        case 2: format = SkMask::kARGB32_Format; break;
+-        case 3: format = SkMask::kBW_Format; break;
+-    }
+-    const_cast<SkGlyph&>(glyph).fMaskFormat = format;
+-    */
+-
+     if (fFakeIt) {
+         sk_bzero(glyph.fImage, glyph.imageSize());
+         return;
+     }
+ 
+-    if (SkMask::kARGB32_Format != glyph.fMaskFormat) {
+-        fProxy->getImage(glyph);
+-        return;
+-    }
+-
+-    // If the format is ARGB, just draw the glyph from path.
+-    SkPath path;
+-    if (!fProxy->getPath(glyph.getPackedID(), &path)) {
++    SkGlyph* proxyGlyph = fProxyGlyphs.find(glyph.getPackedID());
++    if (!proxyGlyph || !proxyGlyph->path()) {
+         fProxy->getImage(glyph);
+         return;
+     }
++    const SkPath& path = *proxyGlyph->path();
++    const bool hairline = proxyGlyph->pathIsHairline();
+ 
+     SkBitmap bm;
+     bm.installPixels(SkImageInfo::MakeN32Premul(glyph.fWidth, glyph.fHeight),
+@@ -122,10 +119,22 @@ void RandomScalerContext::generateImage(const SkGlyph& glyph) {
+ 
+     SkCanvas canvas(bm);
+     canvas.translate(-SkIntToScalar(glyph.fLeft), -SkIntToScalar(glyph.fTop));
+-    canvas.drawPath(path, this->getRandomTypeface()->paint());
++    SkPaint paint = this->getRandomTypeface()->paint();
++    if (hairline) {
++        // We have a device path with effects already applied which is normally a fill path.
++        // However here we do not have a fill path and there is no area to fill.
++        paint.setStyle(SkPaint::kStroke_Style);
++        paint.setStroke(0);
++    }
++    canvas.drawPath(path, paint); //Need to modify the paint if the devPath is hairline
+ }
+ 
+-bool RandomScalerContext::generatePath(SkGlyphID glyph, SkPath* path) {
++bool RandomScalerContext::generatePath(const SkGlyph& glyph, SkPath* path) {
++    SkGlyph* shadowProxyGlyph = fProxyGlyphs.find(glyph.getPackedID());
++    if (shadowProxyGlyph && shadowProxyGlyph->path()) {
++        path->reset();
++        return false;
++    }
+     return fProxy->generatePath(glyph, path);
+ }
+ 
+diff --git a/tools/fonts/TestSVGTypeface.cpp b/tools/fonts/TestSVGTypeface.cpp
+index 5ab2b188ddc9f6847e06d26c486ee53576c0145d..c340c8df2f399122feb9d06f4017109924b72a81 100644
+--- a/tools/fonts/TestSVGTypeface.cpp
++++ b/tools/fonts/TestSVGTypeface.cpp
+@@ -194,12 +194,13 @@ protected:
+         return true;
+     }
+ 
+-    void generateMetrics(SkGlyph* glyph) override {
++    void generateMetrics(SkGlyph* glyph, SkArenaAlloc* alloc) override {
+         SkGlyphID glyphID = glyph->getGlyphID();
+         glyphID           = glyphID < this->getTestSVGTypeface()->fGlyphCount ? glyphID : 0;
+ 
+         glyph->zeroMetrics();
+         glyph->fMaskFormat = SkMask::kARGB32_Format;
++        glyph->setPath(alloc, nullptr, false);
+         this->generateAdvance(glyph);
+ 
+         TestSVGTypeface::Glyph& glyphData = this->getTestSVGTypeface()->fGlyphs[glyphID];
+@@ -247,7 +248,9 @@ protected:
+         glyphData.render(&canvas);
+     }
+ 
+-    bool generatePath(SkGlyphID glyph, SkPath* path) override {
++    bool generatePath(const SkGlyph& glyph, SkPath* path) override {
++        // Should never get here since generateMetrics always sets the path to not exist.
++        SK_ABORT("Path requested, but it should have been indicated that there isn't one.");
+         path->reset();
+         return false;
+     }
+diff --git a/tools/fonts/TestTypeface.cpp b/tools/fonts/TestTypeface.cpp
+index 00c3374f5186fa0f6eb27984d9d514ad81312f98..e88c52c3f37be948a65e35d8935f5938d5b9d219 100644
+--- a/tools/fonts/TestTypeface.cpp
++++ b/tools/fonts/TestTypeface.cpp
+@@ -170,7 +170,7 @@ protected:
+         return true;
+     }
+ 
+-    void generateMetrics(SkGlyph* glyph) override {
++    void generateMetrics(SkGlyph* glyph, SkArenaAlloc*) override {
+         glyph->zeroMetrics();
+         this->generateAdvance(glyph);
+         // Always generates from paths, so SkScalerContext::makeGlyph will figure the bounds.
+@@ -178,8 +178,8 @@ protected:
+ 
+     void generateImage(const SkGlyph&) override { SK_ABORT("Should have generated from path."); }
+ 
+-    bool generatePath(SkGlyphID glyph, SkPath* path) override {
+-        *path = this->getTestTypeface()->getPath(glyph).makeTransform(fMatrix);
++    bool generatePath(const SkGlyph& glyph, SkPath* path) override {
++        *path = this->getTestTypeface()->getPath(glyph.getGlyphID()).makeTransform(fMatrix);
+         return true;
+     }
+ 
