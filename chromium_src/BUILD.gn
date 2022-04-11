@@ -304,10 +304,10 @@ static_library("chrome") {
         "//chrome/browser/pdf/pdf_extension_util.h",
         "//chrome/browser/pdf/pdf_frame_util.cc",
         "//chrome/browser/pdf/pdf_frame_util.h",
-        "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
-        "//chrome/renderer/pepper/chrome_pdf_print_client.h",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
+        "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
+        "//chrome/renderer/pepper/chrome_pdf_print_client.h",
       ]
     }
   }
