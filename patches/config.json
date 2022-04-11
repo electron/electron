@@ -7,6 +7,8 @@
 
   "src/electron/patches/webrtc": "src/third_party/webrtc",
 
+  "src/electron/patches/pdfium": "src/third_party/pdfium",
+  
   "src/electron/patches/v8":  "src/v8",
 
   "src/electron/patches/node": "src/third_party/electron_node",
