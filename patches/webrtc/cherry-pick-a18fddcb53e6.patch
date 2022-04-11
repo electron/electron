@@ -1,0 +1,49 @@
+From a18fddcb53e64448afee62aaf84489c8bb89cb6a Mon Sep 17 00:00:00 2001
+From: Tony Herre <herre@google.com>
+Date: Fri, 25 Mar 2022 09:33:14 +0100
+Subject: [PATCH] Filter out Mac StatusIndicator window from desktop capture list
+
+Since 12.2, the orange/red indicator at the top right of the screen shows up as a window in the Chrome getDisplayMedia() picker, as it's not filtered out by the existing filters. Screenshots in the bug.
+
+Bug: chromium:1297731, b/218211225
+Change-Id: I0f87e8d2af42a5a2e3d84f69fe73596e9cf35622
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/251841
+Reviewed-by: Alexander Cooper <alcooper@chromium.org>
+Commit-Queue: Tony Herre <herre@google.com>
+Cr-Commit-Position: refs/heads/main@{#36350}
+---
+
+diff --git a/modules/desktop_capture/mac/window_list_utils.cc b/modules/desktop_capture/mac/window_list_utils.cc
+index d2fb20e..5d88166 100644
+--- a/modules/desktop_capture/mac/window_list_utils.cc
++++ b/modules/desktop_capture/mac/window_list_utils.cc
+@@ -31,6 +31,11 @@
+ 
+ namespace {
+ 
++// WindowName of the status indicator dot shown since Monterey in the taskbar.
++// Testing on 12.2.1 shows this is independent of system language setting.
++const CFStringRef kStatusIndicator = CFSTR("StatusIndicator");
++const CFStringRef kStatusIndicatorOwnerName = CFSTR("Window Server");
++
+ bool ToUtf8(const CFStringRef str16, std::string* str8) {
+   size_t maxlen = CFStringGetMaximumSizeForEncoding(CFStringGetLength(str16),
+                                                     kCFStringEncodingUTF8) +
+@@ -145,6 +150,17 @@
+       continue;
+     }
+ 
++    CFStringRef window_owner_name = reinterpret_cast<CFStringRef>(
++        CFDictionaryGetValue(window, kCGWindowOwnerName));
++    // Ignore the red dot status indicator shown in the stats bar. Unlike the
++    // rest of the system UI it has a window_layer of 0, so was otherwise
++    // included. See crbug.com/1297731.
++    if (window_title && CFEqual(window_title, kStatusIndicator) &&
++        window_owner_name &&
++        CFEqual(window_owner_name, kStatusIndicatorOwnerName)) {
++      continue;
++    }
++
+     if (!on_window(window)) {
+       break;
+     }
