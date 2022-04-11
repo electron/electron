@@ -1813,14 +1813,17 @@ describe('webContents module', () => {
 
     it('rejects on incorrectly typed parameters', async () => {
       const badTypes = {
-        marginsType: 'terrible',
-        scaleFactor: 'not-a-number',
         landscape: [],
-        pageRanges: { oops: 'im-not-the-right-key' },
-        headerFooter: '123',
-        printSelectionOnly: 1,
+        displayHeaderFooter: '123',
         printBackground: 2,
-        pageSize: 'IAmAPageSize'
+        scale: 'not-a-number',
+        pageSize: 'IAmAPageSize',
+        margins: 'terrible',
+        pageRanges: { oops: 'im-not-the-right-key' },
+        ignoreInvalidPageRanges: {},
+        headerTemplate: [1, 2, 3],
+        footerTemplate: [4, 5, 6],
+        preferCSSPageSize: 'no'
       };
 
       // These will hard crash in Chromium unless we type-check
