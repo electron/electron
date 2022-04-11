@@ -363,10 +363,6 @@ source_set("electron_lib") {
     "//components/network_session_configurator/common",
     "//components/omnibox/browser:buildflags",
     "//components/os_crypt",
-    "//components/pdf/browser",
-    "//components/pdf/browser:interceptors",
-    "//components/pdf/common",
-    "//components/pdf/renderer",
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
@@ -698,6 +694,8 @@ source_set("electron_lib") {
     deps += [
       "//chrome/browser/resources/pdf:resources",
       "//components/pdf/browser",
+      "//components/pdf/browser:interceptors",
+      "//components/pdf/common",
       "//components/pdf/renderer",
       "//pdf:pdf_ppapi",
     ]
