@@ -96,9 +96,10 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snaphot_zip)
     upload_electron(release, dsym_snaphot_zip, args)    
   elif PLATFORM == 'win32':
-    pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
-    shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
-    upload_electron(release, pdb_zip, args)
+    if get_target_arch() != 'ia32':
+      pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
+      shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
+      upload_electron(release, pdb_zip, args)
   elif PLATFORM == 'linux':
     debug_zip = os.path.join(OUT_DIR, DEBUG_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'debug.zip'), debug_zip)
