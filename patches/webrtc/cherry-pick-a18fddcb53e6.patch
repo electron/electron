@@ -1,7 +1,7 @@
-From a18fddcb53e64448afee62aaf84489c8bb89cb6a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tony Herre <herre@google.com>
 Date: Fri, 25 Mar 2022 09:33:14 +0100
-Subject: [PATCH] Filter out Mac StatusIndicator window from desktop capture list
+Subject: Filter out Mac StatusIndicator window from desktop capture list
 
 Since 12.2, the orange/red indicator at the top right of the screen shows up as a window in the Chrome getDisplayMedia() picker, as it's not filtered out by the existing filters. Screenshots in the bug.
 
@@ -11,13 +11,12 @@ Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/251841
 Reviewed-by: Alexander Cooper <alcooper@chromium.org>
 Commit-Queue: Tony Herre <herre@google.com>
 Cr-Commit-Position: refs/heads/main@{#36350}
----
 
 diff --git a/modules/desktop_capture/mac/window_list_utils.cc b/modules/desktop_capture/mac/window_list_utils.cc
-index d2fb20e..5d88166 100644
+index d2fb20ed4ca0689fd6f51ee994308e876680ab1e..5d881662ea2f2d86d2c33bf20f79d31ef4e7a481 100644
 --- a/modules/desktop_capture/mac/window_list_utils.cc
 +++ b/modules/desktop_capture/mac/window_list_utils.cc
-@@ -31,6 +31,11 @@
+@@ -31,6 +31,11 @@ namespace webrtc {
  
  namespace {
  
@@ -29,7 +28,7 @@ index d2fb20e..5d88166 100644
  bool ToUtf8(const CFStringRef str16, std::string* str8) {
    size_t maxlen = CFStringGetMaximumSizeForEncoding(CFStringGetLength(str16),
                                                      kCFStringEncodingUTF8) +
-@@ -145,6 +150,17 @@
+@@ -145,6 +150,17 @@ bool GetWindowList(rtc::FunctionView<bool(CFDictionaryRef)> on_window,
        continue;
      }
  
