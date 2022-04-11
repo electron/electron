@@ -1793,7 +1793,7 @@ index 0000000000000000000000000000000000000000..8f884a41f57630ac432eb85ebfc9b8bc
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
 @@ -0,0 +1,75 @@
-+#!/usr/bin/env python
++#!/usr/bin/env python3
 +import json
 +import os
 +import sys
@@ -1874,7 +1874,7 @@ index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2e
 --- /dev/null
 +++ b/tools/generate_node_version_header.py
 @@ -0,0 +1,25 @@
-+#!/usr/bin/env python
++#!/usr/bin/env python3
 +import re
 +import sys
 +
