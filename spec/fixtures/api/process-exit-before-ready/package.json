@@ -1,4 +1,4 @@
 {
-  "name": "process-exit-before-ready",
+  "name": "electron-test-process-exit-before-ready",
   "main": "main.js"
 }
