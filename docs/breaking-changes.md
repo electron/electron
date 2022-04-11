@@ -34,6 +34,15 @@ window manager. There is not a direct equivalent for Wayland, and the known
 workarounds have unacceptable tradeoffs (e.g. Window.is_skip_taskbar in GNOME
 requires unsafe mode), so Electron is unable to support this feature on Linux.
 
+### Behavior Changed: `process.exit()`
+
+Previously, after the `app` emitted the `'ready'` event, `process.exit()` was
+getting monkey patched with the value of `app.exit()` which does not exit the
+app instantly, thus leaving users with no way to exit their apps synchronously.
+However, `process.exit()` is a Node.js API and it is meant to synchronously
+terminate the process with the supplied exit code. In Electron 20, this behavior
+has changed and this API will work as intended.
+
 ## Planned Breaking API Changes (19.0)
 
 None
