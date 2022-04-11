@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/cxx17_backports.h"
-#include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/common/color_parser.h"
@@ -17,7 +16,7 @@
 
 namespace {
 
-bool IsHexFormat(const std::string& str) {
+bool IsHexFormatWithAlpha(const std::string& str) {
   // Must be either #ARGB or #AARRGGBB.
   bool is_hex_length = str.length() == 5 || str.length() == 9;
   if (str[0] != '#' || !is_hex_length)
@@ -37,10 +36,12 @@ SkColor ParseCSSColor(const std::string& color_string) {
   // ParseCssColorString expects RGBA and we historically use ARGB
   // so we need to convert before passing to ParseCssColorString.
   std::string color_str;
-  if (IsHexFormat(color_string)) {
+  if (IsHexFormatWithAlpha(color_string)) {
     std::string temp = color_string;
     int len = color_string.length() == 5 ? 1 : 2;
     color_str = temp.erase(1, len) + color_string.substr(1, len);
+  } else {
+    color_str = color_string;
   }
 
   SkColor color;
