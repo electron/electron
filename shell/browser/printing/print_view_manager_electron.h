@@ -56,6 +56,7 @@ class PrintViewManagerElectron
 
   void PrintToPdf(content::RenderFrameHost* rfh,
                   const std::string& page_ranges,
+                  bool ignore_invalid_page_ranges,
                   printing::mojom::PrintPagesParamsPtr print_page_params,
                   PrintToPDFCallback callback);
 
@@ -95,6 +96,7 @@ class PrintViewManagerElectron
 
   raw_ptr<content::RenderFrameHost> printing_rfh_ = nullptr;
   std::string page_ranges_;
+  bool ignore_invalid_page_ranges_ = false;
   printing::mojom::PrintPagesParamsPtr print_pages_params_;
   PrintToPDFCallback callback_;
   std::string data_;
