@@ -12,9 +12,11 @@ const runFixtureAndEnsureCleanExit = (args: string[]) => {
   const child = cp.spawn(process.execPath, args);
   children.push(child);
   child.stdout.on('data', (chunk: Buffer) => {
+    console.log(chunk.toString());
     out += chunk.toString();
   });
   child.stderr.on('data', (chunk: Buffer) => {
+    console.log(chunk.toString());
     out += chunk.toString();
   });
   return new Promise<void>((resolve) => {
@@ -44,7 +46,7 @@ describe('crash cases', () => {
     it(`the "${crashCase}" case should not crash`, () => {
       const fixture = path.resolve(fixturePath, crashCase);
       const argsFile = path.resolve(fixture, 'electron.args');
-      const args = [fixture];
+      const args = [fixture, '--enable-logging'];
       if (fs.existsSync(argsFile)) {
         args.push(...fs.readFileSync(argsFile, 'utf8').trim().split('\n'));
       }
