@@ -515,7 +515,7 @@ index 0000000000000000000000000000000000000000..18ac587f80441106405d00fafd9ee1f2
 --- /dev/null
 +++ b/build/xcrun.py
 @@ -0,0 +1,14 @@
-+#!/usr/bin/env python
++#!/usr/bin/env python3
 +from __future__ import print_function
 +import os
 +import subprocess
