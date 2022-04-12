@@ -1789,11 +1789,11 @@ index 48b8d9f22fb98d0733630eaea3194d746fba8a2f..a7a12564e4dd9320959d07fb4ab1527f
  // which the Node binary being built supports.
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..8f884a41f57630ac432eb85ebfc9b8bc82cddaca
+index 0000000000000000000000000000000000000000..87621ba1d7f1c80aadb81461824b0c2edab1de22
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
 @@ -0,0 +1,75 @@
-+#!/usr/bin/env python
++#!/usr/bin/env python3
 +import json
 +import os
 +import sys
@@ -1870,11 +1870,11 @@ index 0000000000000000000000000000000000000000..8f884a41f57630ac432eb85ebfc9b8bc
 +    f.write('\n')
 diff --git a/tools/generate_node_version_header.py b/tools/generate_node_version_header.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2eee17e941
+index 0000000000000000000000000000000000000000..2a92eccfa582df361f2a889c0d9b32c1059baa7d
 --- /dev/null
 +++ b/tools/generate_node_version_header.py
 @@ -0,0 +1,25 @@
-+#!/usr/bin/env python
++#!/usr/bin/env python3
 +import re
 +import sys
 +
