@@ -20,23 +20,15 @@ namespace extensions {
 
 void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     const std::string& extension_id,
-    const std::string& view_id,
+    const std::string& stream_id,
     bool embedded,
     int frame_tree_node_id,
-    int render_process_id,
-    int render_frame_id,
     blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
     const GURL& original_url) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  content::WebContents* web_contents = nullptr;
-  if (frame_tree_node_id != -1) {
-    web_contents =
-        content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
-  } else {
-    web_contents = content::WebContents::FromRenderFrameHost(
-        content::RenderFrameHost::FromID(render_process_id, render_frame_id));
-  }
+  content::WebContents* web_contents =
+    content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
   if (!web_contents)
     return;
 
@@ -66,8 +58,7 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
       tab_id, embedded, handler_url, extension_id,
       std::move(transferrable_loader), original_url);
   extensions::MimeHandlerStreamManager::Get(browser_context)
-      ->AddStream(view_id, std::move(stream_container), frame_tree_node_id,
-                  render_process_id, render_frame_id);
+      ->AddStream(stream_id, std::move(stream_container), frame_tree_node_id);
 }
 
 }  // namespace extensions
