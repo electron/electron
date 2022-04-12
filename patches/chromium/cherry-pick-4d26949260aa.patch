@@ -1,0 +1,154 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yutaka Hirano <yhirano@chromium.org>
+Date: Fri, 4 Feb 2022 10:16:05 +0000
+Subject: Don't interpret informational response body as HTTP/0.9 response
+
+An informational (1xx) response with body can be interpreted as an
+informational response followed by an HTTP/0.9 response. It is confusing
+so let's stop doing that.
+
+Bug: 1291482
+Change-Id: Ic3823838614330d761f11360a783859e5baa260e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3428433
+Reviewed-by: Matt Menke <mmenke@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Reviewed-by: Mike West <mkwst@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#967169}
+
+diff --git a/net/http/http_stream_parser.cc b/net/http/http_stream_parser.cc
+index a5f7bb10a01abb00db5d4ae15104f305027145b2..aaa22ac7001420c4d9c44a76af5a58bfbdc7deda 100644
+--- a/net/http/http_stream_parser.cc
++++ b/net/http/http_stream_parser.cc
+@@ -1014,15 +1014,23 @@ int HttpStreamParser::ParseResponseHeaders(int end_offset) {
+         base::StringPiece(read_buf_->StartOfBuffer(), end_offset));
+     if (!headers)
+       return net::ERR_INVALID_HTTP_RESPONSE;
++    has_seen_status_line_ = true;
+   } else {
+     // Enough data was read -- there is no status line, so this is HTTP/0.9, or
+     // the server is broken / doesn't speak HTTP.
+ 
+-    // If the port is not the default for the scheme, assume it's not a real
+-    // HTTP/0.9 response, and fail the request.
++    if (has_seen_status_line_) {
++      // If we saw a status line previously, the server can speak HTTP/1.x so it
++      // is not reasonable to interpret the response as an HTTP/0.9 response.
++      return ERR_INVALID_HTTP_RESPONSE;
++    }
++
+     base::StringPiece scheme = request_->url.scheme_piece();
+     if (url::DefaultPortForScheme(scheme.data(), scheme.length()) !=
+         request_->url.EffectiveIntPort()) {
++      // If the port is not the default for the scheme, assume it's not a real
++      // HTTP/0.9 response, and fail the request.
++
+       // Allow Shoutcast responses over HTTP, as it's somewhat common and relies
+       // on HTTP/0.9 on weird ports to work.
+       // See
+diff --git a/net/http/http_stream_parser.h b/net/http/http_stream_parser.h
+index 508b5296d6ff93689facc16939be2c720f42bf48..0c0619bdcf49328d1b737e2c3485d5beff99d0d1 100644
+--- a/net/http/http_stream_parser.h
++++ b/net/http/http_stream_parser.h
+@@ -275,6 +275,11 @@ class NET_EXPORT_PRIVATE HttpStreamParser {
+   // True if reading a keep-alive response. False if not, or if don't yet know.
+   bool response_is_keep_alive_;
+ 
++  // True if we've seen a response that has an HTTP status line. This is
++  // persistent across multiple response parsing. If we see a status line
++  // for a response, this will remain true forever.
++  bool has_seen_status_line_ = false;
++
+   // Keep track of the number of response body bytes read so far.
+   int64_t response_body_read_;
+ 
+diff --git a/net/http/http_stream_parser_unittest.cc b/net/http/http_stream_parser_unittest.cc
+index 3a394e629874d8ffff6eec02609e6009571a6733..e25b78539dfec4b27e6ddf2052967cab91141770 100644
+--- a/net/http/http_stream_parser_unittest.cc
++++ b/net/http/http_stream_parser_unittest.cc
+@@ -1399,6 +1399,25 @@ TEST(HttpStreamParser, Http09PortTests) {
+   }
+ }
+ 
++TEST(HttpStreamParser, ContinueWithBody) {
++  const std::string kResponse =
++      "HTTP/1.1 100 Continue\r\n\r\nhello\r\nworld\r\n";
++
++  SimpleGetRunner get_runner;
++  get_runner.set_url(GURL("http://foo.com/"));
++  get_runner.AddRead(kResponse);
++  get_runner.SetupParserAndSendRequest();
++
++  get_runner.ReadHeadersExpectingError(OK);
++  ASSERT_TRUE(get_runner.response_info()->headers);
++  EXPECT_EQ("HTTP/1.1 100 Continue",
++            get_runner.response_info()->headers->GetStatusLine());
++
++  // We ignore informational responses and start reading the next response in
++  // the stream. This simulates the behavior.
++  get_runner.ReadHeadersExpectingError(ERR_INVALID_HTTP_RESPONSE);
++}
++
+ TEST(HttpStreamParser, NullFails) {
+   const char kTestHeaders[] =
+       "HTTP/1.1 200 OK\r\n"
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any-expected.txt b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ac068363a83816939013bbde88a7584aca4f307
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any-expected.txt
+@@ -0,0 +1,7 @@
++This is a testharness.js-based test.
++PASS Status(100) should be ignored.
++FAIL Status(101) should be accepted, with removing body. promise_test: Unhandled rejection with value: object "TypeError: Failed to fetch"
++PASS Status(103) should be ignored.
++PASS Status(199) should be ignored.
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.js b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..df4dafcd80b38af93b688dcb318cfaf1978a939f
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.js
+@@ -0,0 +1,28 @@
++promise_test(async (t) => {
++  // The 100 response should be ignored, then the transaction ends, which
++  // should lead to an error.
++  await promise_rejects_js(
++    t, TypeError, fetch('/common/text-plain.txt?pipe=status(100)'));
++}, 'Status(100) should be ignored.');
++
++// This behavior is being discussed at https://github.com/whatwg/fetch/issues/1397.
++promise_test(async (t) => {
++  const res = await fetch('/common/text-plain.txt?pipe=status(101)');
++  assert_equals(res.status, 101);
++  const body = await res.text();
++  assert_equals(body, '');
++}, 'Status(101) should be accepted, with removing body.');
++
++promise_test(async (t) => {
++  // The 103 response should be ignored, then the transaction ends, which
++  // should lead to an error.
++  await promise_rejects_js(
++     t, TypeError, fetch('/common/text-plain.txt?pipe=status(103)'));
++}, 'Status(103) should be ignored.');
++
++promise_test(async (t) => {
++  // The 199 response should be ignored, then the transaction ends, which
++  // should lead to an error.
++  await promise_rejects_js(
++    t, TypeError, fetch('/common/text-plain.txt?pipe=status(199)'));
++}, 'Status(199) should be ignored.');
+diff --git a/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.worker-expected.txt b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ac068363a83816939013bbde88a7584aca4f307
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/fetch/security/1xx-response.any.worker-expected.txt
+@@ -0,0 +1,7 @@
++This is a testharness.js-based test.
++PASS Status(100) should be ignored.
++FAIL Status(101) should be accepted, with removing body. promise_test: Unhandled rejection with value: object "TypeError: Failed to fetch"
++PASS Status(103) should be ignored.
++PASS Status(199) should be ignored.
++Harness: the test ran to completion.
++
