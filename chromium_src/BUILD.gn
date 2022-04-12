@@ -298,12 +298,20 @@ static_library("chrome") {
 
     if (enable_pdf_viewer) {
       sources += [
+        "//chrome/browser/pdf/chrome_pdf_stream_delegate.cc",
+        "//chrome/browser/pdf/chrome_pdf_stream_delegate.h",
         "//chrome/browser/pdf/pdf_extension_util.cc",
         "//chrome/browser/pdf/pdf_extension_util.h",
         "//chrome/browser/pdf/pdf_frame_util.cc",
         "//chrome/browser/pdf/pdf_frame_util.h",
+        "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
+        "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
         "//chrome/renderer/pepper/chrome_pdf_print_client.cc",
         "//chrome/renderer/pepper/chrome_pdf_print_client.h",
+      ]
+      deps += [
+        "//components/pdf/browser",
+        "//components/pdf/renderer",
       ]
     }
   }
@@ -332,15 +340,6 @@ source_set("plugins") {
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc",
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
   ]
-  deps += [
-    "//media:media_buildflags",
-    "//ppapi/buildflags",
-    "//ppapi/proxy:ipc",
-    "//services/device/public/mojom",
-  ]
-  if (enable_pdf_viewer) {
-    deps += [ "//components/pdf/browser" ]
-  }
 
   # renderer side
   sources += [
@@ -351,17 +350,18 @@ source_set("plugins") {
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
   ]
-  if (enable_pdf_viewer) {
-    deps += [ "//components/pdf/renderer" ]
-  }
+
   deps += [
     "//components/strings",
     "//media:media_buildflags",
+    "//ppapi/buildflags",
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/proxy:ipc",
     "//ppapi/shared_impl",
+    "//services/device/public/mojom",
     "//skia",
+    "//storage/browser",
   ]
 }
 

@@ -46,6 +46,7 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/tts_controller.h"
 #include "content/public/browser/tts_platform.h"
+#include "content/public/browser/url_loader_request_interceptor.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -204,7 +205,12 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/browser/pdf/chrome_pdf_stream_delegate.h"
+#include "chrome/browser/plugins/pdf_iframe_navigation_throttle.h"  // nogncheck
+#include "components/pdf/browser/pdf_navigation_throttle.h"
+#include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
 #include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
+#include "components/pdf/common/internal_plugin_helpers.h"
 #endif
 
 using content::BrowserThread;
@@ -1048,6 +1054,18 @@ ElectronBrowserClient::CreateThrottlesForNavigation(
       std::make_unique<extensions::ExtensionNavigationThrottle>(handle));
 #endif
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::unique_ptr<content::NavigationThrottle> pdf_iframe_throttle =
+      PDFIFrameNavigationThrottle::MaybeCreateThrottleFor(handle);
+  if (pdf_iframe_throttle)
+    throttles.push_back(std::move(pdf_iframe_throttle));
+  std::unique_ptr<content::NavigationThrottle> pdf_throttle =
+      pdf::PdfNavigationThrottle::MaybeCreateThrottleFor(
+          handle, std::make_unique<ChromePdfStreamDelegate>());
+  if (pdf_throttle)
+    throttles.push_back(std::move(pdf_throttle));
+#endif
+
   return throttles;
 }
 
@@ -1452,6 +1470,26 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   return true;
 }
 
+std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
+ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
+    content::NavigationUIData* navigation_ui_data,
+    int frame_tree_node_id,
+    const scoped_refptr<network::SharedURLLoaderFactory>&
+        network_loader_factory) {
+  std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
+      interceptors;
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  {
+    std::unique_ptr<content::URLLoaderRequestInterceptor> pdf_interceptor =
+        pdf::PdfURLLoaderRequestInterceptor::MaybeCreateInterceptor(
+            frame_tree_node_id, std::make_unique<ChromePdfStreamDelegate>());
+    if (pdf_interceptor)
+      interceptors.push_back(std::move(pdf_interceptor));
+  }
+#endif
+  return interceptors;
+}
+
 void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
@@ -1725,6 +1763,9 @@ ElectronBrowserClient::GetPluginMimeTypesWithExternalHandlers(
   auto map = PluginUtils::GetMimeTypeToExtensionIdMap(browser_context);
   for (const auto& pair : map)
     mime_types.insert(pair.first);
+#endif
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  mime_types.insert(pdf::kInternalPluginMimeType);
 #endif
   return mime_types;
 }
