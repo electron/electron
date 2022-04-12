@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "base/bits.h"
 #include "base/allocator/partition_alloc_features.h"
 #include "base/allocator/partition_allocator/partition_alloc.h"
 #include "base/command_line.h"
