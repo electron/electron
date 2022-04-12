@@ -35,17 +35,17 @@ namespace electron {
 SkColor ParseCSSColor(const std::string& color_string) {
   // ParseCssColorString expects RGBA and we historically use ARGB
   // so we need to convert before passing to ParseCssColorString.
-  std::string color_str;
+  std::string converted_color_str;
   if (IsHexFormatWithAlpha(color_string)) {
     std::string temp = color_string;
     int len = color_string.length() == 5 ? 1 : 2;
-    color_str = temp.erase(1, len) + color_string.substr(1, len);
+    converted_color_str = temp.erase(1, len) + color_string.substr(1, len);
   } else {
-    color_str = color_string;
+    converted_color_str = color_string;
   }
 
   SkColor color;
-  if (!content::ParseCssColorString(color_str, &color))
+  if (!content::ParseCssColorString(converted_color_str, &color))
     color = SK_ColorWHITE;
 
   return color;
