@@ -122,3 +122,4 @@ introduce_ozoneplatform_electron_can_call_x11_property.patch
 revert_motionmark_avoid_unnecessary_ipc_on_mac.patch
 use-after-free_of_id_and_idref_attributes.patch
 fix_--without-valid_build.patch
+cherry-pick-4d26949260aa.patch
