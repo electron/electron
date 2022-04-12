@@ -62,7 +62,7 @@ index 9dddcdf88d56b32a9b8b9be529f0f13a03bd6e06..f4e5be79c1d3b92f6723f7b0c4d9a7f3
    // Set this as early as possible in order to ensure OOM errors are reported
    // correctly.
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index da5b4017b4a8128bf620d4b43d4c2d183719265b..bf58d3b523ce89980132de04cfdd9ced772792b3 100644
+index da5b4017b4a8128bf620d4b43d4c2d183719265b..13a120c7fe8e69a44793473f3124c33d572a07a3 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -31,7 +31,8 @@ class GIN_EXPORT V8Initializer {
@@ -75,4 +75,3 @@ index da5b4017b4a8128bf620d4b43d4c2d183719265b..bf58d3b523ce89980132de04cfdd9ced
  
    // Get address and size information for currently loaded snapshot.
    // If no snapshot is loaded, the return values are null for addresses
-
