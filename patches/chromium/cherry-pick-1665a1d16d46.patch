@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "msw@chromium.org" <msw@chromium.org>
+Date: Tue, 1 Feb 2022 21:16:10 +0000
+Subject: Reland "Make web cursor size limits match on browser and renderer"
+
+This reverts commit 38a8343085e53889eba48fcff78a6c2295927333.
+
+Reason for revert: Fix without regressing https://crbug.com/1292426
+(Increased WebCursor limit 128->150px to support DevToolsEyeDropper)
+
+Original change's description:
+> Revert "Make web cursor size limits match on browser and renderer"
+>
+> This reverts commit 868b44dd8b4a1a3b9698f561ca17f75e4ec78dd2.
+>
+> Reason for revert: https://crbug.com/1292426
+>
+> Original change's description:
+> > Make web cursor size limits match on browser and renderer
+> >
+> > Use NSCursor arrowCursor on Mac for ui::mojom::CursorType::kNull.
+> > (i.e. when WebCursor is constructed with an overly large custom cursor)
+> >
+> > Bug: 1246188
+> > Test: Automated unit tests and WPTs
+> > Change-Id: I89627fa13cba96b755b8f80adbc91cfc865b6b1b
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3413912
+> > Reviewed-by: Henrique Ferreiro <hferreiro@igalia.com>
+> > Reviewed-by: Charlie Harrison <csharrison@chromium.org>
+> > Commit-Queue: Mike Wasserman <msw@chromium.org>
+> > Auto-Submit: Mike Wasserman <msw@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#964378}
+>
+> Bug: 1246188
+> Change-Id: Id7b3b88e65c012993537ce96c2b5064b7b76646e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3428347
+> Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+> Commit-Queue: Mike Wasserman <msw@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#965475}
+
+Fixed: 1246188
+Bug: 1292426
+Change-Id: I5a490603c3e21e17f3136a3d792a18429eb3f633
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3428624
+Auto-Submit: Mike Wasserman <msw@chromium.org>
+Reviewed-by: Charlie Harrison <csharrison@chromium.org>
+Commit-Queue: Mike Wasserman <msw@chromium.org>
+Reviewed-by: Henrique Ferreiro <hferreiro@igalia.com>
+Cr-Commit-Position: refs/heads/main@{#965857}
+
+diff --git a/content/common/cursors/webcursor.cc b/content/common/cursors/webcursor.cc
+index c8b6b9d3f75d0cac98cc4ab8e71b68117837c1dc..4c80616e41e6ba5b171ae09d06d7f4110589f70a 100644
+--- a/content/common/cursors/webcursor.cc
++++ b/content/common/cursors/webcursor.cc
+@@ -22,16 +22,19 @@ WebCursor::WebCursor(const ui::Cursor& cursor) {
+ WebCursor::WebCursor(const WebCursor& other) = default;
+ 
+ bool WebCursor::SetCursor(const ui::Cursor& cursor) {
+-  static constexpr int kMaxSize = 1024;
++  // This value is just large enough to accommodate:
++  // - kMaximumCursorSize in Blink's EventHandler
++  // - kCursorSize in Chrome's DevToolsEyeDropper
++  static constexpr int kMaximumCursorSize = 150;
+   if (cursor.image_scale_factor() < 0.01f ||
+       cursor.image_scale_factor() > 100.f ||
+       (cursor.type() == ui::mojom::CursorType::kCustom &&
+-       (cursor.custom_bitmap().width() > kMaxSize ||
+-        cursor.custom_bitmap().height() > kMaxSize ||
++       (cursor.custom_bitmap().width() > kMaximumCursorSize ||
++        cursor.custom_bitmap().height() > kMaximumCursorSize ||
+         cursor.custom_bitmap().width() / cursor.image_scale_factor() >
+-            kMaxSize ||
++            kMaximumCursorSize ||
+         cursor.custom_bitmap().height() / cursor.image_scale_factor() >
+-            kMaxSize))) {
++            kMaximumCursorSize))) {
+     return false;
+   }
+ 
+diff --git a/content/common/cursors/webcursor_mac.mm b/content/common/cursors/webcursor_mac.mm
+index f85c421f8581abe191738eaee133004b729a817d..fdc70bdff2ddc517f3e341dd16263ae89d8b153f 100644
+--- a/content/common/cursors/webcursor_mac.mm
++++ b/content/common/cursors/webcursor_mac.mm
+@@ -265,6 +265,7 @@ - (CrCoreCursorType)_coreCursorType {
+     case ui::mojom::CursorType::kCustom:
+       return CreateCustomCursor(cursor_);
+     case ui::mojom::CursorType::kNull:
++      return [NSCursor arrowCursor];
+     case ui::mojom::CursorType::kDndNone:
+     case ui::mojom::CursorType::kDndMove:
+     case ui::mojom::CursorType::kDndCopy:
+diff --git a/content/common/cursors/webcursor_unittest.cc b/content/common/cursors/webcursor_unittest.cc
+index 9c9216de35c862d45970120140f27cd99c1d44eb..6e050e7494e8eb72da903a2cd8e3739d3d9fb6e6 100644
+--- a/content/common/cursors/webcursor_unittest.cc
++++ b/content/common/cursors/webcursor_unittest.cc
+@@ -122,11 +122,11 @@ TEST(WebCursorTest, SetCursor) {
+ 
+   // SetCursor should return false when the image width is too large.
+   cursor.set_image_scale_factor(1.f);
+-  cursor.set_custom_bitmap(CreateTestBitmap(1025, 3));
++  cursor.set_custom_bitmap(CreateTestBitmap(151, 3));
+   EXPECT_FALSE(webcursor.SetCursor(cursor));
+ 
+   // SetCursor should return false when the image height is too large.
+-  cursor.set_custom_bitmap(CreateTestBitmap(3, 1025));
++  cursor.set_custom_bitmap(CreateTestBitmap(3, 151));
+   EXPECT_FALSE(webcursor.SetCursor(cursor));
+ 
+   // SetCursor should return false when the scaled image width is too large.
+@@ -136,7 +136,7 @@ TEST(WebCursorTest, SetCursor) {
+ 
+   // SetCursor should return false when the scaled image height is too large.
+   cursor.set_image_scale_factor(0.1f);
+-  cursor.set_custom_bitmap(CreateTestBitmap(5, 200));
++  cursor.set_custom_bitmap(CreateTestBitmap(5, 20));
+   EXPECT_FALSE(webcursor.SetCursor(cursor));
+ }
+ 
