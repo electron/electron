@@ -29,8 +29,6 @@ dawn_enable_vulkan_validation_layers = false
 # See https://chromium-review.googlesource.com/c/chromium/src/+/2774898.
 enable_pseudolocales = false
 
-is_cfi = false
-
 # Make application name configurable at runtime for cookie crypto
 allow_runtime_configurable_key_storage = true
 
@@ -38,3 +36,9 @@ allow_runtime_configurable_key_storage = true
 # enabling this flag causes main process crashes where CET is enabled
 # Ref: https://source.chromium.org/chromium/chromium/src/+/45fba672185aae233e75d6ddc81ea1e0b30db050:v8/BUILD.gn;l=357
 enable_cet_shadow_stack = false
+
+# For similar reasons, disable CFI, which is not well supported in V8.
+# Chromium doesn't have any problems with this because they do not run
+# V8 in the browser process.
+# Ref: https://source.chromium.org/chromium/chromium/src/+/45fba672185aae233e75d6ddc81ea1e0b30db050:v8/BUILD.gn;l=281
+is_cfi = false
