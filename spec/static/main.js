@@ -86,8 +86,14 @@ app.on('window-all-closed', function () {
   app.quit();
 });
 
-app.on('gpu-process-crashed', (event, killed) => {
-  console.log(`GPU process crashed (killed=${killed})`);
+app.on('child-process-gone', (event, details) => {
+  if (details.type === 'GPU' && details.reason !== 'clean-exit') {
+    if (details.reason === 'crashed') {
+      console.log('GPU process crashed');
+    } else {
+      console.log(`GPU process exited with code ${details.exitCode}`);
+    }
+  }
 });
 
 app.on('renderer-process-crashed', (event, contents, killed) => {

@@ -431,9 +431,11 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     background: true
 
 # On macOS delete all .git directories under src/ expect for
-# third_party/angle/ because of build time generation of file
+# third_party/angle/ and third_party/dawn/ because of build time generation of files
 # gen/angle/commit.h depends on third_party/angle/.git/HEAD
 # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
+# and dawn/common/Version_autogen.h depends on  third_party/dawn/.git/HEAD
+# https://dawn-review.googlesource.com/c/dawn/+/83901
 # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
 step-delete-git-directories: &step-delete-git-directories
   run:
@@ -441,7 +443,7 @@ step-delete-git-directories: &step-delete-git-directories
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
-        ( find . -type d -name ".git" -not -path "./third_party/angle/*" ) | xargs rm -rf
+        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux

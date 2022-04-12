@@ -41,10 +41,10 @@ index ac1e7854dc9ae629a499fac7626ec456e18c7867..087da9bbfb9081b94ca8ea8d245871dc
  
  int DesktopMediaListBase::GetSourceCount() const {
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index 9c77a2d5872cc340b7a237b896afea1dd3be2503..d06869ff78ec0d48e97c3aeb7ac86d4aa9d9b1ba 100644
+index 1150cf5fd95cb19d926a9af6d65472b680f53859..0fc3455f4966dd2047329adc308526dadcc64f1b 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
-@@ -38,7 +38,7 @@ class DesktopMediaListBase : public DesktopMediaList {
+@@ -39,7 +39,7 @@ class DesktopMediaListBase : public DesktopMediaList {
    void SetThumbnailSize(const gfx::Size& thumbnail_size) override;
    void SetViewDialogWindowId(content::DesktopMediaID dialog_id) override;
    void StartUpdating(DesktopMediaListObserver* observer) override;

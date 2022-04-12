@@ -132,7 +132,7 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
         // show the resize cursor when resizing is possible. The cost of which
         // is also maybe showing it over the portion of the DIP that isn't the
         // outermost pixel.
-        buttons.Inset(0, kCaptionButtonTopInset, 0, 0);
+        buttons.Inset(gfx::Insets::TLBR(0, kCaptionButtonTopInset, 0, 0));
         if (buttons.Contains(point))
           return HTNOWHERE;
       }
@@ -143,8 +143,8 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     // pixels at the end of the top and bottom edges trigger diagonal resizing.
     constexpr int kResizeCornerWidth = 16;
     int window_component = GetHTComponentForFrame(
-        point, gfx::Insets(top_border_thickness, 0, 0, 0), top_border_thickness,
-        kResizeCornerWidth - FrameBorderThickness(),
+        point, gfx::Insets::TLBR(top_border_thickness, 0, 0, 0),
+        top_border_thickness, kResizeCornerWidth - FrameBorderThickness(),
         frame()->widget_delegate()->CanResize());
     if (window_component != HTNOWHERE)
       return window_component;
