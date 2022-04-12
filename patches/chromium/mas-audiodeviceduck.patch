@@ -6,7 +6,7 @@ Subject: mas: avoid usage of AudioDeviceDuck
 Removes usage of the AudioDeviceDuck private API.
 
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index e28d37435da00153e34132f49ce8f6b240e70a65..77ce459d969022b7c5a4d1e57bb1f7e6fa7a9898 100644
+index 0e842caf7b6487d94978c7b68fb5b222e330581f..5eafcd163ee1a05203a5eb76592a449f5a84e71f 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -34,19 +34,23 @@

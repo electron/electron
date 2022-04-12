@@ -283,7 +283,7 @@ index 5e136488b37887e9523ac04a9ff4ccdfaf96c104..24899f4c2b6fe66b96a6728bf747f1aa
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 6d2744b673ecb31464d4aa9b0d11177892c030f4..f9ea66415b85ce385be429ead5e04c8a96dc31c4 100644
+index c24fdd1360e582293a8b21b2f29dc6bc02b564c9..24bb07ae2efaad2e7f5957a73585885168349109 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -15,9 +15,11 @@

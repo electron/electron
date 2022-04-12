@@ -40,6 +40,47 @@ std::string PhysicalDeviceIdFromDeviceInfo(
                                            : device.physical_device_id;
 }
 
+bool FilterMatch(const blink::mojom::HidDeviceFilterPtr& filter,
+                 const device::mojom::HidDeviceInfo& device) {
+  if (filter->device_ids) {
+    if (filter->device_ids->is_vendor()) {
+      if (filter->device_ids->get_vendor() != device.vendor_id)
+        return false;
+    } else if (filter->device_ids->is_vendor_and_product()) {
+      const auto& vendor_and_product =
+          filter->device_ids->get_vendor_and_product();
+      if (vendor_and_product->vendor != device.vendor_id)
+        return false;
+      if (vendor_and_product->product != device.product_id)
+        return false;
+    }
+  }
+
+  if (filter->usage) {
+    if (filter->usage->is_page()) {
+      const uint16_t usage_page = filter->usage->get_page();
+      auto find_it =
+          std::find_if(device.collections.begin(), device.collections.end(),
+                       [=](const device::mojom::HidCollectionInfoPtr& c) {
+                         return usage_page == c->usage->usage_page;
+                       });
+      if (find_it == device.collections.end())
+        return false;
+    } else if (filter->usage->is_usage_and_page()) {
+      const auto& usage_and_page = filter->usage->get_usage_and_page();
+      auto find_it = std::find_if(
+          device.collections.begin(), device.collections.end(),
+          [&usage_and_page](const device::mojom::HidCollectionInfoPtr& c) {
+            return usage_and_page->usage_page == c->usage->usage_page &&
+                   usage_and_page->usage == c->usage->usage;
+          });
+      if (find_it == device.collections.end())
+        return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace
 
 namespace gin {
@@ -62,11 +103,13 @@ namespace electron {
 HidChooserController::HidChooserController(
     content::RenderFrameHost* render_frame_host,
     std::vector<blink::mojom::HidDeviceFilterPtr> filters,
+    std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
     content::HidChooser::Callback callback,
     content::WebContents* web_contents,
     base::WeakPtr<ElectronHidDelegate> hid_delegate)
     : WebContentsObserver(web_contents),
       filters_(std::move(filters)),
+      exclusion_filters_(std::move(exclusion_filters)),
       callback_(std::move(callback)),
       origin_(content::WebContents::FromRenderFrameHost(render_frame_host)
                   ->GetMainFrame()
@@ -251,7 +294,7 @@ bool HidChooserController::DisplayDevice(
       return false;
   }
 
-  return FilterMatchesAny(device);
+  return FilterMatchesAny(device) && !IsExcluded(device);
 }
 
 bool HidChooserController::FilterMatchesAny(
@@ -260,44 +303,18 @@ bool HidChooserController::FilterMatchesAny(
     return true;
 
   for (const auto& filter : filters_) {
-    if (filter->device_ids) {
-      if (filter->device_ids->is_vendor()) {
-        if (filter->device_ids->get_vendor() != device.vendor_id)
-          continue;
-      } else if (filter->device_ids->is_vendor_and_product()) {
-        const auto& vendor_and_product =
-            filter->device_ids->get_vendor_and_product();
-        if (vendor_and_product->vendor != device.vendor_id)
-          continue;
-        if (vendor_and_product->product != device.product_id)
-          continue;
-      }
-    }
+    if (FilterMatch(filter, device))
+      return true;
+  }
 
-    if (filter->usage) {
-      if (filter->usage->is_page()) {
-        const uint16_t usage_page = filter->usage->get_page();
-        auto find_it =
-            std::find_if(device.collections.begin(), device.collections.end(),
-                         [=](const device::mojom::HidCollectionInfoPtr& c) {
-                           return usage_page == c->usage->usage_page;
-                         });
-        if (find_it == device.collections.end())
-          continue;
-      } else if (filter->usage->is_usage_and_page()) {
-        const auto& usage_and_page = filter->usage->get_usage_and_page();
-        auto find_it = std::find_if(
-            device.collections.begin(), device.collections.end(),
-            [&usage_and_page](const device::mojom::HidCollectionInfoPtr& c) {
-              return usage_and_page->usage_page == c->usage->usage_page &&
-                     usage_and_page->usage == c->usage->usage;
-            });
-        if (find_it == device.collections.end())
-          continue;
-      }
-    }
+  return false;
+}
 
-    return true;
+bool HidChooserController::IsExcluded(
+    const device::mojom::HidDeviceInfo& device) const {
+  for (const auto& exclusion_filter : exclusion_filters_) {
+    if (FilterMatch(exclusion_filter, device))
+      return true;
   }
 
   return false;

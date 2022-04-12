@@ -47,7 +47,6 @@ void AddStringsForPdf(base::DictionaryValue* dict) {
       {"pageReload", IDS_PDF_PAGE_RELOAD_BUTTON},
       {"bookmarks", IDS_PDF_BOOKMARKS},
       {"labelPageNumber", IDS_PDF_LABEL_PAGE_NUMBER},
-      {"tooltipRotateCW", IDS_PDF_TOOLTIP_ROTATE_CW},
       {"tooltipDownload", IDS_PDF_TOOLTIP_DOWNLOAD},
       {"tooltipPrint", IDS_PDF_TOOLTIP_PRINT},
       {"tooltipFitToPage", IDS_PDF_TOOLTIP_FIT_PAGE},
