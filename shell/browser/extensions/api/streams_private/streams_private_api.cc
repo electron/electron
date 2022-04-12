@@ -28,7 +28,7 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   content::WebContents* web_contents =
-    content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
+      content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
   if (!web_contents)
     return;
 

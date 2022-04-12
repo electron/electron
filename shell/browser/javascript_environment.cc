@@ -9,9 +9,9 @@
 #include <unordered_set>
 #include <utility>
 
-#include "base/bits.h"
 #include "base/allocator/partition_alloc_features.h"
 #include "base/allocator/partition_allocator/partition_alloc.h"
+#include "base/bits.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/task/current_thread.h"
@@ -342,13 +342,11 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
       tracing_controller, gin::V8Platform::PageAllocator());
 
   v8::V8::InitializePlatform(platform_);
-  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
-                                 new ArrayBufferAllocator(),
-                                 nullptr /* external_reference_table */,
-                                 js_flags,
-                                 nullptr /* fatal_error_callback */,
-                                 nullptr /* oom_error_callback */,
-                                 false /* create_v8_platform */);
+  gin::IsolateHolder::Initialize(
+      gin::IsolateHolder::kNonStrictMode, new ArrayBufferAllocator(),
+      nullptr /* external_reference_table */, js_flags,
+      nullptr /* fatal_error_callback */, nullptr /* oom_error_callback */,
+      false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
