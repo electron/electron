@@ -139,4 +139,6 @@ remove_incorrect_width_height_adjustments.patch
 set_dpi_correctly_during_main_window_creation.patch
 use_numpy_1_2x_supported_1_for_vpython.patch
 cherry-pick-4d26949260aa.patch
+use-after-free_of_id_and_idref_attributes.patch
+fix_--without-valid_build.patch
 usb_fix_oob_access_with_non-sequential_interfaces.patch
