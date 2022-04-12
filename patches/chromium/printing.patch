@@ -809,17 +809,17 @@ index cd26f9ecf888c2a321890edd378ee0f8843a7f6c..958794f95fe8830b7e494340fbd53b0e
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index c4cdb402bc0aaa25b9118bad33a84b7f04cc94c4..8022f3599ec38d614272cde3109a7be2d9b2840e 100644
+index d0ef2181c649afe110c3c466a565a01cf6ae63a9..2daf9f02d41e04930fc4dad6d36ccbf3006dc175 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -120,7 +120,6 @@ mojom::ResultCode PrintingContext::UsePdfSettings() {
+@@ -119,7 +119,6 @@ mojom::ResultCode PrintingContext::UsePdfSettings() {
  
  mojom::ResultCode PrintingContext::UpdatePrintSettings(
      base::Value job_settings) {
 -  ResetSettings();
    {
      std::unique_ptr<PrintSettings> settings =
-         PrintSettingsFromJobSettings(job_settings);
+         PrintSettingsFromJobSettings(job_settings.GetDict());
 diff --git a/printing/printing_context.h b/printing/printing_context.h
 index 3f36303105b7979a1a771bf26b42596abe5b3cce..52f740bb832db4a8d76431d9bc77cab10bb7e0c7 100644
 --- a/printing/printing_context.h
