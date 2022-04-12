@@ -1,0 +1,413 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jack Hsieh <chengweih@chromium.org>
+Date: Fri, 21 Jan 2022 00:01:43 +0000
+Subject: usb: Fix OOB access with non-sequential interfaces
+
+When accessing a usb device with non-sequential interface number or
+alternative setting value, it might end up using index out of the
+internal array allocated size. It is caused by using incorrect
+parameters (i.e interface_number and alternate_setting) into the
+callback which expects taking interface_index and alternate_index. Fix
+it by passing the correct parameters which are already available in the
+function to the callback.
+
+Bug: 1286816
+Change-Id: I6b3533f944f94e94e63959b99718858e089449da
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3384715
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Jack Hsieh <chengweih@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#961679}
+
+diff --git a/third_party/blink/renderer/modules/webusb/usb_device.cc b/third_party/blink/renderer/modules/webusb/usb_device.cc
+index 7c9fa09a12516e2a866bd2e64b85d9643189ef5d..178781a3346c3271ba2592e472ec1d45afe42e61 100644
+--- a/third_party/blink/renderer/modules/webusb/usb_device.cc
++++ b/third_party/blink/renderer/modules/webusb/usb_device.cc
+@@ -132,9 +132,9 @@ bool USBDevice::IsInterfaceClaimed(wtf_size_t configuration_index,
+          claimed_interfaces_[interface_index];
+ }
+ 
+-wtf_size_t USBDevice::SelectedAlternateInterface(
++wtf_size_t USBDevice::SelectedAlternateInterfaceIndex(
+     wtf_size_t interface_index) const {
+-  return selected_alternates_[interface_index];
++  return selected_alternate_indices_[interface_index];
+ }
+ 
+ USBConfiguration* USBDevice::configuration() const {
+@@ -302,7 +302,7 @@ ScriptPromise USBDevice::selectAlternateInterface(ScriptState* script_state,
+       device_->SetInterfaceAlternateSetting(
+           interface_number, alternate_setting,
+           WTF::Bind(&USBDevice::AsyncSelectAlternateInterface,
+-                    WrapPersistent(this), interface_number, alternate_setting,
++                    WrapPersistent(this), interface_index, alternate_index,
+                     WrapPersistent(resolver)));
+     }
+   }
+@@ -744,7 +744,7 @@ void USBDevice::SetEndpointsForInterface(wtf_size_t interface_index, bool set) {
+   const auto& configuration = *Info().configurations[configuration_index_];
+   const auto& interface = *configuration.interfaces[interface_index];
+   const auto& alternate =
+-      *interface.alternates[selected_alternates_[interface_index]];
++      *interface.alternates[selected_alternate_indices_[interface_index]];
+   for (const auto& endpoint : alternate.endpoints) {
+     uint8_t endpoint_number = endpoint->endpoint_number;
+     if (endpoint_number == 0 || endpoint_number >= kEndpointsBitsNumber)
+@@ -792,7 +792,7 @@ void USBDevice::OnDeviceOpenedOrClosed(bool opened) {
+   opened_ = opened;
+   if (!opened_) {
+     claimed_interfaces_.Fill(false);
+-    selected_alternates_.Fill(0);
++    selected_alternate_indices_.Fill(0);
+     in_endpoints_.reset();
+     out_endpoints_.reset();
+   }
+@@ -825,8 +825,8 @@ void USBDevice::OnConfigurationSelected(bool success,
+     claimed_interfaces_.Fill(false);
+     interface_state_change_in_progress_.resize(num_interfaces);
+     interface_state_change_in_progress_.Fill(false);
+-    selected_alternates_.resize(num_interfaces);
+-    selected_alternates_.Fill(0);
++    selected_alternate_indices_.resize(num_interfaces);
++    selected_alternate_indices_.Fill(0);
+     in_endpoints_.reset();
+     out_endpoints_.reset();
+   }
+@@ -887,7 +887,7 @@ void USBDevice::OnInterfaceClaimedOrUnclaimed(bool claimed,
+     claimed_interfaces_[interface_index] = true;
+   } else {
+     claimed_interfaces_[interface_index] = false;
+-    selected_alternates_[interface_index] = 0;
++    selected_alternate_indices_[interface_index] = 0;
+   }
+   SetEndpointsForInterface(interface_index, claimed);
+   interface_state_change_in_progress_[interface_index] = false;
+@@ -901,7 +901,7 @@ void USBDevice::AsyncSelectAlternateInterface(wtf_size_t interface_index,
+     return;
+ 
+   if (success)
+-    selected_alternates_[interface_index] = alternate_index;
++    selected_alternate_indices_[interface_index] = alternate_index;
+   SetEndpointsForInterface(interface_index, success);
+   interface_state_change_in_progress_[interface_index] = false;
+ 
+diff --git a/third_party/blink/renderer/modules/webusb/usb_device.h b/third_party/blink/renderer/modules/webusb/usb_device.h
+index 21231db5f4d6f949b4d371143c631a6f33dcb1e4..cb199d2f2ac4c27f2db7f153d51408e604b5f6f0 100644
+--- a/third_party/blink/renderer/modules/webusb/usb_device.h
++++ b/third_party/blink/renderer/modules/webusb/usb_device.h
+@@ -40,7 +40,7 @@ class USBDevice : public ScriptWrappable,
+   }
+   bool IsInterfaceClaimed(wtf_size_t configuration_index,
+                           wtf_size_t interface_index) const;
+-  wtf_size_t SelectedAlternateInterface(wtf_size_t interface_index) const;
++  wtf_size_t SelectedAlternateInterfaceIndex(wtf_size_t interface_index) const;
+ 
+   // USBDevice.idl
+   uint8_t usbVersionMajor() const { return Info().usb_version_major; }
+@@ -179,7 +179,7 @@ class USBDevice : public ScriptWrappable,
+   // configured. Use the index returned by FindInterfaceIndex().
+   WTF::Vector<bool> claimed_interfaces_;
+   WTF::Vector<bool> interface_state_change_in_progress_;
+-  WTF::Vector<wtf_size_t> selected_alternates_;
++  WTF::Vector<wtf_size_t> selected_alternate_indices_;
+ 
+   // These bit sets have one entry for each endpoint. Index using the endpoint
+   // number (lower 4 bits of the endpoint address).
+diff --git a/third_party/blink/renderer/modules/webusb/usb_interface.cc b/third_party/blink/renderer/modules/webusb/usb_interface.cc
+index ee7b79b351e5002cb02842097b89156f6e407a54..8187282e09b0f11e2a0f704555e8f557aa97f920 100644
+--- a/third_party/blink/renderer/modules/webusb/usb_interface.cc
++++ b/third_party/blink/renderer/modules/webusb/usb_interface.cc
+@@ -53,7 +53,7 @@ const device::mojom::blink::UsbInterfaceInfo& USBInterface::Info() const {
+ USBAlternateInterface* USBInterface::alternate() const {
+   if (device_->IsInterfaceClaimed(configuration_index_, interface_index_))
+     return USBAlternateInterface::Create(
+-        this, device_->SelectedAlternateInterface(interface_index_));
++        this, device_->SelectedAlternateInterfaceIndex(interface_index_));
+   return nullptr;
+ }
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/webusb/resources/fake-devices.js b/third_party/blink/web_tests/external/wpt/webusb/resources/fake-devices.js
+index 975d2242c949740217c050beea72db908ef46fc7..c5c5cadaa6af48f676565775d1dc8e27efffc3a2 100644
+--- a/third_party/blink/web_tests/external/wpt/webusb/resources/fake-devices.js
++++ b/third_party/blink/web_tests/external/wpt/webusb/resources/fake-devices.js
+@@ -16,75 +16,160 @@ let fakeDeviceInit = {
+   productName: 'The amazing imaginary printer',
+   serialNumber: '4',
+   activeConfigurationValue: 0,
+-  configurations: [{
+-    configurationValue: 1,
+-    configurationName: 'Printer Mode',
+-    interfaces: [{
+-      interfaceNumber: 0,
+-      alternates: [{
+-        alternateSetting: 0,
+-        interfaceClass: 0xff,
+-        interfaceSubclass: 0x01,
+-        interfaceProtocol: 0x01,
+-        interfaceName: 'Control',
+-        endpoints: [{
+-          endpointNumber: 1,
+-          direction: 'in',
+-          type: 'interrupt',
+-          packetSize: 8
+-        }]
++  configurations: [
++    {
++      configurationValue: 1,
++      configurationName: 'Printer Mode',
++      interfaces: [
++        {
++          interfaceNumber: 0,
++          alternates: [{
++            alternateSetting: 0,
++            interfaceClass: 0xff,
++            interfaceSubclass: 0x01,
++            interfaceProtocol: 0x01,
++            interfaceName: 'Control',
++            endpoints: [{
++              endpointNumber: 1,
++              direction: 'in',
++              type: 'interrupt',
++              packetSize: 8
++            }]
++          }]
++        },
++        {
++          interfaceNumber: 1,
++          alternates: [{
++            alternateSetting: 0,
++            interfaceClass: 0xff,
++            interfaceSubclass: 0x02,
++            interfaceProtocol: 0x01,
++            interfaceName: 'Data',
++            endpoints: [
++              {
++                endpointNumber: 2,
++                direction: 'in',
++                type: 'bulk',
++                packetSize: 1024
++              },
++              {
++                endpointNumber: 2,
++                direction: 'out',
++                type: 'bulk',
++                packetSize: 1024
++              }
++            ]
++          }]
++        }
++      ]
++    },
++    {
++      configurationValue: 2,
++      configurationName: 'Fighting Robot Mode',
++      interfaces: [{
++        interfaceNumber: 0,
++        alternates: [
++          {
++            alternateSetting: 0,
++            interfaceClass: 0xff,
++            interfaceSubclass: 0x42,
++            interfaceProtocol: 0x01,
++            interfaceName: 'Disabled',
++            endpoints: []
++          },
++          {
++            alternateSetting: 1,
++            interfaceClass: 0xff,
++            interfaceSubclass: 0x42,
++            interfaceProtocol: 0x01,
++            interfaceName: 'Activate!',
++            endpoints: [
++              {
++                endpointNumber: 1,
++                direction: 'in',
++                type: 'isochronous',
++                packetSize: 1024
++              },
++              {
++                endpointNumber: 1,
++                direction: 'out',
++                type: 'isochronous',
++                packetSize: 1024
++              }
++            ]
++          }
++        ]
+       }]
+-    }, {
+-      interfaceNumber: 1,
+-      alternates: [{
+-        alternateSetting: 0,
+-        interfaceClass: 0xff,
+-        interfaceSubclass: 0x02,
+-        interfaceProtocol: 0x01,
+-        interfaceName: 'Data',
+-        endpoints: [{
+-          endpointNumber: 2,
+-          direction: 'in',
+-          type: 'bulk',
+-          packetSize: 1024
+-        }, {
+-          endpointNumber: 2,
+-          direction: 'out',
+-          type: 'bulk',
+-          packetSize: 1024
+-        }]
+-      }]
+-    }]
+-  }, {
+-    configurationValue: 2,
+-    configurationName: 'Fighting Robot Mode',
+-    interfaces: [{
+-      interfaceNumber: 0,
+-      alternates: [{
+-        alternateSetting: 0,
+-        interfaceClass: 0xff,
+-        interfaceSubclass: 0x42,
+-        interfaceProtocol: 0x01,
+-        interfaceName: 'Disabled',
+-        endpoints: []
+-      }, {
+-        alternateSetting: 1,
+-        interfaceClass: 0xff,
+-        interfaceSubclass: 0x42,
+-        interfaceProtocol: 0x01,
+-        interfaceName: 'Activate!',
+-        endpoints: [{
+-          endpointNumber: 1,
+-          direction: 'in',
+-          type: 'isochronous',
+-          packetSize: 1024
+-        }, {
+-          endpointNumber: 1,
+-          direction: 'out',
+-          type: 'isochronous',
+-          packetSize: 1024
+-        }]
+-      }]
+-    }]
+-  }]
++    },
++    {
++      configurationValue: 3,
++      configurationName: 'Non-sequential interface number and alternate ' +
++          'setting Mode',
++      interfaces: [
++        {
++          interfaceNumber: 0,
++          alternates: [
++            {
++              alternateSetting: 0,
++              interfaceClass: 0xff,
++              interfaceSubclass: 0x01,
++              interfaceProtocol: 0x01,
++              interfaceName: 'Control',
++              endpoints: [{
++                endpointNumber: 1,
++                direction: 'in',
++                type: 'interrupt',
++                packetSize: 8
++              }]
++            },
++            {
++              alternateSetting: 2,
++              interfaceClass: 0xff,
++              interfaceSubclass: 0x02,
++              interfaceProtocol: 0x01,
++              interfaceName: 'Data',
++              endpoints: [
++                {
++                  endpointNumber: 2,
++                  direction: 'in',
++                  type: 'bulk',
++                  packetSize: 1024
++                },
++                {
++                  endpointNumber: 2,
++                  direction: 'out',
++                  type: 'bulk',
++                  packetSize: 1024
++                }
++              ]
++            }
++          ]
++        },
++        {
++          interfaceNumber: 2,
++          alternates: [{
++            alternateSetting: 0,
++            interfaceClass: 0xff,
++            interfaceSubclass: 0x02,
++            interfaceProtocol: 0x01,
++            interfaceName: 'Data',
++            endpoints: [
++              {
++                endpointNumber: 2,
++                direction: 'in',
++                type: 'bulk',
++                packetSize: 1024
++              },
++              {
++                endpointNumber: 2,
++                direction: 'out',
++                type: 'bulk',
++                packetSize: 1024
++              }
++            ]
++          }]
++        }
++      ]
++    }
++  ]
+ };
+diff --git a/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js b/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
+index 5bfd841d5248e91a5cabf10d00d78db23d11f0e5..527d238d69b703b1fcf5d8a001d02e9f87b5689a 100644
+--- a/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
++++ b/third_party/blink/web_tests/external/wpt/webusb/usbDevice.https.any.js
+@@ -236,10 +236,11 @@ usb_test(() => {
+   return getFakeDevice().then(({ device }) => {
+     assert_equals(device.configuration, null);
+     return device.open()
+-      .then(() => assertRejectsWithError(
+-            device.selectConfiguration(3), 'NotFoundError',
+-            'The configuration value provided is not supported by the device.'))
+-      .then(() => device.close());
++        .then(
++            () => assertRejectsWithError(
++                device.selectConfiguration(10), 'NotFoundError',
++                'The configuration value provided is not supported by the device.'))
++        .then(() => device.close());
+   });
+ }, 'selectConfiguration rejects on invalid configurations');
+ 
+@@ -431,6 +432,30 @@ usb_test(() => {
+   });
+ }, 'can select an alternate interface');
+ 
++usb_test(
++    async () => {
++      const {device} = await getFakeDevice();
++      await device.open();
++      await device.selectConfiguration(3);
++      await device.claimInterface(2);
++      await device.selectAlternateInterface(2, 0);
++      await device.close();
++    },
++    'can select an alternate interface on a setting with non-sequential ' +
++        'interface number');
++
++usb_test(
++    async () => {
++      const {device} = await getFakeDevice();
++      await device.open();
++      await device.selectConfiguration(3);
++      await device.claimInterface(0);
++      await device.selectAlternateInterface(0, 2);
++      await device.close();
++    },
++    'can select an alternate interface on a setting with non-sequential ' +
++        'alternative setting value');
++
+ usb_test(() => {
+   return getFakeDevice().then(({ device }) => {
+     return device.open()
