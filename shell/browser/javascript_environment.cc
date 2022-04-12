@@ -156,8 +156,6 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
                       gin::IsolateHolder::IsolateCreationMode::kNormal,
                       nullptr,
                       nullptr,
-                      nullptr,
-                      nullptr,
                       isolate_),
       locker_(isolate_) {
   isolate_->Enter();
@@ -346,7 +344,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  new ArrayBufferAllocator(),
                                  nullptr /* external_reference_table */,
-                                 js_flags, false /* create_v8_platform */);
+                                 js_flags,
+                                 nullptr /* fatal_error_callback */,
+                                 nullptr /* oom_error_callback */,
+                                 false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
