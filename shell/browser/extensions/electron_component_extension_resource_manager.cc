@@ -39,8 +39,8 @@ ElectronComponentExtensionResourceManager::
   pdf_extension_util::AddAdditionalData(true, &pdf_strings);
 
   ui::TemplateReplacements pdf_viewer_replacements;
-  ui::TemplateReplacementsFromDictionaryValue(
-      base::Value::AsDictionaryValue(pdf_strings), &pdf_viewer_replacements);
+  ui::TemplateReplacementsFromDictionaryValue(pdf_strings.GetDict(),
+                                              &pdf_viewer_replacements);
   extension_template_replacements_[extension_misc::kPdfExtensionId] =
       std::move(pdf_viewer_replacements);
 #endif

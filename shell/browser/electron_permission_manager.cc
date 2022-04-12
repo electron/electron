@@ -253,6 +253,7 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
 ElectronPermissionManager::SubscriptionId
 ElectronPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
+    content::RenderProcessHost* render_process_host,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback) {
@@ -406,6 +407,14 @@ ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
   return GetPermissionStatus(
       permission, render_frame_host->GetLastCommittedOrigin().GetURL(),
       content::PermissionUtil::GetLastCommittedOriginAsURL(render_frame_host));
+}
+
+blink::mojom::PermissionStatus
+ElectronPermissionManager::GetPermissionStatusForWorker(
+    content::PermissionType permission,
+    content::RenderProcessHost* render_process_host,
+    const GURL& worker_origin) {
+  return GetPermissionStatus(permission, worker_origin, worker_origin);
 }
 
 }  // namespace electron

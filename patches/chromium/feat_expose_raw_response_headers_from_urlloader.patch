@@ -53,7 +53,7 @@ index 1fcf54cac11c38352e14774cd08bcaa162443e9c..5356da11391d52a8f9aaa57a27616cee
    out->upgrade_if_insecure = data.upgrade_if_insecure();
    out->is_revalidating = data.is_revalidating();
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 1b8dbc0538d0af843e40edc41505d08f9034f97b..270822eb756090f8a74f34823009942ed21e8616 100644
+index 3a1c5bd943c110514e4da06491190476d6e6de38..6a80fb16242865d398bcbcd380893ccc9a3fe167 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -269,6 +269,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -103,10 +103,10 @@ index 4c4cc16db82d7434573f7740855fbe72d68815e6..f71290800b6bb51a39b1f86be36f02d6
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 1530c51f9090ce51de1f3bc495ca83590d6430ab..d053aa813ab53092dcefb81116ff850318f439c2 100644
+index 74365833e96d5a3c443e9160e1ada106026ada30..10bc715a2d0bd4cfe750ed222424dd4c7be37979 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -470,6 +470,7 @@ URLLoader::URLLoader(
+@@ -469,6 +469,7 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
        per_factory_corb_state_(context.GetMutableCorbState()),
@@ -114,7 +114,7 @@ index 1530c51f9090ce51de1f3bc495ca83590d6430ab..d053aa813ab53092dcefb81116ff8503
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -637,7 +638,7 @@ URLLoader::URLLoader(
+@@ -636,7 +637,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 1530c51f9090ce51de1f3bc495ca83590d6430ab..d053aa813ab53092dcefb81116ff8503
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1408,6 +1409,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1407,6 +1408,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

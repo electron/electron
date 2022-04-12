@@ -117,8 +117,13 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       content::PermissionType permission,
       const GURL& requesting_origin,
       const GURL& embedding_origin) override;
+  blink::mojom::PermissionStatus GetPermissionStatusForWorker(
+      content::PermissionType permission,
+      content::RenderProcessHost* render_process_host,
+      const GURL& worker_origin) override;
   SubscriptionId SubscribePermissionStatusChange(
       content::PermissionType permission,
+      content::RenderProcessHost* render_process_host,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
