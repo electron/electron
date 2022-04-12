@@ -738,7 +738,7 @@ void BaseWindow::RemoveMenu() {
 void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
                                  gin_helper::Arguments* args) {
   if (IsModal() && !(value->IsNull() || value->IsUndefined())) {
-    args->ThrowError("Modal window can be only detached from the parent.");
+    args->ThrowError("Modal window once detached cannot be reattached.");
     return;
   }
 
