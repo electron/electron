@@ -511,11 +511,11 @@ index 0000000000000000000000000000000000000000..bdfaf95f3eca65b3e0831db1b66f651d
 +}
 diff --git a/build/xcrun.py b/build/xcrun.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..18ac587f80441106405d00fafd9ee1f25b147772
+index 0000000000000000000000000000000000000000..a7aeeb7d3e187bd91ef12ed860d1e37eaea31fc1
 --- /dev/null
 +++ b/build/xcrun.py
 @@ -0,0 +1,14 @@
-+#!/usr/bin/env python
++#!/usr/bin/env python3
 +from __future__ import print_function
 +import os
 +import subprocess
