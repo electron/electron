@@ -76,17 +76,17 @@ class SystemPreferences
   void PostNotification(const std::string& name,
                         base::DictionaryValue user_info,
                         gin::Arguments* args);
-  int SubscribeNotification(const std::string& name,
+  int SubscribeNotification(v8::Local<v8::Value> maybe_name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
   void PostLocalNotification(const std::string& name,
                              base::DictionaryValue user_info);
-  int SubscribeLocalNotification(const std::string& name,
+  int SubscribeLocalNotification(v8::Local<v8::Value> maybe_name,
                                  const NotificationCallback& callback);
   void UnsubscribeLocalNotification(int request_id);
   void PostWorkspaceNotification(const std::string& name,
                                  base::DictionaryValue user_info);
-  int SubscribeWorkspaceNotification(const std::string& name,
+  int SubscribeWorkspaceNotification(v8::Local<v8::Value> maybe_name,
                                      const NotificationCallback& callback);
   void UnsubscribeWorkspaceNotification(int request_id);
   v8::Local<v8::Value> GetUserDefault(v8::Isolate* isolate,
@@ -130,7 +130,7 @@ class SystemPreferences
   ~SystemPreferences() override;
 
 #if BUILDFLAG(IS_MAC)
-  int DoSubscribeNotification(const std::string& name,
+  int DoSubscribeNotification(v8::Local<v8::Value> maybe_name,
                               const NotificationCallback& callback,
                               NotificationCenterKind kind);
   void DoUnsubscribeNotification(int request_id, NotificationCenterKind kind);
