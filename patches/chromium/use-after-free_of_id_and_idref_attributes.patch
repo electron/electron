@@ -1,0 +1,190 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nick Wellnhofer <wellnhofer@aevum.de>
+Date: Tue, 8 Feb 2022 03:29:24 +0100
+Subject: Use-after-free of ID and IDREF attributes
+
+If a document is parsed with XML_PARSE_DTDVALID and without
+XML_PARSE_NOENT, the value of ID attributes has to be normalized after
+potentially expanding entities in xmlRemoveID. Otherwise, later calls
+to xmlGetID can return a pointer to previously freed memory.
+
+ID attributes which are empty or contain only whitespace after
+entity expansion are affected in a similar way. This is fixed by
+not storing such attributes in the ID table.
+
+The test to detect streaming mode when validating against a DTD was
+broken. In connection with the defects above, this could result in a
+use-after-free when using the xmlReader interface with validation.
+Fix detection of streaming mode to avoid similar issues. (This changes
+the expected result of a test case. But as far as I can tell, using the
+XML reader with XIncludes referencing the root document never worked
+properly, anyway.)
+
+All of these issues can result in denial of service. Using xmlReader
+with validation could result in disclosure of memory via the error
+channel, typically stderr. The security impact of xmlGetID returning
+a pointer to freed memory depends on the application. The typical use
+case of calling xmlGetID on an unmodified document is not affected.
+
+diff --git a/third_party/libxml/src/valid.c b/third_party/libxml/src/valid.c
+index 5ee391c0418327f5e46293aedafdb353550f6f5b..8e596f1db3db40a5decc5f4b529abc7588c6bd66 100644
+--- a/third_party/libxml/src/valid.c
++++ b/third_party/libxml/src/valid.c
+@@ -479,6 +479,35 @@ nodeVPop(xmlValidCtxtPtr ctxt)
+     return (ret);
+ }
+ 
++/**
++ * xmlValidNormalizeString:
++ * @str: a string
++ *
++ * Normalize a string in-place.
++ */
++static void
++xmlValidNormalizeString(xmlChar *str) {
++    xmlChar *dst;
++    const xmlChar *src;
++
++    if (str == NULL)
++        return;
++    src = str;
++    dst = str;
++
++    while (*src == 0x20) src++;
++    while (*src != 0) {
++	if (*src == 0x20) {
++	    while (*src == 0x20) src++;
++	    if (*src != 0)
++		*dst++ = 0x20;
++	} else {
++	    *dst++ = *src++;
++	}
++    }
++    *dst = 0;
++}
++
+ #ifdef DEBUG_VALID_ALGO
+ static void
+ xmlValidPrintNode(xmlNodePtr cur) {
+@@ -2607,6 +2636,24 @@ xmlDumpNotationTable(xmlBufferPtr buf, xmlNotationTablePtr table) {
+ 	    (xmlDictOwns(dict, (const xmlChar *)(str)) == 0)))	\
+ 	    xmlFree((char *)(str));
+ 
++static int
++xmlIsStreaming(xmlValidCtxtPtr ctxt) {
++    xmlParserCtxtPtr pctxt;
++
++    if (ctxt == NULL)
++        return(0);
++    /*
++     * These magic values are also abused to detect whether we're validating
++     * while parsing a document. In this case, userData points to the parser
++     * context.
++     */
++    if ((ctxt->finishDtd != XML_CTXT_FINISH_DTD_0) &&
++        (ctxt->finishDtd != XML_CTXT_FINISH_DTD_1))
++        return(0);
++    pctxt = ctxt->userData;
++    return(pctxt->parseMode == XML_PARSE_READER);
++}
++
+ /**
+  * xmlFreeID:
+  * @not:  A id
+@@ -2650,7 +2697,7 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+     if (doc == NULL) {
+ 	return(NULL);
+     }
+-    if (value == NULL) {
++    if ((value == NULL) || (value[0] == 0)) {
+ 	return(NULL);
+     }
+     if (attr == NULL) {
+@@ -2681,7 +2728,7 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+      */
+     ret->value = xmlStrdup(value);
+     ret->doc = doc;
+-    if ((ctxt != NULL) && (ctxt->vstateNr != 0)) {
++    if (xmlIsStreaming(ctxt)) {
+ 	/*
+ 	 * Operating in streaming mode, attr is gonna disappear
+ 	 */
+@@ -2820,6 +2867,7 @@ xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
+     ID = xmlNodeListGetString(doc, attr->children, 1);
+     if (ID == NULL)
+         return(-1);
++    xmlValidNormalizeString(ID);
+ 
+     id = xmlHashLookup(table, ID);
+     if (id == NULL || id->attr != attr) {
+@@ -3009,7 +3057,7 @@ xmlAddRef(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+      * fill the structure.
+      */
+     ret->value = xmlStrdup(value);
+-    if ((ctxt != NULL) && (ctxt->vstateNr != 0)) {
++    if (xmlIsStreaming(ctxt)) {
+ 	/*
+ 	 * Operating in streaming mode, attr is gonna disappear
+ 	 */
+@@ -4028,8 +4076,7 @@ xmlValidateAttributeValue2(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+ xmlChar *
+ xmlValidCtxtNormalizeAttributeValue(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+ 	     xmlNodePtr elem, const xmlChar *name, const xmlChar *value) {
+-    xmlChar *ret, *dst;
+-    const xmlChar *src;
++    xmlChar *ret;
+     xmlAttributePtr attrDecl = NULL;
+     int extsubset = 0;
+ 
+@@ -4070,19 +4117,7 @@ xmlValidCtxtNormalizeAttributeValue(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+     ret = xmlStrdup(value);
+     if (ret == NULL)
+ 	return(NULL);
+-    src = value;
+-    dst = ret;
+-    while (*src == 0x20) src++;
+-    while (*src != 0) {
+-	if (*src == 0x20) {
+-	    while (*src == 0x20) src++;
+-	    if (*src != 0)
+-		*dst++ = 0x20;
+-	} else {
+-	    *dst++ = *src++;
+-	}
+-    }
+-    *dst = 0;
++    xmlValidNormalizeString(ret);
+     if ((doc->standalone) && (extsubset == 1) && (!xmlStrEqual(value, ret))) {
+ 	xmlErrValidNode(ctxt, elem, XML_DTD_NOT_STANDALONE,
+ "standalone: %s on %s value had to be normalized based on external subset declaration\n",
+@@ -4114,8 +4149,7 @@ xmlValidCtxtNormalizeAttributeValue(xmlValidCtxtPtr ctxt, xmlDocPtr doc,
+ xmlChar *
+ xmlValidNormalizeAttributeValue(xmlDocPtr doc, xmlNodePtr elem,
+ 			        const xmlChar *name, const xmlChar *value) {
+-    xmlChar *ret, *dst;
+-    const xmlChar *src;
++    xmlChar *ret;
+     xmlAttributePtr attrDecl = NULL;
+ 
+     if (doc == NULL) return(NULL);
+@@ -4145,19 +4179,7 @@ xmlValidNormalizeAttributeValue(xmlDocPtr doc, xmlNodePtr elem,
+     ret = xmlStrdup(value);
+     if (ret == NULL)
+ 	return(NULL);
+-    src = value;
+-    dst = ret;
+-    while (*src == 0x20) src++;
+-    while (*src != 0) {
+-	if (*src == 0x20) {
+-	    while (*src == 0x20) src++;
+-	    if (*src != 0)
+-		*dst++ = 0x20;
+-	} else {
+-	    *dst++ = *src++;
+-	}
+-    }
+-    *dst = 0;
++    xmlValidNormalizeString(ret);
+     return(ret);
+ }
+ 
