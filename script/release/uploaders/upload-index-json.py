@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import json
 import os
 import sys
-import urllib2
+from urllib.request import Request, urlopen
 
 sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
@@ -28,12 +28,12 @@ def is_json(myjson):
 
 def get_content(retry_count = 5):
   try:
-    request = urllib2.Request(
+    request = Request(
       BASE_URL + version,
       headers={"Authorization" : authToken}
     )
 
-    proposed_content = urllib2.urlopen(
+    proposed_content = urlopen(
       request
     ).read()
 
