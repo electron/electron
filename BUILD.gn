@@ -1055,6 +1055,7 @@ if (is_mac) {
       ":electron_app_plist",
       ":electron_app_resources",
       ":electron_fuses",
+      "//base",
       "//electron/buildflags",
     ]
     if (is_mas_build) {
