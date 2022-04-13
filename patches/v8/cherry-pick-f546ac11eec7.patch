@@ -1,7 +1,10 @@
-From f546ac11eec75a5f3db797a844a5b8e2322f345f Mon Sep 17 00:00:00 2001
-From: Marja Hölttä <marja@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
 Date: Thu, 24 Mar 2022 17:30:16 +0100
-Subject: [PATCH] [M96-LTS][super IC] Turn off super ICs
+Subject: Turn off super ICs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 M96 merge issues:
   Conflicts in the bytecode test expectations
@@ -24,13 +27,12 @@ Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/9.6@{#60}
 Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
 Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
----
 
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index 12ecfc9..19b0b8c 100644
+index 6a8eb146770118d9d0d8ae5efc5a7162a094e26b..9c000959f55e42f388ba4ae75b98a6a80201ed44 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -1588,7 +1588,7 @@
+@@ -1659,7 +1659,7 @@ DEFINE_INT(max_valid_polymorphic_map_count, 4,
  DEFINE_BOOL(native_code_counters, DEBUG_BOOL,
              "generate extra code for manipulating stats counters")
  
@@ -40,10 +42,10 @@ index 12ecfc9..19b0b8c 100644
  DEFINE_BOOL(enable_mega_dom_ic, false, "use MegaDOM IC state for API objects")
  
 diff --git a/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden b/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
-index 82b6e16..c433538 100644
+index 82b6e16be98d8dd9d8fe6b8419653d2c02f7bf79..c433538d8ed52c52277f2ad7163fc4b15c29591c 100644
 --- a/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
 +++ b/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
-@@ -20,14 +20,18 @@
+@@ -20,14 +20,18 @@ snippet: "
      test();
    })();
  "
@@ -66,7 +68,7 @@ index 82b6e16..c433538 100644
    /*  126 E> */ B(AddSmi), I8(1), U8(0),
    /*  130 S> */ B(Return),
  ]
-@@ -54,7 +58,7 @@
+@@ -54,7 +58,7 @@ snippet: "
  "
  frame size: 4
  parameter count: 1
@@ -75,7 +77,7 @@ index 82b6e16..c433538 100644
  bytecodes: [
    /*  130 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
                  B(Star1),
-@@ -65,7 +69,11 @@
+@@ -65,7 +69,11 @@ bytecodes: [
                  B(Mov), R(this), R(0),
    /*  138 E> */ B(CallRuntime), U16(Runtime::kStoreToSuper), R(0), U8(4),
    /*  143 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
