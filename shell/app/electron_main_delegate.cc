@@ -139,13 +139,9 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       cur = cur.Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
       create_dir = true;
       break;
-    case DIR_BROWSER_DATA: {
+    case DIR_BROWSER_DATA:
       // By default and for backward, equivalent to DIR_USER_DATA.
-      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
-        return false;
-      create_dir = true;
-      break;
-    }
+      return base::PathService::Get(chrome::DIR_USER_DATA, result);
     case DIR_USER_CACHE: {
 #if BUILDFLAG(IS_POSIX)
       int parent_key = base::DIR_CACHE;
