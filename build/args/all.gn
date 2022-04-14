@@ -35,3 +35,5 @@ is_cfi = false
 allow_runtime_configurable_key_storage = true
 
 enable_cet_shadow_stack = false
+
+enable_resource_allowlist_generation = true

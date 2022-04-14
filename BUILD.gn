@@ -13,6 +13,7 @@ import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
+import("//tools/resources/generate_resource_allowlist.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
@@ -723,12 +724,29 @@ source_set("electron_lib") {
   }
 }
 
+_electron_resource_allowlist = "$target_gen_dir/electron_resource_allowlist.txt"
+
+if (enable_resource_allowlist_generation) {
+  generate_resource_allowlist("resource_allowlist") {
+    deps = [ ":electron_framework+link_nested" ]
+    inputs = [
+      "$target_out_dir/electron_framework_shared_library/Electron Framework",
+    ]
+    output = _electron_resource_allowlist
+  }
+}
+
 electron_paks("packed_resources") {
   if (is_mac) {
     output_dir = "$root_gen_dir/electron_repack"
     copy_data_to_bundle = true
   } else {
     output_dir = root_out_dir
+  }
+
+  if (enable_resource_allowlist_generation) {
+    repack_allowlist = _electron_resource_allowlist
+    deps = [ ":resource_allowlist" ]
   }
 }
 
@@ -857,10 +875,11 @@ if (is_mac) {
     deps = [
       ":electron_angle_library",
       ":electron_framework_libraries",
-      ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
     ]
+
+    bundle_deps = [ ":electron_framework_resources" ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
     }
@@ -900,7 +919,7 @@ if (is_mac) {
       assert(defined(invoker.helper_name_suffix))
 
       output_name = electron_helper_name + invoker.helper_name_suffix
-      deps = [ ":electron_framework+link" ]
+      deps = [ ":electron_framework+link_nested" ]
       if (!is_mas_build) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
