@@ -506,6 +506,14 @@ step-install-gnutar-on-mac: &step-install-gnutar-on-mac
         ln -fs /usr/local/bin/gtar /usr/local/bin/tar
       fi
 
+step-install-python2-on-mac: &step-install-python2-on-mac
+  run:
+    name: Install python2 on macos
+    command: |
+      if [ "`uname`" == "Darwin" ]; then
+        brew install vertedinde/python2/python@2
+      fi
+
 step-gn-gen-default: &step-gn-gen-default
   run:
     name: Default GN gen
@@ -1039,6 +1047,7 @@ steps-electron-gn-check: &steps-electron-gn-check
     - attach_workspace:
         at: .
     - *step-depot-tools-add-to-path
+    - *step-install-python2-on-mac
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
     - *step-gn-gen-default
@@ -1052,6 +1061,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
     - *step-install-gnutar-on-mac
+    - *step-install-python2-on-mac
     - *step-get-more-space-on-mac
     - *step-generate-deps-hash
     - *step-touch-sync-done
@@ -1086,6 +1096,7 @@ steps-native-tests: &steps-native-tests
     - attach_workspace:
         at: .
     - *step-depot-tools-add-to-path
+    - *step-install-python2-on-mac
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
     - *step-gn-gen-default
@@ -1355,6 +1366,7 @@ commands:
             - run: rm -rf src/electron
       - *step-restore-brew-cache
       - *step-install-gnutar-on-mac
+      - *step-install-python2-on-mac
       - *step-save-brew-cache
       - when:
           condition: << parameters.checkout-and-assume-cache >>
