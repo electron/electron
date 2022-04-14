@@ -627,6 +627,7 @@ WebContents.prototype._init = function () {
   });
 
   this.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
+    addSenderFrameToEvent(event);
     event.ports = ports.map(p => new MessagePortMain(p));
     ipcMain.emit(channel, event, message);
   });
