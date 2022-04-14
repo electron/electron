@@ -168,3 +168,4 @@ fixed_terminate_caused_by_binding_to_wrong_version.patch
 follow_wayland_specification_regarding_xkb_keymap.patch
 use-after-free_of_id_and_idref_attributes.patch
 fix_--without-valid_build.patch
+usb_fix_oob_access_with_non-sequential_interfaces.patch
