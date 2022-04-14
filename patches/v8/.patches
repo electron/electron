@@ -9,3 +9,4 @@ fix_disable_implies_dcheck_for_node_stream_array_buffers.patch
 fix_use_allocationtype_kold_in_v8_scriptormodule_legacy_lifetime.patch
 fix_destructor_for_embedderstatescope.patch
 cherry-pick-36b66b5cc991.patch
+cherry-pick-f546ac11eec7.patch
