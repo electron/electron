@@ -1342,6 +1342,11 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   if (!owner_window_)
     return;
 
+  // This needs to be called before we exit fullscreen on the native window,
+  // or the controller will incorrectly think we weren't fullscreen and bail.
+  exclusive_access_manager_->fullscreen_controller()->ExitFullscreenModeForTab(
+      source);
+
   SetHtmlApiFullscreen(false);
 
   if (native_fullscreen_) {
@@ -1350,9 +1355,6 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
     // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
-
-  exclusive_access_manager_->fullscreen_controller()->ExitFullscreenModeForTab(
-      source);
 }
 
 void WebContents::RendererUnresponsive(
