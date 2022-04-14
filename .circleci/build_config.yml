@@ -431,9 +431,11 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     background: true
 
 # On macOS delete all .git directories under src/ expect for
-# third_party/angle/ because of build time generation of file
+# third_party/angle/ and third_party/dawn/ because of build time generation of files
 # gen/angle/commit.h depends on third_party/angle/.git/HEAD
 # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
+# and dawn/common/Version_autogen.h depends on  third_party/dawn/.git/HEAD
+# https://dawn-review.googlesource.com/c/dawn/+/83901
 # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
 step-delete-git-directories: &step-delete-git-directories
   run:
@@ -441,7 +443,7 @@ step-delete-git-directories: &step-delete-git-directories
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
-        ( find . -type d -name ".git" -not -path "./third_party/angle/*" ) | xargs rm -rf
+        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux
@@ -502,6 +504,14 @@ step-install-gnutar-on-mac: &step-install-gnutar-on-mac
           brew install gnu-tar
         fi
         ln -fs /usr/local/bin/gtar /usr/local/bin/tar
+      fi
+
+step-install-python2-on-mac: &step-install-python2-on-mac
+  run:
+    name: Install python2 on macos
+    command: |
+      if [ "`uname`" == "Darwin" ]; then
+        brew install vertedinde/python2/python@2
       fi
 
 step-gn-gen-default: &step-gn-gen-default
@@ -1037,6 +1047,7 @@ steps-electron-gn-check: &steps-electron-gn-check
     - attach_workspace:
         at: .
     - *step-depot-tools-add-to-path
+    - *step-install-python2-on-mac
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
     - *step-gn-gen-default
@@ -1050,6 +1061,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-depot-tools-add-to-path
     - *step-restore-brew-cache
     - *step-install-gnutar-on-mac
+    - *step-install-python2-on-mac
     - *step-get-more-space-on-mac
     - *step-generate-deps-hash
     - *step-touch-sync-done
@@ -1084,6 +1096,7 @@ steps-native-tests: &steps-native-tests
     - attach_workspace:
         at: .
     - *step-depot-tools-add-to-path
+    - *step-install-python2-on-mac
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
     - *step-gn-gen-default
@@ -1353,6 +1366,7 @@ commands:
             - run: rm -rf src/electron
       - *step-restore-brew-cache
       - *step-install-gnutar-on-mac
+      - *step-install-python2-on-mac
       - *step-save-brew-cache
       - when:
           condition: << parameters.checkout-and-assume-cache >>

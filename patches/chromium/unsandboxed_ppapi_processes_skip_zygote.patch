@@ -6,7 +6,7 @@ Subject: unsandboxed_ppapi_processes_skip_zygote.patch
 Unsandboxed ppapi processes should skip zygote.
 
 diff --git a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
-index a0d6f0353bb387e6eca9f2b13ab1d40996234110..8548abdfae14d630794abc1033f9b9eda59f771b 100644
+index 28e6c85b65b782c5b788b3e2283db070d4490c7a..87dc089b7c36d72d623c73cd5aba196f00a0d1f1 100644
 --- a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
 @@ -7,6 +7,7 @@
@@ -17,7 +17,7 @@ index a0d6f0353bb387e6eca9f2b13ab1d40996234110..8548abdfae14d630794abc1033f9b9ed
  
  #if BUILDFLAG(IS_WIN)
  #include "base/win/windows_version.h"
-@@ -63,6 +64,9 @@ bool PpapiPluginSandboxedProcessLauncherDelegate::PreSpawnTarget(
+@@ -53,6 +54,9 @@ bool PpapiPluginSandboxedProcessLauncherDelegate::PreSpawnTarget(
  ZygoteHandle PpapiPluginSandboxedProcessLauncherDelegate::GetZygote() {
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();
