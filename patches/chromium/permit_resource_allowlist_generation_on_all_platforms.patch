@@ -6,7 +6,6 @@ Subject: permit resource allowlist generation on all platforms
 This adds (somewhat shaky) support for resource allowlist generation on mac and
 linux. Or at least, removes some barriers to experimenting with same.
 
-
 diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
 index 84e83c0dc8eb41f3330adf6df95d11384fbbc98d..462b2586179e00aefae35034c1154e9399ba8cf7 100644
 --- a/build/toolchain/gcc_toolchain.gni
