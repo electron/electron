@@ -56,7 +56,7 @@ def main():
 
     new_content = get_content()
 
-    with open(index_json, "w") as f:
+    with open(index_json, "wb") as f:
       f.write(new_content)
 
     bucket, access_key, secret_key = s3_config()
