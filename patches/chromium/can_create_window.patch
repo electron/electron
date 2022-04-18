@@ -220,10 +220,10 @@ index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 12658b5c9ca6bc10cffd2c9e8ddf45bac697e75c..284f3ed1513009092ecdf2be6ff87641cc404cd9 100644
+index 030cc373443766b6485a888f5627885f535e06fc..7bc60b17a0f1aeb208f6d7d85cd6fa537c44c54a 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2051,6 +2051,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2050,6 +2050,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
  
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, incumbent_window);
