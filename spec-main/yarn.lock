@@ -2,6 +2,12 @@
 # yarn lockfile v1
 
 
+"@electron/echo@file:./fixtures/native-addon/echo":
+  version "0.0.1"
+
+"@electron/uv-dlopen@file:./fixtures/native-addon/uv-dlopen":
+  version "0.0.1"
+
 "@sinonjs/commons@^1", "@sinonjs/commons@^1.6.0", "@sinonjs/commons@^1.7.0", "@sinonjs/commons@^1.7.2":
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/@sinonjs/commons/-/commons-1.8.0.tgz#c8d68821a854c555bba172f3b06959a0039b236d"
@@ -319,9 +325,6 @@ ecc-jsbn@~0.1.1:
   dependencies:
     jsbn "~0.1.0"
     safer-buffer "^2.1.0"
-
-"echo@file:fixtures/native-addon/echo":
-  version "0.0.1"
 
 emojis-list@^2.0.0:
   version "2.1.0"
@@ -948,9 +951,6 @@ uuid@^3.3.2:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.4.0.tgz#b23e4358afa8a202fe7a100af1f5f883f02007ee"
   integrity sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==
-
-uv-dlopen@./fixtures/native-addon/uv-dlopen/:
-  version "0.0.1"
 
 verror@1.10.0:
   version "1.10.0"
