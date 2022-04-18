@@ -1,2 +1,3 @@
 add_thread_local_to_x_error_trap_cc.patch
+adding_fuzzer_for_pcm16b_decoder_and_fixing_a_fuzzer_problem.patch
 cherry-pick-a18fddcb53e6.patch
