@@ -22,7 +22,7 @@
 #include "ui/gfx/skia_util.h"
 #include "ui/gfx/text_constants.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"    // nogncheck
 #include "ui/native_theme/native_theme.h"
 #include "ui/strings/grit/ui_strings.h"
 #include "ui/views/controls/button/image_button.h"
