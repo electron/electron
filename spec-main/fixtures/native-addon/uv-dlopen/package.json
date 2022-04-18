@@ -1,5 +1,5 @@
 {
-  "name": "uv-dlopen",
+  "name": "@electron/uv-dlopen",
   "version": "0.0.1",
   "main": "index.js"
 }
