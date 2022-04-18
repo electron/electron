@@ -4,6 +4,9 @@
 
 Process: [Main](../glossary.md#main-process)
 
+This module cannot be used until the `ready` event of the `app`
+module is emitted.
+
 ```javascript
 // In the main process.
 const { BrowserWindow } = require('electron')
