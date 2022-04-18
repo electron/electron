@@ -29,7 +29,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/common/platform_util_internal.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 #include "url/gurl.h"
 
 #define ELECTRON_TRASH "ELECTRON_TRASH"

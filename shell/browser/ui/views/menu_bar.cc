@@ -14,7 +14,7 @@
 #include "ui/views/layout/box_layout.h"
 
 #if BUILDFLAG(IS_LINUX)
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 #if BUILDFLAG(IS_WIN)
