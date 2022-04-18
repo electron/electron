@@ -35,7 +35,7 @@ page you load in your renderer executes code in this world.
 
 When `contextIsolation` is enabled in your `webPreferences` (this is the default behavior since Electron 12.0.0), your `preload` scripts run in an
 "Isolated World".  You can read more about context isolation and what it affects in the
-[security](../tutorial/security.md#3-enable-context-isolation-for-remote-content) docs.
+[security](../tutorial/security.md#3-enable-context-isolation) docs.
 
 ## Methods
 
