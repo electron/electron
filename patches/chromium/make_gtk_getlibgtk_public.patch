@@ -7,7 +7,7 @@ Allows embedders to get a handle to the gtk library
 already loaded in the process.
 
 diff --git a/ui/gtk/gtk_compat.cc b/ui/gtk/gtk_compat.cc
-index 7104a0d5f4489c687f3cb9e63bc7cbef59d2fa62..f0b9ed834a3f7310da09377f0b2105cf635ffeb7 100644
+index 0ed04582106639911d9a4e0284ff880be9c3bc74..bfda81b08be52406048be9b96d2de59223d56ee7 100644
 --- a/ui/gtk/gtk_compat.cc
 +++ b/ui/gtk/gtk_compat.cc
 @@ -86,12 +86,6 @@ void* GetLibGtk4(bool check = true) {
@@ -23,7 +23,7 @@ index 7104a0d5f4489c687f3cb9e63bc7cbef59d2fa62..f0b9ed834a3f7310da09377f0b2105cf
  bool LoadGtk3() {
    if (!GetLibGtk3(false))
      return false;
-@@ -133,6 +127,12 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
+@@ -134,6 +128,12 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
  
  }  // namespace
  
