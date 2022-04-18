@@ -167,4 +167,6 @@ fix_non-client_mouse_tracking_and_message_bubbling_on_windows.patch
 fixed_terminate_caused_by_binding_to_wrong_version.patch
 follow_wayland_specification_regarding_xkb_keymap.patch
 cherry-pick-1665a1d16d46.patch
+use-after-free_of_id_and_idref_attributes.patch
+fix_--without-valid_build.patch
 usb_fix_oob_access_with_non-sequential_interfaces.patch
