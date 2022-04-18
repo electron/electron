@@ -79,6 +79,13 @@ if (is_linux) {
     ]
   }
 
+  # Generates electron_gtk_stubs.h header which contains
+  # stubs for extracting function ptrs from the gtk library.
+  # Function signatures for which stubs are required should be
+  # declared in electron_gtk.sigs, currently this file contains
+  # signatures for the functions used with native file chooser
+  # implementation. In future, this file can be extended to contain
+  # gtk4 stubs to switch gtk version in runtime.
   generate_stubs("electron_gtk_stubs") {
     sigs = [ "shell/browser/ui/electron_gtk.sigs" ]
     extra_header = "shell/browser/ui/electron_gtk.fragment"
