@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Thu, 24 Mar 2022 17:30:16 +0100
+Subject: Turn off super ICs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+M96 merge issues:
+  Conflicts in the bytecode test expectations
+
+They make assumptions which don't hold for API handlers.
+
+(cherry picked from commit c6b68cbfbd49a24bd9d343d718132125370da729)
+
+Bug: v8:9237,chromium:1308360
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I9f122c4e75a24d83ef3653cbf7a223ed522e4d13
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3548899
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#79614}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3553109
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/9.6@{#60}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+
+diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
+index 12ecfc9d4538acaf7471f967a6de97625936a226..19b0b8ce46334554a2765ccb2a0751dc6c3e0057 100644
+--- a/src/flags/flag-definitions.h
++++ b/src/flags/flag-definitions.h
+@@ -1588,7 +1588,7 @@ DEFINE_INT(max_valid_polymorphic_map_count, 4,
+ DEFINE_BOOL(native_code_counters, DEBUG_BOOL,
+             "generate extra code for manipulating stats counters")
+ 
+-DEFINE_BOOL(super_ic, true, "use an IC for super property loads")
++DEFINE_BOOL(super_ic, false, "use an IC for super property loads")
+ 
+ DEFINE_BOOL(enable_mega_dom_ic, false, "use MegaDOM IC state for API objects")
+ 
+diff --git a/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden b/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
+index 82b6e16be98d8dd9d8fe6b8419653d2c02f7bf79..c433538d8ed52c52277f2ad7163fc4b15c29591c 100644
+--- a/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
++++ b/test/cctest/interpreter/bytecode_expectations/ClassAndSuperClass.golden
+@@ -20,14 +20,18 @@ snippet: "
+     test();
+   })();
+ "
+-frame size: 1
++frame size: 5
+ parameter count: 1
+-bytecode array length: 16
++bytecode array length: 24
+ bytecodes: [
+   /*  104 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
+-  /*  117 E> */ B(LdaNamedPropertyFromSuper), R(this), U8(0), U8(1),
++                B(Star3),
++                B(LdaConstant), U8(0),
++                B(Star4),
++                B(Mov), R(this), R(2),
++  /*  117 E> */ B(CallRuntime), U16(Runtime::kLoadFromSuper), R(2), U8(3),
+                 B(Star0),
+-  /*  117 E> */ B(CallAnyReceiver), R(0), R(this), U8(1), U8(3),
++  /*  117 E> */ B(CallAnyReceiver), R(0), R(this), U8(1), U8(1),
+   /*  126 E> */ B(AddSmi), I8(1), U8(0),
+   /*  130 S> */ B(Return),
+ ]
+@@ -54,7 +58,7 @@ snippet: "
+ "
+ frame size: 4
+ parameter count: 1
+-bytecode array length: 24
++bytecode array length: 32
+ bytecodes: [
+   /*  130 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
+                 B(Star1),
+@@ -65,7 +69,11 @@ bytecodes: [
+                 B(Mov), R(this), R(0),
+   /*  138 E> */ B(CallRuntime), U16(Runtime::kStoreToSuper), R(0), U8(4),
+   /*  143 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
+-  /*  156 E> */ B(LdaNamedPropertyFromSuper), R(this), U8(0), U8(0),
++                B(Star1),
++                B(LdaConstant), U8(0),
++                B(Star2),
++                B(Mov), R(this), R(0),
++  /*  156 E> */ B(CallRuntime), U16(Runtime::kLoadFromSuper), R(0), U8(3),
+   /*  158 S> */ B(Return),
+ ]
+ constant pool: [
