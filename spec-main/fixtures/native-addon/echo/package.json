@@ -1,6 +1,6 @@
 
 {
   "main": "./lib/echo.js",
-  "name": "echo",
+  "name": "@electron/echo",
   "version": "0.0.1"
 }

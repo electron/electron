@@ -4,13 +4,13 @@
   "main": "index.js",
   "version": "0.1.0",
   "devDependencies": {
+    "@electron/echo": "file:./fixtures/native-addon/echo",
+    "@electron/uv-dlopen": "file:./fixtures/native-addon/uv-dlopen/",
     "@types/sinon": "^9.0.4",
     "@types/ws": "^7.2.0",
     "busboy": "^0.3.1",
-    "echo": "file:fixtures/native-addon/echo",
     "q": "^1.5.1",
     "sinon": "^9.0.1",
-    "uv-dlopen": "./fixtures/native-addon/uv-dlopen/",
     "ws": "^7.4.6"
   },
   "dependencies": {
