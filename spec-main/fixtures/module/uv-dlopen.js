@@ -1,1 +1,1 @@
-require('uv-dlopen');
+require('@electron/uv-dlopen');
