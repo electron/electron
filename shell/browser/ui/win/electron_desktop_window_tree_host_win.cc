@@ -93,7 +93,7 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     // monitors with different DPIs before changing this code.
     const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
                           ::GetSystemMetrics(SM_CXPADDEDBORDER);
-    insets->Set(thickness, thickness, thickness, thickness);
+    *insets = gfx::Insets::TLBR(thickness, thickness, thickness, thickness);
     return true;
   }
   return false;
