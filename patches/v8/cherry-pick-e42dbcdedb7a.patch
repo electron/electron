@@ -1,0 +1,38 @@
+From e42dbcdedb7a7fad504bb1979500cda05baddc1f Mon Sep 17 00:00:00 2001
+From: Brendon Tiszka <btiszka@gmail.com>
+Date: Fri, 18 Mar 2022 01:32:54 -0400
+Subject: [PATCH] Merged: Update write barrier when storing HeapNumber to last index.
+
+(cherry picked from commit bdc4f54a50293507d9ef51573bab537883560cc8)
+
+No-Try: true
+No-Presubmit: true
+No-Treechecks: true
+Bug: chromium:1307610
+Change-Id: I60aaa0e58e13b705b5eff4b57411a0ad4a2e9b3f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3534849
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#79538}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3565716
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.0@{#18}
+Cr-Branched-From: 6ea73a738c467dc26abbbe84e27a36aac1c6e119-refs/heads/10.0.139@{#1}
+Cr-Branched-From: ccc689011280419901e6ee42cae39980c0e96030-refs/heads/main@{#79131}
+---
+
+diff --git a/src/regexp/regexp-utils.cc b/src/regexp/regexp-utils.cc
+index dabe5ee..b260071 100644
+--- a/src/regexp/regexp-utils.cc
++++ b/src/regexp/regexp-utils.cc
+@@ -49,7 +49,8 @@
+   Handle<Object> value_as_object =
+       isolate->factory()->NewNumberFromInt64(value);
+   if (HasInitialRegExpMap(isolate, *recv)) {
+-    JSRegExp::cast(*recv).set_last_index(*value_as_object, SKIP_WRITE_BARRIER);
++    JSRegExp::cast(*recv).set_last_index(*value_as_object,
++                                         UPDATE_WRITE_BARRIER);
+     return recv;
+   } else {
+     return Object::SetProperty(
