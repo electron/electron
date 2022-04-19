@@ -1,0 +1,271 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Tue, 7 Dec 2021 20:49:07 +0000
+Subject: [skia_renderer] - Don't explicitly clip scissor for large transforms
+
+This adds a check to CanExplicitlyScissor that confirms that the device
+space scissor rect, transformed to the quad's local space, can be
+transformed back to device space and equal the same pixel bounds.
+
+Without this check, sufficiently large scales and translates could
+cause the local-space coordinates of the scissor rect to be in a float
+range that does not have single-pixel precision, meaning it could round
+significantly. Clipping the quad's coordinates to those rounded edges
+and then transforming to device space can result in coordinates that
+fall outside the original device-space scissor rect.
+
+If however, we ensure we can round-trip the scissor coordinates, then
+any clipping to the quad's coordinates will also be projected to within
+the scissor rect as well.
+
+(cherry picked from commit ab1b76f3e7cdad702c562f0b43bf3367caff4812)
+
+Bug: 1272250
+Change-Id: I7c37c54efd082723797ccf32b5d19ef285c520c1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3306893
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Brian Salomon <bsalomon@google.com>
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#946552}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3320870
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4692@{#786}
+Cr-Branched-From: 038cd96142d384c0d2238973f1cb277725a62eba-refs/heads/main@{#938553}
+
+diff --git a/components/viz/service/display/skia_renderer.cc b/components/viz/service/display/skia_renderer.cc
+index 20a49431f8f3a3b00441f6adc03fe80db6c5ae77..43864afb3b3dc3abaa0a114478f9fcee75151679 100644
+--- a/components/viz/service/display/skia_renderer.cc
++++ b/components/viz/service/display/skia_renderer.cc
+@@ -121,45 +121,6 @@ bool IsTextureResource(DisplayResourceProviderSkia* resource_provider,
+   return !resource_provider->IsResourceSoftwareBacked(resource_id);
+ }
+ 
+-void ApplyExplicitScissor(const DrawQuad* quad,
+-                          const gfx::Rect& scissor_rect,
+-                          const gfx::Transform& device_transform,
+-                          unsigned* aa_flags,
+-                          gfx::RectF* vis_rect) {
+-  // Inset rectangular edges and turn off the AA for clipped edges. Operates in
+-  // the quad's space, so apply inverse of transform to get new scissor
+-  gfx::RectF scissor(scissor_rect);
+-  device_transform.TransformRectReverse(&scissor);
+-
+-  float left_inset = scissor.x() - vis_rect->x();
+-  float top_inset = scissor.y() - vis_rect->y();
+-  float right_inset = vis_rect->right() - scissor.right();
+-  float bottom_inset = vis_rect->bottom() - scissor.bottom();
+-
+-  if (left_inset >= kAAEpsilon) {
+-    *aa_flags &= ~SkCanvas::kLeft_QuadAAFlag;
+-  } else {
+-    left_inset = 0;
+-  }
+-  if (top_inset >= kAAEpsilon) {
+-    *aa_flags &= ~SkCanvas::kTop_QuadAAFlag;
+-  } else {
+-    top_inset = 0;
+-  }
+-  if (right_inset >= kAAEpsilon) {
+-    *aa_flags &= ~SkCanvas::kRight_QuadAAFlag;
+-  } else {
+-    right_inset = 0;
+-  }
+-  if (bottom_inset >= kAAEpsilon) {
+-    *aa_flags &= ~SkCanvas::kBottom_QuadAAFlag;
+-  } else {
+-    bottom_inset = 0;
+-  }
+-
+-  vis_rect->Inset(left_inset, top_inset, right_inset, bottom_inset);
+-}
+-
+ unsigned GetCornerAAFlags(const DrawQuad* quad,
+                           const SkPoint& vertex,
+                           unsigned edge_mask) {
+@@ -552,6 +513,10 @@ struct SkiaRenderer::DrawQuadParams {
+     p.setAntiAlias(aa_flags != SkCanvas::kNone_QuadAAFlags);
+     return p;
+   }
++
++  void ApplyScissor(const SkiaRenderer* renderer,
++                    const DrawQuad* quad,
++                    const gfx::Rect* scissor_to_apply);
+ };
+ 
+ SkiaRenderer::DrawQuadParams::DrawQuadParams(const gfx::Transform& cdt,
+@@ -1331,18 +1296,7 @@ SkiaRenderer::DrawQuadParams SkiaRenderer::CalculateDrawQuadParams(
+     params.opacity = 1.f;
+   }
+ 
+-  // Applying the scissor explicitly means avoiding a clipRect() call and
+-  // allows more quads to be batched together in a DrawEdgeAAImageSet call
+-  if (scissor_rect) {
+-    if (CanExplicitlyScissor(quad, draw_region, params.content_device_transform,
+-                             *scissor_rect)) {
+-      ApplyExplicitScissor(quad, *scissor_rect, params.content_device_transform,
+-                           &params.aa_flags, &params.visible_rect);
+-      params.vis_tex_coords = params.visible_rect;
+-    } else {
+-      params.scissor_rect = *scissor_rect;
+-    }
+-  }
++  params.ApplyScissor(this, quad, scissor_rect);
+ 
+   // Determine final rounded rect clip geometry. We transform it from target
+   // space to window space to make batching and canvas preparation easier
+@@ -1372,28 +1326,40 @@ SkiaRenderer::DrawQuadParams SkiaRenderer::CalculateDrawQuadParams(
+   return params;
+ }
+ 
+-bool SkiaRenderer::CanExplicitlyScissor(
++void SkiaRenderer::DrawQuadParams::ApplyScissor(
++    const SkiaRenderer* renderer,
+     const DrawQuad* quad,
+-    const gfx::QuadF* draw_region,
+-    const gfx::Transform& contents_device_transform,
+-    const gfx::Rect& scissor_rect) const {
++    const gfx::Rect* scissor_to_apply) {
++  // No scissor should have been set before calling ApplyScissor
++  DCHECK(!scissor_rect.has_value());
++
++  if (!scissor_to_apply) {
++    // No scissor at all, which matches the DCHECK'ed state above
++    return;
++  }
++
++  // Assume at start that the scissor will be applied through the canvas clip,
++  // so that this can simply return when it detects the scissor cannot be
++  // applied explicitly to |visible_rect|.
++  scissor_rect = *scissor_to_apply;
++
+   // PICTURE_CONTENT is not like the others, since it is executing a list of
+   // draw calls into the canvas.
+   if (quad->material == DrawQuad::Material::kPictureContent)
+-    return false;
++    return;
+   // Intersection with scissor and a quadrilateral is not necessarily a quad,
+   // so don't complicate things
+-  if (draw_region)
+-    return false;
++  if (draw_region.has_value())
++    return;
+ 
+   // This is slightly different than
+   // gfx::Transform::IsPositiveScaleAndTranslation in that it also allows zero
+   // scales. This is because in the common orthographic case the z scale is 0.
+-  if (!contents_device_transform.IsScaleOrTranslation() ||
+-      contents_device_transform.matrix().get(0, 0) < 0.0f ||
+-      contents_device_transform.matrix().get(1, 1) < 0.0f ||
+-      contents_device_transform.matrix().get(2, 2) < 0.0f) {
+-    return false;
++  if (!content_device_transform.IsScaleOrTranslation() ||
++      content_device_transform.matrix().get(0, 0) < 0.0f ||
++      content_device_transform.matrix().get(1, 1) < 0.0f ||
++      content_device_transform.matrix().get(2, 2) < 0.0f) {
++    return;
+   }
+ 
+   // State check: should not have a CompositorRenderPassDrawQuad if we got here.
+@@ -1403,22 +1369,69 @@ bool SkiaRenderer::CanExplicitlyScissor(
+     // geometry beyond the quad's visible_rect, so it's not safe to pre-clip.
+     auto pass_id =
+         AggregatedRenderPassDrawQuad::MaterialCast(quad)->render_pass_id;
+-    if (FiltersForPass(pass_id) || BackdropFiltersForPass(pass_id))
+-      return false;
++    if (renderer->FiltersForPass(pass_id) ||
++        renderer->BackdropFiltersForPass(pass_id))
++      return;
+   }
+ 
+   // If the intersection of the scissor and the quad's visible_rect results in
+   // subpixel device-space geometry, do not drop the scissor. Otherwise Skia
+   // sees an unclipped anti-aliased hairline and uses different AA methods that
+   // would cause the rasterized result to extend beyond the scissor.
+-  gfx::RectF device_bounds(quad->visible_rect);
+-  contents_device_transform.TransformRect(&device_bounds);
+-  device_bounds.Intersect(gfx::RectF(scissor_rect));
++  gfx::RectF device_bounds(visible_rect);
++  content_device_transform.TransformRect(&device_bounds);
++  device_bounds.Intersect(gfx::RectF(*scissor_rect));
+   if (device_bounds.width() < 1.0f || device_bounds.height() < 1.0f) {
+-    return false;
++    return;
++  }
++
++  // The explicit scissor is applied in the quad's local space. If the transform
++  // does not leave sufficient precision to round-trip the scissor rect to-from
++  // device->local->device space, the explicitly "clipped" geometry does not
++  // necessarily respect the original scissor.
++  gfx::RectF local_scissor(*scissor_rect);
++  content_device_transform.TransformRectReverse(&local_scissor);
++  gfx::RectF remapped_scissor(local_scissor);
++  content_device_transform.TransformRect(&remapped_scissor);
++  if (gfx::ToRoundedRect(remapped_scissor) != *scissor_rect) {
++    return;
++  }
++
++  // At this point, we've determined that we can transform the scissor rect into
++  // the quad's local space and adjust |vis_rect|, such that when it's mapped to
++  // device space, it will be contained in in the original scissor.
++  // Applying the scissor explicitly means avoiding a clipRect() call and
++  // allows more quads to be batched together in a DrawEdgeAAImageSet call
++  float left_inset = local_scissor.x() - visible_rect.x();
++  float top_inset = local_scissor.y() - visible_rect.y();
++  float right_inset = visible_rect.right() - local_scissor.right();
++  float bottom_inset = visible_rect.bottom() - local_scissor.bottom();
++
++  // The scissor is a non-AA clip, so we unset the bit flag for clipped edges.
++  if (left_inset >= kAAEpsilon) {
++    aa_flags &= ~SkCanvas::kLeft_QuadAAFlag;
++  } else {
++    left_inset = 0;
++  }
++  if (top_inset >= kAAEpsilon) {
++    aa_flags &= ~SkCanvas::kTop_QuadAAFlag;
++  } else {
++    top_inset = 0;
++  }
++  if (right_inset >= kAAEpsilon) {
++    aa_flags &= ~SkCanvas::kRight_QuadAAFlag;
++  } else {
++    right_inset = 0;
++  }
++  if (bottom_inset >= kAAEpsilon) {
++    aa_flags &= ~SkCanvas::kBottom_QuadAAFlag;
++  } else {
++    bottom_inset = 0;
+   }
+ 
+-  return true;
++  visible_rect.Inset(left_inset, top_inset, right_inset, bottom_inset);
++  vis_tex_coords = visible_rect;
++  scissor_rect.reset();
+ }
+ 
+ const DrawQuad* SkiaRenderer::CanPassBeDrawnDirectly(
+diff --git a/components/viz/service/display/skia_renderer.h b/components/viz/service/display/skia_renderer.h
+index 78b9e6f93340098ce8db9e637b3f65abbdc675f2..04ffdb89ee55302e576e14e6d95beca73338f429 100644
+--- a/components/viz/service/display/skia_renderer.h
++++ b/components/viz/service/display/skia_renderer.h
+@@ -143,6 +143,7 @@ class VIZ_SERVICE_EXPORT SkiaRenderer : public DirectRenderer {
+                                          const gfx::Rect* scissor_rect,
+                                          const DrawQuad* quad,
+                                          const gfx::QuadF* draw_region) const;
++
+   DrawRPDQParams CalculateRPDQParams(const AggregatedRenderPassDrawQuad* quad,
+                                      DrawQuadParams* params);
+   // Modifies |params| and |rpdq_params| to apply correctly when drawing the
+@@ -160,12 +161,6 @@ class VIZ_SERVICE_EXPORT SkiaRenderer : public DirectRenderer {
+       const SkImage* image,
+       const gfx::RectF& valid_texel_bounds,
+       DrawQuadParams* params) const;
+-  // True or false if the DrawQuad can have the scissor rect applied by
+-  // modifying the quad's visible_rect instead of as a separate clip operation.
+-  bool CanExplicitlyScissor(const DrawQuad* quad,
+-                            const gfx::QuadF* draw_region,
+-                            const gfx::Transform& contents_device_transform,
+-                            const gfx::Rect& scissor_rect) const;
+ 
+   bool MustFlushBatchedQuads(const DrawQuad* new_quad,
+                              const DrawRPDQParams* rpdq_params,
