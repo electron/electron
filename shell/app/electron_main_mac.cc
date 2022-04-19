@@ -30,7 +30,8 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet("ELECTRON_RUN_AS_NODE")) {
+  if (electron::fuses::IsRunAsNodeEnabled() &&
+      IsEnvSet("ELECTRON_RUN_AS_NODE")) {
     return ElectronInitializeICUandStartNode(argc, argv);
   }
 #endif
