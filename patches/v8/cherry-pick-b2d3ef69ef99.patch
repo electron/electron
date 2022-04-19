@@ -1,7 +1,7 @@
-From b2d3ef69ef992d2dc2f1733e3c17c361357516dd Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tobias Tebbi <tebbi@chromium.org>
 Date: Wed, 13 Apr 2022 16:30:36 +0000
-Subject: [PATCH] [M96-LTS][compiler] mark receiver and function as escaping
+Subject: mark receiver and function as escaping
 
 (cherry picked from commit 8081a5ffa7ebdb0e5b35cf63aa0490ad3578b940)
 
@@ -20,10 +20,9 @@ Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/9.6@{#62}
 Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
 Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
----
 
 diff --git a/src/compiler/escape-analysis.cc b/src/compiler/escape-analysis.cc
-index bf693c7..fe8126f 100644
+index 7ff6ab684fcf405b956d8dcca506f6b3e116244e..316db298da86cedf8e550a39f6f7ee9413f02c86 100644
 --- a/src/compiler/escape-analysis.cc
 +++ b/src/compiler/escape-analysis.cc
 @@ -5,10 +5,12 @@
@@ -39,7 +38,7 @@ index bf693c7..fe8126f 100644
  #include "src/handles/handles-inl.h"
  #include "src/init/bootstrapper.h"
  #include "src/objects/map-inl.h"
-@@ -224,6 +226,11 @@
+@@ -224,6 +226,11 @@ class EscapeAnalysisTracker : public ZoneObject {
        return tracker_->ResolveReplacement(
            NodeProperties::GetContextInput(current_node()));
      }
@@ -51,7 +50,7 @@ index bf693c7..fe8126f 100644
  
      void SetReplacement(Node* replacement) {
        replacement_ = replacement;
-@@ -799,9 +806,25 @@
+@@ -796,9 +803,25 @@ void ReduceNode(const Operator* op, EscapeAnalysisTracker::Scope* current,
        break;
      }
      case IrOpcode::kStateValues:
