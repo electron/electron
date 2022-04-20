@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <memory>
 
+#include "base/allocator/early_zone_registration_mac.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_library_main.h"
@@ -28,6 +29,7 @@ namespace {
 }  // namespace
 
 int main(int argc, char* argv[]) {
+  partition_alloc::EarlyMallocZoneRegistration();
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
