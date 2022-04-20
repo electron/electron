@@ -1,0 +1,432 @@
+From 5cb934a23ddfccb7ce7ace36b5f0ec5036281e0f Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Tue, 05 Apr 2022 20:09:23 +0000
+Subject: [PATCH] M100: Change ownership of BlobBytesProvider.
+
+Rather than immediately passing ownership to a cross-thread
+SelfOwnedReceiver while retaining a raw pointer, instead maintain
+ownership in a unique_ptr as long as it is needed, only transferring
+ownership to a SelfOwnedReceiver when BlobData is done with the
+BlobBytesProvider.
+
+Also clean-up/tighten down sequence checks for BlobBytesProvider a bit.
+
+(cherry picked from commit 7222e9825fc02acc962e005c59885ee2f26df185)
+
+Bug: 1285234
+Change-Id: I7273e886a0bab2ae489b680d786991c9e4ff1dbb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3553304
+Reviewed-by: Austin Sullivan <asully@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#986111}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3568972
+Auto-Submit: Marijn Kruisselbrink <mek@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4896@{#1040}
+Cr-Branched-From: 1f63ff4bc27570761b35ffbc7f938f6586f7bee8-refs/heads/main@{#972766}
+---
+
+diff --git a/third_party/blink/renderer/platform/blob/blob_bytes_provider.cc b/third_party/blink/renderer/platform/blob/blob_bytes_provider.cc
+index fd27f12..125acccd 100644
+--- a/third_party/blink/renderer/platform/blob/blob_bytes_provider.cc
++++ b/third_party/blink/renderer/platform/blob/blob_bytes_provider.cc
+@@ -32,13 +32,10 @@
+ 
+  public:
+   BlobBytesStreamer(Vector<scoped_refptr<RawData>> data,
+-                    mojo::ScopedDataPipeProducerHandle pipe,
+-                    scoped_refptr<base::SequencedTaskRunner> task_runner)
++                    mojo::ScopedDataPipeProducerHandle pipe)
+       : data_(std::move(data)),
+         pipe_(std::move(pipe)),
+-        watcher_(FROM_HERE,
+-                 mojo::SimpleWatcher::ArmingPolicy::AUTOMATIC,
+-                 std::move(task_runner)) {
++        watcher_(FROM_HERE, mojo::SimpleWatcher::ArmingPolicy::AUTOMATIC) {
+     watcher_.Watch(pipe_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
+                    MOJO_WATCH_CONDITION_SATISFIED,
+                    WTF::BindRepeating(&BlobBytesStreamer::OnWritable,
+@@ -46,6 +43,8 @@
+   }
+ 
+   void OnWritable(MojoResult result, const mojo::HandleSignalsState& state) {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
+     if (result == MOJO_RESULT_CANCELLED ||
+         result == MOJO_RESULT_FAILED_PRECONDITION) {
+       delete this;
+@@ -85,15 +84,18 @@
+ 
+  private:
+   // The index of the item currently being written.
+-  wtf_size_t current_item_ = 0;
++  wtf_size_t current_item_ GUARDED_BY_CONTEXT(sequence_checker_) = 0;
+   // The offset into the current item of the first byte not yet written to the
+   // data pipe.
+-  size_t current_item_offset_ = 0;
++  size_t current_item_offset_ GUARDED_BY_CONTEXT(sequence_checker_) = 0;
+   // The data being written.
+-  Vector<scoped_refptr<RawData>> data_;
++  Vector<scoped_refptr<RawData>> data_ GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+-  mojo::ScopedDataPipeProducerHandle pipe_;
+-  mojo::SimpleWatcher watcher_;
++  mojo::ScopedDataPipeProducerHandle pipe_
++      GUARDED_BY_CONTEXT(sequence_checker_);
++  mojo::SimpleWatcher watcher_ GUARDED_BY_CONTEXT(sequence_checker_);
++
++  SEQUENCE_CHECKER(sequence_checker_);
+ };
+ 
+ // This keeps the process alive while blobs are being transferred.
+@@ -119,31 +121,8 @@
+ 
+ constexpr size_t BlobBytesProvider::kMaxConsolidatedItemSizeInBytes;
+ 
+-// static
+-BlobBytesProvider* BlobBytesProvider::CreateAndBind(
+-    mojo::PendingReceiver<mojom::blink::BytesProvider> receiver) {
+-  auto task_runner = base::ThreadPool::CreateSequencedTaskRunner(
+-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
+-  auto provider = base::WrapUnique(new BlobBytesProvider(task_runner));
+-  auto* result = provider.get();
+-  // TODO(mek): Consider binding BytesProvider on the IPC thread instead, only
+-  // using the MayBlock taskrunner for actual file operations.
+-  PostCrossThreadTask(
+-      *task_runner, FROM_HERE,
+-      CrossThreadBindOnce(
+-          [](std::unique_ptr<BlobBytesProvider> provider,
+-             mojo::PendingReceiver<mojom::blink::BytesProvider> receiver) {
+-            mojo::MakeSelfOwnedReceiver(std::move(provider),
+-                                        std::move(receiver));
+-          },
+-          std::move(provider), std::move(receiver)));
+-  return result;
+-}
+-
+-// static
+-std::unique_ptr<BlobBytesProvider> BlobBytesProvider::CreateForTesting(
+-    scoped_refptr<base::SequencedTaskRunner> task_runner) {
+-  return base::WrapUnique(new BlobBytesProvider(std::move(task_runner)));
++BlobBytesProvider::BlobBytesProvider() {
++  IncreaseChildProcessRefCount();
+ }
+ 
+ BlobBytesProvider::~BlobBytesProvider() {
+@@ -151,6 +130,8 @@
+ }
+ 
+ void BlobBytesProvider::AppendData(scoped_refptr<RawData> data) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
+   if (!data_.IsEmpty()) {
+     uint64_t last_offset = offsets_.IsEmpty() ? 0 : offsets_.back();
+     offsets_.push_back(last_offset + data_.back()->length());
+@@ -159,6 +140,8 @@
+ }
+ 
+ void BlobBytesProvider::AppendData(base::span<const char> data) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
+   if (data_.IsEmpty() ||
+       data_.back()->length() + data.size() > kMaxConsolidatedItemSizeInBytes) {
+     AppendData(RawData::Create());
+@@ -167,8 +150,32 @@
+       data.data(), base::checked_cast<wtf_size_t>(data.size()));
+ }
+ 
++// static
++void BlobBytesProvider::Bind(
++    std::unique_ptr<BlobBytesProvider> provider,
++    mojo::PendingReceiver<mojom::blink::BytesProvider> receiver) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(provider->sequence_checker_);
++  DETACH_FROM_SEQUENCE(provider->sequence_checker_);
++
++  auto task_runner = base::ThreadPool::CreateSequencedTaskRunner(
++      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
++  // TODO(mek): Consider binding BytesProvider on the IPC thread instead, only
++  // using the MayBlock taskrunner for actual file operations.
++  PostCrossThreadTask(
++      *task_runner, FROM_HERE,
++      CrossThreadBindOnce(
++          [](std::unique_ptr<BlobBytesProvider> provider,
++             mojo::PendingReceiver<mojom::blink::BytesProvider> receiver) {
++            DCHECK_CALLED_ON_VALID_SEQUENCE(provider->sequence_checker_);
++            mojo::MakeSelfOwnedReceiver(std::move(provider),
++                                        std::move(receiver));
++          },
++          std::move(provider), std::move(receiver)));
++}
++
+ void BlobBytesProvider::RequestAsReply(RequestAsReplyCallback callback) {
+-  DCHECK(task_runner_->RunsTasksInCurrentSequence());
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
+   // TODO(mek): Once better metrics are created we could experiment with ways
+   // to reduce the number of copies of data that are made here.
+   Vector<uint8_t> result;
+@@ -179,9 +186,10 @@
+ 
+ void BlobBytesProvider::RequestAsStream(
+     mojo::ScopedDataPipeProducerHandle pipe) {
+-  DCHECK(task_runner_->RunsTasksInCurrentSequence());
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
+   // BlobBytesStreamer will self delete when done.
+-  new BlobBytesStreamer(std::move(data_), std::move(pipe), task_runner_);
++  new BlobBytesStreamer(std::move(data_), std::move(pipe));
+ }
+ 
+ void BlobBytesProvider::RequestAsFile(uint64_t source_offset,
+@@ -189,7 +197,7 @@
+                                       base::File file,
+                                       uint64_t file_offset,
+                                       RequestAsFileCallback callback) {
+-  DCHECK(task_runner_->RunsTasksInCurrentSequence());
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+   if (!file.IsValid()) {
+     std::move(callback).Run(absl::nullopt);
+@@ -257,10 +265,4 @@
+   std::move(callback).Run(info.last_modified);
+ }
+ 
+-BlobBytesProvider::BlobBytesProvider(
+-    scoped_refptr<base::SequencedTaskRunner> task_runner)
+-    : task_runner_(std::move(task_runner)) {
+-  IncreaseChildProcessRefCount();
+-}
+-
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/blob/blob_bytes_provider.h b/third_party/blink/renderer/platform/blob/blob_bytes_provider.h
+index 94e0172..662cc02 100644
+--- a/third_party/blink/renderer/platform/blob/blob_bytes_provider.h
++++ b/third_party/blink/renderer/platform/blob/blob_bytes_provider.h
+@@ -6,6 +6,7 @@
+ #define THIRD_PARTY_BLINK_RENDERER_PLATFORM_BLOB_BLOB_BYTES_PROVIDER_H_
+ 
+ #include "base/gtest_prod_util.h"
++#include "base/sequence_checker.h"
+ #include "base/task/sequenced_task_runner.h"
+ #include "third_party/blink/public/mojom/blob/blob_registry.mojom-blink-forward.h"
+ #include "third_party/blink/public/mojom/blob/data_element.mojom-blink.h"
+@@ -17,8 +18,8 @@
+ // making up a blob to the browser process, at the request of the blob service.
+ //
+ // Typical usage of this class creates and calls AppendData on one thread, and
+-// then transfers ownership of the class to a different thread where it will be
+-// bound to a mojo pipe, such that the various Request* methods are called on a
++// then transfers ownership of the class to a different thread using the `Bind`
++// method. This ensures that the various Request* methods are called on a
+ // thread that is allowed to do File IO.
+ class PLATFORM_EXPORT BlobBytesProvider : public mojom::blink::BytesProvider {
+  public:
+@@ -26,19 +27,17 @@
+   // data appended to the same item.
+   static constexpr size_t kMaxConsolidatedItemSizeInBytes = 15 * 1024;
+ 
+-  // Creates a new instance, and binds it on a new SequencedTaskRunner. The
+-  // returned instance should only be considered valid as long as the request
+-  // passed in to this method is still known to be valid.
+-  static BlobBytesProvider* CreateAndBind(
+-      mojo::PendingReceiver<mojom::blink::BytesProvider>);
+-  static std::unique_ptr<BlobBytesProvider> CreateForTesting(
+-      scoped_refptr<base::SequencedTaskRunner>);
+-
++  BlobBytesProvider();
+   ~BlobBytesProvider() override;
+ 
+   void AppendData(scoped_refptr<RawData>);
+   void AppendData(base::span<const char>);
+ 
++  // Binds `provider` to `receiver` on a threadpool task runner, transferring
++  // ownership.
++  static void Bind(std::unique_ptr<BlobBytesProvider> provider,
++                   mojo::PendingReceiver<mojom::blink::BytesProvider> receiver);
++
+   // BytesProvider implementation:
+   void RequestAsReply(RequestAsReplyCallback) override;
+   void RequestAsStream(mojo::ScopedDataPipeProducerHandle) override;
+@@ -51,17 +50,13 @@
+  private:
+   FRIEND_TEST_ALL_PREFIXES(BlobBytesProviderTest, Consolidation);
+ 
+-  BlobBytesProvider(scoped_refptr<base::SequencedTaskRunner>);
+-
+-  // The task runner this class is bound on, as well as what is used by the
+-  // RequestAsStream method to monitor the data pipe.
+-  scoped_refptr<base::SequencedTaskRunner> task_runner_;
+-
+-  Vector<scoped_refptr<RawData>> data_;
++  Vector<scoped_refptr<RawData>> data_ GUARDED_BY_CONTEXT(sequence_checker_);
+   // |offsets_| always contains exactly one fewer item than |data_| (except when
+   // |data_| itself is empty).
+   // offsets_[x] is equal to the sum of data_[i].length for all i <= x.
+-  Vector<uint64_t> offsets_;
++  Vector<uint64_t> offsets_ GUARDED_BY_CONTEXT(sequence_checker_);
++
++  SEQUENCE_CHECKER(sequence_checker_);
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/blob/blob_bytes_provider_test.cc b/third_party/blink/renderer/platform/blob/blob_bytes_provider_test.cc
+index 227955f..27bdebc 100644
+--- a/third_party/blink/renderer/platform/blob/blob_bytes_provider_test.cc
++++ b/third_party/blink/renderer/platform/blob/blob_bytes_provider_test.cc
+@@ -52,8 +52,7 @@
+ 
+   std::unique_ptr<BlobBytesProvider> CreateProvider(
+       scoped_refptr<RawData> data = nullptr) {
+-    auto result = BlobBytesProvider::CreateForTesting(
+-        blink::scheduler::GetSequencedTaskRunnerForTesting());
++    auto result = std::make_unique<BlobBytesProvider>();
+     if (data)
+       result->AppendData(std::move(data));
+     return result;
+@@ -73,6 +72,8 @@
+ 
+ TEST_F(BlobBytesProviderTest, Consolidation) {
+   auto data = CreateProvider();
++  DCHECK_CALLED_ON_VALID_SEQUENCE(data->sequence_checker_);
++
+   data->AppendData(base::make_span("abc", 3));
+   data->AppendData(base::make_span("def", 3));
+   data->AppendData(base::make_span("ps1", 3));
+diff --git a/third_party/blink/renderer/platform/blob/blob_data.cc b/third_party/blink/renderer/platform/blob/blob_data.cc
+index 945f0f0..798e795 100644
+--- a/third_party/blink/renderer/platform/blob/blob_data.cc
++++ b/third_party/blink/renderer/platform/blob/blob_data.cc
+@@ -107,6 +107,12 @@
+ BlobData::~BlobData() = default;
+ 
+ Vector<mojom::blink::DataElementPtr> BlobData::ReleaseElements() {
++  if (last_bytes_provider_) {
++    DCHECK(last_bytes_provider_receiver_);
++    BlobBytesProvider::Bind(std::move(last_bytes_provider_),
++                            std::move(last_bytes_provider_receiver_));
++  }
++
+   return std::move(elements_);
+ }
+ 
+@@ -141,16 +147,6 @@
+   return data;
+ }
+ 
+-void BlobData::DetachFromCurrentThread() {
+-  content_type_ = content_type_.IsolatedCopy();
+-  for (auto& element : elements_) {
+-    if (element->is_file_filesystem()) {
+-      auto& file_element = element->get_file_filesystem();
+-      file_element->url = file_element->url.Copy();
+-    }
+-  }
+-}
+-
+ void BlobData::SetContentType(const String& content_type) {
+   if (IsValidBlobType(content_type))
+     content_type_ = content_type;
+@@ -274,6 +270,7 @@
+   if (!elements_.IsEmpty() && elements_.back()->is_bytes()) {
+     // Append bytes to previous element.
+     DCHECK(last_bytes_provider_);
++    DCHECK(last_bytes_provider_receiver_);
+     const auto& bytes_element = elements_.back()->get_bytes();
+     bytes_element->length += data.size();
+     if (should_embed_bytes && bytes_element->embedded_data) {
+@@ -285,9 +282,18 @@
+       bytes_element->embedded_data = absl::nullopt;
+     }
+   } else {
++    if (last_bytes_provider_) {
++      // If `last_bytes_provider_` is set, but the previous element is not a
++      // bytes element, a new BytesProvider will be created and we need to
++      // make sure to bind the previous one first.
++      DCHECK(last_bytes_provider_receiver_);
++      BlobBytesProvider::Bind(std::move(last_bytes_provider_),
++                              std::move(last_bytes_provider_receiver_));
++    }
+     mojo::PendingRemote<BytesProvider> bytes_provider_remote;
+-    last_bytes_provider_ = BlobBytesProvider::CreateAndBind(
+-        bytes_provider_remote.InitWithNewPipeAndPassReceiver());
++    last_bytes_provider_ = std::make_unique<BlobBytesProvider>();
++    last_bytes_provider_receiver_ =
++        bytes_provider_remote.InitWithNewPipeAndPassReceiver();
+ 
+     auto bytes_element = DataElementBytes::New(
+         data.size(), absl::nullopt, std::move(bytes_provider_remote));
+diff --git a/third_party/blink/renderer/platform/blob/blob_data.h b/third_party/blink/renderer/platform/blob/blob_data.h
+index ebfd0a3..99d4c07 100644
+--- a/third_party/blink/renderer/platform/blob/blob_data.h
++++ b/third_party/blink/renderer/platform/blob/blob_data.h
+@@ -46,6 +46,7 @@
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "mojo/public/cpp/bindings/struct_ptr.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
++#include "third_party/blink/public/mojom/blob/data_element.mojom-blink-forward.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+ #include "third_party/blink/renderer/platform/wtf/forward.h"
+@@ -122,13 +123,10 @@
+       const KURL& file_system_url,
+       const absl::optional<base::Time>& expected_modification_time);
+ 
+-  // Detaches from current thread so that it can be passed to another thread.
+-  void DetachFromCurrentThread();
+-
+   const String& ContentType() const { return content_type_; }
+   void SetContentType(const String&);
+ 
+-  const Vector<mojom::blink::DataElementPtr>& Elements() const {
++  const Vector<mojom::blink::DataElementPtr>& ElementsForTesting() const {
+     return elements_;
+   }
+   Vector<mojom::blink::DataElementPtr> ReleaseElements();
+@@ -170,7 +168,15 @@
+ 
+   Vector<mojom::blink::DataElementPtr> elements_;
+   size_t current_memory_population_ = 0;
+-  BlobBytesProvider* last_bytes_provider_ = nullptr;
++
++  // These two members are used to combine multiple consecutive 'bytes' elements
++  // (as created by `AppendBytes`, `AppendData` or `AppendText`) into a single
++  // element. When one has a value the other also has a value. Before using
++  // `elements_` to actually create a blob, `last_bytes_provider_` should be
++  // bound to `last_bytes_provider_receiver_`.
++  std::unique_ptr<BlobBytesProvider> last_bytes_provider_;
++  mojo::PendingReceiver<mojom::blink::BytesProvider>
++      last_bytes_provider_receiver_;
+ };
+ 
+ class PLATFORM_EXPORT BlobDataHandle
+diff --git a/third_party/blink/renderer/platform/blob/blob_data_test.cc b/third_party/blink/renderer/platform/blob/blob_data_test.cc
+index 60a811d1..1bad0fcf 100644
+--- a/third_party/blink/renderer/platform/blob/blob_data_test.cc
++++ b/third_party/blink/renderer/platform/blob/blob_data_test.cc
+@@ -315,7 +315,7 @@
+   auto data = std::make_unique<BlobData>();
+   data->AppendBytes(medium_test_data_.data(), medium_test_data_.size());
+   data->AppendBytes(small_test_data_.data(), small_test_data_.size());
+-  EXPECT_EQ(1u, data->Elements().size());
++  EXPECT_EQ(1u, data->ElementsForTesting().size());
+ 
+   Vector<uint8_t> expected_data = medium_test_data_;
+   expected_data.AppendVector(small_test_data_);
+@@ -331,7 +331,7 @@
+   auto data = std::make_unique<BlobData>();
+   data->AppendBytes(large_test_data_.data(), large_test_data_.size());
+   data->AppendBytes(small_test_data_.data(), small_test_data_.size());
+-  EXPECT_EQ(1u, data->Elements().size());
++  EXPECT_EQ(1u, data->ElementsForTesting().size());
+ 
+   Vector<uint8_t> expected_data = large_test_data_;
+   expected_data.AppendVector(small_test_data_);
+@@ -347,7 +347,7 @@
+   auto data = std::make_unique<BlobData>();
+   data->AppendBytes(small_test_data_.data(), small_test_data_.size());
+   data->AppendBytes(large_test_data_.data(), large_test_data_.size());
+-  EXPECT_EQ(1u, data->Elements().size());
++  EXPECT_EQ(1u, data->ElementsForTesting().size());
+ 
+   Vector<uint8_t> expected_data = small_test_data_;
+   expected_data.AppendVector(large_test_data_);
