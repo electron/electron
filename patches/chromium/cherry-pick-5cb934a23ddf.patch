@@ -1,7 +1,7 @@
-From 5cb934a23ddfccb7ce7ace36b5f0ec5036281e0f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Marijn Kruisselbrink <mek@chromium.org>
-Date: Tue, 05 Apr 2022 20:09:23 +0000
-Subject: [PATCH] M100: Change ownership of BlobBytesProvider.
+Date: Tue, 5 Apr 2022 20:09:23 +0000
+Subject: M100: Change ownership of BlobBytesProvider.
 
 Rather than immediately passing ownership to a cross-thread
 SelfOwnedReceiver while retaining a raw pointer, instead maintain
@@ -24,13 +24,12 @@ Auto-Submit: Marijn Kruisselbrink <mek@chromium.org>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/4896@{#1040}
 Cr-Branched-From: 1f63ff4bc27570761b35ffbc7f938f6586f7bee8-refs/heads/main@{#972766}
----
 
 diff --git a/third_party/blink/renderer/platform/blob/blob_bytes_provider.cc b/third_party/blink/renderer/platform/blob/blob_bytes_provider.cc
-index fd27f12..125acccd 100644
+index fd27f1280e1745103879ffa4df563c21f4c46afd..125acccdd268c134a0608b739b5036ce2c455f26 100644
 --- a/third_party/blink/renderer/platform/blob/blob_bytes_provider.cc
 +++ b/third_party/blink/renderer/platform/blob/blob_bytes_provider.cc
-@@ -32,13 +32,10 @@
+@@ -32,13 +32,10 @@ class BlobBytesStreamer {
  
   public:
    BlobBytesStreamer(Vector<scoped_refptr<RawData>> data,
@@ -46,7 +45,7 @@ index fd27f12..125acccd 100644
      watcher_.Watch(pipe_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
                     MOJO_WATCH_CONDITION_SATISFIED,
                     WTF::BindRepeating(&BlobBytesStreamer::OnWritable,
-@@ -46,6 +43,8 @@
+@@ -46,6 +43,8 @@ class BlobBytesStreamer {
    }
  
    void OnWritable(MojoResult result, const mojo::HandleSignalsState& state) {
@@ -55,7 +54,7 @@ index fd27f12..125acccd 100644
      if (result == MOJO_RESULT_CANCELLED ||
          result == MOJO_RESULT_FAILED_PRECONDITION) {
        delete this;
-@@ -85,15 +84,18 @@
+@@ -85,15 +84,18 @@ class BlobBytesStreamer {
  
   private:
    // The index of the item currently being written.
@@ -68,18 +67,18 @@ index fd27f12..125acccd 100644
    // The data being written.
 -  Vector<scoped_refptr<RawData>> data_;
 +  Vector<scoped_refptr<RawData>> data_ GUARDED_BY_CONTEXT(sequence_checker_);
- 
--  mojo::ScopedDataPipeProducerHandle pipe_;
--  mojo::SimpleWatcher watcher_;
++
 +  mojo::ScopedDataPipeProducerHandle pipe_
 +      GUARDED_BY_CONTEXT(sequence_checker_);
 +  mojo::SimpleWatcher watcher_ GUARDED_BY_CONTEXT(sequence_checker_);
-+
+ 
+-  mojo::ScopedDataPipeProducerHandle pipe_;
+-  mojo::SimpleWatcher watcher_;
 +  SEQUENCE_CHECKER(sequence_checker_);
  };
  
  // This keeps the process alive while blobs are being transferred.
-@@ -119,31 +121,8 @@
+@@ -119,31 +121,8 @@ void DecreaseChildProcessRefCount() {
  
  constexpr size_t BlobBytesProvider::kMaxConsolidatedItemSizeInBytes;
  
@@ -113,7 +112,7 @@ index fd27f12..125acccd 100644
  }
  
  BlobBytesProvider::~BlobBytesProvider() {
-@@ -151,6 +130,8 @@
+@@ -151,6 +130,8 @@ BlobBytesProvider::~BlobBytesProvider() {
  }
  
  void BlobBytesProvider::AppendData(scoped_refptr<RawData> data) {
@@ -122,7 +121,7 @@ index fd27f12..125acccd 100644
    if (!data_.IsEmpty()) {
      uint64_t last_offset = offsets_.IsEmpty() ? 0 : offsets_.back();
      offsets_.push_back(last_offset + data_.back()->length());
-@@ -159,6 +140,8 @@
+@@ -159,6 +140,8 @@ void BlobBytesProvider::AppendData(scoped_refptr<RawData> data) {
  }
  
  void BlobBytesProvider::AppendData(base::span<const char> data) {
@@ -131,7 +130,7 @@ index fd27f12..125acccd 100644
    if (data_.IsEmpty() ||
        data_.back()->length() + data.size() > kMaxConsolidatedItemSizeInBytes) {
      AppendData(RawData::Create());
-@@ -167,8 +150,32 @@
+@@ -167,8 +150,32 @@ void BlobBytesProvider::AppendData(base::span<const char> data) {
        data.data(), base::checked_cast<wtf_size_t>(data.size()));
  }
  
@@ -165,7 +164,7 @@ index fd27f12..125acccd 100644
    // TODO(mek): Once better metrics are created we could experiment with ways
    // to reduce the number of copies of data that are made here.
    Vector<uint8_t> result;
-@@ -179,9 +186,10 @@
+@@ -179,9 +186,10 @@ void BlobBytesProvider::RequestAsReply(RequestAsReplyCallback callback) {
  
  void BlobBytesProvider::RequestAsStream(
      mojo::ScopedDataPipeProducerHandle pipe) {
@@ -178,7 +177,7 @@ index fd27f12..125acccd 100644
  }
  
  void BlobBytesProvider::RequestAsFile(uint64_t source_offset,
-@@ -189,7 +197,7 @@
+@@ -189,7 +197,7 @@ void BlobBytesProvider::RequestAsFile(uint64_t source_offset,
                                        base::File file,
                                        uint64_t file_offset,
                                        RequestAsFileCallback callback) {
@@ -187,7 +186,7 @@ index fd27f12..125acccd 100644
  
    if (!file.IsValid()) {
      std::move(callback).Run(absl::nullopt);
-@@ -257,10 +265,4 @@
+@@ -257,10 +265,4 @@ void BlobBytesProvider::RequestAsFile(uint64_t source_offset,
    std::move(callback).Run(info.last_modified);
  }
  
@@ -199,7 +198,7 @@ index fd27f12..125acccd 100644
 -
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/blob/blob_bytes_provider.h b/third_party/blink/renderer/platform/blob/blob_bytes_provider.h
-index 94e0172..662cc02 100644
+index 94e0172b7d411c8442b3949e8c82590f0b331fea..662cc02ecec7346ef32c44452cab38878c323edb 100644
 --- a/third_party/blink/renderer/platform/blob/blob_bytes_provider.h
 +++ b/third_party/blink/renderer/platform/blob/blob_bytes_provider.h
 @@ -6,6 +6,7 @@
@@ -210,7 +209,7 @@ index 94e0172..662cc02 100644
  #include "base/task/sequenced_task_runner.h"
  #include "third_party/blink/public/mojom/blob/blob_registry.mojom-blink-forward.h"
  #include "third_party/blink/public/mojom/blob/data_element.mojom-blink.h"
-@@ -17,8 +18,8 @@
+@@ -17,8 +18,8 @@ namespace blink {
  // making up a blob to the browser process, at the request of the blob service.
  //
  // Typical usage of this class creates and calls AppendData on one thread, and
@@ -221,7 +220,7 @@ index 94e0172..662cc02 100644
  // thread that is allowed to do File IO.
  class PLATFORM_EXPORT BlobBytesProvider : public mojom::blink::BytesProvider {
   public:
-@@ -26,19 +27,17 @@
+@@ -26,19 +27,17 @@ class PLATFORM_EXPORT BlobBytesProvider : public mojom::blink::BytesProvider {
    // data appended to the same item.
    static constexpr size_t kMaxConsolidatedItemSizeInBytes = 15 * 1024;
  
@@ -247,7 +246,7 @@ index 94e0172..662cc02 100644
    // BytesProvider implementation:
    void RequestAsReply(RequestAsReplyCallback) override;
    void RequestAsStream(mojo::ScopedDataPipeProducerHandle) override;
-@@ -51,17 +50,13 @@
+@@ -51,17 +50,13 @@ class PLATFORM_EXPORT BlobBytesProvider : public mojom::blink::BytesProvider {
   private:
    FRIEND_TEST_ALL_PREFIXES(BlobBytesProviderTest, Consolidation);
  
@@ -270,10 +269,10 @@ index 94e0172..662cc02 100644
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/blob/blob_bytes_provider_test.cc b/third_party/blink/renderer/platform/blob/blob_bytes_provider_test.cc
-index 227955f..27bdebc 100644
+index 227955f6c0762ab7015597fc3c6a6dada823b507..27bdebcbd7a96b579efdb9372d1de4e543b55f4d 100644
 --- a/third_party/blink/renderer/platform/blob/blob_bytes_provider_test.cc
 +++ b/third_party/blink/renderer/platform/blob/blob_bytes_provider_test.cc
-@@ -52,8 +52,7 @@
+@@ -52,8 +52,7 @@ class BlobBytesProviderTest : public testing::Test {
  
    std::unique_ptr<BlobBytesProvider> CreateProvider(
        scoped_refptr<RawData> data = nullptr) {
@@ -283,7 +282,7 @@ index 227955f..27bdebc 100644
      if (data)
        result->AppendData(std::move(data));
      return result;
-@@ -73,6 +72,8 @@
+@@ -73,6 +72,8 @@ class BlobBytesProviderTest : public testing::Test {
  
  TEST_F(BlobBytesProviderTest, Consolidation) {
    auto data = CreateProvider();
@@ -293,10 +292,10 @@ index 227955f..27bdebc 100644
    data->AppendData(base::make_span("def", 3));
    data->AppendData(base::make_span("ps1", 3));
 diff --git a/third_party/blink/renderer/platform/blob/blob_data.cc b/third_party/blink/renderer/platform/blob/blob_data.cc
-index 945f0f0..798e795 100644
+index 6e3b98983f45b8583d8a7bb0fa51ad0fa73ecfa6..065820bf854e24ee4f1ef69fe1aff75755a27111 100644
 --- a/third_party/blink/renderer/platform/blob/blob_data.cc
 +++ b/third_party/blink/renderer/platform/blob/blob_data.cc
-@@ -107,6 +107,12 @@
+@@ -107,6 +107,12 @@ BlobData::BlobData(FileCompositionStatus composition)
  BlobData::~BlobData() = default;
  
  Vector<mojom::blink::DataElementPtr> BlobData::ReleaseElements() {
@@ -309,7 +308,7 @@ index 945f0f0..798e795 100644
    return std::move(elements_);
  }
  
-@@ -141,16 +147,6 @@
+@@ -141,16 +147,6 @@ std::unique_ptr<BlobData> BlobData::CreateForFileSystemURLWithUnknownSize(
    return data;
  }
  
@@ -326,7 +325,7 @@ index 945f0f0..798e795 100644
  void BlobData::SetContentType(const String& content_type) {
    if (IsValidBlobType(content_type))
      content_type_ = content_type;
-@@ -274,6 +270,7 @@
+@@ -274,6 +270,7 @@ void BlobData::AppendDataInternal(base::span<const char> data,
    if (!elements_.IsEmpty() && elements_.back()->is_bytes()) {
      // Append bytes to previous element.
      DCHECK(last_bytes_provider_);
@@ -334,7 +333,7 @@ index 945f0f0..798e795 100644
      const auto& bytes_element = elements_.back()->get_bytes();
      bytes_element->length += data.size();
      if (should_embed_bytes && bytes_element->embedded_data) {
-@@ -285,9 +282,18 @@
+@@ -285,9 +282,18 @@ void BlobData::AppendDataInternal(base::span<const char> data,
        bytes_element->embedded_data = absl::nullopt;
      }
    } else {
@@ -356,10 +355,10 @@ index 945f0f0..798e795 100644
      auto bytes_element = DataElementBytes::New(
          data.size(), absl::nullopt, std::move(bytes_provider_remote));
 diff --git a/third_party/blink/renderer/platform/blob/blob_data.h b/third_party/blink/renderer/platform/blob/blob_data.h
-index ebfd0a3..99d4c07 100644
+index 17cf9a704f1f0238e5f7f2ed754b1b9f37acdc6a..bfb88005916987eb61d533f53f5090dddc543cd5 100644
 --- a/third_party/blink/renderer/platform/blob/blob_data.h
 +++ b/third_party/blink/renderer/platform/blob/blob_data.h
-@@ -46,6 +46,7 @@
+@@ -44,6 +44,7 @@
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/struct_ptr.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -367,7 +366,7 @@ index ebfd0a3..99d4c07 100644
  #include "third_party/blink/renderer/platform/weborigin/kurl.h"
  #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
  #include "third_party/blink/renderer/platform/wtf/forward.h"
-@@ -122,13 +123,10 @@
+@@ -120,13 +121,10 @@ class PLATFORM_EXPORT BlobData {
        const KURL& file_system_url,
        const absl::optional<base::Time>& expected_modification_time);
  
@@ -382,7 +381,7 @@ index ebfd0a3..99d4c07 100644
      return elements_;
    }
    Vector<mojom::blink::DataElementPtr> ReleaseElements();
-@@ -170,7 +168,15 @@
+@@ -168,7 +166,15 @@ class PLATFORM_EXPORT BlobData {
  
    Vector<mojom::blink::DataElementPtr> elements_;
    size_t current_memory_population_ = 0;
@@ -400,10 +399,10 @@ index ebfd0a3..99d4c07 100644
  
  class PLATFORM_EXPORT BlobDataHandle
 diff --git a/third_party/blink/renderer/platform/blob/blob_data_test.cc b/third_party/blink/renderer/platform/blob/blob_data_test.cc
-index 60a811d1..1bad0fcf 100644
+index 60a811d1736c035a846fb9a8e0945c3203b2b6b4..1bad0fcf3a29e5420dff6a51c5e57714b063eb03 100644
 --- a/third_party/blink/renderer/platform/blob/blob_data_test.cc
 +++ b/third_party/blink/renderer/platform/blob/blob_data_test.cc
-@@ -315,7 +315,7 @@
+@@ -315,7 +315,7 @@ TEST_F(BlobDataHandleTest, CreateFromMergedBytes) {
    auto data = std::make_unique<BlobData>();
    data->AppendBytes(medium_test_data_.data(), medium_test_data_.size());
    data->AppendBytes(small_test_data_.data(), small_test_data_.size());
@@ -412,7 +411,7 @@ index 60a811d1..1bad0fcf 100644
  
    Vector<uint8_t> expected_data = medium_test_data_;
    expected_data.AppendVector(small_test_data_);
-@@ -331,7 +331,7 @@
+@@ -331,7 +331,7 @@ TEST_F(BlobDataHandleTest, CreateFromMergedLargeAndSmallBytes) {
    auto data = std::make_unique<BlobData>();
    data->AppendBytes(large_test_data_.data(), large_test_data_.size());
    data->AppendBytes(small_test_data_.data(), small_test_data_.size());
@@ -421,7 +420,7 @@ index 60a811d1..1bad0fcf 100644
  
    Vector<uint8_t> expected_data = large_test_data_;
    expected_data.AppendVector(small_test_data_);
-@@ -347,7 +347,7 @@
+@@ -347,7 +347,7 @@ TEST_F(BlobDataHandleTest, CreateFromMergedSmallAndLargeBytes) {
    auto data = std::make_unique<BlobData>();
    data->AppendBytes(small_test_data_.data(), small_test_data_.size());
    data->AppendBytes(large_test_data_.data(), large_test_data_.size());
