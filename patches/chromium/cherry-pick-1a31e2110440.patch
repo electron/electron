@@ -1,7 +1,7 @@
-From 1a31e2110440a507ff75e50490ae50a47fdd2a6c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anders Hartvoll Ruud <andruud@chromium.org>
-Date: Tue, 05 Apr 2022 20:44:33 +0000
-Subject: [PATCH] [css-typed-om] Disallow CSS-wide keywords for StylePropertyMap.set
+Date: Tue, 5 Apr 2022 20:44:33 +0000
+Subject: Disallow CSS-wide keywords for StylePropertyMap.set
 
 We don't support this properly, and the spec does not handle CSS-keywords
 either. Disallow it until we can add proper support for this.
@@ -21,13 +21,12 @@ Auto-Submit: Srinivas Sista <srinivassista@chromium.org>
 Commit-Queue: Rune Lillesveen <futhark@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4896@{#1041}
 Cr-Branched-From: 1f63ff4bc27570761b35ffbc7f938f6586f7bee8-refs/heads/main@{#972766}
----
 
 diff --git a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_keywords.cc.tmpl b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_keywords.cc.tmpl
-index 925272d..75597ba 100644
+index 87caef2cf5cf56b7bf72752410648ef1d7bb9f9a..59c505707216362d3a3b662a6a531398b8f5009e 100644
 --- a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_keywords.cc.tmpl
 +++ b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_keywords.cc.tmpl
-@@ -20,8 +20,10 @@
+@@ -21,8 +21,10 @@ bool CSSOMKeywords::ValidKeywordForProperty(CSSPropertyID id,
      return false;
    }
  
@@ -42,7 +41,7 @@ index 925272d..75597ba 100644
    {% for property in properties if property.keywordIDs and 'Keyword' in property.typedom_types %}
 diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-css-wide-in-custom-property-crash.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-css-wide-in-custom-property-crash.html
 new file mode 100644
-index 0000000..bc977c98
+index 0000000000000000000000000000000000000000..bc977c9889889bd8a35eccc48ac28e25871b1ec9
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-css-wide-in-custom-property-crash.html
 @@ -0,0 +1,15 @@
