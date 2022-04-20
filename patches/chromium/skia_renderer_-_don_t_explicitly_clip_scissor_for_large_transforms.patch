@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michael Ludwig <michaelludwig@google.com>
 Date: Tue, 7 Dec 2021 20:49:07 +0000
-Subject: [skia_renderer] - Don't explicitly clip scissor for large transforms
+Subject: - Don't explicitly clip scissor for large transforms
 
 This adds a check to CanExplicitlyScissor that confirms that the device
 space scissor rect, transformed to the quad's local space, can be
