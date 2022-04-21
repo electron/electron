@@ -171,3 +171,4 @@ fix_--without-valid_build.patch
 usb_fix_oob_access_with_non-sequential_interfaces.patch
 skia_renderer_-_don_t_explicitly_clip_scissor_for_large_transforms.patch
 skia_renderer_use_rectf_intersect_in_applyscissor.patch
+m100_change_ownership_of_blobbytesprovider.patch
