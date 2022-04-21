@@ -2503,3 +2503,6 @@ workflows:
               ignore: /pull\/[0-9]+/
           requires:
             - mas-testing-arm64
+  lint:
+    jobs:
+      - lint
