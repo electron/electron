@@ -170,3 +170,4 @@ use-after-free_of_id_and_idref_attributes.patch
 fix_--without-valid_build.patch
 usb_fix_oob_access_with_non-sequential_interfaces.patch
 m100_change_ownership_of_blobbytesprovider.patch
+m96-lts_use_iserrordocument_to_prevent_bfcacheing_of.patch
