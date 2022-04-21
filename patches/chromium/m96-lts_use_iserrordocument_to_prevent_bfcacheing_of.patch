@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Fergal Daly <fergal@chromium.org>
 Date: Tue, 19 Apr 2022 15:25:29 +0000
-Subject: [M96-LTS] Use IsErrorDocument() to prevent BFCacheing of
- interstitials and errors.
+Subject: Use IsErrorDocument() to prevent BFCacheing of interstitials and
+ errors.
 
 M96 merge issues:
   Tests not present on M96:
