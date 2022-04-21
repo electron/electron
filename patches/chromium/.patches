@@ -126,3 +126,4 @@ use-after-free_of_id_and_idref_attributes.patch
 fix_--without-valid_build.patch
 cherry-pick-4d26949260aa.patch
 skia_renderer_use_rectf_intersect_in_applyscissor.patch
+cherry-pick-5cb934a23ddf.patch
