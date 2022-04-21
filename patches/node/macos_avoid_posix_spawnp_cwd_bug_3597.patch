@@ -48,10 +48,10 @@ index c8816b85b7e531648064e739fb89257565ad64bb..de51bac3d0e8daf519d35c6a3994f147
    if (path == NULL)
      path = _PATH_DEFPATH;
 diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
-index 199402e31406cf8ba360d54769461bb5285011ee..f8c08a4a7eb164ffff495c81e1f5df712084648b 100644
+index 58489c4be7b3a7b36d5b01a1f07d411ef3d99ae3..b4c039706417ab679c4f24a863118e736635371c 100644
 --- a/deps/uv/test/test-list.h
 +++ b/deps/uv/test/test-list.h
-@@ -322,6 +322,7 @@ TEST_DECLARE   (spawn_inherit_streams)
+@@ -319,6 +319,7 @@ TEST_DECLARE   (spawn_inherit_streams)
  TEST_DECLARE   (spawn_quoted_path)
  TEST_DECLARE   (spawn_tcp_server)
  TEST_DECLARE   (spawn_exercise_sigchld_issue)
@@ -59,7 +59,7 @@ index 199402e31406cf8ba360d54769461bb5285011ee..f8c08a4a7eb164ffff495c81e1f5df71
  TEST_DECLARE   (fs_poll)
  TEST_DECLARE   (fs_poll_getpath)
  TEST_DECLARE   (fs_poll_close_request)
-@@ -954,6 +955,7 @@ TASK_LIST_START
+@@ -946,6 +947,7 @@ TASK_LIST_START
    TEST_ENTRY  (spawn_quoted_path)
    TEST_ENTRY  (spawn_tcp_server)
    TEST_ENTRY  (spawn_exercise_sigchld_issue)
