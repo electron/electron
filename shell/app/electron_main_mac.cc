@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <memory>
 
+#include "base/compiler_specific.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_library_main.h"
