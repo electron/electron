@@ -1,7 +1,7 @@
-From 2004594a46c8a2766de63d850d15fcf5efe82dc9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Nico Hartmann <nicohartmann@chromium.org>
 Date: Thu, 17 Mar 2022 17:03:12 +0100
-Subject: [PATCH] [M96-LTS][turbofan] Fix NumberConstant used with Word32 rep in ISel
+Subject: Fix NumberConstant used with Word32 rep in ISel
 
 Bug: chromium:1304658
 
@@ -21,13 +21,12 @@ Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/9.6@{#58}
 Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
 Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
----
 
 diff --git a/src/compiler/backend/instruction-selector.cc b/src/compiler/backend/instruction-selector.cc
-index beb716a..2219310 100644
+index beb716abbe3914d2871c81933951ba2bc1e394e2..22193107ab2da36eabfda7ac5e678ca22d965fc3 100644
 --- a/src/compiler/backend/instruction-selector.cc
 +++ b/src/compiler/backend/instruction-selector.cc
-@@ -30,6 +30,14 @@
+@@ -30,6 +30,14 @@ namespace v8 {
  namespace internal {
  namespace compiler {
  
@@ -42,7 +41,7 @@ index beb716a..2219310 100644
  InstructionSelector::InstructionSelector(
      Zone* zone, size_t node_count, Linkage* linkage,
      InstructionSequence* sequence, Schedule* schedule,
-@@ -501,11 +509,17 @@
+@@ -501,11 +509,17 @@ InstructionOperand OperandForDeopt(Isolate* isolate, OperandGenerator* g,
    switch (input->opcode()) {
      case IrOpcode::kInt32Constant:
      case IrOpcode::kInt64Constant:
