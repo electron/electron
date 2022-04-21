@@ -45,3 +45,4 @@ process_simplify_uv_write_int_calls_3519.patch
 macos_don_t_use_thread-unsafe_strtok_3524.patch
 process_fix_hang_after_note_exit_3521.patch
 worker_thread_add_asar_support.patch
+macos_avoid_posix_spawnp_cwd_bug_3597.patch
