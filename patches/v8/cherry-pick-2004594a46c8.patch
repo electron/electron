@@ -1,0 +1,63 @@
+From 2004594a46c8a2766de63d850d15fcf5efe82dc9 Mon Sep 17 00:00:00 2001
+From: Nico Hartmann <nicohartmann@chromium.org>
+Date: Thu, 17 Mar 2022 17:03:12 +0100
+Subject: [PATCH] [M96-LTS][turbofan] Fix NumberConstant used with Word32 rep in ISel
+
+Bug: chromium:1304658
+
+(cherry picked from commit bbea5909c797dec7c620b9fee43d80a1420c2e08)
+
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I6a82603a7c5de5ae8f5a895990c1a904bbdd39b2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3532263
+Auto-Submit: Nico Hartmann <nicohartmann@chromium.org>
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#79526}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3541919
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/9.6@{#58}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+---
+
+diff --git a/src/compiler/backend/instruction-selector.cc b/src/compiler/backend/instruction-selector.cc
+index beb716a..2219310 100644
+--- a/src/compiler/backend/instruction-selector.cc
++++ b/src/compiler/backend/instruction-selector.cc
+@@ -30,6 +30,14 @@
+ namespace internal {
+ namespace compiler {
+ 
++Smi NumberConstantToSmi(Node* node) {
++  DCHECK_EQ(node->opcode(), IrOpcode::kNumberConstant);
++  const double d = OpParameter<double>(node->op());
++  Smi smi = Smi::FromInt(static_cast<int32_t>(d));
++  CHECK_EQ(smi.value(), d);
++  return smi;
++}
++
+ InstructionSelector::InstructionSelector(
+     Zone* zone, size_t node_count, Linkage* linkage,
+     InstructionSequence* sequence, Schedule* schedule,
+@@ -501,11 +509,17 @@
+   switch (input->opcode()) {
+     case IrOpcode::kInt32Constant:
+     case IrOpcode::kInt64Constant:
+-    case IrOpcode::kNumberConstant:
+     case IrOpcode::kFloat32Constant:
+     case IrOpcode::kFloat64Constant:
+     case IrOpcode::kDelayedStringConstant:
+       return g->UseImmediate(input);
++    case IrOpcode::kNumberConstant:
++      if (rep == MachineRepresentation::kWord32) {
++        Smi smi = NumberConstantToSmi(input);
++        return g->UseImmediate(static_cast<int32_t>(smi.ptr()));
++      } else {
++        return g->UseImmediate(input);
++      }
+     case IrOpcode::kCompressedHeapConstant:
+     case IrOpcode::kHeapConstant: {
+       if (!CanBeTaggedOrCompressedPointer(rep)) {
