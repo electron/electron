@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jameson Nash <vtjnash@gmail.com>
+Date: Fri, 15 Apr 2022 14:10:27 -0400
+Subject: macos: avoid posix_spawnp() cwd bug (#3597)
+
+macOS 10.15 has a bug where configuring the working directory with
+posix_spawn_file_actions_addchdir_np() makes posix_spawnp() fail with
+ENOENT even though the executable is spawned successfully.
+
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index c8816b85b7e531648064e739fb89257565ad64bb..de51bac3d0e8daf519d35c6a3994f1479590607a 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -671,27 +671,25 @@ static int uv__spawn_resolve_and_spawn(const uv_process_options_t* options,
+   if (options->env != NULL)
+     env = options->env;
+ 
+-  /* If options->file contains a slash, posix_spawn/posix_spawnp behave
+-   * the same, and don't involve PATH resolution at all. Otherwise, if
+-   * options->file does not include a slash, but no custom environment is
+-   * to be used, the environment used for path resolution as well for the
+-   * child process is that of the parent process, so posix_spawnp is the
+-   * way to go. */
+-  if (strchr(options->file, '/') != NULL || options->env == NULL) {
++  /* If options->file contains a slash, posix_spawn/posix_spawnp should behave
++   * the same, and do not involve PATH resolution at all. The libc
++   * `posix_spawnp` provided by Apple is buggy (since 10.15), so we now emulate it
++   * here, per https://github.com/libuv/libuv/pull/3583. */
++  if (strchr(options->file, '/') != NULL) {
+     do
+-      err = posix_spawnp(pid, options->file, actions, attrs, options->args, env);
++      err = posix_spawn(pid, options->file, actions, attrs, options->args, env);
+     while (err == EINTR);
+     return err;
+   }
+ 
+   /* Look for the definition of PATH in the provided env */
+-  path = uv__spawn_find_path_in_env(options->env);
++  path = uv__spawn_find_path_in_env(env);
+ 
+   /* The following resolution logic (execvpe emulation) is copied from
+    * https://git.musl-libc.org/cgit/musl/tree/src/process/execvp.c
+    * and adapted to work for our specific usage */
+ 
+-  /* If no path was provided in options->env, use the default value
++  /* If no path was provided in env, use the default value
+    * to look for the executable */
+   if (path == NULL)
+     path = _PATH_DEFPATH;
+diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
+index 58489c4be7b3a7b36d5b01a1f07d411ef3d99ae3..b4c039706417ab679c4f24a863118e736635371c 100644
+--- a/deps/uv/test/test-list.h
++++ b/deps/uv/test/test-list.h
+@@ -319,6 +319,7 @@ TEST_DECLARE   (spawn_inherit_streams)
+ TEST_DECLARE   (spawn_quoted_path)
+ TEST_DECLARE   (spawn_tcp_server)
+ TEST_DECLARE   (spawn_exercise_sigchld_issue)
++TEST_DECLARE   (spawn_relative_path)
+ TEST_DECLARE   (fs_poll)
+ TEST_DECLARE   (fs_poll_getpath)
+ TEST_DECLARE   (fs_poll_close_request)
+@@ -946,6 +947,7 @@ TASK_LIST_START
+   TEST_ENTRY  (spawn_quoted_path)
+   TEST_ENTRY  (spawn_tcp_server)
+   TEST_ENTRY  (spawn_exercise_sigchld_issue)
++  TEST_ENTRY  (spawn_relative_path)
+   TEST_ENTRY  (fs_poll)
+   TEST_ENTRY  (fs_poll_getpath)
+   TEST_ENTRY  (fs_poll_close_request)
+diff --git a/deps/uv/test/test-spawn.c b/deps/uv/test/test-spawn.c
+index dfd5458ef37c664af9a55a8383bdb3121885db3b..de9c710020ef7da66e45f5617a8a697e698fa202 100644
+--- a/deps/uv/test/test-spawn.c
++++ b/deps/uv/test/test-spawn.c
+@@ -1981,3 +1981,37 @@ void spawn_stdin_stdout(void) {
+   }
+ }
+ #endif /* !_WIN32 */
++
++TEST_IMPL(spawn_relative_path) {
++  char* sep;
++
++  init_process_options("spawn_helper1", exit_cb);
++
++  exepath_size = sizeof(exepath) - 2;
++  ASSERT_EQ(0, uv_exepath(exepath, &exepath_size));
++  exepath[exepath_size] = '\0';
++
++  /* Poor man's basename(3). */
++  sep = strrchr(exepath, '/');
++  if (sep == NULL)
++    sep = strrchr(exepath, '\\');
++  ASSERT_NOT_NULL(sep);
++
++  /* Split into dirname and basename and make basename relative. */
++  memmove(sep + 2, sep, 1 + strlen(sep));
++  sep[0] = '\0';
++  sep[1] = '.';
++  sep[2] = '/';
++
++  options.cwd = exepath;
++  options.file = options.args[0] = sep + 1;
++
++  ASSERT_EQ(0, uv_spawn(uv_default_loop(), &process, &options));
++  ASSERT_EQ(0, uv_run(uv_default_loop(), UV_RUN_DEFAULT));
++
++  ASSERT_EQ(1, exit_cb_called);
++  ASSERT_EQ(1, close_cb_called);
++
++  MAKE_VALGRIND_HAPPY();
++  return 0;
++}
