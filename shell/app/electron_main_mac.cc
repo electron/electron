@@ -10,7 +10,6 @@
 #include "electron/fuses.h"
 #include "shell/app/electron_library_main.h"
 #include "shell/app/uv_stdio_fix.h"
-#include "shell/common/electron_constants.h"
 
 #if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
 #include <mach-o/dyld.h>
@@ -33,7 +32,8 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
+  if (electron::fuses::IsRunAsNodeEnabled() &&
+      IsEnvSet("ELECTRON_RUN_AS_NODE")) {
     return ElectronInitializeICUandStartNode(argc, argv);
   }
 #endif
