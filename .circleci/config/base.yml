@@ -247,21 +247,12 @@ step-depot-tools-get: &step-depot-tools-get
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
         # Remove swift-format dep from cipd on macOS until we send a patch upstream.
         cd depot_tools
-        patch gclient.py -p1 \<<'EOF'
-      diff --git a/gclient.py b/gclient.py
-      index c2a6fb34988d22a93a12dbe4849d6ac0cf4f15ca..c78f0b9d628390d21d8ff0551a51866382bc0af6 100755
-      --- a/gclient.py
-      +++ b/gclient.py
-      @@ -673,7 +673,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
-      
-            if dep_type == 'cipd':
-              cipd_root = self.GetCipdRoot()
-      -        for package in dep_value.get('packages', []):
-      +        packages = dep_value.get('packages', [])
-      +        for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
-                deps_to_add.append(
-                    CipdDependency(
-                        parent=self,
+        patch gclient.py -R \<<'EOF'
+      676,677c676
+      <         packages = dep_value.get('packages', [])
+      <         for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
+      ---
+      >         for package in dep_value.get('packages', []):
       EOF
       fi
 
