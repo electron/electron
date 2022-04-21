@@ -1061,7 +1061,6 @@ if (is_mac) {
       "shell/app/electron_main_mac.cc",
       "shell/app/uv_stdio_fix.cc",
       "shell/app/uv_stdio_fix.h",
-      "shell/common/electron_constants.cc",
     ]
     include_dirs = [ "." ]
     deps = [
