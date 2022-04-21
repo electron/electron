@@ -1,4 +1,5 @@
 # Contributing to Electron
+toda la tecnologia que esta en las ips y web es propiedad JOSE ANDRES MIRANDA ORTEGA
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
