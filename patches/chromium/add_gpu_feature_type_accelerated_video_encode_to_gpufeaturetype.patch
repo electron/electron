@@ -1,0 +1,204 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chunbo Hua <chunbo.hua@intel.com>
+Date: Thu, 28 Oct 2021 06:45:57 +0000
+Subject: Add GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE to GpuFeatureType.
+
+This new flag indicates gpu hardware encode feature for the system
+on which Chrome is currently running.
+
+Bug: 1262037
+Change-Id: I846003e98b0c47192f9a775f98e002dc42f722cc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3238327
+Reviewed-by: mark a. foltz <mfoltz@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: danakj <danakj@chromium.org>
+Commit-Queue: Chunbo Hua <chunbo.hua@intel.com>
+Cr-Commit-Position: refs/heads/main@{#935714}
+
+diff --git a/components/mirroring/service/session.cc b/components/mirroring/service/session.cc
+index cfa573a4a4e8e0d92320126e030a1598a6e553b7..34b33f3f64ba03a06e2ace9164a533ef7fa6dfd2 100644
+--- a/components/mirroring/service/session.cc
++++ b/components/mirroring/service/session.cc
+@@ -415,7 +415,7 @@ Session::Session(
+     gpu_channel_host_ = gpu_->EstablishGpuChannelSync();
+     if (gpu_channel_host_ &&
+         gpu_channel_host_->gpu_feature_info().status_values
+-                [gpu::GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE] ==
++                [gpu::GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE] ==
+             gpu::kGpuFeatureStatusEnabled) {
+       supported_profiles_ =
+           media::GpuVideoAcceleratorUtil::ConvertGpuToMediaEncodeProfiles(
+diff --git a/content/browser/gpu/compositor_util.cc b/content/browser/gpu/compositor_util.cc
+index 0251fbd46e71392fbb83722aa2b96b2113629e4d..a6d81eaae5c7b704504a1b6ecb83f9b29b51bac6 100644
+--- a/content/browser/gpu/compositor_util.cc
++++ b/content/browser/gpu/compositor_util.cc
+@@ -154,6 +154,18 @@ const GpuFeatureData GetGpuFeatureData(
+          "Accelerated video decode has been disabled, either via blocklist, "
+          "about:flags or the command line."),
+      true},
++    {"video_encode",
++     SafeGetFeatureStatus(gpu_feature_info,
++                          gpu::GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE),
++#if defined(OS_LINUX)
++     !base::FeatureList::IsEnabled(media::kVaapiVideoEncodeLinux),
++#else
++     command_line.HasSwitch(switches::kDisableAcceleratedVideoEncode),
++#endif  // defined(OS_LINUX)
++     DisableInfo::Problem(
++         "Accelerated video encode has been disabled, either via blocklist, "
++         "about:flags or the command line."),
++     true},
+     {"rasterization",
+      SafeGetFeatureStatus(gpu_feature_info,
+                           gpu::GPU_FEATURE_TYPE_GPU_RASTERIZATION),
+diff --git a/content/renderer/render_thread_impl.cc b/content/renderer/render_thread_impl.cc
+index 5e48b08a97db44e716e5593dfc68b91e856a70dd..fed0669d80d88c295b92daf33a297d9eed73288d 100644
+--- a/content/renderer/render_thread_impl.cc
++++ b/content/renderer/render_thread_impl.cc
+@@ -1056,7 +1056,7 @@ media::GpuVideoAcceleratorFactories* RenderThreadImpl::GetGpuFactories() {
+           viz::command_buffer_metrics::ContextType::MEDIA, kGpuStreamIdMedia,
+           kGpuStreamPriorityMedia);
+ 
+-  const bool enable_video_accelerator =
++  const bool enable_video_decode_accelerator =
+ 
+ #if defined(OS_LINUX)
+       base::FeatureList::IsEnabled(media::kVaapiVideoDecodeLinux) &&
+@@ -1066,6 +1066,20 @@ media::GpuVideoAcceleratorFactories* RenderThreadImpl::GetGpuFactories() {
+       (gpu_channel_host->gpu_feature_info()
+            .status_values[gpu::GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE] ==
+        gpu::kGpuFeatureStatusEnabled);
++
++  const bool enable_video_encode_accelerator =
++
++#if defined(OS_LINUX)
++      base::FeatureList::IsEnabled(media::kVaapiVideoEncodeLinux) &&
++#else
++      !cmd_line->HasSwitch(switches::kDisableAcceleratedVideoEncode) &&
++#endif  // defined(OS_LINUX)
++      (gpu_channel_host->gpu_feature_info()
++           .status_values[gpu::GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE] ==
++       gpu::kGpuFeatureStatusEnabled);
++
++  const bool enable_video_accelerator =
++      enable_video_decode_accelerator || enable_video_encode_accelerator;
+   const bool enable_gpu_memory_buffers =
+       !is_gpu_compositing_disabled_ &&
+ #if !defined(OS_ANDROID)
+diff --git a/gpu/config/gpu_blocklist.cc b/gpu/config/gpu_blocklist.cc
+index 31683b628eb64f6c4a94381ea41af1afab565874..3b219862db18e949d125c02799c78ba71c62ba2d 100644
+--- a/gpu/config/gpu_blocklist.cc
++++ b/gpu/config/gpu_blocklist.cc
+@@ -31,6 +31,8 @@ std::unique_ptr<GpuBlocklist> GpuBlocklist::Create(
+                             GPU_FEATURE_TYPE_ACCELERATED_WEBGL);
+   list->AddSupportedFeature("accelerated_video_decode",
+                             GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE);
++  list->AddSupportedFeature("accelerated_video_encode",
++                            GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE);
+   list->AddSupportedFeature("gpu_rasterization",
+                             GPU_FEATURE_TYPE_GPU_RASTERIZATION);
+   list->AddSupportedFeature("accelerated_webgl2",
+diff --git a/gpu/config/gpu_blocklist_unittest.cc b/gpu/config/gpu_blocklist_unittest.cc
+index 0be1f0feb40d82e5f6fdb966c5a6af8d53c2fa29..5c325ee97e4175a6b6fafeb302914826e2439849 100644
+--- a/gpu/config/gpu_blocklist_unittest.cc
++++ b/gpu/config/gpu_blocklist_unittest.cc
+@@ -90,6 +90,9 @@ GPU_BLOCKLIST_FEATURE_TEST(AcceleratedWebGL, GPU_FEATURE_TYPE_ACCELERATED_WEBGL)
+ GPU_BLOCKLIST_FEATURE_TEST(AcceleratedVideoDecode,
+                            GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE)
+ 
++GPU_BLOCKLIST_FEATURE_TEST(AcceleratedVideoEncode,
++                           GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE)
++
+ GPU_BLOCKLIST_FEATURE_TEST(GpuRasterization, GPU_FEATURE_TYPE_GPU_RASTERIZATION)
+ 
+ GPU_BLOCKLIST_FEATURE_TEST(OOPRasterization, GPU_FEATURE_TYPE_OOP_RASTERIZATION)
+diff --git a/gpu/config/gpu_feature_type.h b/gpu/config/gpu_feature_type.h
+index f9b4566254000aebc9585eb0c588844cf13b4baf..a68a550d8c5a61bd459dc55e37d15a812087e8b1 100644
+--- a/gpu/config/gpu_feature_type.h
++++ b/gpu/config/gpu_feature_type.h
+@@ -14,6 +14,7 @@ enum GpuFeatureType {
+   GPU_FEATURE_TYPE_ACCELERATED_2D_CANVAS = 0,
+   GPU_FEATURE_TYPE_ACCELERATED_WEBGL,
+   GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE,
++  GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE,
+   GPU_FEATURE_TYPE_GPU_RASTERIZATION,
+   GPU_FEATURE_TYPE_ACCELERATED_WEBGL2,
+   GPU_FEATURE_TYPE_OOP_RASTERIZATION,
+diff --git a/gpu/config/gpu_util.cc b/gpu/config/gpu_util.cc
+index dde5d64a174fcdb0c5fe48daba249c5b273dabc4..4524ebd7ec3db6d823622f1bde16c3219d59b6f6 100644
+--- a/gpu/config/gpu_util.cc
++++ b/gpu/config/gpu_util.cc
+@@ -297,6 +297,19 @@ GpuFeatureStatus GetAcceleratedVideoDecodeFeatureStatus(
+   return kGpuFeatureStatusEnabled;
+ }
+ 
++GpuFeatureStatus GetAcceleratedVideoEncodeFeatureStatus(
++    const std::set<int>& blocklisted_features,
++    bool use_swift_shader) {
++  if (use_swift_shader) {
++    // This is for testing only. Chrome should exercise the GPU accelerated
++    // path on top of SwiftShader driver.
++    return kGpuFeatureStatusEnabled;
++  }
++  if (blocklisted_features.count(GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE))
++    return kGpuFeatureStatusBlocklisted;
++  return kGpuFeatureStatusEnabled;
++}
++
+ GpuFeatureStatus GetGLFeatureStatus(const std::set<int>& blocklisted_features,
+                                     bool use_swift_shader) {
+   if (use_swift_shader) {
+@@ -427,6 +440,8 @@ GpuFeatureInfo ComputeGpuFeatureInfoWithHardwareAccelerationDisabled() {
+       kGpuFeatureStatusSoftware;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE] =
+       kGpuFeatureStatusDisabled;
++  gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE] =
++      kGpuFeatureStatusDisabled;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_GPU_RASTERIZATION] =
+       kGpuFeatureStatusDisabled;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_WEBGL2] =
+@@ -459,6 +474,8 @@ GpuFeatureInfo ComputeGpuFeatureInfoWithNoGpu() {
+       kGpuFeatureStatusDisabled;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE] =
+       kGpuFeatureStatusDisabled;
++  gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE] =
++      kGpuFeatureStatusDisabled;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_GPU_RASTERIZATION] =
+       kGpuFeatureStatusDisabled;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_WEBGL2] =
+@@ -491,6 +508,8 @@ GpuFeatureInfo ComputeGpuFeatureInfoForSwiftShader() {
+       kGpuFeatureStatusSoftware;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE] =
+       kGpuFeatureStatusDisabled;
++  gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE] =
++      kGpuFeatureStatusDisabled;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_GPU_RASTERIZATION] =
+       kGpuFeatureStatusDisabled;
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_WEBGL2] =
+@@ -581,6 +600,9 @@ GpuFeatureInfo ComputeGpuFeatureInfo(const GPUInfo& gpu_info,
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_DECODE] =
+       GetAcceleratedVideoDecodeFeatureStatus(blocklisted_features,
+                                              use_swift_shader);
++  gpu_feature_info.status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE] =
++      GetAcceleratedVideoEncodeFeatureStatus(blocklisted_features,
++                                             use_swift_shader);
+   gpu_feature_info.status_values[GPU_FEATURE_TYPE_OOP_RASTERIZATION] =
+       GetOopRasterizationFeatureStatus(blocklisted_features, *command_line,
+                                        gpu_preferences, gpu_info);
+diff --git a/gpu/ipc/service/gpu_init.cc b/gpu/ipc/service/gpu_init.cc
+index ad6e626f14bd07acde47147d46864a78c7d4d911..07f7995b30d107d482cbec4446bb030e325833a2 100644
+--- a/gpu/ipc/service/gpu_init.cc
++++ b/gpu/ipc/service/gpu_init.cc
+@@ -599,6 +599,12 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
+     gpu_preferences_.disable_accelerated_video_decode = true;
+   }
+ 
++  if (kGpuFeatureStatusEnabled !=
++      gpu_feature_info_
++          .status_values[GPU_FEATURE_TYPE_ACCELERATED_VIDEO_ENCODE]) {
++    gpu_preferences_.disable_accelerated_video_encode = true;
++  }
++
+   base::TimeDelta initialize_one_off_time =
+       base::TimeTicks::Now() - before_initialize_one_off;
+   UMA_HISTOGRAM_MEDIUM_TIMES("GPU.InitializeOneOffMediumTime",

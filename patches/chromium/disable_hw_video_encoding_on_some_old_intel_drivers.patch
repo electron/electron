@@ -1,0 +1,189 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Thu, 9 Dec 2021 21:11:28 +0000
+Subject: Disable hw video encoding on some old Intel drivers
+
+This also reverts crrev.com/935995 and crrev.com/938634 because they
+didn't address crashes caused by VEA::GetSupportedProfiles() calls.
+
+Bug: 1251071
+Change-Id: I4f435a1f592dd871e0ac130f6181146f48dcc582
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3324988
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#950259}
+
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 5bc499415be7b2dff419e5b8487b166b05dff3fc..1dd73c3ba887c55a40fdba728427050576411799 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3817,82 +3817,6 @@
+       "features": [
+         "check_egl_fence_before_wait"
+       ]
+-    },
+-    {
+-      "id": 382,
+-      "description": "Disable hardware MFT H.264 encoder on older Intel drivers",
+-      "cr_bugs": [1251071],
+-      "os": {
+-        "type": "win"
+-      },
+-      "vendor_id": "0x8086",
+-      "multi_gpu_category": "any",
+-      "driver_version": {
+-        "schema": "intel_driver",
+-        "op": "between",
+-        "value": "0.0.10.0",
+-        "value2": "0.0.10.4425"
+-      },
+-      "features": [
+-        "disable_accelerated_h264_encode"
+-      ]
+-    },
+-    {
+-      "id": 383,
+-      "description": "Disable hardware MFT H.264 encoder on older Intel drivers",
+-      "cr_bugs": [1251071],
+-      "os": {
+-        "type": "win"
+-      },
+-      "vendor_id": "0x8086",
+-      "multi_gpu_category": "any",
+-      "driver_version": {
+-        "schema": "intel_driver",
+-        "op": "between",
+-        "value": "0.0.13.0",
+-        "value2": "0.0.13.5435"
+-      },
+-      "features": [
+-        "disable_accelerated_h264_encode"
+-      ]
+-    },
+-    {
+-      "id": 384,
+-      "description": "Disable hardware MFT H.264 encoder on older Intel drivers",
+-      "cr_bugs": [1251071],
+-      "os": {
+-        "type": "win"
+-      },
+-      "vendor_id": "0x8086",
+-      "multi_gpu_category": "any",
+-      "driver_version": {
+-        "schema": "intel_driver",
+-        "op": "between",
+-        "value": "0.0.14.0",
+-        "value2": "0.0.14.4264"
+-      },
+-      "features": [
+-        "disable_accelerated_h264_encode"
+-      ]
+-    },
+-    {
+-      "id": 385,
+-      "description": "Disable hardware MFT H.264 encoder on older Intel drivers",
+-      "cr_bugs": [1251071],
+-      "os": {
+-        "type": "win"
+-      },
+-      "vendor_id": "0x8086",
+-      "multi_gpu_category": "any",
+-      "driver_version": {
+-        "schema": "intel_driver",
+-        "op": "between",
+-        "value": "0.0.15.0",
+-        "value2": "0.0.15.4256"
+-      },
+-      "features": [
+-        "disable_accelerated_h264_encode"
+-      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/software_rendering_list.json b/gpu/config/software_rendering_list.json
+index 2a6f275099556ea9cb1ecbc616cb25f6e00326b2..6a94def9993c953f4ab921afac2504eee3ccf48d 100644
+--- a/gpu/config/software_rendering_list.json
++++ b/gpu/config/software_rendering_list.json
+@@ -1591,6 +1591,82 @@
+       "features": [
+         "all"
+       ]
++    },
++    {
++      "id": 170,
++      "description": "Disable hardware MFT video encoder on older Intel drivers",
++      "cr_bugs": [1251071],
++      "os": {
++        "type": "win"
++      },
++      "vendor_id": "0x8086",
++      "multi_gpu_category": "any",
++      "driver_version": {
++        "schema": "intel_driver",
++        "op": "between",
++        "value": "0.0.10.0",
++        "value2": "0.0.10.4425"
++      },
++      "features": [
++        "accelerated_video_encode"
++      ]
++    },
++    {
++      "id": 171,
++      "description": "Disable hardware MFT video encoder on older Intel drivers",
++      "cr_bugs": [1251071],
++      "os": {
++        "type": "win"
++      },
++      "vendor_id": "0x8086",
++      "multi_gpu_category": "any",
++      "driver_version": {
++        "schema": "intel_driver",
++        "op": "between",
++        "value": "0.0.13.0",
++        "value2": "0.0.13.5435"
++      },
++      "features": [
++        "accelerated_video_encode"
++      ]
++    },
++    {
++      "id": 172,
++      "description": "Disable hardware MFT video encoder on older Intel drivers",
++      "cr_bugs": [1251071],
++      "os": {
++        "type": "win"
++      },
++      "vendor_id": "0x8086",
++      "multi_gpu_category": "any",
++      "driver_version": {
++        "schema": "intel_driver",
++        "op": "between",
++        "value": "0.0.14.0",
++        "value2": "0.0.14.4264"
++      },
++      "features": [
++        "accelerated_video_encode"
++      ]
++    },
++    {
++      "id": 173,
++      "description": "Disable hardware MFT video encoder on older Intel drivers",
++      "cr_bugs": [1251071],
++      "os": {
++        "type": "win"
++      },
++      "vendor_id": "0x8086",
++      "multi_gpu_category": "any",
++      "driver_version": {
++        "schema": "intel_driver",
++        "op": "between",
++        "value": "0.0.15.0",
++        "value2": "0.0.15.4256"
++      },
++      "features": [
++        "accelerated_video_encode"
++      ]
+     }
+   ]
+ }
