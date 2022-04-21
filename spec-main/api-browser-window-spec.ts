@@ -3717,6 +3717,25 @@ describe('BrowserWindow module', () => {
         expect(w.getChildWindows().length).to.equal(0);
       });
 
+      it('closes a grandchild window when a middle child window is destroyed', (done) => {
+        const w = new BrowserWindow();
+
+        w.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
+        w.webContents.executeJavaScript('window.open("")');
+
+        w.webContents.on('did-create-window', async (window) => {
+          const childWindow = new BrowserWindow({ parent: window });
+
+          await delay();
+          window.close();
+
+          childWindow.on('closed', () => {
+            expect(() => { BrowserWindow.getFocusedWindow(); }).to.not.throw();
+            done();
+          });
+        });
+      });
+
       it('should not affect the show option', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
