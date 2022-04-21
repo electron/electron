@@ -126,3 +126,4 @@ use-after-free_of_id_and_idref_attributes.patch
 fix_--without-valid_build.patch
 cherry-pick-4d26949260aa.patch
 cherry-pick-5cb934a23ddf.patch
+disable_video_encoding_on_nvidia_drivers_older_than_summer_2018.patch

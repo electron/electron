@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Thu, 13 Jan 2022 21:32:00 +0000
+Subject: Disable video encoding on NVIDIA drivers older than summer 2018
+
+Bug: 1263058
+Change-Id: Ibb900bc96e19bd2e2a92a14738c14e0eb117caf5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3385615
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#958835}
+
+diff --git a/gpu/config/software_rendering_list.json b/gpu/config/software_rendering_list.json
+index 6a94def9993c953f4ab921afac2504eee3ccf48d..cf81607d8d4fceda8458055c7c78f6ac5302dc49 100644
+--- a/gpu/config/software_rendering_list.json
++++ b/gpu/config/software_rendering_list.json
+@@ -1667,6 +1667,23 @@
+       "features": [
+         "accelerated_video_encode"
+       ]
++    },
++    {
++      "id": 175,
++      "description": "Disable video encoding on NVidia drivers older than summer 2018",
++      "cr_bugs": [1263058],
++      "os": {
++        "type": "win"
++      },
++      "vendor_id": "0x10de",
++      "multi_gpu_category": "any",
++      "driver_version": {
++        "op": "<=",
++        "value": "24.21.13.9826"
++      },
++      "features": [
++        "accelerated_video_encode"
++      ]
+     }
+   ]
+ }
