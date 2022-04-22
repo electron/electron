@@ -154,8 +154,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "clipboard-read");
     case content::PermissionType::CLIPBOARD_SANITIZED_WRITE:
       return StringToV8(isolate, "clipboard-sanitized-write");
-    case content::PermissionType::FONT_ACCESS:
-      return StringToV8(isolate, "font-access");
+    case content::PermissionType::LOCAL_FONTS:
+      return StringToV8(isolate, "local-fonts");
     case content::PermissionType::IDLE_DETECTION:
       return StringToV8(isolate, "idle-detection");
     case content::PermissionType::MIDI_SYSEX:
