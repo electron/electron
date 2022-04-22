@@ -24,7 +24,7 @@ parameters:
   linux-publish-arch-limit:
     type: enum
     default: all
-    enum: ["all", "arm", "arm64", "x64", "ia32"]
+    enum: ["all", "arm", "arm64", "x64"]
 
   run-macos-publish:
     type: boolean
@@ -114,12 +114,6 @@ env-unittests: &env-unittests
   GN_CONFIG: //electron/build/args/native_tests.gn
   BUILD_TARGET: electron/spec:chromium_unittests
   TESTS_CONFIG: src/electron/spec/configs/unittests.yml
-
-# Build targets options.
-env-ia32: &env-ia32
-  GN_EXTRA_ARGS: 'target_cpu = "x86"'
-  NPM_CONFIG_ARCH: ia32
-  TARGET_ARCH: ia32
 
 env-arm: &env-arm
   GN_EXTRA_ARGS: 'target_cpu = "arm"'
@@ -246,11 +240,20 @@ step-depot-tools-get: &step-depot-tools-get
     name: Get depot tools
     command: |
       git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-      # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
       if [ "`uname`" == "Darwin" ]; then
+        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
         sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
       else
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        # Remove swift-format dep from cipd on macOS until we send a patch upstream.
+        cd depot_tools
+        patch gclient.py -R \<<'EOF'
+      676,677c676
+      <         packages = dep_value.get('packages', [])
+      <         for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
+      ---
+      >         for package in dep_value.get('packages', []):
+      EOF
       fi
 
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
@@ -343,14 +346,14 @@ step-restore-brew-cache: &step-restore-brew-cache
       - /usr/local/Cellar/gnu-tar
       - /usr/local/bin/gtar
     keys:
-      - v4-brew-cache-{{ arch }}
+      - v5-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
       - /usr/local/Cellar/gnu-tar
       - /usr/local/bin/gtar
-    key: v4-brew-cache-{{ arch }}
+    key: v5-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
@@ -586,8 +589,6 @@ step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
       if [ "$STRIP_BINARIES" == "true" ] && [ "`uname`" == "Linux" ]; then
         if [ x"$TARGET_ARCH" == x ]; then
           target_cpu=x64
-        elif [ "$TARGET_ARCH" == "ia32" ]; then
-          target_cpu=x86
         else
           target_cpu="$TARGET_ARCH"
         fi
@@ -618,8 +619,6 @@ step-electron-dist-build: &step-electron-dist-build
             target_os=linux
             if [ x"$TARGET_ARCH" == x ]; then
               target_cpu=x64
-            elif [ "$TARGET_ARCH" == "ia32" ]; then
-              target_cpu=x86
             else
               target_cpu="$TARGET_ARCH"
             fi
@@ -952,7 +951,7 @@ step-restore-out-cache: &step-restore-out-cache
     paths:
       - ./src/out/Default
     keys:
-      - v9-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+      - v10-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Restoring out cache
 
 step-set-git-cache-path: &step-set-git-cache-path
@@ -976,7 +975,7 @@ step-save-out-cache: &step-save-out-cache
   save_cache:
     paths:
       - ./src/out/Default
-    key: v9-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
+    key: v10-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
     name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
@@ -1802,54 +1801,6 @@ jobs:
                 attach: false
                 checkout: true
 
-  linux-ia32-testing:
-    executor: linux-docker
-    environment:
-      <<: *env-global
-      <<: *env-ia32
-      <<: *env-testing-build
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: true
-          checkout: true
-          use-out-cache: false
-
-  linux-ia32-release:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-ia32
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: true
-          checkout: true
-
-  linux-ia32-publish:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-ia32
-      <<: *env-release-build
-      <<: *env-32bit-release
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - run: echo running
-      - when:
-          condition:
-            or:
-              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
-              - equal: ["ia32", << pipeline.parameters.linux-publish-arch-limit >>]
-          steps:
-            - electron-publish:
-                attach: false
-                checkout: true
 
   linux-arm-testing:
     executor: linux-docker
@@ -2240,60 +2191,6 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
-  linux-ia32-testing-tests:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-ia32
-      <<: *env-headless-testing
-      <<: *env-stack-dumping
-    parallelism: 3
-    <<: *steps-tests
-
-  linux-ia32-testing-nan:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-ia32
-      <<: *env-headless-testing
-      <<: *env-stack-dumping
-    <<: *steps-test-nan
-
-  linux-ia32-testing-node:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-medium
-      <<: *env-ia32
-      <<: *env-headless-testing
-      <<: *env-stack-dumping
-    <<: *steps-test-node
-
-  linux-ia32-release-tests:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-ia32
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-tests
-
-  linux-ia32-verify-ffmpeg:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-ia32
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-ffmpeg
-
   linux-arm-testing-tests:
     executor: linux-arm
     environment:
@@ -2371,8 +2268,6 @@ workflows:
     jobs:
     - linux-x64-publish:
         context: release-env
-    - linux-ia32-publish:
-        context: release-env
     - linux-arm-publish:
         context: release-env
     - linux-arm64-publish:
@@ -2426,16 +2321,6 @@ workflows:
       - linux-x64-testing-node:
           requires:
             - linux-x64-testing
-      - linux-ia32-testing
-      - linux-ia32-testing-tests:
-          requires:
-            - linux-ia32-testing
-      - linux-ia32-testing-nan:
-          requires:
-            - linux-ia32-testing
-      - linux-ia32-testing-node:
-          requires:
-            - linux-ia32-testing
       - linux-arm-testing
       - linux-arm-testing-tests:
           filters:

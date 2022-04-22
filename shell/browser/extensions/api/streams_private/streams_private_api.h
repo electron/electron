@@ -15,24 +15,16 @@ namespace extensions {
 // rename and move it to make that clear. https://crbug.com/890401.
 class StreamsPrivateAPI {
  public:
-  // Send the onExecuteMimeTypeHandler event to |extension_id|. If the viewer is
-  // being opened in a BrowserPlugin, specify a non-empty |view_id| of the
-  // plugin. |embedded| should be set to whether the document is embedded
-  // within another document. The |frame_tree_node_id| parameter is used for the
-  // top level plugins case. (PDF, etc). If this parameter has a valid value
-  // then it overrides the |render_process_id| and |render_frame_id| parameters.
-  // The |render_process_id| is the id of the renderer process. The
-  // |render_frame_id| is the routing id of the RenderFrameHost.
-  //
-  // If the network service is not enabled, |stream| is used; otherwise,
-  // |transferrable_loader| and |original_url| are used instead.
+  // Send the onExecuteMimeTypeHandler event to |extension_id|. A non-empty
+  // |stream_id| will be used to identify the created stream during
+  // MimeHandlerViewGuest creation. |embedded| should be set to whether the
+  // document is embedded within another document. The |frame_tree_node_id|
+  // parameter is used for the top level plugins case. (PDF, etc).
   static void SendExecuteMimeTypeHandlerEvent(
       const std::string& extension_id,
-      const std::string& view_id,
+      const std::string& stream_id,
       bool embedded,
       int frame_tree_node_id,
-      int render_process_id,
-      int render_frame_id,
       blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
       const GURL& original_url);
 };
