@@ -183,7 +183,7 @@ index ed23267cd9f28f4e02d8374177f0bb697547cc2a..a979719f75ab4c9b49775ec3df5eff13
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 1911b0558fad1d5834befa98e57a978e6e0b72da..cb85515f79617a32e2809ad6eb7f55e4ecc36b3f 100644
+index 1a6bbeea689901e23717d660e67f8d1abb21f799..85f7b42e7aadce3abcae9f9596403f9856771993 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -170,14 +170,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -246,7 +246,7 @@ index c6bd5c19f8a7ceec17c9e32af5296a9617f3a619..02199b439fba7fdc617b7f7980d958b7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 63b01c486f56499bbc2acff0b5abdbf24b0ce676..aeb111257740cd8c73e88c9b15d1f95fd49240c4 100644
+index b9309e1cbc4a8b701534aa8be2827c40d98d6678..c1b1bfc8333e93456178842db392eabff96bf4c9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3891,8 +3891,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -316,7 +316,7 @@ index 7350382146178f58960a9bf68cd959076d2d9790..a70a94d14bdfa993feab60b8e4f32e10
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 56b6d5d28fe21a2bea723060ad48ee0134e814a2..a3da9c86c0018e7f4810feb73ca32896cd6ce93c 100644
+index b652f1f30ce7043a0c8434d05a3b1da653aee1fc..259c62c60f302abebf167709b4a1c68ad5607129 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -402,8 +402,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
