@@ -810,16 +810,11 @@ if (is_mac) {
     # Add the SwiftShader .dylibs in the Libraries directory of the Framework.
     bundle_data("electron_swiftshader_binaries") {
       sources = [
-        "$root_out_dir/egl_intermediates/libswiftshader_libEGL.dylib",
-        "$root_out_dir/egl_intermediates/libswiftshader_libGLESv2.dylib",
         "$root_out_dir/vk_intermediates/libvk_swiftshader.dylib",
         "$root_out_dir/vk_intermediates/vk_swiftshader_icd.json",
       ]
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
-      public_deps = [
-        "//ui/gl:swiftshader_egl_library_copy",
-        "//ui/gl:swiftshader_vk_library_copy",
-      ]
+      public_deps = [ "//ui/gl:swiftshader_vk_library_copy" ]
     }
   }
   group("electron_angle_library") {
@@ -1111,21 +1106,18 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    extract_symbols("swiftshader_egl_syms") {
-      binary = "$root_out_dir/libswiftshader_libEGL.dylib"
+    extract_symbols("egl_syms") {
+      binary = "$root_out_dir/ibEGL.dylib"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/libswiftshader_libEGL.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libEGL.dylib"
-      deps =
-          [ "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL" ]
+      dsym_file = "$root_out_dir/libEGL.dylib.dSYM/Contents/Resources/DWARF/libEGL.dylib"
+      deps = [ "//third_party/angle:libEGL" ]
     }
 
-    extract_symbols("swiftshader_gles_syms") {
-      binary = "$root_out_dir/libswiftshader_libGLESv2.dylib"
+    extract_symbols("gles_syms") {
+      binary = "$root_out_dir/libGLESv2.dylib"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/libswiftshader_libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libGLESv2.dylib"
-      deps = [
-        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
-      ]
+      dsym_file = "$root_out_dir/libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libGLESv2.dylib"
+      deps = [ "//third_party/angle:libGLESv2" ]
     }
 
     extract_symbols("crashpad_handler_syms") {
@@ -1137,10 +1129,10 @@ if (is_mac) {
 
     group("electron_symbols") {
       deps = [
+        ":egl_syms",
         ":electron_app_syms",
         ":electron_framework_syms",
-        ":swiftshader_egl_syms",
-        ":swiftshader_gles_syms",
+        ":gles_syms",
       ]
 
       if (!is_mas_build) {
@@ -1295,27 +1287,23 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    extract_symbols("swiftshader_egl_symbols") {
-      binary = "$root_out_dir/swiftshader/libEGL$_target_shared_library_suffix"
+    extract_symbols("egl_symbols") {
+      binary = "$root_out_dir/libEGL$_target_shared_library_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps =
-          [ "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL" ]
+      deps = [ "//third_party/angle:libEGL" ]
     }
 
-    extract_symbols("swiftshader_gles_symbols") {
-      binary =
-          "$root_out_dir/swiftshader/libGLESv2$_target_shared_library_suffix"
+    extract_symbols("gles_symbols") {
+      binary = "$root_out_dir/libGLESv2$_target_shared_library_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps = [
-        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
-      ]
+      deps = [ "//third_party/angle:libGLESv2" ]
     }
 
     group("electron_symbols") {
       deps = [
+        ":egl_symbols",
         ":electron_app_symbols",
-        ":swiftshader_egl_symbols",
-        ":swiftshader_gles_symbols",
+        ":gles_symbols",
       ]
     }
   }
