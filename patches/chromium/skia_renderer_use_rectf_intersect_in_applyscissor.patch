@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Sat, 2 Apr 2022 01:05:15 +0000
+Subject: Use RectF::Intersect in ApplyScissor
+
+(cherry picked from commit 540e2ecde447b0757dd5bb079a59d8faef3183c1)
+
+Bug: 1299287, 1307317
+Change-Id: I026090466ebfb3dee0e9daf0609f04babcf42092
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3516507
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Reviewed-by: Brian Sheedy <bsheedy@chromium.org>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#982400}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3564640
+Cr-Commit-Position: refs/branch-heads/4896@{#1017}
+Cr-Branched-From: 1f63ff4bc27570761b35ffbc7f938f6586f7bee8-refs/heads/main@{#972766}
+
+diff --git a/components/viz/service/display/skia_renderer.cc b/components/viz/service/display/skia_renderer.cc
+index 43864afb3b3dc3abaa0a114478f9fcee75151679..5c8316bfd14b5ee3af6a3abaf36879c17b114578 100644
+--- a/components/viz/service/display/skia_renderer.cc
++++ b/components/viz/service/display/skia_renderer.cc
+@@ -1402,34 +1402,20 @@ void SkiaRenderer::DrawQuadParams::ApplyScissor(
+   // device space, it will be contained in in the original scissor.
+   // Applying the scissor explicitly means avoiding a clipRect() call and
+   // allows more quads to be batched together in a DrawEdgeAAImageSet call
+-  float left_inset = local_scissor.x() - visible_rect.x();
+-  float top_inset = local_scissor.y() - visible_rect.y();
+-  float right_inset = visible_rect.right() - local_scissor.right();
+-  float bottom_inset = visible_rect.bottom() - local_scissor.bottom();
++  float x_epsilon = kAAEpsilon / content_device_transform.matrix().get(0, 0);
++  float y_epsilon = kAAEpsilon / content_device_transform.matrix().get(1, 1);
+ 
+-  // The scissor is a non-AA clip, so we unset the bit flag for clipped edges.
+-  if (left_inset >= kAAEpsilon) {
++  // The scissor is a non-AA clip, so unset the bit flag for clipped edges.
++  if (local_scissor.x() - visible_rect.x() >= x_epsilon)
+     aa_flags &= ~SkCanvas::kLeft_QuadAAFlag;
+-  } else {
+-    left_inset = 0;
+-  }
+-  if (top_inset >= kAAEpsilon) {
++  if (local_scissor.y() - visible_rect.y() >= y_epsilon)
+     aa_flags &= ~SkCanvas::kTop_QuadAAFlag;
+-  } else {
+-    top_inset = 0;
+-  }
+-  if (right_inset >= kAAEpsilon) {
++  if (visible_rect.right() - local_scissor.right() >= x_epsilon)
+     aa_flags &= ~SkCanvas::kRight_QuadAAFlag;
+-  } else {
+-    right_inset = 0;
+-  }
+-  if (bottom_inset >= kAAEpsilon) {
++  if (visible_rect.bottom() - local_scissor.bottom() >= y_epsilon)
+     aa_flags &= ~SkCanvas::kBottom_QuadAAFlag;
+-  } else {
+-    bottom_inset = 0;
+-  }
+ 
+-  visible_rect.Inset(left_inset, top_inset, right_inset, bottom_inset);
++  visible_rect.Intersect(local_scissor);
+   vis_tex_coords = visible_rect;
+   scissor_rect.reset();
+ }
+diff --git a/content/test/gpu/gpu_tests/test_expectations/pixel_expectations.txt b/content/test/gpu/gpu_tests/test_expectations/pixel_expectations.txt
+index 591f1e5913075748c56656748919c2d0f99f6314..348d58a8108edb20104df4b83b369421a8649b02 100644
+--- a/content/test/gpu/gpu_tests/test_expectations/pixel_expectations.txt
++++ b/content/test/gpu/gpu_tests/test_expectations/pixel_expectations.txt
+@@ -387,6 +387,9 @@ crbug.com/1086687 [ chromeos chromeos-board-kevin ] Pixel_PrecisionRoundedCorner
+ crbug.com/1218288 [ fuchsia-board-astro ] Pixel_PrecisionRoundedCorner [ Skip ]
+ crbug.com/1136875 [ fuchsia-board-qemu-x64 ] Pixel_PrecisionRoundedCorner [ RetryOnFailure ]
+ 
++# Fails on Nexus 5X.
++crbug.com/1307317 [ android android-chromium android-nexus-5x ] Pixel_PrecisionRoundedCorner [ Failure ]
++
+ # Still fails on Nexus 5 after all other Pixel_CanvasLowLatency* pass.
+ crbug.com/1097752 [ android android-nexus-5 ] Pixel_CanvasLowLatencyWebGLAlphaFalse [ Skip ]
+ 
