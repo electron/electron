@@ -40,7 +40,7 @@ index 1b84c9df5990d0905d068ca822d5173313a74edd..89a90a5c8e0c3ede1b0fe63d45c5768b
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 767d3f6454ef3150354911ed683f5485bb83fbbb..f273b56276c1b277b307f6c4c061e08d12daea42 100644
+index 547a5c4260b28d651d470e06c4c4e6bfa77ef966..01fee4e6b104aad68d52f30c9af3e9072f078e0c 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -60,7 +60,7 @@
@@ -60,7 +60,7 @@ index 767d3f6454ef3150354911ed683f5485bb83fbbb..f273b56276c1b277b307f6c4c061e08d
  }
  
  template <typename BaseClass>
-@@ -149,7 +150,9 @@
+@@ -160,7 +161,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {

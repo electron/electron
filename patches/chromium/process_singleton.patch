@@ -235,10 +235,10 @@ index 22331cd6985b2aa2347fe9d4211f51634e94d0a6..be2c417c07a4206fac4a9a6c03e516fd
    return true;
  }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index e2312c65623a3f54ecbc18058720ccae53822e76..ec725b44296266bea1a51aea889463a0bba8449c 100644
+index 363c18e4d9d5c0fe30f843d32df67e97e3d73111..0c87fc8ccb4511904f19b76ae5e03a5df6664391 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -28,7 +28,9 @@
+@@ -29,7 +29,9 @@
  #include "base/win/wmi.h"
  #include "chrome/browser/process_singleton_internal.h"
  #include "chrome/browser/shell_integration.h"

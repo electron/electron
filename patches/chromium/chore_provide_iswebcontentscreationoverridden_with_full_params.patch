@@ -108,10 +108,10 @@ index 6688ba8ba2fb7d930773144cdbc43f1f6fa2b685..22015c7b9b50e1264551ce226757f90e
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 70ee9049e3cb73f55bed81c3e08037df2f4c9e07..8d230826aaf867d9046a6b9ac93a60f4750e52be 100644
+index 4b3f23e1ad661bd52fac90ac6dc4dabf2fbd54d6..1f6f64e0d6f1ce1008485352b6d653b698522380 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1786,12 +1786,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1790,12 +1790,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -127,10 +127,10 @@ index 70ee9049e3cb73f55bed81c3e08037df2f4c9e07..8d230826aaf867d9046a6b9ac93a60f4
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 5edda102ff59ccb30d2150a88e75e8fb65379fca..82aaa442bca9e7a5e57315ace0b1c62e40ec1d24 100644
+index 60795f5e596c96330201c97dc1eef9da200ac099..24536f2ac3099f6b0d4c4618c841ba281079fac2 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -808,8 +808,7 @@ class Browser : public TabStripModelObserver,
+@@ -820,8 +820,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -246,10 +246,10 @@ index c6bd5c19f8a7ceec17c9e32af5296a9617f3a619..02199b439fba7fdc617b7f7980d958b7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b9309e1cbc4a8b701534aa8be2827c40d98d6678..c1b1bfc8333e93456178842db392eabff96bf4c9 100644
+index 533fb62b1965304e7563300871aedbed425cef50..c1424c6766ece5868d529fb57118d0199caa940f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3891,8 +3891,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3896,8 +3896,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -260,7 +260,7 @@ index b9309e1cbc4a8b701534aa8be2827c40d98d6678..c1b1bfc8333e93456178842db392eabf
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 7bb1680553c405a9016cfd67eca5fa3c6439b692..3aa2cca04340098859e1072eaa80a46a8e0463b1 100644
+index c01e06b08b1cca7a663e30476a551904ce9c6db8..9f50a8721560f734270308776f2f37ad49a8cb91 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -134,8 +134,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -274,7 +274,7 @@ index 7bb1680553c405a9016cfd67eca5fa3c6439b692..3aa2cca04340098859e1072eaa80a46a
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index eeafde1fa6067804665954525eafdd482d8eb3f3..b17f371aa489a5b61c28fbcd316b19815f072df9 100644
+index 2556c044b6e28501a5fac9b0040e623b8f35f497..4c6cd654551b2f5cfd59a5271a8d95a9e6862d3c 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -317,8 +317,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -344,10 +344,10 @@ index ef6faf317dd4168adf6fd530a7da0b80f9166dec..f401659a81d4aeaf71039d71eb8fec48
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index 424c5f89440dccc29f3431e034d0a4fd4f647a00..8d40d0bd30fc28e841eedb3f34be3c033db62449 100644
+index 0d7a947e3f1ca31898e7553e80821389661824a6..b190f5751fbc9c42fd6f248a65925404fcd7bb0d 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
-@@ -402,8 +402,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -403,8 +403,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

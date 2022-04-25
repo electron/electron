@@ -40,10 +40,10 @@ index 4ed951d5829e87431a1f9f84f0317978cb673e31..82f9a2f97e71848ece8d04effc083db9
    void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
  
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 53402e4d706f58c26498015c1a5c33b4f7ceabc7..c14ce99ec72881133a5bf2bd90369ee0211f6ca1 100644
+index dc9aad63c1f88f459e0d684f585631c9998975d0..33770fc86ac4f05de445bce6d1f3cba1c7b7d5f7 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1215,6 +1215,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1231,6 +1231,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }
