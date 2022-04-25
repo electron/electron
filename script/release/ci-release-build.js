@@ -110,12 +110,12 @@ async function getCircleCIWorkflowId (pipelineId) {
     switch (pipelineInfo.state) {
       case 'created': {
         const workflows = await circleCIRequest(`${pipelineInfoUrl}/workflow`, 'GET');
-        // The logic below expects two workflow.items: publish [0] & setup [1]
-        if (workflows.items.length === 2) {
+        // The logic below expects three workflow.items: publish, lint, & setup
+        if (workflows.items.length === 3) {
           workflowId = workflows.items.find(item => item.name.includes('publish')).id;
           break;
         }
-        console.log('Unxpected number of workflows, response was:', pipelineInfo);
+        console.log('Unxpected number of workflows, response was:', workflows);
         workflowId = -1;
         break;
       }
