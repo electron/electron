@@ -1119,7 +1119,7 @@ if (is_mac) {
     }
 
     extract_symbols("egl_syms") {
-      binary = "$root_out_dir/ibEGL.dylib"
+      binary = "$root_out_dir/libEGL.dylib"
       symbol_dir = "$root_out_dir/breakpad_symbols"
       dsym_file = "$root_out_dir/libEGL.dylib.dSYM/Contents/Resources/DWARF/libEGL.dylib"
       deps = [ "//third_party/angle:libEGL" ]
