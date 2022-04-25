@@ -169,4 +169,5 @@ follow_wayland_specification_regarding_xkb_keymap.patch
 use-after-free_of_id_and_idref_attributes.patch
 fix_--without-valid_build.patch
 usb_fix_oob_access_with_non-sequential_interfaces.patch
+cherry-pick-1a31e2110440.patch
 m100_change_ownership_of_blobbytesprovider.patch
