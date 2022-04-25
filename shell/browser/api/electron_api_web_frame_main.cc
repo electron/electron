@@ -315,7 +315,7 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
 }
 
 void WebFrameMain::Connect() {
-  if (pending_receiver_) {
+  if (pending_receiver_ && render_frame_->IsRenderFrameCreated()) {
     render_frame_->GetRemoteInterfaces()->GetInterface(
         std::move(pending_receiver_));
   }
