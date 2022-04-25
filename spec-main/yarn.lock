@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@electron/echo@file:./fixtures/native-addon/echo":
+"@electron-ci/echo@file:./fixtures/native-addon/echo":
   version "0.0.1"
 
-"@electron/uv-dlopen@file:./fixtures/native-addon/uv-dlopen":
+"@electron-ci/uv-dlopen@file:./fixtures/native-addon/uv-dlopen":
   version "0.0.1"
 
 "@sinonjs/commons@^1", "@sinonjs/commons@^1.6.0", "@sinonjs/commons@^1.7.0", "@sinonjs/commons@^1.7.2":
