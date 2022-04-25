@@ -12,7 +12,26 @@ import * as fs from 'fs';
 *
 * Because all encryption methods are gated by isEncryptionAvailable, the methods will never return the correct values
 * when run on CI and linux.
+* Refs: https://github.com/electron/electron/issues/30424.
 */
+
+describe('safeStorage module', () => {
+  it('safeStorage before and after app is ready', async () => {
+    const appPath = path.join(__dirname, 'fixtures', 'crash-cases', 'safe-storage');
+    const appProcess = cp.spawn(process.execPath, [appPath]);
+
+    let output = '';
+    appProcess.stdout.on('data', data => { output += data; });
+    appProcess.stderr.on('data', data => { output += data; });
+
+    const code = (await emittedOnce(appProcess, 'exit'))[0] ?? 1;
+
+    if (code !== 0 && output) {
+      console.log(output);
+    }
+    expect(code).to.equal(0);
+  });
+});
 
 ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
   after(async () => {
