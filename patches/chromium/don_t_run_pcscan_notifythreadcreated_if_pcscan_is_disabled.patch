@@ -49,7 +49,7 @@ index d51b37c8a2df11f71fa6056193100d00883db43d..b44002788cf4d4f5d754dd35dd193be2
  #endif
  
 diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thread_win.cc
-index 8542c0d0d49511298cca800a59796b1e4271a3d8..1d0eeff5800f2ccf3f1fb6b1356c8cd067cfd945 100644
+index 5b179a2d15cfc4997410d9467bf9484f5cae0b9f..98296aa4e8d75e94b141694c592dfa83627861ff 100644
 --- a/base/threading/platform_thread_win.cc
 +++ b/base/threading/platform_thread_win.cc
 @@ -30,6 +30,7 @@
