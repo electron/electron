@@ -364,7 +364,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     // Don't show title bar.
     [window_ setTitlebarAppearsTransparent:YES];
     [window_ setTitleVisibility:NSWindowTitleHidden];
-    // Remove non-transparent corners, see https://github.com/electron/electron/issues/517.
+    // Remove non-transparent corners, see
+    // https://github.com/electron/electron/issues/517.
     [window_ setOpaque:NO];
     // Show window buttons if titleBarStyle is not "normal".
     if (title_bar_style_ == TitleBarStyle::kNormal) {
