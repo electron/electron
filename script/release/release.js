@@ -85,7 +85,7 @@ async function validateReleaseAssets (release, validatingRelease) {
     const s3RemoteFiles = s3RemoteFilesForVersion(release.tag_name);
     await verifyShasumsForRemoteFiles(s3RemoteFiles, true);
     const azRemoteFiles = azRemoteFilesForVersion(release.tag_name);
-    await verifyShasumsForRemoteFiles(s3RemoteFiles, true);
+    await verifyShasumsForRemoteFiles(azRemoteFiles, true);
   }
 }
 
