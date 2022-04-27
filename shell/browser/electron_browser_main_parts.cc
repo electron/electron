@@ -495,7 +495,7 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
   config->should_use_preference =
       command_line.HasSwitch(::switches::kEnableEncryptionSelection);
-  base::PathService::Get(DIR_BROWSER_DATA, &config->user_data_path);
+  base::PathService::Get(DIR_SESSION_DATA, &config->user_data_path);
   OSCrypt::SetConfig(std::move(config));
 #endif
 #if BUILDFLAG(IS_POSIX)

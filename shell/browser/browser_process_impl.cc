@@ -110,7 +110,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   // Only use a persistent prefs store when cookie encryption is enabled as that
   // is the only key that needs it
   base::FilePath prefs_path;
-  CHECK(base::PathService::Get(electron::DIR_BROWSER_DATA, &prefs_path));
+  CHECK(base::PathService::Get(electron::DIR_SESSION_DATA, &prefs_path));
   prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   scoped_refptr<JsonPrefStore> user_pref_store =

@@ -473,8 +473,8 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 int GetPathConstant(const std::string& name) {
   if (name == "appData")
     return DIR_APP_DATA;
-  else if (name == "browserData")
-    return DIR_BROWSER_DATA;
+  else if (name == "sessionData")
+    return DIR_SESSION_DATA;
   else if (name == "userData")
     return chrome::DIR_USER_DATA;
   else if (name == "cache")

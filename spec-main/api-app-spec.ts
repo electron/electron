@@ -1079,7 +1079,7 @@ describe('app module', () => {
       expect(() => { app.getPath(badPath as any); }).to.throw();
     });
 
-    describe('browserData', () => {
+    describe('sessionData', () => {
       const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
       const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
       const userDataPath = path.join(app.getPath('appData'), appName);
@@ -1100,12 +1100,12 @@ describe('app module', () => {
 
       it('can be changed', () => {
         expect(fs.existsSync(changedBrowserFile)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath, 'browserData', tempBrowserDataPath]);
+        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
         expect(fs.existsSync(defaultBrowserFile)).to.equal(false);
         expect(fs.existsSync(changedBrowserFile)).to.equal(true);
       });
 
-      it('changing userData affects default browserData', () => {
+      it('changing userData affects default sessionData', () => {
         expect(fs.existsSync(changedBrowserFile)).to.equal(false);
         cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
         expect(fs.existsSync(defaultBrowserFile)).to.equal(false);
