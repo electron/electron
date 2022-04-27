@@ -1084,8 +1084,22 @@ describe('app module', () => {
       const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
       const userDataPath = path.join(app.getPath('appData'), appName);
       const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
-      const defaultBrowserFile = path.join(userDataPath, 'Preferences');
-      const changedBrowserFile = path.join(tempBrowserDataPath, 'Preferences');
+
+      const sessionFiles = [
+        'Preferences',
+        'Code Cache',
+        'Local Storage',
+        'IndexedDB',
+        'Service Worker'
+      ];
+      const hasSessionFiles = (dir: string) => {
+        for (const file of sessionFiles) {
+          if (!fs.existsSync(path.join(dir, file))) {
+            return false;
+          }
+        }
+        return true;
+      };
 
       beforeEach(() => {
         fs.removeSync(userDataPath);
@@ -1093,23 +1107,23 @@ describe('app module', () => {
       });
 
       it('writes to userData by default', () => {
-        expect(fs.existsSync(defaultBrowserFile)).to.equal(false);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
         cp.spawnSync(process.execPath, [appPath]);
-        expect(fs.existsSync(defaultBrowserFile)).to.equal(true);
+        expect(hasSessionFiles(userDataPath)).to.equal(true);
       });
 
       it('can be changed', () => {
-        expect(fs.existsSync(changedBrowserFile)).to.equal(false);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
         cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
-        expect(fs.existsSync(defaultBrowserFile)).to.equal(false);
-        expect(fs.existsSync(changedBrowserFile)).to.equal(true);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
       });
 
       it('changing userData affects default sessionData', () => {
-        expect(fs.existsSync(changedBrowserFile)).to.equal(false);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
         cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
-        expect(fs.existsSync(defaultBrowserFile)).to.equal(false);
-        expect(fs.existsSync(changedBrowserFile)).to.equal(true);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
       });
     });
   });
