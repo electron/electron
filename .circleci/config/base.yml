@@ -339,6 +339,19 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
       echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
       cd ..
+      touch "${TMPDIR:=/tmp}"/.goma-ready
+    background: true
+
+step-wait-for-goma: &step-wait-for-goma
+  run:
+    name: Wait for Goma
+    command: |
+      until [ -f "${TMPDIR:=/tmp}"/.goma-ready ]
+      do
+          sleep 5
+      done
+      echo "Goma ready"
+    no_output_timeout: 2m
 
 step-restore-brew-cache: &step-restore-brew-cache
   restore_cache:
@@ -574,14 +587,6 @@ step-electron-build: &step-electron-build
       cp out/Default/.ninja_log out/electron_ninja_log
       node electron/script/check-symlinks.js
 
-step-native-unittests-build: &step-native-unittests-build
-  run:
-    name: Build native test targets
-    no_output_timeout: 30m
-    command: |
-      cd src
-      ninja -C out/Default shell_browser_ui_unittests -j $NUMBER_OF_NINJA_PROCESSES
-
 step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
     name: Strip electron binaries
@@ -596,38 +601,6 @@ step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
         electron/script/copy-debug-symbols.py --target-cpu="$target_cpu" --out-dir=out/Default/debug --compress
         electron/script/strip-binaries.py --target-cpu="$target_cpu"
         electron/script/add-debug-link.py --target-cpu="$target_cpu" --debug-dir=out/Default/debug
-      fi
-
-step-electron-dist-build: &step-electron-dist-build
-  run:
-    name: Build dist.zip
-    command: |
-      cd src
-      if [ "$SKIP_DIST_ZIP" != "1" ]; then
-        ninja -C out/Default electron:electron_dist_zip
-        if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
-          if [ "`uname`" == "Darwin" ]; then
-            target_os=mac
-            target_cpu=x64
-            if [ x"$MAS_BUILD" == x"true" ]; then
-              target_os=mac_mas
-            fi
-            if [ "$TARGET_ARCH" == "arm64" ]; then
-              target_cpu=arm64
-            fi
-          elif [ "`uname`" == "Linux" ]; then
-            target_os=linux
-            if [ x"$TARGET_ARCH" == x ]; then
-              target_cpu=x64
-            else
-              target_cpu="$TARGET_ARCH"
-            fi
-          else
-            echo "Unknown system: `uname`"
-            exit 1
-          fi
-          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
-        fi
       fi
 
 step-electron-chromedriver-build: &step-electron-chromedriver-build
@@ -682,7 +655,6 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/out/Default/dist.zip
       - src/out/Default/mksnapshot.zip
       - src/out/Default/chromedriver.zip
-      - src/out/Default/shell_browser_ui_unittests
       - src/out/Default/gen/node_headers
       - src/out/Default/overlapped-checker
       - src/out/ffmpeg/ffmpeg.zip
@@ -794,6 +766,7 @@ step-show-goma-stats: &step-show-goma-stats
       $LOCAL_GOMA_DIR/diagnose_goma_log.py
       true
     when: always
+    background: true
 
 step-mksnapshot-build: &step-mksnapshot-build
   run:
@@ -821,13 +794,6 @@ step-mksnapshot-build: &step-mksnapshot-build
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
-
-step-nodejs-build-test-executable: &step-nodejs-build-test-executable
-  run:
-    name: Build Node.js Test Executables
-    command: |
-      cd src
-      ninja -C out/Default third_party/electron_node:overlapped-checker
 
 step-hunspell-build: &step-hunspell-build
   run:
@@ -1044,12 +1010,16 @@ step-ts-compile: &step-ts-compile
 # List of all steps.
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
-    - attach_workspace:
-        at: .
+    - *step-checkout-electron
+    - *step-depot-tools-get
     - *step-depot-tools-add-to-path
     - *step-install-python2-on-mac
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
+    - *step-generate-deps-hash
+    - *step-touch-sync-done
+    - maybe-restore-portaled-src-cache
+    - *step-wait-for-goma
     - *step-gn-gen-default
     - *step-gn-check
 
@@ -1063,6 +1033,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-install-gnutar-on-mac
     - *step-install-python2-on-mac
     - *step-get-more-space-on-mac
+    - *step-setup-goma-for-build
     - *step-generate-deps-hash
     - *step-touch-sync-done
     - maybe-restore-portaled-src-cache
@@ -1082,7 +1053,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
 
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
-    - *step-setup-goma-for-build
+    - *step-wait-for-goma
     - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
     - *step-fix-sync
@@ -1099,6 +1070,7 @@ steps-native-tests: &steps-native-tests
     - *step-install-python2-on-mac
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
+    - *step-wait-for-goma
     - *step-gn-gen-default
 
     - run:
@@ -1284,7 +1256,6 @@ commands:
               fi
             }
             mv_if_exist src/out/Default/dist.zip
-            mv_if_exist src/out/Default/shell_browser_ui_unittests
             mv_if_exist src/out/Default/gen/node_headers.tar.gz
             mv_if_exist src/out/Default/symbols.zip
             mv_if_exist src/out/Default/mksnapshot.zip
@@ -1322,6 +1293,44 @@ commands:
       - *step-checkout-electron
       - *step-run-electron-only-hooks
       - *step-generate-deps-hash-cleanly
+
+  step-electron-dist-build:
+    parameters:
+      additional-targets:
+        type: string
+        default: ''
+    steps:
+      - run:
+          name: Build dist.zip
+          command: |
+            cd src
+            if [ "$SKIP_DIST_ZIP" != "1" ]; then
+              ninja -C out/Default electron:electron_dist_zip << parameters.additional-targets >>
+              if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+                if [ "`uname`" == "Darwin" ]; then
+                  target_os=mac
+                  target_cpu=x64
+                  if [ x"$MAS_BUILD" == x"true" ]; then
+                    target_os=mac_mas
+                  fi
+                  if [ "$TARGET_ARCH" == "arm64" ]; then
+                    target_cpu=arm64
+                  fi
+                elif [ "`uname`" == "Linux" ]; then
+                  target_os=linux
+                  if [ x"$TARGET_ARCH" == x ]; then
+                    target_cpu=x64
+                  else
+                    target_cpu="$TARGET_ARCH"
+                  fi
+                else
+                  echo "Unknown system: `uname`"
+                  exit 1
+                fi
+                electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
+              fi
+            fi
+
   electron-build:
     parameters:
       attach:
@@ -1368,6 +1377,10 @@ commands:
       - *step-install-gnutar-on-mac
       - *step-install-python2-on-mac
       - *step-save-brew-cache
+      - when:
+          condition: << parameters.build >>
+          steps:
+            - *step-setup-goma-for-build
       - when:
           condition: << parameters.checkout-and-assume-cache >>
           steps:
@@ -1462,7 +1475,7 @@ commands:
           steps:
             - *step-depot-tools-add-to-path
             - *step-setup-env-for-build
-            - *step-setup-goma-for-build
+            - *step-wait-for-goma
             - *step-get-more-space-on-mac
             - *step-fix-sync
             - *step-delete-git-directories
@@ -1475,16 +1488,8 @@ commands:
             - *step-gn-gen-default
             - *step-electron-build
             - *step-maybe-electron-dist-strip
-            - *step-electron-dist-build
-
-            # Native test targets
-            - *step-native-unittests-build
-
-            # Node.js headers
-            - *step-nodejs-headers-build
-
-            # Node.js test executable
-            - *step-nodejs-build-test-executable
+            - step-electron-dist-build:
+                additional-targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
 
             - *step-show-goma-stats
 
@@ -1502,13 +1507,14 @@ commands:
                   - *step-ffmpeg-gn-gen
                   - *step-ffmpeg-build
 
-            # hunspell
-            - *step-hunspell-build
-
       # Save all data needed for a further tests run.
       - when:
           condition: << parameters.persist >>
           steps:
+            - *step-minimize-workspace-size-from-checkout
+            - run: |
+                rm -rf src/third_party/electron_node/deps/openssl
+                rm -rf src/third_party/electron_node/deps/v8
             - *step-persist-data-for-tests
 
       - when:
@@ -1575,6 +1581,7 @@ commands:
       - *step-fix-sync
       - *step-setup-env-for-build
       - *step-setup-goma-for-build
+      - *step-wait-for-goma
       - *step-gn-gen-default
 
       # Electron app
@@ -1582,7 +1589,7 @@ commands:
       - *step-show-goma-stats
       - *step-maybe-generate-breakpad-symbols
       - *step-maybe-electron-dist-strip
-      - *step-electron-dist-build
+      - step-electron-dist-build
       - *step-maybe-zip-symbols
 
       # mksnapshot
@@ -1623,20 +1630,10 @@ jobs:
     <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.
-  linux-checkout-for-workspace:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: false
-          build: false
-          checkout: true
-          persist-checkout: true
-
   linux-make-src-cache:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1687,22 +1684,10 @@ jobs:
           persist-checkout: true
           restore-src-cache: false
 
-  mac-checkout-for-workspace:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-testing-build
-      <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    steps:
-      - electron-build:
-          persist: false
-          build: false
-          checkout: true
-          persist-checkout: true
-
   mac-make-src-cache:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: xlarge
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1727,7 +1712,8 @@ jobs:
     steps:
       - electron-build:
           persist: true
-          checkout: true
+          checkout: false
+          checkout-and-assume-cache: true
           use-out-cache: false
 
   linux-x64-testing-asan:
@@ -1767,6 +1753,7 @@ jobs:
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-gn-check
 
   linux-x64-release:
@@ -1815,7 +1802,8 @@ jobs:
     steps:
       - electron-build:
           persist: true
-          checkout: true
+          checkout: false
+          checkout-and-assume-cache: true
           use-out-cache: false
 
   linux-arm-release:
@@ -1867,7 +1855,8 @@ jobs:
     steps:
       - electron-build:
           persist: true
-          checkout: true
+          checkout: false
+          checkout-and-assume-cache: true
           use-out-cache: false
 
   linux-arm64-testing-gn-check:
@@ -1878,6 +1867,7 @@ jobs:
       <<: *env-linux-medium
       <<: *env-arm64
       <<: *env-testing-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-gn-check
 
   linux-arm64-release:
@@ -1939,6 +1929,7 @@ jobs:
     environment:
       <<: *env-machine-mac
       <<: *env-testing-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-electron-gn-check
 
   osx-publish-x64-skip-checkout:
@@ -2029,6 +2020,7 @@ jobs:
       <<: *env-machine-mac
       <<: *env-mas
       <<: *env-testing-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-electron-gn-check
 
   mas-publish-x64-skip-checkout:
@@ -2301,14 +2293,19 @@ workflows:
         - equal: [false, << pipeline.parameters.run-linux-publish >>]
         - equal: [true, << pipeline.parameters.run-build-linux >>]
     jobs:
-      - linux-checkout-for-workspace
       - linux-make-src-cache
-      - linux-x64-testing
-      - linux-x64-testing-asan
-      - linux-x64-testing-no-run-as-node
+      - linux-x64-testing:
+          requires:
+            - linux-make-src-cache
+      - linux-x64-testing-asan:
+          requires:
+            - linux-make-src-cache
+      - linux-x64-testing-no-run-as-node:
+          requires:
+            - linux-make-src-cache
       - linux-x64-testing-gn-check:
           requires:
-            - linux-checkout-for-workspace
+            - linux-make-src-cache
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
@@ -2321,7 +2318,9 @@ workflows:
       - linux-x64-testing-node:
           requires:
             - linux-x64-testing
-      - linux-arm-testing
+      - linux-arm-testing:
+          requires:
+            - linux-make-src-cache
       - linux-arm-testing-tests:
           filters:
             branches:
@@ -2329,7 +2328,9 @@ workflows:
               ignore: /pull\/[0-9]+/        
           requires:
             - linux-arm-testing      
-      - linux-arm64-testing
+      - linux-arm64-testing:
+          requires:
+            - linux-make-src-cache
       - linux-arm64-testing-tests:
           filters:
             branches:
@@ -2339,7 +2340,7 @@ workflows:
             - linux-arm64-testing
       - linux-arm64-testing-gn-check:
           requires:
-            - linux-checkout-for-workspace
+            - linux-make-src-cache
 
   build-mac:
     when:
@@ -2348,14 +2349,13 @@ workflows:
         - equal: [false, << pipeline.parameters.run-linux-publish >>]
         - equal: [true, << pipeline.parameters.run-build-mac >>]
     jobs:
-      - mac-checkout-for-workspace
       - mac-make-src-cache
       - osx-testing-x64:
           requires:
             - mac-make-src-cache
       - osx-testing-x64-gn-check:
           requires:
-            - mac-checkout-for-workspace
+            - mac-make-src-cache
       - osx-testing-x64-tests:
           requires:
             - osx-testing-x64
@@ -2374,7 +2374,7 @@ workflows:
             - mac-make-src-cache
       - mas-testing-x64-gn-check:
           requires:
-            - mac-checkout-for-workspace
+            - mac-make-src-cache
       - mas-testing-x64-tests:
           requires:
             - mas-testing-x64
