@@ -1363,6 +1363,7 @@ commands:
             - *step-checkout-electron
             - *step-run-electron-only-hooks
             - *step-generate-deps-hash-cleanly
+            - *step-touch-sync-done
             - when:
                 condition: << parameters.save-git-cache >>
                 steps:
