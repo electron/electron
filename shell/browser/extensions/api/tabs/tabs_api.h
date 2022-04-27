@@ -46,9 +46,19 @@ class TabsExecuteScriptFunction : public ExecuteCodeInTabFunction {
   DECLARE_EXTENSION_FUNCTION("tabs.executeScript", TABS_EXECUTESCRIPT)
 };
 
+class TabsReloadFunction : public ExtensionFunction {
+  ~TabsReloadFunction() override {}
+
+  ResponseAction Run() override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.reload", TABS_RELOAD)
+};
+
 class TabsGetFunction : public ExtensionFunction {
   ~TabsGetFunction() override {}
+
   ResponseAction Run() override;
+
   DECLARE_EXTENSION_FUNCTION("tabs.get", TABS_GET)
 };
 

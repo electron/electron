@@ -182,6 +182,30 @@ bool TabsExecuteScriptFunction::ShouldRemoveCSS() const {
   return false;
 }
 
+ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
+  std::unique_ptr<tabs::Reload::Params> params(
+      tabs::Reload::Params::Create(args()));
+  EXTENSION_FUNCTION_VALIDATE(params.get());
+
+  bool bypass_cache = false;
+  if (params->reload_properties.get() &&
+      params->reload_properties->bypass_cache.get()) {
+    bypass_cache = *params->reload_properties->bypass_cache;
+  }
+
+  int tab_id = params->tab_id ? *params->tab_id : -1;
+  auto* contents = electron::api::WebContents::FromID(tab_id);
+  if (!contents)
+    return RespondNow(Error("No such tab"));
+
+  contents->web_contents()->GetController().Reload(
+      bypass_cache ? content::ReloadType::BYPASSING_CACHE
+                   : content::ReloadType::NORMAL,
+      true);
+
+  return RespondNow(NoArguments());
+}
+
 ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   std::unique_ptr<tabs::Get::Params> params(tabs::Get::Params::Create(args()));
   EXTENSION_FUNCTION_VALIDATE(params.get());
@@ -262,17 +286,17 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
   auto* zoom_controller = contents->GetZoomController();
   WebContentsZoomController::ZoomMode zoom_mode =
       contents->GetZoomController()->zoom_mode();
-  api::tabs::ZoomSettings zoom_settings;
+  tabs::ZoomSettings zoom_settings;
   ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
   zoom_settings.default_zoom_factor = std::make_unique<double>(
       blink::PageZoomLevelToZoomFactor(zoom_controller->GetDefaultZoomLevel()));
 
   return RespondNow(
-      ArgumentList(api::tabs::GetZoomSettings::Results::Create(zoom_settings)));
+      ArgumentList(tabs::GetZoomSettings::Results::Create(zoom_settings)));
 }
 
 ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
-  using api::tabs::ZoomSettings;
+  using tabs::ZoomSettings;
 
   std::unique_ptr<tabs::SetZoomSettings::Params> params(
       tabs::SetZoomSettings::Params::Create(args()));
