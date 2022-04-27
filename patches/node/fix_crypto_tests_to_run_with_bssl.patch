@@ -31,7 +31,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a20
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..b21eb4b97ad778304b3a4e8d549e109614350dfb 100644
+index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0de416463 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -50,7 +50,9 @@ const errMessages = {
@@ -739,7 +739,7 @@ index d1782359277dc52d7a60830a6dd958544d610e6b..4c781f062bc505b860b821773070551f
 +  assert.match(legacyObject.serialNumber, legacyObjectCheck.serialNumberPattern);
  }
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9cb14f0e1 100644
+index a8ceb169de2b3de73f062083c42292babc673e73..a3bb574d0e5dc85b4ba3fb0b3bd8782fbb8c8700 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
 @@ -67,7 +67,7 @@ assert.throws(() => {
@@ -769,16 +769,16 @@ index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9
           !('opensslErrorStack' in err);
  });
  
-@@ -137,8 +137,6 @@ assert(crypto.getHashes().includes('sha1'));
+@@ -150,8 +150,6 @@ assert(crypto.getHashes().includes('sha1'));
  assert(crypto.getHashes().includes('sha256'));
  assert(!crypto.getHashes().includes('SHA1'));
  assert(!crypto.getHashes().includes('SHA256'));
 -assert(crypto.getHashes().includes('RSA-SHA1'));
 -assert(!crypto.getHashes().includes('rsa-sha1'));
  validateList(crypto.getHashes());
- 
- // Assume that we have at least secp384r1.
-@@ -172,7 +170,7 @@ const encodingError = {
+ // Make sure all of the hashes are supported by OpenSSL
+ for (const algo of crypto.getHashes())
+@@ -188,7 +186,7 @@ const encodingError = {
  // hex input that's not a power of two should throw, not assert in C++ land.
  ['createCipher', 'createDecipher'].forEach((funcName) => {
    assert.throws(
@@ -787,7 +787,7 @@ index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9
      (error) => {
        assert.ok(!('opensslErrorStack' in error));
        if (common.hasFipsCrypto) {
-@@ -224,15 +222,15 @@ assert.throws(() => {
+@@ -240,15 +238,15 @@ assert.throws(() => {
      library: 'rsa routines',
    } : {
      name: 'Error',
@@ -808,7 +808,7 @@ index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9
  if (!common.hasOpenSSL3) {
    assert.throws(() => {
      // The correct header inside `rsa_private_pkcs8_bad.pem` should have been
-@@ -260,7 +258,7 @@ if (!common.hasOpenSSL3) {
+@@ -276,7 +274,7 @@ if (!common.hasOpenSSL3) {
      return true;
    });
  }

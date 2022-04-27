@@ -12,7 +12,7 @@ allocator that does handle these cases.
 Upstreamed in https://github.com/nodejs/node/pull/38362.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 5bf19a0dda42849159d954181058897c45d280fd..03078ff3869fcd17101f1cdaf77f725dbbfa43e8 100644
+index 1add2976e7c48e6704400b9ea0795b934ab0bfc2..2abf5994405e8da2a04d1b23b75ccd3658398474 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -475,8 +475,9 @@ MultiIsolatePlatform* CreatePlatform(
@@ -40,7 +40,7 @@ index 5bf19a0dda42849159d954181058897c45d280fd..03078ff3869fcd17101f1cdaf77f725d
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context) {
 diff --git a/src/node.h b/src/node.h
-index 7ca7502e086190c87ae6a61dca2192253894e906..b2b766f242e02593631be087fceaf63f71d74284 100644
+index 9b9ff1c86ceeaeca828328065e2ad5573ea17fc5..0a9f5139276eb2e102b41a586adf61fa563b47d6 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -332,7 +332,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
@@ -53,7 +53,7 @@ index 7ca7502e086190c87ae6a61dca2192253894e906..b2b766f242e02593631be087fceaf63f
  };
  
  enum IsolateSettingsFlags {
-@@ -528,7 +529,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
+@@ -529,7 +530,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
  NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
      NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
          int thread_pool_size,

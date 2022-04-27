@@ -18,10 +18,10 @@ index 8bfecba74d4d90e9fbf0e2cd301118e4adc6cba8..63e1149f0c4a39cb944114e5824d6074
      "-Wno-unreachable-code-return",
      "-Wno-unused-but-set-variable",
 diff --git a/deps/nghttp2/lib/nghttp2_hd.c b/deps/nghttp2/lib/nghttp2_hd.c
-index 5e8693152599215261e47b152d565bbd9a0083e7..6d54e91dea6d77ad8925ad0452fd2a0a36f35f73 100644
+index 30ee9b88920c0a0bb8f8b714e3deabe0207cac40..010edf48f614c23e971df0f37716275cc1656469 100644
 --- a/deps/nghttp2/lib/nghttp2_hd.c
 +++ b/deps/nghttp2/lib/nghttp2_hd.c
-@@ -1891,7 +1891,7 @@ ssize_t nghttp2_hd_inflate_hd_nv(nghttp2_hd_inflater *inflater,
+@@ -1892,7 +1892,7 @@ ssize_t nghttp2_hd_inflate_hd_nv(nghttp2_hd_inflater *inflater,
          rv = NGHTTP2_ERR_HEADER_COMP;
          goto fail;
        }
@@ -30,7 +30,7 @@ index 5e8693152599215261e47b152d565bbd9a0083e7..6d54e91dea6d77ad8925ad0452fd2a0a
      case NGHTTP2_HD_STATE_INFLATE_START:
      case NGHTTP2_HD_STATE_OPCODE:
        if ((*in & 0xe0u) == 0x20u) {
-@@ -2001,7 +2001,7 @@ ssize_t nghttp2_hd_inflate_hd_nv(nghttp2_hd_inflater *inflater,
+@@ -2002,7 +2002,7 @@ ssize_t nghttp2_hd_inflate_hd_nv(nghttp2_hd_inflater *inflater,
        inflater->left = 0;
        inflater->shift = 0;
        DEBUGF("inflatehd: huffman encoded=%d\n", inflater->huffman_encoded != 0);
@@ -39,7 +39,7 @@ index 5e8693152599215261e47b152d565bbd9a0083e7..6d54e91dea6d77ad8925ad0452fd2a0a
      case NGHTTP2_HD_STATE_NEWNAME_READ_NAMELEN:
        rfin = 0;
        rv = hd_inflate_read_len(inflater, &rfin, in, last, 7, NGHTTP2_HD_MAX_NV);
-@@ -2085,7 +2085,7 @@ ssize_t nghttp2_hd_inflate_hd_nv(nghttp2_hd_inflater *inflater,
+@@ -2086,7 +2086,7 @@ ssize_t nghttp2_hd_inflate_hd_nv(nghttp2_hd_inflater *inflater,
        inflater->left = 0;
        inflater->shift = 0;
        DEBUGF("inflatehd: huffman encoded=%d\n", inflater->huffman_encoded != 0);
@@ -49,7 +49,7 @@ index 5e8693152599215261e47b152d565bbd9a0083e7..6d54e91dea6d77ad8925ad0452fd2a0a
        rfin = 0;
        rv = hd_inflate_read_len(inflater, &rfin, in, last, 7, NGHTTP2_HD_MAX_NV);
 diff --git a/deps/nghttp2/lib/nghttp2_session.c b/deps/nghttp2/lib/nghttp2_session.c
-index 36f1179f72a22595dda0b98927d87e2098cad4df..f007dbf410b1bdc5d1f603aa85c3a4f0704e9741 100644
+index 380a47c1b1e82b015c271e2818aed0baf982aa2d..2f3997709cd07f6f8294f985f60b2e1e4b85a2cf 100644
 --- a/deps/nghttp2/lib/nghttp2_session.c
 +++ b/deps/nghttp2/lib/nghttp2_session.c
 @@ -2644,10 +2644,10 @@ static int session_after_frame_sent1(nghttp2_session *session) {

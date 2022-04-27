@@ -7,10 +7,10 @@ This patch initializes asar support in workers threads in
 Node.js.
 
 diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
-index 2af6b11c97ecdca3c40792ab35c69b07b9db76a0..e79ce2b79a5f88a315ac013b6e12534ba1531d6b 100644
+index 899d5a906683e8967746e10a6de452e99e236903..4c459b58b5a048d9d8a4f15f4011e7cce68089f4 100644
 --- a/lib/internal/bootstrap/pre_execution.js
 +++ b/lib/internal/bootstrap/pre_execution.js
-@@ -498,6 +498,7 @@ module.exports = {
+@@ -563,6 +563,7 @@ module.exports = {
    loadPreloadModules,
    setupTraceCategoryState,
    setupInspectorHooks,
@@ -19,10 +19,10 @@ index 2af6b11c97ecdca3c40792ab35c69b07b9db76a0..e79ce2b79a5f88a315ac013b6e12534b
    initializeCJSLoader,
    initializeWASI
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index 2e5d6b01d86e34549c1c7a3d3128350cad2b0c47..74ab84ca39a01269925ca0e326e4aa8894fce8a1 100644
+index 110a3ed1637b642b1d83fb36549cced151b9c5cd..50da62d11bf87c333322264f26e5b427efc7d46b 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
-@@ -27,6 +27,7 @@ const {
+@@ -29,6 +29,7 @@ const {
    initializeReport,
    initializeSourceMapsHandlers,
    loadPreloadModules,
@@ -30,7 +30,7 @@ index 2e5d6b01d86e34549c1c7a3d3128350cad2b0c47..74ab84ca39a01269925ca0e326e4aa88
    setupTraceCategoryState
  } = require('internal/bootstrap/pre_execution');
  
-@@ -154,6 +155,8 @@ port.on('message', (message) => {
+@@ -158,6 +159,8 @@ port.on('message', (message) => {
      };
      workerIo.sharedCwdCounter = cwdCounter;
  
