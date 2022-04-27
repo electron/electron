@@ -14,6 +14,7 @@
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
+#include "base/strings/escape.h"
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
 #include "base/threading/sequenced_task_runner_handle.h"
@@ -33,7 +34,6 @@
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
-#include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -88,7 +88,7 @@ namespace {
 
 // Convert string to lower case and escape it.
 std::string MakePartitionName(const std::string& input) {
-  return net::EscapePath(base::ToLowerASCII(input));
+  return base::EscapePath(base::ToLowerASCII(input));
 }
 
 }  // namespace

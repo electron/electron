@@ -21,6 +21,7 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/stl_util.h"
+#include "base/strings/escape.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -57,7 +58,6 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
-#include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
@@ -1038,7 +1038,7 @@ void HandleExternalProtocolInUI(
   if (!permission_helper)
     return;
 
-  GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
+  GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
   permission_helper->RequestOpenExternalPermission(std::move(callback),
                                                    has_user_gesture, url);
