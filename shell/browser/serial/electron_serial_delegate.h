@@ -39,6 +39,16 @@ class ElectronSerialDelegate : public content::SerialDelegate {
                    Observer* observer) override;
   void RemoveObserver(content::RenderFrameHost* frame,
                       Observer* observer) override;
+  // Revokes |frame| permission to access port identified by |token| ordered by
+  // website.
+  void RevokePortPermissionWebInitiated(
+      content::RenderFrameHost* frame,
+      const base::UnguessableToken& token) override;
+
+  // Gets the port info for a particular port, identified by its |token|.
+  const device::mojom::SerialPortInfo* GetPortInfo(
+      content::RenderFrameHost* frame,
+      const base::UnguessableToken& token) override;
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
 
