@@ -15,7 +15,7 @@ namespace {
 struct TranslaterHolder {
   explicit TranslaterHolder(v8::Isolate* isolate)
       : handle(isolate, v8::External::New(isolate, this)) {
-    handle.SetWeak(this, &GC, v8::WeakCallbackType::kFinalizer);
+    handle.SetWeak(this, &GC, v8::WeakCallbackType::kParameter);
   }
   ~TranslaterHolder() {
     if (!handle.IsEmpty()) {
