@@ -48,6 +48,9 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
   void OnPortManagerConnectionError() override {}
 
+  // permissions::ChooserContextBase::PermissionObserver:
+  void OnPermissionRevoked(const url::Origin& origin) override;
+
  private:
   api::Session* GetSession();
   void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
