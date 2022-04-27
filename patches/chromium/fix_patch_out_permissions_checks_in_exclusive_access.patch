@@ -14,7 +14,7 @@ but it's not strictly necessary for this API to work to spec.
 Profile check has been upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3247196
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 467fed776d390e1a10075d62dab75fd8a6789627..8793077e77a8ac19d7bd8fa67d65fcedef5cb450 100644
+index 467fed776d390e1a10075d62dab75fd8a6789627..5992117c90fbff008cf2f6a914f85c90ea117e47 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -74,7 +74,7 @@ index 467fed776d390e1a10075d62dab75fd8a6789627..8793077e77a8ac19d7bd8fa67d65fced
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -429,13 +439,9 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -429,17 +439,15 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -90,7 +90,13 @@ index 467fed776d390e1a10075d62dab75fd8a6789627..8793077e77a8ac19d7bd8fa67d65fced
  #endif
  
    toggled_into_fullscreen_ = true;
-@@ -449,6 +455,7 @@ void FullscreenController::EnterFullscreenModeInternal(
++#if 0
+   bool entering_tab_fullscreen = option == TAB && !tab_fullscreen_;
++#endif
+   GURL url;
+   if (option == TAB) {
+     url = GetRequestingOrigin();
+@@ -449,6 +457,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        url = extension_caused_fullscreen_;
    }
  
@@ -98,7 +104,7 @@ index 467fed776d390e1a10075d62dab75fd8a6789627..8793077e77a8ac19d7bd8fa67d65fced
    if (option == TAB && display_id != display::kInvalidDisplayId) {
      // Check, but do not prompt, for permission to request a specific screen.
      // Sites generally need permission to get the display id in the first place.
-@@ -466,6 +473,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -466,6 +475,7 @@ void FullscreenController::EnterFullscreenModeInternal(
            GetDisplayId(WebContents::FromRenderFrameHost(requesting_frame));
      }
    }
