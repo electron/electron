@@ -554,7 +554,7 @@ index 156b987aa9cafb69c04bed483aa78f26baa9cd97..fd50e8ca937878d73f9ae4c22aec204e
    // Tells the browser that there are invalid printer settings.
    ShowInvalidPrinterSettingsError();
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index e0ecf8f3f09dafe44a5220117281a08e38a61bef..a56e6fad3241dc208f86a99f3f307be02aa62a06 100644
+index e0ecf8f3f09dafe44a5220117281a08e38a61bef..01059e34e4c90c681dd347ad4876c0fb208b0d21 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -41,6 +41,7 @@
@@ -659,7 +659,7 @@ index e0ecf8f3f09dafe44a5220117281a08e38a61bef..a56e6fad3241dc208f86a99f3f307be0
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2300,36 +2315,51 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2300,36 +2315,52 @@ void PrintRenderFrameHelper::IPCProcessed() {
    }
  }
  
@@ -680,7 +680,8 @@ index e0ecf8f3f09dafe44a5220117281a08e38a61bef..a56e6fad3241dc208f86a99f3f307be0
 +    bool canceled = false;
 +    int cookie =
 +      print_pages_params_ ? print_pages_params_->params->document_cookie : 0;
-+    GetPrintManagerHost()->UpdatePrintSettings(cookie, new_settings.Clone(), &settings, &canceled);
++    GetPrintManagerHost()->UpdatePrintSettings(
++      cookie, new_settings.GetDict().Clone(), &settings, &canceled);
 +    if (canceled)
 +      return false;
 +  }
@@ -723,7 +724,7 @@ index e0ecf8f3f09dafe44a5220117281a08e38a61bef..a56e6fad3241dc208f86a99f3f307be0
      notify_browser_of_print_failure_ = false;
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
-@@ -2454,7 +2484,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
+@@ -2454,7 +2485,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
        std::move(params),
        base::BindOnce(
            [](base::OnceClosure quit_closure, mojom::PrintPagesParamsPtr* output,
@@ -732,7 +733,7 @@ index e0ecf8f3f09dafe44a5220117281a08e38a61bef..a56e6fad3241dc208f86a99f3f307be0
              *output = std::move(input);
              std::move(quit_closure).Run();
            },
-@@ -2705,18 +2735,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type,
+@@ -2705,18 +2736,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type,
  }
  
  bool PrintRenderFrameHelper::CheckForCancel() {
