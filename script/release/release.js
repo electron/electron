@@ -17,8 +17,8 @@ const pkgVersion = `v${pkg.version}`;
 const path = require('path');
 const temp = require('temp').track();
 const { URL } = require('url');
+const { BlobServiceClient } = require('@azure/storage-blob');
 const { Octokit } = require('@octokit/rest');
-const AWS = require('aws-sdk');
 
 require('colors');
 const pass = '✓'.green;
@@ -80,6 +80,8 @@ async function validateReleaseAssets (release, validatingRelease) {
     }
     const s3RemoteFiles = s3RemoteFilesForVersion(release.tag_name);
     await verifyShasumsForRemoteFiles(s3RemoteFiles, true);
+    const azRemoteFiles = azRemoteFilesForVersion(release.tag_name);
+    await verifyShasumsForRemoteFiles(azRemoteFiles, true);
   }
 }
 
@@ -177,26 +179,36 @@ function assetsForVersion (version, validatingRelease) {
   return patterns;
 }
 
+const cloudStoreFilePaths = (version) => [
+  `iojs-${version}-headers.tar.gz`,
+  `iojs-${version}.tar.gz`,
+  `node-${version}.tar.gz`,
+  'node.lib',
+  'x64/node.lib',
+  'win-x64/iojs.lib',
+  'win-x86/iojs.lib',
+  'win-arm64/iojs.lib',
+  'win-x64/node.lib',
+  'win-x86/node.lib',
+  'win-arm64/node.lib',
+  'arm64/node.lib',
+  'SHASUMS.txt',
+  'SHASUMS256.txt'
+];
+
 function s3RemoteFilesForVersion (version) {
   const bucket = 'https://gh-contractor-zcbenz.s3.amazonaws.com/';
   const versionPrefix = `${bucket}atom-shell/dist/${version}/`;
-  const filePaths = [
-    `iojs-${version}-headers.tar.gz`,
-    `iojs-${version}.tar.gz`,
-    `node-${version}.tar.gz`,
-    'node.lib',
-    'x64/node.lib',
-    'win-x64/iojs.lib',
-    'win-x86/iojs.lib',
-    'win-arm64/iojs.lib',
-    'win-x64/node.lib',
-    'win-x86/node.lib',
-    'win-arm64/node.lib',
-    'arm64/node.lib',
-    'SHASUMS.txt',
-    'SHASUMS256.txt'
-  ];
-  return filePaths.map((filePath) => ({
+  return cloudStoreFilePaths(version).map((filePath) => ({
+    file: filePath,
+    url: `${versionPrefix}${filePath}`
+  }));
+}
+
+function azRemoteFilesForVersion (version) {
+  const azCDN = 'https://artifacts.electronjs.org/headers/';
+  const versionPrefix = `${azCDN}dist/${version}/`;
+  return cloudStoreFilePaths(version).map((filePath) => ({
     file: filePath,
     url: `${versionPrefix}${filePath}`
   }));
@@ -217,49 +229,39 @@ function runScript (scriptName, scriptArgs, cwd) {
 }
 
 function uploadNodeShasums () {
-  console.log('Uploading Node SHASUMS file to S3.');
+  console.log('Uploading Node SHASUMS file to artifacts.electronjs.org.');
   const scriptPath = path.join(ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-node-checksums.py');
   runScript(scriptPath, ['-v', pkgVersion]);
-  console.log(`${pass} Done uploading Node SHASUMS file to S3.`);
+  console.log(`${pass} Done uploading Node SHASUMS file to artifacts.electronjs.org.`);
 }
 
 function uploadIndexJson () {
-  console.log('Uploading index.json to S3.');
+  console.log('Uploading index.json to artifacts.electronjs.org.');
   const scriptPath = path.join(ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-index-json.py');
   runScript(scriptPath, [pkgVersion]);
-  console.log(`${pass} Done uploading index.json to S3.`);
+  console.log(`${pass} Done uploading index.json to artifacts.electronjs.org.`);
 }
 
 async function mergeShasums (pkgVersion) {
-  // Download individual checksum files for Electron zip files from S3,
+  // Download individual checksum files for Electron zip files from artifact storage,
   // concatenate them, and upload to GitHub.
 
-  const bucket = process.env.ELECTRON_S3_BUCKET;
-  const accessKeyId = process.env.ELECTRON_S3_ACCESS_KEY;
-  const secretAccessKey = process.env.ELECTRON_S3_SECRET_KEY;
-  if (!bucket || !accessKeyId || !secretAccessKey) {
-    throw new Error('Please set the $ELECTRON_S3_BUCKET, $ELECTRON_S3_ACCESS_KEY, and $ELECTRON_S3_SECRET_KEY environment variables');
+  const connectionString = process.env.ELECTRON_ARTIFACTS_BLOB_STORAGE;
+  if (!connectionString) {
+    throw new Error('Please set the $ELECTRON_ARTIFACTS_BLOB_STORAGE environment variable');
   }
 
-  const s3 = new AWS.S3({
-    apiVersion: '2006-03-01',
-    accessKeyId,
-    secretAccessKey,
-    region: 'us-west-2'
+  const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+  const containerClient = blobServiceClient.getContainerClient('checksums-scratchpad');
+  const blobsIter = containerClient.listBlobsFlat({
+    prefix: `${pkgVersion}/`
   });
-  const objects = await s3.listObjectsV2({
-    Bucket: bucket,
-    Prefix: `atom-shell/tmp/${pkgVersion}/`,
-    Delimiter: '/'
-  }).promise();
   const shasums = [];
-  for (const obj of objects.Contents) {
-    if (obj.Key.endsWith('.sha256sum')) {
-      const data = await s3.getObject({
-        Bucket: bucket,
-        Key: obj.Key
-      }).promise();
-      shasums.push(data.Body.toString('ascii').trim());
+  for await (const blob of blobsIter) {
+    if (blob.name.endsWith('.sha256sum')) {
+      const blobClient = containerClient.getBlockBlobClient(blob.name);
+      const response = await blobClient.downloadToBuffer();
+      shasums.push(response.toString('ascii').trim());
     }
   }
   return shasums.join('\n');
