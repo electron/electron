@@ -1263,6 +1263,10 @@ if (is_mac) {
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
+
+      if (is_linux) {
+        deps += [ "//sandbox/linux:chrome_sandbox" ]
+      }
     }
   }
 
