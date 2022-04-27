@@ -291,9 +291,10 @@ bool ElectronBundleMover::AuthorizedInstall(NSString* srcPath,
 
   AuthorizationItem myItems = {kAuthorizationRightExecute, 0, NULL, 0};
   AuthorizationRights myRights = {1, &myItems};
-  AuthorizationFlags myFlags = (AuthorizationFlags)(
-      kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights |
-      kAuthorizationFlagPreAuthorize);
+  AuthorizationFlags myFlags =
+      (AuthorizationFlags)(kAuthorizationFlagInteractionAllowed |
+                           kAuthorizationFlagExtendRights |
+                           kAuthorizationFlagPreAuthorize);
 
   err = AuthorizationCopyRights(myAuthorizationRef, &myRights, NULL, myFlags,
                                 NULL);
