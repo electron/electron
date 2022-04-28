@@ -17,7 +17,6 @@ boringssl_build_gn.patch
 pepper_plugin_support.patch
 gtk_visibility.patch
 sysroot.patch
-resource_file_conflict.patch
 scroll_bounce_flag.patch
 mas_blink_no_private_api.patch
 mas_no_private_api.patch

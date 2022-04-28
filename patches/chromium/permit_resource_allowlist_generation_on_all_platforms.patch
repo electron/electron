@@ -23,6 +23,19 @@ index 84e83c0dc8eb41f3330adf6df95d11384fbbc98d..462b2586179e00aefae35034c1154e93
  }
  
  # This template defines a toolchain for something that works like gcc
+diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
+index b7eec4e35fc3480ca6779ff17cf714edfd727c48..769ac10ae2935d200c1664366b6a8dbedfab2f06 100644
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -1544,7 +1544,7 @@ if (!is_android) {
+       mark_as_data = true
+     }
+ 
+-    if (enable_resource_allowlist_generation) {
++    if (enable_resource_allowlist_generation && is_win) {
+       repack_allowlist = _chrome_resource_allowlist
+       deps = [ ":resource_allowlist" ]
+     }
 diff --git a/tools/resources/generate_resource_allowlist.py b/tools/resources/generate_resource_allowlist.py
 index 3fb5ca91e1b3096d650598a98af99f9eda4a1aff..e81c25504141fa6aec569905e78de21b50e4817c 100755
 --- a/tools/resources/generate_resource_allowlist.py
