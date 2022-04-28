@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 13c1a8c9760fa0f286c6c5adc8f74fdae910ab50..b7a967642ff059c97f55002a9a0962709d806959 100644
+index 14d91a0d19c01a856a9614b127a4ef3655614684..a243dd71886af7c5313b16a8522a50ae50af5959 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -128,6 +128,16 @@
