@@ -1,0 +1,234 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fergal Daly <fergal@chromium.org>
+Date: Tue, 19 Apr 2022 15:25:29 +0000
+Subject: Use IsErrorDocument() to prevent BFCacheing of interstitials and
+ errors.
+
+M96 merge issues:
+  Tests not present on M96:
+  - back_forward_cache_basics_browsertest.cc
+  - back_forward_cache_browsertest.h
+  - back_forward_cache_internal_browsertest.cc
+  chrome_track_event.proto:
+  - changed code (tracing) doesn't exist on M96, discarded
+    all changes
+  back_forward_cache_browsertest.cc:
+  - conflicting includes
+  - removed NavigateAndBlock, which would be called on
+    on back_forward_cache_browsertest.cc (not present in M96)
+  page_handler.cc:
+  - conflicting case statements on NotRestoredReasonToProtocol
+  back_forward_cache_can_store_document_result.cc:
+  - NotRestoredReasonToTraceEnum not present on M96
+  - conflicting case statements on NotRestoredReasonToString
+  back_forward_cache_metrics.h:
+  - conflicting entries for NotRestoredReason enum
+
+In the bug, a crash occurs because we try to cache an interstitial. We
+catch some error documents via status codes etc but interstitials do
+not consistently set those. Checking IsErrorDocument() is more reliable.
+
+(cherry picked from commit 7a05b426c6c51254a08de9a8dee8db9c1911b9c9)
+
+Bug: 1274308,1287996,1283050
+Change-Id: Ifec662c169c77e33ca5dc4d56b0e42c8d71f1d97
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3319862
+Commit-Queue: Fergal Daly <fergal@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#981026}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3577265
+Reviewed-by: Fergal Daly <fergal@chromium.org>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Owners-Override: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1592}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/content/browser/back_forward_cache_browsertest.cc b/content/browser/back_forward_cache_browsertest.cc
+index 22efde8130f5a3988d66adef3ef5b6e925480086..105bf22dfa0b4ebc28e9894caa8e87802dfa7d52 100644
+--- a/content/browser/back_forward_cache_browsertest.cc
++++ b/content/browser/back_forward_cache_browsertest.cc
+@@ -528,6 +528,22 @@ class BackForwardCacheBrowserTest : public ContentBrowserTest,
+     return rfh;
+   }
+ 
++  void NavigateAndBlock(GURL url, int history_offset) {
++    // Block the navigation with an error.
++    std::unique_ptr<URLLoaderInterceptor> url_interceptor =
++        URLLoaderInterceptor::SetupRequestFailForURL(
++            url, net::ERR_BLOCKED_BY_CLIENT);
++    TestNavigationManager manager(web_contents(), url);
++    if (history_offset) {
++      shell()->GoBackOrForward(history_offset);
++    } else {
++      shell()->LoadURL(url);
++    }
++    manager.WaitForNavigationFinished();
++    ASSERT_EQ(current_frame_host()->GetLastCommittedURL(), url);
++    ASSERT_TRUE(current_frame_host()->IsErrorDocument());
++  }
++
+   base::HistogramTester histogram_tester_;
+ 
+   bool same_site_back_forward_cache_enabled_ = true;
+@@ -3444,7 +3460,8 @@ IN_PROC_BROWSER_TEST_F(BackForwardCacheBrowserTest,
+   EXPECT_FALSE(WaitForLoadStop(shell()->web_contents()));
+   ExpectNotRestored(
+       {BackForwardCacheMetrics::NotRestoredReason::kHTTPStatusNotOK,
+-       BackForwardCacheMetrics::NotRestoredReason::kNoResponseHead},
++       BackForwardCacheMetrics::NotRestoredReason::kNoResponseHead,
++       BackForwardCacheMetrics::NotRestoredReason::kErrorDocument},
+       {}, {}, {}, {}, FROM_HERE);
+ }
+ 
+@@ -13298,4 +13315,73 @@ IN_PROC_BROWSER_TEST_F(
+   EXPECT_TRUE(ExecuteScript(rfh_a->child_at(0)->child_at(0), "true"));
+ }
+ 
++// Test that when we navigate away from an error page and back with no error
++// that we don't serve the error page from BFCache.
++IN_PROC_BROWSER_TEST_F(BackForwardCacheBrowserTest,
++                       ErrorDocumentNotCachedWithSecondError) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++
++  GURL url_a(embedded_test_server()->GetURL("a.com", "/title1.html"));
++  GURL url_b(embedded_test_server()->GetURL("b.com", "/title1.html"));
++
++  // Navigate to a.com.
++  ASSERT_TRUE(NavigateToURL(web_contents(), url_a));
++
++  // Navigate to b.com and block due to an error.
++  NavigateAndBlock(url_b, /*history_offset=*/0);
++  RenderFrameHostImplWrapper rfh_b(current_frame_host());
++
++  // Navigate back to a.com.
++  web_contents()->GetController().GoBack();
++  EXPECT_TRUE(WaitForLoadStop(shell()->web_contents()));
++  ExpectRestored(FROM_HERE);
++  rfh_b.WaitUntilRenderFrameDeleted();
++
++  // Navigate forward to b.com again and block with an error again.
++  NavigateAndBlock(url_b, /*history_offset=*/1);
++  ExpectNotRestored(
++      {BackForwardCacheMetrics::NotRestoredReason::kHTTPStatusNotOK,
++       BackForwardCacheMetrics::NotRestoredReason::kNoResponseHead,
++       BackForwardCacheMetrics::NotRestoredReason::kErrorDocument},
++      {}, {}, {}, {}, FROM_HERE);
++}
++
++// Test that when we navigate away from an error page and back with no error
++// that we don't serve the error page from BFCache.
++IN_PROC_BROWSER_TEST_F(BackForwardCacheBrowserTest,
++                       ErrorDocumentNotCachedWithoutSecondError) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++
++  GURL url_a(embedded_test_server()->GetURL("a.com", "/title1.html"));
++  GURL url_b(embedded_test_server()->GetURL("b.com", "/title1.html"));
++
++  // Navigate to a.com.
++  ASSERT_TRUE(NavigateToURL(web_contents(), url_a));
++
++  // Navigate to b.com and block due to an error.
++  NavigateAndBlock(url_b, /*history_offset=*/0);
++  RenderFrameHostImplWrapper rfh_b(current_frame_host());
++
++  int history_entry_id =
++      web_contents()->GetController().GetLastCommittedEntry()->GetUniqueID();
++
++  // Navigate back to a.com.
++  web_contents()->GetController().GoBack();
++  EXPECT_TRUE(WaitForLoadStop(shell()->web_contents()));
++  rfh_b.WaitUntilRenderFrameDeleted();
++
++  // Navigate forward to b.com again with no error.
++  web_contents()->GetController().GoForward();
++  EXPECT_TRUE(WaitForLoadStop(shell()->web_contents()));
++
++  // We would normally confirm that the blocking reasons are correct, however,
++  // when performing a history navigations back to an error document, a new
++  // entry is created and the reasons in the old entry are not recorded.
++  //
++  // Check that we indeed got a new history entry.
++  ASSERT_NE(
++      history_entry_id,
++      web_contents()->GetController().GetLastCommittedEntry()->GetUniqueID());
++}
++
+ }  // namespace content
+diff --git a/content/browser/devtools/protocol/page_handler.cc b/content/browser/devtools/protocol/page_handler.cc
+index 848b254079d08a29131cefb365404d189fa4920c..5512aa59bf9a2a6c988b450a5b33caf4400c2df9 100644
+--- a/content/browser/devtools/protocol/page_handler.cc
++++ b/content/browser/devtools/protocol/page_handler.cc
+@@ -1407,6 +1407,8 @@ Page::BackForwardCacheNotRestoredReason NotRestoredReasonToProtocol(
+     case Reason::kActivationNavigationsDisallowedForBug1234857:
+       return Page::BackForwardCacheNotRestoredReasonEnum::
+           ActivationNavigationsDisallowedForBug1234857;
++    case Reason::kErrorDocument:
++      return Page::BackForwardCacheNotRestoredReasonEnum::ErrorDocument;
+     case Reason::kBlocklistedFeatures:
+       // Blocklisted features should be handled separately and be broken down
+       // into sub reasons.
+@@ -1685,6 +1687,7 @@ Page::BackForwardCacheNotRestoredReasonType MapNotRestoredReasonToType(
+     case Reason::kCacheControlNoStoreCookieModified:
+     case Reason::kCacheControlNoStoreHTTPOnlyCookieModified:
+     case Reason::kNoResponseHead:
++    case Reason::kErrorDocument:
+       return Page::BackForwardCacheNotRestoredReasonTypeEnum::Circumstantial;
+     case Reason::kOptInUnloadHeaderNotPresent:
+     case Reason::kUnloadHandlerExistsInMainFrame:
+diff --git a/content/browser/renderer_host/back_forward_cache_can_store_document_result.cc b/content/browser/renderer_host/back_forward_cache_can_store_document_result.cc
+index 0db249d065ce0a9a14c40870cd03a9305c6985c2..27f208a4b04258ece88a057f00aa9ba38477e764 100644
+--- a/content/browser/renderer_host/back_forward_cache_can_store_document_result.cc
++++ b/content/browser/renderer_host/back_forward_cache_can_store_document_result.cc
+@@ -269,6 +269,8 @@ std::string BackForwardCacheCanStoreDocumentResult::NotRestoredReasonToString(
+       return "Activation navigations are disallowed to avoid bypassing "
+              "PasswordProtectionService as a workaround for "
+              "https://crbug.com/1234857.";
++    case Reason::kErrorDocument:
++      return "Error documents cannot be stored in bfcache";
+   }
+ }
+ 
+diff --git a/content/browser/renderer_host/back_forward_cache_impl.cc b/content/browser/renderer_host/back_forward_cache_impl.cc
+index ce81b2ca988e87174a38ebaaf4ad979d74cab504..8e409e4bb6d7f4e05bdebb91c5d2d8dcd7b1a191 100644
+--- a/content/browser/renderer_host/back_forward_cache_impl.cc
++++ b/content/browser/renderer_host/back_forward_cache_impl.cc
+@@ -717,6 +717,13 @@ BackForwardCacheImpl::CanPotentiallyStorePageLater(RenderFrameHostImpl* rfh) {
+   if (rfh->last_http_status_code() != net::HTTP_OK)
+     result.No(BackForwardCacheMetrics::NotRestoredReason::kHTTPStatusNotOK);
+ 
++  // Interstitials and other internal error pages should set an error status
++  // code but there's no guarantee, e.g. https://crbug/1274308,
++  // https://crbug/1287996. This catches those cases. It might also make the
++  // kHTTPStatusNotOK check redundant.
++  if (rfh->IsErrorDocument())
++    result.No(BackForwardCacheMetrics::NotRestoredReason::kErrorDocument);
++
+   // Only store documents that were fetched via HTTP GET method.
+   if (rfh->last_http_method() != net::HttpRequestHeaders::kGetMethod)
+     result.No(BackForwardCacheMetrics::NotRestoredReason::kHTTPMethodNotGET);
+diff --git a/content/browser/renderer_host/back_forward_cache_metrics.h b/content/browser/renderer_host/back_forward_cache_metrics.h
+index 56cbed930fa5d6246466ad73c0eacf8e42aca6f2..05b3cf5a26002e147980225869dca1a6dc35c82a 100644
+--- a/content/browser/renderer_host/back_forward_cache_metrics.h
++++ b/content/browser/renderer_host/back_forward_cache_metrics.h
+@@ -111,7 +111,8 @@ class BackForwardCacheMetrics
+     kCacheControlNoStoreHTTPOnlyCookieModified = 55,
+     kNoResponseHead = 56,
+     kActivationNavigationsDisallowedForBug1234857 = 57,
+-    kMaxValue = kActivationNavigationsDisallowedForBug1234857,
++    kErrorDocument = 58,
++    kMaxValue = kErrorDocument,
+   };
+ 
+   using NotRestoredReasons =
+diff --git a/third_party/blink/public/devtools_protocol/browser_protocol.pdl b/third_party/blink/public/devtools_protocol/browser_protocol.pdl
+index 3f1fdaf6ebce0957480328215d3b987176517db8..bf6c18ac8474f28000dcbbcf38ff51251bf4b4be 100644
+--- a/third_party/blink/public/devtools_protocol/browser_protocol.pdl
++++ b/third_party/blink/public/devtools_protocol/browser_protocol.pdl
+@@ -7856,6 +7856,7 @@ domain Page
+       NoResponseHead
+       Unknown
+       ActivationNavigationsDisallowedForBug1234857
++      ErrorDocument
+       #Blocklisted features
+       WebSocket
+       WebTransport
