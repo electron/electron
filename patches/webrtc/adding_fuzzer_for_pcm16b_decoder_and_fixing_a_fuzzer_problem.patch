@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Henrik Lundin <henrik.lundin@webrtc.org>
+Date: Tue, 15 Feb 2022 15:13:34 +0000
+Subject: Adding fuzzer for PCM16b decoder and fixing a fuzzer problem
+
+Bug: chromium:1280852
+Change-Id: I7f6c5de86ceee01156743c0389c59f875e53bb5f
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/251580
+Reviewed-by: Minyue Li <minyue@webrtc.org>
+Commit-Queue: Henrik Lundin <henrik.lundin@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#36005}
+
+diff --git a/modules/audio_coding/codecs/pcm16b/audio_decoder_pcm16b.cc b/modules/audio_coding/codecs/pcm16b/audio_decoder_pcm16b.cc
+index 1dd2ff289ee10280963c3db5de58545886c60d49..7761efe8b3b2d1627021e9f19dfb25ca871be049 100644
+--- a/modules/audio_coding/codecs/pcm16b/audio_decoder_pcm16b.cc
++++ b/modules/audio_coding/codecs/pcm16b/audio_decoder_pcm16b.cc
+@@ -42,7 +42,12 @@ int AudioDecoderPcm16B::DecodeInternal(const uint8_t* encoded,
+                                        int16_t* decoded,
+                                        SpeechType* speech_type) {
+   RTC_DCHECK_EQ(sample_rate_hz_, sample_rate_hz);
+-  size_t ret = WebRtcPcm16b_Decode(encoded, encoded_len, decoded);
++  // Adjust the encoded length down to ensure the same number of samples in each
++  // channel.
++  const size_t encoded_len_adjusted =
++      PacketDuration(encoded, encoded_len) * 2 *
++      Channels();  // 2 bytes per sample per channel
++  size_t ret = WebRtcPcm16b_Decode(encoded, encoded_len_adjusted, decoded);
+   *speech_type = ConvertSpeechType(1);
+   return static_cast<int>(ret);
+ }
+diff --git a/test/fuzzers/BUILD.gn b/test/fuzzers/BUILD.gn
+index 2e94f40fa2f9deefc867428e1a80aaec3a2d822b..e32da276c91ea67e02eeadf826947e2903090c61 100644
+--- a/test/fuzzers/BUILD.gn
++++ b/test/fuzzers/BUILD.gn
+@@ -308,6 +308,14 @@ webrtc_fuzzer_test("audio_decoder_multiopus_fuzzer") {
+   ]
+ }
+ 
++webrtc_fuzzer_test("audio_decoder_pcm16b_fuzzer") {
++  sources = [ "audio_decoder_pcm16b_fuzzer.cc" ]
++  deps = [
++    ":audio_decoder_fuzzer",
++    "../../modules/audio_coding:pcm16b",
++  ]
++}
++
+ rtc_library("audio_encoder_fuzzer") {
+   testonly = true
+   sources = [
+diff --git a/test/fuzzers/audio_decoder_pcm16b_fuzzer.cc b/test/fuzzers/audio_decoder_pcm16b_fuzzer.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..6e5d6e2190638185578ac71b400913f46f6b67cf
+--- /dev/null
++++ b/test/fuzzers/audio_decoder_pcm16b_fuzzer.cc
+@@ -0,0 +1,56 @@
++/*
++ *  Copyright (c) 2022 The WebRTC project authors. All Rights Reserved.
++ *
++ *  Use of this source code is governed by a BSD-style license
++ *  that can be found in the LICENSE file in the root of the source
++ *  tree. An additional intellectual property rights grant can be found
++ *  in the file PATENTS.  All contributing project authors may
++ *  be found in the AUTHORS file in the root of the source tree.
++ */
++
++#include <memory>
++
++#include "modules/audio_coding/codecs/pcm16b/audio_decoder_pcm16b.h"
++#include "test/fuzzers/audio_decoder_fuzzer.h"
++
++namespace webrtc {
++void FuzzOneInput(const uint8_t* data, size_t size) {
++  if (size > 10000 || size < 2) {
++    return;
++  }
++
++  int sample_rate_hz;
++  switch (data[0] % 4) {
++    case 0:
++      sample_rate_hz = 8000;
++      break;
++    case 1:
++      sample_rate_hz = 16000;
++      break;
++    case 2:
++      sample_rate_hz = 32000;
++      break;
++    case 3:
++      sample_rate_hz = 48000;
++      break;
++    default:
++      RTC_DCHECK_NOTREACHED();
++      return;
++  }
++  const size_t num_channels = data[1] % 16 + 1;
++
++  // Two first bytes of the data are used. Move forward.
++  data += 2;
++  size -= 2;
++
++  AudioDecoderPcm16B dec(sample_rate_hz, num_channels);
++  // Allocate a maximum output size of 100 ms.
++  const size_t allocated_ouput_size_samples =
++      sample_rate_hz * num_channels / 10;
++  std::unique_ptr<int16_t[]> output =
++      std::make_unique<int16_t[]>(allocated_ouput_size_samples);
++  FuzzAudioDecoder(
++      DecoderFunctionType::kNormalDecode, data, size, &dec, sample_rate_hz,
++      allocated_ouput_size_samples * sizeof(int16_t), output.get());
++}
++}  // namespace webrtc
