@@ -113,7 +113,7 @@ index dd27bbf387718d6abda5080e7d2c609cd0eaff17..8837cf2aeaa2f87d51be8d00aa356c8a
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 6d6a038dd57a623890c2dbbe249d811d9864fef6..72723efc3eaa6ae1d0c1002d9813705951f44235 100644
+index 6d6a038dd57a623890c2dbbe249d811d9864fef6..863a43648b7e3fe8895c257b7aba91d7d9fe8443 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,10 +30,10 @@
@@ -397,6 +397,15 @@ index 6d6a038dd57a623890c2dbbe249d811d9864fef6..72723efc3eaa6ae1d0c1002d98137059
      return true;
  
    if (!cookie) {
+@@ -1130,7 +1177,7 @@ void PrintViewManagerBase::SendPrintingEnabled(bool enabled,
+ }
+ 
+ void PrintViewManagerBase::CompletePrintNow(content::RenderFrameHost* rfh) {
+-  GetPrintRenderFrame(rfh)->PrintRequestedPages();
++  GetPrintRenderFrame(rfh)->PrintRequestedPages(true/*silent*/, base::Value{}/*job_settings*/);
+ 
+   for (auto& observer : GetObservers())
+     observer.OnPrintNow(rfh);
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
 index ebb5e7e41fadc8fcf711616a1b5474f48a4da80f..71de1bfd66571bb66515ea992a6fd115bf5c8620 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
