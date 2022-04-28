@@ -27,6 +27,7 @@
   "parallel/test-http2-clean-output",
   "parallel/test-https-agent-session-reuse",
   "parallel/test-https-options-boolean-check",
+  "parallel/test-icu-minimum-version",
   "parallel/test-inspector-multisession-ws",
   "parallel/test-inspector-port-zero-cluster",
   "parallel/test-inspector-tracing-domain",
