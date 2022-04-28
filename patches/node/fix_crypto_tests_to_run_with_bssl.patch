@@ -1010,3 +1010,36 @@ index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c
  };
  
  function generateWrappingKeys() {
+diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
+index 99418e4c0bf21c26d5ba0ad9d617419abc625593..fc129b26ea13895353d6ede26bb2d91695c94ba4 100644
+--- a/test/parallel/test-x509-escaping.js
++++ b/test/parallel/test-x509-escaping.js
+@@ -425,11 +425,11 @@ const { hasOpenSSL3 } = common;
+   assert.strictEqual(certX509.subjectAltName, 'DNS:evil.example.com');
+ 
+   // The newer X509Certificate API allows customizing this behavior:
+-  assert.strictEqual(certX509.checkHost(servername), servername);
++  assert.strictEqual(certX509.checkHost(servername), undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'default' }),
+                      undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'always' }),
+-                     servername);
++                     undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'never' }),
+                      undefined);
+ 
+@@ -464,11 +464,11 @@ const { hasOpenSSL3 } = common;
+   assert.strictEqual(certX509.subjectAltName, 'IP Address:1.2.3.4');
+ 
+   // The newer X509Certificate API allows customizing this behavior:
+-  assert.strictEqual(certX509.checkHost(servername), servername);
++  assert.strictEqual(certX509.checkHost(servername), undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'default' }),
+-                     servername);
++                     undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'always' }),
+-                     servername);
++                     undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'never' }),
+                      undefined);
+ 
