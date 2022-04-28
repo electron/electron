@@ -154,10 +154,11 @@ void SystemPreferences::PostNotification(const std::string& name,
 }
 
 int SystemPreferences::SubscribeNotification(
-    const std::string& name,
+    v8::Local<v8::Value> maybe_name,
     const NotificationCallback& callback) {
   return DoSubscribeNotification(
-      name, callback, NotificationCenterKind::kNSDistributedNotificationCenter);
+      maybe_name, callback,
+      NotificationCenterKind::kNSDistributedNotificationCenter);
 }
 
 void SystemPreferences::UnsubscribeNotification(int request_id) {
@@ -174,9 +175,9 @@ void SystemPreferences::PostLocalNotification(const std::string& name,
 }
 
 int SystemPreferences::SubscribeLocalNotification(
-    const std::string& name,
+    v8::Local<v8::Value> maybe_name,
     const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback,
+  return DoSubscribeNotification(maybe_name, callback,
                                  NotificationCenterKind::kNSNotificationCenter);
 }
 
@@ -196,10 +197,11 @@ void SystemPreferences::PostWorkspaceNotification(
 }
 
 int SystemPreferences::SubscribeWorkspaceNotification(
-    const std::string& name,
+    v8::Local<v8::Value> maybe_name,
     const NotificationCallback& callback) {
   return DoSubscribeNotification(
-      name, callback, NotificationCenterKind::kNSWorkspaceNotificationCenter);
+      maybe_name, callback,
+      NotificationCenterKind::kNSWorkspaceNotificationCenter);
 }
 
 void SystemPreferences::UnsubscribeWorkspaceNotification(int request_id) {
@@ -208,14 +210,25 @@ void SystemPreferences::UnsubscribeWorkspaceNotification(int request_id) {
 }
 
 int SystemPreferences::DoSubscribeNotification(
-    const std::string& name,
+    v8::Local<v8::Value> maybe_name,
     const NotificationCallback& callback,
     NotificationCenterKind kind) {
   int request_id = g_next_id++;
   __block NotificationCallback copied_callback = callback;
 
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  std::string name_str;
+  if (!(maybe_name->IsNull() ||
+        gin::ConvertFromV8(isolate, maybe_name, &name_str))) {
+    isolate->ThrowException(v8::Exception::Error(
+        gin::StringToV8(isolate, "Must pass null or a string")));
+    return -1;
+  }
+
+  auto* name = maybe_name->IsNull() ? nil : base::SysUTF8ToNSString(name_str);
+
   g_id_map[request_id] = [GetNotificationCenter(kind)
-      addObserverForName:base::SysUTF8ToNSString(name)
+      addObserverForName:name
                   object:nil
                    queue:nil
               usingBlock:^(NSNotification* notification) {
