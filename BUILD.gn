@@ -931,7 +931,7 @@ if (is_mac) {
 
       output_name = electron_helper_name + invoker.helper_name_suffix
       deps = [
-        ":electron_framework+link_nested",
+        ":electron_framework+link",
         "//base/allocator:early_zone_registration_mac",
       ]
       if (!is_mas_build) {
