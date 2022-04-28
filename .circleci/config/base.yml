@@ -1461,7 +1461,7 @@ commands:
             - *step-electron-build
             - *step-maybe-electron-dist-strip
             - step-electron-dist-build:
-                additional-targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
+                additional-targets: shell_browser_ui_unittests third_party/electron_node:headers electron:hunspell_dictionaries_zip
 
             - *step-show-goma-stats
 
