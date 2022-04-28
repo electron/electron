@@ -44,6 +44,7 @@ if (is_mac) {
 
 if (is_linux) {
   import("//build/config/linux/pkg_config.gni")
+  import("//tools/generate_stubs/rules.gni")
 
   pkg_config("gio_unix") {
     packages = [ "gio-unix-2.0" ]
@@ -54,6 +55,45 @@ if (is_linux) {
       "glib-2.0",
       "gdk-pixbuf-2.0",
     ]
+  }
+
+  generate_library_loader("libnotify_loader") {
+    name = "LibNotifyLoader"
+    output_h = "libnotify_loader.h"
+    output_cc = "libnotify_loader.cc"
+    header = "<libnotify/notify.h>"
+    config = ":libnotify_config"
+
+    functions = [
+      "notify_is_initted",
+      "notify_init",
+      "notify_get_server_caps",
+      "notify_get_server_info",
+      "notify_notification_new",
+      "notify_notification_add_action",
+      "notify_notification_set_image_from_pixbuf",
+      "notify_notification_set_timeout",
+      "notify_notification_set_urgency",
+      "notify_notification_set_hint_string",
+      "notify_notification_show",
+      "notify_notification_close",
+    ]
+  }
+
+  # Generates electron_gtk_stubs.h header which contains
+  # stubs for extracting function ptrs from the gtk library.
+  # Function signatures for which stubs are required should be
+  # declared in electron_gtk.sigs, currently this file contains
+  # signatures for the functions used with native file chooser
+  # implementation. In future, this file can be extended to contain
+  # gtk4 stubs to switch gtk version in runtime.
+  generate_stubs("electron_gtk_stubs") {
+    sigs = [ "shell/browser/ui/electron_gtk.sigs" ]
+    extra_header = "shell/browser/ui/electron_gtk.fragment"
+    output_name = "electron_gtk_stubs"
+    public_deps = [ "//ui/gtk:gtk_config" ]
+    logging_function = "LogNoop()"
+    logging_include = "ui/gtk/log_noop.h"
   }
 }
 
@@ -252,31 +292,6 @@ grit("resources") {
 copy("copy_shell_devtools_discovery_page") {
   sources = [ "//content/shell/resources/shell_devtools_discovery_page.html" ]
   outputs = [ "$target_gen_dir/shell_devtools_discovery_page.html" ]
-}
-
-if (is_linux) {
-  generate_library_loader("libnotify_loader") {
-    name = "LibNotifyLoader"
-    output_h = "libnotify_loader.h"
-    output_cc = "libnotify_loader.cc"
-    header = "<libnotify/notify.h>"
-    config = ":libnotify_config"
-
-    functions = [
-      "notify_is_initted",
-      "notify_init",
-      "notify_get_server_caps",
-      "notify_get_server_info",
-      "notify_notification_new",
-      "notify_notification_add_action",
-      "notify_notification_set_image_from_pixbuf",
-      "notify_notification_set_timeout",
-      "notify_notification_set_urgency",
-      "notify_notification_set_hint_string",
-      "notify_notification_show",
-      "notify_notification_close",
-    ]
-  }
 }
 
 npm_action("electron_version_args") {
@@ -539,6 +554,7 @@ source_set("electron_lib") {
   if (is_linux) {
     libs = [ "xshmfence" ]
     deps += [
+      ":electron_gtk_stubs",
       ":libnotify_loader",
       "//build/config/linux/gtk",
       "//dbus",
@@ -820,16 +836,11 @@ if (is_mac) {
     # Add the SwiftShader .dylibs in the Libraries directory of the Framework.
     bundle_data("electron_swiftshader_binaries") {
       sources = [
-        "$root_out_dir/egl_intermediates/libswiftshader_libEGL.dylib",
-        "$root_out_dir/egl_intermediates/libswiftshader_libGLESv2.dylib",
         "$root_out_dir/vk_intermediates/libvk_swiftshader.dylib",
         "$root_out_dir/vk_intermediates/vk_swiftshader_icd.json",
       ]
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
-      public_deps = [
-        "//ui/gl:swiftshader_egl_library_copy",
-        "//ui/gl:swiftshader_vk_library_copy",
-      ]
+      public_deps = [ "//ui/gl:swiftshader_vk_library_copy" ]
     }
   }
   group("electron_angle_library") {
@@ -919,7 +930,10 @@ if (is_mac) {
       assert(defined(invoker.helper_name_suffix))
 
       output_name = electron_helper_name + invoker.helper_name_suffix
-      deps = [ ":electron_framework+link_nested" ]
+      deps = [
+        ":electron_framework+link_nested",
+        "//base/allocator:early_zone_registration_mac",
+      ]
       if (!is_mas_build) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
@@ -1072,7 +1086,6 @@ if (is_mac) {
       "shell/app/electron_main_mac.cc",
       "shell/app/uv_stdio_fix.cc",
       "shell/app/uv_stdio_fix.h",
-      "shell/common/electron_constants.cc",
     ]
     include_dirs = [ "." ]
     deps = [
@@ -1080,6 +1093,7 @@ if (is_mac) {
       ":electron_app_plist",
       ":electron_app_resources",
       ":electron_fuses",
+      "//base/allocator:early_zone_registration_mac",
       "//electron/buildflags",
     ]
     if (is_mas_build) {
@@ -1123,21 +1137,18 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    extract_symbols("swiftshader_egl_syms") {
-      binary = "$root_out_dir/libswiftshader_libEGL.dylib"
+    extract_symbols("egl_syms") {
+      binary = "$root_out_dir/libEGL.dylib"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/libswiftshader_libEGL.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libEGL.dylib"
-      deps =
-          [ "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL" ]
+      dsym_file = "$root_out_dir/libEGL.dylib.dSYM/Contents/Resources/DWARF/libEGL.dylib"
+      deps = [ "//third_party/angle:libEGL" ]
     }
 
-    extract_symbols("swiftshader_gles_syms") {
-      binary = "$root_out_dir/libswiftshader_libGLESv2.dylib"
+    extract_symbols("gles_syms") {
+      binary = "$root_out_dir/libGLESv2.dylib"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/libswiftshader_libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libswiftshader_libGLESv2.dylib"
-      deps = [
-        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
-      ]
+      dsym_file = "$root_out_dir/libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libGLESv2.dylib"
+      deps = [ "//third_party/angle:libGLESv2" ]
     }
 
     extract_symbols("crashpad_handler_syms") {
@@ -1149,10 +1160,10 @@ if (is_mac) {
 
     group("electron_symbols") {
       deps = [
+        ":egl_syms",
         ":electron_app_syms",
         ":electron_framework_syms",
-        ":swiftshader_egl_syms",
-        ":swiftshader_gles_syms",
+        ":gles_syms",
       ]
 
       if (!is_mas_build) {
@@ -1289,6 +1300,10 @@ if (is_mac) {
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
+
+      if (is_linux) {
+        deps += [ "//sandbox/linux:chrome_sandbox" ]
+      }
     }
   }
 
@@ -1307,27 +1322,23 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    extract_symbols("swiftshader_egl_symbols") {
-      binary = "$root_out_dir/swiftshader/libEGL$_target_shared_library_suffix"
+    extract_symbols("egl_symbols") {
+      binary = "$root_out_dir/libEGL$_target_shared_library_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps =
-          [ "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL" ]
+      deps = [ "//third_party/angle:libEGL" ]
     }
 
-    extract_symbols("swiftshader_gles_symbols") {
-      binary =
-          "$root_out_dir/swiftshader/libGLESv2$_target_shared_library_suffix"
+    extract_symbols("gles_symbols") {
+      binary = "$root_out_dir/libGLESv2$_target_shared_library_suffix"
       symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps = [
-        "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2",
-      ]
+      deps = [ "//third_party/angle:libGLESv2" ]
     }
 
     group("electron_symbols") {
       deps = [
+        ":egl_symbols",
         ":electron_app_symbols",
-        ":swiftshader_egl_symbols",
-        ":swiftshader_gles_symbols",
+        ":gles_symbols",
       ]
     }
   }

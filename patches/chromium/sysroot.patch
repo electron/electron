@@ -7,7 +7,7 @@ Make chrome's install-sysroot scripts point to our custom sysroot builds,
 which include extra deps that Electron needs (e.g. libnotify)
 
 diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
-index eaa1c2edfd6fba471312fdb4eb3917b50e38e018..1824d513f6296985b5a3758f7e052ed77dcf0e0f 100755
+index eaa1c2edfd6fba471312fdb4eb3917b50e38e018..74140d29ed56ce54e39940e7bffa3778db983f27 100755
 --- a/build/linux/sysroot_scripts/install-sysroot.py
 +++ b/build/linux/sysroot_scripts/install-sysroot.py
 @@ -41,9 +41,11 @@ except ImportError:
@@ -19,8 +19,8 @@ index eaa1c2edfd6fba471312fdb4eb3917b50e38e018..1824d513f6296985b5a3758f7e052ed7
  
 -URL_PREFIX = 'https://commondatastorage.googleapis.com'
 -URL_PATH = 'chrome-linux-sysroot/toolchain'
-+URL_PREFIX = 'https://s3.amazonaws.com'
-+URL_PATH = 'electronjs-sysroots/toolchain'
++URL_PREFIX = 'https://dev-cdn.electronjs.org'
++URL_PATH = 'linux-sysroots'
  
  VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
  

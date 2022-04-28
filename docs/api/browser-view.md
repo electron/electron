@@ -11,6 +11,9 @@ relative to its owning window. It is meant to be an alternative to the
 
 Process: [Main](../glossary.md#main-process)
 
+This module cannot be used until the `ready` event of the `app`
+module is emitted.
+
 ### Example
 
 ```javascript
