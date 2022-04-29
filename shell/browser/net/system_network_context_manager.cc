@@ -20,6 +20,7 @@
 #include "components/os_crypt/os_crypt.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/first_party_sets_handler.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/network_service_util.h"
@@ -287,6 +288,11 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   content::GetNetworkService()->ConfigureStubHostResolver(
       base::FeatureList::IsEnabled(features::kAsyncDns),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
+
+  // Initializes first party sets component
+  // CL: https://chromium-review.googlesource.com/c/chromium/src/+/3449280
+  content::FirstPartySetsHandler::GetInstance()->SetPublicFirstPartySets(
+      base::File());
 
   std::string app_name = electron::Browser::Get()->GetName();
 #if BUILDFLAG(IS_MAC)
