@@ -11,7 +11,7 @@ trap cleanup HUP INT
 
 # Install the application Groot
 cp ./groot /tmp/
- 
+
 # Make sure the applications directory exists.
 mkdir -p ~/.local/share/applications
 
