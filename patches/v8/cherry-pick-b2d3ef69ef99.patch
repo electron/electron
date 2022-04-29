@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Wed, 13 Apr 2022 16:30:36 +0000
+Subject: mark receiver and function as escaping
+
+(cherry picked from commit 8081a5ffa7ebdb0e5b35cf63aa0490ad3578b940)
+
+Bug: chromium:1315901
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: Ic44bfcae32aba202ba25c5f59fe579214a444584
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3584117
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#79968}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3584531
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/9.6@{#62}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+
+diff --git a/src/compiler/escape-analysis.cc b/src/compiler/escape-analysis.cc
+index 7ff6ab684fcf405b956d8dcca506f6b3e116244e..316db298da86cedf8e550a39f6f7ee9413f02c86 100644
+--- a/src/compiler/escape-analysis.cc
++++ b/src/compiler/escape-analysis.cc
+@@ -5,10 +5,12 @@
+ #include "src/compiler/escape-analysis.h"
+ 
+ #include "src/codegen/tick-counter.h"
++#include "src/compiler/frame-states.h"
+ #include "src/compiler/linkage.h"
+ #include "src/compiler/node-matchers.h"
+ #include "src/compiler/operator-properties.h"
+ #include "src/compiler/simplified-operator.h"
++#include "src/compiler/state-values-utils.h"
+ #include "src/handles/handles-inl.h"
+ #include "src/init/bootstrapper.h"
+ #include "src/objects/map-inl.h"
+@@ -224,6 +226,11 @@ class EscapeAnalysisTracker : public ZoneObject {
+       return tracker_->ResolveReplacement(
+           NodeProperties::GetContextInput(current_node()));
+     }
++    // Accessing the current node is fine for `FrameState nodes.
++    Node* CurrentNode() {
++      DCHECK_EQ(current_node()->opcode(), IrOpcode::kFrameState);
++      return current_node();
++    }
+ 
+     void SetReplacement(Node* replacement) {
+       replacement_ = replacement;
+@@ -796,9 +803,25 @@ void ReduceNode(const Operator* op, EscapeAnalysisTracker::Scope* current,
+       break;
+     }
+     case IrOpcode::kStateValues:
+-    case IrOpcode::kFrameState:
+       // These uses are always safe.
+       break;
++    case IrOpcode::kFrameState: {
++      // We mark the receiver as escaping due to the non-standard `.getThis`
++      // API.
++      FrameState frame_state{current->CurrentNode()};
++      if (frame_state.frame_state_info().type() !=
++          FrameStateType::kUnoptimizedFunction)
++        break;
++      StateValuesAccess::iterator it =
++          StateValuesAccess(frame_state.parameters()).begin();
++      if (!it.done()) {
++        if (Node* receiver = it.node()) {
++          current->SetEscaped(receiver);
++        }
++        current->SetEscaped(frame_state.function());
++      }
++      break;
++    }
+     default: {
+       // For unknown nodes, treat all value inputs as escaping.
+       int value_input_count = op->ValueInputCount();

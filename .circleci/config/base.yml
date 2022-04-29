@@ -890,12 +890,12 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v8-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v14-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v1-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v14-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -904,10 +904,10 @@ step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
 step-maybe-restore-git-cache: &step-maybe-restore-git-cache
   restore_cache:
     paths:
-      - ~/.gclient-cache
+      - git-cache
     keys:
-      - v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
-      - v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}
+      - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+      - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
 
 step-restore-out-cache: &step-restore-out-cache
@@ -924,15 +924,15 @@ step-set-git-cache-path: &step-set-git-cache-path
     command: |
       # CircleCI does not support interpolation when setting environment variables.
       # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
-      echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+      echo 'export GIT_CACHE_PATH="$PWD/git-cache"' >> $BASH_ENV
 
 # Persist the git cache based on the hash of DEPS and .circle-sync-done
 # If the src cache was restored above then this will persist an empty cache
 step-save-git-cache: &step-save-git-cache
   save_cache:
     paths:
-      - ~/.gclient-cache
-    key: v2-gclient-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
+      - git-cache
+    key: v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
 
 step-save-out-cache: &step-save-out-cache
@@ -977,7 +977,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v8-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v14-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -987,7 +987,7 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v1-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v14-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
   run:
@@ -1363,6 +1363,40 @@ commands:
             - *step-checkout-electron
             - *step-run-electron-only-hooks
             - *step-generate-deps-hash-cleanly
+            - *step-touch-sync-done
+            - when:
+                condition: << parameters.save-git-cache >>
+                steps:
+                  - *step-save-git-cache
+            # Mark sync as done _after_ saving the git cache so that it is uploaded
+            # only when the src cache was not present
+            # Their are theoretically two cases for this cache key
+            # 1. `vX-git-cache-DONE-{deps_hash}
+            # 2. `vX-git-cache-EMPTY-{deps_hash}
+            #
+            # Case (1) occurs when the flag file has "DONE" in it
+            # which only occurs when "step-mark-sync-done" is run
+            # or when the src cache was restored successfully as that
+            # flag file contains "DONE" in the src cache.
+            #
+            # Case (2) occurs when the flag file is empty, this occurs
+            # when the src cache was not restored and "step-mark-sync-done"
+            # has not run yet.
+            #
+            # Notably both of these cases also have completely different
+            # gclient cache states.
+            # In (1) the git cache is completely empty as we didn't run
+            # "gclient sync" because the src cache was restored.
+            # In (2) the git cache is full as we had to run "gclient sync"
+            #
+            # This allows us to do make the follow transitive assumption:
+            # In cases where the src cache is restored, saving the git cache
+            # will save an empty cache.  In cases where the src cache is built
+            # during this build the git cache will save a full cache.
+            #
+            # In order words if there is a src cache for a given DEPS hash
+            # the git cache restored will be empty.  But if the src cache
+            # is missing we will restore a useful git cache.
             - *step-mark-sync-done
             - *step-minimize-workspace-size-from-checkout
             - *step-delete-git-directories
@@ -2418,3 +2452,6 @@ workflows:
               ignore: /pull\/[0-9]+/
           requires:
             - mas-testing-arm64
+  lint:
+    jobs:
+      - lint
