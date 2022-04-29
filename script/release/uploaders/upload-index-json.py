@@ -4,7 +4,7 @@ from __future__ import print_function
 import json
 import os
 import sys
-from urllib.request import Request, urlopen
+import urllib2
 
 sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
@@ -28,12 +28,12 @@ def is_json(myjson):
 
 def get_content(retry_count = 5):
   try:
-    request = Request(
+    request = urllib2.Request(
       BASE_URL + version,
       headers={"Authorization" : authToken}
     )
 
-    proposed_content = urlopen(
+    proposed_content = urllib2.urlopen(
       request
     ).read()
 
