@@ -25,6 +25,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/device_service.h"
+#include "content/public/browser/first_party_sets_handler.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
@@ -415,6 +416,11 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();
+
+  // The First-Party Sets feature always expects to be initialized
+  // CL: https://chromium-review.googlesource.com/c/chromium/src/+/3448551
+  content::FirstPartySetsHandler::GetInstance()->SetPublicFirstPartySets(
+      base::File());
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_client_ = std::make_unique<ElectronExtensionsClient>();
