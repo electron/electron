@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Austin Eng <enga@chromium.org>
+Date: Mon, 25 Apr 2022 21:01:40 +0000
+Subject: [M96-LTS] Add bounds check to WebGPUDecoderImpl::DoRequestDevice
+
+(cherry picked from commit bee4701c99cbbbb25c0bd6c5c79a40f63f1b1e47)
+
+Fixed: chromium:1314754
+Change-Id: Id23af9cc3df08cca3ce7d627e3761c9a65a2c802
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3580555
+Commit-Queue: Austin Eng <enga@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#991510}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3589810
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1603}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/gpu/command_buffer/service/webgpu_decoder_impl.cc b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+index 703dd4c1aee81aa8b05733b91d1de05b87ff1c0b..507595e2bb5d47128fc6e08dbadf21c43d36cdf0 100644
+--- a/gpu/command_buffer/service/webgpu_decoder_impl.cc
++++ b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+@@ -582,13 +582,13 @@ error::Error WebGPUDecoderImpl::InitDawnDevice(
+     uint32_t device_generation,
+     const WGPUDeviceProperties& request_device_properties,
+     bool* creation_succeeded) {
+-  DCHECK_LE(0, requested_adapter_index);
+-
+-  DCHECK_LT(static_cast<size_t>(requested_adapter_index),
+-            dawn_adapters_.size());
+-
+   *creation_succeeded = false;
+ 
++  if (requested_adapter_index < 0 ||
++      static_cast<uint32_t>(requested_adapter_index) >= dawn_adapters_.size()) {
++    return error::kOutOfBounds;
++  }
++
+   dawn_native::DeviceDescriptor device_descriptor;
+   if (request_device_properties.textureCompressionBC) {
+     device_descriptor.requiredExtensions.push_back("texture_compression_bc");
