@@ -1,0 +1,85 @@
+From 5361d836aeb1bde7fb3ef333209a65b61e1911fe Mon Sep 17 00:00:00 2001
+From: Austin Eng <enga@chromium.org>
+Date: Mon, 25 Apr 2022 21:01:40 +0000
+Subject: [PATCH] [M96-LTS] Add bounds check to WebGPUDecoderImpl::DoRequestDevice
+
+(cherry picked from commit bee4701c99cbbbb25c0bd6c5c79a40f63f1b1e47)
+
+Fixed: chromium:1314754
+Change-Id: Id23af9cc3df08cca3ce7d627e3761c9a65a2c802
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3580555
+Commit-Queue: Austin Eng <enga@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#991510}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3589810
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1603}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+---
+
+diff --git a/gpu/command_buffer/service/webgpu_decoder_impl.cc b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+index 201ac917..6a8d143 100644
+--- a/gpu/command_buffer/service/webgpu_decoder_impl.cc
++++ b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+@@ -424,11 +424,12 @@
+ 
+   int32_t GetPreferredAdapterIndex(PowerPreference power_preference) const;
+ 
+-  void DoRequestDevice(DawnRequestDeviceSerial request_device_serial,
+-                       int32_t requested_adapter_index,
+-                       uint32_t device_id,
+-                       uint32_t device_generation,
+-                       const WGPUDeviceProperties& requested_device_properties);
++  error::Error DoRequestDevice(
++      DawnRequestDeviceSerial request_device_serial,
++      int32_t requested_adapter_index,
++      uint32_t device_id,
++      uint32_t device_generation,
++      const WGPUDeviceProperties& requested_device_properties);
+   void OnRequestDeviceCallback(DawnRequestDeviceSerial request_device_serial,
+                                size_t requested_adapter_index,
+                                uint32_t device_id,
+@@ -583,16 +584,16 @@
+   return ContextResult::kSuccess;
+ }
+ 
+-void WebGPUDecoderImpl::DoRequestDevice(
++error::Error WebGPUDecoderImpl::DoRequestDevice(
+     DawnRequestDeviceSerial request_device_serial,
+     int32_t requested_adapter_index,
+     uint32_t device_id,
+     uint32_t device_generation,
+     const WGPUDeviceProperties& request_device_properties) {
+-  DCHECK_LE(0, requested_adapter_index);
+-
+-  DCHECK_LT(static_cast<size_t>(requested_adapter_index),
+-            dawn_adapters_.size());
++  if (requested_adapter_index < 0 ||
++      static_cast<uint32_t>(requested_adapter_index) >= dawn_adapters_.size()) {
++    return error::kOutOfBounds;
++  }
+ 
+   dawn_native::DeviceDescriptor device_descriptor;
+   if (request_device_properties.textureCompressionBC) {
+@@ -661,6 +662,8 @@
+         std::move(*callback).Run(status, wgpu_device, message);
+       },
+       new CallbackT(std::move(callback)));
++
++  return error::kNoError;
+ }
+ 
+ void WebGPUDecoderImpl::OnRequestDeviceCallback(
+@@ -1071,9 +1074,8 @@
+     }
+   }
+ 
+-  DoRequestDevice(request_device_serial, adapter_service_id, device_id,
+-                  device_generation, device_properties);
+-  return error::kNoError;
++  return DoRequestDevice(request_device_serial, adapter_service_id, device_id,
++                         device_generation, device_properties);
+ }
+ 
+ error::Error WebGPUDecoderImpl::HandleDawnCommands(
