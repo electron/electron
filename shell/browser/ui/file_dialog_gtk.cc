@@ -31,6 +31,25 @@ namespace {
 static const int kPreviewWidth = 256;
 static const int kPreviewHeight = 512;
 
+std::string MakeCaseInsensitivePattern(const std::string& extension) {
+  std::string pattern("*.");
+
+  for (std::size_t i = 0, n = extension.size(); i < n; i++) {
+    char ch = extension[i];
+    if (!base::IsAsciiAlpha(ch)) {
+      pattern.push_back(ch);
+      continue;
+    }
+
+    pattern.push_back('[');
+    pattern.push_back(base::ToLowerASCII(ch));
+    pattern.push_back(base::ToUpperASCII(ch));
+    pattern.push_back(']');
+  }
+
+  return pattern;
+}
+
 class FileChooserDialog {
  public:
   FileChooserDialog(GtkFileChooserAction action, const DialogSettings& settings)
@@ -252,12 +271,8 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     GtkFileFilter* gtk_filter = gtk_file_filter_new();
 
     for (const auto& extension : filter.second) {
-      // guarantee a pure lowercase variant
-      std::string file_extension = base::ToLowerASCII("*." + extension);
-      gtk_file_filter_add_pattern(gtk_filter, file_extension.c_str());
-      // guarantee a pure uppercase variant
-      file_extension = base::ToUpperASCII("*." + extension);
-      gtk_file_filter_add_pattern(gtk_filter, file_extension.c_str());
+      std::string pattern = MakeCaseInsensitivePattern(extension);
+      gtk_file_filter_add_pattern(gtk_filter, pattern.c_str());
     }
 
     gtk_file_filter_set_name(gtk_filter, filter.first.c_str());
