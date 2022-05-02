@@ -1,0 +1,34 @@
+From d49484c21e3c43b06dbe1274e94908559dc444a1 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Mon, 11 Apr 2022 12:29:00 -0400
+Subject: [PATCH] [M100] Add error check on resuming XFB with deleted buffer.
+
+Bug: chromium:1313905
+Change-Id: I22c6f6400b05ca32c922fba9a3b9d4b5841ca8b8
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3578378
+Auto-Submit: Jamie Madill <jmadill@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+(cherry picked from commit 5c85fd4e11a3835a0719223a7cedb978d309da21)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3594103
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+---
+
+diff --git a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp
+index a1d300c..52b4816 100644
+--- a/src/libANGLE/validationES3.cpp
++++ b/src/libANGLE/validationES3.cpp
+@@ -4291,6 +4291,13 @@
+         return false;
+     }
+ 
++    if (!ValidateProgramExecutableXFBBuffersPresent(context,
++                                                    context->getState().getProgramExecutable()))
++    {
++        context->validationError(entryPoint, GL_INVALID_OPERATION, kTransformFeedbackBufferMissing);
++        return false;
++    }
++
+     return true;
+ }
+ 
