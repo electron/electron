@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "19.0.0-beta.2",
+  "version": "19.0.0-beta.3",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
