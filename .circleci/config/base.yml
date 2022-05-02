@@ -1302,6 +1302,8 @@ commands:
                   target_os=linux
                   if [ x"$TARGET_ARCH" == x ]; then
                     target_cpu=x64
+                  elif [ "$TARGET_ARCH" == "ia32" ]; then
+                    target_cpu=x86
                   else
                     target_cpu="$TARGET_ARCH"
                   fi
