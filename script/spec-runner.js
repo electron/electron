@@ -41,8 +41,8 @@ const runners = new Map([
 const specHashPath = path.resolve(__dirname, '../spec/.hash');
 
 let runnersToRun = null;
-if (args.runners) {
-  runnersToRun = args.runners.split(',');
+if (args.runners !== undefined) {
+  runnersToRun = args.runners.split(',').filter(value => value);
   if (!runnersToRun.every(r => [...runners.keys()].includes(r))) {
     console.log(`${fail} ${runnersToRun} must be a subset of [${[...runners.keys()].join(' | ')}]`);
     process.exit(1);
