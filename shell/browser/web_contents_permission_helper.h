@@ -7,9 +7,9 @@
 
 #include "base/values.h"
 #include "content/public/browser/media_stream_request.h"
-#include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 
 namespace electron {
 
@@ -25,7 +25,7 @@ class WebContentsPermissionHelper
       delete;
 
   enum class PermissionType {
-    POINTER_LOCK = static_cast<int>(content::PermissionType::NUM) + 1,
+    POINTER_LOCK = static_cast<int>(blink::PermissionType::NUM) + 1,
     FULLSCREEN,
     OPEN_EXTERNAL,
     SERIAL,
@@ -73,20 +73,20 @@ class WebContentsPermissionHelper
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
   friend class content::WebContentsUserData<WebContentsPermissionHelper>;
 
-  void RequestPermission(content::PermissionType permission,
+  void RequestPermission(blink::PermissionType permission,
                          base::OnceCallback<void(bool)> callback,
                          bool user_gesture = false,
                          const base::DictionaryValue* details = nullptr);
 
-  bool CheckPermission(content::PermissionType permission,
+  bool CheckPermission(blink::PermissionType permission,
                        const base::DictionaryValue* details) const;
 
-  bool CheckDevicePermission(content::PermissionType permission,
+  bool CheckDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
                              const base::Value* device,
                              content::RenderFrameHost* render_frame_host) const;
 
-  void GrantDevicePermission(content::PermissionType permission,
+  void GrantDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
                              const base::Value* device,
                              content::RenderFrameHost* render_frame_host) const;

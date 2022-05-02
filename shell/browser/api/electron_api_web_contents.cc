@@ -3456,7 +3456,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
 void WebContents::GrantDevicePermission(
     const url::Origin& origin,
     const base::Value* device,
-    content::PermissionType permissionType,
+    blink::PermissionType permissionType,
     content::RenderFrameHost* render_frame_host) {
   granted_devices_[render_frame_host->GetFrameTreeNodeId()][permissionType]
                   [origin]
@@ -3466,7 +3466,7 @@ void WebContents::GrantDevicePermission(
 
 std::vector<base::Value> WebContents::GetGrantedDevices(
     const url::Origin& origin,
-    content::PermissionType permissionType,
+    blink::PermissionType permissionType,
     content::RenderFrameHost* render_frame_host) {
   const auto& devices_for_frame_host_it =
       granted_devices_.find(render_frame_host->GetFrameTreeNodeId());

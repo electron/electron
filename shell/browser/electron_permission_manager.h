@@ -39,12 +39,12 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   using StatusesCallback = base::OnceCallback<void(
       const std::vector<blink::mojom::PermissionStatus>&)>;
   using RequestHandler = base::RepeatingCallback<void(content::WebContents*,
-                                                      content::PermissionType,
+                                                      blink::PermissionType,
                                                       StatusCallback,
                                                       const base::Value&)>;
   using CheckHandler =
       base::RepeatingCallback<bool(content::WebContents*,
-                                   content::PermissionType,
+                                   blink::PermissionType,
                                    const GURL& requesting_origin,
                                    const base::Value&)>;
 
@@ -57,49 +57,49 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void SetDevicePermissionHandler(const DeviceCheckHandler& handler);
 
   // content::PermissionControllerDelegate:
-  void RequestPermission(content::PermissionType permission,
+  void RequestPermission(blink::PermissionType permission,
                          content::RenderFrameHost* render_frame_host,
                          const GURL& requesting_origin,
                          bool user_gesture,
                          StatusCallback callback) override;
-  void RequestPermissionWithDetails(content::PermissionType permission,
+  void RequestPermissionWithDetails(blink::PermissionType permission,
                                     content::RenderFrameHost* render_frame_host,
                                     const GURL& requesting_origin,
                                     bool user_gesture,
                                     const base::DictionaryValue* details,
                                     StatusCallback callback);
   void RequestPermissions(
-      const std::vector<content::PermissionType>& permissions,
+      const std::vector<blink::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
       bool user_gesture,
       StatusesCallback callback) override;
   void RequestPermissionsWithDetails(
-      const std::vector<content::PermissionType>& permissions,
+      const std::vector<blink::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
       bool user_gesture,
       const base::DictionaryValue* details,
       StatusesCallback callback);
   blink::mojom::PermissionStatus GetPermissionStatusForFrame(
-      content::PermissionType permission,
+      blink::PermissionType permission,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin) override;
   blink::mojom::PermissionStatus GetPermissionStatusForCurrentDocument(
-      content::PermissionType permission,
+      blink::PermissionType permission,
       content::RenderFrameHost* render_frame_host) override;
 
-  bool CheckPermissionWithDetails(content::PermissionType permission,
+  bool CheckPermissionWithDetails(blink::PermissionType permission,
                                   content::RenderFrameHost* render_frame_host,
                                   const GURL& requesting_origin,
                                   const base::DictionaryValue* details) const;
 
-  bool CheckDevicePermission(content::PermissionType permission,
+  bool CheckDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
                              const base::Value* object,
                              content::RenderFrameHost* render_frame_host) const;
 
-  void GrantDevicePermission(content::PermissionType permission,
+  void GrantDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
                              const base::Value* object,
                              content::RenderFrameHost* render_frame_host) const;
@@ -110,19 +110,19 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                             blink::mojom::PermissionStatus status);
 
   // content::PermissionControllerDelegate:
-  void ResetPermission(content::PermissionType permission,
+  void ResetPermission(blink::PermissionType permission,
                        const GURL& requesting_origin,
                        const GURL& embedding_origin) override;
   blink::mojom::PermissionStatus GetPermissionStatus(
-      content::PermissionType permission,
+      blink::PermissionType permission,
       const GURL& requesting_origin,
       const GURL& embedding_origin) override;
   blink::mojom::PermissionStatus GetPermissionStatusForWorker(
-      content::PermissionType permission,
+      blink::PermissionType permission,
       content::RenderProcessHost* render_process_host,
       const GURL& worker_origin) override;
   SubscriptionId SubscribePermissionStatusChange(
-      content::PermissionType permission,
+      blink::PermissionType permission,
       content::RenderProcessHost* render_process_host,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,

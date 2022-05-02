@@ -61,7 +61,7 @@ WebContentsPermissionHelper::WebContentsPermissionHelper(
 WebContentsPermissionHelper::~WebContentsPermissionHelper() = default;
 
 void WebContentsPermissionHelper::RequestPermission(
-    content::PermissionType permission,
+    blink::PermissionType permission,
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
     const base::DictionaryValue* details) {
@@ -75,7 +75,7 @@ void WebContentsPermissionHelper::RequestPermission(
 }
 
 bool WebContentsPermissionHelper::CheckPermission(
-    content::PermissionType permission,
+    blink::PermissionType permission,
     const base::DictionaryValue* details) const {
   auto* rfh = web_contents_->GetMainFrame();
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
@@ -86,7 +86,7 @@ bool WebContentsPermissionHelper::CheckPermission(
 }
 
 bool WebContentsPermissionHelper::CheckDevicePermission(
-    content::PermissionType permission,
+    blink::PermissionType permission,
     const url::Origin& origin,
     const base::Value* device,
     content::RenderFrameHost* render_frame_host) const {
@@ -97,7 +97,7 @@ bool WebContentsPermissionHelper::CheckDevicePermission(
 }
 
 void WebContentsPermissionHelper::GrantDevicePermission(
-    content::PermissionType permission,
+    blink::PermissionType permission,
     const url::Origin& origin,
     const base::Value* device,
     content::RenderFrameHost* render_frame_host) const {
@@ -110,7 +110,7 @@ void WebContentsPermissionHelper::GrantDevicePermission(
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     base::OnceCallback<void(bool)> callback) {
   RequestPermission(
-      static_cast<content::PermissionType>(PermissionType::FULLSCREEN),
+      static_cast<blink::PermissionType>(PermissionType::FULLSCREEN),
       std::move(callback));
 }
 
@@ -135,13 +135,13 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
 
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
-  RequestPermission(content::PermissionType::AUDIO_CAPTURE, std::move(callback),
+  RequestPermission(blink::PermissionType::AUDIO_CAPTURE, std::move(callback),
                     false, &details);
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
     base::OnceCallback<void(bool)> callback) {
-  RequestPermission(content::PermissionType::NOTIFICATIONS,
+  RequestPermission(blink::PermissionType::NOTIFICATIONS,
                     std::move(callback));
 }
 
@@ -151,7 +151,7 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
     base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
         callback) {
   RequestPermission(
-      static_cast<content::PermissionType>(PermissionType::POINTER_LOCK),
+      static_cast<blink::PermissionType>(PermissionType::POINTER_LOCK),
       base::BindOnce(std::move(callback), web_contents_, user_gesture,
                      last_unlocked_by_target),
       user_gesture);
@@ -164,7 +164,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
   base::DictionaryValue details;
   details.SetString("externalURL", url.spec());
   RequestPermission(
-      static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL),
+      static_cast<blink::PermissionType>(PermissionType::OPEN_EXTERNAL),
       std::move(callback), user_gesture, &details);
 }
 
@@ -176,7 +176,7 @@ bool WebContentsPermissionHelper::CheckMediaAccessPermission(
   details.SetString("mediaType", MediaStreamTypeToString(type));
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
-  return CheckPermission(content::PermissionType::AUDIO_CAPTURE, &details);
+  return CheckPermission(blink::PermissionType::AUDIO_CAPTURE, &details);
 }
 
 bool WebContentsPermissionHelper::CheckSerialAccessPermission(
@@ -184,7 +184,7 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
   base::DictionaryValue details;
   details.SetString("securityOrigin", embedding_origin.GetURL().spec());
   return CheckPermission(
-      static_cast<content::PermissionType>(PermissionType::SERIAL), &details);
+      static_cast<blink::PermissionType>(PermissionType::SERIAL), &details);
 }
 
 bool WebContentsPermissionHelper::CheckSerialPortPermission(
@@ -192,7 +192,7 @@ bool WebContentsPermissionHelper::CheckSerialPortPermission(
     base::Value device,
     content::RenderFrameHost* render_frame_host) const {
   return CheckDevicePermission(
-      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      static_cast<blink::PermissionType>(PermissionType::SERIAL), origin,
       &device, render_frame_host);
 }
 
@@ -201,7 +201,7 @@ void WebContentsPermissionHelper::GrantSerialPortPermission(
     base::Value device,
     content::RenderFrameHost* render_frame_host) const {
   return GrantDevicePermission(
-      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      static_cast<blink::PermissionType>(PermissionType::SERIAL), origin,
       &device, render_frame_host);
 }
 
@@ -210,7 +210,7 @@ bool WebContentsPermissionHelper::CheckHIDAccessPermission(
   base::DictionaryValue details;
   details.SetString("securityOrigin", embedding_origin.GetURL().spec());
   return CheckPermission(
-      static_cast<content::PermissionType>(PermissionType::HID), &details);
+      static_cast<blink::PermissionType>(PermissionType::HID), &details);
 }
 
 bool WebContentsPermissionHelper::CheckHIDDevicePermission(
@@ -218,7 +218,7 @@ bool WebContentsPermissionHelper::CheckHIDDevicePermission(
     base::Value device,
     content::RenderFrameHost* render_frame_host) const {
   return CheckDevicePermission(
-      static_cast<content::PermissionType>(PermissionType::HID), origin,
+      static_cast<blink::PermissionType>(PermissionType::HID), origin,
       &device, render_frame_host);
 }
 
@@ -227,7 +227,7 @@ void WebContentsPermissionHelper::GrantHIDDevicePermission(
     base::Value device,
     content::RenderFrameHost* render_frame_host) const {
   return GrantDevicePermission(
-      static_cast<content::PermissionType>(PermissionType::HID), origin,
+      static_cast<blink::PermissionType>(PermissionType::HID), origin,
       &device, render_frame_host);
 }
 

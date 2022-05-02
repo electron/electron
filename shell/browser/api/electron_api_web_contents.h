@@ -21,7 +21,6 @@
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
-#include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -43,6 +42,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 
@@ -61,6 +61,7 @@ class ScriptExecutor;
 
 namespace blink {
 struct DeviceEmulationParams;
+// enum class PermissionType;
 }
 
 namespace gin_helper {
@@ -97,7 +98,7 @@ namespace api {
 
 using DevicePermissionMap = std::map<
     int,
-    std::map<content::PermissionType,
+    std::map<blink::PermissionType,
              std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
 
 // Wrapper around the content::WebContents.
@@ -439,7 +440,7 @@ class WebContents : public ExclusiveAccessContext,
   // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
   void GrantDevicePermission(const url::Origin& origin,
                              const base::Value* device,
-                             content::PermissionType permissionType,
+                             blink::PermissionType permissionType,
                              content::RenderFrameHost* render_frame_host);
 
   // Returns the list of devices that |origin| has been granted permission to
@@ -447,7 +448,7 @@ class WebContents : public ExclusiveAccessContext,
   // ObjectPermissionContextBase::GetGrantedObjects.
   std::vector<base::Value> GetGrantedDevices(
       const url::Origin& origin,
-      content::PermissionType permissionType,
+      blink::PermissionType permissionType,
       content::RenderFrameHost* render_frame_host);
 
   // disable copy

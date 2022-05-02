@@ -623,7 +623,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
       [](ElectronPermissionManager::RequestHandler* handler,
          content::WebContents* web_contents,
-         content::PermissionType permission_type,
+         blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
         handler->Run(web_contents, permission_type,

@@ -134,67 +134,67 @@ bool Converter<blink::mojom::PermissionStatus>::FromV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
+v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
     v8::Isolate* isolate,
-    const content::PermissionType& val) {
+    const blink::PermissionType& val) {
   using PermissionType = electron::WebContentsPermissionHelper::PermissionType;
   // Based on mappings from content/browser/devtools/protocol/browser_handler.cc
   // Not all permissions are currently used by Electron but this will future
   // proof these conversions.
   switch (val) {
-    case content::PermissionType::ACCESSIBILITY_EVENTS:
+    case blink::PermissionType::ACCESSIBILITY_EVENTS:
       return StringToV8(isolate, "accessibility-events");
-    case content::PermissionType::AR:
+    case blink::PermissionType::AR:
       return StringToV8(isolate, "ar");
-    case content::PermissionType::BACKGROUND_FETCH:
+    case blink::PermissionType::BACKGROUND_FETCH:
       return StringToV8(isolate, "background-fetch");
-    case content::PermissionType::BACKGROUND_SYNC:
+    case blink::PermissionType::BACKGROUND_SYNC:
       return StringToV8(isolate, "background-sync");
-    case content::PermissionType::CLIPBOARD_READ_WRITE:
+    case blink::PermissionType::CLIPBOARD_READ_WRITE:
       return StringToV8(isolate, "clipboard-read");
-    case content::PermissionType::CLIPBOARD_SANITIZED_WRITE:
+    case blink::PermissionType::CLIPBOARD_SANITIZED_WRITE:
       return StringToV8(isolate, "clipboard-sanitized-write");
-    case content::PermissionType::LOCAL_FONTS:
+    case blink::PermissionType::LOCAL_FONTS:
       return StringToV8(isolate, "local-fonts");
-    case content::PermissionType::IDLE_DETECTION:
+    case blink::PermissionType::IDLE_DETECTION:
       return StringToV8(isolate, "idle-detection");
-    case content::PermissionType::MIDI_SYSEX:
+    case blink::PermissionType::MIDI_SYSEX:
       return StringToV8(isolate, "midiSysex");
-    case content::PermissionType::NFC:
+    case blink::PermissionType::NFC:
       return StringToV8(isolate, "nfc");
-    case content::PermissionType::NOTIFICATIONS:
+    case blink::PermissionType::NOTIFICATIONS:
       return StringToV8(isolate, "notifications");
-    case content::PermissionType::PAYMENT_HANDLER:
+    case blink::PermissionType::PAYMENT_HANDLER:
       return StringToV8(isolate, "payment-handler");
-    case content::PermissionType::PERIODIC_BACKGROUND_SYNC:
+    case blink::PermissionType::PERIODIC_BACKGROUND_SYNC:
       return StringToV8(isolate, "periodic-background-sync");
-    case content::PermissionType::DURABLE_STORAGE:
+    case blink::PermissionType::DURABLE_STORAGE:
       return StringToV8(isolate, "persistent-storage");
-    case content::PermissionType::GEOLOCATION:
+    case blink::PermissionType::GEOLOCATION:
       return StringToV8(isolate, "geolocation");
-    case content::PermissionType::CAMERA_PAN_TILT_ZOOM:
-    case content::PermissionType::AUDIO_CAPTURE:
-    case content::PermissionType::VIDEO_CAPTURE:
+    case blink::PermissionType::CAMERA_PAN_TILT_ZOOM:
+    case blink::PermissionType::AUDIO_CAPTURE:
+    case blink::PermissionType::VIDEO_CAPTURE:
       return StringToV8(isolate, "media");
-    case content::PermissionType::PROTECTED_MEDIA_IDENTIFIER:
+    case blink::PermissionType::PROTECTED_MEDIA_IDENTIFIER:
       return StringToV8(isolate, "mediaKeySystem");
-    case content::PermissionType::MIDI:
+    case blink::PermissionType::MIDI:
       return StringToV8(isolate, "midi");
-    case content::PermissionType::WAKE_LOCK_SCREEN:
+    case blink::PermissionType::WAKE_LOCK_SCREEN:
       return StringToV8(isolate, "screen-wake-lock");
-    case content::PermissionType::SENSORS:
+    case blink::PermissionType::SENSORS:
       return StringToV8(isolate, "sensors");
-    case content::PermissionType::STORAGE_ACCESS_GRANT:
+    case blink::PermissionType::STORAGE_ACCESS_GRANT:
       return StringToV8(isolate, "storage-access");
-    case content::PermissionType::VR:
+    case blink::PermissionType::VR:
       return StringToV8(isolate, "vr");
-    case content::PermissionType::WAKE_LOCK_SYSTEM:
+    case blink::PermissionType::WAKE_LOCK_SYSTEM:
       return StringToV8(isolate, "system-wake-lock");
-    case content::PermissionType::WINDOW_PLACEMENT:
+    case blink::PermissionType::WINDOW_PLACEMENT:
       return StringToV8(isolate, "window-placement");
-    case content::PermissionType::DISPLAY_CAPTURE:
+    case blink::PermissionType::DISPLAY_CAPTURE:
       return StringToV8(isolate, "display-capture");
-    case content::PermissionType::NUM:
+    case blink::PermissionType::NUM:
       break;
   }
 
