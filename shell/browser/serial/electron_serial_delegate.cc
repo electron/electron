@@ -63,6 +63,19 @@ bool ElectronSerialDelegate::HasPortPermission(
       web_contents->GetMainFrame()->GetLastCommittedOrigin(), port, frame);
 }
 
+void ElectronSerialDelegate::RevokePortPermissionWebInitiated(
+    content::RenderFrameHost* frame,
+    const base::UnguessableToken& token) {
+  return GetChooserContext(frame)->RevokePortPermissionWebInitiated(
+      frame->GetMainFrame()->GetLastCommittedOrigin(), token);
+}
+
+const device::mojom::SerialPortInfo* ElectronSerialDelegate::GetPortInfo(
+    content::RenderFrameHost* frame,
+    const base::UnguessableToken& token) {
+  return GetChooserContext(frame)->GetPortInfo(token);
+}
+
 device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(
     content::RenderFrameHost* frame) {
   return GetChooserContext(frame)->GetPortManager();
