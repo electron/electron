@@ -38,8 +38,7 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
   RefreshColorCache(theme);
   UpdateViewColors();
 #if BUILDFLAG(IS_WIN)
-  SetBackground(
-      views::CreateThemedSolidBackground(ui::kColorMenuBackground));
+  SetBackground(views::CreateThemedSolidBackground(ui::kColorMenuBackground));
   background_color_ = GetBackground()->get_color();
 #endif
   SetFocusBehavior(FocusBehavior::ALWAYS);
