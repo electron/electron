@@ -1,7 +1,8 @@
-From 5ff02e4d7368d2cc1b7a66c8da17f422c3fbe0bf Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: UwU UwU <uwu7586@gmail.com>
 Date: Tue, 19 Apr 2022 15:10:38 +0000
-Subject: [PATCH] [M96-LTS] NavigatorManagedData: Prevent iterator invalidation during Promise resolution
+Subject: NavigatorManagedData: Prevent iterator invalidation during Promise
+ resolution
 
 (cherry picked from commit 6083135252280d9b43e26169eb35154a9ac861ea)
 
@@ -16,13 +17,12 @@ Owners-Override: Artem Sumaneev <asumaneev@google.com>
 Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1591}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/third_party/blink/renderer/modules/managed_device/navigator_managed_data.cc b/third_party/blink/renderer/modules/managed_device/navigator_managed_data.cc
-index 2df64ff..32b48ca0 100644
+index 2df64ff2c51dfe080cd50b46199e9c1d77ea26db..32b48ca0157a52d322aa4e00d18d4e662d3b1c4a 100644
 --- a/third_party/blink/renderer/modules/managed_device/navigator_managed_data.cc
 +++ b/third_party/blink/renderer/modules/managed_device/navigator_managed_data.cc
-@@ -108,8 +108,14 @@
+@@ -108,8 +108,14 @@ void NavigatorManagedData::OnServiceConnectionError() {
        !managed_configuration_service_.is_connected()) {
      managed_configuration_service_.reset();
    }
