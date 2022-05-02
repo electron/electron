@@ -141,8 +141,7 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
     base::OnceCallback<void(bool)> callback) {
-  RequestPermission(blink::PermissionType::NOTIFICATIONS,
-                    std::move(callback));
+  RequestPermission(blink::PermissionType::NOTIFICATIONS, std::move(callback));
 }
 
 void WebContentsPermissionHelper::RequestPointerLockPermission(
@@ -218,8 +217,8 @@ bool WebContentsPermissionHelper::CheckHIDDevicePermission(
     base::Value device,
     content::RenderFrameHost* render_frame_host) const {
   return CheckDevicePermission(
-      static_cast<blink::PermissionType>(PermissionType::HID), origin,
-      &device, render_frame_host);
+      static_cast<blink::PermissionType>(PermissionType::HID), origin, &device,
+      render_frame_host);
 }
 
 void WebContentsPermissionHelper::GrantHIDDevicePermission(
@@ -227,8 +226,8 @@ void WebContentsPermissionHelper::GrantHIDDevicePermission(
     base::Value device,
     content::RenderFrameHost* render_frame_host) const {
   return GrantDevicePermission(
-      static_cast<blink::PermissionType>(PermissionType::HID), origin,
-      &device, render_frame_host);
+      static_cast<blink::PermissionType>(PermissionType::HID), origin, &device,
+      render_frame_host);
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);

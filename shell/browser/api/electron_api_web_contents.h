@@ -62,7 +62,7 @@ class ScriptExecutor;
 namespace blink {
 struct DeviceEmulationParams;
 // enum class PermissionType;
-}
+}  // namespace blink
 
 namespace gin_helper {
 class Dictionary;
