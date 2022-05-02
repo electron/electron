@@ -75,6 +75,25 @@ int WinFrameView::FrameBorderThickness() const {
              : display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME);
 }
 
+views::View* WinFrameView::TargetForRect(views::View* root,
+                                         const gfx::Rect& rect) {
+  if (NonClientHitTest(rect.origin()) != HTCLIENT) {
+    // Custom system titlebar returns non HTCLIENT value, however event should
+    // be handled by the view, not by the system, because there are no system
+    // buttons underneath.
+    if (!ShouldCustomDrawSystemTitlebar()) {
+      return this;
+    }
+    auto local_point = rect.origin();
+    ConvertPointToTarget(parent(), caption_button_container_, &local_point);
+    if (!caption_button_container_->HitTestPoint(local_point)) {
+      return this;
+    }
+  }
+
+  return NonClientFrameView::TargetForRect(root, rect);
+}
+
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
   if (window_->has_frame())
     return frame_->client_view()->NonClientHitTest(point);
