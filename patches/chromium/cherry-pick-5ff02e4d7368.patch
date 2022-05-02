@@ -1,0 +1,40 @@
+From 5ff02e4d7368d2cc1b7a66c8da17f422c3fbe0bf Mon Sep 17 00:00:00 2001
+From: UwU UwU <uwu7586@gmail.com>
+Date: Tue, 19 Apr 2022 15:10:38 +0000
+Subject: [PATCH] [M96-LTS] NavigatorManagedData: Prevent iterator invalidation during Promise resolution
+
+(cherry picked from commit 6083135252280d9b43e26169eb35154a9ac861ea)
+
+Bug: 1307223
+Change-Id: Iead6cf8c6236a95dbdfe7877c912f6ba86b370ac
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3532439
+Commit-Queue: Anqing Zhao <anqing@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#984230}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3577263
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Owners-Override: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1591}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+---
+
+diff --git a/third_party/blink/renderer/modules/managed_device/navigator_managed_data.cc b/third_party/blink/renderer/modules/managed_device/navigator_managed_data.cc
+index 2df64ff..32b48ca0 100644
+--- a/third_party/blink/renderer/modules/managed_device/navigator_managed_data.cc
++++ b/third_party/blink/renderer/modules/managed_device/navigator_managed_data.cc
+@@ -108,8 +108,14 @@
+       !managed_configuration_service_.is_connected()) {
+     managed_configuration_service_.reset();
+   }
++
++  // Move the set to a local variable to prevent script execution in Reject()
++  // from invalidating the iterator used by the loop.
++  HeapHashSet<Member<ScriptPromiseResolver>> pending_promises;
++  pending_promises_.swap(pending_promises);
++
+   // Resolve all pending promises with a failure.
+-  for (ScriptPromiseResolver* resolver : pending_promises_) {
++  for (ScriptPromiseResolver* resolver : pending_promises) {
+     resolver->Reject(
+         MakeGarbageCollected<DOMException>(DOMExceptionCode::kNotAllowedError,
+                                            kNotHighTrustedAppExceptionMessage));

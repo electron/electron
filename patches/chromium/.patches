@@ -129,3 +129,4 @@ skia_renderer_use_rectf_intersect_in_applyscissor.patch
 cherry-pick-1a31e2110440.patch
 cherry-pick-5cb934a23ddf.patch
 use_iserrordocument_to_prevent_bfcacheing_of_interstitials_and.patch
+cherry-pick-5ff02e4d7368.patch
