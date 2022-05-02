@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Eng <enga@chromium.org>
 Date: Mon, 25 Apr 2022 21:01:40 +0000
-Subject: [M96-LTS] Add bounds check to WebGPUDecoderImpl::DoRequestDevice
+Subject: Add bounds check to WebGPUDecoderImpl::DoRequestDevice
 
 (cherry picked from commit bee4701c99cbbbb25c0bd6c5c79a40f63f1b1e47)
 
