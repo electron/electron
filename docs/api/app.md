@@ -1444,7 +1444,7 @@ details.
 
 ### `app.registerForRemoteNotifications()` _macOS_
 
-Registers this app with Apple Push Notification service (APNS) to receive [Badge, Sound, and Alert](https://developer.apple.com/documentation/appkit/sremotenotificationtype?language=objc) notifications. If registration is successful, the BrowserWindow event `registered-for-remote-notifications` will be emitted with the APNS device token. Otherwise, the event `failed-to-register-for-remote-notifications` will be emitted.
+Registers the app with Apple Push Notification service (APNS) to receive [Badge, Sound, and Alert](https://developer.apple.com/documentation/appkit/sremotenotificationtype?language=objc) notifications. If registration is successful, the BrowserWindow event `registered-for-remote-notifications` will be emitted with the APNS device token. Otherwise, the event `failed-to-register-for-remote-notifications` will be emitted.
 See: https://developer.apple.com/documentation/appkit/nsapplication/1428476-registerforremotenotificationtyp?language=objc
 
 ### `app.unregisterForRemoteNotifications()` _macOS_
