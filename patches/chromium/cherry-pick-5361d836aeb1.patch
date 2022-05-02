@@ -1,7 +1,7 @@
-From 5361d836aeb1bde7fb3ef333209a65b61e1911fe Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Eng <enga@chromium.org>
 Date: Mon, 25 Apr 2022 21:01:40 +0000
-Subject: [PATCH] [M96-LTS] Add bounds check to WebGPUDecoderImpl::DoRequestDevice
+Subject: Add bounds check to WebGPUDecoderImpl::DoRequestDevice
 
 (cherry picked from commit bee4701c99cbbbb25c0bd6c5c79a40f63f1b1e47)
 
@@ -16,13 +16,12 @@ Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
 Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1603}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/gpu/command_buffer/service/webgpu_decoder_impl.cc b/gpu/command_buffer/service/webgpu_decoder_impl.cc
-index 201ac917..6a8d143 100644
+index 39f2652a69e3b0e7494c8de3dee5453c4d447941..6879bddb8354e3f57f1431f05f30801e267940f5 100644
 --- a/gpu/command_buffer/service/webgpu_decoder_impl.cc
 +++ b/gpu/command_buffer/service/webgpu_decoder_impl.cc
-@@ -424,11 +424,12 @@
+@@ -423,11 +423,12 @@ class WebGPUDecoderImpl final : public WebGPUDecoder {
  
    int32_t GetPreferredAdapterIndex(PowerPreference power_preference) const;
  
@@ -40,7 +39,7 @@ index 201ac917..6a8d143 100644
    void OnRequestDeviceCallback(DawnRequestDeviceSerial request_device_serial,
                                 size_t requested_adapter_index,
                                 uint32_t device_id,
-@@ -583,16 +584,16 @@
+@@ -582,16 +583,16 @@ ContextResult WebGPUDecoderImpl::Initialize() {
    return ContextResult::kSuccess;
  }
  
@@ -60,9 +59,9 @@ index 201ac917..6a8d143 100644
 +    return error::kOutOfBounds;
 +  }
  
-   dawn_native::DeviceDescriptor device_descriptor;
+   dawn_native::DawnDeviceDescriptor device_descriptor;
    if (request_device_properties.textureCompressionBC) {
-@@ -661,6 +662,8 @@
+@@ -666,6 +667,8 @@ void WebGPUDecoderImpl::DoRequestDevice(
          std::move(*callback).Run(status, wgpu_device, message);
        },
        new CallbackT(std::move(callback)));
@@ -71,7 +70,7 @@ index 201ac917..6a8d143 100644
  }
  
  void WebGPUDecoderImpl::OnRequestDeviceCallback(
-@@ -1071,9 +1074,8 @@
+@@ -1083,9 +1086,8 @@ error::Error WebGPUDecoderImpl::HandleRequestDevice(
      }
    }
  
