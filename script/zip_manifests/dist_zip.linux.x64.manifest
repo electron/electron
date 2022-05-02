@@ -69,8 +69,6 @@ locales/zh-TW.pak
 resources.pak
 resources/default_app.asar
 snapshot_blob.bin
-swiftshader/libEGL.so
-swiftshader/libGLESv2.so
 vk_swiftshader_icd.json
 v8_context_snapshot.bin
 version
