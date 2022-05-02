@@ -31,7 +31,7 @@ index b0e64049d411305d58802fd290bb0480e9b36fee..4afcf3b7a5b841409b0e1c4c2f32fd48
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 32a61e73658d33dcd0fe1640094c8b79dde0be37..3c3650e0f8364a5c86bd11a6f11ca559a97f5900 100644
+index a3df152caabcadaba454f73f58763a89fdea4247..ba76f2f294a2eab8581b5ef8d879cb464f14cb1f 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -82,10 +82,12 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -77,7 +77,7 @@ index dc8de24c86f1769680ce7830844d35dfef7eb7e7..fcd99361fa8c895d6bd89bacb9fb94e7
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 7461d5079f9cb0f257fbb93248c98be9409d38e7..4ddb9e40f0441b378d73ac75d99ae64c90d32b58 100644
+index fe015fa7d7813115a2c6a23a00cb509c4c16cd93..88e04351204c786d0fc72a99ccc421f76fc26ef9 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -129,7 +129,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
@@ -90,7 +90,7 @@ index 7461d5079f9cb0f257fbb93248c98be9409d38e7..4ddb9e40f0441b378d73ac75d99ae64c
          notification_service_remote_.BindNewPipeAndPassReceiver());
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 1195296c6f925e6c4f52f61866cf4b7f824af4e9..d3142bef0856c5cd7f4822ee9dcaedaef74a12d3 100644
+index fc24d16beb5a0ae61bf3123d0594287031d69ddf..6a6edfa8f919ffca815cc0f50fcde0b09067d494 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -282,13 +282,14 @@ void PlatformNotificationContextImpl::Shutdown() {
