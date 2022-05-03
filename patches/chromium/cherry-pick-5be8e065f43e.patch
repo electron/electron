@@ -1,7 +1,7 @@
-From 5be8e065f43e219d4ab71cefecdbbfd3e75ff426 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Gregg Tavares <gman@chromium.org>
 Date: Fri, 29 Apr 2022 15:23:33 +0000
-Subject: [PATCH] [M96-LTS] Check for error when calling ComputeImageSizeInBytes
+Subject: Check for error when calling ComputeImageSizeInBytes
 
 (cherry picked from commit f3244fe50ba6c64ab6a75f1370d8dd983927fae6)
 
@@ -16,13 +16,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1609}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/third_party/blink/renderer/platform/graphics/gpu/webgl_image_conversion.cc b/third_party/blink/renderer/platform/graphics/gpu/webgl_image_conversion.cc
-index 16babfa9..767b477d 100644
+index 16babfa9bcf98d640bc32be99fc8641e3f459a4b..767b477d50d79b2bca8dcb09d21d3c474d825fca 100644
 --- a/third_party/blink/renderer/platform/graphics/gpu/webgl_image_conversion.cc
 +++ b/third_party/blink/renderer/platform/graphics/gpu/webgl_image_conversion.cc
-@@ -3996,8 +3996,10 @@
+@@ -3996,8 +3996,10 @@ bool WebGLImageConversion::ExtractTextureData(
    data.resize(width * height * bytes_per_pixel);
  
    unsigned image_size_in_bytes, skip_size_in_bytes;
