@@ -14,6 +14,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/thread_pool.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
@@ -117,7 +118,7 @@ void DevToolsManagerDelegate::HandleCommand(
     // Since we only have one method and it is supposed to close Electron,
     // we don't need to add this complexity. Should we decide to support
     // methods like Browser.setWindowBounds, we'll need to do it though.
-    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+    base::ThreadPool::PostTask(FROM_HERE, {content::BrowserThread::UI},
                    base::BindOnce([]() { Browser::Get()->Quit(); }));
     return;
   }

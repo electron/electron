@@ -9,7 +9,7 @@
 
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
+#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
@@ -122,7 +122,7 @@
  */
 - (void)runCallback:(bool)isProductValid {
   if (callback_) {
-    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+    base::ThreadPool::PostTask(FROM_HERE, {content::BrowserThread::UI},
                    base::BindOnce(std::move(callback_), isProductValid));
   }
   // Release this delegate.

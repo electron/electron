@@ -18,7 +18,6 @@
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
-#include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
 #include "base/threading/sequenced_task_runner_handle.h"
@@ -995,7 +994,7 @@ void WebContents::Destroy() {
   if (Browser::Get()->is_shutting_down() || IsGuest()) {
     DeleteThisIfAlive();
   } else {
-    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+    base::ThreadPool::PostTask(FROM_HERE, {content::BrowserThread::UI},
                    base::BindOnce(
                        [](base::WeakPtr<WebContents> contents) {
                          if (contents)

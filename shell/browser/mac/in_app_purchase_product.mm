@@ -10,7 +10,7 @@
 
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
+#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
@@ -83,7 +83,7 @@
   }
 
   // Send the callback to the browser thread.
-  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+  base::ThreadPool::PostTask(FROM_HERE, {content::BrowserThread::UI},
                  base::BindOnce(std::move(callback_), converted));
 
   [self release];

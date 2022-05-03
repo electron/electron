@@ -75,7 +75,7 @@ index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..5a64220aaf1309832dc0ad543e353de6
  
  #if BUILDFLAG(IS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 22331cd6985b2aa2347fe9d4211f51634e94d0a6..be2c417c07a4206fac4a9a6c03e516fd0493c942 100644
+index 22331cd6985b2aa2347fe9d4211f51634e94d0a6..3f065e5ead177579142560e38f0516ff117a9d26 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@
@@ -90,7 +90,7 @@ index 22331cd6985b2aa2347fe9d4211f51634e94d0a6..be2c417c07a4206fac4a9a6c03e516fd
  #include "base/strings/utf_string_conversions.h"
  #include "base/task/sequenced_task_runner_helpers.h"
  #include "base/task/single_thread_task_runner.h"
-+#include "base/task/post_task.h"
++#include "base/task/thread_pool.h"
  #include "base/threading/platform_thread.h"
  #include "base/threading/thread_task_runner_handle.h"
  #include "base/time/time.h"
@@ -163,7 +163,7 @@ index 22331cd6985b2aa2347fe9d4211f51634e94d0a6..be2c417c07a4206fac4a9a6c03e516fd
  
 +void ProcessSingleton::StartListeningOnSocket() {
 +  watcher_ = base::MakeRefCounted<LinuxWatcher>(this);
-+  base::PostTask(FROM_HERE, {BrowserThread::IO},
++  base::ThreadPool::PostTask(FROM_HERE, {BrowserThread::IO},
 +                 base::BindOnce(&ProcessSingleton::LinuxWatcher::StartListening,
 +                                watcher_, sock_));
 +}

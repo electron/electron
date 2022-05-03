@@ -68,7 +68,7 @@ v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
 void Promise<void>::ResolvePromise(Promise<void> promise) {
   if (gin_helper::Locker::IsBrowserProcess() &&
       !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-    base::PostTask(
+    base::ThreadPool::PostTask(
         FROM_HERE, {content::BrowserThread::UI},
         base::BindOnce([](Promise<void> promise) { promise.Resolve(); },
                        std::move(promise)));
