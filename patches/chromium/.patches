@@ -166,6 +166,7 @@ remove_incorrect_width_height_adjustments.patch
 fix_non-client_mouse_tracking_and_message_bubbling_on_windows.patch
 fixed_terminate_caused_by_binding_to_wrong_version.patch
 follow_wayland_specification_regarding_xkb_keymap.patch
+cherry-pick-1665a1d16d46.patch
 cherry-pick-4d26949260aa.patch
 use-after-free_of_id_and_idref_attributes.patch
 fix_--without-valid_build.patch
@@ -175,3 +176,4 @@ skia_renderer_use_rectf_intersect_in_applyscissor.patch
 cherry-pick-1a31e2110440.patch
 m100_change_ownership_of_blobbytesprovider.patch
 m96-lts_add_bounds_check_to_webgpudecoderimpl_dorequestdevice.patch
+cherry-pick-12ba78f3fa7a.patch
