@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
 Date: Mon, 14 Mar 2022 10:37:31 -0400
-Subject: [M100] Fix crash when pausing XFB then deleting a buffer.
+Subject: Fix crash when pausing XFB then deleting a buffer.
 
 Fix is to validate XFB buffer bindings even if we're paused.
 This is undefined behaviour so we can use any non-crashing solution.
