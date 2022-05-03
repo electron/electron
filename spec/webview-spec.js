@@ -7,7 +7,7 @@ const { emittedOnce, waitForEvent } = require('./events-helpers');
 const { ifdescribe, ifit, delay } = require('./spec-helpers');
 
 const features = process._linkedBinding('electron_common_features');
-const nativeModulesEnabled = process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
+const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
