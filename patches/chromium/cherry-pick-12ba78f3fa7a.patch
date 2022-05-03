@@ -1,0 +1,90 @@
+From 12ba78f3fa7a42c9a6a15f7a8248453ffef91a08 Mon Sep 17 00:00:00 2001
+From: Xiaocheng Hu <xiaochengh@chromium.org>
+Date: Mon, 25 Apr 2022 20:57:43 +0000
+Subject: [PATCH] [M96-LTS] Sanitize DragData markup before inserting it into document
+
+(cherry picked from commit 5164a0fe3391283663e1196cf4576ec233985e89)
+
+Fixed: 1315040
+Change-Id: I8a0ddfb983d12c185f7e943d3d5277788199b011
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3579670
+Quick-Run: Xiaocheng Hu <xiaochengh@chromium.org>
+Auto-Submit: Xiaocheng Hu <xiaochengh@chromium.org>
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#991324}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3589799
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1602}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+---
+
+diff --git a/third_party/blink/renderer/core/page/drag_data.cc b/third_party/blink/renderer/core/page/drag_data.cc
+index d5ace3a..36ad9f6 100644
+--- a/third_party/blink/renderer/core/page/drag_data.cc
++++ b/third_party/blink/renderer/core/page/drag_data.cc
+@@ -131,8 +131,8 @@
+     platform_drag_data_->HtmlAndBaseURL(html, base_url);
+     DCHECK(frame->GetDocument());
+     if (DocumentFragment* fragment =
+-            CreateFragmentFromMarkup(*frame->GetDocument(), html, base_url,
+-                                     kDisallowScriptingAndPluginContent))
++            CreateSanitizedFragmentFromMarkupWithContext(
++                *frame->GetDocument(), html, 0, html.length(), base_url))
+       return fragment;
+   }
+ 
+diff --git a/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html b/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html
+new file mode 100644
+index 0000000..58551d2
+--- /dev/null
++++ b/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html
+@@ -0,0 +1,47 @@
++<!doctype html>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++
++<div id="drag-from" draggable=true>Drag from</div>
++<div id="drag-to" contenteditable>Drag to</div>
++
++<script>
++function computePoint(element) {
++  return {
++     x: element.offsetLeft + element.offsetWidth / 2,
++     y: element.offsetTop + element.offsetHeight / 2
++  };
++}
++
++let dragged = false;
++let executed = false;
++const payload = `
++  <svg><use href="data:image/svg+xml,&lt;svg id='x' xmlns='http://www.w3.org/2000/svg'&gt;&lt;image href='fake' onerror='executed=true' /&gt;&lt;/svg&gt;#x" />
++`;
++
++const dragFrom = document.getElementById('drag-from');
++dragFrom.ondragstart = event => {
++  dragged = true;
++  event.dataTransfer.setData('text/html', payload);
++}
++
++const dragTo = document.getElementById('drag-to');
++
++promise_test(async test => {
++  assert_own_property(window, 'eventSender', 'This test requires eventSender to simulate drag and drop');
++
++  const fromPoint = computePoint(dragFrom);
++  eventSender.mouseMoveTo(fromPoint.x, fromPoint.y);
++  eventSender.mouseDown();
++
++  const toPoint = computePoint(dragTo);
++  eventSender.mouseMoveTo(toPoint.x, toPoint.y);
++  eventSender.mouseUp();
++
++  assert_true(dragged, 'Element should be dragged');
++
++  // The 'error' event is dispatched asynchronously.
++  await new Promise(resolve => test.step_timeout(resolve, 100));
++  assert_false(executed, 'Script should be blocked');
++}, 'Script in SVG use href should be sanitized');
++</script>
