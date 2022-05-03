@@ -94,6 +94,19 @@ void ElectronSerialDelegate::RemoveObserver(content::RenderFrameHost* frame,
   }
 }
 
+void ElectronSerialDelegate::RevokePortPermissionWebInitiated(
+    content::RenderFrameHost* frame,
+    const base::UnguessableToken& token) {
+  // TODO(nornagon/jkleinsc): pass this on to the chooser context
+}
+
+const device::mojom::SerialPortInfo* ElectronSerialDelegate::GetPortInfo(
+    content::RenderFrameHost* frame,
+    const base::UnguessableToken& token) {
+  // TODO(nornagon/jkleinsc): pass this on to the chooser context
+  return nullptr;
+}
+
 SerialChooserController* ElectronSerialDelegate::ControllerForFrame(
     content::RenderFrameHost* render_frame_host) {
   auto mapping = controller_map_.find(render_frame_host);

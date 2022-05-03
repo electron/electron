@@ -116,6 +116,10 @@ void SerialChooserController::OnPortRemoved(
   }
 }
 
+void SerialChooserController::OnPortManagerConnectionError() {
+  // TODO(nornagon/jkleinsc): report event
+}
+
 void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
   if (port_id.empty()) {
     RunCallback(/*port=*/nullptr);
