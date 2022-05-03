@@ -1,0 +1,10 @@
+{
+  "name": "@electron/circleci-config",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "fs-extra": "^10.1.0",
+    "js-yaml": "^4.1.0"
+  }
+}
