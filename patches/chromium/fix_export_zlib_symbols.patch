@@ -6,10 +6,10 @@ Subject: fix: export zlib symbols
 This patch sets ZLIB_DLL so that we properly export zlib symbols.
 
 diff --git a/third_party/zlib/BUILD.gn b/third_party/zlib/BUILD.gn
-index 3a71693c5f2941c33909eaa64ae1ec20e1ed7b93..ce0bb6f7800b6933caddbe4488e1030869f1d2c0 100644
+index 999b1de1b2ba1fff5dd92173300dc22b9aa5a865..2132d8ef92acd39bffe3bebddb80b4317e1f52b8 100644
 --- a/third_party/zlib/BUILD.gn
 +++ b/third_party/zlib/BUILD.gn
-@@ -309,6 +309,10 @@ component("zlib") {
+@@ -313,6 +313,10 @@ component("zlib") {
    defines = []
    deps = []
  

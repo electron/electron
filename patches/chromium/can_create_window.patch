@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 08afe0bbf57db786c2f07ea405617bcaf9ddc0e8..9b6babe187904f36639b84f4ba766409b9ccccad 100644
+index aa0be995df8c2f9fa0d84922d30c7e1cdf9025c8..e588b460aa32b4c984d593ed54e10310b59ace9b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -6840,6 +6840,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -68,7 +68,7 @@ index a7f36529608011013dab96a803ad3187c940fc81..2bbcea3efede2fda4ff2c5b270e1db01
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index b9e9efebe827bfb946b3d93b123f1dcec25f6470..0dbaa15a0ddf537032cd4afe46771ff166388018 100644
+index 4a41cd5203f48c9c1e8840aed62d9c5091085097..f9ecb2a593b6d2d067f03e85da8af08a1f6daaab 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -580,6 +580,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -81,10 +81,10 @@ index b9e9efebe827bfb946b3d93b123f1dcec25f6470..0dbaa15a0ddf537032cd4afe46771ff1
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3c3c92e31dee89888a96d3618019f34bc915e6e5..d3637c8a18db711417938b793587c444cdeaa9c3 100644
+index 14e88bcb14748d704c2c6e2dba952ada2409606a..8ed4db68e4725dfcb93e07eec5ad20044354c811 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -169,6 +169,7 @@ class NetworkService;
+@@ -168,6 +168,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -92,7 +92,7 @@ index 3c3c92e31dee89888a96d3618019f34bc915e6e5..d3637c8a18db711417938b793587c444
  }  // namespace network
  
  namespace sandbox {
-@@ -956,6 +957,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -959,6 +960,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -173,10 +173,10 @@ index 89b07508aef80680a847c106fea0e2fa58ff964b..6630af3583a6bac6135d46644280d644
        /*is_opener_navigation=*/false, request.HasUserGesture(),
        // `openee_can_access_opener_origin` only matters for opener navigations,
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index 749ba82767f788c27bba5e9b2e2c5746b2806b29..8fb640d38fa6491a3bde2ada71a5d500e94254c4 100644
+index 2e7c332565ebe33b00ab7fff96a6a8dfc61422a6..0ab061f51d1d0c93f23bfcf5ba051172cea37eb8 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
-@@ -439,6 +439,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -438,6 +438,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -186,7 +186,7 @@ index 749ba82767f788c27bba5e9b2e2c5746b2806b29..8fb640d38fa6491a3bde2ada71a5d500
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/web_test/browser/web_test_content_browser_client.h b/content/web_test/browser/web_test_content_browser_client.h
-index d4eb4d482b2641585d501131c64b90cc9dbcfd18..132a5d86279b9a2cb4364b9c6d3e89e12d55052e 100644
+index 00e2a8c21d4f0ef00c942498251fa44065da63c0..0fc4b092fa276063e05f990bf920fecd60c6d26c 100644
 --- a/content/web_test/browser/web_test_content_browser_client.h
 +++ b/content/web_test/browser/web_test_content_browser_client.h
 @@ -80,6 +80,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
