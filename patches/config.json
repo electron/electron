@@ -5,6 +5,8 @@
 
   "src/electron/patches/devtools_frontend": "src/third_party/devtools-frontend/src",
 
+  "src/electron/patches/icu": "src/third_party/icu",
+
   "src/electron/patches/webrtc": "src/third_party/webrtc",
 
   "src/electron/patches/v8":  "src/v8",
