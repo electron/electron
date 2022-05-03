@@ -148,3 +148,4 @@ skia_renderer_-_don_t_explicitly_clip_scissor_for_large_transforms.patch
 skia_renderer_use_rectf_intersect_in_applyscissor.patch
 m100_change_ownership_of_blobbytesprovider.patch
 cherry-pick-38ab9c5b06a4.patch
+cherry-pick-5361d836aeb1.patch
