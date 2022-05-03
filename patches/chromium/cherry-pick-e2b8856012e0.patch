@@ -1,0 +1,89 @@
+From e2b8856012e068e16a9a343525961972bc45b480 Mon Sep 17 00:00:00 2001
+From: Xiaocheng Hu <xiaochengh@chromium.org>
+Date: Mon, 18 Apr 2022 01:14:45 +0000
+Subject: [PATCH] [M101] Sanitize DragData markup before inserting it into document
+
+(cherry picked from commit 5164a0fe3391283663e1196cf4576ec233985e89)
+
+Fixed: 1315040
+Change-Id: I8a0ddfb983d12c185f7e943d3d5277788199b011
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3579670
+Quick-Run: Xiaocheng Hu <xiaochengh@chromium.org>
+Auto-Submit: Xiaocheng Hu <xiaochengh@chromium.org>
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#991324}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3588887
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4951@{#831}
+Cr-Branched-From: 27de6227ca357da0d57ae2c7b18da170c4651438-refs/heads/main@{#982481}
+---
+
+diff --git a/third_party/blink/renderer/core/page/drag_data.cc b/third_party/blink/renderer/core/page/drag_data.cc
+index 2ce56b1..4fb86bc 100644
+--- a/third_party/blink/renderer/core/page/drag_data.cc
++++ b/third_party/blink/renderer/core/page/drag_data.cc
+@@ -131,8 +131,8 @@
+     platform_drag_data_->HtmlAndBaseURL(html, base_url);
+     DCHECK(frame->GetDocument());
+     if (DocumentFragment* fragment =
+-            CreateFragmentFromMarkup(*frame->GetDocument(), html, base_url,
+-                                     kDisallowScriptingAndPluginContent))
++            CreateSanitizedFragmentFromMarkupWithContext(
++                *frame->GetDocument(), html, 0, html.length(), base_url))
+       return fragment;
+   }
+ 
+diff --git a/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html b/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html
+new file mode 100644
+index 0000000..58551d2
+--- /dev/null
++++ b/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html
+@@ -0,0 +1,47 @@
++<!doctype html>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++
++<div id="drag-from" draggable=true>Drag from</div>
++<div id="drag-to" contenteditable>Drag to</div>
++
++<script>
++function computePoint(element) {
++  return {
++     x: element.offsetLeft + element.offsetWidth / 2,
++     y: element.offsetTop + element.offsetHeight / 2
++  };
++}
++
++let dragged = false;
++let executed = false;
++const payload = `
++  <svg><use href="data:image/svg+xml,&lt;svg id='x' xmlns='http://www.w3.org/2000/svg'&gt;&lt;image href='fake' onerror='executed=true' /&gt;&lt;/svg&gt;#x" />
++`;
++
++const dragFrom = document.getElementById('drag-from');
++dragFrom.ondragstart = event => {
++  dragged = true;
++  event.dataTransfer.setData('text/html', payload);
++}
++
++const dragTo = document.getElementById('drag-to');
++
++promise_test(async test => {
++  assert_own_property(window, 'eventSender', 'This test requires eventSender to simulate drag and drop');
++
++  const fromPoint = computePoint(dragFrom);
++  eventSender.mouseMoveTo(fromPoint.x, fromPoint.y);
++  eventSender.mouseDown();
++
++  const toPoint = computePoint(dragTo);
++  eventSender.mouseMoveTo(toPoint.x, toPoint.y);
++  eventSender.mouseUp();
++
++  assert_true(dragged, 'Element should be dragged');
++
++  // The 'error' event is dispatched asynchronously.
++  await new Promise(resolve => test.step_timeout(resolve, 100));
++  assert_false(executed, 'Script should be blocked');
++}, 'Script in SVG use href should be sanitized');
++</script>
