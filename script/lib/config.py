@@ -21,8 +21,6 @@ LINUX_BINARIES = [
   'libGLESv2.so',
   'libffmpeg.so',
   'libvk_swiftshader.so',
-  'swiftshader/libEGL.so',
-  'swiftshader/libGLESv2.so',
 ]
 
 verbose_mode = False

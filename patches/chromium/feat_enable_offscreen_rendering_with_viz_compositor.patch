@@ -503,7 +503,7 @@ index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef2
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index df92bab44402330869b44aa76bb40fc20e33b16a..2b3fbaee17c0a8bb7b04cd4c4edb13626dd1bb27 100644
+index 4e38e0f49054cef3fd1a712c89608ce39003edeb..427882f8ed0d85c6e4170b213c3a3678b60a62df 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -84,7 +84,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -621,7 +621,7 @@ index 80bff73a5886e8e79d7d91de5e27bc747fcfce02..8bc43d1359fa2551713992d6ccb73949
    raw_ptr<Layer> root_layer_ = nullptr;
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
-index c5fb29b30b9c5b7483998c567ed9a479d8743939..dc10d78315f76a3914ccd6e2e99af97fa909918b 100644
+index 12e115cd6a128d8d150abc786d4d38b1d5119d91..b6320de28750333bee7ee83393849f4eb0a956ac 100644
 --- a/ui/gfx/ca_layer_params.h
 +++ b/ui/gfx/ca_layer_params.h
 @@ -6,6 +6,7 @@
@@ -632,7 +632,7 @@ index c5fb29b30b9c5b7483998c567ed9a479d8743939..dc10d78315f76a3914ccd6e2e99af97f
  #include "ui/gfx/geometry/size.h"
  #include "ui/gfx/gfx_export.h"
  
-@@ -41,6 +42,8 @@ struct GFX_EXPORT CALayerParams {
+@@ -51,6 +52,8 @@ struct GFX_EXPORT CALayerParams {
    gfx::ScopedRefCountedIOSurfaceMachPort io_surface_mach_port;
  #endif
  
