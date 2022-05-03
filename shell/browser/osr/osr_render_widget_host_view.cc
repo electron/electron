@@ -13,7 +13,6 @@
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/task/single_thread_task_runner.h"
-#include "base/task/thread_pool.h"
 #include "base/time/time.h"
 #include "components/viz/common/features.h"
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
@@ -765,8 +764,8 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
   hold_resize_ = false;
   if (pending_resize_) {
     pending_resize_ = false;
-    base::ThreadPool::PostTask(
-        FROM_HERE, {content::BrowserThread::UI},
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
         base::BindOnce(
             &OffScreenRenderWidgetHostView::SynchronizeVisualProperties,
             weak_ptr_factory_.GetWeakPtr()));
@@ -870,8 +869,8 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
         // Scrolling outside of the popup widget so destroy it.
         // Execute asynchronously to avoid deleting the widget from inside some
         // other callback.
-        base::ThreadPool::PostTask(
-            FROM_HERE, {content::BrowserThread::UI},
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }

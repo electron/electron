@@ -994,8 +994,8 @@ void WebContents::Destroy() {
   if (Browser::Get()->is_shutting_down() || IsGuest()) {
     DeleteThisIfAlive();
   } else {
-    base::ThreadPool::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                   base::BindOnce(
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(
                        [](base::WeakPtr<WebContents> contents) {
                          if (contents)
                            contents->DeleteThisIfAlive();

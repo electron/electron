@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/handle.h"
@@ -39,8 +38,8 @@ void NativeTheme::OnNativeThemeUpdatedOnUI() {
 }
 
 void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
-  base::ThreadPool::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
                                 base::Unretained(this)));
 }
 

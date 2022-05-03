@@ -9,7 +9,6 @@
 #include "base/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/path_service.h"
-#include "base/task/thread_pool.h"
 #include "build/build_config.h"
 #include "chrome/browser/extensions/chrome_url_request_util.h"
 #include "chrome/common/chrome_paths.h"
@@ -301,8 +300,8 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     std::unique_ptr<base::ListValue> args,
     bool dispatch_to_off_the_record_profiles) {
   if (!BrowserThread::CurrentlyOn(BrowserThread::UI)) {
-    base::ThreadPool::PostTask(
-        FROM_HERE, {BrowserThread::UI},
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
         base::BindOnce(
             &ElectronExtensionsBrowserClient::BroadcastEventToRenderers,
             base::Unretained(this), histogram_value, event_name,

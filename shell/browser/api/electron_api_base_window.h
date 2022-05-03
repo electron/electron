@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/handle.h"
@@ -258,8 +257,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   template <typename... Args>
   void EmitEventSoon(base::StringPiece eventName) {
-    base::ThreadPool::PostTask(
-        FROM_HERE, {content::BrowserThread::UI},
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
         base::BindOnce(base::IgnoreResult(&BaseWindow::Emit<Args...>),
                        weak_factory_.GetWeakPtr(), eventName));
   }

@@ -17,7 +17,6 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
@@ -178,8 +177,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
       // users will run in the callback, we have to delay running the callback
       // until next tick, otherwise crash like this may happen:
       // https://github.com/electron/electron/issues/26884
-      base::ThreadPool::PostTask(
-          FROM_HERE, {content::BrowserThread::UI},
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
           base::BindOnce(std::move(callback_), response, suppressed));
     };
     [alert beginSheetModalForWindow:window completionHandler:handler];

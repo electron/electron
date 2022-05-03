@@ -16,7 +16,6 @@
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/thread_pool.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "components/remote_cocoa/browser/scoped_cg_window_id.h"
 #include "content/public/browser/browser_accessibility_state.h"
@@ -999,8 +998,8 @@ void NativeWindowMac::OnDisplayMetricsChanged(const display::Display& display,
   if (!is_simple_fullscreen_)
     return;
 
-  base::ThreadPool::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(&NativeWindow::UpdateFrame, GetWeakPtr()));
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&NativeWindow::UpdateFrame, GetWeakPtr()));
 }
 
 void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
@@ -1778,8 +1777,8 @@ bool NativeWindowMac::CanMaximize() const {
 }
 
 void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
-  base::ThreadPool::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&NativeWindow::RedrawTrafficLights, GetWeakPtr()));
 }
 
