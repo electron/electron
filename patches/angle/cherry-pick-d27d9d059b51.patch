@@ -1,0 +1,101 @@
+From d27d9d059b51badd1477e029e3b757b478d3140d Mon Sep 17 00:00:00 2001
+From: Charlie Lao <cclao@google.com>
+Date: Tue, 15 Mar 2022 09:39:36 -0700
+Subject: [PATCH] [M96-LTS] Vulkan: Update mCurrentElementArrayBuffersync based on dirty bit
+
+M96 merge issues:
+  ContextVk.cpp:
+    ContextVk::setupIndexedDraw: vertexArrayVk/getVertexArray() isn't present in M96
+    ContextVk::syncState: M96 uses mVertexArray instead of vertexArrayVk
+  VertexArrayVk.cpp:
+    VertexArrayVk::updateCurrentElementArrayBuffer doesn't exist in M9
+    Created it and kept M96 logic for retrieving buffer/offset
+
+The previous fix crrev.com/c/3513553 has run into corner case that
+requires more follow up change crrev.com/c/3522565. But with that, there
+is report that now we are hitting assertion in
+handleDirtyGraphicsIndexBuffer(). This becomes a bit fragile This new
+fix relies on the DIRTY_BIT_INDEX_BUFFER dirty bit and should be more
+reliable as long as the dirty bit is set properly (if not, then we have
+other bug that it won't even send down vulkan command to bind the
+correct element buffer). We could further optimize the code path and
+create a fast path for most common usages in the future.
+
+Bug: chromium:1299261
+Change-Id: Ifa8f86d431798c9ca4c128ed71a3e9e0a3537ccb
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3526021
+Commit-Queue: Charlie Lao <cclao@google.com>
+(cherry picked from commit 349636a05a3577a127adb6c79a1e947890bbe462)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3605834
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+---
+
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index 62d7541..22e17db 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -933,6 +933,17 @@
+             mGraphicsDirtyBits.set(DIRTY_BIT_INDEX_BUFFER);
+             mLastIndexBufferOffset = indices;
+         }
++
++        // When you draw with LineLoop mode or GL_UNSIGNED_BYTE type, we may allocate its own
++        // element buffer and modify mCurrentElementArrayBuffer. When we switch out of that draw
++        // mode, we must reset mCurrentElementArrayBuffer back to the vertexArray's element buffer.
++        // Since in either case we set DIRTY_BIT_INDEX_BUFFER dirty bit, we use this bit to re-sync
++        // mCurrentElementArrayBuffer.
++        if (mGraphicsDirtyBits[DIRTY_BIT_INDEX_BUFFER])
++        {
++            mVertexArray->updateCurrentElementArrayBuffer();
++        }
++
+         if (shouldConvertUint8VkIndexType(indexType) && mGraphicsDirtyBits[DIRTY_BIT_INDEX_BUFFER])
+         {
+             ANGLE_PERF_WARNING(getDebug(), GL_DEBUG_SEVERITY_LOW,
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index 09cb058..80d97a3 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -463,6 +463,17 @@
+     return angle::Result::Continue;
+ }
+ 
++void VertexArrayVk::updateCurrentElementArrayBuffer()
++{
++    ASSERT(mState.getElementArrayBuffer() != nullptr);
++    ASSERT(mState.getElementArrayBuffer()->getSize() > 0);
++    gl::Buffer *bufferGL = mState.getElementArrayBuffer();
++    BufferVk *bufferVk = vk::GetImpl(bufferGL);
++    mCurrentElementArrayBuffer =
++        &bufferVk->getBufferAndOffset(&mCurrentElementArrayBufferOffset);
++
++}
++
+ angle::Result VertexArrayVk::syncState(const gl::Context *context,
+                                        const gl::VertexArray::DirtyBits &dirtyBits,
+                                        gl::VertexArray::DirtyAttribBitsArray *attribBits,
+@@ -488,9 +499,7 @@
+                 {
+                     // Note that just updating buffer data may still result in a new
+                     // vk::BufferHelper allocation.
+-                    BufferVk *bufferVk = vk::GetImpl(bufferGL);
+-                    mCurrentElementArrayBuffer =
+-                        &bufferVk->getBufferAndOffset(&mCurrentElementArrayBufferOffset);
++                    updateCurrentElementArrayBuffer();
+                 }
+                 else
+                 {
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.h b/src/libANGLE/renderer/vulkan/VertexArrayVk.h
+index c198265..0b98a9e 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.h
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.h
+@@ -34,6 +34,8 @@
+ 
+     angle::Result updateActiveAttribInfo(ContextVk *contextVk);
+ 
++    void updateCurrentElementArrayBuffer();
++
+     angle::Result updateDefaultAttrib(ContextVk *contextVk,
+                                       size_t attribIndex,
+                                       VkBuffer bufferHandle,
