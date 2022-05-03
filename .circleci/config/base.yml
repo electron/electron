@@ -681,13 +681,6 @@ step-electron-dist-unzip: &step-electron-dist-unzip
       #    passed.
       unzip -:o dist.zip
 
-step-ffmpeg-unzip: &step-ffmpeg-unzip
-  run:
-    name: Unzip ffmpeg.zip
-    command: |
-      cd src/out/ffmpeg
-      unzip -:o ffmpeg.zip
-
 step-mksnapshot-unzip: &step-mksnapshot-unzip
   run:
     name: Unzip mksnapshot.zip
@@ -715,13 +708,6 @@ step-ffmpeg-build: &step-ffmpeg-build
     command: |
       cd src
       ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
-
-step-verify-ffmpeg: &step-verify-ffmpeg
-  run:
-    name: Verify ffmpeg
-    command: |
-      cd src
-      python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
 
 step-verify-mksnapshot: &step-verify-mksnapshot
   run:
@@ -1059,53 +1045,6 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
 
     #Compile ts/js to verify doc change didn't break anything
     - *step-ts-compile
-
-steps-native-tests: &steps-native-tests
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-install-python2-on-mac
-    - *step-setup-env-for-build
-    - *step-setup-goma-for-build
-    - *step-wait-for-goma
-    - *step-gn-gen-default
-
-    - run:
-        name: Build tests
-        command: |
-          cd src
-          ninja -C out/Default $BUILD_TARGET
-    - *step-show-goma-stats
-
-    - *step-setup-linux-for-headless-testing
-    - run:
-        name: Run tests
-        command: |
-          mkdir test_results
-          python src/electron/script/native-tests.py run \
-            --config $TESTS_CONFIG \
-            --tests-dir src/out/Default \
-            --output-dir test_results  \
-            $TESTS_ARGS
-
-    - store_artifacts:
-        path: test_results
-        destination: test_results  # Put it in the root folder.
-    - store_test_results:
-        path: test_results
-
-steps-verify-ffmpeg: &steps-verify-ffmpeg
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-ffmpeg-unzip
-    - *step-setup-linux-for-headless-testing
-
-    - *step-verify-ffmpeg
-    - *step-maybe-notify-slack-failure
 
 steps-tests: &steps-tests
   steps:
@@ -1886,7 +1825,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-electron-gn-check
 
-  osx-publish-x64-skip-checkout:
+  osx-publish-x64:
     executor:
       name: macos
       size: macos.x86.medium.gen2
@@ -1907,7 +1846,7 @@ jobs:
                 attach: true
                 checkout: false
 
-  osx-publish-arm64-skip-checkout:
+  osx-publish-arm64:
     executor:
       name: macos
       size: macos.x86.medium.gen2
@@ -1977,7 +1916,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-electron-gn-check
 
-  mas-publish-x64-skip-checkout:
+  mas-publish-x64:
     executor:
       name: macos
       size: macos.x86.medium.gen2
@@ -1998,7 +1937,7 @@ jobs:
                 attach: true
                 checkout: false
 
-  mas-publish-arm64-skip-checkout:
+  mas-publish-arm64:
     executor:
       name: macos
       size: macos.x86.medium.gen2
@@ -2084,16 +2023,6 @@ jobs:
       <<: *env-stack-dumping
     <<: *steps-test-node
 
-  linux-x64-verify-ffmpeg:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-ffmpeg
-
   linux-arm-testing-tests:
     executor: linux-arm
     environment:
@@ -2150,17 +2079,6 @@ jobs:
       <<: *env-apple-silicon
     <<: *steps-tests
 
-  # Layer 4: Summary.
-  linux-release-summary:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
 # List all workflows
 workflows:
   docs-only:
@@ -2186,19 +2104,19 @@ workflows:
     when: << pipeline.parameters.run-macos-publish >>
     jobs:
     - mac-checkout
-    - osx-publish-x64-skip-checkout:
+    - osx-publish-x64:
         requires:
           - mac-checkout
         context: release-env
-    - mas-publish-x64-skip-checkout:
+    - mas-publish-x64:
         requires:
           - mac-checkout
         context: release-env
-    - osx-publish-arm64-skip-checkout:
+    - osx-publish-arm64:
         requires:
           - mac-checkout
         context: release-env
-    - mas-publish-arm64-skip-checkout:
+    - mas-publish-arm64:
         requires:
           - mac-checkout
         context: release-env
