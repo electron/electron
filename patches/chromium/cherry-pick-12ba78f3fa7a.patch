@@ -1,7 +1,7 @@
-From 12ba78f3fa7a42c9a6a15f7a8248453ffef91a08 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xiaocheng Hu <xiaochengh@chromium.org>
 Date: Mon, 25 Apr 2022 20:57:43 +0000
-Subject: [PATCH] [M96-LTS] Sanitize DragData markup before inserting it into document
+Subject: Sanitize DragData markup before inserting it into document
 
 (cherry picked from commit 5164a0fe3391283663e1196cf4576ec233985e89)
 
@@ -18,13 +18,12 @@ Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
 Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1602}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/third_party/blink/renderer/core/page/drag_data.cc b/third_party/blink/renderer/core/page/drag_data.cc
-index d5ace3a..36ad9f6 100644
+index d5ace3a879ab5ab00557ba380d9470d9eb937286..36ad9f68d3a79fe3d7d948276a654aacf5db019b 100644
 --- a/third_party/blink/renderer/core/page/drag_data.cc
 +++ b/third_party/blink/renderer/core/page/drag_data.cc
-@@ -131,8 +131,8 @@
+@@ -131,8 +131,8 @@ DocumentFragment* DragData::AsFragment(LocalFrame* frame) const {
      platform_drag_data_->HtmlAndBaseURL(html, base_url);
      DCHECK(frame->GetDocument());
      if (DocumentFragment* fragment =
@@ -37,7 +36,7 @@ index d5ace3a..36ad9f6 100644
  
 diff --git a/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html b/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html
 new file mode 100644
-index 0000000..58551d2
+index 0000000000000000000000000000000000000000..58551d28341d851dbd99322e2a5d3af68b3b0c72
 --- /dev/null
 +++ b/third_party/blink/web_tests/editing/pasteboard/drag-and-drop-svg-use-sanitize.html
 @@ -0,0 +1,47 @@
