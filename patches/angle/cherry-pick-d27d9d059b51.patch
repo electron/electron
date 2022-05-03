@@ -1,7 +1,7 @@
-From d27d9d059b51badd1477e029e3b757b478d3140d Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Charlie Lao <cclao@google.com>
 Date: Tue, 15 Mar 2022 09:39:36 -0700
-Subject: [PATCH] [M96-LTS] Vulkan: Update mCurrentElementArrayBuffersync based on dirty bit
+Subject: Vulkan: Update mCurrentElementArrayBuffersync based on dirty bit
 
 M96 merge issues:
   ContextVk.cpp:
@@ -29,13 +29,12 @@ Commit-Queue: Charlie Lao <cclao@google.com>
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3605834
 Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
 Reviewed-by: Charlie Lao <cclao@google.com>
----
 
 diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
-index 62d7541..22e17db 100644
+index 15243f0c5a42949c2ce94dbd415089b77a7e39bc..2ff2fd75a73b50e3bce5d72e64d5d3064f30bd66 100644
 --- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
-@@ -933,6 +933,17 @@
+@@ -954,6 +954,17 @@ angle::Result ContextVk::setupIndexedDraw(const gl::Context *context,
              mGraphicsDirtyBits.set(DIRTY_BIT_INDEX_BUFFER);
              mLastIndexBufferOffset = indices;
          }
@@ -54,10 +53,10 @@ index 62d7541..22e17db 100644
          {
              ANGLE_PERF_WARNING(getDebug(), GL_DEBUG_SEVERITY_LOW,
 diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
-index 09cb058..80d97a3 100644
+index 93378c4b24495872405fc06ea01e15254229ab63..035c80a5ba95492247bd87e4189de602ffb47da1 100644
 --- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
-@@ -463,6 +463,17 @@
+@@ -492,6 +492,17 @@ angle::Result VertexArrayVk::convertVertexBufferCPU(ContextVk *contextVk,
      return angle::Result::Continue;
  }
  
@@ -75,7 +74,7 @@ index 09cb058..80d97a3 100644
  angle::Result VertexArrayVk::syncState(const gl::Context *context,
                                         const gl::VertexArray::DirtyBits &dirtyBits,
                                         gl::VertexArray::DirtyAttribBitsArray *attribBits,
-@@ -488,9 +499,7 @@
+@@ -516,9 +527,7 @@ angle::Result VertexArrayVk::syncState(const gl::Context *context,
                  {
                      // Note that just updating buffer data may still result in a new
                      // vk::BufferHelper allocation.
@@ -87,10 +86,10 @@ index 09cb058..80d97a3 100644
                  else
                  {
 diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.h b/src/libANGLE/renderer/vulkan/VertexArrayVk.h
-index c198265..0b98a9e 100644
+index c198265bf8ba2017a13fce558826862f450218b5..0b98a9ed46b7cd4b9588973c74b0bbaf9172ab6c 100644
 --- a/src/libANGLE/renderer/vulkan/VertexArrayVk.h
 +++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.h
-@@ -34,6 +34,8 @@
+@@ -34,6 +34,8 @@ class VertexArrayVk : public VertexArrayImpl
  
      angle::Result updateActiveAttribInfo(ContextVk *contextVk);
  
