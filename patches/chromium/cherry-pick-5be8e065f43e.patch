@@ -1,0 +1,37 @@
+From 5be8e065f43e219d4ab71cefecdbbfd3e75ff426 Mon Sep 17 00:00:00 2001
+From: Gregg Tavares <gman@chromium.org>
+Date: Fri, 29 Apr 2022 15:23:33 +0000
+Subject: [PATCH] [M96-LTS] Check for error when calling ComputeImageSizeInBytes
+
+(cherry picked from commit f3244fe50ba6c64ab6a75f1370d8dd983927fae6)
+
+Bug: chromium:1304987
+Change-Id: I8311231156fca3200ce74d79db59d910a1a0e33a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3556686
+Commit-Queue: Gregg Tavares <gman@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#986304}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3597078
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1609}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+---
+
+diff --git a/third_party/blink/renderer/platform/graphics/gpu/webgl_image_conversion.cc b/third_party/blink/renderer/platform/graphics/gpu/webgl_image_conversion.cc
+index 16babfa9..767b477d 100644
+--- a/third_party/blink/renderer/platform/graphics/gpu/webgl_image_conversion.cc
++++ b/third_party/blink/renderer/platform/graphics/gpu/webgl_image_conversion.cc
+@@ -3996,8 +3996,10 @@
+   data.resize(width * height * bytes_per_pixel);
+ 
+   unsigned image_size_in_bytes, skip_size_in_bytes;
+-  ComputeImageSizeInBytes(format, type, width, height, 1, unpack_params,
+-                          &image_size_in_bytes, nullptr, &skip_size_in_bytes);
++  if (ComputeImageSizeInBytes(format, type, width, height, 1, unpack_params,
++                              &image_size_in_bytes, nullptr,
++                              &skip_size_in_bytes) != GL_NO_ERROR)
++    return false;
+   const uint8_t* src_data = static_cast<const uint8_t*>(pixels);
+   if (skip_size_in_bytes) {
+     src_data += skip_size_in_bytes;
