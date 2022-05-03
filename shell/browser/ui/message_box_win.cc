@@ -16,7 +16,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/synchronization/lock.h"
-#include "base/task/post_task.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
