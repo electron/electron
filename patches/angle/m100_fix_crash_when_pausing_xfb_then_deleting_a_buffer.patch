@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Mon, 14 Mar 2022 10:37:31 -0400
+Subject: [M100] Fix crash when pausing XFB then deleting a buffer.
+
+Fix is to validate XFB buffer bindings even if we're paused.
+This is undefined behaviour so we can use any non-crashing solution.
+
+Bug: chromium:1305190
+Change-Id: Ib95404cdb13adbde7f34d6cc77473a8b3cbf1de7
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3522283
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+(cherry picked from commit 708ce9cfd63bc8eab7c48987612a2dedce78c69a)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3594105
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index ccc1f17f8db2ef85ca3b80bfa35e175dd9434c49..d633334b6ed252da632059cf410e4ca6b9d0c092 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -3978,7 +3978,7 @@ const char *ValidateDrawStates(const Context *context)
+                 }
+             }
+ 
+-            if (state.isTransformFeedbackActiveUnpaused())
++            if (state.isTransformFeedbackActive())
+             {
+                 if (!ValidateProgramExecutableXFBBuffersPresent(context, executable))
+                 {
+diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
+index 0e9aafabc603011fc48d761e32eb9204800a8557..5638cd447958b829dfad5ca270db303f85bed491 100644
+--- a/src/tests/gl_tests/TransformFeedbackTest.cpp
++++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
+@@ -3674,6 +3674,25 @@ void main() {
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+ }
+ 
++// Same as the above, with a paused transform feedback.
++TEST_P(TransformFeedbackTest, DeletePausedTransformFeedbackBuffer)
++{
++    ANGLE_GL_PROGRAM_TRANSFORM_FEEDBACK(testProgram, essl1_shaders::vs::Simple(),
++                                        essl1_shaders::fs::Green(), {"gl_Position"},
++                                        GL_INTERLEAVED_ATTRIBS);
++    glUseProgram(testProgram);
++
++    GLBuffer buffer;
++    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffer);
++    glBufferData(GL_PIXEL_UNPACK_BUFFER, 3, nullptr, GL_STATIC_DRAW);
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buffer);
++
++    glBeginTransformFeedback(GL_POINTS);
++    glPauseTransformFeedback();
++    buffer.reset();
++    glDrawArrays(GL_POINTS, 0, 1);
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TransformFeedbackTest);
+ ANGLE_INSTANTIATE_TEST_ES3(TransformFeedbackTest);
+ 
