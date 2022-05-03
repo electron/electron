@@ -179,8 +179,7 @@ class DarkThemeObserver : public ui::NativeThemeObserver {
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
-ElectronBrowserMainParts::ElectronBrowserMainParts(
-    const content::MainFunctionParams& params)
+ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
       browser_(std::make_unique<Browser>()),
       node_bindings_(

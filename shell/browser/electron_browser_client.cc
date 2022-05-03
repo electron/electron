@@ -965,9 +965,9 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
-    content::MainFunctionParams params) {
+    bool /* is_integration_test */) {
   auto browser_main_parts =
-      std::make_unique<ElectronBrowserMainParts>(std::move(params));
+      std::make_unique<ElectronBrowserMainParts>();
 
 #if BUILDFLAG(IS_MAC)
   browser_main_parts_ = browser_main_parts.get();
