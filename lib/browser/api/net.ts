@@ -36,17 +36,14 @@ const discardableDuplicateHeaders = new Set([
 ]);
 
 class IncomingMessage extends Readable {
-  _shouldPush: boolean;
-  _data: (Buffer | null)[];
+  _shouldPush: boolean = false;
+  _data: (Buffer | null)[] = [];
   _responseHead: NodeJS.ResponseHead;
-  _resume: (() => void) | null;
+  _resume: (() => void) | null = null;
 
   constructor (responseHead: NodeJS.ResponseHead) {
     super();
-    this._shouldPush = false;
-    this._data = [];
     this._responseHead = responseHead;
-    this._resume = null;
   }
 
   get statusCode () {
