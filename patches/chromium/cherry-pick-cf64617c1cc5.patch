@@ -1,0 +1,404 @@
+From cf64617c1cc509f1dc88adb068ef64e61457bc0f Mon Sep 17 00:00:00 2001
+From: Austin Sullivan <asully@chromium.org>
+Date: Fri, 11 Mar 2022 10:08:55 +0000
+Subject: [PATCH] FSA: Pass File ownership to worker for async FSARFD file operations
+
+We cannot access the backing file as a member of the
+FileSystemAccessRegularFileDelegate since WrapCrossThreadPersistent
+does NOT cancel the task posted to the worker pool if delegate is
+destroyed. Passing ownership to the worker task ensures the file must
+be alive when used. After the operation, ownership of the file is
+passed back to the delegate.
+
+This pattern was already used for the SetLength operation on old Macs.
+
+Bug: 1299743
+Change-Id: Ie00c09e8f77dc353f280af726a68ed6c572b750b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3498864
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Commit-Queue: Austin Sullivan <asully@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#980167}
+---
+
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_access_regular_file_delegate.cc b/third_party/blink/renderer/modules/file_system_access/file_system_access_regular_file_delegate.cc
+index 1787619..ed384f7 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_access_regular_file_delegate.cc
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_access_regular_file_delegate.cc
+@@ -19,6 +19,7 @@
+ #include "third_party/blink/renderer/platform/scheduler/public/worker_pool.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ #if BUILDFLAG(IS_MAC)
+ #include "base/mac/mac_util.h"
+@@ -65,6 +66,8 @@
+ base::FileErrorOr<int> FileSystemAccessRegularFileDelegate::Read(
+     int64_t offset,
+     base::span<uint8_t> data) {
++  DCHECK_GE(offset, 0);
++
+   int size = base::checked_cast<int>(data.size());
+   int result =
+       backing_file_.Read(offset, reinterpret_cast<char*>(data.data()), size);
+@@ -75,13 +78,14 @@
+ }
+ 
+ base::FileErrorOr<int> FileSystemAccessRegularFileDelegate::Write(
+-    int64_t write_offset,
++    int64_t offset,
+     const base::span<uint8_t> data) {
++  DCHECK_GE(offset, 0);
++
+   int write_size = base::checked_cast<int>(data.size());
+ 
+   int64_t write_end_offset;
+-  if (!base::CheckAdd(write_offset, write_size)
+-           .AssignIfValid(&write_end_offset)) {
++  if (!base::CheckAdd(offset, write_size).AssignIfValid(&write_end_offset)) {
+     return base::File::FILE_ERROR_NO_SPACE;
+   }
+ 
+@@ -89,8 +93,8 @@
+     return base::File::FILE_ERROR_NO_SPACE;
+   }
+ 
+-  int result = backing_file_.Write(
+-      write_offset, reinterpret_cast<char*>(data.data()), write_size);
++  int result = backing_file_.Write(offset, reinterpret_cast<char*>(data.data()),
++                                   write_size);
+   if (write_size == result) {
+     capacity_tracker_->CommitFileSizeChange(write_end_offset);
+     return result;
+@@ -114,16 +118,19 @@
+       FROM_HERE, {base::MayBlock()},
+       CrossThreadBindOnce(&FileSystemAccessRegularFileDelegate::DoGetLength,
+                           WrapCrossThreadPersistent(this),
+-                          std::move(wrapped_callback), task_runner_));
++                          std::move(wrapped_callback), std::move(backing_file_),
++                          task_runner_));
+ }
+ 
+ // static
+ void FileSystemAccessRegularFileDelegate::DoGetLength(
+     CrossThreadPersistent<FileSystemAccessRegularFileDelegate> delegate,
+-    WTF::CrossThreadOnceFunction<void(base::FileErrorOr<int64_t>)>
+-        wrapped_callback,
++    CrossThreadOnceFunction<void(base::FileErrorOr<int64_t>)> callback,
++    base::File file,
+     scoped_refptr<base::SequencedTaskRunner> task_runner) {
+-  int64_t length = delegate->backing_file_.GetLength();
++  DCHECK(!IsMainThread());
++
++  int64_t length = file.GetLength();
+ 
+   // If the length is negative, the file operation failed. Get the last error
+   // now before another file operation might run.
+@@ -132,7 +139,19 @@
+ 
+   PostCrossThreadTask(
+       *task_runner, FROM_HERE,
+-      CrossThreadBindOnce(std::move(wrapped_callback), std::move(result)));
++      CrossThreadBindOnce(&FileSystemAccessRegularFileDelegate::DidGetLength,
++                          std::move(delegate), std::move(callback),
++                          std::move(file), std::move(result)));
++}
++
++void FileSystemAccessRegularFileDelegate::DidGetLength(
++    CrossThreadOnceFunction<void(base::FileErrorOr<int64_t>)> callback,
++    base::File file,
++    base::FileErrorOr<int64_t> error_or_length) {
++  DCHECK(task_runner_->RunsTasksInCurrentSequence());
++  backing_file_ = std::move(file);
++
++  std::move(callback).Run(std::move(error_or_length));
+ }
+ 
+ void FileSystemAccessRegularFileDelegate::SetLength(
+@@ -163,6 +182,9 @@
+     return;
+   }
+ 
++  auto wrapped_callback =
++      CrossThreadOnceFunction<void(bool)>(std::move(callback));
++
+ #if BUILDFLAG(IS_MAC)
+   // On macOS < 10.15, a sandboxing limitation causes failures in ftruncate()
+   // syscalls issued from renderers. For this reason, base::File::SetLength()
+@@ -175,81 +197,57 @@
+     }
+     file_utilities_host_->SetLength(
+         std::move(backing_file_), new_length,
+-        WTF::Bind(&FileSystemAccessRegularFileDelegate::DidSetLengthIPC,
+-                  WrapPersistent(this), std::move(callback), new_length));
++        WTF::Bind(&FileSystemAccessRegularFileDelegate::DidSetLength,
++                  WrapPersistent(this), std::move(wrapped_callback),
++                  new_length));
+     return;
+   }
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+-  auto wrapped_callback =
+-      CrossThreadOnceFunction<void(bool)>(std::move(callback));
+-
+   // Truncate file on a worker thread and reply back to this sequence.
+   worker_pool::PostTask(
+       FROM_HERE, {base::MayBlock()},
+       CrossThreadBindOnce(&FileSystemAccessRegularFileDelegate::DoSetLength,
+                           WrapCrossThreadPersistent(this),
+-                          std::move(wrapped_callback), task_runner_,
+-                          new_length));
++                          std::move(wrapped_callback), std::move(backing_file_),
++                          task_runner_, new_length));
+ }
+ 
+ // static
+ void FileSystemAccessRegularFileDelegate::DoSetLength(
+     CrossThreadPersistent<FileSystemAccessRegularFileDelegate> delegate,
+-    CrossThreadOnceFunction<void(bool)> wrapped_callback,
++    CrossThreadOnceFunction<void(bool)> callback,
++    base::File file,
+     scoped_refptr<base::SequencedTaskRunner> task_runner,
+     int64_t length) {
+-  bool result = delegate->backing_file_.SetLength(length);
++  DCHECK(!IsMainThread());
+ 
+-  if (!result) {
+-    // If the operation failed, the previously requested capacity is not
+-    // returned and no change in file size is recorded. This assumes that
+-    // setLength operations either succeed or do not change the file's length,
+-    // which is consistent with the way other file operations are implemented in
+-    // File System Access.
+-    PostCrossThreadTask(
+-        *task_runner, FROM_HERE,
+-        CrossThreadBindOnce(std::move(wrapped_callback), std::move(result)));
+-    return;
+-  }
++  bool success = file.SetLength(length);
++
+   PostCrossThreadTask(
+       *task_runner, FROM_HERE,
+-      CrossThreadBindOnce(
+-          &FileSystemAccessRegularFileDelegate::DidSuccessfulSetLength,
+-          std::move(delegate), length, std::move(wrapped_callback)));
++      CrossThreadBindOnce(&FileSystemAccessRegularFileDelegate::DidSetLength,
++                          std::move(delegate), std::move(callback), length,
++                          std::move(file), success));
+ }
+ 
+-void FileSystemAccessRegularFileDelegate::DidSuccessfulSetLength(
+-    int64_t new_length,
+-    CrossThreadOnceFunction<void(bool)> callback) {
+-  DCHECK(task_runner_->RunsTasksInCurrentSequence());
+-  capacity_tracker_->CommitFileSizeChange(new_length);
+-  std::move(callback).Run(true);
+-}
+-
+-#if BUILDFLAG(IS_MAC)
+-void FileSystemAccessRegularFileDelegate::DidSetLengthIPC(
+-    base::OnceCallback<void(bool)> callback,
++void FileSystemAccessRegularFileDelegate::DidSetLength(
++    CrossThreadOnceFunction<void(bool)> callback,
+     int64_t new_length,
+     base::File file,
+     bool success) {
+   DCHECK(task_runner_->RunsTasksInCurrentSequence());
+   backing_file_ = std::move(file);
+ 
+-  if (!success) {
+-    // If the operation failed, the previously requested capacity is not
+-    // returned and no change in file size is recorded. This assumes that
+-    // setLength operations either succeed or do not change the file's length,
+-    // which is consistent with the way other file operations are implemented in
+-    // File System Access.
+-    std::move(callback).Run(success);
+-    return;
+-  }
+-  auto wrapped_callback =
+-      CrossThreadOnceFunction<void(bool)>(std::move(callback));
+-  DidSuccessfulSetLength(new_length, std::move(wrapped_callback));
++  // If the operation failed, no change in file size is recorded. This assumes
++  // that setLength operations either succeed or do not change the file's
++  // length, which is consistent with the way other file operations are
++  // implemented in File System Access.
++  if (success)
++    capacity_tracker_->CommitFileSizeChange(new_length);
++
++  std::move(callback).Run(success);
+ }
+-#endif  // BUILDFLAG(IS_MAC)
+ 
+ void FileSystemAccessRegularFileDelegate::Flush(
+     base::OnceCallback<void(bool)> callback) {
+@@ -262,17 +260,34 @@
+       FROM_HERE, {base::MayBlock()},
+       CrossThreadBindOnce(&FileSystemAccessRegularFileDelegate::DoFlush,
+                           WrapCrossThreadPersistent(this),
+-                          std::move(wrapped_callback), task_runner_));
++                          std::move(wrapped_callback), std::move(backing_file_),
++                          task_runner_));
+ }
+ 
+ // static
+ void FileSystemAccessRegularFileDelegate::DoFlush(
+     CrossThreadPersistent<FileSystemAccessRegularFileDelegate> delegate,
+-    CrossThreadOnceFunction<void(bool)> wrapped_callback,
++    CrossThreadOnceFunction<void(bool)> callback,
++    base::File file,
+     scoped_refptr<base::SequencedTaskRunner> task_runner) {
+-  bool result = delegate->backing_file_.Flush();
+-  PostCrossThreadTask(*task_runner, FROM_HERE,
+-                      CrossThreadBindOnce(std::move(wrapped_callback), result));
++  DCHECK(!IsMainThread());
++
++  bool success = file.Flush();
++  PostCrossThreadTask(
++      *task_runner, FROM_HERE,
++      CrossThreadBindOnce(&FileSystemAccessRegularFileDelegate::DidFlush,
++                          std::move(delegate), std::move(callback),
++                          std::move(file), success));
++}
++
++void FileSystemAccessRegularFileDelegate::DidFlush(
++    CrossThreadOnceFunction<void(bool)> callback,
++    base::File file,
++    bool success) {
++  DCHECK(task_runner_->RunsTasksInCurrentSequence());
++  backing_file_ = std::move(file);
++
++  std::move(callback).Run(success);
+ }
+ 
+ void FileSystemAccessRegularFileDelegate::Close(base::OnceClosure callback) {
+@@ -284,16 +299,33 @@
+       FROM_HERE, {base::MayBlock()},
+       CrossThreadBindOnce(&FileSystemAccessRegularFileDelegate::DoClose,
+                           WrapCrossThreadPersistent(this),
+-                          std::move(wrapped_callback), task_runner_));
++                          std::move(wrapped_callback), std::move(backing_file_),
++                          task_runner_));
+ }
+ 
+ // static
+ void FileSystemAccessRegularFileDelegate::DoClose(
+     CrossThreadPersistent<FileSystemAccessRegularFileDelegate> delegate,
+-    CrossThreadOnceClosure wrapped_callback,
++    CrossThreadOnceClosure callback,
++    base::File file,
+     scoped_refptr<base::SequencedTaskRunner> task_runner) {
+-  delegate->backing_file_.Close();
+-  PostCrossThreadTask(*task_runner, FROM_HERE, std::move(wrapped_callback));
++  DCHECK(!IsMainThread());
++
++  file.Close();
++  PostCrossThreadTask(
++      *task_runner, FROM_HERE,
++      CrossThreadBindOnce(&FileSystemAccessRegularFileDelegate::DidClose,
++                          std::move(delegate), std::move(callback),
++                          std::move(file)));
++}
++
++void FileSystemAccessRegularFileDelegate::DidClose(
++    CrossThreadOnceClosure callback,
++    base::File file) {
++  DCHECK(task_runner_->RunsTasksInCurrentSequence());
++  backing_file_ = std::move(file);
++
++  std::move(callback).Run();
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_access_regular_file_delegate.h b/third_party/blink/renderer/modules/file_system_access/file_system_access_regular_file_delegate.h
+index dc89405..880d688 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_access_regular_file_delegate.h
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_access_regular_file_delegate.h
+@@ -28,6 +28,11 @@
+ 
+ // Non-incognito implementation of the FileSystemAccessFileDelegate. This class
+ // is a thin wrapper around an OS-level file descriptor.
++//
++// For async file operations, ownership of the file descriptor is passed to
++// `task_runner_` to ensure it stays alive while being used. Ownership is passed
++// back to the delegate once the operation completes. The delegate must not be
++// used while there is an in-progress operation.
+ class FileSystemAccessRegularFileDelegate final
+     : public FileSystemAccessFileDelegate {
+  public:
+@@ -71,24 +76,55 @@
+   bool IsValid() const override { return backing_file_.IsValid(); }
+ 
+  private:
++  // All async file operations perform I/O via a worker pool, off the main
++  // thread. To keep `backing_file_` from being garbage-collected, ownership is
++  // passed to the worker thread during the file operation. Concurrent file
++  // operations is NOT supported.
++
++  // Performs the file I/O part of getSize(), off the main thread.
+   static void DoGetLength(
+       CrossThreadPersistent<FileSystemAccessRegularFileDelegate> delegate,
+-      CrossThreadOnceFunction<void(base::FileErrorOr<int64_t>)>
+-          wrapped_callback,
++      CrossThreadOnceFunction<void(base::FileErrorOr<int64_t>)> callback,
++      base::File file,
+       scoped_refptr<base::SequencedTaskRunner> file_task_runner);
++  // Performs the post file I/O part of getSize(), on the main thread.
++  void DidGetLength(
++      CrossThreadOnceFunction<void(base::FileErrorOr<int64_t>)> callback,
++      base::File file,
++      base::FileErrorOr<int64_t> error_or_length);
++
++  // Performs the file I/O part of truncate(), off the main thread.
+   static void DoSetLength(
+       CrossThreadPersistent<FileSystemAccessRegularFileDelegate> delegate,
+-      CrossThreadOnceFunction<void(bool)> wrapped_callback,
++      CrossThreadOnceFunction<void(bool)> callback,
++      base::File file,
+       scoped_refptr<base::SequencedTaskRunner> task_runner,
+       int64_t length);
++  // Performs the post file I/O part of truncate(), on the main thread.
++  void DidSetLength(CrossThreadOnceFunction<void(bool)> callback,
++                    int64_t new_length,
++                    base::File file,
++                    bool success);
++
++  // Performs the file I/O part of flush(), off the main thread.
+   static void DoFlush(
+       CrossThreadPersistent<FileSystemAccessRegularFileDelegate> delegate,
+-      CrossThreadOnceFunction<void(bool)> wrapped_callback,
++      CrossThreadOnceFunction<void(bool)> callback,
++      base::File file,
+       scoped_refptr<base::SequencedTaskRunner> task_runner);
++  // Performs the post file I/O part of flush(), on the main thread.
++  void DidFlush(CrossThreadOnceFunction<void(bool)> callback,
++                base::File file,
++                bool success);
++
++  // Performs the file I/O part of close(), off the main thread.
+   static void DoClose(
+       CrossThreadPersistent<FileSystemAccessRegularFileDelegate> delegate,
+-      CrossThreadOnceClosure wrapped_callback,
++      CrossThreadOnceClosure callback,
++      base::File file,
+       scoped_refptr<base::SequencedTaskRunner> task_runner);
++  // Performs the post file I/O part of close(), on the main thread.
++  void DidClose(CrossThreadOnceClosure callback, base::File file);
+ 
+   // Called after preconditions for SetLength, including the requesting
+   // additional capacity (if needed), have been performed.
+@@ -98,16 +134,7 @@
+                                  int64_t new_length,
+                                  bool request_capacity_result);
+ 
+-  // Called after SetLength was successfully performed.
+-  void DidSuccessfulSetLength(int64_t new_length,
+-                              CrossThreadOnceFunction<void(bool)> callback);
+-
+ #if BUILDFLAG(IS_MAC)
+-  void DidSetLengthIPC(base::OnceCallback<void(bool)> callback,
+-                       int64_t new_length,
+-                       base::File file,
+-                       bool result);
+-
+   // We need the FileUtilitiesHost only on Mac, where we have to execute
+   // base::File::SetLength on the browser process, see crbug.com/1084565.
+   // We need the context_ to create the instance of FileUtilitiesHost lazily.
