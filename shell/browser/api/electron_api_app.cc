@@ -34,6 +34,7 @@
 #include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "media/audio/audio_manager.h"
+#include "net/dns/public/dns_over_https_server_config.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/util.h"
 #include "net/ssl/client_cert_identity.h"
@@ -1682,17 +1683,18 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
     // Validate individual server templates prior to batch-assigning to
     // doh_config.
+    std::vector<net::DnsOverHttpsServerConfig> servers;
     for (const std::string& server_template : secure_dns_server_strings) {
-      absl::optional<net::DnsOverHttpsConfig> server_config =
-          net::DnsOverHttpsConfig::FromString(server_template);
+      absl::optional<net::DnsOverHttpsServerConfig> server_config =
+          net::DnsOverHttpsServerConfig::FromString(server_template);
       if (!server_config.has_value()) {
         thrower.ThrowTypeError(std::string("not a valid DoH template: ") +
                                server_template);
         return;
       }
+      servers.push_back(*server_config);
     }
-    doh_config = *net::DnsOverHttpsConfig::FromStrings(
-        std::move(secure_dns_server_strings));
+    doh_config = net::DnsOverHttpsConfig(std::move(servers));
   }
 
   if (opts.Has("enableAdditionalDnsQueryTypes") &&
