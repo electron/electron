@@ -151,3 +151,4 @@ cherry-pick-38ab9c5b06a4.patch
 cherry-pick-5ff02e4d7368.patch
 cherry-pick-5361d836aeb1.patch
 cherry-pick-5be8e065f43e.patch
+reland_fix_noopener_case_for_user_activation_consumption.patch
