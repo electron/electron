@@ -282,7 +282,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index ec725b44296266bea1a51aea889463a0bba8449c..a3d4dd1efc950033855a1f2783f941384b249a5d 100644
+index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d05018b627 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -21,6 +21,7 @@
@@ -406,7 +406,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..a3d4dd1efc950033855a1f2783f94138
  bool ProcessLaunchNotification(
      const ProcessSingleton::NotificationCallback& notification_callback,
      UINT message,
-@@ -151,16 +233,23 @@ bool ProcessLaunchNotification(
+@@ -151,16 +233,35 @@ bool ProcessLaunchNotification(
  
    // Handle the WM_COPYDATA message from another process.
    const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
@@ -423,18 +423,30 @@ index ec725b44296266bea1a51aea889463a0bba8449c..a3d4dd1efc950033855a1f2783f94138
  
 -  *result = notification_callback.Run(parsed_command_line, current_directory) ?
 -      TRUE : FALSE;
++  // notification_callback.Run waits for StoreAck to
++  // run to completion before moving onwards.
++  // Therefore, we cannot directly send the SendBackAck
++  // callback instead, as it would hang the program
++  // during the ConnectNamedPipe call.
 +  g_write_ack_callback_called = false;
 +  *result = notification_callback.Run(parsed_command_line, current_directory,
 +                                      std::move(additional_data),
 +                                      base::BindRepeating(&StoreAck))
 +                ? TRUE
 +                : FALSE;
-+  g_ack_timer.Start(FROM_HERE, base::Seconds(0),
-+                    base::BindOnce(&SendBackAck));
++  if (*result) {
++    // If *result is TRUE, we return NOTIFY_SUCCESS.
++    // Only for that case does the second process read
++    // the acknowledgement. Therefore, only send back
++    // the acknowledgement if *result is TRUE,
++    // otherwise the program hangs during the ConnectNamedPipe call.
++    g_ack_timer.Start(FROM_HERE, base::Seconds(0),
++                      base::BindOnce(&SendBackAck));
++  }
    return true;
  }
  
-@@ -261,9 +350,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -261,9 +362,13 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -449,7 +461,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..a3d4dd1efc950033855a1f2783f94138
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -278,6 +371,37 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -278,6 +383,37 @@ ProcessSingleton::~ProcessSingleton() {
      ::CloseHandle(lock_file_);
  }
  
@@ -487,7 +499,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..a3d4dd1efc950033855a1f2783f94138
  // Code roughly based on Mozilla.
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
    TRACE_EVENT0("startup", "ProcessSingleton::NotifyOtherProcess");
-@@ -290,8 +414,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -290,8 +426,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
@@ -498,7 +510,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..a3d4dd1efc950033855a1f2783f94138
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
        remote_window_ = NULL;
-@@ -429,6 +554,18 @@ bool ProcessSingleton::Create() {
+@@ -429,6 +566,18 @@ bool ProcessSingleton::Create() {
            << "Lock file can not be created! Error code: " << error;
  
        if (lock_file_ != INVALID_HANDLE_VALUE) {
@@ -517,7 +529,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..a3d4dd1efc950033855a1f2783f94138
          // Set the window's title to the path of our user data directory so
          // other Chrome instances can decide if they should forward to us.
          TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateWindow");
-@@ -456,6 +593,7 @@ bool ProcessSingleton::Create() {
+@@ -456,6 +605,7 @@ bool ProcessSingleton::Create() {
  }
  
  void ProcessSingleton::Cleanup() {
