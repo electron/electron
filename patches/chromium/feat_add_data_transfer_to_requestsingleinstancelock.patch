@@ -282,7 +282,7 @@ index 9bb12894da06fc7d281daced754b240afa9bedeb..52717600e7346daeb0726c177162c718
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 0c87fc8ccb4511904f19b76ae5e03a5df6664391..cf3fa17ecfa46a2aa42902634f5bb8f652e61d99 100644
+index 0c87fc8ccb4511904f19b76ae5e03a5df6664391..c6b3b0c4719164f4043d4ad8deac3720e92cf725 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -22,6 +22,7 @@
