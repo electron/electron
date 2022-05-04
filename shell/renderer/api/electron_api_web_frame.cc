@@ -161,9 +161,9 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     {
       v8::TryCatch try_catch(isolate);
       context_bridge::ObjectCache object_cache;
-      maybe_result = PassValueToOtherContext(result->GetCreationContextChecked(),
-                                             promise_.GetContext(), result,
-                                             &object_cache, false, 0);
+      maybe_result = PassValueToOtherContext(
+          result->GetCreationContextChecked(), promise_.GetContext(), result,
+          &object_cache, false, 0);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
