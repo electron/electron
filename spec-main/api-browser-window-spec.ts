@@ -760,12 +760,136 @@ describe('BrowserWindow module', () => {
         w.focus();
         expect(w.isVisible()).to.equal(false);
       });
+
+      ifit(process.platform !== 'win32')('focuses a blurred window', async () => {
+        {
+          const isBlurred = emittedOnce(w, 'blur');
+          const isShown = emittedOnce(w, 'show');
+          w.show();
+          w.blur();
+          await isShown;
+          await isBlurred;
+        }
+        expect(w.isFocused()).to.equal(false);
+        w.focus();
+        expect(w.isFocused()).to.equal(true);
+      });
+
+      ifit(process.platform !== 'linux')('acquires focus status from the other windows', async () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+        const w3 = new BrowserWindow({ show: false });
+        {
+          const isFocused3 = emittedOnce(w3, 'focus');
+          const isShown1 = emittedOnce(w1, 'show');
+          const isShown2 = emittedOnce(w2, 'show');
+          const isShown3 = emittedOnce(w3, 'show');
+          w1.show();
+          w2.show();
+          w3.show();
+          await isShown1;
+          await isShown2;
+          await isShown3;
+          await isFocused3;
+        }
+        // TODO(RaisinTen): Investigate why this assertion fails only on Linux.
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(true);
+
+        w1.focus();
+        expect(w1.isFocused()).to.equal(true);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(false);
+
+        w2.focus();
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(true);
+        expect(w3.isFocused()).to.equal(false);
+
+        w3.focus();
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(true);
+
+        {
+          const isClosed1 = emittedOnce(w1, 'closed');
+          const isClosed2 = emittedOnce(w2, 'closed');
+          const isClosed3 = emittedOnce(w3, 'closed');
+          w1.destroy();
+          w2.destroy();
+          w3.destroy();
+          await isClosed1;
+          await isClosed2;
+          await isClosed3;
+        }
+      });
     });
 
-    describe('BrowserWindow.blur()', () => {
-      it('removes focus from window', () => {
+    // TODO(RaisinTen): Make this work on Windows too.
+    // Refs: https://github.com/electron/electron/issues/20464.
+    ifdescribe(process.platform !== 'win32')('BrowserWindow.blur()', () => {
+      it('removes focus from window', async () => {
+        {
+          const isFocused = emittedOnce(w, 'focus');
+          const isShown = emittedOnce(w, 'show');
+          w.show();
+          await isShown;
+          await isFocused;
+        }
+        expect(w.isFocused()).to.equal(true);
         w.blur();
         expect(w.isFocused()).to.equal(false);
+      });
+
+      ifit(process.platform !== 'linux')('transfers focus status to the next window', async () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+        const w3 = new BrowserWindow({ show: false });
+        {
+          const isFocused3 = emittedOnce(w3, 'focus');
+          const isShown1 = emittedOnce(w1, 'show');
+          const isShown2 = emittedOnce(w2, 'show');
+          const isShown3 = emittedOnce(w3, 'show');
+          w1.show();
+          w2.show();
+          w3.show();
+          await isShown1;
+          await isShown2;
+          await isShown3;
+          await isFocused3;
+        }
+        // TODO(RaisinTen): Investigate why this assertion fails only on Linux.
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(true);
+
+        w3.blur();
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(true);
+        expect(w3.isFocused()).to.equal(false);
+
+        w2.blur();
+        expect(w1.isFocused()).to.equal(true);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(false);
+
+        w1.blur();
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(true);
+
+        {
+          const isClosed1 = emittedOnce(w1, 'closed');
+          const isClosed2 = emittedOnce(w2, 'closed');
+          const isClosed3 = emittedOnce(w3, 'closed');
+          w1.destroy();
+          w2.destroy();
+          w3.destroy();
+          await isClosed1;
+          await isClosed2;
+          await isClosed3;
+        }
       });
     });
 
