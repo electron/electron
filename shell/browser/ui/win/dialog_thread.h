@@ -8,8 +8,8 @@
 #include <utility>
 
 #include "base/memory/scoped_refptr.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 
 namespace dialog_thread {
 
