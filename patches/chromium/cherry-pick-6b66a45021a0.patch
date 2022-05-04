@@ -1,7 +1,7 @@
-From 6b66a45021a0eef9795568b1f5797968723f381b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Garrett Tanzer <gtanzer@chromium.org>
-Date: Wed, 02 Mar 2022 18:33:42 +0000
-Subject: [PATCH] Reland "Fix noopener case for user activation consumption"
+Date: Wed, 2 Mar 2022 18:33:42 +0000
+Subject: Reland "Fix noopener case for user activation consumption"
 
 This is a reland of e9828a82b5c182dc9a7fb0ae7226c35ba1726e7d
 
@@ -60,13 +60,12 @@ Reviewed-by: Ken Buchanan <kenrb@chromium.org>
 Reviewed-by: Charles Reis <creis@chromium.org>
 Commit-Queue: Garrett Tanzer <gtanzer@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#976745}
----
 
 diff --git a/chrome/browser/site_isolation/chrome_site_per_process_browsertest.cc b/chrome/browser/site_isolation/chrome_site_per_process_browsertest.cc
-index 880337c..a3e8095b 100644
+index 4c7d9a3fc2d90b751b8b6dd109f223132eb27fe6..2c6ec16e1700882a0ea30c022e1bb0b5eb3a88f8 100644
 --- a/chrome/browser/site_isolation/chrome_site_per_process_browsertest.cc
 +++ b/chrome/browser/site_isolation/chrome_site_per_process_browsertest.cc
-@@ -1187,6 +1187,52 @@
+@@ -1187,6 +1187,52 @@ IN_PROC_BROWSER_TEST_F(ChromeSitePerProcessTest,
    EXPECT_FALSE(frame_c_popup_opened);
  }
  
@@ -120,10 +119,10 @@ index 880337c..a3e8095b 100644
  // Tests that a cross-site iframe runs its beforeunload handler when closing a
  // tab.  See https://crbug.com/853021.
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 1234087..852aa42 100644
+index afd175d35096b0a50ccee3f2b14c632adbfec58a..b346e9adcb73d80c260e4095b140acd319f69e89 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6725,18 +6725,23 @@
+@@ -6719,17 +6719,22 @@ void RenderFrameHostImpl::CreateNewWindow(
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
@@ -136,13 +135,15 @@ index 1234087..852aa42 100644
 -        blink::mojom::UserActivationNotificationType::kNone);
 -  } else {
 -    std::move(callback).Run(mojom::CreateNewWindowStatus::kIgnore, nullptr);
+-    return;
+-  }
 +  // If this frame isn't allowed to create a window, return early (before we
 +  // consume transient user activation).
 +  if (!can_create_window) {
 +    std::move(callback).Run(mojom::CreateNewWindowStatus::kBlocked, nullptr);
-     return;
-   }
- 
++    return;
++  }
++
 +  // Otherwise, consume user activation before we proceed. In particular, it is
 +  // important to do this before we return from the |opener_suppressed| case
 +  // below.
@@ -152,15 +153,14 @@ index 1234087..852aa42 100644
 +  bool was_consumed = frame_tree_node_->UpdateUserActivationState(
 +      blink::mojom::UserActivationUpdateType::kConsumeTransientActivation,
 +      blink::mojom::UserActivationNotificationType::kNone);
-+
+ 
    // For Android WebView, we support a pop-up like behavior for window.open()
    // even if the embedding app doesn't support multiple windows. In this case,
-   // window.open() will return "window" and navigate it to whatever URL was
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index ace032d..afc0dc3 100644
+index 80f7dd56fdaa94a9880995b2b5393af0414eef29..f3d13fc719324e064f70077deb5d95cb9e467820 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -554,8 +554,10 @@
+@@ -558,8 +558,10 @@ struct CreateNewWindowParams {
  
  // Operation result when the renderer asks the browser to create a new window.
  enum CreateNewWindowStatus {
@@ -174,10 +174,10 @@ index ace032d..afc0dc3 100644
    // Reuse the current window rather than creating a new window.
    kReuse,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 8351788..9bdeb87 100644
+index aa65517a568aa0b324b2c8cca8f60bb532ba085a..11815bca2741002dd8595af026ef402bc2af999e 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -306,8 +306,27 @@
+@@ -311,8 +311,27 @@ WebView* RenderViewImpl::CreateView(
    mojom::CreateNewWindowStatus status;
    mojom::CreateNewWindowReplyPtr reply;
    auto* frame_host = creator_frame->GetFrameHost();
@@ -207,7 +207,7 @@ index 8351788..9bdeb87 100644
      return nullptr;
  
    // For Android WebView, we support a pop-up like behavior for window.open()
-@@ -327,11 +346,6 @@
+@@ -332,11 +351,6 @@ WebView* RenderViewImpl::CreateView(
    DCHECK_NE(MSG_ROUTING_NONE, reply->main_frame_route_id);
    DCHECK_NE(MSG_ROUTING_NONE, reply->widget_params->routing_id);
  
@@ -220,10 +220,10 @@ index 8351788..9bdeb87 100644
    // render view. So we just assume that the new one is not another background
    // page instead of passing on our own value.
 diff --git a/third_party/blink/web_tests/wpt_internal/fenced_frame/consume-user-activation.https.html b/third_party/blink/web_tests/wpt_internal/fenced_frame/consume-user-activation.https.html
-index d78d08e..e4ad20d 100644
+index d78d08e18a803f66d5136b193abfa26fd7ab087a..e4ad20d17b7fdcec69f25e652dab967f9b52cf65 100644
 --- a/third_party/blink/web_tests/wpt_internal/fenced_frame/consume-user-activation.https.html
 +++ b/third_party/blink/web_tests/wpt_internal/fenced_frame/consume-user-activation.https.html
-@@ -88,11 +88,7 @@
+@@ -88,11 +88,7 @@ promise_test(async () => {
  
    // Check that B's transient user activation was consumed.
    assert_activations(true, true, "A");
@@ -238,7 +238,7 @@ index d78d08e..e4ad20d 100644
  </script>
 diff --git a/third_party/blink/web_tests/wpt_internal/fenced_frame/restrict-size.https.html b/third_party/blink/web_tests/wpt_internal/fenced_frame/restrict-size.https.html
 new file mode 100644
-index 0000000..5668407d
+index 0000000000000000000000000000000000000000..5668407d7e1e6ac7840fc47b76869787cb3f3d63
 --- /dev/null
 +++ b/third_party/blink/web_tests/wpt_internal/fenced_frame/restrict-size.https.html
 @@ -0,0 +1,15 @@
