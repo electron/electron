@@ -50,10 +50,7 @@ if (is_linux) {
   }
 
   pkg_config("libnotify_config") {
-    packages = [
-      "glib-2.0",
-      "gdk-pixbuf-2.0",
-    ]
+    packages = [ "glib-2.0" ]
   }
 
   generate_library_loader("libnotify_loader") {
@@ -91,6 +88,15 @@ if (is_linux) {
     extra_header = "shell/browser/ui/electron_gtk.fragment"
     output_name = "electron_gtk_stubs"
     public_deps = [ "//ui/gtk:gtk_config" ]
+    logging_function = "LogNoop()"
+    logging_include = "ui/gtk/log_noop.h"
+  }
+
+  generate_stubs("electron_gdk_pixbuf_stubs") {
+    sigs = [ "shell/browser/ui/electron_gdk_pixbuf.sigs" ]
+    extra_header = "shell/browser/ui/electron_gdk_pixbuf.fragment"
+    output_name = "electron_gdk_pixbuf_stubs"
+    public_deps = [ "//ui/gtk:gdk_pixbuf_config" ]
     logging_function = "LogNoop()"
     logging_include = "ui/gtk/log_noop.h"
   }
@@ -490,6 +496,7 @@ source_set("electron_lib") {
   if (is_linux) {
     deps += [
       "//components/crash/content/browser",
+      "//ui/gtk:gdk_pixbuf_config",
       "//ui/gtk:gtk_config",
     ]
   }
@@ -553,6 +560,7 @@ source_set("electron_lib") {
   if (is_linux) {
     libs = [ "xshmfence" ]
     deps += [
+      ":electron_gdk_pixbuf_stubs",
       ":electron_gtk_stubs",
       ":libnotify_loader",
       "//build/config/linux/gtk",
