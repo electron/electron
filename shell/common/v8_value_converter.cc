@@ -389,9 +389,9 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
   std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
   // that context, but change back after val is converted.
-  if (!val->CreationContext().IsEmpty() &&
-      val->CreationContext() != isolate->GetCurrentContext())
-    scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
+  if (!val->GetCreationContextChecked().IsEmpty() &&
+      val->GetCreationContextChecked() != isolate->GetCurrentContext())
+    scope = std::make_unique<v8::Context::Scope>(val->GetCreationContextChecked());
 
   auto result = std::make_unique<base::ListValue>();
 
@@ -445,9 +445,9 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Object(
   std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
   // that context, but change back after val is converted.
-  if (!val->CreationContext().IsEmpty() &&
-      val->CreationContext() != isolate->GetCurrentContext())
-    scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
+  if (!val->GetCreationContextChecked().IsEmpty() &&
+      val->GetCreationContextChecked() != isolate->GetCurrentContext())
+    scope = std::make_unique<v8::Context::Scope>(val->GetCreationContextChecked());
 
   auto result = std::make_unique<base::DictionaryValue>();
   v8::Local<v8::Array> property_names;
