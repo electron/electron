@@ -75,10 +75,10 @@
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gtk/gtk_compat.h"      // nogncheck
-#include "ui/gtk/gtk_ui_factory.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"        // nogncheck
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/linux_ui/linux_ui.h"
+#include "ui/views/linux_ui/linux_ui_factory.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -365,8 +365,7 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
-  auto linux_ui = BuildGtkUi();
-  linux_ui->Initialize();
+  auto linux_ui = CreateLinuxUi();
   DCHECK(ui::LinuxInputMethodContextFactory::instance());
 
   // Try loading gtk symbols used by Electron.
