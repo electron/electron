@@ -344,7 +344,7 @@ index ef6faf317dd4168adf6fd530a7da0b80f9166dec..f401659a81d4aeaf71039d71eb8fec48
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index cae3194590af99bac8c96fb15bfdc0c89c9a6e9c..2e9a749258e94bace5004dedcacb6efe976d74a8 100644
+index d2497be79bb5d7943589bb928e2fbe13f76aa3e3..54adf30432cf178f2d00630420e45cfa95551b54 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
 @@ -404,8 +404,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
