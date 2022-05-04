@@ -891,10 +891,6 @@ base::FilePath ElectronBrowserClient::GetLoggingFileName(
   return logging::GetLogFileName(cmd_line);
 }
 
-bool ElectronBrowserClient::WillProvidePublicFirstPartySets() {
-  return false;
-}
-
 void ElectronBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

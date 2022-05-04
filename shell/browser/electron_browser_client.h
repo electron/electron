@@ -293,7 +293,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const net::SiteForCookies& site_for_cookies,
       const absl::optional<url::Origin>& top_frame_origin) override;
   base::FilePath GetLoggingFileName(const base::CommandLine& cmd_line) override;
-  bool WillProvidePublicFirstPartySets() override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
