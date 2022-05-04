@@ -176,4 +176,5 @@ skia_renderer_use_rectf_intersect_in_applyscissor.patch
 cherry-pick-1a31e2110440.patch
 m100_change_ownership_of_blobbytesprovider.patch
 cherry-pick-cf64617c1cc5.patch
+cherry-pick-5ff02e4d7368.patch
 cherry-pick-12ba78f3fa7a.patch
