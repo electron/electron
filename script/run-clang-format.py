@@ -55,8 +55,7 @@ def list_files(files, recursive=False, extensions=None, exclude=None):
                         x for x in fpaths if not fnmatch.fnmatch(x, pattern)
                     ]
                 for fp in fpaths:
-                    ext = os.path.splitext(f)[1][1:]
-                    print(ext)
+                    ext = os.path.splitext(fp)[1][1:]
                     if ext in extensions:
                         out.append(fp)
         else:
