@@ -116,3 +116,4 @@ remove_incorrect_width_height_adjustments.patch
 introduce_ozoneplatform_electron_can_call_x11_property.patch
 make_gtk_getlibgtk_public.patch
 cherry-pick-e2b8856012e0.patch
+cherry-pick-6b66a45021a0.patch
