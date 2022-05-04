@@ -177,3 +177,4 @@ cherry-pick-1a31e2110440.patch
 m100_change_ownership_of_blobbytesprovider.patch
 cherry-pick-5ff02e4d7368.patch
 cherry-pick-12ba78f3fa7a.patch
+reland_fix_noopener_case_for_user_activation_consumption.patch
