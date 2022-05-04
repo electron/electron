@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Wed, 4 May 2022 12:29:37 -0700
+Subject: remove usage of deprecated override of
+ SetImportModuleDynamicallyCallback
+
+https://chromium-review.googlesource.com/c/v8/v8/+/3571804
+
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index aeb0d2cb37313bdbb00abe065c91362cac5dcb9a..514cb7d4f080444fcb29d1951855ca9d41bd1dde 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -25,6 +25,7 @@ using node::url::URL_FLAGS_FAILED;
+ using v8::Array;
+ using v8::ArrayBufferView;
+ using v8::Context;
++using v8::Data;
+ using v8::EscapableHandleScope;
+ using v8::FixedArray;
+ using v8::Function;
+@@ -559,7 +560,8 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+ 
+ static MaybeLocal<Promise> ImportModuleDynamically(
+     Local<Context> context,
+-    Local<ScriptOrModule> referrer,
++    Local<Data> host_defined_options,
++    Local<Value> resource_name,
+     Local<String> specifier,
+     Local<FixedArray> import_assertions) {
+   Isolate* isolate = context->GetIsolate();
+@@ -574,7 +576,17 @@ static MaybeLocal<Promise> ImportModuleDynamically(
+   Local<Function> import_callback =
+     env->host_import_module_dynamically_callback();
+ 
+-  Local<PrimitiveArray> options = referrer->GetHostDefinedOptions();
++  if (host_defined_options.IsEmpty() || !host_defined_options->IsFixedArray()) {
++    Local<Promise::Resolver> resolver;
++    if (!Promise::Resolver::New(context).ToLocal(&resolver)) return {};
++    resolver
++        ->Reject(context,
++                 v8::Exception::TypeError(FIXED_ONE_BYTE_STRING(
++                     context->GetIsolate(), "Invalid host defined options")))
++        .ToChecked();
++    return handle_scope.Escape(resolver->GetPromise());
++  }
++  Local<PrimitiveArray> options = host_defined_options.As<PrimitiveArray>();
+   if (options->Length() != HostDefinedOptions::kLength) {
+     Local<Promise::Resolver> resolver;
+     if (!Promise::Resolver::New(context).ToLocal(&resolver)) return {};

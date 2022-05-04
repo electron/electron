@@ -23,13 +23,17 @@ class Locker {
 
   // Returns whether current process is browser process, currently we detect it
   // by checking whether current has used V8 Lock, but it might be a bad idea.
-  static inline bool IsBrowserProcess() { return v8::Locker::WasEverUsed(); }
+  static inline bool IsBrowserProcess() { return g_is_browser_process; }
+
+  static void SetIsBrowserProcess(bool is_browser_process);
 
  private:
   void* operator new(size_t size);
   void operator delete(void*, size_t);
 
   std::unique_ptr<v8::Locker> locker_;
+
+  static bool g_is_browser_process;
 };
 
 }  // namespace gin_helper
