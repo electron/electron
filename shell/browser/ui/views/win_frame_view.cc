@@ -34,14 +34,6 @@ void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   window_ = window;
   frame_ = frame;
 
-  // Prevent events from trickling down the views hierarchy here, since
-  // when a given resizable window is frameless we only want to use
-  // FramelessView's ResizingBorderHitTest in
-  // ShouldDescendIntoChildForEventHandling. See
-  // https://chromium-review.googlesource.com/c/chromium/src/+/3251980.
-  if (!window_->has_frame() && window_->IsResizable())
-    frame_->client_view()->SetCanProcessEventsWithinSubtree(false);
-
   if (window->IsWindowControlsOverlayEnabled()) {
     caption_button_container_ =
         AddChildView(std::make_unique<WinCaptionButtonContainer>(this));
@@ -81,6 +73,25 @@ int WinFrameView::FrameBorderThickness() const {
   return (IsMaximized() || frame()->IsFullscreen())
              ? 0
              : display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME);
+}
+
+views::View* WinFrameView::TargetForRect(views::View* root,
+                                         const gfx::Rect& rect) {
+  if (NonClientHitTest(rect.origin()) != HTCLIENT) {
+    // Custom system titlebar returns non HTCLIENT value, however event should
+    // be handled by the view, not by the system, because there are no system
+    // buttons underneath.
+    if (!ShouldCustomDrawSystemTitlebar()) {
+      return this;
+    }
+    auto local_point = rect.origin();
+    ConvertPointToTarget(parent(), caption_button_container_, &local_point);
+    if (!caption_button_container_->HitTestPoint(local_point)) {
+      return this;
+    }
+  }
+
+  return NonClientFrameView::TargetForRect(root, rect);
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {

@@ -41,9 +41,8 @@ executors:
     parameters:
       size:
         description: "Docker executor size"
-        default: 2xlarge+
         type: enum
-        enum: ["medium", "xlarge", "2xlarge+"]
+        enum: ["medium", "xlarge", "2xlarge"]
     docker:
       - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
     resource_class: << parameters.size >>
@@ -52,12 +51,11 @@ executors:
     parameters:
       size:
         description: "macOS executor size"
-        default: macos.x86.medium.gen2
         type: enum
         enum: ["macos.x86.medium.gen2", "large"]
       xcode:
         description: "xcode version"
-        default: "12.4.0"
+        default: 13.3.0
         type: enum
         enum: ["12.4.0", "13.3.0"]
 
@@ -683,13 +681,6 @@ step-electron-dist-unzip: &step-electron-dist-unzip
       #    passed.
       unzip -:o dist.zip
 
-step-ffmpeg-unzip: &step-ffmpeg-unzip
-  run:
-    name: Unzip ffmpeg.zip
-    command: |
-      cd src/out/ffmpeg
-      unzip -:o ffmpeg.zip
-
 step-mksnapshot-unzip: &step-mksnapshot-unzip
   run:
     name: Unzip mksnapshot.zip
@@ -717,13 +708,6 @@ step-ffmpeg-build: &step-ffmpeg-build
     command: |
       cd src
       ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
-
-step-verify-ffmpeg: &step-verify-ffmpeg
-  run:
-    name: Verify ffmpeg
-    command: |
-      cd src
-      python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
 
 step-verify-mksnapshot: &step-verify-mksnapshot
   run:
@@ -1061,53 +1045,6 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
 
     #Compile ts/js to verify doc change didn't break anything
     - *step-ts-compile
-
-steps-native-tests: &steps-native-tests
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-install-python2-on-mac
-    - *step-setup-env-for-build
-    - *step-setup-goma-for-build
-    - *step-wait-for-goma
-    - *step-gn-gen-default
-
-    - run:
-        name: Build tests
-        command: |
-          cd src
-          ninja -C out/Default $BUILD_TARGET
-    - *step-show-goma-stats
-
-    - *step-setup-linux-for-headless-testing
-    - run:
-        name: Run tests
-        command: |
-          mkdir test_results
-          python src/electron/script/native-tests.py run \
-            --config $TESTS_CONFIG \
-            --tests-dir src/out/Default \
-            --output-dir test_results  \
-            $TESTS_ARGS
-
-    - store_artifacts:
-        path: test_results
-        destination: test_results  # Put it in the root folder.
-    - store_test_results:
-        path: test_results
-
-steps-verify-ffmpeg: &steps-verify-ffmpeg
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-ffmpeg-unzip
-    - *step-setup-linux-for-headless-testing
-
-    - *step-verify-ffmpeg
-    - *step-maybe-notify-slack-failure
 
 steps-tests: &steps-tests
   steps:
@@ -1623,7 +1560,9 @@ commands:
 jobs:
   # Layer 0: Docs. Standalone.
   ts-compile-doc-change:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1646,32 +1585,10 @@ jobs:
           save-git-cache: true
           checkout-to-create-src-cache: true
 
-  linux-checkout-for-native-tests:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_pyyaml=True'
-    steps:
-      - electron-build:
-          persist: false
-          build: false
-          checkout: true
-          persist-checkout: true
-
-  linux-checkout-for-native-tests-with-no-patches:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False --custom-var=checkout_pyyaml=True'
-    steps:
-      - electron-build:
-          persist: false
-          build: false
-          checkout: true
-          persist-checkout: true
-
   mac-checkout:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: xlarge
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1704,7 +1621,9 @@ jobs:
 
   # Layer 2: Builds.
   linux-x64-testing:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: xlarge
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1718,7 +1637,9 @@ jobs:
           use-out-cache: false
 
   linux-x64-testing-asan:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: 2xlarge
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1734,7 +1655,9 @@ jobs:
           build-nonproprietary-ffmpeg: false
 
   linux-x64-testing-no-run-as-node:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: xlarge
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1757,21 +1680,10 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-gn-check
 
-  linux-x64-release:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: true
-          checkout: true
-
   linux-x64-publish:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: 2xlarge
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
@@ -1791,7 +1703,9 @@ jobs:
 
 
   linux-arm-testing:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: 2xlarge
     environment:
       <<: *env-global
       <<: *env-arm
@@ -1807,22 +1721,10 @@ jobs:
           checkout-and-assume-cache: true
           use-out-cache: false
 
-  linux-arm-release:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-arm
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: false
-          checkout: true
-
   linux-arm-publish:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: 2xlarge
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
@@ -1844,7 +1746,9 @@ jobs:
                 checkout: true
 
   linux-arm64-testing:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: 2xlarge
     environment:
       <<: *env-global
       <<: *env-arm64
@@ -1871,22 +1775,10 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-gn-check
 
-  linux-arm64-release:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-arm64
-      <<: *env-release-build
-      <<: *env-send-slack-notifications
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: false
-          checkout: true
-
   linux-arm64-publish:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: 2xlarge
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
@@ -1909,7 +1801,7 @@ jobs:
   osx-testing-x64:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1926,17 +1818,17 @@ jobs:
   osx-testing-x64-gn-check:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-machine-mac
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-electron-gn-check
 
-  osx-publish-x64-skip-checkout:
+  osx-publish-x64:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1954,10 +1846,10 @@ jobs:
                 attach: true
                 checkout: false
 
-  osx-publish-arm64-skip-checkout:
+  osx-publish-arm64:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1979,7 +1871,7 @@ jobs:
   osx-testing-arm64:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -1998,7 +1890,7 @@ jobs:
   mas-testing-x64:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large
       <<: *env-mas
@@ -2016,7 +1908,7 @@ jobs:
   mas-testing-x64-gn-check:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-machine-mac
       <<: *env-mas
@@ -2024,10 +1916,10 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     <<: *steps-electron-gn-check
 
-  mas-publish-x64-skip-checkout:
+  mas-publish-x64:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large-release
       <<: *env-mas
@@ -2045,10 +1937,10 @@ jobs:
                 attach: true
                 checkout: false
 
-  mas-publish-arm64-skip-checkout:
+  mas-publish-arm64:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2070,7 +1962,7 @@ jobs:
   mas-testing-arm64:
     executor:
       name: macos
-      xcode: "13.3.0"
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2087,41 +1979,6 @@ jobs:
           attach: true
 
   # Layer 3: Tests.
-  linux-x64-unittests:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-unittests
-      <<: *env-headless-testing
-    <<: *steps-native-tests
-
-  linux-x64-disabled-unittests:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-unittests
-      <<: *env-headless-testing
-      TESTS_ARGS: '--only-disabled-tests'
-    <<: *steps-native-tests
-
-  linux-x64-chromium-unittests:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-unittests
-      <<: *env-headless-testing
-      TESTS_ARGS: '--include-disabled-tests'
-    <<: *steps-native-tests
-
-  linux-x64-browsertests:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-browsertests
-      <<: *env-testing-build
-      <<: *env-headless-testing
-    <<: *steps-native-tests
-
   linux-x64-testing-tests:
     executor:
       name: linux-docker
@@ -2157,32 +2014,14 @@ jobs:
     <<: *steps-test-nan
 
   linux-x64-testing-node:
-    executor: linux-docker
+    executor:
+      name: linux-docker
+      size: xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
     <<: *steps-test-node
-
-  linux-x64-release-tests:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-tests
-
-  linux-x64-verify-ffmpeg:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-headless-testing
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-ffmpeg
 
   linux-arm-testing-tests:
     executor: linux-arm
@@ -2203,7 +2042,10 @@ jobs:
     <<: *steps-tests
 
   osx-testing-x64-tests:
-    executor: macos      
+    executor:
+      name: macos
+      xcode: 12.4.0
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2219,7 +2061,10 @@ jobs:
     <<: *steps-tests
 
   mas-testing-x64-tests:
-    executor: macos
+    executor:
+      name: macos
+      xcode: 12.4.0
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2233,17 +2078,6 @@ jobs:
       <<: *env-stack-dumping
       <<: *env-apple-silicon
     <<: *steps-tests
-
-  # Layer 4: Summary.
-  linux-release-summary:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
 
 # List all workflows
 workflows:
@@ -2270,19 +2104,19 @@ workflows:
     when: << pipeline.parameters.run-macos-publish >>
     jobs:
     - mac-checkout
-    - osx-publish-x64-skip-checkout:
+    - osx-publish-x64:
         requires:
           - mac-checkout
         context: release-env
-    - mas-publish-x64-skip-checkout:
+    - mas-publish-x64:
         requires:
           - mac-checkout
         context: release-env
-    - osx-publish-arm64-skip-checkout:
+    - osx-publish-arm64:
         requires:
           - mac-checkout
         context: release-env
-    - mas-publish-arm64-skip-checkout:
+    - mas-publish-arm64:
         requires:
           - mac-checkout
         context: release-env
