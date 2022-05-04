@@ -1041,7 +1041,6 @@ void WebContents::WebContentsCreatedWithFullParams(
   tracker->body = params.body;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
 
   gin_helper::Dictionary dict;
@@ -1073,7 +1072,6 @@ bool WebContents::IsWebContentsCreationOverridden(
 void WebContents::SetNextChildWebPreferences(
     const gin_helper::Dictionary preferences) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   // Store these prefs for when Chrome calls WebContentsCreatedWithFullParams
   // with the new child contents.
@@ -1105,7 +1103,6 @@ void WebContents::AddNewContents(
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents =
       CreateAndTake(isolate, std::move(new_contents), Type::kBrowserWindow);
@@ -1392,7 +1389,6 @@ void WebContents::FindReply(content::WebContents* web_contents,
     return;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
   result.Set("requestId", request_id);
@@ -1991,7 +1987,6 @@ void WebContents::DevToolsFocused() {
 
 void WebContents::DevToolsOpened() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   DCHECK(inspectable_web_contents_);
   DCHECK(inspectable_web_contents_->GetDevToolsWebContents());
@@ -2015,7 +2010,6 @@ void WebContents::DevToolsOpened() {
 
 void WebContents::DevToolsClosed() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   devtools_web_contents_.Reset();
 

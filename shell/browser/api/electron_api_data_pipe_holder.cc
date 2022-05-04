@@ -107,7 +107,6 @@ class DataPipeReader {
     //
     // Note that the lifetime of the native buffer belongs to us, and we will
     // free memory when JS buffer gets garbage collected.
-    v8::Locker locker(promise_.isolate());
     v8::HandleScope handle_scope(promise_.isolate());
     v8::Local<v8::Value> buffer =
         node::Buffer::New(promise_.isolate(), &buffer_.front(), buffer_.size(),

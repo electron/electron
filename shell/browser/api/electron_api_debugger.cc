@@ -43,8 +43,6 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   DCHECK(agent_host == agent_host_);
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
 
   base::StringPiece message_str(reinterpret_cast<const char*>(message.data()),

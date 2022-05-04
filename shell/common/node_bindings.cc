@@ -628,8 +628,6 @@ void NodeBindings::UvRunOnce() {
   if (!env)
     return;
 
-  // Use Locker in browser process.
-  gin_helper::Locker locker(env->isolate());
   v8::HandleScope handle_scope(env->isolate());
 
   // Enter node context while dealing with uv events.

@@ -155,7 +155,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
       if (!webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
               &device_names)) {
         v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-        v8::Locker locker(isolate);
         v8::HandleScope scope(isolate);
         gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
 
@@ -191,7 +190,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
 
   if (!capture_window_ && !capture_screen_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::CallMethod(this, "_onfinished", captured_sources_);
 

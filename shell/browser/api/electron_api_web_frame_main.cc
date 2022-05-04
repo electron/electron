@@ -108,7 +108,6 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
 bool WebFrameMain::CheckRenderFrame() const {
   if (render_frame_disposed_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Render frame was disposed before WebFrameMain could be accessed");
