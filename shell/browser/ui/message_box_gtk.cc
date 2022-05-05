@@ -11,6 +11,7 @@
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "electron/electron_gdk_pixbuf_stubs.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/native_window_views.h"
