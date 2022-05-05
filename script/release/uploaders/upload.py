@@ -47,7 +47,7 @@ def main():
   args = parse_args()
   if args.verbose:
     enable_verbose_mode()
-  if args.upload_to_s3:
+  if args.upload_to_az:
     utcnow = datetime.datetime.utcnow()
     args.upload_timestamp = utcnow.strftime('%Y%m%d')
 
@@ -64,7 +64,7 @@ def main():
   if not release['draft']:
     tag_exists = True
 
-  if not args.upload_to_s3:
+  if not args.upload_to_az:
     assert release['exists'], \
           'Release does not exist; cannot upload to GitHub!'
     assert tag_exists == args.overwrite, \
@@ -146,7 +146,7 @@ def main():
       OUT_DIR, 'hunspell_dictionaries.zip')
     upload_electron(release, hunspell_dictionaries_zip, args)
 
-  if not tag_exists and not args.upload_to_s3:
+  if not tag_exists and not args.upload_to_az:
     # Upload symbols to symbol server.
     run_python_upload_script('upload-symbols.py')
     if PLATFORM == 'win32':
@@ -170,9 +170,9 @@ def parse_args():
   parser.add_argument('-p', '--publish-release',
                       help='Publish the release',
                       action='store_true')
-  parser.add_argument('-s', '--upload_to_s3',
-                      help='Upload assets to s3 bucket',
-                      dest='upload_to_s3',
+  parser.add_argument('-s', '--upload_to_az',
+                      help='Upload assets to azure bucket',
+                      dest='upload_to_az',
                       action='store_true',
                       default=False,
                       required=False)
@@ -337,9 +337,9 @@ def upload_electron(release, file_path, args):
   except NonZipFileError:
     pass
 
-  # if upload_to_s3 is set, skip github upload.
+  # if upload_to_az is set, skip github upload.
   # todo (vertedinde): migrate this variable to upload_to_az
-  if args.upload_to_s3:
+  if args.upload_to_az:
     key_prefix = 'release-builds/{0}_{1}'.format(args.version,
                                                      args.upload_timestamp)
     store_artifact(os.path.dirname(file_path), key_prefix, [file_path])
