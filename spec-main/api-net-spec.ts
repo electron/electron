@@ -1811,6 +1811,11 @@ describe('net module', () => {
       urlRequest.on('response', () => {});
       urlRequest.end();
       await delay(2000);
+      // TODO(nornagon): I think this ought to max out at 20, but in practice
+      // it seems to exceed that sometimes. This is at 25 to avoid test flakes,
+      // but we should investigate if there's actually something broken here and
+      // if so fix it and reset this to max at 20, and if not then delete this
+      // comment.
       expect(numChunksSent).to.be.at.most(25);
     });
   });
