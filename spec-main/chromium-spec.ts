@@ -824,7 +824,8 @@ describe('chromium features', () => {
       expect(typeofProcessGlobal).to.equal('undefined');
     });
 
-    it('disables JavaScript when it is disabled on the parent window', async () => {
+    // TODO(jkleinsc) fix this flaky test on WOA
+    ifit(process.platform !== 'win32' || process.arch !== 'arm64')('disables JavaScript when it is disabled on the parent window', async () => {
       const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
       w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       const windowUrl = require('url').format({
