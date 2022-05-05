@@ -1811,7 +1811,7 @@ describe('net module', () => {
       urlRequest.on('response', () => {});
       urlRequest.end();
       await delay(2000);
-      expect(numChunksSent).to.be.at.most(20);
+      expect(numChunksSent).to.be.at.most(25);
     });
   });
 
