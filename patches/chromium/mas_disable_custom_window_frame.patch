@@ -75,7 +75,7 @@ index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70b
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 5a23ea7558814eec59eda349bc7194afcb70d01e..c9147bbe5a225291552082434e5db34239394139 100644
+index 67ebc56bd7ee267c03a5543e10a6a41042fcaa38..af3ed27dea51c22ab32ce14686dd7807eb797316 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -95,7 +95,7 @@ index 5a23ea7558814eec59eda349bc7194afcb70d01e..c9147bbe5a225291552082434e5db342
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 83e08e8e56f8fdfe5c321c33b451b9bde8ee819a..f48d8ac4816e2d775c16758e086eb56ad456bd01 100644
+index 622b25c637ba14f287cbcdb4781967564d7e9eff..a21fe0aa19069a748b41e7d0781e20031c40fbfc 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -16,7 +16,9 @@
@@ -126,7 +126,7 @@ index 83e08e8e56f8fdfe5c321c33b451b9bde8ee819a..f48d8ac4816e2d775c16758e086eb56a
  @implementation NativeWidgetMacNSWindow {
   @private
    base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -186,6 +192,8 @@ - (BOOL)hasViewsMenuActive {
+@@ -209,6 +215,8 @@ - (BOOL)hasViewsMenuActive {
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index 83e08e8e56f8fdfe5c321c33b451b9bde8ee819a..f48d8ac4816e2d775c16758e086eb56a
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -197,6 +205,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -220,6 +228,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

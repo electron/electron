@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 25f8cc0c40d3c2bc538fb10b667ed2918f67e64b..fef83eea867c71ed1cca3a91a364639610464f47 100644
+index 36b4e75828436df4274b522bdf75e88e1112aab6..0c8d0735523d388d0e68d2ad0b20a1c2525502ed 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -1791,9 +1791,15 @@ bool RenderProcessHostImpl::Init() {
