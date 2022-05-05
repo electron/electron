@@ -15,7 +15,7 @@ except ImportError:
   from urllib2 import urlopen
 import zipfile
 
-from lib.config import is_verbose_mode, s3_config
+from lib.config import is_verbose_mode
 
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -156,25 +156,8 @@ def get_electron_version():
     return 'v' + f.read().strip()
 
 def store_artifact(prefix, key_prefix, files):
-  # Legacy S3 Bucket
-  s3put(prefix, key_prefix, files)
-  # New AZ Storage
+  # Azure Storage
   azput(prefix, key_prefix, files)
-
-def s3put(prefix, key_prefix, files):
-  bucket, access_key, secret_key = s3_config()
-  env = os.environ.copy()
-  env['AWS_ACCESS_KEY_ID'] = access_key
-  env['AWS_SECRET_ACCESS_KEY'] = secret_key
-  output = execute([
-    'node',
-    os.path.join(os.path.dirname(__file__), 's3put.js'),
-    '--bucket', bucket,
-    '--prefix', prefix,
-    '--key_prefix', key_prefix,
-    '--grant', 'public-read',
-  ] + files, env)
-  print(output)
 
 def azput(prefix, key_prefix, files):
   env = os.environ.copy()
