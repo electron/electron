@@ -802,7 +802,6 @@ bool App::CanCreateWindow(
     bool opener_suppressed,
     bool* no_javascript_access) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
@@ -828,7 +827,6 @@ void App::AllowCertificateError(
     base::OnceCallback<void(content::CertificateRequestResultType)> callback) {
   auto adapted_callback = base::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   bool prevent_default = Emit(
       "certificate-error", WebContents::FromOrCreate(isolate, web_contents),
@@ -1086,7 +1084,6 @@ std::string App::GetLocaleCountryCode() {
 void App::OnFirstInstanceAck(
     const base::span<const uint8_t>* first_instance_data) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   base::Value data_to_send;
   if (first_instance_data) {
@@ -1120,7 +1117,6 @@ void App::OnSecondInstance(
     const std::vector<uint8_t> additional_data,
     const ProcessSingleton::NotificationAckCallback& ack_callback) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> data_value =
       DeserializeV8Value(isolate, std::move(additional_data));

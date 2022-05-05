@@ -171,7 +171,6 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   platform_->DrainTasks(isolate_);
 
   {
-    v8::Locker locker(isolate_);
     v8::HandleScope scope(isolate_);
     context_.Get(isolate_)->Exit();
   }
@@ -370,7 +369,6 @@ void JavascriptEnvironment::OnMessageLoopCreated() {
 void JavascriptEnvironment::OnMessageLoopDestroying() {
   DCHECK(microtasks_runner_);
   {
-    v8::Locker locker(isolate_);
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
