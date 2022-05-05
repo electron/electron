@@ -1,0 +1,202 @@
+From b321ac924772586a874927cce2b04600efdf4d69 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Thu, 10 Mar 2022 02:35:27 +0000
+Subject: [PATCH] [M98] Do not expose inner WebContents on scripting/getAllFrames.
+
+Inner WebContents shouldn't be exposed for executeScript or getAllFrames
+APIs. This is consistent with the API before crrev.com/f894f106
+and crrev.com/c8de3b0a.
+
+BUG=1301320,1261261
+
+(cherry picked from commit 5c4e043324b3afd1be673ae2c0a5c00845bb0e86)
+
+Change-Id: I86a5b09aa44c48319b7dd0a10e5442b8c803d4e5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3497565
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Reviewed-by: Kevin McNee <mcnee@chromium.org>
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#977769}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3514993
+Cr-Commit-Position: refs/branch-heads/4758@{#1244}
+Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
+---
+
+diff --git a/chrome/browser/extensions/api/scripting/scripting_apitest.cc b/chrome/browser/extensions/api/scripting/scripting_apitest.cc
+index 646701b..fc1e974 100644
+--- a/chrome/browser/extensions/api/scripting/scripting_apitest.cc
++++ b/chrome/browser/extensions/api/scripting/scripting_apitest.cc
+@@ -85,6 +85,15 @@
+   ASSERT_TRUE(RunExtensionTest("scripting/sub_frames")) << message_;
+ }
+ 
++// Test validating we don't insert content into nested WebContents.
++IN_PROC_BROWSER_TEST_F(ScriptingAPITest, NestedWebContents) {
++  OpenURLInCurrentTab(
++      embedded_test_server()->GetURL("a.com", "/page_with_embedded_pdf.html"));
++
++  // From there, the test continues in the JS.
++  ASSERT_TRUE(RunExtensionTest("scripting/nested_web_contents")) << message_;
++}
++
+ IN_PROC_BROWSER_TEST_F(ScriptingAPITest, CSSInjection) {
+   OpenURLInCurrentTab(
+       embedded_test_server()->GetURL("example.com", "/simple.html"));
+diff --git a/chrome/browser/extensions/api/web_navigation/web_navigation_api.cc b/chrome/browser/extensions/api/web_navigation/web_navigation_api.cc
+index eff48ee..4888bda7 100644
+--- a/chrome/browser/extensions/api/web_navigation/web_navigation_api.cc
++++ b/chrome/browser/extensions/api/web_navigation/web_navigation_api.cc
+@@ -515,14 +515,21 @@
+   // expose back/forward cached frames or prerender frames in the GetAllFrames
+   // API.
+   web_contents->GetMainFrame()->ForEachRenderFrameHost(base::BindRepeating(
+-      [](std::vector<GetAllFrames::Results::DetailsType>& result_list,
++      [](content::WebContents* web_contents,
++         std::vector<GetAllFrames::Results::DetailsType>& result_list,
+          content::RenderFrameHost* render_frame_host) {
++        // Don't expose inner WebContents for the getFrames API.
++        if (content::WebContents::FromRenderFrameHost(render_frame_host) !=
++            web_contents) {
++          return content::RenderFrameHost::FrameIterationAction::kSkipChildren;
++        }
++
+         auto* navigation_state =
+             FrameNavigationState::GetForCurrentDocument(render_frame_host);
+ 
+         if (!navigation_state ||
+             !FrameNavigationState::IsValidUrl(navigation_state->GetUrl())) {
+-          return;
++          return content::RenderFrameHost::FrameIterationAction::kContinue;
+         }
+ 
+         GetAllFrames::Results::DetailsType frame;
+@@ -533,8 +540,9 @@
+         frame.process_id = render_frame_host->GetProcess()->GetID();
+         frame.error_occurred = navigation_state->GetErrorOccurredInFrame();
+         result_list.push_back(std::move(frame));
++        return content::RenderFrameHost::FrameIterationAction::kContinue;
+       },
+-      std::ref(result_list)));
++      web_contents, std::ref(result_list)));
+ 
+   return RespondNow(ArgumentList(GetAllFrames::Results::Create(result_list)));
+ }
+diff --git a/chrome/test/data/extensions/api_test/scripting/nested_web_contents/manifest.json b/chrome/test/data/extensions/api_test/scripting/nested_web_contents/manifest.json
+new file mode 100644
+index 0000000..1ee28c4
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/scripting/nested_web_contents/manifest.json
+@@ -0,0 +1,8 @@
++{
++  "name": "Scripting API Test",
++  "manifest_version": 3,
++  "version": "0.1",
++  "permissions": ["scripting", "tabs", "webNavigation"],
++  "background": {"service_worker": "worker.js"},
++  "host_permissions": ["http://a.com/*", "http://b.com/*"]
++}
+diff --git a/chrome/test/data/extensions/api_test/scripting/nested_web_contents/worker.js b/chrome/test/data/extensions/api_test/scripting/nested_web_contents/worker.js
+new file mode 100644
+index 0000000..cea1287
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/scripting/nested_web_contents/worker.js
+@@ -0,0 +1,41 @@
++// Copyright 2022 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++function injectedFunction() {
++  return location.pathname;
++}
++
++// Returns the single tab matching the given `query`.
++async function getSingleTab(query) {
++  const tabs = await chrome.tabs.query(query);
++  chrome.test.assertEq(1, tabs.length);
++  return tabs[0];
++}
++
++chrome.test.runTests([
++  async function nestedWebContents() {
++    const query = {url: 'http://a.com/*'};
++    let tab = await getSingleTab(query);
++    // There should be exactly 2 frames.
++    let frames = await chrome.webNavigation.getAllFrames({tabId: tab.id});
++    chrome.test.assertEq(2, frames.length);
++
++    // There should be exactly 2 results from executeScript.
++    let results = await chrome.scripting.executeScript({
++      target: {
++        tabId: tab.id,
++        allFrames: true,
++      },
++      func: injectedFunction,
++    });
++
++    // We see two frames here, the main frame and one for the embed. We should
++    // *not* see the third "embed within the embed" created by the PDF
++    // reader.
++    chrome.test.assertEq(2, results.length);
++    chrome.test.assertEq('/page_with_embedded_pdf.html', results[0].result);
++    chrome.test.assertEq('/pdf/test.pdf', results[1].result);
++    chrome.test.succeed();
++  },
++]);
+diff --git a/extensions/browser/script_executor.cc b/extensions/browser/script_executor.cc
+index b5b8c8d..672e3a1 100644
+--- a/extensions/browser/script_executor.cc
++++ b/extensions/browser/script_executor.cc
+@@ -90,24 +90,32 @@
+     // `pending_render_frames_` and add them if they are alive (and not already
+     // contained in `pending_frames`).
+     if (scope == ScriptExecutor::INCLUDE_SUB_FRAMES) {
+-      auto append_frame =
+-          [](std::vector<content::RenderFrameHost*>* pending_frames,
+-             content::RenderFrameHost* frame) {
+-            if (!frame->IsRenderFrameLive() ||
+-                base::Contains(*pending_frames, frame)) {
+-              return;
+-            }
++      auto append_frame = [](content::WebContents* web_contents,
++                             std::vector<raw_ptr<content::RenderFrameHost>>*
++                                 pending_frames,
++                             content::RenderFrameHost* frame) {
++        // Avoid inner web contents. If we need to execute scripts on
++        // inner WebContents this class needs to be updated.
++        // See crbug.com/1301320.
++        if (content::WebContents::FromRenderFrameHost(frame) != web_contents) {
++          return content::RenderFrameHost::FrameIterationAction::kSkipChildren;
++        }
++        if (!frame->IsRenderFrameLive() ||
++            base::Contains(*pending_frames, frame)) {
++          return content::RenderFrameHost::FrameIterationAction::kContinue;
++        }
+ 
+-            pending_frames->push_back(frame);
+-          };
++        pending_frames->push_back(frame);
++        return content::RenderFrameHost::FrameIterationAction::kContinue;
++      };
+ 
+       // We iterate over the requested frames. Note we can't use an iterator
+       // as the for loop will mutate `pending_render_frames_`.
+       size_t requested_frame_count = pending_render_frames_.size();
+       for (size_t i = 0; i < requested_frame_count; ++i) {
+-        auto* frame = pending_render_frames_.at(i);
+-        frame->ForEachRenderFrameHost(
+-            base::BindRepeating(append_frame, &pending_render_frames_));
++        pending_render_frames_.at(i)->ForEachRenderFrameHost(
++            base::BindRepeating(append_frame, web_contents,
++                                &pending_render_frames_));
+       }
+     }
+ 
+@@ -254,7 +262,7 @@
+   // TODO(devlin): Extensions *shouldn't* rely on order here, because there's
+   // never a guarantee. We should probably just adjust the test and disregard
+   // order (except the root frame).
+-  std::vector<content::RenderFrameHost*> pending_render_frames_;
++  std::vector<raw_ptr<content::RenderFrameHost>> pending_render_frames_;
+ 
+   // The results of the injection.
+   std::vector<ScriptExecutor::FrameResult> results_;
