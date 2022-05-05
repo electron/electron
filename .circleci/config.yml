@@ -14,7 +14,7 @@ parameters:
     type: boolean
     default: false
   
-  upload-to-az:
+  upload-to-storage:
     type: string
     default: '1'
 
