@@ -36,7 +36,7 @@ async function main () {
   // file and pull cflags_cc from it instead of using bespoke code here?
   // I think it's unlikely to work; but if it does, it would be more futureproof
   const cxxflags = [
-    '-std=c++14',
+    '-std=c++17',
     '-nostdinc++',
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
