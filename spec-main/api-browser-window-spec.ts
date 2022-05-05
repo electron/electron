@@ -692,12 +692,12 @@ describe('BrowserWindow module', () => {
     });
 
     describe('BrowserWindow.show()', () => {
-      it('should focus on window', () => {
-        w.show();
+      it('should focus on window', async () => {
+        await emittedOnce(w, 'focus', () => w.show());
         expect(w.isFocused()).to.equal(true);
       });
-      it('should make the window visible', () => {
-        w.show();
+      it('should make the window visible', async () => {
+        await emittedOnce(w, 'focus', () => w.show());
         expect(w.isVisible()).to.equal(true);
       });
       it('emits when window is shown', async () => {
@@ -893,7 +893,7 @@ describe('BrowserWindow module', () => {
 
     describe('BrowserWindow.getFocusedWindow()', () => {
       it('returns the opener window when dev tools window is focused', async () => {
-        w.show();
+        await emittedOnce(w, 'focus', () => w.show());
         w.webContents.openDevTools({ mode: 'undocked' });
         await emittedOnce(w.webContents, 'devtools-focused');
         expect(BrowserWindow.getFocusedWindow()).to.equal(w);
