@@ -56,7 +56,7 @@ def main():
 
   files += glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')
 
-  # The file upload needs to be atom-shell/symbols/:symbol_name/:hash/:symbol
+  # The file upload needs to be symbols/:symbol_name/:hash/:symbol
   os.chdir(SYMBOLS_DIR)
   files = [os.path.relpath(f, os.getcwd()) for f in files]
 
@@ -84,7 +84,7 @@ def run_symstore(pdb, dest, product):
 
 
 def upload_symbols(files):
-  store_artifact(SYMBOLS_DIR, 'atom-shell/symbols',
+  store_artifact(SYMBOLS_DIR, 'symbols',
         files)
 
 
