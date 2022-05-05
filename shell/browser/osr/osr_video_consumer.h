@@ -33,7 +33,7 @@ class OffScreenVideoConsumer : public viz::mojom::FrameSinkVideoConsumer {
 
   void SetActive(bool active);
   void SetFrameRate(int frame_rate);
-  void SizeChanged();
+  void SizeChanged(const gfx::Size& size_in_pixels);
 
  private:
   // viz::mojom::FrameSinkVideoConsumer implementation.
