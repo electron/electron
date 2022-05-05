@@ -62,9 +62,9 @@ async function circleCIcall (targetBranch, workflowName, options) {
     parameters: {}
   };
   if (options.ghRelease) {
-    buildRequest.parameters['upload-to-az'] = '0';
+    buildRequest.parameters['upload-to-storage'] = '0';
   } else {
-    buildRequest.parameters['upload-to-az'] = '1';
+    buildRequest.parameters['upload-to-storage'] = '1';
   }
   buildRequest.parameters[`run-${workflowName}`] = true;
   if (options.arch) {
@@ -205,7 +205,7 @@ async function callAppVeyor (targetBranch, job, options) {
   };
 
   if (!options.ghRelease) {
-    environmentVariables.UPLOAD_TO_AZ = 1;
+    environmentVariables.UPLOAD_TO_STORAGE = 1;
   }
 
   const requestOpts = {
