@@ -50,7 +50,10 @@ if (is_linux) {
   }
 
   pkg_config("libnotify_config") {
-    packages = [ "glib-2.0" ]
+    packages = [
+      "glib-2.0",
+      "gdk-pixbuf-2.0",
+    ]
   }
 
   generate_library_loader("libnotify_loader") {
