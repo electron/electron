@@ -1,0 +1,242 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Garrett Tanzer <gtanzer@chromium.org>
+Date: Wed, 2 Mar 2022 18:33:42 +0000
+Subject: Reland "Fix noopener case for user activation consumption"
+
+This is a reland of e9828a82b5c182dc9a7fb0ae7226c35ba1726e7d
+
+The MSAN error is from checking status before err in
+content/renderer/render_view_impl.cc .
+https://ci.chromium.org/ui/p/chromium/builders/ci/Linux%20ChromiumOS%20MSan%20Tests/b8821495655905086193/overview
+
+The fix is to split the check for err and kIgnore into two checks,
+and put the err check before kBlocked.
+
+It is probably possible for the browser to consume user activation
+but then eventually mojo returns an error and the renderer doesn't
+consume activation, but that seems pretty marginal.
+
+Original change's description:
+> Fix noopener case for user activation consumption
+>
+>
+> The flow for user activation consumption in window.open was as follows:
+>
+> Renderer: ask the browser to create a new window
+> Browser: consume transient user activation (in the browser, and via RPC
+> to remote frames only)
+> Browser: return success for opener, return ignore for noopener
+> Renderer: consume transient user activation upon success
+>
+> So in the noopener case, the renderer with the local frame where the
+> window.open originated didn't have its transient user activation
+> consumed.
+>
+>
+> The new behavior is to consume user activation in the calling renderer
+> whenever it is consumed in the browser. We accomplish this by returning
+> a distinct value kBlocked to represent failure before the browser
+> consumes user activation.
+>
+> Bug: 1264543, 1291210
+> Change-Id: Iffb6e3fd772bef625d3d28e600e6fb73d70ab29f
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3468171
+> Reviewed-by: Dominic Farolino <dom@chromium.org>
+> Reviewed-by: Ken Buchanan <kenrb@chromium.org>
+> Reviewed-by: Mustaq Ahmed <mustaq@chromium.org>
+> Reviewed-by: Charles Reis <creis@chromium.org>
+> Reviewed-by: Jonathan Ross <jonross@chromium.org>
+> Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+> Commit-Queue: Garrett Tanzer <gtanzer@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#973876}
+
+Bug: 1264543, 1291210
+Change-Id: Ie27c4d68db34dfd98adee7cc5c743953dad59834
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3481666
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Mustaq Ahmed <mustaq@chromium.org>
+Reviewed-by: Ken Buchanan <kenrb@chromium.org>
+Reviewed-by: Charles Reis <creis@chromium.org>
+Commit-Queue: Garrett Tanzer <gtanzer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#976745}
+
+diff --git a/chrome/browser/site_isolation/chrome_site_per_process_browsertest.cc b/chrome/browser/site_isolation/chrome_site_per_process_browsertest.cc
+index 35ca82b39b954e2bb34b22f3d565e06773faeeff..6391f834c65e175838ade202c67118ead2c81264 100644
+--- a/chrome/browser/site_isolation/chrome_site_per_process_browsertest.cc
++++ b/chrome/browser/site_isolation/chrome_site_per_process_browsertest.cc
+@@ -1194,6 +1194,52 @@ IN_PROC_BROWSER_TEST_F(ChromeSitePerProcessTest,
+   EXPECT_FALSE(frame_c_popup_opened);
+ }
+ 
++// Test that opening a window with `noopener` consumes user activation.
++// crbug.com/1264543, crbug.com/1291210
++IN_PROC_BROWSER_TEST_F(ChromeSitePerProcessTest,
++                       UserActivationConsumptionNoopener) {
++  // Start on a page a.com.
++  GURL main_url(embedded_test_server()->GetURL(
++      "a.com", "/cross_site_iframe_factory.html?a"));
++  ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), main_url));
++  content::WebContents* web_contents =
++      browser()->tab_strip_model()->GetActiveWebContents();
++
++  // Activate the frame by executing a dummy script.
++  const std::string no_op_script = "// No-op script";
++  EXPECT_TRUE(ExecuteScript(web_contents, no_op_script));
++
++  // Add a popup observer.
++  content::TestNavigationObserver popup_observer(nullptr);
++  popup_observer.StartWatchingNewWebContents();
++
++  // Open a popup from the frame, with `noopener`. This should consume
++  // transient user activation.
++  GURL popup_url(embedded_test_server()->GetURL("popup.com", "/"));
++  EXPECT_TRUE(ExecuteScriptWithoutUserGesture(
++      web_contents,
++      base::StringPrintf(
++          "window.w = window.open('%s'+'title1.html', '_blank', 'noopener');",
++          popup_url.spec().c_str())));
++
++  // Try to open another popup.
++  EXPECT_TRUE(ExecuteScriptWithoutUserGesture(
++      web_contents,
++      base::StringPrintf(
++          "window.w = window.open('%s'+'title2.html', '_blank', 'noopener');",
++          popup_url.spec().c_str())));
++
++  // Wait and check that only one popup was opened.
++  popup_observer.Wait();
++  EXPECT_EQ(2, browser()->tab_strip_model()->count());
++
++  content::WebContents* popup =
++      browser()->tab_strip_model()->GetActiveWebContents();
++  EXPECT_EQ(embedded_test_server()->GetURL("popup.com", "/title1.html"),
++            popup->GetLastCommittedURL());
++  EXPECT_NE(popup, web_contents);
++}
++
+ // TODO(crbug.com/1021895): Flaky.
+ // Tests that a cross-site iframe runs its beforeunload handler when closing a
+ // tab.  See https://crbug.com/853021.
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 147ce007ac5cdd4814872a5803c0ce721ea26ff8..37d2129521b30e46cbaa9552d5122fb6f0e2d46e 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -6518,17 +6518,22 @@ void RenderFrameHostImpl::CreateNewWindow(
+           effective_transient_activation_state, params->opener_suppressed,
+           &no_javascript_access);
+ 
+-  bool was_consumed = false;
+-  if (can_create_window) {
+-    // Consume activation even w/o User Activation v2, to sync other renderers
+-    // with calling renderer.
+-    was_consumed = frame_tree_node_->UpdateUserActivationState(
+-        blink::mojom::UserActivationUpdateType::kConsumeTransientActivation,
+-        blink::mojom::UserActivationNotificationType::kNone);
+-  } else {
+-    std::move(callback).Run(mojom::CreateNewWindowStatus::kIgnore, nullptr);
+-    return;
+-  }
++  // If this frame isn't allowed to create a window, return early (before we
++  // consume transient user activation).
++  if (!can_create_window) {
++    std::move(callback).Run(mojom::CreateNewWindowStatus::kBlocked, nullptr);
++    return;
++  }
++
++  // Otherwise, consume user activation before we proceed. In particular, it is
++  // important to do this before we return from the |opener_suppressed| case
++  // below.
++  // NB: This call will consume activations in the browser and the remote frame
++  // proxies for this frame. The initiating renderer will consume its view of
++  // the activations after we return.
++  bool was_consumed = frame_tree_node_->UpdateUserActivationState(
++      blink::mojom::UserActivationUpdateType::kConsumeTransientActivation,
++      blink::mojom::UserActivationNotificationType::kNone);
+ 
+   // For Android WebView, we support a pop-up like behavior for window.open()
+   // even if the embedding app doesn't support multiple windows. In this case,
+diff --git a/content/common/frame.mojom b/content/common/frame.mojom
+index c0cad20dc8273576dea2a9f3fe0c67be101a2193..e7f4b3d4c41034357a07f699b517c37b9783e304 100644
+--- a/content/common/frame.mojom
++++ b/content/common/frame.mojom
+@@ -558,8 +558,10 @@ struct CreateNewWindowParams {
+ 
+ // Operation result when the renderer asks the browser to create a new window.
+ enum CreateNewWindowStatus {
+-  // Ignore creation of the new window. This can happen because creation is
+-  // blocked or because the new window should have no opener relationship.
++  // Creation of the new window was blocked, e.g. because the source frame
++  // doesn't have user activation.
++  kBlocked,
++  // Ignore creation of the new window, e.g. because noopener is in effect.
+   kIgnore,
+   // Reuse the current window rather than creating a new window.
+   kReuse,
+diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
+index 215b059bb2dfcead6c709c99b39578f8e2216d93..007659591659a691e1b1606e6a13eb77a755ee6e 100644
+--- a/content/renderer/render_view_impl.cc
++++ b/content/renderer/render_view_impl.cc
+@@ -309,8 +309,27 @@ WebView* RenderViewImpl::CreateView(
+   mojom::CreateNewWindowStatus status;
+   mojom::CreateNewWindowReplyPtr reply;
+   auto* frame_host = creator_frame->GetFrameHost();
+-  bool err = !frame_host->CreateNewWindow(std::move(params), &status, &reply);
+-  if (err || status == mojom::CreateNewWindowStatus::kIgnore)
++  if (!frame_host->CreateNewWindow(std::move(params), &status, &reply)) {
++    // The sync IPC failed, e.g. maybe the render process is in the middle of
++    // shutting down. Can't create a new window without the browser process,
++    // so just bail out.
++    return nullptr;
++  }
++
++  // If creation of the window was blocked (e.g. because this frame doesn't
++  // have user activation), return before consuming user activation. A frame
++  // that isn't allowed to open a window  shouldn't be able to consume the
++  // activation for the rest of the frame tree.
++  if (status == mojom::CreateNewWindowStatus::kBlocked)
++    return nullptr;
++
++  // Consume the transient user activation in the current renderer.
++  consumed_user_gesture = creator->ConsumeTransientUserActivation(
++      blink::UserActivationUpdateSource::kBrowser);
++
++  // If we should ignore the new window (e.g. because of `noopener`), return
++  // now that user activation was consumed.
++  if (status == mojom::CreateNewWindowStatus::kIgnore)
+     return nullptr;
+ 
+   // For Android WebView, we support a pop-up like behavior for window.open()
+@@ -330,11 +349,6 @@ WebView* RenderViewImpl::CreateView(
+   DCHECK_NE(MSG_ROUTING_NONE, reply->main_frame_route_id);
+   DCHECK_NE(MSG_ROUTING_NONE, reply->widget_params->routing_id);
+ 
+-  // The browser allowed creation of a new window and consumed the user
+-  // activation.
+-  consumed_user_gesture = creator->ConsumeTransientUserActivation(
+-      blink::UserActivationUpdateSource::kBrowser);
+-
+   // While this view may be a background extension page, it can spawn a visible
+   // render view. So we just assume that the new one is not another background
+   // page instead of passing on our own value.
+diff --git a/third_party/blink/web_tests/wpt_internal/fenced_frame/restrict-size.https.html b/third_party/blink/web_tests/wpt_internal/fenced_frame/restrict-size.https.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..5668407d7e1e6ac7840fc47b76869787cb3f3d63
+--- /dev/null
++++ b/third_party/blink/web_tests/wpt_internal/fenced_frame/restrict-size.https.html
+@@ -0,0 +1,15 @@
++<!DOCTYPE html>
++<title>Test fencedframe size restrictions in opaque ads mode.</title>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script src="/common/utils.js"></script>
++<script src="/common/dispatcher/dispatcher.js"></script>
++<script src="resources/utils.js"></script>
++
++<body>
++<script>
++promise_test(async () => {
++  const frame = attachFencedFrameContext();
++}, 'restrict fencedframe size');
++</script>
++</body>
