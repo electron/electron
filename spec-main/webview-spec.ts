@@ -435,6 +435,11 @@ describe('<webview> tag', function () {
     };
 
     afterEach(closeAllWindows);
+    afterEach(async () => {
+      // The leaving animation is un-observable but can interfere with future tests
+      // Specifically this is async on macOS but can be on other platforms too
+      await delay(1000);
+    });
 
     // TODO(jkleinsc) fix this test on arm64 macOS.  It causes the tests following it to fail/be flaky
     ifit(process.platform !== 'darwin' || process.arch !== 'arm64')('should make parent frame element fullscreen too', async () => {
