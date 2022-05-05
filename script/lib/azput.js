@@ -20,12 +20,7 @@ let anErrorOccurred = false;
 function next (done) {
   const file = files.shift();
   if (!file) return done();
-  let key = filenameToKey(file);
-  // TODO: When we drop s3put, migrate the key to not include atom-shell in the callsites
-  key = key.replace('atom-shell/dist/', 'headers/dist/');
-  key = key.replace('atom-shell/symbols/', 'symbols/');
-  key = key.replace('atom-shell/tmp/', 'checksums-scratchpad/');
-  key = key.replace('electron-artifacts/', 'release-builds/');
+  const key = filenameToKey(file);
 
   const [containerName, ...keyPath] = key.split('/');
   const blobKey = keyPath.join('/');
