@@ -1001,7 +1001,7 @@ const gotTheLock = app.requestSingleInstanceLock(additionalData)
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
+  app.on('second-instance', (event, commandLine, workingDirectory, additionalData, ackCallback) => {
     // We must call preventDefault if we're sending back data.
     event.preventDefault()
     // Print out data received from the second instance.
