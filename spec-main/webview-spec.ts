@@ -435,6 +435,11 @@ describe('<webview> tag', function () {
     };
 
     afterEach(closeAllWindows);
+    afterEach(async () => {
+      // The leaving animation is un-observable but can interfere with future tests
+      // Specifically this is async on macOS but can be on other platforms too
+      await delay(1000);
+    });
 
     it('should make parent frame element fullscreen too', async () => {
       const [w, webview] = await loadWebViewWindow();
