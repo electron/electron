@@ -343,8 +343,9 @@ def upload_electron(release, file_path, args):
     pass
 
   # if upload_to_s3 is set, skip github upload.
+  # todo (vertedinde): migrate this variable to upload_to_az
   if args.upload_to_s3:
-    key_prefix = 'electron-artifacts/{0}_{1}'.format(args.version,
+    key_prefix = 'release-builds/{0}_{1}'.format(args.version,
                                                      args.upload_timestamp)
     store_artifact(os.path.dirname(file_path), key_prefix, [file_path])
     upload_sha256_checksum(args.version, file_path, key_prefix)
@@ -369,7 +370,7 @@ def upload_io_to_github(release, filename, filepath, version):
 def upload_sha256_checksum(version, file_path, key_prefix=None):
   checksum_path = '{}.sha256sum'.format(file_path)
   if key_prefix is None:
-    key_prefix = 'atom-shell/tmp/{0}'.format(version)
+    key_prefix = 'checksums-scratchpad/{0}'.format(version)
   sha256 = hashlib.sha256()
   with open(file_path, 'rb') as f:
     sha256.update(f.read())
