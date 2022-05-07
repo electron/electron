@@ -59,7 +59,7 @@ def main():
     with open(index_json, "wb") as f:
       f.write(new_content)
 
-    store_artifact(OUT_DIR, 'atom-shell/dist', [index_json])
+    store_artifact(OUT_DIR, 'headers/dist', [index_json])
 
 
 if __name__ == '__main__':
