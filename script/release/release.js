@@ -82,8 +82,6 @@ async function validateReleaseAssets (release, validatingRelease) {
           console.log(`${fail} error verifyingShasums`, err);
         });
     }
-    const s3RemoteFiles = s3RemoteFilesForVersion(release.tag_name);
-    await verifyShasumsForRemoteFiles(s3RemoteFiles, true);
     const azRemoteFiles = azRemoteFilesForVersion(release.tag_name);
     await verifyShasumsForRemoteFiles(azRemoteFiles, true);
   }
@@ -203,15 +201,6 @@ const cloudStoreFilePaths = (version) => [
   'SHASUMS.txt',
   'SHASUMS256.txt'
 ];
-
-function s3RemoteFilesForVersion (version) {
-  const bucket = 'https://gh-contractor-zcbenz.s3.amazonaws.com/';
-  const versionPrefix = `${bucket}atom-shell/dist/${version}/`;
-  return cloudStoreFilePaths(version).map((filePath) => ({
-    file: filePath,
-    url: `${versionPrefix}${filePath}`
-  }));
-}
 
 function azRemoteFilesForVersion (version) {
   const azCDN = 'https://artifacts.electronjs.org/headers/';
