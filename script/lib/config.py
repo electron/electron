@@ -51,17 +51,6 @@ def get_env_var(name):
   return value
 
 
-def s3_config():
-  config = (get_env_var('S3_BUCKET'),
-            get_env_var('S3_ACCESS_KEY'),
-            get_env_var('S3_SECRET_KEY'))
-  message = ('Error: Please set the $ELECTRON_S3_BUCKET, '
-             '$ELECTRON_S3_ACCESS_KEY, and '
-             '$ELECTRON_S3_SECRET_KEY environment variables')
-  assert all(len(c) for c in config), message
-  return config
-
-
 def enable_verbose_mode():
   print('Running in verbose mode')
   global verbose_mode
