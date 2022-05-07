@@ -532,7 +532,7 @@ void Browser::SetSecureKeyboardEntryEnabled(bool enabled) {
   }
 }
 
-void Browser::RegisterForRemoteNotifications() {
+void Browser::RegisterForAPNSNotifications() {
   [[AtomApplication sharedApplication]
       registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge |
                                          NSRemoteNotificationTypeAlert |
@@ -540,26 +540,26 @@ void Browser::RegisterForRemoteNotifications() {
 
 }
 
-void Browser::UnregisterForRemoteNotifications() {
+void Browser::UnregisterForAPNSNotifications() {
   [[AtomApplication sharedApplication] unregisterForRemoteNotifications];
 }
 
-void Browser::DidRegisterForRemoteNotificationsWithDeviceToken(
+void Browser::DidRegisterForAPNSNotificationsWithDeviceToken(
     const std::string& token) {
   for (BrowserObserver& observer : observers_)
-    observer.OnDidRegisterForRemoteNotificationsWithDeviceToken(token);
+    observer.OnDidRegisterForAPNSNotificationsWithDeviceToken(token);
 }
 
-void Browser::DidFailToRegisterForRemoteNotificationsWithError(
+void Browser::DidFailToRegisterForAPNSNotificationsWithError(
     const std::string& error) {
   for (BrowserObserver& observer : observers_)
-    observer.OnDidFailToRegisterForRemoteNotificationsWithError(error);
+    observer.OnDidFailToRegisterForAPNSNotificationsWithError(error);
 }
 
-void Browser::DidReceiveRemoteNotification(
+void Browser::DidReceiveAPNSNotification(
     const base::DictionaryValue& user_info) {
   for (BrowserObserver& observer : observers_)
-    observer.OnDidReceiveRemoteNotification(user_info);
+    observer.OnDidReceiveAPNSNotification(user_info);
 }
 
 }  // namespace electron
