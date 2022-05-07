@@ -432,26 +432,14 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..d9a47fc419b7d42e31498cc2d8035609
  
 -  *result = notification_callback.Run(parsed_command_line, current_directory) ?
 -      TRUE : FALSE;
-+  // notification_callback.Run waits for StoreAck to
-+  // run to completion before moving onwards.
-+  // Therefore, we cannot directly send the SendBackAck
-+  // callback instead, as it would hang the program
-+  // during the ConnectNamedPipe call.
 +  g_write_ack_callback_called = false;
 +  *result = notification_callback.Run(parsed_command_line, current_directory,
 +                                      std::move(additional_data),
 +                                      base::BindRepeating(&StoreAck))
 +                ? TRUE
 +                : FALSE;
-+  if (*result) {
-+    // If *result is TRUE, we return NOTIFY_SUCCESS.
-+    // Only for that case does the second process read
-+    // the acknowledgement. Therefore, only send back
-+    // the acknowledgement if *result is TRUE,
-+    // otherwise the program hangs during the ConnectNamedPipe call.
-+    g_ack_timer.Start(FROM_HERE, base::Seconds(0),
-+                      base::BindOnce(&SendBackAck));
-+  }
++  g_ack_timer.Start(FROM_HERE, base::Seconds(0),
++                    base::BindOnce(&SendBackAck));
    return true;
  }
  
