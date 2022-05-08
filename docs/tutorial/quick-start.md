@@ -1,4 +1,4 @@
-# Quick Start
+# Quick Start 
 
 This guide will step you through the process of creating a barebones Hello World app in
 Electron, similar to [`electron/electron-quick-start`][quick-start].
