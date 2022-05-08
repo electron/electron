@@ -282,7 +282,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d05018b627 100644
+index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803a5ea7df9 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -21,6 +21,7 @@
@@ -293,11 +293,10 @@ index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d0
  #include "base/trace_event/base_tracing.h"
  #include "base/win/registry.h"
  #include "base/win/scoped_handle.h"
-@@ -45,6 +46,14 @@
+@@ -45,6 +46,13 @@
  namespace {
  
  const char kLockfile[] = "lockfile";
-+const LPCWSTR kPipeName = L"\\\\.\\pipe\\electronAckPipe";
 +const DWORD kPipeTimeout = 10000;
 +const DWORD kMaxMessageLength = 32 * 1024;
 +
@@ -308,7 +307,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d0
  
  // A helper class that acquires the given |mutex| while the AutoLockMutex is in
  // scope.
-@@ -80,10 +89,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -80,10 +88,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -323,7 +322,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d0
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -133,11 +144,82 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -133,11 +143,82 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -406,7 +405,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d0
  bool ProcessLaunchNotification(
      const ProcessSingleton::NotificationCallback& notification_callback,
      UINT message,
-@@ -151,16 +233,35 @@ bool ProcessLaunchNotification(
+@@ -151,16 +232,35 @@ bool ProcessLaunchNotification(
  
    // Handle the WM_COPYDATA message from another process.
    const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
@@ -446,7 +445,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d0
    return true;
  }
  
-@@ -261,9 +362,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -261,9 +361,13 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -461,13 +460,30 @@ index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d0
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -278,6 +383,37 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -278,6 +382,54 @@ ProcessSingleton::~ProcessSingleton() {
      ::CloseHandle(lock_file_);
  }
  
-+void ReadAck(const ProcessSingleton::NotificationAckCallback& ack_callback) {
++std::wstring GetPipeName(std::string& program_name_) {
++  // Create a per-process pipename using a combination of the
++  // username and executable name. Pipe names are maxed to 256
++  // characters and can include any character other than a backslash
++  wchar_t user_name[256];
++  DWORD size = std::size(user_name);
++  if (::GetUserName(user_name, &size) == 0 || size < 1) {
++    NOTREACHED();
++  }
++
++  std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + program_name_.substr(0, 5));
++  pipe_name.append(user_name, 10);
++  return pipe_name;
++}
++
++void ReadAck(const ProcessSingleton::NotificationAckCallback& ack_callback, std::string& program_name_) {
 +  // We are reading the ack from the first instance.
 +  // First, wait for the pipe.
++  std::wstring pipe_name = GetPipeName(program_name_);
++  const LPCWSTR kPipeName = pipe_name.c_str();
 +  ::WaitNamedPipe(kPipeName, NMPWAIT_USE_DEFAULT_WAIT);
 +
 +  HANDLE read_ack_pipe = ::CreateFile(kPipeName,
@@ -499,22 +515,24 @@ index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d0
  // Code roughly based on Mozilla.
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
    TRACE_EVENT0("startup", "ProcessSingleton::NotifyOtherProcess");
-@@ -290,8 +426,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -290,8 +442,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
 -  switch (chrome::AttemptToNotifyRunningChrome(remote_window_)) {
 +  switch (chrome::AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
      case chrome::NOTIFY_SUCCESS:
-+      ReadAck(notification_ack_callback_);
++      ReadAck(notification_ack_callback_, program_name_);
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
        remote_window_ = NULL;
-@@ -429,6 +566,18 @@ bool ProcessSingleton::Create() {
+@@ -429,6 +582,20 @@ bool ProcessSingleton::Create() {
            << "Lock file can not be created! Error code: " << error;
  
        if (lock_file_ != INVALID_HANDLE_VALUE) {
 +        // We are the first instance. Create a pipe to send out ack data.
++        std::wstring pipe_name = GetPipeName(program_name_);
++        const LPCWSTR kPipeName = pipe_name.c_str();
 +        ack_pipe_ = ::CreateNamedPipe(kPipeName,
 +          PIPE_ACCESS_OUTBOUND,
 +          PIPE_TYPE_BYTE | PIPE_REJECT_REMOTE_CLIENTS,
@@ -529,7 +547,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..3bb74c08cd78b11cd9925a6bfafc62d0
          // Set the window's title to the path of our user data directory so
          // other Chrome instances can decide if they should forward to us.
          TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateWindow");
-@@ -456,6 +605,7 @@ bool ProcessSingleton::Create() {
+@@ -456,6 +623,7 @@ bool ProcessSingleton::Create() {
  }
  
  void ProcessSingleton::Cleanup() {
