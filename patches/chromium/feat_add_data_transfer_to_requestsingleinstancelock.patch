@@ -282,10 +282,20 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803a5ea7df9 100644
+index ec725b44296266bea1a51aea889463a0bba8449c..6d9aa90857c0ad0d55df1efd1e6791fdab5ecb0a 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -21,6 +21,7 @@
+@@ -13,14 +13,17 @@
+ #include "base/command_line.h"
+ #include "base/debug/activity_tracker.h"
+ #include "base/files/file_path.h"
++#include "base/files/file_util.h"
+ #include "base/logging.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
+ #include "base/process/process.h"
+ #include "base/process/process_info.h"
++#include "base/rand_util.h"
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/utf_string_conversions.h"
  #include "base/time/time.h"
@@ -293,7 +303,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803
  #include "base/trace_event/base_tracing.h"
  #include "base/win/registry.h"
  #include "base/win/scoped_handle.h"
-@@ -45,6 +46,13 @@
+@@ -45,6 +48,13 @@
  namespace {
  
  const char kLockfile[] = "lockfile";
@@ -307,7 +317,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803
  
  // A helper class that acquires the given |mutex| while the AutoLockMutex is in
  // scope.
-@@ -80,10 +88,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -80,10 +90,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -322,7 +332,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -133,11 +143,82 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -133,11 +145,82 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -405,7 +415,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803
  bool ProcessLaunchNotification(
      const ProcessSingleton::NotificationCallback& notification_callback,
      UINT message,
-@@ -151,16 +232,35 @@ bool ProcessLaunchNotification(
+@@ -151,16 +234,35 @@ bool ProcessLaunchNotification(
  
    // Handle the WM_COPYDATA message from another process.
    const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
@@ -445,7 +455,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803
    return true;
  }
  
-@@ -261,9 +361,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -261,9 +363,13 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -460,33 +470,31 @@ index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -278,6 +382,54 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -278,6 +384,52 @@ ProcessSingleton::~ProcessSingleton() {
      ::CloseHandle(lock_file_);
  }
  
-+std::wstring GetPipeName(std::string& program_name_) {
-+  // Create a per-process pipename using a combination of the
-+  // username and executable name. Pipe names are maxed to 256
-+  // characters and can include any character other than a backslash
-+  wchar_t user_name[256];
-+  DWORD size = std::size(user_name);
-+  if (::GetUserName(user_name, &size) == 0 || size < 1) {
-+    NOTREACHED();
-+  }
-+
-+  std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + program_name_.substr(0, 5));
-+  pipe_name.append(user_name, 10);
-+  return pipe_name;
-+}
-+
-+void ReadAck(const ProcessSingleton::NotificationAckCallback& ack_callback, std::string& program_name_) {
++void ReadAck(const ProcessSingleton::NotificationAckCallback& ack_callback,
++             std::string program_name_,
++             base::FilePath& user_data_dir_) {
 +  // We are reading the ack from the first instance.
 +  // First, wait for the pipe.
-+  std::wstring pipe_name = GetPipeName(program_name_);
-+  const LPCWSTR kPipeName = pipe_name.c_str();
-+  ::WaitNamedPipe(kPipeName, NMPWAIT_USE_DEFAULT_WAIT);
++  HWND remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
++  base::FilePath lock_file_path = user_data_dir_.AppendASCII(kLockfile);
++  int64_t file_size = 0;
++  base::GetFileSize(lock_file_path, &file_size);
++  std::string contents(file_size, '\0');
++  base::ReadFile(lock_file_path, &contents[0], file_size);
 +
-+  HANDLE read_ack_pipe = ::CreateFile(kPipeName,
++  DWORD process_id;
++  DWORD thread_id = GetWindowThreadProcessId(remote_window_, &process_id);
++  std::string identifier = base::NumberToString(process_id) +
++      base::NumberToString(thread_id);
++  std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + identifier + program_name_ + contents);
++  const LPCWSTR w_pipe_name = pipe_name.c_str();
++  ::WaitNamedPipe(w_pipe_name, NMPWAIT_USE_DEFAULT_WAIT);
++
++  HANDLE read_ack_pipe = ::CreateFile(w_pipe_name,
 +    GENERIC_READ,
 +    FILE_SHARE_READ,
 +    NULL,
@@ -522,18 +530,37 @@ index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803
 -  switch (chrome::AttemptToNotifyRunningChrome(remote_window_)) {
 +  switch (chrome::AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
      case chrome::NOTIFY_SUCCESS:
-+      ReadAck(notification_ack_callback_, program_name_);
++      ReadAck(notification_ack_callback_, program_name_, user_data_dir_);
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
        remote_window_ = NULL;
-@@ -429,6 +582,20 @@ bool ProcessSingleton::Create() {
+@@ -410,13 +563,13 @@ bool ProcessSingleton::Create() {
+     // between the time where we looked for it above and the time the mutex
+     // was given to us.
+     remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
++    base::FilePath lock_file_path = user_data_dir_.AppendASCII(kLockfile);
+ 
+     if (!remote_window_) {
+       // We have to make sure there is no Chrome instance running on another
+       // machine that uses the same profile.
+       {
+         TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateLockFile");
+-        base::FilePath lock_file_path = user_data_dir_.AppendASCII(kLockfile);
+         lock_file_ = ::CreateFile(
+             lock_file_path.value().c_str(), GENERIC_WRITE, FILE_SHARE_READ,
+             NULL, CREATE_ALWAYS,
+@@ -429,6 +582,24 @@ bool ProcessSingleton::Create() {
            << "Lock file can not be created! Error code: " << error;
  
        if (lock_file_ != INVALID_HANDLE_VALUE) {
 +        // We are the first instance. Create a pipe to send out ack data.
-+        std::wstring pipe_name = GetPipeName(program_name_);
-+        const LPCWSTR kPipeName = pipe_name.c_str();
-+        ack_pipe_ = ::CreateNamedPipe(kPipeName,
++        std::string rand = std::to_string(base::RandUint64());
++        base::WriteFile(lock_file_path, rand);
++        std::string identifier = base::NumberToString(::GetCurrentProcessId()) +
++              base::NumberToString(::GetCurrentThreadId());
++        std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + identifier + program_name_ + rand);
++        const LPCWSTR w_pipe_name = pipe_name.c_str();
++        ack_pipe_ = ::CreateNamedPipe(w_pipe_name,
 +          PIPE_ACCESS_OUTBOUND,
 +          PIPE_TYPE_BYTE | PIPE_REJECT_REMOTE_CLIENTS,
 +          PIPE_UNLIMITED_INSTANCES,
@@ -547,7 +574,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..ba03aed92df7e584fc7e7380892a6803
          // Set the window's title to the path of our user data directory so
          // other Chrome instances can decide if they should forward to us.
          TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateWindow");
-@@ -456,6 +623,7 @@ bool ProcessSingleton::Create() {
+@@ -456,6 +627,7 @@ bool ProcessSingleton::Create() {
  }
  
  void ProcessSingleton::Cleanup() {
