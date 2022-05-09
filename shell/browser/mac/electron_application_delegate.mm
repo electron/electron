@@ -192,7 +192,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 }
 
 - (void)application:(NSApplication*)application
-    didRegisterForAPNSNotificationsWithDeviceToken:(NSData*)deviceToken {
+    didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
   // https://stackoverflow.com/a/16411517
   const char* tokenData = static_cast<const char*>([deviceToken bytes]);
   NSMutableString* tokenString = [NSMutableString string];
@@ -204,7 +204,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 }
 
 - (void)application:(NSApplication*)application
-    didFailToRegisterForAPNSNotificationsWithError:(NSError*)error {
+    didFailToRegisterForRemoteNotificationsWithError:(NSError*)error {
   std::string error_message(base::SysNSStringToUTF8(
       [NSString stringWithFormat:@"%ld %@ %@", [error code], [error domain],
                                  [error userInfo]]));
@@ -213,7 +213,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 }
 
 - (void)application:(NSApplication*)application
-    didReceiveAPNSNotification:(NSDictionary*)userInfo {
+    didReceiveRemoteNotification:(NSDictionary*)userInfo {
   electron::Browser::Get()->DidReceiveAPNSNotification(
       electron::NSDictionaryToDictionaryValue(userInfo));
 }
