@@ -4,11 +4,7 @@
 
 #include "shell/browser/api/electron_api_push_notifications.h"
 
-#include "base/power_monitor/power_monitor.h"
-#include "base/power_monitor/power_monitor_device_source.h"
-#include "gin/handle.h"
 #include "shell/browser/browser.h"
-#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"

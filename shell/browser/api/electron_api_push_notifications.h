@@ -1,63 +1,58 @@
-// Copyright (c) 2015 GitHub, Inc.
+// Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
-#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
+#include <memory>
+#include <string>
 
-#include <map>
-
+#include "base/values.h"
 #include "gin/handle.h"
-#include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
-#include "mojo/public/cpp/bindings/remote.h"
-#include "services/device/public/mojom/wake_lock.mojom.h"
+#include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/promise.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/browser_observer.h"
 
 namespace electron {
 
 namespace api {
 
-class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
+class PushNotifications
+    : public gin::Wrappable<PushNotifications>,
+      public gin_helper::EventEmitterMixin<PushNotifications>
+      public BrowserObserver,
+{
  public:
-  static gin::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
+  static gin::Handle<PushNotifications> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-
-  static gin::WrapperInfo kWrapperInfo;
+  const char* GetTypeName() override;
 
   // disable copy
-  PowerSaveBlocker(const PowerSaveBlocker&) = delete;
-  PowerSaveBlocker& operator=(const PowerSaveBlocker&) = delete;
-
- protected:
-  explicit PowerSaveBlocker(v8::Isolate* isolate);
-  ~PowerSaveBlocker() override;
+  PushNotifications(const PushNotifications&) = delete;
+  PushNotifications& operator=(const PushNotifications&) = delete;
 
  private:
-  void UpdatePowerSaveBlocker();
-  int Start(device::mojom::WakeLockType type);
-  bool Stop(int id);
-  bool IsStarted(int id);
+  explicit PushNotifications(v8::Isolate* isolate);
+  ~PushNotifications() override;
 
-  device::mojom::WakeLock* GetWakeLock();
-
-  // Current wake lock level.
-  device::mojom::WakeLockType current_lock_type_;
-
-  // Whether the wake lock is currently active.
-  bool is_wake_lock_active_ = false;
-
-  // Map from id to the corresponding blocker type for each request.
-  using WakeLockTypeMap = std::map<int, device::mojom::WakeLockType>;
-  WakeLockTypeMap wake_lock_types_;
-
-  mojo::Remote<device::mojom::WakeLock> wake_lock_;
+  // BrowserObserver
+#if BUILDFLAG(IS_MAC)
+  void OnDidRegisterForAPNSNotificationsWithDeviceToken(
+    const std::string& token) override;
+  void OnDidFailToRegisterForAPNSNotificationsWithError(
+      const std::string& error) override;
+  void OnDidReceiveAPNSNotification(
+      const base::DictionaryValue& user_info) override;
+#endif
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
