@@ -5,7 +5,7 @@ parameters:
     type: boolean
     default: false
   
-  upload-to-s3:
+  upload-to-storage:
     type: string
     default: '1'
 
@@ -637,9 +637,9 @@ step-electron-publish: &step-electron-publish
       fi
 
       cd src/electron
-      if [ "$UPLOAD_TO_S3" == "1" ]; then
-        echo 'Uploading Electron release distribution to S3'
-        script/release/uploaders/upload.py --verbose --upload_to_s3
+      if [ "$UPLOAD_TO_STORAGE" == "1" ]; then
+        echo 'Uploading Electron release distribution to Azure'
+        script/release/uploaders/upload.py --verbose --UPLOAD_TO_STORAGE
       else
         echo 'Uploading Electron release distribution to Github releases'
         script/release/uploaders/upload.py --verbose
@@ -1747,7 +1747,7 @@ jobs:
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
       <<: *env-ninja-status
     steps:
       - run: echo running
@@ -1791,7 +1791,7 @@ jobs:
       <<: *env-release-build
       <<: *env-32bit-release
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
       <<: *env-ninja-status
     steps:
       - run: echo running
@@ -1844,7 +1844,7 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
       <<: *env-ninja-status
     steps:
       - run: echo running
@@ -1892,7 +1892,7 @@ jobs:
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
       <<: *env-ninja-status
     steps:
       - run: echo running
@@ -1914,7 +1914,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-release-build
       <<: *env-apple-silicon
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
       <<: *env-ninja-status
     steps:
       - run: echo running
@@ -1984,7 +1984,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas
       <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
     steps:
       - run: echo running
       - when:
@@ -2005,7 +2005,7 @@ jobs:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
       <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
       <<: *env-ninja-status
     steps:
       - run: echo running
