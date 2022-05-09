@@ -480,7 +480,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
-             node::EnvironmentFlags::kNoInitializeInspector;
+             node::EnvironmentFlags::kNoCreateInspector;
   }
 
   if (!electron::fuses::IsNodeCliInspectEnabled()) {
