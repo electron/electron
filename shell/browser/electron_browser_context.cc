@@ -119,8 +119,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &path_));
-
+  base::PathService::Get(DIR_SESSION_DATA, &path_);
   if (!in_memory && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
                 .Append(base::FilePath::FromUTF8Unsafe(

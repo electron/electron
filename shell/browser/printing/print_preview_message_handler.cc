@@ -23,7 +23,6 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "mojo/public/cpp/bindings/callback_helpers.h"
-#include "shell/common/gin_helper/locker.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 #include "shell/common/node_includes.h"
@@ -249,7 +248,6 @@ void PrintPreviewMessageHandler::ResolvePromise(
   gin_helper::Promise<v8::Local<v8::Value>> promise = GetPromise(request_id);
 
   v8::Isolate* isolate = promise.isolate();
-  gin_helper::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(
       v8::Local<v8::Context>::New(isolate, promise.GetContext()));

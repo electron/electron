@@ -30,7 +30,6 @@ NodeStreamLoader::NodeStreamLoader(
 }
 
 NodeStreamLoader::~NodeStreamLoader() {
-  v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
 
@@ -154,7 +153,6 @@ void NodeStreamLoader::DidWrite(MojoResult result) {
 }
 
 void NodeStreamLoader::On(const char* event, EventCallback callback) {
-  v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
 

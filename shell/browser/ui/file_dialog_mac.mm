@@ -306,7 +306,6 @@ void ResolvePromiseInNextTick(gin_helper::Promise<v8::Local<v8::Value>> promise,
           [](gin_helper::Promise<v8::Local<v8::Value>> promise,
              v8::Global<v8::Value> global) {
             v8::Isolate* isolate = promise.isolate();
-            v8::Locker locker(isolate);
             v8::HandleScope handle_scope(isolate);
             v8::Local<v8::Value> value = global.Get(isolate);
             promise.Resolve(value);

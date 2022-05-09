@@ -371,7 +371,6 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   if (item->IsSavePackageDownload())
     return;
 
-  v8::Locker locker(isolate_);
   v8::HandleScope handle_scope(isolate_);
   auto handle = DownloadItem::FromOrCreate(isolate_, item);
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
