@@ -1760,7 +1760,7 @@ jobs:
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-32bit-release
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      UPLOAD_TO_STORAGE: << pipeline.parameters.upload-to-storage >>
       <<: *env-ninja-status
     steps:
       - run: echo running
