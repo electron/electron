@@ -33,6 +33,10 @@ constexpr char kInvalidRequestPrintPreviewCall[] =
 
 }  // namespace
 
+// This file subclasses printing::PrintViewManagerBase
+// but the implementations are duplicated from
+// components/printing/browser/print_to_pdf/pdf_print_manager.cc.
+
 PrintViewManagerElectron::PrintViewManagerElectron(
     content::WebContents* web_contents)
     : printing::PrintViewManagerBase(web_contents),
