@@ -2,10 +2,8 @@ import { expect } from 'chai';
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
-import * as semver from 'semver';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
 
@@ -2150,7 +2148,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarStyle" option', () => {
+  ifdescribe(['win32', 'darwin'].includes(process.platform))('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
         show: false,
@@ -2219,7 +2217,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarOverlay" option', () => {
+  ifdescribe(['win32', 'darwin'].includes(process.platform))('"titleBarOverlay" option', () => {
     const testWindowsOverlayHeight = async (size: any) => {
       const w = new BrowserWindow({
         show: false,
@@ -2278,6 +2276,27 @@ describe('BrowserWindow module', () => {
   ifdescribe(process.platform === 'win32')('BrowserWindow.setTitlebarOverlay', () => {
     afterEach(closeAllWindows);
     afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+
+    it('does not crash when an invalid titleBarStyle was initially set', () => {
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          color: '#0000f0',
+          symbolColor: '#ffffff'
+        },
+        titleBarStyle: 'hiddenInset'
+      });
+
+      expect(() => {
+        win.setTitleBarOverlay({
+          color: '#000000'
+        });
+      }).to.not.throw();
+    });
 
     it('correctly updates the height of the overlay', async () => {
       const testOverlay = async (w: BrowserWindow, size: Number) => {
