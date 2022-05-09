@@ -1139,11 +1139,11 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 
 std::vector<base::FilePath>
 ElectronBrowserClient::GetNetworkContextsParentDirectory() {
-  base::FilePath user_data_dir;
-  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
-  DCHECK(!user_data_dir.empty());
+  base::FilePath session_data;
+  base::PathService::Get(DIR_SESSION_DATA, &session_data);
+  DCHECK(!session_data.empty());
 
-  return {user_data_dir};
+  return {session_data};
 }
 
 std::string ElectronBrowserClient::GetProduct() {
