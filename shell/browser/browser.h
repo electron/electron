@@ -228,21 +228,21 @@ class Browser : public WindowListObserver {
   void DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
 
   // Register with APNS
-  void RegisterForRemoteNotifications();
-  void UnregisterForRemoteNotifications();
+  void RegisterForAPNSNotifications();
+  void UnregisterForAPNSNotifications();
 
   // Indicates that APNS registration succeeded, the token can be used to send
   // notifications.
-  void DidRegisterForRemoteNotificationsWithDeviceToken(
+  void DidRegisterForAPNSNotificationsWithDeviceToken(
       const std::string& token);
 
   // Indicates a failure to register for APNS
-  void DidFailToRegisterForRemoteNotificationsWithError(
+  void DidFailToRegisterForAPNSNotificationsWithError(
       const std::string& error);
 
   // Indicates that a new remote notification has been received while the app is
   // running.
-  void DidReceiveRemoteNotification(const base::DictionaryValue& user_info);
+  void DidReceiveAPNSNotification(const base::DictionaryValue& user_info);
 
 #endif  // BUILDFLAG(IS_MAC)
 
