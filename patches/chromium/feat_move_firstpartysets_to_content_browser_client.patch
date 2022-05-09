@@ -1,0 +1,874 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Sun, 8 May 2022 17:21:12 -0700
+Subject: feat: replace ad-hoc SetPublicFirstPartySets calls with method in
+ ContentBrowserClient
+
+Cherry-picked from upstream Chromium. This patch can be removed when the
+fix is inherited from the next Chromium roll backport.
+
+This essentially requires
+embedders to indicate whether they will
+(maybe asynchronously) call SetPublicFirstPartySets during startup, or
+not. This makes it easier to initialize First-Party Sets properly, since
+it is now done via a pull-based interface rather than a push-based
+interface (which would require code in every embedder in order to
+set up the First-Party Sets backend). Now, there is a single place (in
+content) that handles every embedder that won't need to explicitly call
+SetPublicFirstPartySets at some point (e.g. after initializing
+Component Updater, in Chrome's case).
+
+Bug: 1321908
+Change-Id: I47eaaaf77e548079e1bd6360fd573e877aa79b32
+Reviewed-on:
+https://chromium-review.googlesource.com/c/chromium/src/+/3623985
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Chris Fredrickson <cfredric@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#999047}
+
+Patch-Filename:
+feat_move_firstpartysets_to_content_browser_client.patch
+
+diff --git a/chrome/browser/chrome_browser_main.cc b/chrome/browser/chrome_browser_main.cc
+index e07874dc5a2fab83dff0a07d35aeb0cad7a1a67c..9f635870282f0f2a9b8bfaaa59e34f91675dcda3 100644
+--- a/chrome/browser/chrome_browser_main.cc
++++ b/chrome/browser/chrome_browser_main.cc
+@@ -1601,10 +1601,6 @@ int ChromeBrowserMainParts::PreMainMessageLoopRunImpl() {
+   // called inside PostProfileInit and depends on it.
+   if (!parsed_command_line().HasSwitch(switches::kDisableComponentUpdate)) {
+     component_updater::RegisterComponentsForUpdate();
+-  } else {
+-    // Initialize First-Party Sets even if component updater is disabled.
+-    content::FirstPartySetsHandler::GetInstance()->SetPublicFirstPartySets(
+-        base::File());
+   }
+ 
+   // TODO(stevenjb): Move WIN and MACOSX specific code to appropriate Parts.
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+index 3943c32ab29e785f401c2a5b31f1f6ed832514f0..939c28a029418bc353795aa1a007508680f42e57 100644
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -6462,6 +6462,12 @@ bool ChromeContentBrowserClient::IsFirstPartySetsEnabled() {
+   return local_state->GetBoolean(first_party_sets::kFirstPartySetsEnabled);
+ }
+ 
++bool ChromeContentBrowserClient::WillProvidePublicFirstPartySets() {
++  return !base::CommandLine::ForCurrentProcess()->HasSwitch(
++             switches::kDisableComponentUpdate) &&
++         base::FeatureList::IsEnabled(features::kFirstPartySets);
++}
++
+ base::Value::Dict ChromeContentBrowserClient::GetFirstPartySetsOverrides() {
+   if (!g_browser_process) {
+     // If browser process doesn't exist (e.g. in minimal mode on Android),
+diff --git a/chrome/browser/chrome_content_browser_client.h b/chrome/browser/chrome_content_browser_client.h
+index f0415a5099cdf181ab620fb6400db4f524c2c892..016b8276feeb6c35c88bc779ae84eea38d66f57d 100644
+--- a/chrome/browser/chrome_content_browser_client.h
++++ b/chrome/browser/chrome_content_browser_client.h
+@@ -772,6 +772,7 @@ class ChromeContentBrowserClient : public content::ContentBrowserClient {
+ 
+   bool IsFindInPageDisabledForOrigin(const url::Origin& origin) override;
+   bool IsFirstPartySetsEnabled() override;
++  bool WillProvidePublicFirstPartySets() override;
+   base::Value::Dict GetFirstPartySetsOverrides() override;
+ 
+   bool ShouldPreconnectNavigation(
+diff --git a/content/browser/first_party_sets/first_party_set_parser.cc b/content/browser/first_party_sets/first_party_set_parser.cc
+index b03570f072f407a1d2c6a58646db0f48a845429d..3ac5c0d206c7910e5ae653004e96780c14c8315d 100644
+--- a/content/browser/first_party_sets/first_party_set_parser.cc
++++ b/content/browser/first_party_sets/first_party_set_parser.cc
+@@ -323,4 +323,4 @@ FirstPartySetParser::ParseSetsFromEnterprisePolicy(
+   return absl::nullopt;
+ }
+ 
+-}  // namespace content
++}  // namespace content
+\ No newline at end of file
+diff --git a/content/browser/first_party_sets/first_party_set_parser.h b/content/browser/first_party_sets/first_party_set_parser.h
+index 491a8b508ef0d093f37608d2fde615427b9319df..3f33b1604fecbff0d4db8739ad138d95223b579c 100644
+--- a/content/browser/first_party_sets/first_party_set_parser.h
++++ b/content/browser/first_party_sets/first_party_set_parser.h
+@@ -102,4 +102,4 @@ class CONTENT_EXPORT FirstPartySetParser {
+ 
+ }  // namespace content
+ 
+-#endif  // CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SET_PARSER_H_
++#endif  // CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SET_PARSER_H_
+\ No newline at end of file
+diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl.cc b/content/browser/first_party_sets/first_party_sets_handler_impl.cc
+index e5d277236b6393d35e8cf5a69c7f6d16f3394582..bb6840eecabfab9e9f0ae6b0fdc4e4436d1ea3b1 100644
+--- a/content/browser/first_party_sets/first_party_sets_handler_impl.cc
++++ b/content/browser/first_party_sets/first_party_sets_handler_impl.cc
+@@ -74,7 +74,8 @@ FirstPartySetsHandler* FirstPartySetsHandler::GetInstance() {
+ // static
+ FirstPartySetsHandlerImpl* FirstPartySetsHandlerImpl::GetInstance() {
+   static base::NoDestructor<FirstPartySetsHandlerImpl> instance(
+-      GetContentClient()->browser()->IsFirstPartySetsEnabled());
++      GetContentClient()->browser()->IsFirstPartySetsEnabled(),
++      GetContentClient()->browser()->WillProvidePublicFirstPartySets());
+   return instance.get();
+ }
+ 
+@@ -89,8 +90,12 @@ FirstPartySetsHandler::ValidateEnterprisePolicy(
+       policy, /*out_sets=*/nullptr);
+ }
+ 
+-FirstPartySetsHandlerImpl::FirstPartySetsHandlerImpl(bool enabled)
+-    : enabled_(enabled) {
++FirstPartySetsHandlerImpl::FirstPartySetsHandlerImpl(
++    bool enabled,
++    bool embedder_will_provide_public_sets)
++    : enabled_(enabled),
++      embedder_will_provide_public_sets_(enabled &&
++                                         embedder_will_provide_public_sets) {
+   sets_loader_ = std::make_unique<FirstPartySetsLoader>(
+       base::BindOnce(&FirstPartySetsHandlerImpl::SetCompleteSets,
+                      // base::Unretained(this) is safe here because
+@@ -112,12 +117,23 @@ void FirstPartySetsHandlerImpl::Init(const base::FilePath& user_data_dir,
+                                      const std::string& flag_value,
+                                      SetsReadyOnceCallback on_sets_ready) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  DCHECK(!initialized_);
++  DCHECK(persisted_sets_path_.empty());
++  DCHECK(on_sets_ready_.is_null());
++
++  initialized_ = true;
+   on_sets_ready_ = std::move(on_sets_ready);
+   SetPersistedSets(user_data_dir);
+-  SetManuallySpecifiedSet(flag_value);
+ 
+-  if (!IsEnabled())
++  if (IsEnabled()) {
++    DCHECK(!on_sets_ready_.is_null());
++    sets_loader_->SetManuallySpecifiedSet(flag_value);
++    if (!embedder_will_provide_public_sets_) {
++      sets_loader_->SetComponentSets(base::File());
++    }
++  } else {
+     SetCompleteSets({});
++  }
+ }
+ 
+ bool FirstPartySetsHandlerImpl::IsEnabled() const {
+@@ -127,16 +143,17 @@ bool FirstPartySetsHandlerImpl::IsEnabled() const {
+ 
+ void FirstPartySetsHandlerImpl::SetPublicFirstPartySets(base::File sets_file) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  if (!IsEnabled()) {
+-    sets_loader_->DisposeFile(std::move(sets_file));
+-    return;
+-  }
++  DCHECK(enabled_);
++  DCHECK(embedder_will_provide_public_sets_);
+   sets_loader_->SetComponentSets(std::move(sets_file));
+ }
+ 
+ void FirstPartySetsHandlerImpl::ResetForTesting() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  initialized_ = false;
+   enabled_ = GetContentClient()->browser()->IsFirstPartySetsEnabled();
++  embedder_will_provide_public_sets_ =
++      GetContentClient()->browser()->WillProvidePublicFirstPartySets();
+ 
+   // Initializes the `sets_loader_` member with a callback to SetCompleteSets
+   // and the result of content::GetFirstPartySetsOverrides.
+@@ -153,19 +170,16 @@ void FirstPartySetsHandlerImpl::ResetForTesting() {
+   raw_persisted_sets_ = absl::nullopt;
+ }
+ 
+-void FirstPartySetsHandlerImpl::SetManuallySpecifiedSet(
+-    const std::string& flag_value) {
+-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  if (!IsEnabled())
+-    return;
+-  sets_loader_->SetManuallySpecifiedSet(flag_value);
+-}
+-
+ void FirstPartySetsHandlerImpl::SetPersistedSets(
+     const base::FilePath& user_data_dir) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  DCHECK(!raw_persisted_sets_.has_value());
++  DCHECK(persisted_sets_path_.empty());
+   if (user_data_dir.empty()) {
+     VLOG(1) << "Empty path. Failed loading serialized First-Party Sets file.";
++    // We have to continue, in case the embedder has enabled FPS but has not
++    // provided a directory to store persisted sets.
++    OnReadPersistedSetsFile("");
+     return;
+   }
+   persisted_sets_path_ = user_data_dir.Append(kPersistedFirstPartySetsFileName);
+@@ -184,19 +198,36 @@ void FirstPartySetsHandlerImpl::SetPersistedSets(
+ void FirstPartySetsHandlerImpl::OnReadPersistedSetsFile(
+     const std::string& raw_persisted_sets) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  DCHECK(!persisted_sets_path_.empty());
++  DCHECK(!raw_persisted_sets_.has_value());
+   raw_persisted_sets_ = raw_persisted_sets;
+   UmaHistogramTimes(
+-      "Cookie.FirstPartySets.InitializationDuration.ReadPersistedSets",
++      "Cookie.FirstPartySets.InitializationDuration.ReadPersistedSets2",
+       construction_timer_.Elapsed());
+-  ClearSiteDataOnChangedSetsIfReady();
++
++  if (sets_.has_value()) {
++    ClearSiteDataOnChangedSets();
++
++    if (IsEnabled()) {
++      DCHECK(!on_sets_ready_.is_null());
++      std::move(on_sets_ready_).Run(sets_.value());
++    }
++  }
+ }
+ 
+ void FirstPartySetsHandlerImpl::SetCompleteSets(
+     base::flat_map<net::SchemefulSite, net::SchemefulSite> sets) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  DCHECK(!sets_.has_value());
+   sets_ = std::move(sets);
+-  ClearSiteDataOnChangedSetsIfReady();
++
++  if (raw_persisted_sets_.has_value()) {
++    ClearSiteDataOnChangedSets();
++
++    if (IsEnabled()) {
++      DCHECK(!on_sets_ready_.is_null());
++      std::move(on_sets_ready_).Run(sets_.value());
++    }
++  }
+ }
+ 
+ // static
+@@ -229,10 +260,10 @@ base::flat_set<net::SchemefulSite> FirstPartySetsHandlerImpl::ComputeSetsDiff(
+   return result;
+ }
+ 
+-void FirstPartySetsHandlerImpl::ClearSiteDataOnChangedSetsIfReady() {
++void FirstPartySetsHandlerImpl::ClearSiteDataOnChangedSets() const {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  if (!raw_persisted_sets_.has_value() || !sets_.has_value())
+-    return;
++  DCHECK(sets_.has_value());
++  DCHECK(raw_persisted_sets_.has_value());
+ 
+   base::flat_set<net::SchemefulSite> diff =
+       ComputeSetsDiff(FirstPartySetParser::DeserializeFirstPartySets(
+@@ -241,14 +272,13 @@ void FirstPartySetsHandlerImpl::ClearSiteDataOnChangedSetsIfReady() {
+ 
+   // TODO(shuuran@chromium.org): Implement site state clearing.
+ 
+-  if (!on_sets_ready_.is_null() && IsEnabledAndReady())
+-    std::move(on_sets_ready_).Run(sets_.value());
+-
+-  base::ThreadPool::PostTask(
+-      FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
+-      base::BindOnce(
+-          &MaybeWriteSetsToDisk, persisted_sets_path_,
+-          FirstPartySetParser::SerializeFirstPartySets(sets_.value())));
++  if (!persisted_sets_path_.empty()) {
++    base::ThreadPool::PostTask(
++        FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
++        base::BindOnce(
++            &MaybeWriteSetsToDisk, persisted_sets_path_,
++            FirstPartySetParser::SerializeFirstPartySets(sets_.value())));
++  }
+ }
+ 
+ bool FirstPartySetsHandlerImpl::IsEnabledAndReady() const {
+@@ -256,4 +286,4 @@ bool FirstPartySetsHandlerImpl::IsEnabledAndReady() const {
+   return IsEnabled() && sets_.has_value();
+ }
+ 
+-}  // namespace content
++}  // namespace content
+\ No newline at end of file
+diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl.h b/content/browser/first_party_sets/first_party_sets_handler_impl.h
+index a60adcd16b5b8911965f9a22c2e70b5044150758..829cd96245cbe39eeddecf2e0403f2ba1ab88793 100644
+--- a/content/browser/first_party_sets/first_party_sets_handler_impl.h
++++ b/content/browser/first_party_sets/first_party_sets_handler_impl.h
+@@ -55,10 +55,9 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+   // persisted sets, since we may still need to clear data from a previous
+   // invocation of Chromium which had First-Party Sets enabled.
+   //
+-  // TODO(https://crbug.com/1309188): Init() should be called in the
+-  // BrowserMainLoop::PreMainMessageLoopRun(). But just in case it's
+-  // accidentally called from other places, make sure it's no-op for the
+-  // following calls.
++  // If First-Party Sets is enabled, `on_sets_ready` must not be null.
++  //
++  // Must be called exactly once.
+   void Init(const base::FilePath& user_data_dir,
+             const std::string& flag_value,
+             SetsReadyOnceCallback on_sets_ready);
+@@ -78,6 +77,11 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+     enabled_ = enabled;
+   }
+ 
++  void SetEmbedderWillProvidePublicSetsForTesting(bool will_provide) {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    embedder_will_provide_public_sets_ = enabled_ && will_provide;
++  }
++
+   // Compares the map `old_sets` to `current_sets` and returns the set of sites
+   // that: 1) were in `old_sets` but are no longer in `current_sets`, i.e. leave
+   // the FPSs; or, 2) mapped to a different owner site.
+@@ -92,41 +96,38 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+  private:
+   friend class base::NoDestructor<FirstPartySetsHandlerImpl>;
+ 
+-  explicit FirstPartySetsHandlerImpl(bool enabled);
++  FirstPartySetsHandlerImpl(bool enabled,
++                            bool embedder_will_provide_public_sets);
+ 
+   // This method reads the persisted First-Party Sets from the file under
+-  // `user_data_dir`.
++  // `user_data_dir`. Must be called exactly once.
+   void SetPersistedSets(const base::FilePath& user_data_dir);
+ 
+-  // Stores the read persisted sets in `raw_persisted_sets_`.
++  // Stores the read persisted sets in `raw_persisted_sets_`. Must be called
++  // exactly once.
+   void OnReadPersistedSetsFile(const std::string& raw_persisted_sets);
+ 
+-  // Parses and sets the First-Party Set that was provided via the
+-  // `kUseFirstPartySet` flag/switch.
+-  //
+-  // Has no effect if `kFirstPartySets` is disabled, or
+-  // `SetPublicFirstPartySets` is not called.
+-  void SetManuallySpecifiedSet(const std::string& flag_value);
+-
+-  // Sets the current First-Party Sets data.
++  // Sets the current First-Party Sets data. Must be called exactly once.
+   void SetCompleteSets(FlattenedSets sets);
+ 
+-  // Checks the required inputs have been received, and if so:
++  // Does the following:
+   // 1) computes the diff between the `sets_` and the parsed
+   // `raw_persisted_sets_`;
+   // 2) clears the site data of the set of sites based on the diff;
+-  // 3) calls `on_sets_ready_` if conditions are met;
+-  // 4) writes the current First-Party Sets to the file in
++  // 3) writes the current First-Party Sets to the file in
+   // `persisted_sets_path_`.
+   //
+   // TODO(shuuran@chromium.org): Implement the code to clear site state.
+-  void ClearSiteDataOnChangedSetsIfReady();
++  void ClearSiteDataOnChangedSets() const;
+ 
+   // Returns true if:
+   // * First-Party Sets are enabled;
+   // * `sets_` is ready to be used.
+   bool IsEnabledAndReady() const;
+ 
++  // Whether Init has been called already or not.
++  bool initialized_ = false;
++
+   // Represents the mapping of site -> site, where keys are members of sets, and
+   // values are owners of the sets. Owners are explicitly represented as members
+   // of the set.
+@@ -144,6 +145,7 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+   base::FilePath persisted_sets_path_ GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+   bool enabled_ GUARDED_BY_CONTEXT(sequence_checker_);
++  bool embedder_will_provide_public_sets_ GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+   // We use a OnceCallback to ensure we only pass along the sets once
+   // during Chrome's lifetime (modulo reconfiguring the network service).
+@@ -160,4 +162,4 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+ 
+ }  // namespace content
+ 
+-#endif  // CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SETS_HANDLER_IMPL_H_
++#endif  // CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SETS_HANDLER_IMPL_H_
+\ No newline at end of file
+diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl_unittest.cc b/content/browser/first_party_sets/first_party_sets_handler_impl_unittest.cc
+index 0c0eeda67a8a4bdc9876f5ad3fe78c06c4f18b5d..3e92801eb25e339e6b3a43b5fadab8f1b78b23f9 100644
+--- a/content/browser/first_party_sets/first_party_sets_handler_impl_unittest.cc
++++ b/content/browser/first_party_sets/first_party_sets_handler_impl_unittest.cc
+@@ -367,14 +367,6 @@ TEST_F(FirstPartySetsHandlerImplDisabledTest, IgnoresValid) {
+             FAIL();  // Should not be called.
+           }));
+ 
+-  // Set required inputs to be able to receive the merged sets from
+-  // FirstPartySetsLoader.
+-  const std::string input =
+-      "{\"owner\": \"https://example.test\",\"members\": "
+-      "[\"https://aaaa.test\"]}";
+-  ASSERT_TRUE(base::JSONReader::Read(input));
+-  SetPublicFirstPartySetsAndWait(input);
+-
+   env().RunUntilIdle();
+ 
+   // TODO(shuuran@chromium.org): test site state is cleared.
+@@ -397,9 +389,6 @@ TEST_F(FirstPartySetsHandlerImplDisabledTest,
+             FAIL();  // Should not be called.
+           }));
+ 
+-  SetPublicFirstPartySetsAndWait(R"({"owner": "https://example.test", )"
+-                                 R"("members": ["https://member.test"]})");
+-
+   EXPECT_EQ(
+       FirstPartySetsHandlerImpl::GetInstance()->GetSetsIfEnabledAndReady(),
+       absl::nullopt);
+@@ -413,11 +402,6 @@ class FirstPartySetsHandlerImplEnabledTest
+ };
+ 
+ TEST_F(FirstPartySetsHandlerImplEnabledTest, PersistedSetsNotReady) {
+-  const std::string input = R"({"owner": "https://foo.test", )"
+-                            R"("members": ["https://member2.test"]})";
+-  ASSERT_TRUE(base::JSONReader::Read(input));
+-  SetPublicFirstPartySetsAndWait(input);
+-
+   // Empty `user_data_dir` will fail loading persisted sets.
+   FirstPartySetsHandlerImpl::GetInstance()->Init(
+       /*user_data_dir=*/{},
+@@ -431,6 +415,8 @@ TEST_F(FirstPartySetsHandlerImplEnabledTest, PersistedSetsNotReady) {
+ }
+ 
+ TEST_F(FirstPartySetsHandlerImplEnabledTest, PublicFirstPartySetsNotReady) {
++  FirstPartySetsHandlerImpl::GetInstance()
++      ->SetEmbedderWillProvidePublicSetsForTesting(true);
+   ASSERT_TRUE(base::WriteFile(persisted_sets_path_, "{}"));
+ 
+   // Persisted sets are expected to be loaded with the provided path.
+@@ -447,6 +433,8 @@ TEST_F(FirstPartySetsHandlerImplEnabledTest, PublicFirstPartySetsNotReady) {
+ 
+ TEST_F(FirstPartySetsHandlerImplEnabledTest,
+        Successful_PersistedSetsFileNotExist) {
++  FirstPartySetsHandlerImpl::GetInstance()
++      ->SetEmbedderWillProvidePublicSetsForTesting(true);
+   const std::string input = R"({"owner": "https://foo.test", )"
+                             R"("members": ["https://member2.test"]})";
+   ASSERT_TRUE(base::JSONReader::Read(input));
+@@ -479,6 +467,8 @@ TEST_F(FirstPartySetsHandlerImplEnabledTest,
+ }
+ 
+ TEST_F(FirstPartySetsHandlerImplEnabledTest, Successful_PersistedSetsEmpty) {
++  FirstPartySetsHandlerImpl::GetInstance()
++      ->SetEmbedderWillProvidePublicSetsForTesting(true);
+   ASSERT_TRUE(base::WriteFile(persisted_sets_path_, "{}"));
+ 
+   const std::string input = R"({"owner": "https://foo.test", )"
+@@ -514,6 +504,8 @@ TEST_F(FirstPartySetsHandlerImplEnabledTest, Successful_PersistedSetsEmpty) {
+ 
+ TEST_F(FirstPartySetsHandlerImplEnabledTest,
+        GetSetsIfEnabledAndReady_AfterSetsReady) {
++  FirstPartySetsHandlerImpl::GetInstance()
++      ->SetEmbedderWillProvidePublicSetsForTesting(true);
+   ASSERT_TRUE(base::WriteFile(persisted_sets_path_, "{}"));
+ 
+   const std::string input = R"({"owner": "https://example.test", )"
+@@ -549,6 +541,8 @@ TEST_F(FirstPartySetsHandlerImplEnabledTest,
+ 
+ TEST_F(FirstPartySetsHandlerImplEnabledTest,
+        GetSetsIfEnabledAndReady_BeforeSetsReady) {
++  FirstPartySetsHandlerImpl::GetInstance()
++      ->SetEmbedderWillProvidePublicSetsForTesting(true);
+   ASSERT_TRUE(base::WriteFile(persisted_sets_path_, "{}"));
+ 
+   // Call GetSetsIfEnabledAndReady before the sets are ready.
+diff --git a/content/browser/first_party_sets/first_party_sets_loader.cc b/content/browser/first_party_sets/first_party_sets_loader.cc
+index 52acedfde41b85acfc9246121ccfd6e63290270e..c229815ff14160c4f325fb51473e3b4baf5a9891 100644
+--- a/content/browser/first_party_sets/first_party_sets_loader.cc
++++ b/content/browser/first_party_sets/first_party_sets_loader.cc
+@@ -20,6 +20,7 @@
+ #include "base/strings/string_split.h"
+ #include "base/task/thread_pool.h"
+ #include "base/values.h"
++#include "content/browser/first_party_sets/addition_overlaps_union_find.h"
+ #include "content/browser/first_party_sets/first_party_set_parser.h"
+ #include "net/base/schemeful_site.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+@@ -66,6 +67,37 @@ std::string ReadSetsFile(base::File sets_file) {
+   return base::ReadStreamToString(file.get(), &raw_sets) ? raw_sets : "";
+ }
+ 
++// Creates a set of SchemefulSites present with the given list of SingleSets.
++base::flat_set<net::SchemefulSite> FlattenSingleSetList(
++    const std::vector<content::FirstPartySetsLoader::SingleSet>& sets) {
++  std::vector<net::SchemefulSite> sites;
++  for (const content::FirstPartySetsLoader::SingleSet& set : sets) {
++    sites.push_back(set.first);
++    sites.insert(sites.end(), set.second.begin(), set.second.end());
++  }
++  return sites;
++}
++
++// Populates the `policy_set_overlaps` out-parameter by checking
++// `existing_sets`. If `site` is equal to an existing site e in `sets`, then
++// `policy_set_index` will be added to the list of set indices at
++// `policy_set_overlaps`[e].
++void AddIfPolicySetOverlaps(
++    const net::SchemefulSite& site,
++    size_t policy_set_index,
++    FirstPartySetsLoader::FlattenedSets existing_sets,
++    base::flat_map<net::SchemefulSite, base::flat_set<size_t>>&
++        policy_set_overlaps) {
++  // Check `site` for membership in `existing_sets`.
++  if (auto it = existing_sets.find(site); it != existing_sets.end()) {
++    // Add the index of `site`'s policy set to the list of policy set indices
++    // that also overlap with site_owner.
++    auto [site_and_sets, inserted] =
++        policy_set_overlaps.insert({it->second, {}});
++    site_and_sets->second.insert(policy_set_index);
++  }
++}
++
+ }  // namespace
+ 
+ FirstPartySetsLoader::FirstPartySetsLoader(
+@@ -89,7 +121,7 @@ void FirstPartySetsLoader::SetManuallySpecifiedSet(
+   manually_specified_set_ = {CanonicalizeSet(base::SplitString(
+       flag_value, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY))};
+   UmaHistogramTimes(
+-      "Cookie.FirstPartySets.InitializationDuration.ReadCommandLineSet",
++      "Cookie.FirstPartySets.InitializationDuration.ReadCommandLineSet2",
+       construction_timer_.Elapsed());
+ 
+   MaybeFinishLoading();
+@@ -127,7 +159,7 @@ void FirstPartySetsLoader::OnReadSetsFile(const std::string& raw_sets) {
+ 
+   component_sets_parse_progress_ = Progress::kFinished;
+   UmaHistogramTimes(
+-      "Cookie.FirstPartySets.InitializationDuration.ReadComponentSets",
++      "Cookie.FirstPartySets.InitializationDuration.ReadComponentSets2",
+       construction_timer_.Elapsed());
+   MaybeFinishLoading();
+ }
+@@ -144,33 +176,141 @@ void FirstPartySetsLoader::DisposeFile(base::File sets_file) {
+   }
+ }
+ 
++std::vector<FirstPartySetsLoader::SingleSet>
++FirstPartySetsLoader::NormalizeAdditionSets(
++    const FlattenedSets& existing_sets,
++    const std::vector<SingleSet>& addition_sets) {
++  // Create a mapping from an owner site in `existing_sets` to all policy sets
++  // that intersect with the set that it owns.
++  base::flat_map<net::SchemefulSite, base::flat_set<size_t>>
++      policy_set_overlaps;
++  for (size_t set_idx = 0; set_idx < addition_sets.size(); set_idx++) {
++    const net::SchemefulSite& owner = addition_sets[set_idx].first;
++    AddIfPolicySetOverlaps(owner, set_idx, existing_sets, policy_set_overlaps);
++    for (const net::SchemefulSite& member : addition_sets[set_idx].second) {
++      AddIfPolicySetOverlaps(member, set_idx, existing_sets,
++                             policy_set_overlaps);
++    }
++  }
++
++  AdditionOverlapsUnionFind union_finder(addition_sets.size());
++  for (auto& [public_site, policy_set_indices] : policy_set_overlaps) {
++    // Union together all overlapping policy sets to determine which one will
++    // take ownership.
++    for (size_t representative : policy_set_indices) {
++      union_finder.Union(*policy_set_indices.begin(), representative);
++    }
++  }
++
++  // The union-find data structure now knows which policy set should be given
++  // the role of representative for each entry in policy_set_overlaps.
++  // AdditionOverlapsUnionFind::SetsMapping returns a map from representative
++  // index to list of its children.
++  std::vector<SingleSet> normalized_additions;
++  for (auto& [rep, children] : union_finder.SetsMapping()) {
++    SingleSet normalized = addition_sets[rep];
++    for (size_t child_set_idx : children) {
++      // Update normalized to absorb the child_set_idx-th addition set.
++      const SingleSet& child_set = addition_sets[child_set_idx];
++      normalized.second.insert(child_set.first);
++      normalized.second.insert(child_set.second.begin(),
++                               child_set.second.end());
++    }
++    normalized_additions.push_back(normalized);
++  }
++  return normalized_additions;
++}
++
+ void FirstPartySetsLoader::ApplyManuallySpecifiedSet() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  DCHECK_EQ(component_sets_parse_progress_, Progress::kFinished);
+-  DCHECK(manually_specified_set_.has_value());
++  DCHECK(HasAllInputs());
+   if (!manually_specified_set_.value().has_value())
+     return;
++  ApplyReplacementOverrides({manually_specified_set_->value()});
++  RemoveAllSingletons();
++}
++
++void FirstPartySetsLoader::ApplyReplacementOverrides(
++    const std::vector<SingleSet>& override_sets) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  DCHECK(HasAllInputs());
++
++  base::flat_set<net::SchemefulSite> all_override_sites =
++      FlattenSingleSetList(override_sets);
++
++  // Erase the intersection between |sets_| and the list of |override_sets| and
++  // any members whose owner was in the intersection.
++  base::EraseIf(
++      sets_, [&all_override_sites](
++                 const std::pair<net::SchemefulSite, net::SchemefulSite>& p) {
++        return all_override_sites.contains(p.first) ||
++               all_override_sites.contains(p.second);
++      });
++
++  // Next, we must add each site in the override_sets to |sets_|.
++  for (auto& [owner, members] : override_sets) {
++    sets_.emplace(owner, owner);
++    for (const net::SchemefulSite& member : members) {
++      sets_.emplace(member, owner);
++    }
++  }
++}
++
++void FirstPartySetsLoader::ApplyAdditionOverrides(
++    const std::vector<SingleSet>& new_sets) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  DCHECK(HasAllInputs());
++
++  if (new_sets.empty())
++    return;
+ 
+-  const net::SchemefulSite& manual_owner =
+-      manually_specified_set_.value()->first;
+-  const base::flat_set<net::SchemefulSite>& manual_members =
+-      manually_specified_set_.value()->second;
++  std::vector<SingleSet> normalized_additions =
++      NormalizeAdditionSets(sets_, new_sets);
+ 
+-  const auto was_manually_provided =
+-      [&manual_members, &manual_owner](const net::SchemefulSite& site) {
+-        return site == manual_owner || manual_members.contains(site);
+-      };
++  FlattenedSets flattened_additions;
++  for (const auto& [owner, members] : normalized_additions) {
++    for (const net::SchemefulSite& member : members)
++      flattened_additions.emplace(member, owner);
++    flattened_additions.emplace(owner, owner);
++  }
+ 
+-  // Erase the intersection between the manually-specified set and the
+-  // CU-supplied set, and any members whose owner was in the intersection.
+-  base::EraseIf(sets_, [&was_manually_provided](const auto& p) {
+-    return was_manually_provided(p.first) || was_manually_provided(p.second);
+-  });
++  // Identify intersections between addition sets and existing sets. This will
++  // be used to reparent existing sets if they intersect with an addition set.
++  //
++  // Since we reparent every member of an existing set (regardless of whether
++  // the intersection was via one of its members or its owner), we just keep
++  // track of the set itself, via its owner.
++  base::flat_map<net::SchemefulSite, net::SchemefulSite> owners_in_intersection;
++  for (const auto& [site, owner] : flattened_additions) {
++    // Found an overlap with an existing set. Add the existing owner to the
++    // map.
++    if (auto it = sets_.find(site); it != sets_.end()) {
++      owners_in_intersection[it->second] = owner;
++    }
++  }
++
++  // Update the (site, owner) mappings in sets_ such that if owner is in the
++  // intersection, then the site is mapped to owners_in_intersection[owner].
++  //
++  // This reparents existing sets to their owner given by the normalized
++  // addition sets.
++  for (auto& [site, owner] : sets_) {
++    if (auto owner_entry = owners_in_intersection.find(owner);
++        owner_entry != owners_in_intersection.end()) {
++      owner = owner_entry->second;
++    }
++  }
+ 
+-  // Now remove singleton sets. We already removed any sites that were part
+-  // of the intersection, or whose owner was part of the intersection. This
+-  // leaves sites that *are* owners, which no longer have any (other)
+-  // members.
++  // Since the intersection between sets_ and flattened_additions has already
++  // been updated above, we can insert flattened_additions into sets_ without
++  // affecting any existing mappings in sets_.
++  sets_.insert(flattened_additions.begin(), flattened_additions.end());
++}
++
++void FirstPartySetsLoader::RemoveAllSingletons() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  // Now remove singleton sets, which are sets that just contain sites that
++  // *are* owners, but no longer have any (other) members.
+   std::set<net::SchemefulSite> owners_with_members;
+   for (const auto& it : sets_) {
+     if (it.first != it.second)
+@@ -179,21 +319,29 @@ void FirstPartySetsLoader::ApplyManuallySpecifiedSet() {
+   base::EraseIf(sets_, [&owners_with_members](const auto& p) {
+     return p.first == p.second && !base::Contains(owners_with_members, p.first);
+   });
++}
+ 
+-  // Next, we must add the manually-added set to the parsed value.
+-  for (const net::SchemefulSite& member : manual_members) {
+-    sets_.emplace(member, manual_owner);
+-  }
+-  sets_.emplace(manual_owner, manual_owner);
++void FirstPartySetsLoader::ApplyAllPolicyOverrides() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  DCHECK(HasAllInputs());
++  ApplyReplacementOverrides(policy_overrides_.replacements);
++  ApplyAdditionOverrides(policy_overrides_.additions);
++  RemoveAllSingletons();
+ }
+ 
+ void FirstPartySetsLoader::MaybeFinishLoading() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  if (component_sets_parse_progress_ != Progress::kFinished ||
+-      !manually_specified_set_.has_value())
++  if (!HasAllInputs())
+     return;
+   ApplyManuallySpecifiedSet();
++  ApplyAllPolicyOverrides();
+   std::move(on_load_complete_).Run(std::move(sets_));
+ }
+ 
+-}  // namespace content
++bool FirstPartySetsLoader::HasAllInputs() const {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  return component_sets_parse_progress_ == Progress::kFinished &&
++         manually_specified_set_.has_value();
++}
++
++}  // namespace content
+\ No newline at end of file
+diff --git a/content/browser/first_party_sets/first_party_sets_loader.h b/content/browser/first_party_sets/first_party_sets_loader.h
+index c27d2300c4c3533df91a8e814e89827bbd7d72ae..8588fe5f9922b36c9fe8e16ac16d02ccf00c8723 100644
+--- a/content/browser/first_party_sets/first_party_sets_loader.h
++++ b/content/browser/first_party_sets/first_party_sets_loader.h
+@@ -57,6 +57,19 @@ class CONTENT_EXPORT FirstPartySetsLoader {
+   // Close the file on thread pool that allows blocking.
+   void DisposeFile(base::File sets_file);
+ 
++  // Handles addition sets which overlap by intersecting with the same existing
++  // set, known as a transitive-overlap.
++  //
++  // This uses a Union-Find algorithm to select the earliest-provided addition
++  // set as the representative of all other addition sets that
++  // transitively-overlap with it.
++  //
++  // The "earliest-provided" tie-breaker is determined using a set's index in
++  // `addition_sets`.
++  static std::vector<SingleSet> NormalizeAdditionSets(
++      const FlattenedSets& existing_sets,
++      const std::vector<SingleSet>& addition_sets);
++
+  private:
+   // Parses the contents of `raw_sets` as a collection of First-Party Set
+   // declarations, and assigns to `sets_`.
+@@ -67,10 +80,42 @@ class CONTENT_EXPORT FirstPartySetsLoader {
+   // `SetManuallySpecifiedSet`, and the public sets via `SetComponentSets`.
+   void ApplyManuallySpecifiedSet();
+ 
++  // Removes the intersection between `sets_` and `override_sets` from the
++  // `sets_` member variable, and then adds the `override_sets` into `sets_`.
++  void ApplyReplacementOverrides(const std::vector<SingleSet>& override_sets);
++
++  // Updates the intersection between `sets_` and `override_sets` within the
++  // `sets_` member variable, and then adds the `override_sets` into
++  // `sets_`.
++  //
++  // The applied update ensures that invariants of First-Party Sets are
++  // maintained, and that all sets in sets_ are disjoint.
++  //
++  // This will add in the `override_sets` into `sets_` without removing
++  // any existing sites from the list of First-Party Sets.
++  void ApplyAdditionOverrides(const std::vector<SingleSet>& override_sets);
++
++  // Removes all singletons (owners that have no members) from sets_.
++  void RemoveAllSingletons();
++
++  // Applies the First-Party Sets overrides provided by policy.
++  //
++  // Must not be called until the loader has already received the public sets
++  // via `SetComponentSets` and the CLI-provided sets have been applied to
++  // `sets_`.
++  //
++  // Applies "Replacement" overrides before applying "Addition" overrides.
++  void ApplyAllPolicyOverrides();
++
+   // Checks the required inputs have been received, and if so, invokes the
+   // callback `on_load_complete_`, after merging sets appropriately.
+   void MaybeFinishLoading();
+ 
++  // Returns true if all sources are present (Component Updater sets, CLI set,
++  // and Policy sets). The Policy sets are provided at construction time, so
++  // this effectively checks that the other two sources are ready.
++  bool HasAllInputs() const;
++
+   // Represents the mapping of site -> site, where keys are members of sets,
+   // and values are owners of the sets (explicitly including an entry of owner
+   // -> owner).
+@@ -117,4 +162,4 @@ class CONTENT_EXPORT FirstPartySetsLoader {
+ 
+ }  // namespace content
+ 
+-#endif  // CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SETS_LOADER_H_
++#endif  // CONTENT_BROWSER_FIRST_PARTY_SETS_FIRST_PARTY_SETS_LOADER_H_
+\ No newline at end of file
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index 16fb4946cb3ea2d097e8ed05bb340cc3f0782ed6..b751bf43d41a149579047faeec958646ecc3a5e0 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -1327,6 +1327,10 @@ bool ContentBrowserClient::IsFirstPartySetsEnabled() {
+   return base::FeatureList::IsEnabled(features::kFirstPartySets);
+ }
+ 
++bool ContentBrowserClient::WillProvidePublicFirstPartySets() {
++  return false;
++}
++
+ base::Value::Dict ContentBrowserClient::GetFirstPartySetsOverrides() {
+   return base::Value::Dict();
+ }
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 4db1e6c2dbea27249ca15d5660b7fcd8c6736ad1..8aac2a95a3ac66f0b0c180f46ec29ca7341a1d4c 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -2227,6 +2227,16 @@ class CONTENT_EXPORT ContentBrowserClient {
+   // should not change in a single browser session.
+   virtual bool IsFirstPartySetsEnabled();
+ 
++  // Returns true iff the embedder will provide a list of First-Party Sets via
++  // content::FirstPartySetsHandler::SetPublicFirstPartySets during startup, at
++  // some point. If `IsFirstPartySetsEnabled()` returns false, this method will
++  // still be called, but its return value will be ignored.
++  //
++  // If this method returns false but `IsFirstPartySetsEnabled()` returns true
++  // (e.g. in tests), an empty list will be used instead of waiting for the
++  // embedder to call content::FirstPartySetsHandler::SetPublicFirstPartySets.
++  virtual bool WillProvidePublicFirstPartySets();
++
+   // Returns a base::Value::Dict containing the value of the First-Party Sets
+   // Overrides enterprise policy.
+   // If the policy was not present or it was invalid, this returns an empty
+diff --git a/content/public/browser/first_party_sets_handler.h b/content/public/browser/first_party_sets_handler.h
+index 8bd62717732a4afe1e8c02fd5ceb39bd1790e3e0..3ff5dea5612fe3329c7c612818f1436a980ea9e3 100644
+--- a/content/public/browser/first_party_sets_handler.h
++++ b/content/public/browser/first_party_sets_handler.h
+@@ -72,7 +72,9 @@ class CONTENT_EXPORT FirstPartySetsHandler {
+   //
+   // Embedder should call this method as early as possible during browser
+   // startup if First-Party Sets are enabled, since no First-Party Sets queries
+-  // are answered until initialization is complete.
++  // are answered until initialization is complete. Must not be called if
++  // `ContentBrowserClient::WillProvidePublicFirstPartySets` returns false or
++  // `ContentBrowserClient::IsFrstpartySetsEnabled` returns false.
+   virtual void SetPublicFirstPartySets(base::File sets_file) = 0;
+ 
+   // Resets the state on the instance for testing.
+diff --git a/content/shell/browser/shell_browser_main_parts.cc b/content/shell/browser/shell_browser_main_parts.cc
+index 89040432c9f56d8285d8e9f59e1e0280abc25199..bd412789695f49253f67f237b2a92b8dee298e7a 100644
+--- a/content/shell/browser/shell_browser_main_parts.cc
++++ b/content/shell/browser/shell_browser_main_parts.cc
+@@ -189,8 +189,6 @@ int ShellBrowserMainParts::PreMainMessageLoopRun() {
+   net::NetModule::SetResourceProvider(PlatformResourceProvider);
+   ShellDevToolsManagerDelegate::StartHttpHandler(browser_context_.get());
+   InitializeMessageLoopContext();
+-  // The First-Party Sets feature always expects to be initialized
+-  FirstPartySetsHandler::GetInstance()->SetPublicFirstPartySets(base::File());
+   return 0;
+ }
+ 
