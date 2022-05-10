@@ -70,17 +70,8 @@ function isInstalled () {
 
 // unzips and makes path.txt point at the correct executable
 function extractFile (zipPath) {
-  return new Promise((resolve, reject) => {
-    extract(zipPath, { dir: path.join(__dirname, 'dist') }, err => {
-      if (err) return reject(err);
-
-      fs.writeFile(path.join(__dirname, 'path.txt'), platformPath, err => {
-        if (err) return reject(err);
-
-        resolve();
-      });
-    });
-  });
+  return extract(zipPath, { dir: path.join(__dirname, 'dist') })
+    .then(() => fs.promises.writeFile(path.join(__dirname, 'path.txt'), platformPath));
 }
 
 function getPlatformPath () {
