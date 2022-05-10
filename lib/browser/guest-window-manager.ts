@@ -78,6 +78,19 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     ...browserWindowOptions
   });
 
+  if (!guest) {
+    // When we open a new window from a link (via OpenURLFromTab),
+    // the browser process is responsible for initiating navigation
+    // in the new window.
+    window.loadURL(url, {
+      httpReferrer: referrer,
+      ...(postData && {
+        postData,
+        extraHeaders: formatPostDataHeaders(postData as Electron.UploadRawData[])
+      })
+    });
+  }
+
   handleWindowLifecycleEvents({ embedder, frameName, guest: window, outlivesOpener });
 
   embedder.emit('did-create-window', window, { url, frameName, options: browserWindowOptions, disposition, referrer, postData });
@@ -241,6 +254,15 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
     ...securityWebPreferencesFromParent,
     ...secureOverrideWebPreferences
   };
+}
+
+function formatPostDataHeaders (postData: PostData) {
+  if (!postData) return;
+
+  const { contentType, boundary } = parseContentTypeFormat(postData);
+  if (boundary != null) { return `content-type: ${contentType}; boundary=${boundary}`; }
+
+  return `content-type: ${contentType}`;
 }
 
 const MULTIPART_CONTENT_TYPE = 'multipart/form-data';
