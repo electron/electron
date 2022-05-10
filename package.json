@@ -141,5 +141,8 @@
     "DEPS": [
       "node script/gen-hunspell-filenames.js"
     ]
+  },
+  "resolutions": {
+    "nan": "nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac"
   }
 }
