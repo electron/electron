@@ -4,3 +4,4 @@ void gtk_native_dialog_show(GtkNativeDialog* self);
 void gtk_native_dialog_hide(GtkNativeDialog* self);
 gint gtk_native_dialog_run(GtkNativeDialog* self);
 void gtk_native_dialog_destroy(GtkNativeDialog* self);
+GType gtk_native_dialog_get_type(void);
