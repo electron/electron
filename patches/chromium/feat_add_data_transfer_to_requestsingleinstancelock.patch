@@ -282,7 +282,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index ec725b44296266bea1a51aea889463a0bba8449c..cf3218df4be6ac4ebf3209ef0d6ede446acbe48a 100644
+index ec725b44296266bea1a51aea889463a0bba8449c..f0ae34a7c1020be043ed8d56a755ad9caf8fc330 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -13,14 +13,17 @@
@@ -475,23 +475,23 @@ index ec725b44296266bea1a51aea889463a0bba8449c..cf3218df4be6ac4ebf3209ef0d6ede44
  }
  
 +void ReadAck(const ProcessSingleton::NotificationAckCallback& ack_callback,
-+             std::string program_name_,
-+             base::FilePath& user_data_dir_) {
++             const std::string program_name,
++             base::FilePath& user_data_dir) {
 +  // We are reading the ack from the first instance.
 +  // First, wait for the pipe.
-+  HWND remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
++  HWND remote_window = chrome::FindRunningChromeWindow(user_data_dir);
 +  wchar_t user_name[256];
 +  DWORD size = std::size(user_name);
 +  if (::GetUserName(user_name, &size) == 0 || size < 1) {
 +    LOG(ERROR) << "User name could not be found for pipe name.";
 +  }
 +  DWORD process_id;
-+  DWORD thread_id = GetWindowThreadProcessId(remote_window_, &process_id);
++  DWORD thread_id = GetWindowThreadProcessId(remote_window, &process_id);
 +  std::string identifier = base::NumberToString(process_id) +
 +      base::NumberToString(thread_id);
-+  std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + program_name_ +
-+        identifier);
-+  pipe_name.append(user_name);
++  std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + identifier +
++        program_name.substr(0, 5));
++  pipe_name.append(user_name, 5);
 +  const LPCWSTR w_pipe_name = pipe_name.c_str();
 +  ::WaitNamedPipe(w_pipe_name, NMPWAIT_USE_DEFAULT_WAIT);
 +
@@ -535,7 +535,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..cf3218df4be6ac4ebf3209ef0d6ede44
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
        remote_window_ = NULL;
-@@ -429,6 +583,32 @@ bool ProcessSingleton::Create() {
+@@ -429,6 +583,34 @@ bool ProcessSingleton::Create() {
            << "Lock file can not be created! Error code: " << error;
  
        if (lock_file_ != INVALID_HANDLE_VALUE) {
@@ -543,6 +543,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..cf3218df4be6ac4ebf3209ef0d6ede44
 +        // Create a per-process pipename using a combination of the
 +        // username, process id, thread id, and program name. Pipe names max
 +        // at 256 characters, can include any character other than a backslash
++        // std::string p = program_name_.substr(0, 5);
 +        wchar_t user_name[256];
 +        DWORD size = std::size(user_name);
 +        if (::GetUserName(user_name, &size) == 0 || size < 1) {
@@ -550,10 +551,11 @@ index ec725b44296266bea1a51aea889463a0bba8449c..cf3218df4be6ac4ebf3209ef0d6ede44
 +        }
 +        std::string identifier = base::NumberToString(::GetCurrentProcessId()) +
 +              base::NumberToString(::GetCurrentThreadId());
-+        std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + program_name_ +
-+              identifier);
-+        pipe_name.append(user_name);
++        std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + identifier +
++              program_name_.substr(0, 5));
++        pipe_name.append(user_name, 5);
 +        const LPCWSTR w_pipe_name = pipe_name.c_str();
++        LOG(INFO) << "Pipe Name: " << w_pipe_name;
 +        ack_pipe_ = ::CreateNamedPipe(w_pipe_name,
 +          PIPE_ACCESS_OUTBOUND,
 +          PIPE_TYPE_BYTE | PIPE_REJECT_REMOTE_CLIENTS,
@@ -568,7 +570,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..cf3218df4be6ac4ebf3209ef0d6ede44
          // Set the window's title to the path of our user data directory so
          // other Chrome instances can decide if they should forward to us.
          TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateWindow");
-@@ -456,6 +636,7 @@ bool ProcessSingleton::Create() {
+@@ -456,6 +638,7 @@ bool ProcessSingleton::Create() {
  }
  
  void ProcessSingleton::Cleanup() {
