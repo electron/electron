@@ -282,7 +282,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index ec725b44296266bea1a51aea889463a0bba8449c..6d9aa90857c0ad0d55df1efd1e6791fdab5ecb0a 100644
+index ec725b44296266bea1a51aea889463a0bba8449c..5d68e5c8bf99c6ccd0e4fde6386c93cb1db65280 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -13,14 +13,17 @@
@@ -549,16 +549,22 @@ index ec725b44296266bea1a51aea889463a0bba8449c..6d9aa90857c0ad0d55df1efd1e6791fd
          lock_file_ = ::CreateFile(
              lock_file_path.value().c_str(), GENERIC_WRITE, FILE_SHARE_READ,
              NULL, CREATE_ALWAYS,
-@@ -429,6 +582,24 @@ bool ProcessSingleton::Create() {
+@@ -429,6 +582,30 @@ bool ProcessSingleton::Create() {
            << "Lock file can not be created! Error code: " << error;
  
        if (lock_file_ != INVALID_HANDLE_VALUE) {
 +        // We are the first instance. Create a pipe to send out ack data.
-+        std::string rand = std::to_string(base::RandUint64());
-+        base::WriteFile(lock_file_path, rand);
++        uint64_t rand = base::RandUint64();
++        DWORD bytes_written = 0;
++        ::WriteFile(lock_file_,
++            (LPCVOID)rand,
++            sizeof(rand),
++            &bytes_written,
++            NULL);
 +        std::string identifier = base::NumberToString(::GetCurrentProcessId()) +
 +              base::NumberToString(::GetCurrentThreadId());
-+        std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + identifier + program_name_ + rand);
++        std::wstring pipe_name = base::UTF8ToWide("\\\\.\\pipe\\" + identifier +
++              program_name_ + std::to_string(rand));
 +        const LPCWSTR w_pipe_name = pipe_name.c_str();
 +        ack_pipe_ = ::CreateNamedPipe(w_pipe_name,
 +          PIPE_ACCESS_OUTBOUND,
@@ -574,7 +580,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..6d9aa90857c0ad0d55df1efd1e6791fd
          // Set the window's title to the path of our user data directory so
          // other Chrome instances can decide if they should forward to us.
          TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateWindow");
-@@ -456,6 +627,7 @@ bool ProcessSingleton::Create() {
+@@ -456,6 +633,7 @@ bool ProcessSingleton::Create() {
  }
  
  void ProcessSingleton::Cleanup() {
