@@ -1937,6 +1937,26 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('Opening a BrowserWindow from a link', () => {
+    let appProcess: childProcess.ChildProcessWithoutNullStreams | undefined;
+
+    afterEach(() => {
+      if (appProcess && !appProcess.killed) {
+        appProcess.kill();
+        appProcess = undefined;
+      }
+    });
+
+    it('can properly open and load a new window from a link', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'open-new-window-from-link');
+
+      appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+      const [code] = await emittedOnce(appProcess, 'exit');
+      expect(code).to.equal(0);
+    });
+  });
+
   describe('BrowserWindow.fromWebContents(webContents)', () => {
     afterEach(closeAllWindows);
 
