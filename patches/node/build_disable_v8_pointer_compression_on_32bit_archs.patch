@@ -14,7 +14,7 @@ Reviewed-By: Minwoo Jung <nodecorelab@gmail.com>
 Reviewed-By: Michael Dawson <midawson@redhat.com>
 
 diff --git a/common.gypi b/common.gypi
-index 8a85c7c3d0ab0e2906c417f2cc2fc9ca584fd601..f6ea8340b696103d0949df7fb7b75a1d05e90f87 100644
+index f330d4e92a585d7d72e8322cebb5606fe7220e8c..6e229ef3ae59c668a7c978c96493d8d36242c2a4 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -130,6 +130,11 @@
