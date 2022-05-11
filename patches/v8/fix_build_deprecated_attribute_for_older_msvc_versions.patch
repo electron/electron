@@ -1,15 +1,12 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Deepak Mohan <hop2deep@gmail.com>
 Date: Tue, 28 Jan 2020 15:48:03 -0800
-Subject: fix: usage of c++ [[deprecated]] attirbute for older msvc versions
+Subject: fix: usage of c++ [[deprecated]] attribute for older msvc versions
 
-VS 2015 update 3 has a bug where [[deprecated]] attribute cannot
-be applied to constructor declarations, this is fixed in 2017 and
-higher versions, but native module compiling with this version
-will have an issue.
+This attribute can only be used in all contexts in Visual Studio 2019
 
 diff --git a/include/v8config.h b/include/v8config.h
-index b16ab3ff88d1054d12af4de3ad0018c97c0b7fcc..c9963b43c121964c0c37c858adb228cd090d5c2a 100644
+index b16ab3ff88d1054d12af4de3ad0018c97c0b7fcc..09f1a1b9a6aa8c7d08121725c8447e95209ec7b6 100644
 --- a/include/v8config.h
 +++ b/include/v8config.h
 @@ -452,10 +452,13 @@ path. Add it with -I<path> to the command line
@@ -20,7 +17,7 @@ index b16ab3ff88d1054d12af4de3ad0018c97c0b7fcc..c9963b43c121964c0c37c858adb228cd
  // A macro (V8_DEPRECATED) to mark classes or functions as deprecated.
  #if defined(V8_DEPRECATION_WARNINGS)
 -# define V8_DEPRECATED(message) [[deprecated(message)]]
-+# if defined(_MSC_VER) && _MSC_VER <= 1900
++# if !defined(__clang__) && defined(_MSC_VER) && _MSC_VER < 1920
 +#   define V8_DEPRECATED(message) __declspec(deprecated(message))
 +# else
 +#   define V8_DEPRECATED(message) [[deprecated(message)]]
@@ -33,7 +30,7 @@ index b16ab3ff88d1054d12af4de3ad0018c97c0b7fcc..c9963b43c121964c0c37c858adb228cd
  // A macro (V8_DEPRECATE_SOON) to make it easier to see what will be deprecated.
  #if defined(V8_IMMINENT_DEPRECATION_WARNINGS)
 -# define V8_DEPRECATE_SOON(message) [[deprecated(message)]]
-+# if defined(_MSC_VER) && _MSC_VER <= 1900
++# if !defined(__clang__) && defined(_MSC_VER) && _MSC_VER < 1920
 +#   define V8_DEPRECATE_SOON(message) __declspec(deprecated(message))
 +# else
 +#   define V8_DEPRECATE_SOON(message) [[deprecated(message)]]
