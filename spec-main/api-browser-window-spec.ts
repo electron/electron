@@ -3516,9 +3516,14 @@ describe('BrowserWindow module', () => {
   describe('beginFrameSubscription method', () => {
     it('does not crash when callback returns nothing', (done) => {
       const w = new BrowserWindow({ show: false });
+      let called = false;
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
       w.webContents.on('dom-ready', () => {
         w.webContents.beginFrameSubscription(function () {
+          // This callback might be called twice.
+          if (called) return;
+          called = true;
+
           // Pending endFrameSubscription to next tick can reliably reproduce
           // a crash which happens when nothing is returned in the callback.
           setTimeout(() => {
