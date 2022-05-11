@@ -1,0 +1,265 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hidehiko Abe <hidehiko@chromium.org>
+Date: Wed, 2 Mar 2022 16:17:43 +0000
+Subject: Fix xkb_keysym reverse look up for Lacros.
+
+In crrev.com/c/3422444, we introduced
+xkb_keymap_key_get_mods_for_level in order to construct a reverse map.
+However, unlike its name, and unlike its document, it returns a "mask"
+of modifiers, rather than the modifiers to trigger the level.
+As a result, the CL introduced a regression on some key events,
+such as SHIFT+SPACE.
+
+This CL fixes the issue by giving up creating a simple reverse map.
+Instead, on keymap setting, it creates a reverse map from keysym
+to a list of (keycode/layout) pairs. And, on look up, we iterate
+all the candidates, and find the first one (min keycode entry).
+In order to runtime look up, we assume the current key layout,
+as the wayland keysym event does not provide any layout info.
+
+diff --git a/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine.cc b/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine.cc
+index d8b0594442b2708a03532312b62c4c3481da3b23..d30045bce1af98f68d19e3b01a7a06f67682af16 100644
+--- a/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine.cc
++++ b/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine.cc
+@@ -31,14 +31,6 @@
+ #include "ui/events/keycodes/keyboard_code_conversion.h"
+ #include "ui/events/keycodes/keyboard_code_conversion_xkb.h"
+ 
+-// xkb_keymap_key_get_mods_for_level is relatively new (introduced in ver 1.0,
+-// Sep 6, 2020), thus it is not available on some platform, such as Ubuntu
+-// 18.04, which we still supports.
+-// Thus declare the function as weak here, so we can check the availability on
+-// runtime.
+-extern "C" __attribute__((weak)) decltype(
+-    xkb_keymap_key_get_mods_for_level) xkb_keymap_key_get_mods_for_level;
+-
+ namespace ui {
+ 
+ namespace {
+@@ -901,17 +893,7 @@ void XkbKeyboardLayoutEngine::SetKeymap(xkb_keymap* keymap) {
+   }
+ 
+   // Reconstruct keysym map.
+-  std::vector<std::pair<XkbKeysymMapKey, uint32_t>> keysym_map;
+-  auto AddEntries = [&keysym_map](base::span<const xkb_keysym_t> keysyms,
+-                                  base::span<const xkb_mod_mask_t> masks,
+-                                  xkb_keycode_t keycode) {
+-    if (keysyms.empty() || masks.empty())
+-      return;
+-    for (xkb_keysym_t keysym : keysyms) {
+-      for (xkb_mod_mask_t mask : masks)
+-        keysym_map.emplace_back(XkbKeysymMapKey(keysym, mask), keycode);
+-    }
+-  };
++  std::vector<XkbKeysymMapEntry> keysym_map;
+ 
+   const xkb_keycode_t min_key = xkb_keymap_min_keycode(keymap);
+   const xkb_keycode_t max_key = xkb_keymap_max_keycode(keymap);
+@@ -925,34 +907,33 @@ void XkbKeyboardLayoutEngine::SetKeymap(xkb_keymap* keymap) {
+         const xkb_keysym_t* keysyms;
+         int num_syms = xkb_keymap_key_get_syms_by_level(keymap, keycode, layout,
+                                                         level, &keysyms);
+-        if (xkb_keymap_key_get_mods_for_level) {
+-          xkb_mod_mask_t masks[100];  // Large enough buffer.
+-          int num_mods = xkb_keymap_key_get_mods_for_level(
+-              keymap, keycode, layout, level, masks, std::size(masks));
+-          AddEntries(base::make_span(keysyms, num_syms),
+-                     base::make_span(masks, num_mods), keycode);
+-        } else {
+-          // If not, unfortunately, there's no convenient/efficient way
+-          // to take the possible masks. Thus, use mask 0 always.
+-          constexpr xkb_mod_mask_t kMask[] = {0};
+-          AddEntries(base::make_span(keysyms, num_syms), kMask, keycode);
+-        }
++        for (int i = 0; i < num_syms; ++i)
++          keysym_map.emplace_back(
++              XkbKeysymMapEntry{keysyms[i], keycode, layout});
+       }
+     }
+   }
+ 
+-  // Sort here. If there are multiple entries for a (keysym, mask) pair,
+-  // min keycode wins.
+-  std::sort(keysym_map.begin(), keysym_map.end());
++  // Then sort and unique here. On tie break, smaller keycode comes first.
++  std::sort(
++      keysym_map.begin(), keysym_map.end(),
++      [](const XkbKeysymMapEntry& entry1, const XkbKeysymMapEntry& entry2) {
++        return std::tie(entry1.xkb_keysym, entry1.xkb_keycode,
++                        entry1.xkb_layout) < std::tie(entry2.xkb_keysym,
++                                                      entry2.xkb_keycode,
++                                                      entry2.xkb_layout);
++      });
+   keysym_map.erase(
+-      std::unique(keysym_map.begin(), keysym_map.end(),
+-                  [](const std::pair<XkbKeysymMapKey, uint32_t>& entry1,
+-                     const std::pair<XkbKeysymMapKey, uint32_t>& entry2) {
+-                    return entry1.first == entry2.first;
+-                  }),
++      std::unique(
++          keysym_map.begin(), keysym_map.end(),
++          [](const XkbKeysymMapEntry& entry1, const XkbKeysymMapEntry& entry2) {
++            return std::tie(entry1.xkb_keysym, entry1.xkb_keycode,
++                            entry1.xkb_layout) == std::tie(entry2.xkb_keysym,
++                                                           entry2.xkb_keycode,
++                                                           entry2.xkb_layout);
++          }),
+       keysym_map.end());
+-  xkb_keysym_map_ = base::flat_map<XkbKeysymMapKey, uint32_t>(
+-      base::sorted_unique, std::move(keysym_map));
++  xkb_keysym_map_ = std::move(keysym_map);
+ 
+   layout_index_ = 0;
+ #if BUILDFLAG(IS_CHROMEOS_ASH)
+@@ -1000,18 +981,38 @@ int XkbKeyboardLayoutEngine::UpdateModifiers(uint32_t depressed,
+ 
+ DomCode XkbKeyboardLayoutEngine::GetDomCodeByKeysym(uint32_t keysym,
+                                                     uint32_t modifiers) const {
+-  // If xkb_keymap_key_get_mods_for_level is not available, all entries are
+-  // stored with modifiers mask is 0.
+-  if (!xkb_keymap_key_get_mods_for_level)
+-    modifiers = 0;
+-
+-  auto iter = xkb_keysym_map_.find(XkbKeysymMapKey(keysym, modifiers));
+-  if (iter == xkb_keysym_map_.end()) {
+-    VLOG(1) << "No Keycode found for the keysym: " << keysym
+-            << ", modifiers: " << modifiers;
+-    return DomCode::NONE;
++  // Look up all candidates.
++  auto range = std::equal_range(
++      xkb_keysym_map_.begin(), xkb_keysym_map_.end(), XkbKeysymMapEntry{keysym},
++      [](const XkbKeysymMapEntry& entry1, const XkbKeysymMapEntry& entry2) {
++        return entry1.xkb_keysym < entry2.xkb_keysym;
++      });
++  if (range.first != range.second) {
++    // Note: value is already in the lexicographical order, so smaller keycode
++    // comes first.
++    for (std::unique_ptr<xkb_state, XkbStateDeleter> xkb_state(
++             xkb_state_new(xkb_state_get_keymap(xkb_state_.get())));
++         range.first != range.second; ++range.first) {
++      xkb_keycode_t xkb_keycode = range.first->xkb_keycode;
++      xkb_layout_index_t xkb_layout = range.first->xkb_layout;
++      // The argument does not have any info about the layout, so we assume the
++      // current layout here.
++      if (xkb_layout != layout_index_)
++        continue;
++      xkb_state_update_mask(xkb_state.get(), modifiers, 0, 0, 0, 0, xkb_layout);
++      const xkb_keysym_t* out_keysyms;
++      int num_syms =
++          xkb_state_key_get_syms(xkb_state.get(), xkb_keycode, &out_keysyms);
++      for (int i = 0; i < num_syms; ++i) {
++        if (out_keysyms[i] == keysym)
++          return KeycodeConverter::NativeKeycodeToDomCode(xkb_keycode);
++      }
++    }
+   }
+-  return KeycodeConverter::NativeKeycodeToDomCode(iter->second);
++
++  VLOG(1) << "No Keycode found for the keysym: " << keysym
++          << ", modifiers: " << modifiers;
++  return DomCode::NONE;
+ }
+ 
+ bool XkbKeyboardLayoutEngine::XkbLookup(xkb_keycode_t xkb_keycode,
+diff --git a/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine.h b/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine.h
+index 4fcbce540e4f4dc419f13be9a45fd97c52f8d2b5..3ed6a030d393a927663e1486efef09cf6add589c 100644
+--- a/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine.h
++++ b/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine.h
+@@ -74,14 +74,19 @@ class COMPONENT_EXPORT(EVENTS_OZONE_LAYOUT) XkbKeyboardLayoutEngine
+   };
+   std::vector<XkbFlagMapEntry> xkb_flag_map_;
+ 
+-  // Table from (xkb_keysym, xkb_modifier) to xkb_keycode for the current
+-  // keymap. Note that there could be multiple keycodes mapped to the same
+-  // keysym. In the case, the first one (smallest keycode) will be
+-  // kept.
+-  // The first element is keysym value. The second element is a bit-mask of
+-  // modifiers.
+-  using XkbKeysymMapKey = std::pair<uint32_t, uint32_t>;
+-  base::flat_map<XkbKeysymMapKey, uint32_t> xkb_keysym_map_;
++  // The data to reverse look up xkb_keycode/xkb_layout from xkb_keysym.
++  // The data is sorted in the (xkb_keysym, xkb_keycode, xkb_layout) dictionary
++  // order. Note that there can be multiple keycode/layout for a keysym, so
++  // this is a multi map.
++  // We can binary search on this vector by keysym as the key, and iterate from
++  // the begin to the end of the range linearly. Then, on tie break, smaller
++  // keycode wins.
++  struct XkbKeysymMapEntry {
++    xkb_keysym_t xkb_keysym;
++    xkb_keycode_t xkb_keycode;
++    xkb_layout_index_t xkb_layout;
++  };
++  std::vector<XkbKeysymMapEntry> xkb_keysym_map_;
+ 
+ #if BUILDFLAG(IS_CHROMEOS_ASH)
+   // Flag mask for num lock, which is always considered enabled in ChromeOS.
+diff --git a/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine_unittest.cc b/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine_unittest.cc
+index 3f9223e6c2aad19309d8d3a9367b58a310023d21..18ea942e5b785e037e3fbbd10d1ff4393cf068d0 100644
+--- a/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine_unittest.cc
++++ b/ui/events/ozone/layout/xkb/xkb_keyboard_layout_engine_unittest.cc
+@@ -18,9 +18,6 @@
+ #include "ui/events/keycodes/keyboard_code_conversion.h"
+ #include "ui/events/ozone/layout/scoped_keyboard_layout_engine.h"
+ 
+-extern "C" __attribute__((weak)) decltype(
+-    xkb_keymap_key_get_mods_for_level) xkb_keymap_key_get_mods_for_level;
+-
+ namespace ui {
+ 
+ namespace {
+@@ -946,35 +943,31 @@ TEST_F(XkbLayoutEngineVkTest, GetDomCodeByKeysym) {
+   constexpr struct {
+     uint32_t keysym;
+     uint32_t modifiers;
+-    DomCode dom_code;
++    DomCode expected_dom_code;
+   } kTestCases[] = {
+-      {65307, 0, ui::DomCode::ESCAPE},       {65288, 0, ui::DomCode::BACKSPACE},
+-      {65293, 0, ui::DomCode::ENTER},        {65289, 0, ui::DomCode::TAB},
++      {65307, 0, ui::DomCode::ESCAPE},
++      {65288, 0, ui::DomCode::BACKSPACE},
++      {65293, 0, ui::DomCode::ENTER},
++      {65289, 0, ui::DomCode::TAB},
+       {65056, kShiftMask, ui::DomCode::TAB},
++
++      // Test conflict keysym case. We use '<' as a testing example.
++      // On pc101 layout, intl_backslash is expected without SHIFT modifier.
++      {60, 0, ui::DomCode::INTL_BACKSLASH},
++      // And, if SHIFT is pressed, comma key is expected.
++      {60, kShiftMask, ui::DomCode::COMMA},
++
++      // Test for space key. The keysym mapping has only one keycode entry.
++      // It expects all modifiers are ignored. Used SHIFT as testing example.
++      {32, 0, ui::DomCode::SPACE},
++      {32, kShiftMask, ui::DomCode::SPACE},
+   };
+ 
+   for (const auto& test_case : kTestCases) {
+-    SCOPED_TRACE(test_case.keysym);
+-    EXPECT_EQ(test_case.dom_code, layout_engine_->GetDomCodeByKeysym(
+-                                      test_case.keysym, test_case.modifiers));
+-  }
+-
+-  // Test conflict keysym case. We use '<' as a testing sample.
+-  constexpr uint32_t kLessThanCode = 60;
+-  if (xkb_keymap_key_get_mods_for_level) {
+-    // If there's no modifier, on pc101 us layout, intl_backslash is expected.
+-    EXPECT_EQ(ui::DomCode::INTL_BACKSLASH,
+-              layout_engine_->GetDomCodeByKeysym(kLessThanCode, 0));
+-    // If there's shift modifier, comma key is expected.
+-    EXPECT_EQ(ui::DomCode::COMMA,
+-              layout_engine_->GetDomCodeByKeysym(kLessThanCode, kShiftMask));
+-  } else {
+-    // If xkb_keymap_key_get_mods_for_level is unavailable, fallback to older
+-    // implementation, which ignores modifiers.
+-    EXPECT_EQ(ui::DomCode::COMMA,
+-              layout_engine_->GetDomCodeByKeysym(kLessThanCode, 0));
+-    EXPECT_EQ(ui::DomCode::COMMA,
+-              layout_engine_->GetDomCodeByKeysym(kLessThanCode, kShiftMask));
++    EXPECT_EQ(test_case.expected_dom_code,
++              layout_engine_->GetDomCodeByKeysym(test_case.keysym,
++                                                 test_case.modifiers))
++        << "input: " << test_case.keysym << ", " << test_case.modifiers;
+   }
+ }
+ 
