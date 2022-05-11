@@ -10,6 +10,7 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
+#include "chrome/common/pdf_util.h"
 #include "extensions/common/constants.h"
 #include "extensions/renderer/guest_view/mime_handler_view/post_message_support.h"
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
@@ -24,22 +25,11 @@ PrintRenderFrameHelperDelegate::~PrintRenderFrameHelperDelegate() = default;
 blink::WebElement PrintRenderFrameHelperDelegate::GetPdfElement(
     blink::WebLocalFrame* frame) {
 #if BUILDFLAG(ENABLE_EXTENSIONS)
-  GURL url = frame->GetDocument().Url();
-  bool inside_pdf_extension =
-      url.SchemeIs(extensions::kExtensionScheme) &&
-      url.host_piece() == extension_misc::kPdfExtensionId;
-  if (inside_pdf_extension) {
-    // <object> with id="plugin" is created in
-    // chrome/browser/resources/pdf/pdf_viewer_base.js.
-    auto viewer_element = frame->GetDocument().GetElementById("viewer");
-    if (!viewer_element.IsNull() && !viewer_element.ShadowRoot().IsNull()) {
-      auto plugin_element =
-          viewer_element.ShadowRoot().QuerySelector("#plugin");
-      if (!plugin_element.IsNull()) {
-        return plugin_element;
-      }
-    }
-    NOTREACHED();
+  if (frame->Parent() &&
+      IsPdfInternalPluginAllowedOrigin(frame->Parent()->GetSecurityOrigin())) {
+    auto plugin_element = frame->GetDocument().QuerySelector("embed");
+    DCHECK(!plugin_element.IsNull());
+    return plugin_element;
   }
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
   return blink::WebElement();
