@@ -9,12 +9,12 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b19517ceafabde2ad88e83af97b9768b8a03fb60..4a553eee8f5d06cb645f2b52fe3baee347b1fa94 100644
+index d157b82514bc8eec76b9a06f67bb581c5bf24d56..cbcad21d8e320c6019cc7fbf31bd1c2aac5d03d8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3040,6 +3040,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
+@@ -3049,6 +3049,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
        site_instance.get(), params.renderer_initiated_creation,
-       params.main_frame_name, GetOriginalOpener(), primary_main_frame_policy);
+       params.main_frame_name, GetOpener(), primary_main_frame_policy);
  
 +  if (params.view && params.delegate_view) {
 +    view_.reset(params.view);
@@ -26,7 +26,7 @@ index b19517ceafabde2ad88e83af97b9768b8a03fb60..4a553eee8f5d06cb645f2b52fe3baee3
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -3050,6 +3057,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
+@@ -3059,6 +3066,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
      view_.reset(CreateWebContentsView(this, delegate,
                                        &render_view_host_delegate_view_));
    }
@@ -35,7 +35,7 @@ index b19517ceafabde2ad88e83af97b9768b8a03fb60..4a553eee8f5d06cb645f2b52fe3baee3
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index ad5c13965f1ccc078de5f25b08d51ed43e37f259..cd1b44d4ff5ce8924749ba9e41b3f599108bb8fd 100644
+index da69df2b3b6c97b5b7f3200f6ba355a02804ccf3..be92a83de1a5ccdc106277d67b706e9b109298a9 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -93,10 +93,13 @@ class BrowserContext;
