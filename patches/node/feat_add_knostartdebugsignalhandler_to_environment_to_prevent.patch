@@ -7,10 +7,10 @@ Subject: feat: add kNoStartDebugSignalHandler to Environment to prevent
 This patch should be upstreamed, it allows embedders to prevent the call to StartDebugSignalHandler which handles SIGUSR1 and starts the inspector agent.  Apps that have --inspect disabled also don't want SIGUSR1 to have this affect.
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 845e00208af4b12960ed8b3f3926323af7685185..1ebc33324907654d16e9c0e19b2955efbac7cac7 100644
+index 7c7ee3207089bf3e51db646a367bdd6deba18628..0144b7ca31a8c41a893d9549a9214c0c86477af7 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -896,6 +896,10 @@ inline bool Environment::should_initialize_inspector() const {
+@@ -885,6 +885,10 @@ inline bool Environment::should_initialize_inspector() const {
    return (flags_ & EnvironmentFlags::kNoInitializeInspector) == 0;
  }
  
@@ -22,12 +22,12 @@ index 845e00208af4b12960ed8b3f3926323af7685185..1ebc33324907654d16e9c0e19b2955ef
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index ab8334bf0e3405fee4d21a4b541bd1164d92ca89..b2537ebd44bc5b37dd97752735f84e87de1f24bf 100644
+index 6b22cc4aaaf59d309d1bcebfbb3710ceeafd13e6..030a3b65c8c09aa71dcc7cdebee920574700807d 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1207,6 +1207,7 @@ class Environment : public MemoryRetainer {
+@@ -1205,6 +1205,7 @@ class Environment : public MemoryRetainer {
+   inline bool tracks_unmanaged_fds() const;
    inline bool hide_console_windows() const;
-   inline bool no_global_search_paths() const;
    inline bool should_initialize_inspector() const;
 +  inline bool should_start_debug_signal_handler() const;
    inline uint64_t thread_id() const;
@@ -51,19 +51,19 @@ index c4a3322c6d972fc2052af75b79389c522924d9c5..39ff8df415be1908ba404fba34d9cedd
      parent_env_->AddCleanupHook([](void* data) {
        Environment* env = static_cast<Environment*>(data);
 diff --git a/src/node.h b/src/node.h
-index 4201c0d0460b032721ef42a26d79c38a9ee20c24..6873fc89406b046823db9e45234eb7f6b767099d 100644
+index 22e095804bca9d73d22707169c5aff2b13994344..481898a1294bbf593b714173e0857cebf5368cd0 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -425,7 +425,11 @@ enum Flags : uint64_t {
+@@ -414,7 +414,11 @@ enum Flags : uint64_t {
    // Controls whether or not the Environment should call InitializeInspector.
    // This control is needed by embedders who may not want to initialize the V8
    // inspector in situations where it already exists.
--  kNoInitializeInspector = 1 << 8
-+  kNoInitializeInspector = 1 << 8,
+-  kNoInitializeInspector = 1 << 6
++  kNoInitializeInspector = 1 << 6,
 +  // Controls where or not the InspectorAgent for this Environment should
 +  // call StartDebugSignalHandler.  This control is needed by embedders who may
 +  // not want to allow other processes to start the V8 inspector.
-+  kNoStartDebugSignalHandler = 1 << 9
++  kNoStartDebugSignalHandler = 1 << 7
  };
  }  // namespace EnvironmentFlags
  
