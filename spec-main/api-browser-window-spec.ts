@@ -1937,6 +1937,26 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('Opening a BrowserWindow from a link', () => {
+    let appProcess: childProcess.ChildProcessWithoutNullStreams | undefined;
+
+    afterEach(() => {
+      if (appProcess && !appProcess.killed) {
+        appProcess.kill();
+        appProcess = undefined;
+      }
+    });
+
+    it('can properly open and load a new window from a link', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'open-new-window-from-link');
+
+      appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+      const [code] = await emittedOnce(appProcess, 'exit');
+      expect(code).to.equal(0);
+    });
+  });
+
   describe('BrowserWindow.fromWebContents(webContents)', () => {
     afterEach(closeAllWindows);
 
@@ -3516,9 +3536,14 @@ describe('BrowserWindow module', () => {
   describe('beginFrameSubscription method', () => {
     it('does not crash when callback returns nothing', (done) => {
       const w = new BrowserWindow({ show: false });
+      let called = false;
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
       w.webContents.on('dom-ready', () => {
         w.webContents.beginFrameSubscription(function () {
+          // This callback might be called twice.
+          if (called) return;
+          called = true;
+
           // Pending endFrameSubscription to next tick can reliably reproduce
           // a crash which happens when nothing is returned in the callback.
           setTimeout(() => {
