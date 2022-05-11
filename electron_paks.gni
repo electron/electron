@@ -198,7 +198,7 @@ template("electron_paks") {
       "//components/strings:components_locale_settings",
       "//components/strings:components_strings",
       "//device/bluetooth/strings",
-      "//extensions/strings:strings_grit",
+      "//extensions/strings",
       "//services/strings",
       "//third_party/blink/public/strings",
       "//third_party/blink/public/strings:accessibility_strings",
