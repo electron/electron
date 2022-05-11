@@ -187,7 +187,7 @@ template("electron_paks") {
       "//chrome/app/resources:platform_locale_settings",
       "//components/strings:components_strings",
       "//device/bluetooth/strings",
-      "//extensions/strings:strings_grit",
+      "//extensions/strings",
       "//services/strings",
       "//third_party/blink/public/strings",
       "//ui/strings:app_locale_settings",
