@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Tue, 12 Oct 2021 10:41:55 +0900
+Subject: build: disable v8 pointer compression on 32bit archs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+PR-URL: https://github.com/nodejs/node/pull/40418
+Reviewed-By: Jiawen Geng <technicalcute@gmail.com>
+Reviewed-By: Stewart X Addison <sxa@redhat.com>
+Reviewed-By: Tobias Nießen <tniessen@tnie.de>
+Reviewed-By: Minwoo Jung <nodecorelab@gmail.com>
+Reviewed-By: Michael Dawson <midawson@redhat.com>
+
+diff --git a/common.gypi b/common.gypi
+index f330d4e92a585d7d72e8322cebb5606fe7220e8c..6e229ef3ae59c668a7c978c96493d8d36242c2a4 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -130,6 +130,11 @@
+       ['target_arch == "arm64" or target_arch == "x64"', {
+         'v8_enable_pointer_compression': 1,
+       }],
++      # V8 pointer compression only supports 64bit architectures.
++      ['target_arch in "arm ia32 mips mipsel ppc x32"', {
++        'v8_enable_pointer_compression': 0,
++        'v8_enable_31bit_smis_on_64bit_arch': 0,
++      }],
+       ['target_arch in "ppc64 s390x"', {
+         'v8_enable_backtrace': 1,
+       }],
