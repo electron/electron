@@ -11,7 +11,7 @@
 #  - "TARGET_ARCH" Choose from {'ia32', 'x64', 'arm', 'arm64', 'mips64el'}.
 #      Is used in some publishing scripts, but does NOT affect the Electron binary.
 #      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "NPM_CONFIG_ARCH" value.
-#  - "UPLOAD_TO_S3" Set it to '1' upload a release to the S3 bucket.
+#  - "UPLOAD_TO_STORAGE" Set it to '1' upload a release to the Azure bucket.
 #      Otherwise the release will be uploaded to the Github Releases.
 #      (The value is only checked if "ELECTRON_RELEASE" is defined.)
 #
@@ -235,9 +235,9 @@ deploy_script:
   - cd electron
   - ps: >-
       if (Test-Path Env:\ELECTRON_RELEASE) {
-        if (Test-Path Env:\UPLOAD_TO_S3) {
-          Write-Output "Uploading Electron release distribution to s3"
-          & python script\release\uploaders\upload.py --verbose --upload_to_s3
+        if (Test-Path Env:\UPLOAD_TO_STORAGE) {
+          Write-Output "Uploading Electron release distribution to azure"
+          & python script\release\uploaders\upload.py --verbose --upload_to_storage
         } else {
           Write-Output "Uploading Electron release distribution to github releases"
           & python script\release\uploaders\upload.py --verbose
