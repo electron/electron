@@ -744,10 +744,21 @@ _electron_resource_allowlist = "$target_gen_dir/electron_resource_allowlist.txt"
 
 if (enable_resource_allowlist_generation) {
   generate_resource_allowlist("resource_allowlist") {
-    deps = [ ":electron_framework+link_nested" ]
-    inputs = [
-      "$target_out_dir/electron_framework_shared_library/Electron Framework",
-    ]
+    if (is_mac) {
+      deps = [ ":electron_framework+link_nested" ]
+      inputs = [
+        "$target_out_dir/electron_framework_shared_library/Electron Framework",
+      ]
+    } else {
+      deps = [ ":electron_app" ]
+      _target_executable_suffix = ""
+      if (is_win) {
+        _target_executable_suffix = ".exe.pdb"
+      }
+      inputs = [
+        "$target_out_dir/electron${_target_executable_suffix}"
+      ]
+    }
     output = _electron_resource_allowlist
   }
 }
