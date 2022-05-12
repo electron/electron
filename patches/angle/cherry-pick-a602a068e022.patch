@@ -1,7 +1,7 @@
-From a602a068e022149691d8642b095b8e68d05feb77 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
 Date: Tue, 19 Apr 2022 17:01:20 -0400
-Subject: [PATCH] [M100] Fix validate state cache after XFB buffer deleted.
+Subject: Fix validate state cache after XFB buffer deleted.
 
 Bug: chromium:1317650
 Change-Id: Iec9f1167c3b2957091dd0f4ef3efcfcd7c4bf3c0
@@ -12,13 +12,12 @@ Commit-Queue: Jamie Madill <jmadill@chromium.org>
 (cherry picked from commit 4efc4ee6830a8a53a0daf9daa3c7aa835db4220f)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3621779
 Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
----
 
 diff --git a/src/libANGLE/State.cpp b/src/libANGLE/State.cpp
-index 383bf7c..360896c 100644
+index 182709c348f7490e1ee990a05570c13d7e9d0dd7..dc2b1728e3a7ab494e616940565f08692a9ff028 100644
 --- a/src/libANGLE/State.cpp
 +++ b/src/libANGLE/State.cpp
-@@ -2176,10 +2176,7 @@
+@@ -2115,10 +2115,7 @@ angle::Result State::detachBuffer(Context *context, const Buffer *buffer)
      if (curTransformFeedback)
      {
          ANGLE_TRY(curTransformFeedback->detachBuffer(context, bufferID));
