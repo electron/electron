@@ -190,9 +190,9 @@
       gfx::ScreenPointFromNSPoint([event locationInWindow]),
       ui::EventFlagsFromModifiers([event modifierFlags]));
 
-  // Pass click to superclass to show menu. Custom mouseUp handler won't be
-  // invoked.
-  if (menuController_) {
+  // Pass click to superclass to show menu if one exists and has a non-zero
+  // number of items. Custom mouseUp handler won't be invoked in this case.
+  if (menuController_ && [[menuController_ menu] numberOfItems] > 0) {
     [self handleClickNotifications:event];
     [super mouseDown:event];
   } else {
