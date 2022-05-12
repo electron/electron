@@ -1,7 +1,7 @@
-From 723ed8a9cfffede007ae3d675a961d3cabe67e30 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jakob Kummerow <jkummerow@chromium.org>
-Date: Mon, 02 May 2022 19:52:11 +0200
-Subject: [PATCH] Merged: [wasm] Fix Int64Lowering for tagged stack-passed parameters
+Date: Mon, 2 May 2022 19:52:11 +0200
+Subject: Merged: [wasm] Fix Int64Lowering for tagged stack-passed parameters
 
 When lowering signatures, we must preserve the separation of parameters
 into tagged and untagged sections.
@@ -16,13 +16,12 @@ Reviewed-by: Shu-yu Guo <syg@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.1@{#28}
 Cr-Branched-From: b003970395b7efcc309eb30b4ca06dd8385acd55-refs/heads/10.1.124@{#1}
 Cr-Branched-From: e62f556862624103ea1da5b9dcef9b216832033b-refs/heads/main@{#79503}
----
 
 diff --git a/src/compiler/wasm-compiler.cc b/src/compiler/wasm-compiler.cc
-index 0afc124..d03f146 100644
+index 8f54d1b045550ea848bda59f0b65b1493afe46e3..d1cbdfa674e9118e2316b44b5f9cffe6fe9dae98 100644
 --- a/src/compiler/wasm-compiler.cc
 +++ b/src/compiler/wasm-compiler.cc
-@@ -8555,16 +8555,10 @@
+@@ -8530,16 +8530,10 @@ class LinkageLocationAllocator {
    // must be offset to just before the param slots, using this |slot_offset_|.
    int slot_offset_;
  };
@@ -42,7 +41,7 @@ index 0afc124..d03f146 100644
    int extra_params = extra_callable_param ? 2 : 1;
    LocationSignature::Builder locations(zone, fsig->return_count(),
                                         fsig->parameter_count() + extra_params);
-@@ -8607,19 +8601,37 @@
+@@ -8582,19 +8576,37 @@ CallDescriptor* GetWasmCallDescriptor(Zone* zone, const wasm::FunctionSig* fsig,
          kJSFunctionRegister.code(), MachineType::TaggedPointer()));
    }
  
@@ -83,9 +82,9 @@ index 0afc124..d03f146 100644
 +  LocationSignature* location_sig = BuildLocations(
 +      zone, fsig, extra_callable_param, &parameter_slots, &return_slots);
  
-   const RegList kCalleeSaveRegisters;
-   const DoubleRegList kCalleeSaveFPRegisters;
-@@ -8645,7 +8657,7 @@
+   const RegList kCalleeSaveRegisters = 0;
+   const RegList kCalleeSaveFPRegisters = 0;
+@@ -8620,7 +8632,7 @@ CallDescriptor* GetWasmCallDescriptor(Zone* zone, const wasm::FunctionSig* fsig,
        descriptor_kind,                    // kind
        target_type,                        // target MachineType
        target_loc,                         // target location
@@ -94,7 +93,7 @@ index 0afc124..d03f146 100644
        parameter_slots,                    // parameter slot count
        compiler::Operator::kNoProperties,  // properties
        kCalleeSaveRegisters,               // callee-saved registers
-@@ -8696,78 +8708,45 @@
+@@ -8671,78 +8683,45 @@ const wasm::FunctionSig* ReplaceTypeInSig(Zone* zone,
  CallDescriptor* ReplaceTypeInCallDescriptorWith(
      Zone* zone, const CallDescriptor* call_descriptor, size_t num_replacements,
      wasm::ValueType input_type, wasm::ValueType output_type) {
@@ -117,22 +116,21 @@ index 0afc124..d03f146 100644
 +    for (size_t i = 0; i < call_descriptor->ReturnCount(); i++) {
 +      DCHECK_NE(call_descriptor->GetReturnType(i), input_type.machine_type());
      }
--  }
++#endif
++    return const_cast<CallDescriptor*>(call_descriptor);
+   }
 -  if (parameter_count == call_descriptor->ParameterCount() &&
 -      return_count == call_descriptor->ReturnCount()) {
-+#endif
-     return const_cast<CallDescriptor*>(call_descriptor);
-   }
--
--  LocationSignature::Builder locations(zone, return_count, parameter_count);
 +  const wasm::FunctionSig* sig =
 +      ReplaceTypeInSig(zone, call_descriptor->wasm_sig(), input_type,
 +                       output_type, num_replacements);
 +  // If {ReplaceTypeInSig} took the early fast path, there's nothing to do.
 +  if (sig == call_descriptor->wasm_sig()) {
-+    return const_cast<CallDescriptor*>(call_descriptor);
-+  }
+     return const_cast<CallDescriptor*>(call_descriptor);
+   }
  
+-  LocationSignature::Builder locations(zone, return_count, parameter_count);
+-
    // The last parameter may be the special callable parameter. In that case we
    // have to preserve it as the last parameter, i.e. we allocate it in the new
    // location signature again in the same register.
@@ -143,7 +141,7 @@ index 0afc124..d03f146 100644
                                      MachineType::TaggedPointer()));
 -  LinkageLocationAllocator params(
 -      wasm::kGpParamRegisters, wasm::kFpParamRegisters, 0 /* no slot offset */);
- 
+-
 -  for (size_t i = 0;
 -       i < call_descriptor->ParameterCount() - (has_callable_param ? 1 : 0);
 -       i++) {
@@ -178,7 +176,7 @@ index 0afc124..d03f146 100644
 -  }
 -
 -  int return_slots = rets.NumStackSlots();
--
+ 
 -  auto sig = ReplaceTypeInSig(zone, call_descriptor->wasm_sig(), input_type,
 -                              output_type, num_replacements);
 +  int parameter_slots;
