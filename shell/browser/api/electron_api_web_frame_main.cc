@@ -103,6 +103,7 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   render_frame_disposed_ = false;
   render_frame_ = rfh;
   renderer_api_.reset();
+  MaybeSetupMojoConnection();
 }
 
 bool WebFrameMain::CheckRenderFrame() const {
@@ -181,16 +182,21 @@ void WebFrameMain::Send(v8::Isolate* isolate,
 }
 
 const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::GetRendererApi() {
+  MaybeSetupMojoConnection();
+  return renderer_api_;
+}
+
+void WebFrameMain::MaybeSetupMojoConnection() {
   if (!renderer_api_) {
     pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
-    if (render_frame_->IsRenderFrameCreated()) {
-      render_frame_->GetRemoteInterfaces()->GetInterface(
-          std::move(pending_receiver_));
-    }
     renderer_api_.set_disconnect_handler(base::BindOnce(
         &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
   }
-  return renderer_api_;
+  // Wait for RenderFrame to be created in renderer before accessing remote.
+  if (pending_receiver_ && render_frame_->IsRenderFrameCreated()) {
+    render_frame_->GetRemoteInterfaces()->GetInterface(
+        std::move(pending_receiver_));
+  }
 }
 
 void WebFrameMain::OnRendererConnectionError() {
@@ -312,13 +318,6 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
       &frame_hosts));
 
   return frame_hosts;
-}
-
-void WebFrameMain::Connect() {
-  if (pending_receiver_ && render_frame_->IsRenderFrameCreated()) {
-    render_frame_->GetRemoteInterfaces()->GetInterface(
-        std::move(pending_receiver_));
-  }
 }
 
 void WebFrameMain::DOMContentLoaded() {
