@@ -14,7 +14,7 @@ parameters:
     type: boolean
     default: false
   
-  upload-to-s3:
+  upload-to-storage:
     type: string
     default: '1'
 
