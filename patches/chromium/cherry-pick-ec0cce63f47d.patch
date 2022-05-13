@@ -1,7 +1,7 @@
-From ec0cce63f47df40f35e27e668f321c75ff26e670 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Corentin Pescheloche <cpescheloche@fb.com>
 Date: Tue, 10 May 2022 14:05:53 +0000
-Subject: [PATCH] [M96-LTS][profiler] Cleanup profiler group detached profilers
+Subject: Cleanup profiler group detached profilers
 
 ProfilerGroup keeps track of detached profilers to be able to gracefully
 stop leaked profilers when the corresponding ExecutionContext is
@@ -21,13 +21,12 @@ Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Auto-Submit: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1629}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/third_party/blink/renderer/core/timing/profiler_group.cc b/third_party/blink/renderer/core/timing/profiler_group.cc
-index 6638ee3..f498a12 100644
+index 090068ee1dc22a0c823a4817e6c6e748fcec354b..466e4f76fce71787b78c2d24624e60184f1d1f36 100644
 --- a/third_party/blink/renderer/core/timing/profiler_group.cc
 +++ b/third_party/blink/renderer/core/timing/profiler_group.cc
-@@ -110,8 +110,7 @@
+@@ -110,8 +110,7 @@ ProfilerGroup::ProfilerGroup(v8::Isolate* isolate)
      : isolate_(isolate),
        cpu_profiler_(nullptr),
        next_profiler_id_(0),
@@ -37,7 +36,7 @@ index 6638ee3..f498a12 100644
  
  void DiscardedSamplesDelegate::Notify() {
    if (profiler_group_) {
-@@ -234,6 +233,8 @@
+@@ -234,6 +233,8 @@ void ProfilerGroup::WillBeDestroyed() {
      DCHECK(!profilers_.Contains(profiler));
    }
  
@@ -46,7 +45,7 @@ index 6638ee3..f498a12 100644
    if (cpu_profiler_)
      TeardownV8Profiler();
  }
-@@ -304,18 +305,49 @@
+@@ -304,18 +305,49 @@ void ProfilerGroup::CancelProfiler(Profiler* profiler) {
  
  void ProfilerGroup::CancelProfilerAsync(ScriptState* script_state,
                                          Profiler* profiler) {
@@ -98,10 +97,10 @@ index 6638ee3..f498a12 100644
    if (!cpu_profiler_)
      return;
 diff --git a/third_party/blink/renderer/core/timing/profiler_group.h b/third_party/blink/renderer/core/timing/profiler_group.h
-index d673d0d..8c27d41b 100644
+index d673d0d6ec63a042a6b08149ba7c2b3fc505e221..8c27d41b160876e0347186958f0e9f08efd41e01 100644
 --- a/third_party/blink/renderer/core/timing/profiler_group.h
 +++ b/third_party/blink/renderer/core/timing/profiler_group.h
-@@ -81,6 +81,10 @@
+@@ -81,6 +81,10 @@ class CORE_EXPORT ProfilerGroup
    // Internal implementation of cancel.
    void CancelProfilerImpl(String profiler_id);
  
@@ -112,7 +111,7 @@ index d673d0d..8c27d41b 100644
    // Generates an unused string identifier to use for a new profiling session.
    String NextProfilerId();
  
-@@ -88,9 +92,11 @@
+@@ -88,9 +92,11 @@ class CORE_EXPORT ProfilerGroup
    v8::CpuProfiler* cpu_profiler_;
    int next_profiler_id_;
    int num_active_profilers_;
@@ -126,10 +125,10 @@ index d673d0d..8c27d41b 100644
    // enabled.
    HeapHashSet<Member<ProfilingContextObserver>> context_observers_;
 diff --git a/third_party/blink/renderer/core/timing/profiler_group_test.cc b/third_party/blink/renderer/core/timing/profiler_group_test.cc
-index 7f203a7..85f1742 100644
+index fadab535bc3f8de7173e329e4d514e648e0f5817..1879523e9f18c41b448957d906c1684c024814da 100644
 --- a/third_party/blink/renderer/core/timing/profiler_group_test.cc
 +++ b/third_party/blink/renderer/core/timing/profiler_group_test.cc
-@@ -268,4 +268,29 @@
+@@ -268,4 +268,29 @@ TEST(ProfilerGroupTest, LeakProfilerWithContext) {
    test::RunPendingTasks();
  }
  
