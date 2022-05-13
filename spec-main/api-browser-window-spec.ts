@@ -2245,9 +2245,15 @@ describe('BrowserWindow module', () => {
       const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
       expect(overlayEnabled).to.be.true('overlayEnabled');
       const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
-      await w.maximize();
-      const max = await w.isMaximized();
-      expect(max).to.equal(true);
+
+      if (!w.isMaximized()) {
+        const maximize = emittedOnce(w, 'maximize');
+        w.show();
+        w.maximize();
+        await maximize;
+      }
+
+      expect(w.isMaximized()).to.be.true('not maximized');
       const overlayRectPostMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
       expect(overlayRectPreMax.y).to.equal(0);
@@ -2266,6 +2272,61 @@ describe('BrowserWindow module', () => {
     afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
+    });
+  });
+
+  ifdescribe(process.platform === 'win32')('BrowserWindow.setTitlebarOverlay', () => {
+    afterEach(closeAllWindows);
+    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+
+    it('correctly updates the height of the overlay', async () => {
+      const testOverlay = async (w: BrowserWindow, size: Number) => {
+        const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+        w.loadFile(overlayHTML);
+        await emittedOnce(ipcMain, 'geometrychange');
+
+        const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
+        expect(overlayEnabled).to.be.true('overlayEnabled');
+        const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+
+        if (!w.isMaximized()) {
+          const maximize = emittedOnce(w, 'maximize');
+          w.show();
+          w.maximize();
+          await maximize;
+        }
+
+        expect(w.isMaximized()).to.be.true('not maximized');
+        const { x, y, width, height } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+        expect(x).to.equal(0);
+        expect(y).to.equal(0);
+        expect(width).to.be.greaterThan(0);
+        expect(height).to.equal(size);
+        expect(preMaxHeight).to.equal(size);
+      };
+
+      const INITIAL_SIZE = 40;
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          height: INITIAL_SIZE
+        }
+      });
+
+      await testOverlay(w, INITIAL_SIZE);
+
+      w.setTitleBarOverlay({
+        height: INITIAL_SIZE + 10
+      });
+
+      await testOverlay(w, INITIAL_SIZE + 10);
     });
   });
 
