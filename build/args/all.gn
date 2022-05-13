@@ -21,8 +21,6 @@ proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
 enable_basic_printing = true
-angle_enable_vulkan_validation_layers = false
-dawn_enable_vulkan_validation_layers = false
 
 # These are disabled because they cause the zip manifest to differ between
 # testing and release builds.
