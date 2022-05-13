@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@google.com>
+Date: Fri, 1 Apr 2022 11:38:17 -0400
+Subject: Fix CheckedNumeric using the wrong type.
+
+Validation for glBufferSubData checks that the buffer is large enough
+for size+offset but verifies they fit in a size_t which is a different
+type than the deduced type for size+offset on 32-bit systems.
+
+Use decltype to ensure that we always verify there is no overflow on the
+correct type.
+
+Bug: chromium:1298867
+Change-Id: I82f534b2d227d3273a763e626ebeae068dc918dc
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3563515
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Reviewed-by: Jonah Ryan-Davis <jonahr@google.com>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit c458b5add432c3da98ef370680518d0af7e4d4e3)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3630020
+
+diff --git a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp
+index 9802a3385d5f042df8b643b9b452de29b41ba868..e0add8edaac527fac374afefbebce216d21182e9 100644
+--- a/src/libANGLE/validationES2.cpp
++++ b/src/libANGLE/validationES2.cpp
+@@ -3779,7 +3779,7 @@ bool ValidateBufferSubData(const Context *context,
+     }
+ 
+     // Check for possible overflow of size + offset
+-    angle::CheckedNumeric<size_t> checkedSize(size);
++    angle::CheckedNumeric<decltype(size + offset)> checkedSize(size);
+     checkedSize += offset;
+     if (!checkedSize.IsValid())
+     {
+diff --git a/src/tests/gl_tests/BufferDataTest.cpp b/src/tests/gl_tests/BufferDataTest.cpp
+index b3e70c797ace1fbcaf0002fe7d63e4b4ac418e97..bad538962d262f81b3e6e78c820a28e114ea75fa 100644
+--- a/src/tests/gl_tests/BufferDataTest.cpp
++++ b/src/tests/gl_tests/BufferDataTest.cpp
+@@ -746,6 +746,19 @@ void main()
+     EXPECT_PIXEL_COLOR_EQ(3, 3, GLColor::green);
+ }
+ 
++// Verify that buffer sub data uploads are properly validated within the buffer size range on 32-bit
++// systems.
++TEST_P(BufferDataTest, BufferSizeValidation32Bit)
++{
++    GLBuffer buffer;
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    glBufferData(GL_ARRAY_BUFFER, 100, nullptr, GL_STATIC_DRAW);
++
++    GLubyte data = 0;
++    glBufferSubData(GL_ARRAY_BUFFER, std::numeric_limits<uint32_t>::max(), 1, &data);
++    EXPECT_GL_ERROR(GL_INVALID_VALUE);
++}
++
+ // Tests a null crash bug caused by copying from null back-end buffer pointer
+ // when calling bufferData again after drawing without calling bufferData in D3D11.
+ TEST_P(BufferDataTestES3, DrawWithNotCallingBufferData)
