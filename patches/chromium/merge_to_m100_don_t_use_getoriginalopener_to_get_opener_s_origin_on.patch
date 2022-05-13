@@ -1,0 +1,217 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Mon, 25 Apr 2022 06:18:19 +0000
+Subject: [Merge to M100] Don't use GetOriginalOpener to get opener's origin on
+ FrameTree initialization
+
+When setting the origin of the new main RFH on FrameTree initialization,
+we base it on the opener's origin if it exists. GetOriginalOpener()
+was used to get the opener, but that function will actually return the
+main frame of the opener. This means when the FrameTree is opened by a
+non-main frame, we might inherit the wrong origin.
+
+This CL fixes the bug by getting the actual opener using GetOpener()
+instead, and adds a regression test and warning note to
+GetOriginalOpener().
+
+(cherry picked from commit 4eb716ef5cdbca4db3a9377ee6390964d0d4025f)
+
+Bug: 1311820, 1291764
+Change-Id: I7e6f63a394ba4188eee3ce3043b174a2695508eb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3564826
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#989165}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3600157
+Auto-Submit: Rakina Zata Amni <rakina@chromium.org>
+Reviewed-by: Nidhi Jaju <nidhijaju@chromium.org>
+Commit-Queue: Nidhi Jaju <nidhijaju@chromium.org>
+Owners-Override: Nidhi Jaju <nidhijaju@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4896@{#1179}
+Cr-Branched-From: 1f63ff4bc27570761b35ffbc7f938f6586f7bee8-refs/heads/main@{#972766}
+
+diff --git a/content/browser/renderer_host/frame_tree.cc b/content/browser/renderer_host/frame_tree.cc
+index dc8f28bdefb7c490104c2e88fb71f7cc91db0fda..7193d75e5daa83b4749c8e1e2497a2e99cc03ef3 100644
+--- a/content/browser/renderer_host/frame_tree.cc
++++ b/content/browser/renderer_host/frame_tree.cc
+@@ -789,7 +789,7 @@ void FrameTree::RegisterExistingOriginToPreventOptInIsolation(
+ void FrameTree::Init(SiteInstance* main_frame_site_instance,
+                      bool renderer_initiated_creation,
+                      const std::string& main_frame_name,
+-                     RenderFrameHostImpl* opener) {
++                     RenderFrameHostImpl* opener_for_origin) {
+   // blink::FrameTree::SetName always keeps |unique_name| empty in case of a
+   // main frame - let's do the same thing here.
+   std::string unique_name;
+@@ -800,16 +800,16 @@ void FrameTree::Init(SiteInstance* main_frame_site_instance,
+ 
+   // The initial empty document should inherit the origin of its opener (the
+   // origin may change after the first commit), except when they are in
+-  // different browsing context groups (`renderer_initiated_creation` is false),
+-  // where it should use a new opaque origin.
++  // different browsing context groups (`renderer_initiated_creation` will be
++  // false), where it should use a new opaque origin.
+   // See also https://crbug.com/932067.
+   //
+   // Note that the origin of the new frame might depend on sandbox flags.
+   // Checking sandbox flags of the new frame should be safe at this point,
+   // because the flags should be already inherited when creating the root node.
+-  DCHECK(!renderer_initiated_creation || opener);
++  DCHECK(!renderer_initiated_creation || opener_for_origin);
+   root_->current_frame_host()->SetOriginDependentStateOfNewFrame(
+-      renderer_initiated_creation ? opener->GetLastCommittedOrigin()
++      renderer_initiated_creation ? opener_for_origin->GetLastCommittedOrigin()
+                                   : url::Origin());
+ 
+   if (blink::features::IsInitialNavigationEntryEnabled())
+diff --git a/content/browser/renderer_host/frame_tree.h b/content/browser/renderer_host/frame_tree.h
+index d1f7db763fabe942e6322e8781331df6998a6a28..ca0a0e16f4ccdf77eb1feb1fb197230579c1b01b 100644
+--- a/content/browser/renderer_host/frame_tree.h
++++ b/content/browser/renderer_host/frame_tree.h
+@@ -204,7 +204,7 @@ class CONTENT_EXPORT FrameTree {
+   // Initializes the main frame for this FrameTree. That is it creates the
+   // initial RenderFrameHost in the root node's RenderFrameHostManager, and also
+   // creates an initial NavigationEntry (if the InitialNavigationEntry feature
+-  // is enabled) that potentially inherits `opener`'s origin in its
++  // is enabled) that potentially inherits `opener_for_origin`'s origin in its
+   // NavigationController. This method will call back into the delegates so it
+   // should only be called once they have completed their initialization.
+   // TODO(carlscab): It would be great if initialization could happened in the
+@@ -212,7 +212,7 @@ class CONTENT_EXPORT FrameTree {
+   void Init(SiteInstance* main_frame_site_instance,
+             bool renderer_initiated_creation,
+             const std::string& main_frame_name,
+-            RenderFrameHostImpl* opener);
++            RenderFrameHostImpl* opener_for_origin);
+ 
+   Type type() const { return type_; }
+ 
+diff --git a/content/browser/renderer_host/render_frame_host_impl_browsertest.cc b/content/browser/renderer_host/render_frame_host_impl_browsertest.cc
+index bf1494b76230c77d9dac8c66f16b4349dfb15ae8..e6b582af29dd6fa274cc0740aa272b1e62c2725c 100644
+--- a/content/browser/renderer_host/render_frame_host_impl_browsertest.cc
++++ b/content/browser/renderer_host/render_frame_host_impl_browsertest.cc
+@@ -6543,6 +6543,80 @@ IN_PROC_BROWSER_TEST_F(RenderFrameHostImplBrowserTest, ErrorDocuments) {
+   EXPECT_TRUE(child_b->IsErrorDocument());
+ }
+ 
++// Tests that a popup that is opened by a subframe inherits the subframe's
++// origin, instead of the main frame's origin.
++// Regression test for https://crbug.com/1311820 and https://crbug.com/1291764.
++IN_PROC_BROWSER_TEST_F(RenderFrameHostImplBrowserTest,
++                       PopupOpenedBySubframeHasCorrectOrigin) {
++  GURL main_url(embedded_test_server()->GetURL(
++      "a.com", "/cross_site_iframe_factory.html?a(b)"));
++  // Navigate to a page with a cross-site iframe.
++  EXPECT_TRUE(NavigateToURL(shell(), main_url));
++  FrameTreeNode* root = web_contents()->GetPrimaryFrameTree().root();
++  FrameTreeNode* child = root->child_at(0);
++
++  // Verify that the main frame & subframe origin differs.
++  url::Origin a_origin = url::Origin::Create(main_url);
++  url::Origin b_origin = url::Origin::Create(child->current_url());
++  EXPECT_EQ(a_origin, root->current_frame_host()->GetLastCommittedOrigin());
++  EXPECT_EQ(b_origin, child->current_frame_host()->GetLastCommittedOrigin());
++  EXPECT_NE(a_origin, b_origin);
++
++  {
++    // From the subframe, open a popup that stays on the initial empty
++    // document.
++    WebContentsAddedObserver popup_observer;
++    ASSERT_TRUE(ExecJs(child, "var w = window.open('/nocontent');"));
++    WebContentsImpl* popup =
++        static_cast<WebContentsImpl*>(popup_observer.GetWebContents());
++    FrameTreeNode* popup_frame = popup->GetMainFrame()->frame_tree_node();
++
++    // The popup should inherit the subframe's origin. Before the fix for
++    // https://crbug.com/1311820, the popup used to inherit the main frame's
++    // origin instead.
++    EXPECT_EQ(b_origin,
++              popup_frame->current_frame_host()->GetLastCommittedOrigin());
++    EXPECT_EQ(b_origin.Serialize(), EvalJs(popup_frame, "self.origin"));
++
++    // Try calling document.open() on the popup from itself.
++    // This used to cause a renderer kill as the browser used to notice the
++    // current origin & process lock mismatched when the document.open()
++    // notification IPC arrives.
++    EXPECT_EQ(GURL("about:blank"), EvalJs(popup_frame, "location.href"));
++    EXPECT_TRUE(ExecJs(popup_frame, "document.open()"));
++    EXPECT_EQ(GURL("about:blank"), EvalJs(popup_frame, "location.href"));
++
++    // Try updating the URL of the popup to the opener subframe's URL by
++    // calling document.open() on the popup from the opener subframe.
++    // This used to cause a renderer kill as the browser used to expect that
++    // the popup frame can only update to URLs under `a_origin`, while the
++    // new URL is under `b_origin`. See also https://crbug.com/1291764.
++    EXPECT_TRUE(ExecJs(child, "w.document.open()"));
++    EXPECT_EQ(child->current_url().spec(),
++              EvalJs(popup_frame, "location.href"));
++  }
++
++  {
++    // From the subframe, open a popup that stays on the initial empty
++    // document, and specify 'noopener' to sever the opener relationship.
++    WebContentsAddedObserver popup_observer;
++    ASSERT_TRUE(
++        ExecJs(child, "var w = window.open('/nocontent', '', 'noopener');"));
++    WebContentsImpl* popup =
++        static_cast<WebContentsImpl*>(popup_observer.GetWebContents());
++    FrameTreeNode* popup_frame = popup->GetMainFrame()->frame_tree_node();
++    EXPECT_EQ(nullptr, EvalJs(popup_frame, "window.opener"));
++
++    // The popup should use a new opaque origin, instead of the subframe's
++    // origin.
++    EXPECT_NE(b_origin,
++              popup_frame->current_frame_host()->GetLastCommittedOrigin());
++    EXPECT_TRUE(
++        popup_frame->current_frame_host()->GetLastCommittedOrigin().opaque());
++    EXPECT_EQ("null", EvalJs(popup_frame, "self.origin"));
++  }
++}
++
+ class RenderFrameHostImplAvoidUnnecessaryBeforeUnloadBrowserTest
+     : public RenderFrameHostImplBeforeUnloadBrowserTest {
+  public:
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 00a701c92c6b3ab7aa00e6f7bfc40febc7d0439e..f66907f633fe51f220164ca8ebbf16a8059ee843 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -2971,9 +2971,18 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+         ->PreventAssociationWithSpareProcess();
+   }
+ 
++  // Iniitalize the primary FrameTree.
++  // Note that GetOpener() is used here to get the opener for origin
++  // inheritance, instead of other similar functions:
++  // - GetOriginalOpener(), which would always return the main frame of the
++  // opener, which might be different from the actual opener.
++  // - FindOpenerRFH(), which will still return the opener frame if the
++  // opener is suppressed (e.g. due to 'noopener'). The opener should not
++  // be used for origin inheritance purposes in those cases, so this should
++  // not pass the opener for those cases.
+   primary_frame_tree_.Init(site_instance.get(),
+                            params.renderer_initiated_creation,
+-                           params.main_frame_name, GetOriginalOpener());
++                           params.main_frame_name, GetOpener());
+ 
+   if (params.view && params.delegate_view) {
+     view_.reset(params.view);
+diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
+index aa10ae9a2154fe28c3df749c9f6c493f9101a567..52f2cd80da6ef870c9123faf388b9bfadc936b66 100644
+--- a/content/public/browser/web_contents.h
++++ b/content/public/browser/web_contents.h
+@@ -1075,8 +1075,13 @@ class WebContents : public PageNavigator,
+   // original owner, etc.
+   virtual bool HasOriginalOpener() = 0;
+ 
+-  // Returns the original opener if HasOriginalOpener() is true, or nullptr
+-  // otherwise.
++  // Returns the original opener's main frame if HasOriginalOpener() is true, or
++  // nullptr otherwise. NOTE: This will always be the main frame of the actual
++  // original opener's frame tree, so it might be different from the actual
++  // original opener if it is a subframe. See https://crbug.com/705316 for more
++  // context.
++  // TODO(https://crbug.com/1311820): Consider renaming this function and other
++  // things related to "original openers", to make the quirk more obvious.
+   virtual RenderFrameHost* GetOriginalOpener() = 0;
+ 
+   // Returns the WakeLockContext accociated with this WebContents.
