@@ -1,7 +1,7 @@
-From 99c3f3bfd507090070bc5ae5f9396528fbe03d0f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Eugene Zemtsov <eugene@chromium.org>
-Date: Fri, 08 Apr 2022 23:28:35 +0000
-Subject: [PATCH] Only destroy successfully created compression session in VT encoder
+Date: Fri, 8 Apr 2022 23:28:35 +0000
+Subject: Only destroy successfully created compression session in VT encoder
 
 This is a defensive change, since we don't have a repro on hand.
 My guess is that VTCompressionSessionCreate() might fail to create a
@@ -17,13 +17,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3575680
 Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
 Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#990654}
----
 
 diff --git a/media/gpu/mac/vt_video_encode_accelerator_mac.cc b/media/gpu/mac/vt_video_encode_accelerator_mac.cc
-index 8e5df31..6a3a7771 100644
+index 06333aaeca6b8bfd10d6809bcace4177ac7fd368..c265ff94617dfedca60ad9b3f1ce3de3364cfe56 100644
 --- a/media/gpu/mac/vt_video_encode_accelerator_mac.cc
 +++ b/media/gpu/mac/vt_video_encode_accelerator_mac.cc
-@@ -139,13 +139,13 @@
+@@ -129,13 +129,13 @@ VTVideoEncodeAccelerator::GetSupportedProfiles() {
    SupportedProfiles profiles;
    const bool rv = CreateCompressionSession(
        gfx::Size(kDefaultResolutionWidth, kDefaultResolutionHeight));
@@ -38,7 +37,7 @@ index 8e5df31..6a3a7771 100644
    SupportedProfile profile;
    profile.max_framerate_numerator = kMaxFrameRateNumerator;
    profile.max_framerate_denominator = kMaxFrameRateDenominator;
-@@ -578,10 +578,8 @@
+@@ -533,10 +533,8 @@ bool VTVideoEncodeAccelerator::ResetCompressionSession() {
    DestroyCompressionSession();
  
    bool session_rv = CreateCompressionSession(input_visible_size_);
@@ -50,7 +49,7 @@ index 8e5df31..6a3a7771 100644
  
    const bool configure_rv = ConfigureCompressionSession();
    if (configure_rv)
-@@ -625,6 +623,12 @@
+@@ -572,6 +570,12 @@ bool VTVideoEncodeAccelerator::CreateCompressionSession(
        &VTVideoEncodeAccelerator::CompressionCallback,
        reinterpret_cast<void*>(this), compression_session_.InitializeInto());
    if (status != noErr) {
