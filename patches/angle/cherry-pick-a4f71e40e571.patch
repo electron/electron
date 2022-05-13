@@ -1,7 +1,7 @@
-From a4f71e40e571a8768f8fe2dbdc35678bcb9e6783 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Geoff Lang <geofflang@google.com>
-Date: Fri, 01 Apr 2022 11:38:17 -0400
-Subject: [PATCH] Fix CheckedNumeric using the wrong type.
+Date: Fri, 1 Apr 2022 11:38:17 -0400
+Subject: Fix CheckedNumeric using the wrong type.
 
 Validation for glBufferSubData checks that the buffer is large enough
 for size+offset but verifies they fit in a size_t which is a different
@@ -18,13 +18,12 @@ Reviewed-by: Jonah Ryan-Davis <jonahr@google.com>
 Commit-Queue: Geoff Lang <geofflang@chromium.org>
 (cherry picked from commit c458b5add432c3da98ef370680518d0af7e4d4e3)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3630020
----
 
 diff --git a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp
-index c4d1764..f60d3d1 100644
+index 1615b8c64476d43201b67bb69489efd01ac51c7b..8deba1e5f922f56607abdcbea8c69bc0e71aceb4 100644
 --- a/src/libANGLE/validationES2.cpp
 +++ b/src/libANGLE/validationES2.cpp
-@@ -3638,7 +3638,7 @@
+@@ -3500,7 +3500,7 @@ bool ValidateBufferSubData(const Context *context,
      }
  
      // Check for possible overflow of size + offset
@@ -34,10 +33,10 @@ index c4d1764..f60d3d1 100644
      if (!checkedSize.IsValid())
      {
 diff --git a/src/tests/gl_tests/BufferDataTest.cpp b/src/tests/gl_tests/BufferDataTest.cpp
-index d9942c6..215eca9 100644
+index 59bc691abc00dd11a068898b25b403fa3a397e37..5b3ef6a1b208cfc3c32338024c347b515ecbfd6e 100644
 --- a/src/tests/gl_tests/BufferDataTest.cpp
 +++ b/src/tests/gl_tests/BufferDataTest.cpp
-@@ -914,6 +914,19 @@
+@@ -824,6 +824,19 @@ TEST_P(BufferDataTest, MapWriteArrayBufferDataDrawArrays)
      EXPECT_GL_NO_ERROR();
  }
  
