@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Rakina Zata Amni <rakina@chromium.org>
 Date: Mon, 25 Apr 2022 06:18:19 +0000
-Subject: [Merge to M100] Don't use GetOriginalOpener to get opener's origin on
- FrameTree initialization
+Subject: Don't use GetOriginalOpener to get opener's origin on FrameTree
+ initialization
 
 When setting the origin of the new main RFH on FrameTree initialization,
 we base it on the opener's origin if it exists. GetOriginalOpener()
