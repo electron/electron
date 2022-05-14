@@ -9,6 +9,8 @@ const klaw = require('klaw');
 const minimist = require('minimist');
 const path = require('path');
 
+const { chunkFilenames } = require('./lib/utils');
+
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
@@ -69,12 +71,20 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
-    if (opts.fix) {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames]);
-    } else {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames]);
+    const chunkedFilenames = chunkFilenames(filenames);
+
+    filenames = chunkedFilenames.shift();
+
+    while (filenames) {
+      if (opts.fix) {
+        spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames]);
+      } else {
+        spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames]);
+      }
+      cpplint(filenames);
+
+      filenames = chunkedFilenames.shift();
     }
-    cpplint(filenames);
   }
 }, {
   key: 'objc',
