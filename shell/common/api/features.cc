@@ -54,8 +54,8 @@ bool IsPictureInPictureEnabled() {
   return BUILDFLAG(ENABLE_PICTURE_IN_PICTURE);
 }
 
-bool IsWindowsImmersiveDarkModeEnabled() {
-  return electron::fuses::IsWindowsImmersiveDarkModeEnabled();
+bool IsWindows10ImmersiveDarkModeEnabled() {
+  return electron::fuses::IsWindows10ImmersiveDarkModeEnabled();
 }
 
 bool IsComponentBuild() {
@@ -84,8 +84,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPictureInPictureEnabled", &IsPictureInPictureEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
   dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
-  dict.SetMethod("isWindowsImmersiveDarkModeEnabled",
-                 &IsWindowsImmersiveDarkModeEnabled);
+  dict.SetMethod("isWindows10ImmersiveDarkModeEnabled",
+                 &IsWindows10ImmersiveDarkModeEnabled);
 }
 
 }  // namespace

@@ -6,6 +6,9 @@
 
 #include <dwmapi.h>  // DwmSetWindowAttribute()
 
+#include "base/win/windows_version.h"
+#include "electron/fuses.h"
+
 #define DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 19
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 
@@ -14,8 +17,8 @@
 // governed by the MIT license and (c) Microsoft Corporation.
 namespace {
 
-// Use private Windows API to set window theme.
-HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
+// Use private Windows API to set window theme on Windows 10
+HRESULT TrySetWindowThemeOnWin10(HWND hWnd, bool dark) {
   const BOOL isDarkMode = dark;
   if (FAILED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
                                    &isDarkMode, sizeof(isDarkMode)))) {
@@ -34,17 +37,42 @@ HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
   return S_OK;
 }
 
+HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
+  const BOOL isDarkMode = dark;
+  HRESULT result = DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
+                                         &isDarkMode, sizeof(isDarkMode));
+
+  return FAILED(result) ? result : S_OK;
+}
+
 }  // namespace
 
 namespace electron {
 
 namespace win {
 
+bool IsDarkModeSupported() {
+  auto* os_info = base::win::OSInfo::GetInstance();
+  auto const version = os_info->version();
+
+  return version >= base::win::Version::WIN11 ||
+         (version >= base::win::Version::WIN10 &&
+          electron::fuses::IsWindows10ImmersiveDarkModeEnabled());
+}
+
 void SetDarkModeForWindow(HWND hWnd) {
   ui::NativeTheme* theme = ui::NativeTheme::GetInstanceForNativeUi();
   bool dark =
       theme->ShouldUseDarkColors() && !theme->UserHasContrastPreference();
-  TrySetWindowTheme(hWnd, dark);
+
+  auto* os_info = base::win::OSInfo::GetInstance();
+  auto const version = os_info->version();
+
+  if (version >= base::win::Version::WIN11) {
+    TrySetWindowTheme(hWnd, dark);
+  } else {
+    TrySetWindowThemeOnWin10(hWnd, dark);
+  }
 }
 
 }  // namespace win

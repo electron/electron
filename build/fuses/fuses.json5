@@ -8,5 +8,5 @@
   "node_cli_inspect": "1",
   "embedded_asar_integrity_validation": "0",
   "only_load_app_from_asar": "0",
-  "windows_immersive_dark_mode": "0"
+  "windows_10_immersive_dark_mode": "0"
 }

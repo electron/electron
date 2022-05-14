@@ -6,7 +6,6 @@
 
 #include "base/win/windows_version.h"
 #include "electron/buildflags/buildflags.h"
-#include "electron/fuses.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
 #include "ui/base/win/hwnd_metrics.h"
@@ -27,12 +26,11 @@ bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                     WPARAM w_param,
                                                     LPARAM l_param,
                                                     LRESULT* result) {
-  if (electron::fuses::IsWindowsImmersiveDarkModeEnabled() &&
-      message == WM_NCCREATE) {
+  const bool dark_mode_supported = win::IsDarkModeSupported();
+  if (dark_mode_supported && message == WM_NCCREATE) {
     win::SetDarkModeForWindow(GetAcceleratedWidget());
     ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
-  } else if (electron::fuses::IsWindowsImmersiveDarkModeEnabled() &&
-             message == WM_DESTROY) {
+  } else if (dark_mode_supported && message == WM_DESTROY) {
     ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   }
 

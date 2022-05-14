@@ -19,6 +19,7 @@ namespace electron {
 
 namespace win {
 
+bool IsDarkModeSupported();
 void SetDarkModeForWindow(HWND hWnd);
 
 }  // namespace win
