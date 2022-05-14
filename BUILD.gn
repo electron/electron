@@ -596,10 +596,7 @@ source_set("electron_lib") {
     ]
   }
   if (is_win) {
-    libs += [
-      "dwmapi.lib",
-      "uxtheme.lib",
-    ]
+    libs += [ "dwmapi.lib" ]
     deps += [
       "//components/crash/core/app:crash_export_thunks",
       "//ui/native_theme:native_theme_browser",

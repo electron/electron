@@ -6,7 +6,6 @@
 
 #include <dwmapi.h>  // DwmSetWindowAttribute()
 
-#define DARK_MODE_STRING_NAME L"DarkMode_Explorer"
 #define DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 19
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 
@@ -17,15 +16,10 @@ namespace {
 
 // Use private Windows API to set window theme.
 HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
-  HRESULT result =
-      SetWindowTheme(hWnd, dark ? DARK_MODE_STRING_NAME : L"", nullptr);
-  if (FAILED(result))
-    return result;
-
   const BOOL isDarkMode = dark;
   if (FAILED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
                                    &isDarkMode, sizeof(isDarkMode)))) {
-    result =
+    HRESULT result =
         DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1,
                               &isDarkMode, sizeof(isDarkMode));
     if (FAILED(result))
