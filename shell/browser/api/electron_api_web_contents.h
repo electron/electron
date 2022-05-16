@@ -352,7 +352,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   template <typename... Args>
   bool EmitWithSender(base::StringPiece name,
                       content::RenderFrameHost* sender,
-                      electron::mojom::ElectronBrowser::InvokeCallback callback,
+                      electron::mojom::ElectronApiIPC::InvokeCallback callback,
                       Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -396,7 +396,7 @@ class WebContents : public gin::Wrappable<WebContents>,
     fullscreen_frame_ = rfh;
   }
 
-  // mojom::ElectronBrowser
+  // mojom::ElectronApiIPC
   void Message(bool internal,
                const std::string& channel,
                blink::CloneableMessage arguments,
@@ -404,9 +404,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   void Invoke(bool internal,
               const std::string& channel,
               blink::CloneableMessage arguments,
-              electron::mojom::ElectronBrowser::InvokeCallback callback,
+              electron::mojom::ElectronApiIPC::InvokeCallback callback,
               content::RenderFrameHost* render_frame_host);
-  void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message,
                           content::RenderFrameHost* render_frame_host);
@@ -414,7 +413,7 @@ class WebContents : public gin::Wrappable<WebContents>,
       bool internal,
       const std::string& channel,
       blink::CloneableMessage arguments,
-      electron::mojom::ElectronBrowser::MessageSyncCallback callback,
+      electron::mojom::ElectronApiIPC::MessageSyncCallback callback,
       content::RenderFrameHost* render_frame_host);
   void MessageTo(int32_t web_contents_id,
                  const std::string& channel,
@@ -422,10 +421,15 @@ class WebContents : public gin::Wrappable<WebContents>,
   void MessageHost(const std::string& channel,
                    blink::CloneableMessage arguments,
                    content::RenderFrameHost* render_frame_host);
+
+  // mojom::ElectronWebContentsUtility
+  void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
   void UpdateDraggableRegions(std::vector<mojom::DraggableRegionPtr> regions);
   void SetTemporaryZoomLevel(double level);
   void DoGetZoomLevel(
-      electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback);
+      electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
+          callback);
+
   void SetImageAnimationPolicy(const std::string& new_policy);
 
   // Grants |origin| access to |device|.

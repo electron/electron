@@ -22,7 +22,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
-#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
 
@@ -59,17 +59,17 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
         v8::Global<v8::Context>(isolate, isolate->GetCurrentContext());
     weak_context_.SetWeak();
 
-    render_frame->GetBrowserInterfaceBroker()->GetInterface(
-        electron_browser_remote_.BindNewPipeAndPassReceiver());
+    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+        &electron_ipc_remote_);
   }
 
-  void OnDestruct() override { electron_browser_remote_.reset(); }
+  void OnDestruct() override { electron_ipc_remote_.reset(); }
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int32_t world_id) override {
     if (weak_context_.IsEmpty() ||
         weak_context_.Get(context->GetIsolate()) == context)
-      electron_browser_remote_.reset();
+      electron_ipc_remote_.reset();
   }
 
   // gin::Wrappable:
@@ -92,7 +92,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
                    bool internal,
                    const std::string& channel,
                    v8::Local<v8::Value> arguments) {
-    if (!electron_browser_remote_) {
+    if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
     }
@@ -100,7 +100,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
-    electron_browser_remote_->Message(internal, channel, std::move(message));
+    electron_ipc_remote_->Message(internal, channel, std::move(message));
   }
 
   v8::Local<v8::Promise> Invoke(v8::Isolate* isolate,
@@ -108,7 +108,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
                                 bool internal,
                                 const std::string& channel,
                                 v8::Local<v8::Value> arguments) {
-    if (!electron_browser_remote_) {
+    if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return v8::Local<v8::Promise>();
     }
@@ -119,7 +119,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     gin_helper::Promise<blink::CloneableMessage> p(isolate);
     auto handle = p.GetHandle();
 
-    electron_browser_remote_->Invoke(
+    electron_ipc_remote_->Invoke(
         internal, channel, std::move(message),
         base::BindOnce(
             [](gin_helper::Promise<blink::CloneableMessage> p,
@@ -134,7 +134,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,
                    absl::optional<v8::Local<v8::Value>> transfer) {
-    if (!electron_browser_remote_) {
+    if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
     }
@@ -166,8 +166,8 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     }
 
     transferable_message.ports = std::move(ports);
-    electron_browser_remote_->ReceivePostMessage(
-        channel, std::move(transferable_message));
+    electron_ipc_remote_->ReceivePostMessage(channel,
+                                             std::move(transferable_message));
   }
 
   void SendTo(v8::Isolate* isolate,
@@ -175,7 +175,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
               int32_t web_contents_id,
               const std::string& channel,
               v8::Local<v8::Value> arguments) {
-    if (!electron_browser_remote_) {
+    if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
     }
@@ -183,15 +183,15 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
-    electron_browser_remote_->MessageTo(web_contents_id, channel,
-                                        std::move(message));
+    electron_ipc_remote_->MessageTo(web_contents_id, channel,
+                                    std::move(message));
   }
 
   void SendToHost(v8::Isolate* isolate,
                   gin_helper::ErrorThrower thrower,
                   const std::string& channel,
                   v8::Local<v8::Value> arguments) {
-    if (!electron_browser_remote_) {
+    if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
     }
@@ -199,7 +199,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
-    electron_browser_remote_->MessageHost(channel, std::move(message));
+    electron_ipc_remote_->MessageHost(channel, std::move(message));
   }
 
   v8::Local<v8::Value> SendSync(v8::Isolate* isolate,
@@ -207,7 +207,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
                                 bool internal,
                                 const std::string& channel,
                                 v8::Local<v8::Value> arguments) {
-    if (!electron_browser_remote_) {
+    if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return v8::Local<v8::Value>();
     }
@@ -217,13 +217,13 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     }
 
     blink::CloneableMessage result;
-    electron_browser_remote_->MessageSync(internal, channel, std::move(message),
-                                          &result);
+    electron_ipc_remote_->MessageSync(internal, channel, std::move(message),
+                                      &result);
     return electron::DeserializeV8Value(isolate, result);
   }
 
   v8::Global<v8::Context> weak_context_;
-  mojo::Remote<electron::mojom::ElectronBrowser> electron_browser_remote_;
+  mojo::AssociatedRemote<electron::mojom::ElectronApiIPC> electron_ipc_remote_;
 };
 
 gin::WrapperInfo IPCRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
