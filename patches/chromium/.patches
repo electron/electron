@@ -135,4 +135,5 @@ cherry-pick-5be8e065f43e.patch
 cherry-pick-12ba78f3fa7a.patch
 reland_fix_noopener_case_for_user_activation_consumption.patch
 fsa_pass_file_ownership_to_worker_for_async_fsarfd_file_operations.patch
+cherry-pick-ec0cce63f47d.patch
 cherry-pick-99c3f3bfd507.patch
