@@ -1,0 +1,160 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Pescheloche <cpescheloche@fb.com>
+Date: Tue, 10 May 2022 14:05:53 +0000
+Subject: Cleanup profiler group detached profilers
+
+ProfilerGroup keeps track of detached profilers to be able to gracefully
+stop leaked profilers when the corresponding ExecutionContext is
+destroyed.
+
+(cherry picked from commit 9f9d5fd2f3085414fc8776bf556fb5c4fa2dac2c)
+
+Change-Id: I4fdbbc3a5208819397d742c9ecbff117f839691c
+Bug: chromium:1297283
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3594570
+Commit-Queue: Corentin Pescheloche <cpescheloche@fb.com>
+Cr-Original-Commit-Position: refs/heads/main@{#994316}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3620956
+Reviewed-by: Oleh Lamzin <lamzin@google.com>
+Owners-Override: Oleh Lamzin <lamzin@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Auto-Submit: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1629}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/renderer/core/timing/profiler_group.cc b/third_party/blink/renderer/core/timing/profiler_group.cc
+index 6638ee38519674036c6c45cf6cd1a4eff023289b..f498a122f5a491226720a36dc729364028148eaa 100644
+--- a/third_party/blink/renderer/core/timing/profiler_group.cc
++++ b/third_party/blink/renderer/core/timing/profiler_group.cc
+@@ -110,8 +110,7 @@ ProfilerGroup::ProfilerGroup(v8::Isolate* isolate)
+     : isolate_(isolate),
+       cpu_profiler_(nullptr),
+       next_profiler_id_(0),
+-      num_active_profilers_(0) {
+-}
++      num_active_profilers_(0) {}
+ 
+ void DiscardedSamplesDelegate::Notify() {
+   if (profiler_group_) {
+@@ -234,6 +233,8 @@ void ProfilerGroup::WillBeDestroyed() {
+     DCHECK(!profilers_.Contains(profiler));
+   }
+ 
++  StopDetachedProfilers();
++
+   if (cpu_profiler_)
+     TeardownV8Profiler();
+ }
+@@ -304,18 +305,49 @@ void ProfilerGroup::CancelProfiler(Profiler* profiler) {
+ 
+ void ProfilerGroup::CancelProfilerAsync(ScriptState* script_state,
+                                         Profiler* profiler) {
++  DCHECK(IsMainThread());
+   DCHECK(cpu_profiler_);
+   DCHECK(!profiler->stopped());
+   profilers_.erase(profiler);
+ 
++  // register the profiler to be cleaned up in case its associated context
++  // gets destroyed before the cleanup task is executed.
++  detached_profiler_ids_.push_back(profiler->ProfilerId());
++
+   // Since it's possible for the profiler to get destructed along with its
+   // associated context, dispatch a task to cleanup context-independent isolate
+   // resources (rather than use the context's task runner).
+   ThreadScheduler::Current()->V8TaskRunner()->PostTask(
+-      FROM_HERE, WTF::Bind(&ProfilerGroup::CancelProfilerImpl,
++      FROM_HERE, WTF::Bind(&ProfilerGroup::StopDetachedProfiler,
+                            WrapPersistent(this), profiler->ProfilerId()));
+ }
+ 
++void ProfilerGroup::StopDetachedProfiler(String profiler_id) {
++  DCHECK(IsMainThread());
++
++  // we use a vector instead of a map because the expected number of profiler
++  // is expected to be very small
++  auto* it = std::find(detached_profiler_ids_.begin(),
++                       detached_profiler_ids_.end(), profiler_id);
++
++  if (it == detached_profiler_ids_.end()) {
++    // Profiler already stopped
++    return;
++  }
++
++  CancelProfilerImpl(profiler_id);
++  detached_profiler_ids_.erase(it);
++}
++
++void ProfilerGroup::StopDetachedProfilers() {
++  DCHECK(IsMainThread());
++
++  for (auto& detached_profiler_id : detached_profiler_ids_) {
++    CancelProfilerImpl(detached_profiler_id);
++  }
++  detached_profiler_ids_.clear();
++}
++
+ void ProfilerGroup::CancelProfilerImpl(String profiler_id) {
+   if (!cpu_profiler_)
+     return;
+diff --git a/third_party/blink/renderer/core/timing/profiler_group.h b/third_party/blink/renderer/core/timing/profiler_group.h
+index d673d0d6ec63a042a6b08149ba7c2b3fc505e221..8c27d41b160876e0347186958f0e9f08efd41e01 100644
+--- a/third_party/blink/renderer/core/timing/profiler_group.h
++++ b/third_party/blink/renderer/core/timing/profiler_group.h
+@@ -81,6 +81,10 @@ class CORE_EXPORT ProfilerGroup
+   // Internal implementation of cancel.
+   void CancelProfilerImpl(String profiler_id);
+ 
++  // Clean context independent resources for leaked profilers
++  void StopDetachedProfiler(String profiler_id);
++  void StopDetachedProfilers();
++
+   // Generates an unused string identifier to use for a new profiling session.
+   String NextProfilerId();
+ 
+@@ -88,9 +92,11 @@ class CORE_EXPORT ProfilerGroup
+   v8::CpuProfiler* cpu_profiler_;
+   int next_profiler_id_;
+   int num_active_profilers_;
+-
+   HeapHashSet<WeakMember<Profiler>> profilers_;
+ 
++  // Store the ids of leaked collected profilers that needs to be stopped
++  Vector<String> detached_profiler_ids_;
++
+   // A set of observers, one for each ExecutionContext that has profiling
+   // enabled.
+   HeapHashSet<Member<ProfilingContextObserver>> context_observers_;
+diff --git a/third_party/blink/renderer/core/timing/profiler_group_test.cc b/third_party/blink/renderer/core/timing/profiler_group_test.cc
+index 7f203a746ac9856ef746c4caad2e62b6a2c423d8..85f1742cf875a561f16fba9686841cf99ae3fcb3 100644
+--- a/third_party/blink/renderer/core/timing/profiler_group_test.cc
++++ b/third_party/blink/renderer/core/timing/profiler_group_test.cc
+@@ -268,4 +268,29 @@ TEST(ProfilerGroupTest, LeakProfilerWithContext) {
+   test::RunPendingTasks();
+ }
+ 
++// Tests that a ProfilerGroup doesn't crash if the ProfilerGroup is destroyed
++// before a Profiler::Dispose is ran.
++TEST(ProfilerGroupTest, Bug1297283) {
++  {
++    V8TestingScope scope;
++    ProfilerGroup* profiler_group = ProfilerGroup::From(scope.GetIsolate());
++    profiler_group->OnProfilingContextAdded(scope.GetExecutionContext());
++
++    ProfilerInitOptions* init_options = ProfilerInitOptions::Create();
++    init_options->setSampleInterval(0);
++    init_options->setMaxBufferSize(0);
++    Profiler* profiler = profiler_group->CreateProfiler(
++        scope.GetScriptState(), *init_options, base::TimeTicks(),
++        scope.GetExceptionState());
++    EXPECT_FALSE(profiler->stopped());
++
++    // Force a collection of the underlying Profiler
++    profiler = nullptr;
++    ThreadState::Current()->CollectAllGarbageForTesting();
++    // Exit Scope deallocating Context triggering ProfilerGroup::WillBeDestroyed
++    // Ensure doesn't crash.
++  }
++  test::RunPendingTasks();
++}
++
+ }  // namespace blink
