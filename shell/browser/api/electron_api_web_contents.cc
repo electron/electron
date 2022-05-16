@@ -2970,6 +2970,9 @@ uint32_t WebContents::FindInPage(gin::Arguments* args) {
     dict.Get("findNext", &options->new_session);
   }
 
+  LOG(INFO) << "web_contents()->GetLastCommittedURL(): "
+            << web_contents()->GetLastCommittedURL().spec();
+
   web_contents()->Find(request_id, search_text, std::move(options));
   return request_id;
 }

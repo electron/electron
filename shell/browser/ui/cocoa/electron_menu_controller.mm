@@ -422,10 +422,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       [item setKeyEquivalentModifierMask:modifier_mask];
     }
 
-    if (@available(macOS 10.13, *)) {
-      [(id)item
-          setAllowsKeyEquivalentWhenHidden:(model->WorksWhenHiddenAt(index))];
-    }
+    [(id)item
+        setAllowsKeyEquivalentWhenHidden:(model->WorksWhenHiddenAt(index))];
 
     // Set menu item's role.
     [item setTarget:self];
