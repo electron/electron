@@ -126,6 +126,7 @@
   "report/test-report-worker",
   "report/test-report-writereport",
   "sequential/test-cpu-prof-kill",
+  "sequential/test-diagnostic-dir-cpu-prof",
   "sequential/test-tls-connect",
   "wpt/test-webcrypto"
 ]
