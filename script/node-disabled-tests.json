@@ -125,6 +125,7 @@
   "report/test-report-uv-handles",
   "report/test-report-worker",
   "report/test-report-writereport",
+  "sequential/test-cpu-prof-kill",
   "sequential/test-tls-connect",
   "wpt/test-webcrypto"
 ]
