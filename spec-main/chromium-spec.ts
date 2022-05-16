@@ -2083,11 +2083,11 @@ describe('navigator.hid', () => {
       const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
       if (grantedDevices.length > 0) {
         const deletedDevice = await w.webContents.executeJavaScript(`
-          navigator.hid.getDevices().then(devices => { 
-            devices[0].forget(); 
-            return { 
-              vendorId: devices[0].vendorId, 
-              productId: devices[0].productId, 
+          navigator.hid.getDevices().then(devices => {
+            devices[0].forget();
+            return {
+              vendorId: devices[0].vendorId,
+              productId: devices[0].productId,
               name: devices[0].productName
             }
           })
