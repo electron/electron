@@ -15,3 +15,4 @@ m96-lts_vulkan_fix_issue_with_redefining_a_layered_attachment.patch
 cherry-pick-d27d9d059b51.patch
 m100_fix_crash_when_pausing_xfb_then_deleting_a_buffer.patch
 cherry-pick-a602a068e022.patch
+fix_checkednumeric_using_the_wrong_type.patch
