@@ -750,13 +750,13 @@ if (enable_resource_allowlist_generation) {
         "$target_out_dir/electron_framework_shared_library/Electron Framework",
       ]
     } else {
-      deps = [ ":electron_app" ]
-      _target_executable_suffix = ""
+      deps = [ ":electron_dll" ]
+      _target_shared_library_suffix = ".so"
       if (is_win) {
-        _target_executable_suffix = ".exe.pdb"
+        _target_shared_library_suffix = ".dll.pdb"
       }
       inputs = [
-        "$target_out_dir/electron${_target_executable_suffix}"
+        "$target_out_dir/electron${_target_shared_library_suffix}"
       ]
     }
     output = _electron_resource_allowlist
@@ -1201,6 +1201,10 @@ if (is_mac) {
     ]
   }
 
+  shared_library("electron_dll") {
+    deps = [ ":electron_lib" ]
+  }
+
   executable("electron_app") {
     output_name = electron_project_name
     if (is_win) {
@@ -1216,7 +1220,7 @@ if (is_mac) {
     deps = [
       ":default_app_asar",
       ":electron_app_manifest",
-      ":electron_lib",
+      ":electron_dll",
       ":packed_resources",
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
