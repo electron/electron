@@ -74,11 +74,11 @@
 #include "ui/base/cursor/cursor_factory.h"
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gfx/color_utils.h"
-#include "ui/gtk/gtk_compat.h"      // nogncheck
-#include "ui/gtk/gtk_ui_factory.h"  // nogncheck
-#include "ui/gtk/gtk_util.h"        // nogncheck
+#include "ui/gtk/gtk_compat.h"  // nogncheck
+#include "ui/gtk/gtk_util.h"    // nogncheck
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/linux_ui/linux_ui.h"
+#include "ui/views/linux_ui/linux_ui_factory.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -179,8 +179,7 @@ class DarkThemeObserver : public ui::NativeThemeObserver {
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
-ElectronBrowserMainParts::ElectronBrowserMainParts(
-    const content::MainFunctionParams& params)
+ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
       browser_(std::make_unique<Browser>()),
       node_bindings_(
@@ -347,8 +346,8 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 }
 
 void ElectronBrowserMainParts::PostCreateThreads() {
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::IO},
+  content::GetIOThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
 }
 
@@ -366,8 +365,7 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
-  auto linux_ui = BuildGtkUi();
-  linux_ui->Initialize();
+  auto linux_ui = CreateLinuxUi();
   DCHECK(ui::LinuxInputMethodContextFactory::instance());
 
   // Try loading gtk symbols used by Electron.
@@ -417,11 +415,6 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // url::Add*Scheme are not threadsafe, this helps prevent data races.
   url::LockSchemeRegistries();
 
-  // The First-Party Sets feature always expects to be initialized
-  // CL: https://chromium-review.googlesource.com/c/chromium/src/+/3448551
-  content::FirstPartySetsHandler::GetInstance()->SetPublicFirstPartySets(
-      base::File());
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
@@ -446,8 +439,8 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
     // --remote-debugging-pipe
     auto on_disconnect = base::BindOnce([]() {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce([]() { Browser::Get()->Quit(); }));
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE, base::BindOnce([]() { Browser::Get()->Quit(); }));
     });
     content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler(
         std::move(on_disconnect));

@@ -10,7 +10,6 @@
 #include "base/message_loop/message_pump_mac.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
@@ -365,8 +364,8 @@ void TrayIconCocoa::PopUpOnUI(ElectronMenuModel* menu_model) {
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
                                      ElectronMenuModel* menu_model) {
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
                      base::Unretained(menu_model)));
 }

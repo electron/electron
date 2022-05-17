@@ -7,7 +7,7 @@ Allows embedders to get a handle to the gtk library
 already loaded in the process.
 
 diff --git a/ui/gtk/gtk_compat.cc b/ui/gtk/gtk_compat.cc
-index 0ed04582106639911d9a4e0284ff880be9c3bc74..bfda81b08be52406048be9b96d2de59223d56ee7 100644
+index b5c7af5bdb93b320f95252d35d2d76bae7f8c445..40b706ed7cde206e98274025148604760b7477f9 100644
 --- a/ui/gtk/gtk_compat.cc
 +++ b/ui/gtk/gtk_compat.cc
 @@ -86,12 +86,6 @@ void* GetLibGtk4(bool check = true) {
@@ -37,10 +37,10 @@ index 0ed04582106639911d9a4e0284ff880be9c3bc74..bfda81b08be52406048be9b96d2de592
    static bool loaded = LoadGtkImpl();
    return loaded;
 diff --git a/ui/gtk/gtk_compat.h b/ui/gtk/gtk_compat.h
-index 72981270fe26579211afcaf3c596a412f69f5fac..b5dbfde5b011d57d26960d245e0dc61cac9341e4 100644
+index 57e55b9e749b43d327deff449a530e1f435a8e8b..2245974f91be4a691d82f54b55e12e44ae2000c5 100644
 --- a/ui/gtk/gtk_compat.h
 +++ b/ui/gtk/gtk_compat.h
-@@ -37,6 +37,9 @@ using SkColor = uint32_t;
+@@ -34,6 +34,9 @@ using SkColor = uint32_t;
  
  namespace gtk {
  

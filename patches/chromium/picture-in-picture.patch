@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-index 3309906bcae27ba89d73ce4fba49843a10cd31f6..987917a440480130d35f34f85c27ff7c27632fd9 100644
+index 27e776fcf770b0ef72151d98d07778badabe807e..f7fb7850497a289ca8627752ba952d9f59468079 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 @@ -15,15 +15,19 @@
@@ -113,7 +113,7 @@ index b2b178ccadce82f8d4ec8e5a6dafe1c67bcecd74..603d82a461c4c443ac26c85a46fbd866
    // OverlayWindowViews
    bool ControlsHitTestContainsPoint(const gfx::Point& point) override;
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 850b34e3b40f7ff1848c66158976db079e0853bd..74178fd4752e9c469d50ccafda61157acd9edd56 100644
+index 55b53039e4db6afa197fbb61c40d0a21095c5bf9..9dfdd0288391aac31556c716d24c66d123fbd783 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -14,9 +14,11 @@
@@ -138,7 +138,7 @@ index 850b34e3b40f7ff1848c66158976db079e0853bd..74178fd4752e9c469d50ccafda61157a
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index c24fdd1360e582293a8b21b2f29dc6bc02b564c9..b9b2b4aa7d168cd7a83c36edbe4f7dc30565c921 100644
+index c1d2614f3ae3e7256db95a2cd3c5253ab6b25bd0..cabe6f261c863c35882deb8f850194e27f78a4f9 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -15,9 +15,11 @@
@@ -162,7 +162,7 @@ index c24fdd1360e582293a8b21b2f29dc6bc02b564c9..b9b2b4aa7d168cd7a83c36edbe4f7dc3
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -167,7 +169,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -166,7 +168,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

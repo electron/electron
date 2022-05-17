@@ -102,7 +102,7 @@ struct Converter<blink::WebCssOrigin> {
 namespace electron {
 
 content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
-  v8::Local<v8::Context> context = value->CreationContext();
+  v8::Local<v8::Context> context = value->GetCreationContextChecked();
   if (context.IsEmpty())
     return nullptr;
   blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
@@ -161,9 +161,9 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     {
       v8::TryCatch try_catch(isolate);
       context_bridge::ObjectCache object_cache;
-      maybe_result = PassValueToOtherContext(result->CreationContext(),
-                                             promise_.GetContext(), result,
-                                             &object_cache, false, 0);
+      maybe_result = PassValueToOtherContext(
+          result->GetCreationContextChecked(), promise_.GetContext(), result,
+          &object_cache, false, 0);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
@@ -206,7 +206,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
         bool should_clone_value =
             !(value->IsObject() &&
               promise_.GetContext() ==
-                  value.As<v8::Object>()->CreationContext()) &&
+                  value.As<v8::Object>()->GetCreationContextChecked()) &&
             value->IsObject();
         if (should_clone_value) {
           CopyResultToCallingContextAndFinalize(isolate,

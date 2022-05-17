@@ -67,7 +67,6 @@ template("electron_extra_paks") {
       "$root_gen_dir/net/net_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/inspector_overlay_resources.pak",
-      "$root_gen_dir/ui/resources/webui_resources.pak",
       "$target_gen_dir/electron_resources.pak",
     ]
     deps = [

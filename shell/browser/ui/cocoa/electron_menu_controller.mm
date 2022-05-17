@@ -12,7 +12,6 @@
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/mac/url_conversions.h"
@@ -227,7 +226,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     if (model_)
       model_->MenuWillClose();
     if (!closeCallback.is_null()) {
-      base::PostTask(FROM_HERE, {BrowserThread::UI}, std::move(closeCallback));
+      content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                   std::move(closeCallback));
     }
   }
 }
@@ -536,7 +536,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     // Post async task so that itemSelected runs before the close callback
     // deletes the controller from the map which deallocates it
     if (!closeCallback.is_null()) {
-      base::PostTask(FROM_HERE, {BrowserThread::UI}, std::move(closeCallback));
+      content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                   std::move(closeCallback));
     }
   }
 }

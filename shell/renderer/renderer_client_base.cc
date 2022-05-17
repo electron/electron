@@ -601,7 +601,7 @@ void RendererClientBase::AllowGuestViewElementDefinition(
     v8::Local<v8::Object> context,
     v8::Local<v8::Function> register_cb) {
   v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context->CreationContext());
+  v8::Context::Scope context_scope(context->GetCreationContextChecked());
   blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
 
   content::RenderFrame* render_frame = GetRenderFrame(context);
@@ -609,8 +609,8 @@ void RendererClientBase::AllowGuestViewElementDefinition(
     return;
 
   render_frame->GetWebFrame()->RequestExecuteV8Function(
-      context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
-      nullptr);
+      context->GetCreationContextChecked(), register_cb, v8::Null(isolate), 0,
+      nullptr, nullptr);
 }
 
 }  // namespace electron

@@ -96,10 +96,10 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..5b701b1361707b610ed60c344e441e67
    // Return true if the given pid is one of our child processes.
    // Assumes that the current pid is the root of all pids of the current
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190f7d1137d 100644
+index 9bb12894da06fc7d281daced754b240afa9bedeb..52717600e7346daeb0726c177162c718da53500a 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -146,7 +146,7 @@ const char kACKToken[] = "ACK";
+@@ -145,7 +145,7 @@ const char kACKToken[] = "ACK";
  const char kShutdownToken[] = "SHUTDOWN";
  const char kTokenDelimiter = '\0';
  const int kMaxMessageLength = 32 * 1024;
@@ -108,7 +108,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
  
  bool g_disable_prompt = false;
  bool g_skip_is_chrome_process_check = false;
-@@ -612,6 +612,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -611,6 +611,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
@@ -116,7 +116,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
                       SocketReader* reader);
  
   private:
-@@ -636,6 +637,9 @@ class ProcessSingleton::LinuxWatcher
+@@ -635,6 +636,9 @@ class ProcessSingleton::LinuxWatcher
    // The ProcessSingleton that owns us.
    ProcessSingleton* const parent_;
  
@@ -126,7 +126,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
    std::set<std::unique_ptr<SocketReader>, base::UniquePtrComparator> readers_;
  };
  
-@@ -666,16 +670,21 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+@@ -665,16 +669,21 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -154,7 +154,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
      LOG(WARNING) << "Not handling interprocess notification as browser"
                      " is shutting down";
      // Send back "SHUTDOWN" message, so that the client process can start up
-@@ -685,6 +694,22 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
+@@ -684,6 +693,22 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
    }
  }
  
@@ -177,7 +177,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
  void ProcessSingleton::LinuxWatcher::RemoveSocketReader(SocketReader* reader) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
    DCHECK(reader);
-@@ -720,7 +745,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -719,7 +744,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
      }
    }
  
@@ -187,7 +187,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
    const size_t kMinMessageLength = std::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-@@ -750,10 +776,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -749,10 +775,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
@@ -217,7 +217,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -782,8 +826,12 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -781,8 +825,12 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -231,7 +231,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -902,7 +950,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -901,7 +949,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -241,7 +241,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -912,11 +961,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -911,11 +960,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -263,7 +263,7 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
    // Send the message
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
-@@ -958,6 +1017,17 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -957,6 +1016,17 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
        linux_ui->NotifyWindowManagerStartupComplete();
  #endif
  
@@ -282,10 +282,10 @@ index be2c417c07a4206fac4a9a6c03e516fd0493c942..78f74b0b21242553b6af98628dc48190
      return PROCESS_NOTIFIED;
    }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index ec725b44296266bea1a51aea889463a0bba8449c..6355e5c73ba9df9bdb9ff48205d909dca04470f1 100644
+index 0c87fc8ccb4511904f19b76ae5e03a5df6664391..83ede77121c5dadbde8b0a4132de1dba6eeb5b52 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -13,14 +13,17 @@
+@@ -13,15 +13,18 @@
  #include "base/command_line.h"
  #include "base/debug/activity_tracker.h"
  #include "base/files/file_path.h"
@@ -295,6 +295,7 @@ index ec725b44296266bea1a51aea889463a0bba8449c..6355e5c73ba9df9bdb9ff48205d909dc
  #include "base/metrics/histogram_macros.h"
  #include "base/process/process.h"
  #include "base/process/process_info.h"
+ #include "base/strings/escape.h"
 +#include "base/rand_util.h"
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/utf_string_conversions.h"

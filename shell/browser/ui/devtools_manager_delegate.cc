@@ -117,8 +117,8 @@ void DevToolsManagerDelegate::HandleCommand(
     // Since we only have one method and it is supposed to close Electron,
     // we don't need to add this complexity. Should we decide to support
     // methods like Browser.setWindowBounds, we'll need to do it though.
-    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                   base::BindOnce([]() { Browser::Get()->Quit(); }));
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce([]() { Browser::Get()->Quit(); }));
     return;
   }
   std::move(callback).Run(message);

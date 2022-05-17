@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 88fad9811069e7851363c8068f9702a9019669cc..526d951589f2757835fded706f4e448a8bb9daae 100644
+index d05a82a9c369a42cddebb1af1546a5ba6ae59c9f..7a263e3e6cc2a6bd27ec61598d9aae81c12d16e0 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,7 +11,9 @@
@@ -34,7 +34,7 @@ index 88fad9811069e7851363c8068f9702a9019669cc..526d951589f2757835fded706f4e448a
  ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    DCHECK(profile);
-@@ -56,6 +59,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+@@ -57,6 +60,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
  
    proxy_config_service_->AddObserver(this);
  }
@@ -42,7 +42,7 @@ index 88fad9811069e7851363c8068f9702a9019669cc..526d951589f2757835fded706f4e448a
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -133,9 +137,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -134,9 +138,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -54,7 +54,7 @@ index 88fad9811069e7851363c8068f9702a9019669cc..526d951589f2757835fded706f4e448a
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -149,9 +155,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -150,9 +156,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      // controlled.
      return;
    }

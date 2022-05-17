@@ -10,7 +10,6 @@
 
 #include "base/bind.h"
 #include "base/files/file_util.h"
-#include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/pref_names.h"
@@ -144,7 +143,8 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     std::move(callback).Run(
         path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-        item->GetMixedContentStatus(), path, base::FilePath(), absl::nullopt,
+        item->GetMixedContentStatus(), path, base::FilePath(),
+        std::string() /*mime_type*/, absl::nullopt /*download_schedule*/,
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
   }
 }
@@ -184,7 +184,8 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
   std::move(download_callback)
       .Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
            download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-           item->GetMixedContentStatus(), path, base::FilePath(), absl::nullopt,
+           item->GetMixedContentStatus(), path, base::FilePath(),
+           std::string() /*mime_type*/, absl::nullopt /*download_schedule*/,
            interrupt_reason);
 }
 
@@ -204,7 +205,8 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN,
-        download->GetForcedFilePath(), base::FilePath(), absl::nullopt,
+        download->GetForcedFilePath(), base::FilePath(),
+        std::string() /*mime_type*/, absl::nullopt /*download_schedule*/,
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
@@ -217,7 +219,8 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         save_path, download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN, save_path,
-        base::FilePath(), absl::nullopt,
+        base::FilePath(), std::string() /*mime_type*/,
+        absl::nullopt /*download_schedule*/,
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }

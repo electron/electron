@@ -18,7 +18,7 @@ This patch can be removed when streams support rab/gsab, or
 when support is synchronized across both v8 and node.
 
 diff --git a/src/objects/js-array-buffer.cc b/src/objects/js-array-buffer.cc
-index 7c6dec2b52514085a731f78a551370d54912b5e9..2e8332b9fa6a6a3f55e78f29f710afa02c268b99 100644
+index dd59d5d6afc7c8e0b309d4e8928cd2bb7e682884..f3445a71aa02683dc40221b2eee1a80071629fef 100644
 --- a/src/objects/js-array-buffer.cc
 +++ b/src/objects/js-array-buffer.cc
 @@ -72,9 +72,9 @@ void JSArrayBuffer::Attach(std::shared_ptr<BackingStore> backing_store) {
