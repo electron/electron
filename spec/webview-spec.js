@@ -1117,7 +1117,6 @@ describe('<webview> tag', function () {
         pageSize: 'IAmAPageSize',
         margins: 'terrible',
         pageRanges: { oops: 'im-not-the-right-key' },
-        ignoreInvalidPageRanges: {},
         headerTemplate: [1, 2, 3],
         footerTemplate: [4, 5, 6],
         preferCSSPageSize: 'no'

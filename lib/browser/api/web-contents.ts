@@ -280,13 +280,6 @@ WebContents.prototype.printToPDF = async function (options) {
     printSettings.pageRanges = options.pageRanges;
   }
 
-  if (options.ignoreInvalidPageRanges !== undefined) {
-    if (typeof options.ignoreInvalidPageRanges !== 'boolean') {
-      return Promise.reject(new Error('ignoreInvalidPageRanges must be Boolean'));
-    }
-    printSettings.ignoreInvalidPageRanges = options.ignoreInvalidPageRanges;
-  }
-
   if (options.headerTemplate !== undefined) {
     if (typeof options.headerTemplate !== 'string') {
       return Promise.reject(new Error('headerTemplate must be a String'));

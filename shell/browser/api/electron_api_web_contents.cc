@@ -2826,8 +2826,6 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto margin_left = settings.GetDict().FindIntByDottedPath("margins.left");
   auto margin_right = settings.GetDict().FindIntByDottedPath("margins.right");
   auto page_ranges = *settings.GetDict().FindString("pageRanges");
-  auto ignore_invalid_page_ranges =
-      settings.GetDict().FindBool("ignoreInvalidPageRanges");
   auto header_template = *settings.GetDict().FindString("headerTemplate");
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
   auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
@@ -2857,7 +2855,6 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   params->params->document_cookie = unique_id.value_or(0);
 
   manager->PrintToPdf(web_contents()->GetMainFrame(), page_ranges,
-                      ignore_invalid_page_ranges.value_or(false),
                       std::move(params),
                       base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
                                      std::move(promise)));

@@ -35,7 +35,6 @@ address changes upstream that made our previous implementation untenable and rif
 * `headerTemplate`
 * `footerTemplate`
 * `displayHeaderFooter`
-* `ignoreInvalidPageRanges`
 * `margins`
 * `scale`
 * `preferCSSPageSize`
