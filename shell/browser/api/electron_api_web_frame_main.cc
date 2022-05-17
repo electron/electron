@@ -96,14 +96,14 @@ void WebFrameMain::Destroyed() {
 void WebFrameMain::MarkRenderFrameDisposed() {
   render_frame_ = nullptr;
   render_frame_disposed_ = true;
+  TeardownMojoConnection();
 }
 
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   // Should only be called when swapping frames.
   render_frame_disposed_ = false;
   render_frame_ = rfh;
-  renderer_api_.reset();
-  pending_receiver_.reset();
+  TeardownMojoConnection();
   MaybeSetupMojoConnection();
 }
 
@@ -194,14 +194,19 @@ void WebFrameMain::MaybeSetupMojoConnection() {
         &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
   }
   // Wait for RenderFrame to be created in renderer before accessing remote.
-  if (pending_receiver_ && !render_frame_disposed_ && render_frame_->IsRenderFrameCreated()) {
+  if (pending_receiver_ && render_frame_->IsRenderFrameCreated()) {
     render_frame_->GetRemoteInterfaces()->GetInterface(
         std::move(pending_receiver_));
   }
 }
 
-void WebFrameMain::OnRendererConnectionError() {
+void WebFrameMain::TeardownMojoConnection() {
   renderer_api_.reset();
+  pending_receiver_.reset();
+}
+
+void WebFrameMain::OnRendererConnectionError() {
+  TeardownMojoConnection();
 }
 
 void WebFrameMain::PostMessage(v8::Isolate* isolate,

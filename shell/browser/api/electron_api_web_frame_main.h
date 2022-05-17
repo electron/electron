@@ -83,6 +83,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
   void MaybeSetupMojoConnection();
+  void TeardownMojoConnection();
   void OnRendererConnectionError();
 
   // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
