@@ -556,7 +556,7 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
   * `header` string (optional) - string to be printed as page header.
   * `footer` string (optional) - string to be printed as page footer.
   * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A3`,
-  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height`.
+  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` in microns.
 
 Returns `Promise<void>`
 
