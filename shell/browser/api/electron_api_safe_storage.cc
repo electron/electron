@@ -31,7 +31,7 @@ void SetElectronCryptoReady(bool ready) {
 #endif
 
 bool IsEncryptionAvailable() {
-#if BUILDFLAG(IS_LINUX)
+#if defined(OS_LINUX)
   // Calling IsEncryptionAvailable() before the app is ready results in a crash
   // on Linux.
   // Refs: https://github.com/electron/electron/issues/32206.
