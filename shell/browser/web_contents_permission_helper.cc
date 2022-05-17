@@ -246,8 +246,8 @@ void WebContentsPermissionHelper::RevokeHIDDevicePermission(
     base::Value device,
     content::RenderFrameHost* render_frame_host) const {
   return RevokeDevicePermission(
-      static_cast<blink::PermissionType>(PermissionType::HID), origin,
-      &device, render_frame_host);
+      static_cast<blink::PermissionType>(PermissionType::HID), origin, &device,
+      render_frame_host);
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);

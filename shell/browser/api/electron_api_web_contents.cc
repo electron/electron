@@ -47,7 +47,6 @@
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
-#include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -3446,7 +3445,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
 void WebContents::GrantDevicePermission(
     const url::Origin& origin,
     const base::Value* device,
-    blink::PermissionType permissionType,
+    blink::PermissionType permission_type,
     content::RenderFrameHost* render_frame_host) {
   granted_devices_[render_frame_host->GetFrameTreeNodeId()][permission_type]
                   [origin]
@@ -3457,7 +3456,7 @@ void WebContents::GrantDevicePermission(
 void WebContents::RevokeDevicePermission(
     const url::Origin& origin,
     const base::Value* device,
-    blink::PermissionType permissionType,
+    blink::PermissionType permission_type,
     content::RenderFrameHost* render_frame_host) {
   const auto& devices_for_frame_host_it =
       granted_devices_.find(render_frame_host->GetFrameTreeNodeId());
