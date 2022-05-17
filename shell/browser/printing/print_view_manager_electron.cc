@@ -189,14 +189,16 @@ void PrintViewManagerElectron::ShowInvalidPrinterSettingsError() {
   ReleaseJob(INVALID_PRINTER_SETTINGS);
 }
 
-void PrintViewManagerElectron::PrintingFailed(int32_t cookie) {
-  ReleaseJob(PRINTING_FAILED);
+void PrintViewManagerElectron::PrintingFailed(int32_t cookie, printing::mojom::PrintFailureReason reason) {
+  ReleaseJob(reason == printing::mojom::PrintFailureReason::kInvalidPageRange
+                 ? PAGE_COUNT_EXCEEDED
+                 : PRINTING_FAILED);
 }
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
 void PrintViewManagerElectron::UpdatePrintSettings(
     int32_t cookie,
-    base::Value job_settings,
+    base::Value::Dict job_settings,
     UpdatePrintSettingsCallback callback) {
   auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(), cookie);
   if (entry == headless_jobs_.end()) {
