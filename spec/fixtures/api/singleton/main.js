@@ -4,6 +4,13 @@ app.whenReady().then(() => {
   console.log('started'); // ping parent
 });
 
+app.on('first-instance-ack', (event, additionalData) => {
+  console.log(JSON.stringify(additionalData));
+  setImmediate(() => {
+    app.exit(1);
+  });
+});
+
 const gotTheLock = app.requestSingleInstanceLock();
 
 app.on('second-instance', (event, args, workingDirectory) => {
@@ -12,7 +19,3 @@ app.on('second-instance', (event, args, workingDirectory) => {
     app.exit(0);
   });
 });
-
-if (!gotTheLock) {
-  app.exit(1);
-}

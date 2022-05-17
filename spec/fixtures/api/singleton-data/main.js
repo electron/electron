@@ -45,6 +45,9 @@ if (app.commandLine.hasSwitch('ack-content')) {
 
 app.on('first-instance-ack', (event, additionalData) => {
   console.log(JSON.stringify(additionalData));
+  setImmediate(() => {
+    app.exit(1);
+  });
 });
 
 const gotTheLock = sendAdditionalData
@@ -56,13 +59,11 @@ app.on('second-instance', (event, args, workingDirectory, data, ackCallback) => 
   }
   setImmediate(() => {
     console.log([JSON.stringify(args), JSON.stringify(data)].join('||'));
-    sendAck ? ackCallback(ackObj) : ackCallback();
-    setImmediate(() => {
+    if (preventDefault) {
+      sendAck ? ackCallback(ackObj) : ackCallback();
+    }
+    setTimeout(() => {
       app.exit(0);
-    });
+    }, 500);
   });
 });
-
-if (!gotTheLock) {
-  app.exit(1);
-}

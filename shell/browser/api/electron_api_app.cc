@@ -1098,6 +1098,9 @@ void App::OnFirstInstanceAck(
     }
   }
   Emit("first-instance-ack", data_to_send);
+
+  // Reset the singleton
+  process_singleton_.reset();
 }
 
 // This function handles the user calling
@@ -1174,6 +1177,8 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
       process_singleton_.reset();
       return false;
     }
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED_AWAITING_ACK:
+      return false;  // We reset the singleton after receiving the ack.
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
     default:  // Shouldn't be needed, but VS warns if it is not there.
       return true;

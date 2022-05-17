@@ -235,6 +235,18 @@ describe('app module', () => {
       expect(code).to.equal(0);
     });
 
+    it('allows two different user data dirs to hold two different instances', async function () {
+      const appPath = path.join(fixturesPath, 'api', 'singleton-userdata-double');
+      const instance = cp.spawn(process.execPath, [appPath, '--user-data-dir-suffix=first']);
+      const firstInstanceExit = emittedOnce(instance, 'exit');
+      const anotherInstance = cp.spawn(process.execPath, [appPath, '--user-data-dir-suffix=second']);
+      const secondInstanceExit = emittedOnce(anotherInstance, 'exit');
+      const [code] = await firstInstanceExit;
+      const [secondCode] = await secondInstanceExit;
+      expect(code).to.equal(0);
+      expect(secondCode).to.equal(0);
+    });
+
     async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
@@ -247,14 +259,15 @@ describe('app module', () => {
       }
       const additionalDataPromise = emittedOnce(firstStdoutLines, 'data');
 
-      const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
+      const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch=some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
       const secondExited = emittedOnce(second, 'exit');
       const secondStdoutLines = second.stdout.pipe(split());
-      let ackData;
-      while ((ackData = await emittedOnce(secondStdoutLines, 'data'))[0].toString().length === 0) {
-        // This isn't valid data.
+      let ackData = (await emittedOnce(secondStdoutLines, 'data')).toString();
+      while (ackData === 'started' || ackData.trim().length === 0) {
+        ackData = (await emittedOnce(secondStdoutLines, 'data')).toString();
       }
+      // const ackDataPromise = emittedOnce(secondStdoutLines, 'data');
 
       const [code2] = await secondExited;
       expect(code2).to.equal(1);
@@ -264,7 +277,7 @@ describe('app module', () => {
       const [args, additionalData] = dataFromSecondInstance[0].toString('ascii').split('||');
       const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
       const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
-      const dataAckReceived = JSON.parse(ackData[0].toString('ascii'));
+      const dataAckReceived = JSON.parse(ackData);
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
