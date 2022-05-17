@@ -123,10 +123,10 @@ void HidChooserContext::RevokeDevicePermission(
   if (session) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
-    v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
-                                        .Set("device", device.Clone())
-                                        .Set("frame", render_frame_host)
-                                        .Build();
+    gin_helper::Dictionary details =
+        gin_helper::Dictionary::CreateEmpty(isolate);
+    details.Set("device", device.Clone());
+    details.SetGetter("frame", render_frame_host);
     session->Emit("hid-device-revoked", details);
   }
 }
