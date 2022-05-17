@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Fri, 8 Apr 2022 23:28:35 +0000
+Subject: Only destroy successfully created compression session in VT encoder
+
+This is a defensive change, since we don't have a repro on hand.
+My guess is that VTCompressionSessionCreate() might fail to create a
+compression session, but still write a value to compressionSessionOut.
+It makes VTCompressionSessionInvalidate() access uninitialized memory.
+
+That's why this CL makes sure that we only destroy a compression session
+if VTCompressionSessionCreate() reports success.
+
+Bug: 1312563
+Change-Id: I468ce0e10bad251ca0b62b568607dbc5c32ba8bc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3575680
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#990654}
+
+diff --git a/media/gpu/mac/vt_video_encode_accelerator_mac.cc b/media/gpu/mac/vt_video_encode_accelerator_mac.cc
+index 8a49e706890a173a3e09ae16b8e88500aefb0499..39384b426a38f2210040cb3f2cbba85893496a7b 100644
+--- a/media/gpu/mac/vt_video_encode_accelerator_mac.cc
++++ b/media/gpu/mac/vt_video_encode_accelerator_mac.cc
+@@ -120,13 +120,13 @@ VTVideoEncodeAccelerator::GetSupportedProfiles() {
+   SupportedProfiles profiles;
+   const bool rv = CreateCompressionSession(
+       gfx::Size(kDefaultResolutionWidth, kDefaultResolutionHeight));
+-  DestroyCompressionSession();
+   if (!rv) {
+     VLOG(1)
+         << "Hardware encode acceleration is not available on this platform.";
+     return profiles;
+   }
+ 
++  DestroyCompressionSession();
+   SupportedProfile profile;
+   profile.max_framerate_numerator = kMaxFrameRateNumerator;
+   profile.max_framerate_denominator = kMaxFrameRateDenominator;
+@@ -505,10 +505,8 @@ bool VTVideoEncodeAccelerator::ResetCompressionSession() {
+   DestroyCompressionSession();
+ 
+   bool session_rv = CreateCompressionSession(input_visible_size_);
+-  if (!session_rv) {
+-    DestroyCompressionSession();
++  if (!session_rv)
+     return false;
+-  }
+ 
+   const bool configure_rv = ConfigureCompressionSession();
+   if (configure_rv)
+@@ -544,6 +542,12 @@ bool VTVideoEncodeAccelerator::CreateCompressionSession(
+       &VTVideoEncodeAccelerator::CompressionCallback,
+       reinterpret_cast<void*>(this), compression_session_.InitializeInto());
+   if (status != noErr) {
++    // IMPORTANT: ScopedCFTypeRef::release() doesn't call CFRelease().
++    // In case of an error VTCompressionSessionCreate() is not supposed to
++    // write a non-null value into compression_session_, but just in case,
++    // we'll clear it without calling CFRelease() because it can be unsafe
++    // to call on a not fully created session.
++    (void)compression_session_.release();
+     DLOG(ERROR) << " VTCompressionSessionCreate failed: " << status;
+     return false;
+   }
