@@ -103,6 +103,7 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   render_frame_disposed_ = false;
   render_frame_ = rfh;
   renderer_api_.reset();
+  pending_receiver_.reset();
   MaybeSetupMojoConnection();
 }
 
@@ -194,7 +195,7 @@ void WebFrameMain::MaybeSetupMojoConnection() {
         &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
   }
   // Wait for RenderFrame to be created in renderer before accessing remote.
-  if (pending_receiver_ && render_frame_->IsRenderFrameCreated()) {
+  if (pending_receiver_ && !render_frame_disposed_ && render_frame_->IsRenderFrameCreated()) {
     render_frame_->GetRemoteInterfaces()->GetInterface(
         std::move(pending_receiver_));
   }
