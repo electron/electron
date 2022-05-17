@@ -55,8 +55,8 @@ SkColor WinFrameView::GetReadableFeatureColor(SkColor background_color) {
 }
 
 void WinFrameView::InvalidateCaptionButtons() {
-  // Ensure that the caption buttons container exists
-  DCHECK(caption_button_container_);
+  if (!caption_button_container_)
+    return;
 
   caption_button_container_->InvalidateLayout();
   caption_button_container_->SchedulePaint();
