@@ -19,5 +19,7 @@
 
   "src/electron/patches/angle": "src/third_party/angle",
 
-  "src/electron/patches/skia": "src/third_party/skia"
+  "src/electron/patches/skia": "src/third_party/skia",
+
+  "src/electron/patches/icu": "src/third_party/icu"
 }

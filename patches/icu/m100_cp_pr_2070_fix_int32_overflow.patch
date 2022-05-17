@@ -1,0 +1,349 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Tang <ftang@chromium.org>
+Date: Fri, 29 Apr 2022 16:50:59 -0700
+Subject: CP PR 2070 fix int32 overflow
+
+https://github.com/unicode-org/icu/pull/2070
+https://unicode-org.atlassian.net/browse/ICU-22005
+
+Bug: chromium:1316946
+Change-Id: I6cd7d687a55b6cc157b1afa52365908be2992fa6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/deps/icu/+/3614280
+Reviewed-by: Jungshik Shin <jshin@chromium.org>
+(cherry picked from commit 85814e1af52482199a13d284545623ffbc9eef83)
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/deps/icu/+/3632709
+
+diff --git a/README.chromium b/README.chromium
+index fe29431ee485858aa600c29d30e364362d667178..815d7d57d69d6d0333c0431c0bd37537b5f39392 100644
+--- a/README.chromium
++++ b/README.chromium
+@@ -282,3 +282,7 @@ D. Local Modifications
+   - upstream PR:
+     https://github.com/unicode-org/icu/pull/1762
+ 
++12. Patch i18n/formatted_string_builder to fix int32_t overflow bug
++    patches/formatted_string_builder.patch
++  - https://github.com/unicode-org/icu/pull/2070
++  - https://unicode-org.atlassian.net/browse/ICU-22005
+diff --git a/patches/formatted_string_builder.patch b/patches/formatted_string_builder.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..4fad6f18601f7b4097e2d46bfe6660bec2e2882d
+--- /dev/null
++++ b/patches/formatted_string_builder.patch
+@@ -0,0 +1,191 @@
++diff --git a/source/i18n/formatted_string_builder.cpp b/source/i18n/formatted_string_builder.cpp
++index 73407864..628fbea8 100644
++--- a/source/i18n/formatted_string_builder.cpp
+++++ b/source/i18n/formatted_string_builder.cpp
++@@ -6,6 +6,7 @@
++ #if !UCONFIG_NO_FORMATTING
++
++ #include "formatted_string_builder.h"
+++#include "putilimp.h"
++ #include "unicode/ustring.h"
++ #include "unicode/utf16.h"
++ #include "unicode/unum.h" // for UNumberFormatFields literals
++@@ -197,6 +198,9 @@ FormattedStringBuilder::splice(int32_t startThis, int32_t endThis,  const Unicod
++     int32_t thisLength = endThis - startThis;
++     int32_t otherLength = endOther - startOther;
++     int32_t count = otherLength - thisLength;
+++    if (U_FAILURE(status)) {
+++        return count;
+++    }
++     int32_t position;
++     if (count > 0) {
++         // Overall, chars need to be added.
++@@ -221,6 +225,9 @@ int32_t FormattedStringBuilder::append(const FormattedStringBuilder &other, UErr
++
++ int32_t
++ FormattedStringBuilder::insert(int32_t index, const FormattedStringBuilder &other, UErrorCode &status) {
+++    if (U_FAILURE(status)) {
+++        return 0;
+++    }
++     if (this == &other) {
++         status = U_ILLEGAL_ARGUMENT_ERROR;
++         return 0;
++@@ -255,12 +262,18 @@ int32_t FormattedStringBuilder::prepareForInsert(int32_t index, int32_t count, U
++     U_ASSERT(index >= 0);
++     U_ASSERT(index <= fLength);
++     U_ASSERT(count >= 0);
+++    U_ASSERT(fZero >= 0);
+++    U_ASSERT(fLength >= 0);
+++    U_ASSERT(getCapacity() - fZero >= fLength);
+++    if (U_FAILURE(status)) {
+++        return count;
+++    }
++     if (index == 0 && fZero - count >= 0) {
++         // Append to start
++         fZero -= count;
++         fLength += count;
++         return fZero;
++-    } else if (index == fLength && fZero + fLength + count < getCapacity()) {
+++    } else if (index == fLength && count <= getCapacity() - fZero - fLength) {
++         // Append to end
++         fLength += count;
++         return fZero + fLength - count;
++@@ -275,18 +288,26 @@ int32_t FormattedStringBuilder::prepareForInsertHelper(int32_t index, int32_t co
++     int32_t oldZero = fZero;
++     char16_t *oldChars = getCharPtr();
++     Field *oldFields = getFieldPtr();
++-    if (fLength + count > oldCapacity) {
++-        if ((fLength + count) > INT32_MAX / 2) {
++-            // If we continue, then newCapacity will overflow int32_t in the next line.
+++    int32_t newLength;
+++    if (uprv_add32_overflow(fLength, count, &newLength)) {
+++        status = U_INPUT_TOO_LONG_ERROR;
+++        return -1;
+++    }
+++    int32_t newZero;
+++    if (newLength > oldCapacity) {
+++        if (newLength > INT32_MAX / 2) {
+++            // We do not support more than 1G char16_t in this code because
+++            // dealing with >2G *bytes* can cause subtle bugs.
++             status = U_INPUT_TOO_LONG_ERROR;
++             return -1;
++         }
++-        int32_t newCapacity = (fLength + count) * 2;
++-        int32_t newZero = newCapacity / 2 - (fLength + count) / 2;
+++        // Keep newCapacity also to at most 1G char16_t.
+++        int32_t newCapacity = newLength * 2;
+++        newZero = (newCapacity - newLength) / 2;
++
++         // C++ note: malloc appears in two places: here and in the assignment operator.
++-        auto newChars = static_cast<char16_t *> (uprv_malloc(sizeof(char16_t) * newCapacity));
++-        auto newFields = static_cast<Field *>(uprv_malloc(sizeof(Field) * newCapacity));
+++        auto newChars = static_cast<char16_t *> (uprv_malloc(sizeof(char16_t) * static_cast<size_t>(newCapacity)));
+++        auto newFields = static_cast<Field *>(uprv_malloc(sizeof(Field) * static_cast<size_t>(newCapacity)));
++         if (newChars == nullptr || newFields == nullptr) {
++             uprv_free(newChars);
++             uprv_free(newFields);
++@@ -315,10 +336,8 @@ int32_t FormattedStringBuilder::prepareForInsertHelper(int32_t index, int32_t co
++         fChars.heap.capacity = newCapacity;
++         fFields.heap.ptr = newFields;
++         fFields.heap.capacity = newCapacity;
++-        fZero = newZero;
++-        fLength += count;
++     } else {
++-        int32_t newZero = oldCapacity / 2 - (fLength + count) / 2;
+++        newZero = (oldCapacity - newLength) / 2;
++
++         // C++ note: memmove is required because src and dest may overlap.
++         // First copy the entire string to the location of the prefix, and then move the suffix
++@@ -331,18 +350,20 @@ int32_t FormattedStringBuilder::prepareForInsertHelper(int32_t index, int32_t co
++         uprv_memmove2(oldFields + newZero + index + count,
++                 oldFields + newZero + index,
++                 sizeof(Field) * (fLength - index));
++-
++-        fZero = newZero;
++-        fLength += count;
++     }
++-    U_ASSERT((fZero + index) >= 0);
+++    fZero = newZero;
+++    fLength = newLength;
++     return fZero + index;
++ }
++
++ int32_t FormattedStringBuilder::remove(int32_t index, int32_t count) {
++-    // TODO: Reset the heap here?  (If the string after removal can fit on stack?)
+++     U_ASSERT(0 <= index);
+++     U_ASSERT(index <= fLength);
+++     U_ASSERT(count <= (fLength - index));
+++     U_ASSERT(index <= getCapacity() - fZero);
+++
++     int32_t position = index + fZero;
++-    U_ASSERT(position >= 0);
+++    // TODO: Reset the heap here?  (If the string after removal can fit on stack?)
++     uprv_memmove2(getCharPtr() + position,
++             getCharPtr() + position + count,
++             sizeof(char16_t) * (fLength - index - count));
++diff --git a/source/test/intltest/formatted_string_builder_test.cpp b/source/test/intltest/formatted_string_builder_test.cpp
++index 45721a32..57294e24 100644
++--- a/source/test/intltest/formatted_string_builder_test.cpp
+++++ b/source/test/intltest/formatted_string_builder_test.cpp
++@@ -22,6 +22,7 @@ class FormattedStringBuilderTest : public IntlTest {
++     void testFields();
++     void testUnlimitedCapacity();
++     void testCodePoints();
+++    void testInsertOverflow();
++
++     void runIndexedTest(int32_t index, UBool exec, const char *&name, char *par = 0) override;
++
++@@ -50,6 +51,7 @@ void FormattedStringBuilderTest::runIndexedTest(int32_t index, UBool exec, const
++         TESTCASE_AUTO(testFields);
++         TESTCASE_AUTO(testUnlimitedCapacity);
++         TESTCASE_AUTO(testCodePoints);
+++        TESTCASE_AUTO(testInsertOverflow);
++     TESTCASE_AUTO_END;
++ }
++
++@@ -308,6 +310,45 @@ void FormattedStringBuilderTest::testCodePoints() {
++     assertEquals("Code point count is 2", 2, nsb.codePointCount());
++ }
++
+++void FormattedStringBuilderTest::testInsertOverflow() {
+++    if (quick) return;
+++    // Setup the test fixture in sb, sb2, ustr.
+++    UErrorCode status = U_ZERO_ERROR;
+++    FormattedStringBuilder sb;
+++    int32_t data_length = INT32_MAX / 2;
+++    UnicodeString ustr(data_length, u'a', data_length);
+++    sb.append(ustr, kUndefinedField, status);
+++    assertSuccess("Setup the first FormattedStringBuilder", status);
+++
+++    FormattedStringBuilder sb2;
+++    sb2.append(ustr, kUndefinedField, status);
+++    sb2.insert(0, ustr, 0, data_length / 2, kUndefinedField, status);
+++    sb2.writeTerminator(status);
+++    assertSuccess("Setup the second FormattedStringBuilder", status);
+++
+++    ustr = sb2.toUnicodeString();
+++    // Complete setting up the test fixture in sb, sb2 and ustr.
+++
+++    // Test splice() of the second UnicodeString
+++    sb.splice(0, 1, ustr, 1, ustr.length(),
+++              kUndefinedField, status);
+++    assertEquals(
+++        "splice() long text should not crash but return U_INPUT_TOO_LONG_ERROR",
+++        U_INPUT_TOO_LONG_ERROR, status);
+++
+++    // Test sb.insert() of the first FormattedStringBuilder with the second one.
+++    sb.insert(0, sb2, status);
+++    assertEquals(
+++        "insert() long FormattedStringBuilder should not crash but return "
+++        "U_INPUT_TOO_LONG_ERROR", U_INPUT_TOO_LONG_ERROR, status);
+++
+++    // Test sb.insert() of the first FormattedStringBuilder with UnicodeString.
+++    sb.insert(0, ustr, 0, ustr.length(), kUndefinedField, status);
+++    assertEquals(
+++        "insert() long UnicodeString should not crash but return "
+++        "U_INPUT_TOO_LONG_ERROR", U_INPUT_TOO_LONG_ERROR, status);
+++}
+++
++ void FormattedStringBuilderTest::assertEqualsImpl(const UnicodeString &a, const FormattedStringBuilder &b) {
++     // TODO: Why won't this compile without the IntlTest:: qualifier?
++     IntlTest::assertEquals("Lengths should be the same", a.length(), b.length());
+diff --git a/source/i18n/formatted_string_builder.cpp b/source/i18n/formatted_string_builder.cpp
+index b370f14f2ac4ff0873e5614376ae51fe0232b02d..628fbea871167619f60cc6eed0ee4b7776dab7fe 100644
+--- a/source/i18n/formatted_string_builder.cpp
++++ b/source/i18n/formatted_string_builder.cpp
+@@ -6,6 +6,7 @@
+ #if !UCONFIG_NO_FORMATTING
+ 
+ #include "formatted_string_builder.h"
++#include "putilimp.h"
+ #include "unicode/ustring.h"
+ #include "unicode/utf16.h"
+ #include "unicode/unum.h" // for UNumberFormatFields literals
+@@ -197,6 +198,9 @@ FormattedStringBuilder::splice(int32_t startThis, int32_t endThis,  const Unicod
+     int32_t thisLength = endThis - startThis;
+     int32_t otherLength = endOther - startOther;
+     int32_t count = otherLength - thisLength;
++    if (U_FAILURE(status)) {
++        return count;
++    }
+     int32_t position;
+     if (count > 0) {
+         // Overall, chars need to be added.
+@@ -221,6 +225,9 @@ int32_t FormattedStringBuilder::append(const FormattedStringBuilder &other, UErr
+ 
+ int32_t
+ FormattedStringBuilder::insert(int32_t index, const FormattedStringBuilder &other, UErrorCode &status) {
++    if (U_FAILURE(status)) {
++        return 0;
++    }
+     if (this == &other) {
+         status = U_ILLEGAL_ARGUMENT_ERROR;
+         return 0;
+@@ -255,12 +262,18 @@ int32_t FormattedStringBuilder::prepareForInsert(int32_t index, int32_t count, U
+     U_ASSERT(index >= 0);
+     U_ASSERT(index <= fLength);
+     U_ASSERT(count >= 0);
++    U_ASSERT(fZero >= 0);
++    U_ASSERT(fLength >= 0);
++    U_ASSERT(getCapacity() - fZero >= fLength);
++    if (U_FAILURE(status)) {
++        return count;
++    }
+     if (index == 0 && fZero - count >= 0) {
+         // Append to start
+         fZero -= count;
+         fLength += count;
+         return fZero;
+-    } else if (index == fLength && fZero + fLength + count < getCapacity()) {
++    } else if (index == fLength && count <= getCapacity() - fZero - fLength) {
+         // Append to end
+         fLength += count;
+         return fZero + fLength - count;
+@@ -275,18 +288,26 @@ int32_t FormattedStringBuilder::prepareForInsertHelper(int32_t index, int32_t co
+     int32_t oldZero = fZero;
+     char16_t *oldChars = getCharPtr();
+     Field *oldFields = getFieldPtr();
+-    if (fLength + count > oldCapacity) {
+-        if ((fLength + count) > INT32_MAX / 2) {
+-            // If we continue, then newCapacity will overlow int32_t in the next line.
++    int32_t newLength;
++    if (uprv_add32_overflow(fLength, count, &newLength)) {
++        status = U_INPUT_TOO_LONG_ERROR;
++        return -1;
++    }
++    int32_t newZero;
++    if (newLength > oldCapacity) {
++        if (newLength > INT32_MAX / 2) {
++            // We do not support more than 1G char16_t in this code because
++            // dealing with >2G *bytes* can cause subtle bugs.
+             status = U_INPUT_TOO_LONG_ERROR;
+             return -1;
+         }
+-        int32_t newCapacity = (fLength + count) * 2;
+-        int32_t newZero = newCapacity / 2 - (fLength + count) / 2;
++        // Keep newCapacity also to at most 1G char16_t.
++        int32_t newCapacity = newLength * 2;
++        newZero = (newCapacity - newLength) / 2;
+ 
+         // C++ note: malloc appears in two places: here and in the assignment operator.
+-        auto newChars = static_cast<char16_t *> (uprv_malloc(sizeof(char16_t) * newCapacity));
+-        auto newFields = static_cast<Field *>(uprv_malloc(sizeof(Field) * newCapacity));
++        auto newChars = static_cast<char16_t *> (uprv_malloc(sizeof(char16_t) * static_cast<size_t>(newCapacity)));
++        auto newFields = static_cast<Field *>(uprv_malloc(sizeof(Field) * static_cast<size_t>(newCapacity)));
+         if (newChars == nullptr || newFields == nullptr) {
+             uprv_free(newChars);
+             uprv_free(newFields);
+@@ -315,10 +336,8 @@ int32_t FormattedStringBuilder::prepareForInsertHelper(int32_t index, int32_t co
+         fChars.heap.capacity = newCapacity;
+         fFields.heap.ptr = newFields;
+         fFields.heap.capacity = newCapacity;
+-        fZero = newZero;
+-        fLength += count;
+     } else {
+-        int32_t newZero = oldCapacity / 2 - (fLength + count) / 2;
++        newZero = (oldCapacity - newLength) / 2;
+ 
+         // C++ note: memmove is required because src and dest may overlap.
+         // First copy the entire string to the location of the prefix, and then move the suffix
+@@ -331,18 +350,20 @@ int32_t FormattedStringBuilder::prepareForInsertHelper(int32_t index, int32_t co
+         uprv_memmove2(oldFields + newZero + index + count,
+                 oldFields + newZero + index,
+                 sizeof(Field) * (fLength - index));
+-
+-        fZero = newZero;
+-        fLength += count;
+     }
+-    U_ASSERT((fZero + index) >= 0);
++    fZero = newZero;
++    fLength = newLength;
+     return fZero + index;
+ }
+ 
+ int32_t FormattedStringBuilder::remove(int32_t index, int32_t count) {
+-    // TODO: Reset the heap here?  (If the string after removal can fit on stack?)
++     U_ASSERT(0 <= index);
++     U_ASSERT(index <= fLength);
++     U_ASSERT(count <= (fLength - index));
++     U_ASSERT(index <= getCapacity() - fZero);
++
+     int32_t position = index + fZero;
+-    U_ASSERT(position >= 0);
++    // TODO: Reset the heap here?  (If the string after removal can fit on stack?)
+     uprv_memmove2(getCharPtr() + position,
+             getCharPtr() + position + count,
+             sizeof(char16_t) * (fLength - index - count));
