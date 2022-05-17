@@ -17,7 +17,7 @@
 // governed by the MIT license and (c) Microsoft Corporation.
 namespace {
 
-// Use private Windows API to set window theme on Windows 10
+// Use undocumented flags to set window theme on Windows 10
 HRESULT TrySetWindowThemeOnWin10(HWND hWnd, bool dark) {
   const BOOL isDarkMode = dark;
   if (FAILED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
@@ -29,7 +29,7 @@ HRESULT TrySetWindowThemeOnWin10(HWND hWnd, bool dark) {
       return result;
   }
 
-  // Toggle the nonclient area active state to force a redraw
+  // Toggle the nonclient area active state to force a redraw (workaround for Windows 10)
   HWND activeWindow = GetActiveWindow();
   SendMessage(hWnd, WM_NCACTIVATE, hWnd != activeWindow, 0);
   SendMessage(hWnd, WM_NCACTIVATE, hWnd == activeWindow, 0);
@@ -37,12 +37,10 @@ HRESULT TrySetWindowThemeOnWin10(HWND hWnd, bool dark) {
   return S_OK;
 }
 
+// Docs: https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
 HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
   const BOOL isDarkMode = dark;
-  HRESULT result = DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
-                                         &isDarkMode, sizeof(isDarkMode));
-
-  return FAILED(result) ? result : S_OK;
+  return DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &isDarkMode, sizeof(isDarkMode));
 }
 
 }  // namespace
