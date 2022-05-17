@@ -29,7 +29,7 @@ HRESULT TrySetWindowThemeOnWin10(HWND hWnd, bool dark) {
       return result;
   }
 
-  // Toggle the nonclient area active state to force a redraw (workaround for Windows 10)
+  // Toggle the nonclient area active state to force a redraw (Win10 workaround)
   HWND activeWindow = GetActiveWindow();
   SendMessage(hWnd, WM_NCACTIVATE, hWnd != activeWindow, 0);
   SendMessage(hWnd, WM_NCACTIVATE, hWnd == activeWindow, 0);
@@ -37,10 +37,11 @@ HRESULT TrySetWindowThemeOnWin10(HWND hWnd, bool dark) {
   return S_OK;
 }
 
-// Docs: https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
+// https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
 HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
   const BOOL isDarkMode = dark;
-  return DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &isDarkMode, sizeof(isDarkMode));
+  return DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &isDarkMode,
+                               sizeof(isDarkMode));
 }
 
 }  // namespace
