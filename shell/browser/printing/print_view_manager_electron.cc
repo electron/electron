@@ -107,24 +107,38 @@ void PrintViewManagerElectron::PrintToPdf(
     return;
   }
 
+  absl::variant<printing::PageRanges, print_to_pdf::PageRangeError> parsed_ranges =
+      print_to_pdf::TextPageRangesToPageRanges(page_ranges);
+  if (absl::holds_alternative<print_to_pdf::PageRangeError>(parsed_ranges)) {
+    PrintResult print_result;
+    switch (absl::get<print_to_pdf::PageRangeError>(parsed_ranges)) {
+      case print_to_pdf::PageRangeError::kSyntaxError:
+        print_result = PAGE_RANGE_SYNTAX_ERROR;
+        break;
+      case print_to_pdf::PageRangeError::kInvalidRange:
+        print_result = PAGE_RANGE_INVALID_RANGE;
+        break;
+    }
+    std::move(callback).Run(print_result,
+                            base::MakeRefCounted<base::RefCountedString>());
+    return;
+  }
+
   printing_rfh_ = rfh;
-  page_ranges_ = page_ranges;
-  print_pages_params_ = std::move(print_pages_params);
-
-  int32_t cookie = print_pages_params_->params->document_cookie;
-  headless_jobs_.emplace_back(cookie);
+  print_pages_params->pages = absl::get<printing::PageRanges>(parsed_ranges);
+  auto cookie = print_pages_params->params->document_cookie;
   set_cookie(cookie);
-
+  headless_jobs_.emplace_back(cookie);
   callback_ = std::move(callback);
 
-  base::Value dict(base::Value::Type::DICTIONARY);
-  GetPrintRenderFrame(rfh)->PrintRequestedPages(false, std::move(dict));
+  GetPrintRenderFrame(rfh)->PrintWithParams(std::move(print_pages_params));
 }
 
 void PrintViewManagerElectron::GetDefaultPrintSettings(
     GetDefaultPrintSettingsCallback callback) {
-  if (print_pages_params_) {
-    std::move(callback).Run(print_pages_params_->params->Clone());
+  if (printing_rfh_) {
+    LOG(ERROR) << "Scripted print is not supported";
+    std::move(callback).Run(printing::mojom::PrintParams::New());
   } else {
     PrintViewManagerBase::GetDefaultPrintSettings(std::move(callback));
   }
@@ -142,44 +156,8 @@ void PrintViewManagerElectron::ScriptedPrint(
 
   auto default_param = printing::mojom::PrintPagesParams::New();
   default_param->params = printing::mojom::PrintParams::New();
-  if (!printing_rfh_) {
-    DLOG(ERROR) << "Unexpected message received before PrintToPdf is "
-                   "called: ScriptedPrint";
-    std::move(callback).Run(std::move(default_param), true);
-    return;
-  }
-
-  if (params->is_scripted &&
-      GetCurrentTargetFrame()->IsNestedWithinFencedFrame()) {
-    DLOG(ERROR) << "Unexpected message received. Script Print is not allowed"
-                   " in a fenced frame.";
-    std::move(callback).Run(std::move(default_param), true);
-    return;
-  }
-
-  absl::variant<printing::PageRanges, print_to_pdf::PageRangeError>
-      page_ranges = print_to_pdf::TextPageRangesToPageRanges(
-          page_ranges_,
-          params->expected_pages_count);
-  if (absl::holds_alternative<print_to_pdf::PageRangeError>(page_ranges)) {
-    PrintResult print_result;
-    switch (absl::get<print_to_pdf::PageRangeError>(page_ranges)) {
-      case print_to_pdf::PageRangeError::SYNTAX_ERROR:
-        print_result = PAGE_RANGE_SYNTAX_ERROR;
-        break;
-      case print_to_pdf::PageRangeError::LIMIT_ERROR:
-        print_result = PAGE_COUNT_EXCEEDED;
-        break;
-    }
-    ReleaseJob(print_result);
-    std::move(callback).Run(std::move(default_param), true);
-    return;
-  }
-
-  DCHECK(absl::holds_alternative<printing::PageRanges>(page_ranges));
-  print_pages_params_->pages = absl::get<printing::PageRanges>(page_ranges);
-
-  std::move(callback).Run(print_pages_params_->Clone(), false);
+  LOG(ERROR) << "Scripted print is not supported";
+  std::move(callback).Run(std::move(default_param), /*cancelled*/ false);
 }
 
 void PrintViewManagerElectron::ShowInvalidPrinterSettingsError() {
@@ -286,7 +264,6 @@ void PrintViewManagerElectron::DidPrintDocument(
 void PrintViewManagerElectron::Reset() {
   printing_rfh_ = nullptr;
   callback_.Reset();
-  print_pages_params_.reset();
   data_.clear();
 }
 

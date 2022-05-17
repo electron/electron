@@ -95,8 +95,6 @@ class PrintViewManagerElectron
   void ReleaseJob(PrintResult result);
 
   raw_ptr<content::RenderFrameHost> printing_rfh_ = nullptr;
-  std::string page_ranges_;
-  printing::mojom::PrintPagesParamsPtr print_pages_params_;
   PrintToPDFCallback callback_;
   std::string data_;
   std::vector<int32_t> headless_jobs_;
