@@ -80,6 +80,8 @@ std::string PrintViewManagerElectron::PrintResultToString(PrintResult result) {
       return "The previous printing job hasn't finished";
     case PAGE_RANGE_SYNTAX_ERROR:
       return "Page range syntax error";
+    case PAGE_RANGE_INVALID_RANGE:
+      return "Page range is invalid (start > end)";
     case PAGE_COUNT_EXCEEDED:
       return "Page range exceeds page count";
     default:
