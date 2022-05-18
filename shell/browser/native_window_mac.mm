@@ -887,9 +887,6 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
     level = NSPopUpMenuWindowLevel;
   } else if (level_name == "screen-saver") {
     level = NSScreenSaverWindowLevel;
-  } else if (level_name == "dock") {
-    // Deprecated by macOS, but kept for backwards compatibility
-    level = NSDockWindowLevel;
   }
 
   SetWindowLevel(level + relative_level);
@@ -913,8 +910,6 @@ std::string NativeWindowMac::GetAlwaysOnTopLevel() {
     level_name = "pop-up-menu";
   } else if (level == NSScreenSaverWindowLevel) {
     level_name = "screen-saver";
-  } else if (level == NSDockWindowLevel) {
-    level_name = "dock";
   }
 
   return level_name;
