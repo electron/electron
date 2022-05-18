@@ -11,6 +11,7 @@
 #include "content/public/browser/media_observer.h"
 #include "content/public/browser/media_stream_request.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 namespace electron {
 
@@ -31,7 +32,7 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   // Called on the UI thread.
   void GetDefaultDevices(bool audio,
                          bool video,
-                         blink::MediaStreamDevices* devices);
+                         blink::mojom::StreamDevices& devices);
 
   // Helpers for picking particular requested devices, identified by raw id.
   // If the device requested is not available it will return NULL.
