@@ -236,6 +236,34 @@ void ElectronPermissionManager::ResetPermission(
     const GURL& requesting_origin,
     const GURL& embedding_origin) {}
 
+void ElectronPermissionManager::RequestPermissionsFromCurrentDocument(
+    const std::vector<blink::PermissionType>& permissions,
+    content::RenderFrameHost* render_frame_host,
+    bool user_gesture,
+    base::OnceCallback<void(const std::vector<blink::mojom::PermissionStatus>&)>
+        callback) {
+  if (render_frame_host->IsNestedWithinFencedFrame()) {
+    std::move(callback).Run(std::vector<blink::mojom::PermissionStatus>(
+        permissions.size(), blink::mojom::PermissionStatus::DENIED));
+    return;
+  }
+
+  auto* web_contents =
+      render_frame_host
+          ? content::WebContents::FromRenderFrameHost(render_frame_host)
+          : nullptr;
+  auto origin = web_contents->GetLastCommittedURL();
+
+  std::vector<blink::mojom::PermissionStatus> result;
+  for (const auto& permission : permissions) {
+    bool granted = CheckPermissionWithDetails(permission, render_frame_host,
+                                              origin, nullptr);
+    result.push_back(granted ? blink::mojom::PermissionStatus::GRANTED
+                             : blink::mojom::PermissionStatus::DENIED);
+  }
+  std::move(callback).Run(result);
+}
+
 blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
     blink::PermissionType permission,
     const GURL& requesting_origin,
@@ -349,18 +377,6 @@ void ElectronPermissionManager::RevokeDevicePermission(
   if (api_web_contents)
     api_web_contents->RevokeDevicePermission(origin, device, permission,
                                              render_frame_host);
-}
-
-blink::mojom::PermissionStatus
-ElectronPermissionManager::GetPermissionStatusForFrame(
-    blink::PermissionType permission,
-    content::RenderFrameHost* render_frame_host,
-    const GURL& requesting_origin) {
-  base::DictionaryValue details;
-  bool granted = CheckPermissionWithDetails(permission, render_frame_host,
-                                            requesting_origin, &details);
-  return granted ? blink::mojom::PermissionStatus::GRANTED
-                 : blink::mojom::PermissionStatus::DENIED;
 }
 
 blink::mojom::PermissionStatus
