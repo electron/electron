@@ -314,7 +314,7 @@ index 9a5903820308299a1a480ecaaa1cbca9655f4093..705f1fce4d05694b92b4eb6de1044ae2
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index e030f01e72d18ef08d04ffbc72a5abb9a7b485c5..6ba17a8c443a43a06bf1bad905c41103828d1dfd 100644
+index e030f01e72d18ef08d04ffbc72a5abb9a7b485c5..25155263bede8a465eb3f3bc2960f173c8f14935 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -332,7 +332,7 @@ index e030f01e72d18ef08d04ffbc72a5abb9a7b485c5..6ba17a8c443a43a06bf1bad905c41103
 +  auto* cmd_line = base::CommandLine::ForCurrentProcess();
 +  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
 +    base::ScopedCFTypeRef<CFDataRef> system_icc(
-+        CGColorSpaceCopyICCProfile(base::mac::GetSystemColorSpace()));
++        CGColorSpaceCopyICCData(base::mac::GetSystemColorSpace()));
 +    IOSurfaceSetValue(io_surface, CFSTR("IOSurfaceColorSpace"), system_icc);
 +    return true;
 +  }
@@ -348,7 +348,7 @@ index e030f01e72d18ef08d04ffbc72a5abb9a7b485c5..6ba17a8c443a43a06bf1bad905c41103
 +  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
 +    CGColorSpaceRef color_space = base::mac::GetSystemColorSpace();
 +    base::ScopedCFTypeRef<CFDataRef> color_space_icc(
-+        CGColorSpaceCopyICCProfile(color_space));
++        CGColorSpaceCopyICCData(color_space));
 +    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), color_space_icc);
 +    return surface;
 +  }
