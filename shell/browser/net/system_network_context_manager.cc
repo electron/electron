@@ -315,12 +315,14 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   KeychainPassword::GetAccountName() = app_name;
 #endif
 
+#if defined(OS_WIN) || defined(OS_MAC)
   // The OSCrypt keys are process bound, so if network service is out of
   // process, send it the required key.
   if (content::IsOutOfProcessNetworkService() &&
       electron::fuses::IsCookieEncryptionEnabled()) {
     network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
   }
+#endif
 
 #if DCHECK_IS_ON()
   electron::safestorage::SetElectronCryptoReady(true);
