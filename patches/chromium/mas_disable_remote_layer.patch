@@ -43,23 +43,22 @@ diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/se
 index 547a5c4260b28d651d470e06c4c4e6bfa77ef966..01fee4e6b104aad68d52f30c9af3e9072f078e0c 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -60,7 +60,7 @@
- 
+@@ -59,6 +59,7 @@ ImageTransportSurfaceOverlayMac::ImageTransportSurfaceOverlayMac(
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
--
+ 
 +#ifndef MAS_BUILD
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -69,6 +69,7 @@
+@@ -67,6 +68,7 @@ ImageTransportSurfaceOverlayMac::ImageTransportSurfaceOverlayMac(
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
 +#endif
  }
  
- template <typename BaseClass>
+ ImageTransportSurfaceOverlayMac::~ImageTransportSurfaceOverlayMac() {
 @@ -160,7 +161,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
