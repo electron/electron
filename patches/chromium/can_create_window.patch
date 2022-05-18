@@ -150,28 +150,28 @@ index 04aa4d993b331396ee20464f6e1d2da10c91c834..2556c044b6e28501a5fac9b0040e623b
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 89b07508aef80680a847c106fea0e2fa58ff964b..6630af3583a6bac6135d46644280d6444fe981b8 100644
+index 03b637c4d3a68a2bff5a4e06f421f23f97f40911..056e06b609736dd37f896700ed7df6a9d0fdddd1 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -33,6 +33,7 @@
- #include "third_party/blink/public/platform/impression_conversions.h"
+@@ -32,6 +32,7 @@
+ #include "third_party/blink/public/mojom/page/page.mojom.h"
  #include "third_party/blink/public/platform/modules/video_capture/web_video_capture_impl_manager.h"
  #include "third_party/blink/public/platform/url_conversion.h"
 +#include "third_party/blink/public/platform/web_url_request_util.h"
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -295,6 +296,10 @@ WebView* RenderViewImpl::CreateView(
-     params->impression = blink::ConvertWebImpressionToImpression(*impression);
-   }
- 
+@@ -301,6 +302,10 @@ WebView* RenderViewImpl::CreateView(
+       // so its value here is irrelevant.
+       /*openee_can_access_opener_origin=*/true, !creator->IsAllowedToDownload(),
+       creator->IsAdSubframe());
++
 +  params->raw_features = features.raw_features.Utf8(
 +      WTF::UTF8ConversionMode::kStrictUTF8ConversionReplacingUnpairedSurrogatesWithFFFD);
 +  params->body = GetRequestBodyForWebURLRequest(request);
-+
-   params->download_policy.ApplyDownloadFramePolicy(
-       /*is_opener_navigation=*/false, request.HasUserGesture(),
-       // `openee_can_access_opener_origin` only matters for opener navigations,
+ 
+   // We preserve this information before sending the message since |params| is
+   // moved on send.
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
 index 2e7c332565ebe33b00ab7fff96a6a8dfc61422a6..0ab061f51d1d0c93f23bfcf5ba051172cea37eb8 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
@@ -199,13 +199,13 @@ index 00e2a8c21d4f0ef00c942498251fa44065da63c0..0fc4b092fa276063e05f990bf920fecd
                         bool opener_suppressed,
                         bool* no_javascript_access) override;
 diff --git a/third_party/blink/public/web/web_window_features.h b/third_party/blink/public/web/web_window_features.h
-index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc0bbfa4a9 100644
+index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e4daf3420 100644
 --- a/third_party/blink/public/web/web_window_features.h
 +++ b/third_party/blink/public/web/web_window_features.h
 @@ -34,6 +34,7 @@
  #include "third_party/abseil-cpp/absl/types/optional.h"
  
- #include "third_party/blink/public/platform/web_impression.h"
+ #include "third_party/blink/public/common/navigation/impression.h"
 +#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
  
  namespace blink {
@@ -213,7 +213,7 @@ index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc
 @@ -68,6 +69,8 @@ struct WebWindowFeatures {
    // Represents the attribution source declared by Attribution Reporting related
    // window features, if any.
-   absl::optional<WebImpression> impression;
+   absl::optional<Impression> impression;
 +
 +  String raw_features;
  };
