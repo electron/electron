@@ -27,4 +27,4 @@ index 80db4cb5941ee84db1534c070c4daefef76d0faf..cf40ac56a9ce4bd4a28eb511b5f37d14
 +    }
    }
  
-   options->environment = delegate_->GetEnvironment();
+   for (const auto& remapped_fd : file_data_->additional_remapped_fds) {
