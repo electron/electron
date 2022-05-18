@@ -185,7 +185,7 @@ index 7fb664525ba696626544c8b09597105bff874c05..b987d649ef84451a9d3e5c2f87da3eb0
                  /*adjust_src_white_level=*/draw_cache_.is_video_frame,
                  locked_quad.hdr_metadata());
  
-@@ -3698,7 +3708,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
+@@ -3698,7 +3698,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& dst_color_space,
                                 bool adjust_src_white_level,
                                 absl::optional<gfx::HDRMetadata> hdr_metadata) {
@@ -194,8 +194,8 @@ index 7fb664525ba696626544c8b09597105bff874c05..b987d649ef84451a9d3e5c2f87da3eb0
 +    DCHECK(dst_color_space.IsValid());
 +  }
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
-   if (adjust_src_white_level && src_color_space.IsHDR()) {
-     // TODO(b/183236148): consider using the destination's HDR static metadata
+ 
+   ProgramKey program_key = program_key_no_color;
 @@ -4084,9 +4096,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
@@ -340,7 +340,7 @@ index e36187917ecec5d9e40009d1c394a07e72281919..de9698d577ab48358d06362fc78575fd
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -312,6 +321,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -311,6 +311,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
@@ -354,8 +354,8 @@ index e36187917ecec5d9e40009d1c394a07e72281919..de9698d577ab48358d06362fc78575fd
 +  }
 +
    // Ensure that all IOSurfaces start as sRGB.
-   if (__builtin_available(macos 10.12, *)) {
-     IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
+   IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
+ 
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
 index 0e8044c6d87008c51fd165c6ef8bdc3687d6cc29..78015868927602b5225f252f0a9182f61b8431dc 100644
 --- a/ui/gfx/switches.cc
