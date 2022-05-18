@@ -9,16 +9,16 @@ diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/cont
 index c37193c2207fb4f20993a35e2ac6fde8f0727a45..8e81312b1424d37c756bbb93cb4020a693c9b380 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -531,7 +531,11 @@
-       browser_compositor_->GetDelegatedFrameHost()->HasSavedFrame();
-   if (has_saved_frame)
-     TRACE_EVENT_BEGIN("cc", "RWHVMac::WasOccluded with saved frame");
+@@ -513,7 +513,11 @@ void RenderWidgetHostViewMac::WasOccluded() {
+     return;
+ 
+   host()->WasHidden();
 -  browser_compositor_->SetRenderWidgetHostIsHidden(true);
 +  // Consider the RWHV occluded only if it is not attached to a window
 +  // (e.g. unattached BrowserView). Otherwise we treat it as visible to
 +  // prevent unnecessary compositor recycling.
 +  const bool unattached = ![GetInProcessNSView() window];
 +  browser_compositor_->SetRenderWidgetHostIsHidden(unattached);
-   if (has_saved_frame)
-     TRACE_EVENT_END("cc");
  }
+ 
+ void RenderWidgetHostViewMac::SetSize(const gfx::Size& size) {
