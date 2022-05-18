@@ -60,6 +60,7 @@
   V(electron_browser_power_save_blocker) \
   V(electron_browser_protocol)           \
   V(electron_browser_printing)           \
+  V(electron_browser_push_notifications) \
   V(electron_browser_safe_storage)       \
   V(electron_browser_session)            \
   V(electron_browser_system_preferences) \
