@@ -60,7 +60,6 @@ void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
   client_->OnReceiveResponse(std::move(head),
                              mojo::ScopedDataPipeConsumerHandle());
-  client_->OnStartLoadingResponseBody(std::move(consumer));
 
   auto weak = weak_factory_.GetWeakPtr();
   On("end",

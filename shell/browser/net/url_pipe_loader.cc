@@ -72,7 +72,6 @@ void URLPipeLoader::OnResponseStarted(
 
   client_->OnReceiveResponse(response_head.Clone(),
                              mojo::ScopedDataPipeConsumerHandle());
-  client_->OnStartLoadingResponseBody(std::move(consumer));
 }
 
 void URLPipeLoader::OnWrite(base::OnceClosure resume, MojoResult result) {
