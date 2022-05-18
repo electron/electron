@@ -4,14 +4,27 @@
 
 #include "shell/browser/api/electron_api_push_notifications.h"
 
+#include "base/callback_helpers.h"
+#include "base/command_line.h"
+#include "base/containers/span.h"
+#include "base/environment.h"
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
+#include "base/path_service.h"
+#include "base/system/sys_info.h"
+#include "base/values.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "shell/browser/electron_browser_client.h"
+#include "shell/common/gin_converters/base_converter.h"
 
 namespace electron {
 
 namespace api {
+
+gin::WrapperInfo PushNotifications::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 PushNotifications::PushNotifications() {
 #if BUILDFLAG(IS_MAC)
@@ -50,6 +63,7 @@ void PushNotifications::OnDidReceiveAPNSNotification(
 // static
 gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
+  auto browser = base::Unretained(Browser::Get());
   return gin_helper::EventEmitterMixin<PushNotifications>::GetObjectTemplateBuilder(
              isolate)
 #if BUILDFLAG(IS_MAC)
@@ -58,7 +72,7 @@ gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
                                      browser))
       .SetMethod("unregisterForAPNSNotifications",
                  base::BindRepeating(&Browser::UnregisterForAPNSNotifications,
-                                     browser))
+                                     browser));
 #endif
 
 }

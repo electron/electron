@@ -2,6 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
+
 #include <memory>
 #include <string>
 
@@ -13,16 +16,17 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
+#include "shell/browser/electron_browser_client.h"
 
 namespace electron {
 
 namespace api {
 
 class PushNotifications
-    : public gin::Wrappable<PushNotifications>,
-      public gin_helper::EventEmitterMixin<PushNotifications>
-      public BrowserObserver,
-{
+    : public ElectronBrowserClient::Delegate,
+      public gin::Wrappable<PushNotifications>,
+      public gin_helper::EventEmitterMixin<PushNotifications>,
+      public BrowserObserver {
  public:
   static gin::Handle<PushNotifications> Create(v8::Isolate* isolate);
 
@@ -37,7 +41,7 @@ class PushNotifications
   PushNotifications& operator=(const PushNotifications&) = delete;
 
  private:
-  explicit PushNotifications(v8::Isolate* isolate);
+  explicit PushNotifications();
   ~PushNotifications() override;
 
   // BrowserObserver
@@ -55,4 +59,4 @@ class PushNotifications
 
 }  // namespace electron
 
-#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
+#endif // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
