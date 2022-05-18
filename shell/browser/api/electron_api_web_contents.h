@@ -223,7 +223,7 @@ class WebContents : public ExclusiveAccessContext,
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void OnGetDefaultPrinter(base::Value print_settings,
+  void OnGetDefaultPrinter(base::Value::Dict print_settings,
                            printing::CompletionCallback print_callback,
                            std::u16string device_name,
                            bool silent,
