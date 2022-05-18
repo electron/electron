@@ -122,7 +122,7 @@ index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index d342eb4e9fc94de4365d86c2d1af4b85a8bf63a3..012f9ce97d9ed6b00deb718a88f432e053cb3bd1 100644
+index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e02ac49cf 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -42,6 +42,7 @@
@@ -141,7 +141,7 @@ index d342eb4e9fc94de4365d86c2d1af4b85a8bf63a3..012f9ce97d9ed6b00deb718a88f432e0
  
  namespace {
  
-@@ -114,8 +114,10 @@ BluetoothAdapterMac::BluetoothAdapterMac()
+@@ -114,8 +116,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -152,7 +152,7 @@ index d342eb4e9fc94de4365d86c2d1af4b85a8bf63a3..012f9ce97d9ed6b00deb718a88f432e0
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        low_energy_discovery_manager_(
-@@ -365,8 +369,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -356,8 +360,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -166,7 +166,7 @@ index d342eb4e9fc94de4365d86c2d1af4b85a8bf63a3..012f9ce97d9ed6b00deb718a88f432e0
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index ebe37172d254e8441fe2b8c290bd5a59af38d754..6a131f5c41f3e43a1467efeec2ce63f6903691b7 100644
+index 1b849df0ee4c40a765a14bfaa75720f5570d4846..1f7a4fe36a96d076ddcfd9c9f092f95132d579dc 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -173,6 +173,12 @@ source_set("audio") {

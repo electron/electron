@@ -16,7 +16,7 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 1b84c9df5990d0905d068ca822d5173313a74edd..89a90a5c8e0c3ede1b0fe63d45c5768b42394474 100644
+index 7fc76ecb3292a892e2aa8c117cd6302f9ce63fa6..80f1cb1f35817fef000e2702e83e7790f64313c5 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -21,7 +21,9 @@
@@ -29,7 +29,7 @@ index 1b84c9df5990d0905d068ca822d5173313a74edd..89a90a5c8e0c3ede1b0fe63d45c5768b
  @class CALayer;
  
  namespace ui {
-@@ -116,7 +118,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
+@@ -115,7 +117,9 @@ class ImageTransportSurfaceOverlayMac : public gl::GLSurface,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -40,10 +40,10 @@ index 1b84c9df5990d0905d068ca822d5173313a74edd..89a90a5c8e0c3ede1b0fe63d45c5768b
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 547a5c4260b28d651d470e06c4c4e6bfa77ef966..01fee4e6b104aad68d52f30c9af3e9072f078e0c 100644
+index 43be379adb3df7dc31e59319c921cd89654db57a..73b35958f42fbc418994db1d189f03770f72c81b 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -59,6 +59,7 @@ ImageTransportSurfaceOverlayMac::ImageTransportSurfaceOverlayMac(
+@@ -59,6 +59,7 @@
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
  
@@ -51,7 +51,7 @@ index 547a5c4260b28d651d470e06c4c4e6bfa77ef966..01fee4e6b104aad68d52f30c9af3e907
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -67,6 +68,7 @@ ImageTransportSurfaceOverlayMac::ImageTransportSurfaceOverlayMac(
+@@ -67,6 +68,7 @@
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -59,7 +59,7 @@ index 547a5c4260b28d651d470e06c4c4e6bfa77ef966..01fee4e6b104aad68d52f30c9af3e907
  }
  
  ImageTransportSurfaceOverlayMac::~ImageTransportSurfaceOverlayMac() {
-@@ -160,7 +161,9 @@
+@@ -146,7 +148,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
