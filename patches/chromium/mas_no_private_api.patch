@@ -141,8 +141,8 @@ index d342eb4e9fc94de4365d86c2d1af4b85a8bf63a3..012f9ce97d9ed6b00deb718a88f432e0
  
  namespace {
  
-@@ -123,8 +125,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
-       controller_state_function_(
+@@ -114,8 +114,10 @@ BluetoothAdapterMac::BluetoothAdapterMac()
+     : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
 +#ifndef MAS_BUILD
