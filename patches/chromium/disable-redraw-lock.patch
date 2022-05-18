@@ -29,11 +29,13 @@ index 2b69f4767e9073ea5f12acddf842c7f1dc82e2c1..a2f053c3e2588451458682aa6e86da52
  // A scoping class that prevents a window from being able to redraw in response
  // to invalidations that may occur within it for the lifetime of the object.
  //
-@@ -359,6 +363,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
+@@ -358,7 +358,8 @@ class HWNDMessageHandler::ScopedRedrawLock {
+         hwnd_(owner_->hwnd()),
          cancel_unlock_(false),
          should_lock_(owner_->IsVisible() && !owner->HasChildRenderingWindow() &&
-                      ::IsWindow(hwnd_) &&
-+                     !owner_->HasNativeFrame() &&
+-                     ::IsWindow(hwnd_) && !owner_->IsHeadless() &&
++                     ::IsWindow(hwnd_) && !owner_->HasNativeFrame() &&
++                     !owner_->IsHeadless() &&
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
