@@ -5,16 +5,10 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
 
-#include <memory>
 #include <string>
 
-#include "base/values.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/promise.h"
-#include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 

@@ -4,21 +4,10 @@
 
 #include "shell/browser/api/electron_api_push_notifications.h"
 
-#include "base/callback_helpers.h"
-#include "base/command_line.h"
-#include "base/containers/span.h"
-#include "base/environment.h"
-#include "base/files/file_path.h"
-#include "base/files/file_util.h"
-#include "base/path_service.h"
-#include "base/system/sys_info.h"
-#include "base/values.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
-#include "shell/browser/electron_browser_client.h"
-#include "shell/common/gin_converters/base_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 
 namespace electron {
 
@@ -61,6 +50,11 @@ void PushNotifications::OnDidReceiveAPNSNotification(
 #endif
 
 // static
+gin::Handle<PushNotifications> PushNotifications::Create(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new PushNotifications());
+}
+
+// static
 gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
@@ -75,6 +69,10 @@ gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
                                      browser));
 #endif
 
+}
+
+const char* PushNotifications::GetTypeName() {
+  return "PushNotifications";
 }
 
 }  // namespace api
