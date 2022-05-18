@@ -120,7 +120,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
     // Technically speaking, 16-byte aligned size doesn't mean 16-byte aligned
     // address, but this heuristics works with the current implementation of
     // PartitionAlloc (and PartitionAlloc doesn't support a better way for now).
-    if (base::kAlignment <
+    if (partition_alloc::internal::kAlignment <
         16) {  // base::kAlignment is a compile-time constant.
       size_t aligned_size = base::bits::AlignUp(size, 16);
       if (size == 0) {
@@ -135,7 +135,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
       flags |= partition_alloc::AllocFlags::kZeroFill;
     }
     void* data = allocator_->root()->AllocWithFlags(flags, size, "Electron");
-    if (base::kAlignment < 16) {
+    if (partition_alloc::internal::kAlignment < 16) {
       char* ptr = reinterpret_cast<char*>(data);
       DCHECK_EQ(base::bits::AlignUp(ptr, 16), ptr)
           << "Pointer " << ptr << " not 16B aligned for size " << size;
