@@ -25,7 +25,7 @@ diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content
 index 36b4e75828436df4274b522bdf75e88e1112aab6..0c8d0735523d388d0e68d2ad0b20a1c2525502ed 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1791,9 +1791,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1750,9 +1750,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              cmd_line.get(), IsJitDisabled());
@@ -39,8 +39,8 @@ index 36b4e75828436df4274b522bdf75e88e1112aab6..0c8d0735523d388d0e68d2ad0b20a1c2
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 +#endif
  #endif
-     // Spawn the child process asynchronously to avoid blocking the UI thread.
-     // As long as there's no renderer prefix, we can use the zygote process
+ 
+     auto file_data = std::make_unique<ChildProcessLauncherFileData>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 index e8d6ef94664bb37996871c0cc0db7c815783b786..0d56fa0aebee80883019a100900119972bf02edd 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
