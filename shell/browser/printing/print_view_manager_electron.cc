@@ -109,8 +109,8 @@ void PrintViewManagerElectron::PrintToPdf(
     return;
   }
 
-  absl::variant<printing::PageRanges, print_to_pdf::PageRangeError> parsed_ranges =
-      print_to_pdf::TextPageRangesToPageRanges(page_ranges);
+  absl::variant<printing::PageRanges, print_to_pdf::PageRangeError>
+      parsed_ranges = print_to_pdf::TextPageRangesToPageRanges(page_ranges);
   if (absl::holds_alternative<print_to_pdf::PageRangeError>(parsed_ranges)) {
     PrintResult print_result;
     switch (absl::get<print_to_pdf::PageRangeError>(parsed_ranges)) {
@@ -166,7 +166,9 @@ void PrintViewManagerElectron::ShowInvalidPrinterSettingsError() {
   ReleaseJob(INVALID_PRINTER_SETTINGS);
 }
 
-void PrintViewManagerElectron::PrintingFailed(int32_t cookie, printing::mojom::PrintFailureReason reason) {
+void PrintViewManagerElectron::PrintingFailed(
+    int32_t cookie,
+    printing::mojom::PrintFailureReason reason) {
   ReleaseJob(reason == printing::mojom::PrintFailureReason::kInvalidPageRange
                  ? PAGE_COUNT_EXCEEDED
                  : PRINTING_FAILED);

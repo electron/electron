@@ -2805,7 +2805,7 @@ void WebContents::Print(gin::Arguments* args) {
                      std::move(callback), device_name, silent));
 }
 
-// Partially duplicated and modified from 
+// Partially duplicated and modified from
 // headless/lib/browser/protocol/page_handler.cc;l=41
 v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
