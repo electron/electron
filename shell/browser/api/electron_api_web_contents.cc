@@ -2656,8 +2656,7 @@ void WebContents::Print(gin::Arguments* args) {
 
   bool print_background = false;
   options.Get("printBackground", &print_background);
-  settings.Set(printing::kSettingShouldPrintBackgrounds,
-                      print_background);
+  settings.Set(printing::kSettingShouldPrintBackgrounds, print_background);
 
   // Set custom margin settings
   gin_helper::Dictionary margins =
@@ -2666,8 +2665,7 @@ void WebContents::Print(gin::Arguments* args) {
     printing::mojom::MarginType margin_type =
         printing::mojom::MarginType::kDefaultMargins;
     margins.Get("marginType", &margin_type);
-    settings.Set(printing::kSettingMarginsType,
-                       static_cast<int>(margin_type));
+    settings.Set(printing::kSettingMarginsType, static_cast<int>(margin_type));
 
     if (margin_type == printing::mojom::MarginType::kCustomMargins) {
       base::Value::Dict custom_margins;
@@ -2750,7 +2748,7 @@ void WebContents::Print(gin::Arguments* args) {
   // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
   settings.Set(printing::kSettingPrinterType,
-                     static_cast<int>(printing::mojom::PrinterType::kLocal));
+               static_cast<int>(printing::mojom::PrinterType::kLocal));
   settings.Set(printing::kSettingShouldPrintSelectionOnly, false);
   settings.Set(printing::kSettingRasterizePdf, false);
 
@@ -2778,8 +2776,7 @@ void WebContents::Print(gin::Arguments* args) {
   printing::mojom::DuplexMode duplex_mode =
       printing::mojom::DuplexMode::kSimplex;
   options.Get("duplexMode", &duplex_mode);
-  settings.Set(printing::kSettingDuplexMode,
-                     static_cast<int>(duplex_mode));
+  settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
   // We've already done necessary parameter sanitization at the
   // JS level, so we can simply pass this through.
