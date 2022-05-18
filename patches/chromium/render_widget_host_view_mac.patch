@@ -50,16 +50,16 @@ index aa0802116eaffaac58800a1b9e08367c489adacd..9eb0014c0aff821814ed83eb83059ba4
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -1006,6 +1022,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
-                               eventType == NSKeyDown &&
-                               !(modifierFlags & NSCommandKeyMask);
+@@ -997,6 +997,10 @@ void ExtractUnderlines(NSAttributedString* string,
+                               eventType == NSEventTypeKeyDown &&
+                               !(modifierFlags & NSEventModifierFlagCommand);
  
 +  if ([theEvent.window respondsToSelector:@selector(disableAutoHideCursor)] &&
 +      [theEvent.window disableAutoHideCursor])
 +    shouldAutohideCursor = NO;
 +
    // We only handle key down events and just simply forward other events.
-   if (eventType != NSKeyDown) {
+   if (eventType != NSEventTypeKeyDown) {
      _hostHelper->ForwardKeyboardEvent(event, latency_info);
 @@ -1769,9 +1789,11 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
