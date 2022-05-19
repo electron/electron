@@ -1679,11 +1679,39 @@ describe('navigator.serial', () => {
   });
 
   it('returns a port when select-serial-port event is defined', async () => {
+    let havePorts = false;
     w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
-      callback(portList[0].portId);
+      if (portList.length > 0) {
+        havePorts = true;
+        callback(portList[0].portId);
+      } else {
+        callback('');
+      }
     });
     const port = await getPorts();
-    expect(port).to.equal('[object SerialPort]');
+    if (havePorts) {
+      expect(port).to.equal('[object SerialPort]');
+    } else {
+      expect(port).to.equal('NotFoundError: No port selected by the user.');
+    }
+  });
+
+  it('navigator.serial.getPorts() returns values', async () => {
+    let havePorts = false;
+
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      if (portList.length > 0) {
+        havePorts = true;
+        callback(portList[0].portId);
+      } else {
+        callback('');
+      }
+    });
+    await getPorts();
+    if (havePorts) {
+      const grantedPorts = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
+      expect(grantedPorts).to.not.be.empty();
+    }
   });
 });
 
@@ -2006,7 +2034,6 @@ describe('navigator.hid', () => {
       if (details.deviceList.length > 0) {
         details.deviceList.find((device) => {
           if (device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '') {
-            console.log('device is: ', device);
             if (checkForExcludedDevice) {
               const compareDevice = {
                 vendorId: device.vendorId,

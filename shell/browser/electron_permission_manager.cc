@@ -335,22 +335,32 @@ bool ElectronPermissionManager::CheckDevicePermission(
                    static_cast<content::PermissionType>(
                        WebContentsPermissionHelper::PermissionType::SERIAL)) {
 #if BUILDFLAG(IS_WIN)
-          if (device->FindStringKey(kDeviceInstanceIdKey) ==
-              granted_device.FindStringKey(kDeviceInstanceIdKey))
+          const auto* instance_id = device->FindStringKey(kDeviceInstanceIdKey);
+          const auto* port_instance_id =
+              granted_device.FindStringKey(kDeviceInstanceIdKey);
+          if (instance_id && port_instance_id &&
+              *instance_id == *port_instance_id)
             return true;
 #else
+          const auto* serial_number =
+              granted_device.FindStringKey(kSerialNumberKey);
+          const auto* port_serial_number =
+              device->FindStringKey(kSerialNumberKey);
           if (device->FindIntKey(kVendorIdKey) !=
                   granted_device.FindIntKey(kVendorIdKey) ||
               device->FindIntKey(kProductIdKey) !=
                   granted_device.FindIntKey(kProductIdKey) ||
-              *device->FindStringKey(kSerialNumberKey) !=
-                  *granted_device.FindStringKey(kSerialNumberKey)) {
+              (serial_number && port_serial_number &&
+               *port_serial_number != *serial_number)) {
             continue;
           }
 
 #if BUILDFLAG(IS_MAC)
-          if (*device->FindStringKey(kUsbDriverKey) !=
-              *granted_device.FindStringKey(kUsbDriverKey)) {
+          const auto* usb_driver_key = device->FindStringKey(kUsbDriverKey);
+          const auto* port_usb_driver_key =
+              granted_device.FindStringKey(kUsbDriverKey);
+          if (usb_driver_key && port_usb_driver_key &&
+              *usb_driver_key != *port_usb_driver_key) {
             continue;
           }
 #endif  // BUILDFLAG(IS_MAC)
