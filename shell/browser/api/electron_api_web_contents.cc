@@ -3507,22 +3507,27 @@ bool WebContents::DoesDeviceMatch(const base::Value* device,
              static_cast<blink::PermissionType>(
                  WebContentsPermissionHelper::PermissionType::SERIAL)) {
 #if BUILDFLAG(IS_WIN)
-    if (device->GetDict().FindString(kDeviceInstanceIdKey) ==
-        device_to_compare->GetDict().FindString(kDeviceInstanceIdKey))
+    const auto* instance_id = device->GetDict().FindString(kDeviceInstanceIdKey);
+    const auto* port_instance_id = device_to_compare->GetDict().FindString(kDeviceInstanceIdKey);
+    if (instance_id && port_instance_id && *instance_id == *port_instance_id)
       return true;
 #else
+    const auto* serial_number = device->GetDict().FindString(kSerialNumberKey);
+    const auto* port_serial_number = device_to_compare->GetDict().FindString(kSerialNumberKey);
     if (device->GetDict().FindInt(kVendorIdKey) !=
             device_to_compare->GetDict().FindInt(kVendorIdKey) ||
         device->GetDict().FindInt(kProductIdKey) !=
             device_to_compare->GetDict().FindInt(kProductIdKey) ||
-        *device->GetDict().FindString(kSerialNumberKey) !=
-            *device_to_compare->GetDict().FindString(kSerialNumberKey)) {
+        (serial_number && port_serial_number && *port_serial_number != *serial_number)) {
       return false;
     }
 
 #if BUILDFLAG(IS_MAC)
-    if (*device->GetDict().FindString(kUsbDriverKey) !=
-        *device_to_compare->GetDict().FindString(kUsbDriverKey)) {
+    const auto* usb_driver_key = device->GetDict().FindString(kUsbDriverKey);
+    const auto* port_usb_driver_key =
+        device_to_compare->GetDict().FindString(kUsbDriverKey);
+    if (usb_driver_key && port_usb_driver_key &&
+        *usb_driver_key != *port_usb_driver_key) {          
       return false;
     }
 #endif  // BUILDFLAG(IS_MAC)
