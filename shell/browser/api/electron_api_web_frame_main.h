@@ -82,6 +82,9 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   void UpdateRenderFrameHost(content::RenderFrameHost* rfh);
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
+  void MaybeSetupMojoConnection();
+  void TeardownMojoConnection();
+  void OnRendererConnectionError();
 
   // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
   // whether its been disposed of prior to accessing it.
@@ -112,8 +115,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
-  void OnRendererConnectionError();
-  void Connect();
   void DOMContentLoaded();
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
