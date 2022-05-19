@@ -31,12 +31,24 @@ void SetElectronCryptoReady(bool ready) {
 #endif
 
 bool IsEncryptionAvailable() {
+#if defined(OS_LINUX)
+  // Calling IsEncryptionAvailable() before the app is ready results in a crash
+  // on Linux.
+  // Refs: https://github.com/electron/electron/issues/32206.
+  if (!Browser::Get()->is_ready())
+    return false;
+#endif
   return OSCrypt::IsEncryptionAvailable();
 }
 
 v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
                                    const std::string& plaintext) {
-  if (!OSCrypt::IsEncryptionAvailable()) {
+  if (!IsEncryptionAvailable()) {
+    if (!Browser::Get()->is_ready()) {
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          "safeStorage cannot be used before app is ready");
+      return v8::Local<v8::Value>();
+    }
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
         "safeStorage.decryptString. "
@@ -59,7 +71,12 @@ v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
 }
 
 std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer) {
-  if (!OSCrypt::IsEncryptionAvailable()) {
+  if (!IsEncryptionAvailable()) {
+    if (!Browser::Get()->is_ready()) {
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          "safeStorage cannot be used before app is ready");
+      return "";
+    }
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
         "safeStorage.decryptString. "
