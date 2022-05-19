@@ -60,7 +60,7 @@ MediaCaptureDevicesDispatcher::GetVideoCaptureDevices() {
 void MediaCaptureDevicesDispatcher::GetDefaultDevices(
     bool audio,
     bool video,
-    blink::mojom::StreamDevices& devices) {
+    blink::mojom::StreamDevices& devices) {  // NOLINT(runtime/references)
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   DCHECK(audio || video);
 

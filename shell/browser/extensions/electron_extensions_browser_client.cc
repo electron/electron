@@ -4,6 +4,7 @@
 
 #include "shell/browser/extensions/electron_extensions_browser_client.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "base/bind.h"
@@ -313,7 +314,7 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
   std::transform(args.begin(), args.end(), event_args.begin(),
                  [](const base::Value& arg) { return arg.Clone(); });
   auto event = std::make_unique<extensions::Event>(histogram_value, event_name,
-                                       std::move(event_args));
+                                                   std::move(event_args));
   auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second) {

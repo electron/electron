@@ -30,9 +30,10 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   // If the return list is empty, it means there is no available device on the
   // OS.
   // Called on the UI thread.
-  void GetDefaultDevices(bool audio,
-                         bool video,
-                         blink::mojom::StreamDevices& devices);
+  void GetDefaultDevices(
+      bool audio,
+      bool video,
+      blink::mojom::StreamDevices& devices);  // NOLINT(runtime/references)
 
   // Helpers for picking particular requested devices, identified by raw id.
   // If the device requested is not available it will return NULL.
