@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/browser_observer.h"
