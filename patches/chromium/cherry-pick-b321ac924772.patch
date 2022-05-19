@@ -1,7 +1,7 @@
-From b321ac924772586a874927cce2b04600efdf4d69 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dave Tapuska <dtapuska@chromium.org>
 Date: Thu, 10 Mar 2022 02:35:27 +0000
-Subject: [PATCH] [M98] Do not expose inner WebContents on scripting/getAllFrames.
+Subject: Do not expose inner WebContents on scripting/getAllFrames.
 
 Inner WebContents shouldn't be exposed for executeScript or getAllFrames
 APIs. This is consistent with the API before crrev.com/f894f106
@@ -20,13 +20,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#977769}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3514993
 Cr-Commit-Position: refs/branch-heads/4758@{#1244}
 Cr-Branched-From: 4a2cf4baf90326df19c3ee70ff987960d59a386e-refs/heads/main@{#950365}
----
 
 diff --git a/chrome/browser/extensions/api/scripting/scripting_apitest.cc b/chrome/browser/extensions/api/scripting/scripting_apitest.cc
-index 646701b..fc1e974 100644
+index e6d0aa8331816e4d2fe3e21fcede6b11b5ab00b2..37a35fda1ba5bda086764d0c1f8ee31f0d70f653 100644
 --- a/chrome/browser/extensions/api/scripting/scripting_apitest.cc
 +++ b/chrome/browser/extensions/api/scripting/scripting_apitest.cc
-@@ -85,6 +85,15 @@
+@@ -83,6 +83,15 @@ IN_PROC_BROWSER_TEST_F(ScriptingAPITest, SubFramesTests) {
    ASSERT_TRUE(RunExtensionTest("scripting/sub_frames")) << message_;
  }
  
@@ -43,13 +42,13 @@ index 646701b..fc1e974 100644
    OpenURLInCurrentTab(
        embedded_test_server()->GetURL("example.com", "/simple.html"));
 diff --git a/chrome/browser/extensions/api/web_navigation/web_navigation_api.cc b/chrome/browser/extensions/api/web_navigation/web_navigation_api.cc
-index eff48ee..4888bda7 100644
+index d18d496e9626990dc633b207a0c7482c026e6ed7..0486c08505e8f2f57229a775ada456ecf1a30a56 100644
 --- a/chrome/browser/extensions/api/web_navigation/web_navigation_api.cc
 +++ b/chrome/browser/extensions/api/web_navigation/web_navigation_api.cc
-@@ -515,14 +515,21 @@
-   // expose back/forward cached frames or prerender frames in the GetAllFrames
-   // API.
-   web_contents->GetMainFrame()->ForEachRenderFrameHost(base::BindRepeating(
+@@ -511,14 +511,21 @@ ExtensionFunction::ResponseAction WebNavigationGetAllFramesFunction::Run() {
+   std::vector<GetAllFrames::Results::DetailsType> result_list;
+ 
+   web_contents->ForEachFrame(base::BindRepeating(
 -      [](std::vector<GetAllFrames::Results::DetailsType>& result_list,
 +      [](content::WebContents* web_contents,
 +         std::vector<GetAllFrames::Results::DetailsType>& result_list,
@@ -70,7 +69,7 @@ index eff48ee..4888bda7 100644
          }
  
          GetAllFrames::Results::DetailsType frame;
-@@ -533,8 +540,9 @@
+@@ -529,8 +536,9 @@ ExtensionFunction::ResponseAction WebNavigationGetAllFramesFunction::Run() {
          frame.process_id = render_frame_host->GetProcess()->GetID();
          frame.error_occurred = navigation_state->GetErrorOccurredInFrame();
          result_list.push_back(std::move(frame));
@@ -83,7 +82,7 @@ index eff48ee..4888bda7 100644
  }
 diff --git a/chrome/test/data/extensions/api_test/scripting/nested_web_contents/manifest.json b/chrome/test/data/extensions/api_test/scripting/nested_web_contents/manifest.json
 new file mode 100644
-index 0000000..1ee28c4
+index 0000000000000000000000000000000000000000..1ee28c4149223ce82a7563270ee13c7f7c01d4a9
 --- /dev/null
 +++ b/chrome/test/data/extensions/api_test/scripting/nested_web_contents/manifest.json
 @@ -0,0 +1,8 @@
@@ -97,7 +96,7 @@ index 0000000..1ee28c4
 +}
 diff --git a/chrome/test/data/extensions/api_test/scripting/nested_web_contents/worker.js b/chrome/test/data/extensions/api_test/scripting/nested_web_contents/worker.js
 new file mode 100644
-index 0000000..cea1287
+index 0000000000000000000000000000000000000000..cea1287ece0a7397ac4cab3919ee2e7c12b02da8
 --- /dev/null
 +++ b/chrome/test/data/extensions/api_test/scripting/nested_web_contents/worker.js
 @@ -0,0 +1,41 @@
@@ -143,10 +142,10 @@ index 0000000..cea1287
 +  },
 +]);
 diff --git a/extensions/browser/script_executor.cc b/extensions/browser/script_executor.cc
-index b5b8c8d..672e3a1 100644
+index b5b8c8d4b31e3e9bdd7d96c79cc361ace45182fd..672e3a14d40b1ccdc38b3d8fcb784ec53b4512ec 100644
 --- a/extensions/browser/script_executor.cc
 +++ b/extensions/browser/script_executor.cc
-@@ -90,24 +90,32 @@
+@@ -90,24 +90,32 @@ class Handler : public content::WebContentsObserver {
      // `pending_render_frames_` and add them if they are alive (and not already
      // contained in `pending_frames`).
      if (scope == ScriptExecutor::INCLUDE_SUB_FRAMES) {
@@ -157,6 +156,9 @@ index b5b8c8d..672e3a1 100644
 -                base::Contains(*pending_frames, frame)) {
 -              return;
 -            }
+-
+-            pending_frames->push_back(frame);
+-          };
 +      auto append_frame = [](content::WebContents* web_contents,
 +                             std::vector<raw_ptr<content::RenderFrameHost>>*
 +                                 pending_frames,
@@ -171,9 +173,7 @@ index b5b8c8d..672e3a1 100644
 +            base::Contains(*pending_frames, frame)) {
 +          return content::RenderFrameHost::FrameIterationAction::kContinue;
 +        }
- 
--            pending_frames->push_back(frame);
--          };
++
 +        pending_frames->push_back(frame);
 +        return content::RenderFrameHost::FrameIterationAction::kContinue;
 +      };
@@ -191,7 +191,7 @@ index b5b8c8d..672e3a1 100644
        }
      }
  
-@@ -254,7 +262,7 @@
+@@ -254,7 +262,7 @@ class Handler : public content::WebContentsObserver {
    // TODO(devlin): Extensions *shouldn't* rely on order here, because there's
    // never a guarantee. We should probably just adjust the test and disregard
    // order (except the root frame).
