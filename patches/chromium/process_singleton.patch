@@ -86,7 +86,7 @@ index 22331cd6985b2aa2347fe9d4211f51634e94d0a6..9bb12894da06fc7d281daced754b240a
  #include <type_traits>
  
  #include "base/base_paths.h"
-@@ -96,9 +97,11 @@
+@@ -96,9 +96,11 @@
  #include "net/base/network_interfaces.h"
  #include "ui/base/l10n/l10n_util.h"
  
@@ -96,8 +96,8 @@ index 22331cd6985b2aa2347fe9d4211f51634e94d0a6..9bb12894da06fc7d281daced754b240a
  #endif
 +#endif
  
- #if defined(TOOLKIT_VIEWS) && \
-     (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
+ using content::BrowserThread;
+ 
 @@ -347,6 +350,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
