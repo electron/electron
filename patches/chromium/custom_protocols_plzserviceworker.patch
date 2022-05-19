@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 20 May 2022 00:29:34 +0900
+Subject: custom_protocols_plzserviceworker.patch
+
+Allow registering custom protocols to handle service worker main script fetching with PlzServiceWorker.
+
+Refs https://bugs.chromium.org/p/chromium/issues/detail?id=996511
+
+diff --git a/content/browser/service_worker/service_worker_context_wrapper.cc b/content/browser/service_worker/service_worker_context_wrapper.cc
+index 4ce769314c6dddae41d915c7f05916f77f26a86e..d8f6882f2dee93fc127e7617abbcc7b71a65775d 100644
+--- a/content/browser/service_worker/service_worker_context_wrapper.cc
++++ b/content/browser/service_worker/service_worker_context_wrapper.cc
+@@ -1600,6 +1600,29 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+   std::unique_ptr<network::PendingSharedURLLoaderFactory>
+       loader_factory_bundle_info =
+           context()->loader_factory_bundle_for_update_check()->Clone();
++
++  // Give the embedder a chance to register custom schemes that can
++  // handle loading the service worker main script.
++  // Previous registration triggered by
++  // ServiceWorkerContextWrapper::CreateNonNetworkPendingURLLoaderFactoryBundleForUpdateCheck
++  // happens early on browser startup before the JS in the main process
++  // is run by the embedder.
++  auto* factory_bundle = static_cast<blink::PendingURLLoaderFactoryBundle*>(
++          loader_factory_bundle_info.get());
++  ContentBrowserClient::NonNetworkURLLoaderFactoryMap non_network_factories;
++  GetContentClient()
++      ->browser()
++      ->RegisterNonNetworkServiceWorkerUpdateURLLoaderFactories(
++          storage_partition_->browser_context(), &non_network_factories);
++  for (auto& pair : non_network_factories) {
++    const std::string& scheme = pair.first;
++    mojo::PendingRemote<network::mojom::URLLoaderFactory>& factory_remote =
++        pair.second;
++
++    factory_bundle->pending_scheme_specific_factories().emplace(
++        scheme, std::move(factory_remote));
++  }
++
+   static_cast<blink::PendingURLLoaderFactoryBundle*>(
+       loader_factory_bundle_info.get())
+       ->pending_default_factory() = std::move(remote);
