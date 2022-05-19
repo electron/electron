@@ -94,7 +94,7 @@ index f0333177f885000fb22818ffa30a0c4ad520a161..03e82957f9d7bf009dcbf5fcd43718c9
        content::WebContents* source,
        const content::OpenURLParams& params) override;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index 6688ba8ba2fb7d930773144cdbc43f1f6fa2b685..22015c7b9b50e1264551ce226757f90e29191d8f 100644
+index caa6c2dbc6dbf87081da9a2e5c42e9ac2e60c77f..ac0b7dbee8195be8c165444a141629475e97a107 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 @@ -71,8 +71,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
@@ -108,10 +108,10 @@ index 6688ba8ba2fb7d930773144cdbc43f1f6fa2b685..22015c7b9b50e1264551ce226757f90e
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index b2d070ac2085e78d652a2f86232a3a334f6655ae..3d5e8ecd955e18ceb5272740cb962ce13dc458cf 100644
+index 706684de51b047abf2a355416a6361b7ed8542c9..5ccbde951b833bd9413a5c3506da5d982fb3b58e 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1793,12 +1793,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1795,12 +1795,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -127,10 +127,10 @@ index b2d070ac2085e78d652a2f86232a3a334f6655ae..3d5e8ecd955e18ceb5272740cb962ce1
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index f720ded6e9b8e679a362c6b4353afb368e7af4a1..13cee14c2672dac5672cb3773db45f09770321ec 100644
+index 1f02e2e3d3f510b52089fbc835c6401ed693f1b9..6116970cb65bb7699759fad4351497ab057e25c0 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -828,8 +828,7 @@ class Browser : public TabStripModelObserver,
+@@ -836,8 +836,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
