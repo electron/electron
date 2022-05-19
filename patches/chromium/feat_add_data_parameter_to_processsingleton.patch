@@ -13,7 +13,7 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 5a64220aaf1309832dc0ad543e353de67fe0a779..3956eaaf8fd4ba8f2ac0b8e93939f703123749e6 100644
+index 5a64220aaf1309832dc0ad543e353de67fe0a779..e75c4f0d7cf1cac2e5862eb858800359e2001eb6 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,7 @@
@@ -24,11 +24,13 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..3956eaaf8fd4ba8f2ac0b8e93939f703
  #include "ui/gfx/native_widget_types.h"
  
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
-@@ -100,21 +101,24 @@ class ProcessSingleton {
+@@ -99,22 +100,25 @@ class ProcessSingleton {
+   // handled within the current browser instance or false if the remote process
    // should handle it (i.e., because the current process is shutting down).
    using NotificationCallback =
-       base::RepeatingCallback<bool(const base::CommandLine& command_line,
+-      base::RepeatingCallback<bool(const base::CommandLine& command_line,
 -                                   const base::FilePath& current_directory)>;
++       base::RepeatingCallback<bool(const base::CommandLine& command_line,
 +                                   const base::FilePath& current_directory,
 +                                   const std::vector<const uint8_t> additional_data)>;
  
@@ -51,10 +53,13 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..3956eaaf8fd4ba8f2ac0b8e93939f703
    ~ProcessSingleton();
  
    // Notify another process, if available. Otherwise sets ourselves as the
-@@ -178,6 +182,8 @@ class ProcessSingleton {
+@@ -177,7 +181,10 @@ class ProcessSingleton {
+ #endif
  
   private:
-   NotificationCallback notification_callback_;  // Handler for notifications.
+-  NotificationCallback notification_callback_;  // Handler for notifications.
++  // A callback to run when the first instance receives data from the second.
++  NotificationCallback notification_callback_;
 +  // Custom data to pass to the other instance during notify.
 +  base::span<const uint8_t> additional_data_;
  
@@ -175,16 +180,16 @@ index 7d3a441bdb64268ed5fbfa7bf589fb35a2fd1b75..a3e45e9baa09bfc87be5b7ff589ac768
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..6ba40a3ebc0e44c512ce7822505ec6ee3d008672 100644
+index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..fe68beb4b2522d27e07dbbb3341f100f14494680 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -80,10 +80,13 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -80,10 +80,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
+-                      base::FilePath* current_directory) {
 +                      base::FilePath* current_directory,
 +                      std::vector<const uint8_t>* parsed_additional_data) {
-                       base::FilePath* current_directory) {
    // We should have enough room for the shortest command (min_message_size)
    // and also be a multiple of wchar_t bytes. The shortest command
 -  // possible is L"START\0\0" (empty current directory and command line).
@@ -193,7 +198,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..6ba40a3ebc0e44c512ce7822505ec6ee
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -133,11 +145,82 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -133,6 +135,37 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -231,7 +236,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..6ba40a3ebc0e44c512ce7822505ec6ee
      return true;
    }
    return false;
-@@ -154,13 +188,14 @@ bool ProcessLaunchNotification(
+@@ -154,13 +187,14 @@ bool ProcessLaunchNotification(
  
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
@@ -249,7 +254,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..6ba40a3ebc0e44c512ce7822505ec6ee
    return true;
  }
  
-@@ -254,9 +289,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -254,9 +288,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -261,7 +266,7 @@ index 0ea5eb3e3cf055d981ab73486115bac53287f2d7..6ba40a3ebc0e44c512ce7822505ec6ee
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -283,7 +320,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -283,7 +319,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
