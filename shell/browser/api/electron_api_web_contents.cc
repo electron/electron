@@ -1505,7 +1505,7 @@ void WebContents::HandleNewRenderFrame(
 
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
-    web_frame->Connect();
+    web_frame->MaybeSetupMojoConnection();
 }
 
 void WebContents::OnBackgroundColorChanged() {
