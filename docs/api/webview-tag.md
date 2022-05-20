@@ -823,6 +823,28 @@ this purpose.
 
 Calling `event.preventDefault()` does __NOT__ have any effect.
 
+### Event: 'will-frame-navigate'
+
+Returns:
+
+* `url` string
+* `isMainFrame` boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+Emitted when a user or the page wants to start navigation anywhere in the `<webview>`
+or any frames embedded within. It can happen when the `window.location` object is
+changed or a user clicks a link in the page.
+
+This event will not emit when the navigation is started programmatically with
+APIs like `<webview>.loadURL` and `<webview>.back`.
+
+It is also not emitted during in-page navigation, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+Calling `event.preventDefault()` does __NOT__ have any effect.
+
 ### Event: 'did-start-navigation'
 
 Returns:
