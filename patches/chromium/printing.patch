@@ -113,7 +113,7 @@ index dd27bbf387718d6abda5080e7d2c609cd0eaff17..8837cf2aeaa2f87d51be8d00aa356c8a
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 3701853ada7f0ffe3cc8a798496f9f48541b4f47..973666a1315c8cbba0a2cefbe9195fdc9c122ae3 100644
+index fb69efbfa8e355f8389abf9490cf338e70f16c7b..52099b2312b042b0afdd5ee3d2df5c66ea25df8b 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,10 +30,10 @@
@@ -407,7 +407,7 @@ index 3701853ada7f0ffe3cc8a798496f9f48541b4f47..973666a1315c8cbba0a2cefbe9195fdc
    for (auto& observer : GetObservers())
      observer.OnPrintNow(rfh);
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 746df417a23f7760818ba265d4a7d589dec8bf34..0027387d4717c59f2df3f279caf7aa0de6669400 100644
+index 48895e0f8a846aeb725e306c7f22ac159d5d96a7..027794e38f86ab1905c5cdd95140b2cb1e5c5653 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -41,6 +41,8 @@ namespace printing {
@@ -466,7 +466,7 @@ index 746df417a23f7760818ba265d4a7d589dec8bf34..0027387d4717c59f2df3f279caf7aa0d
    // This means we are _blocking_ until all the necessary pages have been
    // rendered or the print settings are being loaded.
 diff --git a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
-index aa727261738698610fab5abd3618d0d0f0d29792..2793fbc33e66cf9d7e3fc5e10f0d01730f3b935d 100644
+index 016e0d8fcc575bfa77323d8600d5daba152abbc6..dfb856f57767e24c0ec495c94e515afbb83e19ea 100644
 --- a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
 +++ b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
 @@ -20,7 +20,7 @@ FakePrintRenderFrame::FakePrintRenderFrame(
@@ -479,7 +479,7 @@ index aa727261738698610fab5abd3618d0d0f0d29792..2793fbc33e66cf9d7e3fc5e10f0d0173
  void FakePrintRenderFrame::PrintForSystemDialog() {}
  
 diff --git a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
-index 5f4d6e314b21351e3e5912e3a43ef87774343085..8627c8305686654dca7cd9c26433592e934d4eb0 100644
+index 3c95ee5c0d169f677947427a6ace55b4bfe80277..63ba8aca503968d0409b63b991a9276228d60d4a 100644
 --- a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
 +++ b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
 @@ -25,7 +25,7 @@ class FakePrintRenderFrame : public mojom::PrintRenderFrame {
@@ -541,7 +541,7 @@ index 3ba45e77f66531bc6b81717eb9c7d3faca1e9fa9..41271d3fe390dd16d1c2b9839ac32013
  
  void PdfPrintManager::ShowInvalidPrinterSettingsError() {
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 8e5c441b3d0a2d35fc5c6f9d43b4a4ca167e09ca..2cfcd810c9507c434e673064b63e8fbc95172537 100644
+index 156b987aa9cafb69c04bed483aa78f26baa9cd97..3d3f2cb97b59a6e46bf0c16dd2355aa8e21ec5da 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -275,7 +275,7 @@ interface PrintPreviewUI {
@@ -563,7 +563,7 @@ index 8e5c441b3d0a2d35fc5c6f9d43b4a4ca167e09ca..2cfcd810c9507c434e673064b63e8fbc
    // Tells the browser that there are invalid printer settings.
    ShowInvalidPrinterSettingsError();
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index db8913ae41d46d14fd15c6127e126e4b129dc4b8..ddbc3b0d5a00af9de84e1b0aadc44adb6ff84495 100644
+index e0ecf8f3f09dafe44a5220117281a08e38a61bef..edbaa28ec4ffd22b6afa332365c5dc51c33de31e 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -41,6 +41,7 @@
@@ -763,7 +763,7 @@ index db8913ae41d46d14fd15c6127e126e4b129dc4b8..ddbc3b0d5a00af9de84e1b0aadc44adb
  
  bool PrintRenderFrameHelper::PreviewPageRendered(
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 220b28a7e63625fe8b76290f0d2f40dd32cae255..cff9e35fab9df680c3c39467c50ddb033c2e6cba 100644
+index 15c367bd66706c915fdb95faf483429a8b31eb4c..ba2d5decbad2195c63efa4a5e23c60df7de69441 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -254,7 +254,7 @@ class PrintRenderFrameHelper
