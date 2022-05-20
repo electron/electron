@@ -433,13 +433,6 @@ HRESULT WindowsToastNotification::SetToastXml(
         "XML: Setting \"scenario\" option on notification failed");
   }
 
-  // Configure the toast's notification sound
-  if (silent) {
-    REPORT_AND_RETURN_IF_FAILED(
-        SetXmlAudioSilent(toast_xml),
-        "XML: Setting \"silent\" option on notification failed");
-  }
-
   if (require_interaction) {
     // Reimplement for SAP-17772 SAP-19442
     const bool use_reminder =
@@ -449,12 +442,19 @@ HRESULT WindowsToastNotification::SetToastXml(
         SetXmlScenarioType(
             toast_xml,
             std::wstring(use_reminder ? L"reminder" : L"incomingcall")),
-        "XML: Setting \"reminder\" senarion type failed");
+        "XML: Setting \"reminder\" scenario type failed");
+  }
+
+  // Configure the toast's notification sound
+  if (silent || require_interaction) {
     // SAP-17738 - Can not require interaction on Windows
     // Workaround to silent system IncommingCall sound and play Default sound by
     // custom PlaySound call
+    // SAP-21082 - Notification showing up with strange sounds when
+    // requireInteraction is true require_interaction is necessary to fix side
+    // effect from applying incomingcall
     REPORT_AND_RETURN_IF_FAILED(
-        SetXmlAudioSilent(*toast_xml),
+        SetXmlAudioSilent(toast_xml),
         "XML: Setting \"silent\" option on notification failed");
   }
 
