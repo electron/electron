@@ -270,7 +270,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
                                head->mime_type.c_str());
     }
     client_->OnReceiveResponse(std::move(head),
-                               mojo::ScopedDataPipeConsumerHandle());
+                               std::move(consumer_handle));
 
     if (total_bytes_to_send == 0) {
       // There's definitely no more data, so we're already done.
