@@ -716,7 +716,7 @@ index 0c87fc8ccb4511904f19b76ae5e03a5df6664391..cd62a8409376a65935172b8e460e7c02
  
  void ProcessSingleton::OverrideShouldKillRemoteProcessCallbackForTesting(
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..4d203bd1dcc077550c4fbc5e185ecd9c35db0176 100644
+index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..fff02287ae162c67d54d25b7196f3a5d5e43ba1f 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
 @@ -11,6 +11,7 @@
@@ -747,7 +747,7 @@ index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..4d203bd1dcc077550c4fbc5e185ecd9c
    DCHECK(remote_window);
    DWORD process_id = 0;
    DWORD thread_id = GetWindowThreadProcessId(remote_window, &process_id);
-@@ -50,19 +59,41 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -50,19 +59,43 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
    }
  
    // Send the command line to the remote chrome window.
@@ -762,6 +762,8 @@ index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..4d203bd1dcc077550c4fbc5e185ecd9c
 -    return NOTIFY_FAILED;
 +
 +  if (!is_ack_message) {
++    // Add the following for the GetCurrentDirectory call.
++    base::ThreadRestrictions::ScopedAllowIO allow_io;
 +    base::FilePath cur_dir;
 +    if (!base::GetCurrentDirectory(&cur_dir)) {
 +      TRACE_EVENT_INSTANT(
