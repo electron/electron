@@ -155,10 +155,10 @@ index 0e842caf7b6487d94978c7b68fb5b222e330581f..5eafcd163ee1a05203a5eb76592a449f
  
  }  // namespace
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index 9db3bdb6cc2f60962e2bdc858c7a8304ff0649b9..df9ac5aa8f5f1aba1c1aa7191c7ad244f1e6ef14 100644
+index f071b192208fdfb1b9da932fcbbf64f0712d8f8b..7481ec29aaaa7b9f40af4a1180dd779e60131ea5 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
-@@ -43,9 +43,11 @@
+@@ -32,9 +32,11 @@
    }
  #endif
  
@@ -170,9 +170,9 @@ index 9db3bdb6cc2f60962e2bdc858c7a8304ff0649b9..df9ac5aa8f5f1aba1c1aa7191c7ad244
  
  namespace sandbox::logging {
  
-@@ -115,9 +117,11 @@ void SendAslLog(Level level, const char* message) {
-   asl_set(asl_message.get(), ASL_KEY_MSG, message);
-   asl_send(asl_client.get(), asl_message.get());
+@@ -71,9 +73,11 @@ void SendOsLog(Level level, const char* message) {
+ 
+   os_log_with_type(log.get(), os_log_type, "%{public}s", message);
  
 +#if !defined(MAS_BUILD)
    if (level == Level::FATAL) {
@@ -181,7 +181,7 @@ index 9db3bdb6cc2f60962e2bdc858c7a8304ff0649b9..df9ac5aa8f5f1aba1c1aa7191c7ad244
 +#endif
  }
  
- #else
+ // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
 index 9f5261425162791668c2d15b7ffba091f831d652..c37f3dc05cb8372c7a6c4caef7a280b6f2f48e98 100644
 --- a/sandbox/mac/system_services.cc
