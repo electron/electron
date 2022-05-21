@@ -1563,9 +1563,10 @@ describe('webContents module', () => {
       server.listen(0, '127.0.0.1', () => {
         const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/';
         w.webContents.once('did-finish-load', () => {
-          w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
-            expect(referrer.url).to.equal(url);
-            expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
+          w.webContents.setWindowOpenHandler(details => {
+            expect(details.referrer.url).to.equal(url);
+            expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
+            return { action: 'allow' };
           });
           w.webContents.executeJavaScript('a.click()');
         });
@@ -1591,9 +1592,10 @@ describe('webContents module', () => {
       server.listen(0, '127.0.0.1', () => {
         const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/';
         w.webContents.once('did-finish-load', () => {
-          w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
-            expect(referrer.url).to.equal(url);
-            expect(referrer.policy).to.equal('no-referrer-when-downgrade');
+          w.webContents.setWindowOpenHandler(details => {
+            expect(details.referrer.url).to.equal(url);
+            expect(details.referrer.policy).to.equal('no-referrer-when-downgrade');
+            return { action: 'allow' };
           });
           w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');
         });
