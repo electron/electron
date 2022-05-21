@@ -41,7 +41,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   outlivesOpener: boolean,
 }): BrowserWindow | undefined {
   const { url, frameName, features } = windowOpenArgs;
-  const { options: browserWindowOptions } = makeBrowserWindowOptions({
+  const browserWindowOptions = makeBrowserWindowOptions({
     embedder,
     features,
     overrideOptions: overrideBrowserWindowOptions
@@ -211,23 +211,21 @@ function makeBrowserWindowOptions ({ embedder, features, overrideOptions }: {
   const { options: parsedOptions, webPreferences: parsedWebPreferences } = parseFeatures(features);
 
   return {
-    options: {
-      show: true,
-      width: 800,
-      height: 600,
-      ...parsedOptions,
-      ...overrideOptions,
-      // Note that for normal code path an existing WebContents created by
-      // Chromium will be used, with web preferences parsed in the
-      // |-will-add-new-contents| event.
-      // The |webPreferences| here is only used by the |new-window| event.
-      webPreferences: makeWebPreferences({
-        embedder,
-        insecureParsedWebPreferences: parsedWebPreferences,
-        secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences
-      })
-    } as Electron.BrowserViewConstructorOptions
-  };
+    show: true,
+    width: 800,
+    height: 600,
+    ...parsedOptions,
+    ...overrideOptions,
+    // Note that for normal code path an existing WebContents created by
+    // Chromium will be used, with web preferences parsed in the
+    // |-will-add-new-contents| event.
+    // The |webPreferences| here is only used by the |new-window| event.
+    webPreferences: makeWebPreferences({
+      embedder,
+      insecureParsedWebPreferences: parsedWebPreferences,
+      secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences
+    })
+  } as Electron.BrowserViewConstructorOptions;
 }
 
 export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {}, insecureParsedWebPreferences: parsedWebPreferences = {} }: {
