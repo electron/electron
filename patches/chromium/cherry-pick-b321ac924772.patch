@@ -142,7 +142,7 @@ index 0000000000000000000000000000000000000000..cea1287ece0a7397ac4cab3919ee2e7c
 +  },
 +]);
 diff --git a/extensions/browser/script_executor.cc b/extensions/browser/script_executor.cc
-index b5b8c8d4b31e3e9bdd7d96c79cc361ace45182fd..672e3a14d40b1ccdc38b3d8fcb784ec53b4512ec 100644
+index b5b8c8d4b31e3e9bdd7d96c79cc361ace45182fd..69cea43df78ae2d314bd7634c5eb6112f9dcedea 100644
 --- a/extensions/browser/script_executor.cc
 +++ b/extensions/browser/script_executor.cc
 @@ -90,24 +90,32 @@ class Handler : public content::WebContentsObserver {
@@ -160,7 +160,7 @@ index b5b8c8d4b31e3e9bdd7d96c79cc361ace45182fd..672e3a14d40b1ccdc38b3d8fcb784ec5
 -            pending_frames->push_back(frame);
 -          };
 +      auto append_frame = [](content::WebContents* web_contents,
-+                             std::vector<raw_ptr<content::RenderFrameHost>>*
++                             std::vector<content::RenderFrameHost*>*
 +                                 pending_frames,
 +                             content::RenderFrameHost* frame) {
 +        // Avoid inner web contents. If we need to execute scripts on
@@ -191,12 +191,3 @@ index b5b8c8d4b31e3e9bdd7d96c79cc361ace45182fd..672e3a14d40b1ccdc38b3d8fcb784ec5
        }
      }
  
-@@ -254,7 +262,7 @@ class Handler : public content::WebContentsObserver {
-   // TODO(devlin): Extensions *shouldn't* rely on order here, because there's
-   // never a guarantee. We should probably just adjust the test and disregard
-   // order (except the root frame).
--  std::vector<content::RenderFrameHost*> pending_render_frames_;
-+  std::vector<raw_ptr<content::RenderFrameHost>> pending_render_frames_;
- 
-   // The results of the injection.
-   std::vector<ScriptExecutor::FrameResult> results_;
