@@ -443,13 +443,20 @@ class WebContents : public ExclusiveAccessContext,
                              blink::PermissionType permissionType,
                              content::RenderFrameHost* render_frame_host);
 
+  // Revokes |origin| access to |device|.
+  // To be used in place of ObjectPermissionContextBase::RevokeObjectPermission.
+  void RevokeDevicePermission(const url::Origin& origin,
+                              const base::Value* device,
+                              blink::PermissionType permission_type,
+                              content::RenderFrameHost* render_frame_host);
+
   // Returns the list of devices that |origin| has been granted permission to
   // access. To be used in place of
   // ObjectPermissionContextBase::GetGrantedObjects.
-  std::vector<base::Value> GetGrantedDevices(
-      const url::Origin& origin,
-      blink::PermissionType permissionType,
-      content::RenderFrameHost* render_frame_host);
+  bool CheckDevicePermission(const url::Origin& origin,
+                             const base::Value* device,
+                             blink::PermissionType permissionType,
+                             content::RenderFrameHost* render_frame_host);
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -745,6 +752,10 @@ class WebContents : public ExclusiveAccessContext,
   void SetHtmlApiFullscreen(bool enter_fullscreen);
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
+
+  bool DoesDeviceMatch(const base::Value* device,
+                       const base::Value* device_to_compare,
+                       blink::PermissionType permission_type);
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;

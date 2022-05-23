@@ -21,8 +21,6 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
-#include "shell/browser/hid/hid_chooser_context.h"
-#include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -308,66 +306,8 @@ bool ElectronPermissionManager::CheckDevicePermission(
   api::WebContents* api_web_contents = api::WebContents::From(web_contents);
   if (device_permission_handler_.is_null()) {
     if (api_web_contents) {
-      std::vector<base::Value> granted_devices =
-          api_web_contents->GetGrantedDevices(origin, permission,
-                                              render_frame_host);
-
-      for (const auto& granted_device : granted_devices) {
-        if (permission ==
-            static_cast<blink::PermissionType>(
-                WebContentsPermissionHelper::PermissionType::HID)) {
-          if (device->FindIntKey(kHidVendorIdKey) !=
-                  granted_device.FindIntKey(kHidVendorIdKey) ||
-              device->FindIntKey(kHidProductIdKey) !=
-                  granted_device.FindIntKey(kHidProductIdKey)) {
-            continue;
-          }
-
-          const auto* serial_number =
-              granted_device.FindStringKey(kHidSerialNumberKey);
-          const auto* device_serial_number =
-              device->FindStringKey(kHidSerialNumberKey);
-
-          if (serial_number && device_serial_number &&
-              *device_serial_number == *serial_number)
-            return true;
-        } else if (permission ==
-                   static_cast<blink::PermissionType>(
-                       WebContentsPermissionHelper::PermissionType::SERIAL)) {
-#if BUILDFLAG(IS_WIN)
-          const auto* instance_id = device->FindStringKey(kDeviceInstanceIdKey);
-          const auto* port_instance_id =
-              granted_device.FindStringKey(kDeviceInstanceIdKey);
-          if (instance_id && port_instance_id &&
-              *instance_id == *port_instance_id)
-            return true;
-#else
-          const auto* serial_number =
-              granted_device.FindStringKey(kSerialNumberKey);
-          const auto* port_serial_number =
-              device->FindStringKey(kSerialNumberKey);
-          if (device->FindIntKey(kVendorIdKey) !=
-                  granted_device.FindIntKey(kVendorIdKey) ||
-              device->FindIntKey(kProductIdKey) !=
-                  granted_device.FindIntKey(kProductIdKey) ||
-              (serial_number && port_serial_number &&
-               *port_serial_number != *serial_number)) {
-            continue;
-          }
-
-#if BUILDFLAG(IS_MAC)
-          const auto* usb_driver_key = device->FindStringKey(kUsbDriverKey);
-          const auto* port_usb_driver_key =
-              granted_device.FindStringKey(kUsbDriverKey);
-          if (usb_driver_key && port_usb_driver_key &&
-              *usb_driver_key != *port_usb_driver_key) {
-            continue;
-          }
-#endif  // BUILDFLAG(IS_MAC)
-          return true;
-#endif  // BUILDFLAG(IS_WIN)
-        }
-      }
+      return api_web_contents->CheckDevicePermission(origin, device, permission,
+                                                     render_frame_host);
     }
     return false;
   } else {
@@ -396,6 +336,19 @@ void ElectronPermissionManager::GrantDevicePermission(
       api_web_contents->GrantDevicePermission(origin, device, permission,
                                               render_frame_host);
   }
+}
+
+void ElectronPermissionManager::RevokeDevicePermission(
+    blink::PermissionType permission,
+    const url::Origin& origin,
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents);
+  if (api_web_contents)
+    api_web_contents->RevokeDevicePermission(origin, device, permission,
+                                             render_frame_host);
 }
 
 blink::mojom::PermissionStatus

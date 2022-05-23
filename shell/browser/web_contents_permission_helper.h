@@ -68,6 +68,10 @@ class WebContentsPermissionHelper
       const url::Origin& origin,
       base::Value device,
       content::RenderFrameHost* render_frame_host) const;
+  void RevokeHIDDevicePermission(
+      const url::Origin& origin,
+      base::Value device,
+      content::RenderFrameHost* render_frame_host) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
@@ -90,6 +94,12 @@ class WebContentsPermissionHelper
                              const url::Origin& origin,
                              const base::Value* device,
                              content::RenderFrameHost* render_frame_host) const;
+
+  void RevokeDevicePermission(
+      blink::PermissionType permission,
+      const url::Origin& origin,
+      const base::Value* device,
+      content::RenderFrameHost* render_frame_host) const;
 
   // TODO(clavin): refactor to use the WebContents provided by the
   // WebContentsUserData base class instead of storing a duplicate ref

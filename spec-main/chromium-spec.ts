@@ -1918,7 +1918,7 @@ describe('navigator.hid', () => {
     serverUrl = `http://localhost:${(server.address() as any).port}`;
   });
 
-  const getDevices: any = () => {
+  const requestDevices: any = () => {
     return w.webContents.executeJavaScript(`
       navigator.hid.requestDevice({filters: []}).then(device => device.toString()).catch(err => err.toString());
     `, true);
@@ -1936,7 +1936,7 @@ describe('navigator.hid', () => {
 
   it('does not return a device if select-hid-device event is not defined', async () => {
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    const device = await getDevices();
+    const device = await requestDevices();
     expect(device).to.equal('');
   });
 
@@ -1947,7 +1947,7 @@ describe('navigator.hid', () => {
       callback();
     });
     session.defaultSession.setPermissionCheckHandler(() => false);
-    const device = await getDevices();
+    const device = await requestDevices();
     expect(selectFired).to.be.false();
     expect(device).to.equal('');
   });
@@ -1965,7 +1965,7 @@ describe('navigator.hid', () => {
         callback();
       }
     });
-    const device = await getDevices();
+    const device = await requestDevices();
     expect(selectFired).to.be.true();
     if (haveDevices) {
       expect(device).to.contain('[object HIDDevice]');
@@ -2014,7 +2014,7 @@ describe('navigator.hid', () => {
       return true;
     });
     await w.webContents.executeJavaScript('navigator.hid.getDevices();', true);
-    const device = await getDevices();
+    const device = await requestDevices();
     expect(selectFired).to.be.true();
     if (haveDevices) {
       expect(device).to.contain('[object HIDDevice]');
@@ -2024,7 +2024,7 @@ describe('navigator.hid', () => {
     }
   });
 
-  it('returns excludes a device when a exclusionFilter is specified', async () => {
+  it('excludes a device when a exclusionFilter is specified', async () => {
     const exclusionFilters = <any>[];
     let haveDevices = false;
     let checkForExcludedDevice = false;
@@ -2053,13 +2053,51 @@ describe('navigator.hid', () => {
       callback();
     });
 
-    await getDevices();
+    await requestDevices();
     if (haveDevices) {
       // We have devices to exclude, so check if exculsionFilters work
       checkForExcludedDevice = true;
       await w.webContents.executeJavaScript(`
         navigator.hid.requestDevice({filters: [], exclusionFilters: ${JSON.stringify(exclusionFilters)}}).then(device => device.toString()).catch(err => err.toString());
+
       `, true);
+    }
+  });
+
+  it('supports device.forget()', async () => {
+    let deletedDeviceFromEvent;
+    let haveDevices = false;
+    w.webContents.session.on('select-hid-device', (event, details, callback) => {
+      if (details.deviceList.length > 0) {
+        haveDevices = true;
+        callback(details.deviceList[0].deviceId);
+      } else {
+        callback();
+      }
+    });
+    w.webContents.session.on('hid-device-revoked', (event, details) => {
+      deletedDeviceFromEvent = details.device;
+    });
+    await requestDevices();
+    if (haveDevices) {
+      const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
+      if (grantedDevices.length > 0) {
+        const deletedDevice = await w.webContents.executeJavaScript(`
+          navigator.hid.getDevices().then(devices => {
+            devices[0].forget();
+            return {
+              vendorId: devices[0].vendorId,
+              productId: devices[0].productId,
+              name: devices[0].productName
+            }
+          })
+        `);
+        const grantedDevices2 = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
+        expect(grantedDevices2.length).to.be.lessThan(grantedDevices.length);
+        if (deletedDevice.name !== '' && deletedDevice.productId && deletedDevice.vendorId) {
+          expect(deletedDeviceFromEvent).to.include(deletedDevice);
+        }
+      }
     }
   });
 });

@@ -3445,37 +3445,127 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
 void WebContents::GrantDevicePermission(
     const url::Origin& origin,
     const base::Value* device,
-    blink::PermissionType permissionType,
+    blink::PermissionType permission_type,
     content::RenderFrameHost* render_frame_host) {
-  granted_devices_[render_frame_host->GetFrameTreeNodeId()][permissionType]
+  granted_devices_[render_frame_host->GetFrameTreeNodeId()][permission_type]
                   [origin]
                       .push_back(
                           std::make_unique<base::Value>(device->Clone()));
 }
 
-std::vector<base::Value> WebContents::GetGrantedDevices(
+void WebContents::RevokeDevicePermission(
     const url::Origin& origin,
-    blink::PermissionType permissionType,
+    const base::Value* device,
+    blink::PermissionType permission_type,
     content::RenderFrameHost* render_frame_host) {
   const auto& devices_for_frame_host_it =
       granted_devices_.find(render_frame_host->GetFrameTreeNodeId());
   if (devices_for_frame_host_it == granted_devices_.end())
-    return {};
+    return;
 
   const auto& current_devices_it =
-      devices_for_frame_host_it->second.find(permissionType);
+      devices_for_frame_host_it->second.find(permission_type);
   if (current_devices_it == devices_for_frame_host_it->second.end())
-    return {};
+    return;
 
   const auto& origin_devices_it = current_devices_it->second.find(origin);
   if (origin_devices_it == current_devices_it->second.end())
-    return {};
+    return;
 
-  std::vector<base::Value> results;
-  for (const auto& object : origin_devices_it->second)
-    results.push_back(object->Clone());
+  for (auto it = origin_devices_it->second.begin();
+       it != origin_devices_it->second.end();) {
+    if (DoesDeviceMatch(device, it->get(), permission_type)) {
+      it = origin_devices_it->second.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
 
-  return results;
+bool WebContents::DoesDeviceMatch(const base::Value* device,
+                                  const base::Value* device_to_compare,
+                                  blink::PermissionType permission_type) {
+  if (permission_type ==
+      static_cast<blink::PermissionType>(
+          WebContentsPermissionHelper::PermissionType::HID)) {
+    if (device->GetDict().FindInt(kHidVendorIdKey) !=
+            device_to_compare->GetDict().FindInt(kHidVendorIdKey) ||
+        device->GetDict().FindInt(kHidProductIdKey) !=
+            device_to_compare->GetDict().FindInt(kHidProductIdKey)) {
+      return false;
+    }
+
+    const auto* serial_number =
+        device_to_compare->GetDict().FindString(kHidSerialNumberKey);
+    const auto* device_serial_number =
+        device->GetDict().FindString(kHidSerialNumberKey);
+
+    if (serial_number && device_serial_number &&
+        *device_serial_number == *serial_number)
+      return true;
+  } else if (permission_type ==
+             static_cast<blink::PermissionType>(
+                 WebContentsPermissionHelper::PermissionType::SERIAL)) {
+#if BUILDFLAG(IS_WIN)
+    const auto* instance_id =
+        device->GetDict().FindString(kDeviceInstanceIdKey);
+    const auto* port_instance_id =
+        device_to_compare->GetDict().FindString(kDeviceInstanceIdKey);
+    if (instance_id && port_instance_id && *instance_id == *port_instance_id)
+      return true;
+#else
+    const auto* serial_number = device->GetDict().FindString(kSerialNumberKey);
+    const auto* port_serial_number =
+        device_to_compare->GetDict().FindString(kSerialNumberKey);
+    if (device->GetDict().FindInt(kVendorIdKey) !=
+            device_to_compare->GetDict().FindInt(kVendorIdKey) ||
+        device->GetDict().FindInt(kProductIdKey) !=
+            device_to_compare->GetDict().FindInt(kProductIdKey) ||
+        (serial_number && port_serial_number &&
+         *port_serial_number != *serial_number)) {
+      return false;
+    }
+
+#if BUILDFLAG(IS_MAC)
+    const auto* usb_driver_key = device->GetDict().FindString(kUsbDriverKey);
+    const auto* port_usb_driver_key =
+        device_to_compare->GetDict().FindString(kUsbDriverKey);
+    if (usb_driver_key && port_usb_driver_key &&
+        *usb_driver_key != *port_usb_driver_key) {
+      return false;
+    }
+#endif  // BUILDFLAG(IS_MAC)
+    return true;
+#endif  // BUILDFLAG(IS_WIN)
+  }
+  return false;
+}
+
+bool WebContents::CheckDevicePermission(
+    const url::Origin& origin,
+    const base::Value* device,
+    blink::PermissionType permission_type,
+    content::RenderFrameHost* render_frame_host) {
+  const auto& devices_for_frame_host_it =
+      granted_devices_.find(render_frame_host->GetFrameTreeNodeId());
+  if (devices_for_frame_host_it == granted_devices_.end())
+    return false;
+
+  const auto& current_devices_it =
+      devices_for_frame_host_it->second.find(permission_type);
+  if (current_devices_it == devices_for_frame_host_it->second.end())
+    return false;
+
+  const auto& origin_devices_it = current_devices_it->second.find(origin);
+  if (origin_devices_it == current_devices_it->second.end())
+    return false;
+
+  for (const auto& device_to_compare : origin_devices_it->second) {
+    if (DoesDeviceMatch(device, device_to_compare.get(), permission_type))
+      return true;
+  }
+
+  return false;
 }
 
 void WebContents::UpdatePreferredSize(content::WebContents* web_contents,

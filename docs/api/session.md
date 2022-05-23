@@ -274,6 +274,19 @@ from `select-hid-device` is called.  This event is intended for use when using
 a UI to ask users to pick a device so that the UI can be updated to remove the
 specified device.
 
+#### Event: 'hid-device-revoked'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `device` [HIDDevice[]](structures/hid-device.md)
+  * `frame` [WebFrameMain](web-frame-main.md)
+
+Emitted after `HIDDevice.forget()` has been called.  This event can be used
+to help maintain persistent storage of permissions when
+`setDevicePermissionHandler` is used.
+
 #### Event: 'select-serial-port'
 
 Returns:
