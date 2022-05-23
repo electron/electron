@@ -1160,15 +1160,14 @@ session.defaultSession.setCertificateVerifyProc((request, callback) => {
   }
 })
 
-session.defaultSession.setPermissionRequestHandler(function (webContents, permission, callback) {
+session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
   if (webContents.getURL() === 'github.com') {
     if (permission === 'notifications') {
-      callback(false)
-      return
+      return false;
     }
   }
 
-  callback(true)
+  return true;
 })
 
 // consider any url ending with `example.com`, `foobar.com`, `baz`

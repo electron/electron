@@ -683,22 +683,23 @@ describe('<webview> tag', function () {
 
     function setUpRequestHandler (webContentsId: number, requestedPermission: string) {
       return new Promise<void>((resolve, reject) => {
-        session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
-          if (webContents.id === webContentsId) {
+        session.fromPartition(partition).setPermissionCheckHandler(function (webContents, permission) {
+          if (webContents && webContents.id === webContentsId) {
             // requestMIDIAccess with sysex requests both midi and midiSysex so
             // grant the first midi one and then reject the midiSysex one
             if (requestedPermission === 'midiSysex' && permission === 'midi') {
-              return callback(true);
+              return true;
             }
 
             try {
               expect(permission).to.equal(requestedPermission);
             } catch (e) {
-              return reject(e);
+              reject(e);
             }
-            callback(false);
             resolve();
+            return false;
           }
+          return false;
         });
       });
     }
