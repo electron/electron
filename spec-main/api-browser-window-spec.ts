@@ -2187,8 +2187,10 @@ describe('BrowserWindow module', () => {
       const [, newOverlayRect] = await geometryChange;
       expect(newOverlayRect.width).to.equal(overlayRect.width + 400);
     };
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
     it('creates browser window with hidden title bar', () => {
       const w = new BrowserWindow({
         show: false,
@@ -2266,16 +2268,20 @@ describe('BrowserWindow module', () => {
       // Confirm that maximization only affected the height of the buttons and not the title bar
       expect(overlayRectPostMax.height).to.equal(size);
     };
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
     });
   });
 
   ifdescribe(process.platform === 'win32')('BrowserWindow.setTitlebarOverlay', () => {
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
 
     it('does not crash when an invalid titleBarStyle was initially set', () => {
       const win = new BrowserWindow({
@@ -2299,10 +2305,13 @@ describe('BrowserWindow module', () => {
     });
 
     it('correctly updates the height of the overlay', async () => {
-      const testOverlay = async (w: BrowserWindow, size: Number) => {
+      const testOverlay = async (w: BrowserWindow, size: Number, firstRun: boolean) => {
         const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-        w.loadFile(overlayHTML);
-        await emittedOnce(ipcMain, 'geometrychange');
+        const overlayReady = emittedOnce(ipcMain, 'geometrychange');
+        await w.loadFile(overlayHTML);
+        if (firstRun) {
+          await overlayReady;
+        }
 
         const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
         expect(overlayEnabled).to.be.true('overlayEnabled');
@@ -2339,13 +2348,13 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      await testOverlay(w, INITIAL_SIZE);
+      await testOverlay(w, INITIAL_SIZE, true);
 
       w.setTitleBarOverlay({
         height: INITIAL_SIZE + 10
       });
 
-      await testOverlay(w, INITIAL_SIZE + 10);
+      await testOverlay(w, INITIAL_SIZE + 10, false);
     });
   });
 
