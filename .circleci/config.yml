@@ -56,7 +56,7 @@ jobs:
             ^((?!docs/).)*$ run-build-mac true
             ^((?!docs/).)*$ run-build-linux true
             docs/.* run-docs-only true
-            ^((?!docs/).)*$ run-docs-only false
+            ^((?!docs/).)*$ run-docs-only true
       - run:
           command: |
             cd .circleci/config

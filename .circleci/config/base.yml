@@ -473,6 +473,13 @@ step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
         node script/yarn install
       fi
 
+step-install-npm-deps: &step-install-npm-deps
+  run:
+    name: Install node_modules
+    command: |
+      cd src/electron
+      node script/yarn install --frozen-lockfile
+
 # This step handles the differences between the linux "gclient sync"
 # and the expected state on macOS
 step-fix-sync: &step-fix-sync
@@ -987,9 +994,16 @@ step-ts-compile: &step-ts-compile
   run:
     name: Run TS/JS compile on doc only change
     command: |
-      cd src
-      ninja -C out/Default electron:default_app_js -j $NUMBER_OF_NINJA_PROCESSES
-      ninja -C out/Default electron:electron_js2c -j $NUMBER_OF_NINJA_PROCESSES
+      cd src/electron
+      node script/yarn create-typescript-definitions
+      node script/yarn tsc -p tsconfig.default_app.json --noEmit
+      for f in build/webpack/*.js
+      do
+        out="${f:29}"
+        if [ "$out" != "base.js" ]; then
+          node script/yarn webpack --config $f --output-filename=$out --output-path=./.tmp --env.mode=development
+        fi
+      done
 
 # List of all steps.
 steps-electron-gn-check: &steps-electron-gn-check
@@ -1011,37 +1025,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
   steps:
     # Checkout - Copied from steps-checkout
     - *step-checkout-electron
-    - *step-depot-tools-get
-    - *step-depot-tools-add-to-path
-    - *step-restore-brew-cache
-    - *step-install-gnutar-on-mac
-    - *step-install-python2-on-mac
-    - *step-get-more-space-on-mac
-    - *step-setup-goma-for-build
-    - *step-generate-deps-hash
-    - *step-touch-sync-done
-    - maybe-restore-portaled-src-cache
-    - *step-maybe-restore-git-cache
-    - *step-set-git-cache-path
-    # This sync call only runs if .circle-sync-done is an EMPTY file
-    - *step-gclient-sync
-    # These next few steps reset Electron to the correct commit regardless of which cache was restored
-    - run:
-        name: Wipe Electron
-        command: rm -rf src/electron
-    - *step-checkout-electron
-    - *step-run-electron-only-hooks
-    - *step-generate-deps-hash-cleanly
-    - *step-mark-sync-done
-    - *step-minimize-workspace-size-from-checkout
-
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
-    - *step-wait-for-goma
-    - *step-get-more-space-on-mac
-    - *step-install-npm-deps-on-mac
-    - *step-fix-sync
-    - *step-gn-gen-default
+    - *step-install-npm-deps
 
     #Compile ts/js to verify doc change didn't break anything
     - *step-ts-compile
