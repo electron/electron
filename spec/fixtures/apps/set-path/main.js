@@ -1,8 +1,12 @@
 const http = require('http');
 const { app, ipcMain, BrowserWindow } = require('electron');
 
+let partition;
 if (process.argv.length > 3) {
   app.setPath(process.argv[2], process.argv[3]);
+  if (process.argv.length > 4) {
+    partition = 'persist:' + process.argv[4];
+  }
 }
 
 const html = `
@@ -37,7 +41,7 @@ app.once('ready', () => {
     }
   }).listen(0, '127.0.0.1', () => {
     const serverUrl = 'http://127.0.0.1:' + server.address().port;
-    const mainWindow = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true, contextIsolation: false } });
+    const mainWindow = new BrowserWindow({ show: false, webPreferences: { partition, webSecurity: true, nodeIntegration: true, contextIsolation: false } });
     mainWindow.loadURL(serverUrl);
   });
 });

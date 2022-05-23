@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/path_service.h"
 #include "chrome/browser/browser_features.h"
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
@@ -18,6 +19,7 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/net/system_network_context_manager.h"
+#include "shell/common/electron_paths.h"
 
 namespace electron {
 
@@ -79,9 +81,19 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
   // Configure on-disk storage for persistent sessions.
   if (!in_memory) {
+    // Get cache dir.
+    base::FilePath session_data;
+    base::FilePath user_cache;
+    base::PathService::Get(electron::DIR_SESSION_DATA, &session_data);
+    base::PathService::Get(electron::DIR_USER_CACHE, &user_cache);
+    // For partitions the |path| is $sessionData/Partitions/name, and we should
+    // ensure the |user_cache| is $userCache/Partitions/name.
+    if (path != session_data)
+      CHECK(session_data.AppendRelativePath(path, &user_cache));
+
     // Configure the HTTP cache path and size.
     network_context_params->http_cache_directory =
-        path.Append(chrome::kCacheDirname);
+        user_cache.Append(chrome::kCacheDirname);
     network_context_params->http_cache_max_size =
         browser_context_->GetMaxCacheSize();
 
