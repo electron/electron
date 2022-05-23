@@ -1562,7 +1562,7 @@ jobs:
   ts-compile-doc-change:
     executor:
       name: linux-docker
-      size: medium
+      size: 2xlarge
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
