@@ -1,20 +1,22 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Mon, 25 Oct 2021 21:45:57 +0200
-Subject: fix: patch out permissions checks in exclusive_access
+Subject: fix: adapt exclusive_access for electron needs
 
 This patch is necessary in order to properly enable
 navigator.keyboard.{(un)?lock}() functionality. We don't have a concept
 of PermissionManager nor of a Profile, so this would not affect usage of
 the API.
 
-We might consider potentially using our own permissions handler,
-but it's not strictly necessary for this API to work to spec.
-
-Profile check has been upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3247196
+We also need to ensure that NotifyExclusiveTabAccessLost is called
+on all platforms in FullscreenController::ExitFullscreenModeInternal()
+and not just macOS, since Electron's native window impls report state
+change fairly instantly as well, and so pressing escape won't work on
+Linux or Windows to un-fullscreen in some circumstances without this
+change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index ac9f8b06b066adb53a92cb1768e21d6b6e9be2a8..9fb77b8d7c3d9cb49dcb3ac1f2495fa52f53932e 100644
+index ac9f8b06b066adb53a92cb1768e21d6b6e9be2a8..ebc0f0fe568d7219486360bbe4b6c65e415735e4 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -112,6 +114,22 @@ index ac9f8b06b066adb53a92cb1768e21d6b6e9be2a8..9fb77b8d7c3d9cb49dcb3ac1f2495fa5
  
    if (option == BROWSER)
      base::RecordAction(base::UserMetricsAction("ToggleFullscreen"));
+@@ -507,12 +517,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
+   RecordExitingUMA();
+   toggled_into_fullscreen_ = false;
+   started_fullscreen_transition_ = true;
+-#if BUILDFLAG(IS_MAC)
+-  // Mac windows report a state change instantly, and so we must also clear
++
++  // Electron native windows report a state change instantly, and so we must also clear
+   // state_prior_to_tab_fullscreen_ to match them else other logic using
+   // state_prior_to_tab_fullscreen_ will be incorrect.
+   NotifyTabExclusiveAccessLost();
+-#endif
++
+   exclusive_access_manager()->context()->ExitFullscreen();
+   extension_caused_fullscreen_ = GURL();
+ 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 index f0841982cb296079c8b943067564d74bc1b7067c..49f59fc2c12c98faada52e0e7c8c9c6e6251b599 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
