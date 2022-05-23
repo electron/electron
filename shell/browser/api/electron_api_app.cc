@@ -480,6 +480,12 @@ int GetPathConstant(const std::string& name) {
     return DIR_SESSION_DATA;
   else if (name == "userData")
     return chrome::DIR_USER_DATA;
+  else if (name == "localUserData")
+#if BUILDFLAG(IS_POSIX)
+    return chrome::DIR_USER_DATA;
+#else
+    return DIR_USER_CACHE;
+#endif
   else if (name == "cache")
 #if BUILDFLAG(IS_POSIX)
     return base::DIR_CACHE;
