@@ -484,7 +484,7 @@ int GetPathConstant(const std::string& name) {
 #if BUILDFLAG(IS_POSIX)
     return base::DIR_CACHE;
 #else
-    return base::DIR_ROAMING_APP_DATA;
+    return base::DIR_LOCAL_APP_DATA;
 #endif
   else if (name == "userCache")
     return DIR_USER_CACHE;

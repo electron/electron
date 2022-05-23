@@ -632,6 +632,12 @@ Returns `string` - The current application directory.
     storage like localStorage or cookies to save user data, it is recommended
     to set this directory to other locations to avoid polluting the `userData`
     directory.
+  * `cache` Per-user cache directory, which by default points to:
+    * `%LOCALAPPDATA%` on Windows
+    * `$XDG_CACHE_HOME` or `~/.cache` on Linux
+    * `~/Library/Caches` on macOS
+  * `userCache` The directory for storing your app's cache files, which
+    by default is the `cache` directory appended with your app's name.
   * `temp` Temporary directory.
   * `exe` The current executable file.
   * `module` The `libchromiumcontent` library.
