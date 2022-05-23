@@ -193,12 +193,9 @@ class App : public ElectronBrowserClient::Delegate,
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
-  void OnFirstInstanceAck(const base::span<const uint8_t>* first_instance_data);
-  void OnSecondInstance(
-      const base::CommandLine& cmd,
-      const base::FilePath& cwd,
-      const std::vector<uint8_t> additional_data,
-      const ProcessSingleton::NotificationAckCallback& ack_callback);
+  void OnSecondInstance(const base::CommandLine& cmd,
+                        const base::FilePath& cwd,
+                        const std::vector<const uint8_t> additional_data);
   bool HasSingleInstanceLock() const;
   bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
