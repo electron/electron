@@ -1328,6 +1328,11 @@ void ElectronBrowserClient::
   DCHECK(browser_context);
   DCHECK(factories);
 
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context);
+  protocol_registry->RegisterURLLoaderFactories(factories,
+                                                false /* allow_file_access */);
+
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   factories->emplace(
       extensions::kExtensionScheme,
