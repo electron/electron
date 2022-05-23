@@ -596,12 +596,12 @@ std::string ElectronBrowserClient::GetGeolocationApiKey() {
 content::GeneratedCodeCacheSettings
 ElectronBrowserClient::GetGeneratedCodeCacheSettings(
     content::BrowserContext* context) {
-  // TODO(deepak1556): Use platform cache directory.
-  base::FilePath cache_path = context->GetPath();
+  base::FilePath user_cache;
+  base::PathService::Get(DIR_USER_CACHE, &user_cache);
   // If we pass 0 for size, disk_cache will pick a default size using the
   // heuristics based on available disk size. These are implemented in
   // disk_cache::PreferredCacheSize in net/disk_cache/cache_util.cc.
-  return content::GeneratedCodeCacheSettings(true, 0, cache_path);
+  return content::GeneratedCodeCacheSettings(true, 0, user_cache);
 }
 
 void ElectronBrowserClient::AllowCertificateError(

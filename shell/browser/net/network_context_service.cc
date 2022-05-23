@@ -86,7 +86,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
     base::FilePath user_cache;
     base::PathService::Get(electron::DIR_SESSION_DATA, &session_data);
     base::PathService::Get(electron::DIR_USER_CACHE, &user_cache);
-    // For partitions the |path| is $sessionData/Partitions/name, and we should
+    // For partitions, the |path| is $sessionData/Partitions/name, and we should
     // ensure the |user_cache| is $userCache/Partitions/name.
     if (path != session_data)
       CHECK(session_data.AppendRelativePath(path, &user_cache));
