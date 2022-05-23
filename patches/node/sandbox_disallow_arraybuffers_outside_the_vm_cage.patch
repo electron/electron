@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Mon, 23 May 2022 20:51:41 +0900
-Subject: [sandbox] Disallow ArrayBuffers outside the VM Cage
+Subject: Disallow ArrayBuffers outside the VM Cage
 
 Refs https://chromium-review.googlesource.com/c/v8/v8/+/3114136
 
