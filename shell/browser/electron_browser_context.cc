@@ -126,10 +126,14 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                     &max_cache_size_);
 
   base::PathService::Get(DIR_SESSION_DATA, &path_);
-  if (!in_memory && !partition.empty())
-    path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
-                .Append(base::FilePath::FromUTF8Unsafe(
-                    MakePartitionName(partition)));
+  base::PathService::Get(DIR_USER_CACHE, &cache_path_);
+  if (!in_memory && !partition.empty()) {
+    base::FilePath subdir = base::FilePath(FILE_PATH_LITERAL("Partitions"))
+                                .Append(base::FilePath::FromUTF8Unsafe(
+                                    MakePartitionName(partition)));
+    path_ = path_.Append(subdir);
+    cache_path_ = cache_path_.Append(subdir);
+  }
 
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
 

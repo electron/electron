@@ -1118,8 +1118,8 @@ describe('app module', () => {
     });
 
     describe('userCache', () => {
+      const cacheDirs = ['Cache', 'Code Cache'];
       it('stores http cache', () => {
-        const cacheDirs = ['Cache', 'Code Cache'];
         for (const dir of cacheDirs) {
           expect(fs.existsSync(path.join(tempBrowserDataPath, dir))).to.equal(false);
         }
@@ -1131,13 +1131,14 @@ describe('app module', () => {
 
       it('stores http cache of partition in child dir', () => {
         const partition = 'partition';
-        const cachePath = path.join(tempBrowserDataPath, 'Partitions', partition, 'Cache');
-        const codeCachePath = path.join(tempBrowserDataPath, 'Code Cache');
-        expect(fs.existsSync(cachePath)).to.equal(false);
-        expect(fs.existsSync(codeCachePath)).to.equal(false);
+        const cachePath = path.join(tempBrowserDataPath, 'Partitions', partition);
+        for (const dir of cacheDirs) {
+          expect(fs.existsSync(path.join(cachePath, dir))).to.equal(false);
+        }
         cp.spawnSync(process.execPath, [appPath, 'userCache', tempBrowserDataPath, partition]);
-        expect(fs.existsSync(cachePath)).to.equal(true);
-        expect(fs.existsSync(codeCachePath)).to.equal(true);
+        for (const dir of cacheDirs) {
+          expect(fs.existsSync(path.join(cachePath, dir))).to.equal(true);
+        }
       });
     });
   });
