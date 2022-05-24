@@ -3,6 +3,18 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
+    <script>
+      // Duplicate what Chrome does in chrome/test/data/web_apps/test_utils.js,
+      // which seems to affect the reliability of geometrychange event.
+      const siteTitle = document.title;
+      document.title = siteTitle;
+
+      const {ipcRenderer} = require('electron');
+      navigator.windowControlsOverlay.ongeometrychange = function() {
+        const {x, y, width, height} = navigator.windowControlsOverlay.getTitlebarAreaRect();
+        ipcRenderer.send('geometrychange', {x, y, width, height});
+      };
+    </script>
     <style>
       :root {
         --fallback-title-bar-height: 40px;
@@ -49,13 +61,6 @@
     </style>
   </head>
   <body>
-    <script>
-      const {ipcRenderer} = require('electron');
-      navigator.windowControlsOverlay.ongeometrychange = function() {
-        const {x, y, width, height} = navigator.windowControlsOverlay.getTitlebarAreaRect();
-        ipcRenderer.send('geometrychange', {x, y, width, height});
-      };
-    </script>      
     <div id="titleBarContainer">
       <div id="titleBar" class=" draggable">
         <span class="draggable">Title goes here</span>
