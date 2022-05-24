@@ -294,7 +294,7 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
   ref->ref();
   return node::Buffer::New(args->isolate(),
                            reinterpret_cast<char*>(ref->pixels()),
-                           bitmap.computeByteSize(), &SkUnref, ref)
+                           bitmap.computeByteSize(), &SkUnref, ref);
 #endif
 }
 
