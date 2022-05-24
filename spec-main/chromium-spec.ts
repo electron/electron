@@ -664,11 +664,11 @@ describe('chromium features', () => {
         }
       });
       const message = emittedOnce(w.webContents, 'ipc-message');
-      w.webContents.session.setPermissionCheckHandler((wc, permission) => {
+      w.webContents.session.setPermissionRequestHandler((wc, permission, callback) => {
         if (permission === 'geolocation') {
-          return false;
+          callback(false);
         } else {
-          return true;
+          callback(true);
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'geolocation', 'index.html'));
@@ -926,6 +926,7 @@ describe('chromium features', () => {
     afterEach(closeAllWindows);
     afterEach(() => {
       session.defaultSession.setPermissionCheckHandler(null);
+      session.defaultSession.setPermissionRequestHandler(null);
     });
 
     it('can return labels of enumerated devices', async () => {
@@ -977,12 +978,12 @@ describe('chromium features', () => {
     });
 
     it('provides a securityOrigin to the request handler', async () => {
-      session.defaultSession.setPermissionCheckHandler(
-        (wc, permission, requestingOrigin, details) => {
+      session.defaultSession.setPermissionRequestHandler(
+        (wc, permission, callback, details) => {
           if (details.securityOrigin !== undefined) {
-            return true;
+            callback(true);
           } else {
-            return false;
+            callback(false);
           }
         }
       );
@@ -1732,7 +1733,7 @@ describe('navigator.clipboard', () => {
 
   after(closeAllWindows);
   afterEach(() => {
-    session.defaultSession.setPermissionCheckHandler(null);
+    session.defaultSession.setPermissionRequestHandler(null);
   });
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
@@ -1741,11 +1742,11 @@ describe('navigator.clipboard', () => {
   });
 
   it('returns an error when permission denied', async () => {
-    session.defaultSession.setPermissionCheckHandler((wc, permission) => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
       if (permission === 'clipboard-read') {
-        return false;
+        callback(false);
       } else {
-        return true;
+        callback(true);
       }
     });
     const clipboard = await readClipboard();
@@ -1753,11 +1754,11 @@ describe('navigator.clipboard', () => {
   });
 
   it('returns clipboard contents when permission is granted', async () => {
-    session.defaultSession.setPermissionCheckHandler((wc, permission) => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
       if (permission === 'clipboard-read') {
-        return true;
+        callback(true);
       } else {
-        return false;
+        callback(false);
       }
     });
     const clipboard = await readClipboard();
@@ -1880,26 +1881,22 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
 });
 
 describe('navigator.bluetooth', () => {
-  after(closeAllWindows);
-
-  it('can request bluetooth devices', async () => {
-    const w = new BrowserWindow({
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
       show: false,
       webPreferences: {
         enableBlinkFeatures: 'WebBluetooth'
       }
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    w.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
-      console.log('select-bluetooth-device');
-      event.preventDefault();
-      if (deviceList && deviceList.length > 0) {
-        callback(deviceList[0].deviceId);
-      }
-    });
+  });
 
-    console.log('In can request bluetooth devices');
-    const bluetooth = await w.webContents.executeJavaScript('navigator.bluetooth.requestDevice({ acceptAllDevices: true}).then(device => "Found a device!").catch(err => err.message);', true);
+  after(closeAllWindows);
+
+  it('can request bluetooth devices', async () => {
+    const bluetooth = await w.webContents.executeJavaScript(`
+    navigator.bluetooth.requestDevice({ acceptAllDevices: true}).then(device => "Found a device!").catch(err => err.message);`, true);
     expect(bluetooth).to.be.oneOf(['Found a device!', 'Bluetooth adapter not available.', 'User cancelled the requestDevice() chooser.']);
   });
 });

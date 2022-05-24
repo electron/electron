@@ -150,7 +150,7 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
     StatusCallback response_callback) {
   RequestPermissionsWithDetails(
       std::vector<blink::PermissionType>(1, permission), render_frame_host,
-      requesting_origin, user_gesture, details,
+      user_gesture, details,
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
                      std::move(response_callback)));
 }
@@ -161,15 +161,13 @@ void ElectronPermissionManager::RequestPermissions(
     const GURL& requesting_origin,
     bool user_gesture,
     StatusesCallback response_callback) {
-  RequestPermissionsWithDetails(permissions, render_frame_host,
-                                requesting_origin, user_gesture, nullptr,
-                                std::move(response_callback));
+  RequestPermissionsWithDetails(permissions, render_frame_host, user_gesture,
+                                nullptr, std::move(response_callback));
 }
 
 void ElectronPermissionManager::RequestPermissionsWithDetails(
     const std::vector<blink::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
-    const GURL& requesting_origin,
     bool user_gesture,
     const base::DictionaryValue* details,
     StatusesCallback response_callback) {
@@ -242,26 +240,8 @@ void ElectronPermissionManager::RequestPermissionsFromCurrentDocument(
     bool user_gesture,
     base::OnceCallback<void(const std::vector<blink::mojom::PermissionStatus>&)>
         callback) {
-  if (render_frame_host->IsNestedWithinFencedFrame()) {
-    std::move(callback).Run(std::vector<blink::mojom::PermissionStatus>(
-        permissions.size(), blink::mojom::PermissionStatus::DENIED));
-    return;
-  }
-
-  auto* web_contents =
-      render_frame_host
-          ? content::WebContents::FromRenderFrameHost(render_frame_host)
-          : nullptr;
-  auto origin = web_contents->GetLastCommittedURL();
-
-  std::vector<blink::mojom::PermissionStatus> result;
-  for (const auto& permission : permissions) {
-    bool granted = CheckPermissionWithDetails(permission, render_frame_host,
-                                              origin, nullptr);
-    result.push_back(granted ? blink::mojom::PermissionStatus::GRANTED
-                             : blink::mojom::PermissionStatus::DENIED);
-  }
-  std::move(callback).Run(result);
+  RequestPermissionsWithDetails(permissions, render_frame_host, user_gesture,
+                                nullptr, std::move(callback));
 }
 
 blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(

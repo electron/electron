@@ -76,7 +76,6 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void RequestPermissionsWithDetails(
       const std::vector<blink::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
-      const GURL& requesting_origin,
       bool user_gesture,
       const base::DictionaryValue* details,
       StatusesCallback callback);
