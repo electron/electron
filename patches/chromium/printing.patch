@@ -113,7 +113,7 @@ index dd27bbf387718d6abda5080e7d2c609cd0eaff17..8837cf2aeaa2f87d51be8d00aa356c8a
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 3701853ada7f0ffe3cc8a798496f9f48541b4f47..59140761980b8a3fef06214f645306170d38720b 100644
+index 3701853ada7f0ffe3cc8a798496f9f48541b4f47..203ca9b0c4bf048016023fc3d260df6588392418 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,8 +30,6 @@
@@ -502,7 +502,7 @@ index 8e5c441b3d0a2d35fc5c6f9d43b4a4ca167e09ca..2cfcd810c9507c434e673064b63e8fbc
    // Tells the browser that there are invalid printer settings.
    ShowInvalidPrinterSettingsError();
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index db8913ae41d46d14fd15c6127e126e4b129dc4b8..ddbc3b0d5a00af9de84e1b0aadc44adb6ff84495 100644
+index db8913ae41d46d14fd15c6127e126e4b129dc4b8..eaddc1bbc59bad9cc885fb8532d4f8c1df2f1a86 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -42,6 +42,7 @@
