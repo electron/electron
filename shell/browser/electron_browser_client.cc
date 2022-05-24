@@ -1036,10 +1036,18 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 std::vector<base::FilePath>
 ElectronBrowserClient::GetNetworkContextsParentDirectory() {
   base::FilePath session_data;
+  base::FilePath user_cache;
   base::PathService::Get(DIR_SESSION_DATA, &session_data);
+  base::PathService::Get(DIR_USER_CACHE, &user_cache);
   DCHECK(!session_data.empty());
+  DCHECK(!user_cache.empty());
 
-  return {session_data};
+  // On some platforms, the cache is a child of the user_data_dir so only
+  // return the one path.
+  if (session_data.IsParent(user_cache))
+    return {session_data};
+  else
+    return {session_data, user_cache};
 }
 
 std::string ElectronBrowserClient::GetProduct() {
