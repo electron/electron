@@ -1,7 +1,7 @@
 # Where to Store App Data
 
 This tutorial provides guidance on where to store user data properly depending
-on the app's type.
+on the data's type.
 
 ## User data paths
 
@@ -34,7 +34,6 @@ to `localUserData`. Otherwise, it should instead be written to `userData`.
 
 On Linux and macOS, `localUserData` has no distinctive purpose and is just an alias
 to `userData`.
-
 
 ### `userCache`
 
@@ -77,17 +76,17 @@ with `BrowserWindow`, because disk spaces used by `sessionData` could increase
 quickly and users would get a very large `userData` directory, which is annoying
 for users who synchronize the content of `userData` to cloud.
 
-So for apps that don't store any user data inside browser, it is recommended
-to change `sessionData` to `userCache` to keep `userData` directory clean.
-
-```javascript
-app.setPath('sessionData', app.getPath('userCache'))
-```
-
-And for apps that rely on browser storage like cookies and localStorage to store
+So for apps that rely on browser storage like cookies and localStorage to store
 user data, it is recommended to change `sessionData` to `localUserData`, to
 comply with user data conventions on Windows.
 
 ```javascript
 app.setPath('sessionData', app.getPath('localUserData'))
+```
+
+And for apps that don't store any user data inside browser, it is recommended
+to change `sessionData` to `userCache` to keep `userData` directory clean.
+
+```javascript
+app.setPath('sessionData', app.getPath('userCache'))
 ```
