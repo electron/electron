@@ -17,16 +17,12 @@ gin::WrapperInfo PushNotifications::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 PushNotifications::PushNotifications() {
 #if BUILDFLAG(IS_MAC)
-  static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
-      ->set_delegate(this);
   Browser::Get()->AddObserver(this);
 #endif
 }
 
 PushNotifications::~PushNotifications() {
 #if BUILDFLAG(IS_MAC)
-  static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
-      ->set_delegate(nullptr);
   Browser::Get()->RemoveObserver(this);
 #endif
 }
