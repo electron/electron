@@ -76,10 +76,19 @@ index 61641e1ad8a47a4910918ff61523a23854745b81..d4a3e2282256f5a43235b40b4c9f46ca
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index e12c36384ddc05554ed362bba2c0a8b418634f0a..9712d21c2d59d3b52ad1fa33a944eef116bf5c8a 100644
+index e12c36384ddc05554ed362bba2c0a8b418634f0a..1c740410de70ee5a888ee7cf406dfa3bccc28c9b 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -25,8 +25,10 @@ extern "C" {
+@@ -19,14 +19,19 @@
+ #include "base/threading/scoped_blocking_call.h"
+ #include "base/threading/thread_restrictions.h"
+ #include "base/trace_event/base_tracing.h"
++#if defined(MAS_BUILD)
++#include <sys/syscall.h>
++#endif
+ 
+ extern "C" {
+ // Changes the current thread's directory to a path or directory file
  // descriptor. libpthread only exposes a syscall wrapper starting in
  // macOS 10.12, but the system call dates back to macOS 10.5. On older OSes,
  // the syscall is issued directly.
@@ -90,12 +99,15 @@ index e12c36384ddc05554ed362bba2c0a8b418634f0a..9712d21c2d59d3b52ad1fa33a944eef1
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
      API_AVAILABLE(macosx(10.14));
-@@ -95,13 +97,21 @@ class PosixSpawnFileActions {
+@@ -95,13 +100,27 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
 +#if defined(MAS_BUILD)
++  #pragma clang diagnostic push
++  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 +  return syscall(SYS___pthread_chdir, path);
++  #pragma clang diagnostic pop
 +#else
    return pthread_chdir_np(path);
 +#endif
@@ -105,14 +117,17 @@ index e12c36384ddc05554ed362bba2c0a8b418634f0a..9712d21c2d59d3b52ad1fa33a944eef1
  // invalid file descriptor, per libpthread-218.1.3/private/private.h.
  int ResetCurrentThreadDirectory() {
 +#if defined(MAS_BUILD)
-+  return syscall(SYS___pthread_chdir, path);
++  #pragma clang diagnostic push
++  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
++  return syscall(SYS___pthread_fchdir, -1);
++  #pragma clang diagnostic pop
 +#else
    return pthread_fchdir_np(-1);
 +#endif
  }
  
  struct GetAppOutputOptions {
-@@ -221,11 +231,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -221,11 +240,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
