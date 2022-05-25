@@ -216,7 +216,8 @@ describe('session module', () => {
       });
     });
 
-    it('should survive an app restart for persistent partition', async () => {
+    it('should survive an app restart for persistent partition', async function () {
+      this.timeout(60000);
       const appPath = path.join(fixtures, 'api', 'cookie-app');
 
       const runAppWithPhase = (phase: string) => {
