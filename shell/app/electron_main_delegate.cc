@@ -145,6 +145,9 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     case DIR_SESSION_DATA:
       // By default and for backward, equivalent to DIR_USER_DATA.
       return base::PathService::Get(chrome::DIR_USER_DATA, result);
+    case DIR_SESSION_CACHE:
+      // By default and for backward, equivalent to DIR_USER_DATA.
+      return base::PathService::Get(chrome::DIR_USER_DATA, result);
     case DIR_USER_CACHE: {
 #if BUILDFLAG(IS_POSIX)
       int parent_key = base::DIR_CACHE;

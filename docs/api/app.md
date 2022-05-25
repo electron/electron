@@ -638,6 +638,8 @@ Returns `string` - The current application directory.
     for HTTP disk cache and JavaScript code cache, such as localStorage,
     cookies, downloaded dictionaries, network state, devtools files. By default
     this points to `userData`.
+  * `sessionCache` The directory for storing HTTP disk cache and JavaScript
+    code cache. By default this points to `userData`.
   * `temp` Temporary directory.
   * `exe` The current executable file.
   * `module` The `libchromiumcontent` library.

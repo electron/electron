@@ -126,7 +126,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                     &max_cache_size_);
 
   base::PathService::Get(DIR_SESSION_DATA, &path_);
-  base::PathService::Get(DIR_USER_CACHE, &cache_path_);
+  base::PathService::Get(DIR_SESSION_CACHE, &cache_path_);
   if (!in_memory && !partition.empty()) {
     base::FilePath subdir = base::FilePath(FILE_PATH_LITERAL("Partitions"))
                                 .Append(base::FilePath::FromUTF8Unsafe(

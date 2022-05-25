@@ -1060,6 +1060,9 @@ describe('app module', () => {
     const userDataPath = path.join(app.getPath('appData'), appName);
     const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
 
+    const hasAllFiles = (dir: string, files: string[]) => files.every(f => fs.existsSync(path.join(dir, f)));
+    const hasNoFiles = (dir: string, files: string[]) => files.every(f => !fs.existsSync(path.join(dir, f)));
+
     beforeEach(() => {
       fs.removeSync(userDataPath);
       fs.removeSync(tempBrowserDataPath);
@@ -1072,73 +1075,64 @@ describe('app module', () => {
         'IndexedDB',
         'Service Worker'
       ];
-      const hasSessionFiles = (dir: string) => {
-        for (const file of sessionFiles) {
-          if (!fs.existsSync(path.join(dir, file))) {
-            return false;
-          }
-        }
-        return true;
-      };
 
       it('writes to userData by default', () => {
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasNoFiles(userDataPath, sessionFiles));
         cp.spawnSync(process.execPath, [appPath]);
-        expect(hasSessionFiles(userDataPath)).to.equal(true);
+        expect(hasAllFiles(userDataPath, sessionFiles));
       });
 
       it('includes no http cache', () => {
-        const cachePath = path.join(userDataPath, 'Cache');
+        const cachePath = path.join(tempBrowserDataPath, 'Cache');
         expect(fs.existsSync(cachePath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath]);
+        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
         expect(fs.existsSync(cachePath)).to.equal(false);
       });
 
       it('can be changed', () => {
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasNoFiles(userDataPath, sessionFiles));
         cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
-        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
+        expect(hasNoFiles(userDataPath, sessionFiles));
+        expect(hasAllFiles(tempBrowserDataPath, sessionFiles));
       });
 
       it('changing userData affects default sessionData', () => {
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasNoFiles(userDataPath, sessionFiles));
         cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
-        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
+        expect(hasNoFiles(userDataPath, sessionFiles));
+        expect(hasAllFiles(tempBrowserDataPath, sessionFiles));
       });
 
       it('stores data of partition in child dir', () => {
         const partition = 'partition';
         const partitionDataPath = path.join(tempBrowserDataPath, 'Partitions', partition);
-        expect(fs.existsSync(partitionDataPath)).to.equal(false);
+        expect(hasNoFiles(partitionDataPath, sessionFiles));
         cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath, partition]);
-        expect(fs.existsSync(partitionDataPath)).to.equal(true);
+        expect(hasAllFiles(partitionDataPath, sessionFiles));
       });
     });
 
-    describe('userCache', () => {
+    describe('sessionCache', () => {
       const cacheDirs = ['Cache', 'Code Cache'];
+
+      it('writes to userData by default', () => {
+        expect(hasNoFiles(userDataPath, cacheDirs));
+        cp.spawnSync(process.execPath, [appPath]);
+        expect(hasAllFiles(userDataPath, cacheDirs));
+      });
+
       it('stores http cache', () => {
-        for (const dir of cacheDirs) {
-          expect(fs.existsSync(path.join(tempBrowserDataPath, dir))).to.equal(false);
-        }
-        cp.spawnSync(process.execPath, [appPath, 'userCache', tempBrowserDataPath]);
-        for (const dir of cacheDirs) {
-          expect(fs.existsSync(path.join(tempBrowserDataPath, dir))).to.equal(true);
-        }
+        expect(hasNoFiles(tempBrowserDataPath, cacheDirs));
+        cp.spawnSync(process.execPath, [appPath, 'sessionCache', tempBrowserDataPath]);
+        expect(hasAllFiles(tempBrowserDataPath, cacheDirs));
       });
 
       it('stores http cache of partition in child dir', () => {
         const partition = 'partition';
-        const cachePath = path.join(tempBrowserDataPath, 'Partitions', partition);
-        for (const dir of cacheDirs) {
-          expect(fs.existsSync(path.join(cachePath, dir))).to.equal(false);
-        }
-        cp.spawnSync(process.execPath, [appPath, 'userCache', tempBrowserDataPath, partition]);
-        for (const dir of cacheDirs) {
-          expect(fs.existsSync(path.join(cachePath, dir))).to.equal(true);
-        }
+        const partitionDir = path.join(tempBrowserDataPath, 'Partitions', partition);
+        expect(hasNoFiles(partitionDir, cacheDirs));
+        cp.spawnSync(process.execPath, [appPath, 'sessionCache', tempBrowserDataPath, partition]);
+        expect(hasAllFiles(partitionDir, cacheDirs));
       });
     });
   });
