@@ -1308,8 +1308,6 @@ void WebContents::EnterFullscreenModeForTab(
       base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
                           base::Unretained(this), requesting_frame, options);
   permission_helper->RequestFullscreenPermission(callback);
-  exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
-      requesting_frame, options.display_id);
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
@@ -1324,6 +1322,9 @@ void WebContents::OnEnterFullscreenModeForTab(
     DCHECK_EQ(fullscreen_frame_, source->GetFocusedFrame());
     return;
   }
+
+  exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
+      requesting_frame, options.display_id);
 
   SetHtmlApiFullscreen(true);
 
