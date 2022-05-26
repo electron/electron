@@ -5,9 +5,9 @@
 #include "shell/browser/api/electron_api_push_notifications.h"
 
 #include "shell/browser/browser.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/gin_converters/value_converter.h"
 
 namespace electron {
 
@@ -54,17 +54,16 @@ gin::Handle<PushNotifications> PushNotifications::Create(v8::Isolate* isolate) {
 gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
-  return gin_helper::EventEmitterMixin<PushNotifications>::GetObjectTemplateBuilder(
-             isolate)
+  return gin_helper::EventEmitterMixin<
+             PushNotifications>::GetObjectTemplateBuilder(isolate)
 #if BUILDFLAG(IS_MAC)
-      .SetMethod("registerForAPNSNotifications",
-                 base::BindRepeating(&Browser::RegisterForAPNSNotifications,
-                                     browser))
+      .SetMethod(
+          "registerForAPNSNotifications",
+          base::BindRepeating(&Browser::RegisterForAPNSNotifications, browser))
       .SetMethod("unregisterForAPNSNotifications",
                  base::BindRepeating(&Browser::UnregisterForAPNSNotifications,
                                      browser));
 #endif
-
 }
 
 const char* PushNotifications::GetTypeName() {
@@ -75,7 +74,6 @@ const char* PushNotifications::GetTypeName() {
 
 }  // namespace electron
 
-
 namespace {
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -84,10 +82,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin::Dictionary dict(isolate, exports);
-  dict.Set("pushNotifications", electron::api::PushNotifications::Create(isolate));
+  dict.Set("pushNotifications",
+           electron::api::PushNotifications::Create(isolate));
 }
 
 }  // namespace
 
-
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_push_notifications, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_push_notifications,
+                                 Initialize)

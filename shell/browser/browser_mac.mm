@@ -537,7 +537,6 @@ void Browser::RegisterForAPNSNotifications() {
       registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge |
                                          NSRemoteNotificationTypeAlert |
                                          NSRemoteNotificationTypeSound];
-
 }
 
 void Browser::UnregisterForAPNSNotifications() {

@@ -9,9 +9,9 @@
 
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
+#include "shell/browser/event_emitter_mixin.h"
 
 namespace electron {
 
@@ -36,13 +36,13 @@ class PushNotifications
   PushNotifications& operator=(const PushNotifications&) = delete;
 
  private:
-  explicit PushNotifications();
+  PushNotifications();
   ~PushNotifications() override;
 
   // BrowserObserver
 #if BUILDFLAG(IS_MAC)
   void OnDidRegisterForAPNSNotificationsWithDeviceToken(
-    const std::string& token) override;
+      const std::string& token) override;
   void OnDidFailToRegisterForAPNSNotificationsWithError(
       const std::string& error) override;
   void OnDidReceiveAPNSNotification(
@@ -54,4 +54,4 @@ class PushNotifications
 
 }  // namespace electron
 
-#endif // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_

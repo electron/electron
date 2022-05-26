@@ -233,12 +233,10 @@ class Browser : public WindowListObserver {
 
   // Indicates that APNS registration succeeded, the token can be used to send
   // notifications.
-  void DidRegisterForAPNSNotificationsWithDeviceToken(
-      const std::string& token);
+  void DidRegisterForAPNSNotificationsWithDeviceToken(const std::string& token);
 
   // Indicates a failure to register for APNS
-  void DidFailToRegisterForAPNSNotificationsWithError(
-      const std::string& error);
+  void DidFailToRegisterForAPNSNotificationsWithError(const std::string& error);
 
   // Indicates that a new remote notification has been received while the app is
   // running.
