@@ -54,9 +54,10 @@ gin::Handle<PushNotifications> PushNotifications::Create(v8::Isolate* isolate) {
 gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
-  return gin_helper::EventEmitterMixin<
-             PushNotifications>::GetObjectTemplateBuilder(isolate)
+  auto builder = gin_helper::EventEmitterMixin<
+      PushNotifications>::GetObjectTemplateBuilder(isolate);
 #if BUILDFLAG(IS_MAC)
+  builder
       .SetMethod(
           "registerForAPNSNotifications",
           base::BindRepeating(&Browser::RegisterForAPNSNotifications, browser))
@@ -64,6 +65,7 @@ gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
                  base::BindRepeating(&Browser::UnregisterForAPNSNotifications,
                                      browser));
 #endif
+  return builder;
 }
 
 const char* PushNotifications::GetTypeName() {
