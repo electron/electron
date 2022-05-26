@@ -2185,8 +2185,10 @@ describe('BrowserWindow module', () => {
       const [, newOverlayRect] = await geometryChange;
       expect(newOverlayRect.width).to.equal(overlayRect.width + 400);
     };
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
     it('creates browser window with hidden title bar', () => {
       const w = new BrowserWindow({
         show: false,
@@ -2241,9 +2243,15 @@ describe('BrowserWindow module', () => {
       const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
       expect(overlayEnabled).to.be.true('overlayEnabled');
       const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
-      await w.maximize();
-      const max = await w.isMaximized();
-      expect(max).to.equal(true);
+
+      if (!w.isMaximized()) {
+        const maximize = emittedOnce(w, 'maximize');
+        w.show();
+        w.maximize();
+        await maximize;
+      }
+
+      expect(w.isMaximized()).to.be.true('not maximized');
       const overlayRectPostMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
       expect(overlayRectPreMax.y).to.equal(0);
@@ -2258,16 +2266,20 @@ describe('BrowserWindow module', () => {
       // Confirm that maximization only affected the height of the buttons and not the title bar
       expect(overlayRectPostMax.height).to.equal(size);
     };
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
     });
   });
 
   ifdescribe(process.platform === 'win32')('BrowserWindow.setTitlebarOverlay', () => {
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
 
     it('does not crash when an invalid titleBarStyle was initially set', () => {
       const win = new BrowserWindow({
@@ -2288,6 +2300,59 @@ describe('BrowserWindow module', () => {
           color: '#000000'
         });
       }).to.not.throw();
+    });
+
+    it('correctly updates the height of the overlay', async () => {
+      const testOverlay = async (w: BrowserWindow, size: Number, firstRun: boolean) => {
+        const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+        const overlayReady = emittedOnce(ipcMain, 'geometrychange');
+        await w.loadFile(overlayHTML);
+        if (firstRun) {
+          await overlayReady;
+        }
+
+        const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
+        expect(overlayEnabled).to.be.true('overlayEnabled');
+        const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+
+        if (!w.isMaximized()) {
+          const maximize = emittedOnce(w, 'maximize');
+          w.show();
+          w.maximize();
+          await maximize;
+        }
+
+        expect(w.isMaximized()).to.be.true('not maximized');
+        const { x, y, width, height } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+        expect(x).to.equal(0);
+        expect(y).to.equal(0);
+        expect(width).to.be.greaterThan(0);
+        expect(height).to.equal(size);
+        expect(preMaxHeight).to.equal(size);
+      };
+
+      const INITIAL_SIZE = 40;
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          height: INITIAL_SIZE
+        }
+      });
+
+      await testOverlay(w, INITIAL_SIZE, true);
+
+      w.setTitleBarOverlay({
+        height: INITIAL_SIZE + 10
+      });
+
+      await testOverlay(w, INITIAL_SIZE + 10, false);
     });
   });
 
