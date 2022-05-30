@@ -1328,7 +1328,7 @@ void WebContents::OnEnterFullscreenModeForTab(
   }
 
   exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
-    requesting_frame, options.display_id);
+      requesting_frame, options.display_id);
 
   SetHtmlApiFullscreen(true);
 
