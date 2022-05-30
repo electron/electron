@@ -425,13 +425,17 @@ Possible values are:
 
 * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
   `notification`.
-* On macOS, possible types are `desktop`, `textured`.
+* On macOS, possible types are `desktop`, `textured`, `panel`.
   * The `textured` type adds metal gradient appearance
     (`NSWindowStyleMaskTexturedBackground`).
   * The `desktop` type places the window at the desktop background window level
     (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive
     input sparingly.
+  * The `panel` type sets the window level to float (`NSFloatingWindowLevel`) and
+    makes it appear in all spaces. The `NSWindowStyleMaskNonactivatingPanel` style
+    mask is added on runtime, such that the window can float on top of full-screened
+    apps.
 * On Windows, possible type is `toolbar`.
 
 ### Instance Events
