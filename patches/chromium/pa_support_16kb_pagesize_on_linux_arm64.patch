@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jorrit Jongma <jorrit@jongma.org>
 Date: Tue, 12 Apr 2022 17:09:34 +0000
-Subject: [PA] Support 16kb pagesize on Linux+ARM64
+Subject: Support 16kb pagesize on Linux+ARM64
 
 This makes the system pagesize a run-time property.
 
