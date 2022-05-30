@@ -165,6 +165,8 @@ filenames = {
     "shell/browser/ui/cocoa/electron_native_widget_mac.mm",
     "shell/browser/ui/cocoa/electron_ns_window_delegate.h",
     "shell/browser/ui/cocoa/electron_ns_window_delegate.mm",
+    "shell/browser/ui/cocoa/electron_ns_panel.h",
+    "shell/browser/ui/cocoa/electron_ns_panel.mm",
     "shell/browser/ui/cocoa/electron_ns_window.h",
     "shell/browser/ui/cocoa/electron_ns_window.mm",
     "shell/browser/ui/cocoa/electron_preview_item.h",
