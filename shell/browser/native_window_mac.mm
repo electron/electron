@@ -474,6 +474,11 @@ void NativeWindowMac::Close() {
     return;
   }
 
+  if (fullscreen_transition_state() != FullScreenTransitionState::NONE) {
+    SetHasDeferredWindowClose(true);
+    return;
+  }
+
   // If a sheet is attached to the window when we call
   // [window_ performClose:nil], the window won't close properly
   // even after the user has ended the sheet.
@@ -666,6 +671,15 @@ void NativeWindowMac::HandlePendingFullscreenTransitions() {
   bool next_transition = pending_transitions_.front();
   pending_transitions_.pop();
   SetFullScreen(next_transition);
+}
+
+bool NativeWindowMac::HandleDeferredClose() {
+  if (has_deferred_window_close_) {
+    SetHasDeferredWindowClose(false);
+    Close();
+    return true;
+  }
+  return false;
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
