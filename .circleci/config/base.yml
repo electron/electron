@@ -548,7 +548,7 @@ step-install-python2-on-mac: &step-install-python2-on-mac
         if [ ! -f "python-downloads/python-2.7.18-macosx10.9.pkg" ]; then
           mkdir python-downloads
           echo 'Downloading Python 2.7.18'
-          curl -O https://www.python.org/ftp/python/2.7.18/python-2.7.18-macosx10.9.pkg
+          curl -O https://dev-cdn.electronjs.org/python/python-2.7.18-macosx10.9.pkg
           mv python-2.7.18-macosx10.9.pkg python-downloads
         else
           echo 'Using Python install from cache'
