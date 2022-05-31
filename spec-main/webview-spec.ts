@@ -434,11 +434,12 @@ describe('<webview> tag', function () {
       return [w, webview];
     };
 
-    afterEach(closeAllWindows);
     afterEach(async () => {
       // The leaving animation is un-observable but can interfere with future tests
       // Specifically this is async on macOS but can be on other platforms too
       await delay(1000);
+
+      closeAllWindows();
     });
 
     it('should make parent frame element fullscreen too', async () => {
@@ -449,11 +450,13 @@ describe('<webview> tag', function () {
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await parentFullscreen;
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
+
+      w.close();
+      await emittedOnce(w, 'closed');
     });
 
     // FIXME(zcbenz): Fullscreen events do not work on Linux.
-    // This test is flaky on arm64 macOS.
-    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('exiting fullscreen should unfullscreen window', async () => {
+    ifit(process.platform !== 'linux')('exiting fullscreen should unfullscreen window', async () => {
       const [w, webview] = await loadWebViewWindow();
       const enterFullScreen = emittedOnce(w, 'enter-full-screen');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
@@ -464,6 +467,9 @@ describe('<webview> tag', function () {
       await leaveFullScreen;
       await delay(0);
       expect(w.isFullScreen()).to.be.false();
+
+      w.close();
+      await emittedOnce(w, 'closed');
     });
 
     // Sending ESC via sendInputEvent only works on Windows.
@@ -478,6 +484,9 @@ describe('<webview> tag', function () {
       await leaveFullScreen;
       await delay(0);
       expect(w.isFullScreen()).to.be.false();
+
+      w.close();
+      await emittedOnce(w, 'closed');
     });
 
     it('pressing ESC should emit the leave-html-full-screen event', async () => {
@@ -506,6 +515,9 @@ describe('<webview> tag', function () {
       webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await leaveFSWindow;
       await leaveFSWebview;
+
+      w.close();
+      await emittedOnce(w, 'closed');
     });
   });
 
