@@ -235,7 +235,7 @@ using FullScreenTransitionState =
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
   // Store resizable mask so it can be restored after exiting fullscreen.
-  is_resizable_ = shell_->GetStyleMask(NSResizableWindowMask);
+  is_resizable_ = shell_->HasStyleMask(NSResizableWindowMask);
 
   shell_->SetFullScreenTransitionState(FullScreenTransitionState::ENTERING);
 
