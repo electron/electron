@@ -47,7 +47,6 @@
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "shell/browser/printing/print_preview_message_handler.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
@@ -231,7 +230,10 @@ class WebContents : public ExclusiveAccessContext,
                            std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
-  v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
+  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
+  void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
+                    PrintViewManagerElectron::PrintResult print_result,
+                    scoped_refptr<base::RefCountedMemory> data);
 #endif
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);

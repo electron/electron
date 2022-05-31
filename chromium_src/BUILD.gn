@@ -216,6 +216,8 @@ static_library("chrome") {
       "//chrome/browser/printing/printer_query.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
+      "//components/printing/browser/print_to_pdf/pdf_print_utils.cc",
+      "//components/printing/browser/print_to_pdf/pdf_print_utils.h",
     ]
 
     if (enable_oop_printing) {
