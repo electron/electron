@@ -3421,7 +3421,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     return handle;
   }
 
-  if (!frame_host->IsRenderFrameCreated()) {
+  if (!frame_host->IsRenderFrameLive()) {
     promise.RejectWithErrorMessage("takeHeapSnapshot failed");
     return handle;
   }
