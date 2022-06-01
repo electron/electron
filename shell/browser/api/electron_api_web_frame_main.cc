@@ -194,8 +194,12 @@ void WebFrameMain::MaybeSetupMojoConnection() {
     renderer_api_.set_disconnect_handler(base::BindOnce(
         &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
   }
+
+  // Render frame should exist when this method is called.
+  DCHECK(render_frame_);
+
   // Wait for RenderFrame to be created in renderer before accessing remote.
-  if (pending_receiver_ && render_frame_->IsRenderFrameCreated()) {
+  if (pending_receiver_ && render_frame_ && render_frame_->IsRenderFrameCreated()) {
     render_frame_->GetRemoteInterfaces()->GetInterface(
         std::move(pending_receiver_));
   }
