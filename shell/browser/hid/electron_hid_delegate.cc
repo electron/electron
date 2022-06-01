@@ -62,8 +62,7 @@ bool ElectronHidDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
   auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(rfh);
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   return permission_helper->CheckHIDAccessPermission(
@@ -83,7 +82,7 @@ void ElectronHidDelegate::RevokeDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);      
+  auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
   return GetChooserContext(browser_context)
       ->RevokeDevicePermission(origin, device, rfh);
 }
