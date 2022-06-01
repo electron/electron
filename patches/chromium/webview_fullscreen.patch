@@ -17,7 +17,7 @@ diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/b
 index e612764997277da3411d8040850756eb38996cca..f0341511d7d00f03a52bdead457f1f9d60ac5486 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6284,6 +6284,15 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -6347,6 +6347,15 @@ void RenderFrameHostImpl::EnterFullscreen(
      notified_instances.insert(parent_site_instance);
    }
  
@@ -30,6 +30,6 @@ index e612764997277da3411d8040850756eb38996cca..f0341511d7d00f03a52bdead457f1f9d
 +        options.Clone());
 +  }
 +
-   delegate_->EnterFullscreenMode(this, *options);
-   delegate_->FullscreenStateChanged(this, /*is_fullscreen=*/true,
-                                     std::move(options));
+   // Focus the window if another frame may have delegated the capability.
+   if (had_fullscreen_token && !GetView()->HasFocus())
+     GetView()->Focus();
