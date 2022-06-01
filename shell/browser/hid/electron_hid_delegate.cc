@@ -49,6 +49,8 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
   AddControllerForFrame(render_frame_host, std::move(filters),
                         std::move(exclusion_filters), std::move(callback));
 
+  render_frame_host_id_ = render_frame_host->GetGlobalId();
+
   // Return a nullptr because the return value isn't used for anything, eg
   // there is no mechanism to cancel navigator.hid.requestDevice(). The return
   // value is simply used in Chromium to cleanup the chooser UI once the serial
@@ -59,8 +61,9 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 bool ElectronHidDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
+  auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
   auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
+      content::WebContents::FromRenderFrameHost(rfh);
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   return permission_helper->CheckHIDAccessPermission(
@@ -71,16 +74,18 @@ bool ElectronHidDelegate::HasDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
+  auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
   return GetChooserContext(browser_context)
-      ->HasDevicePermission(origin, device);
+      ->HasDevicePermission(origin, device, rfh);
 }
 
 void ElectronHidDelegate::RevokeDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
+  auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);      
   return GetChooserContext(browser_context)
-      ->RevokeDevicePermission(origin, device);
+      ->RevokeDevicePermission(origin, device, rfh);
 }
 
 device::mojom::HidManager* ElectronHidDelegate::GetHidManager(
