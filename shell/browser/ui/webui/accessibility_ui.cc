@@ -293,7 +293,8 @@ void HandleAccessibilityRequestCallback(
 
   auto window_list = std::make_unique<base::ListValue>();
   for (auto* window : electron::WindowList::GetWindows()) {
-    window_list->Append(base::Value::FromUniquePtrValue(BuildTargetDescriptor(window)));
+    window_list->Append(
+        base::Value::FromUniquePtrValue(BuildTargetDescriptor(window)));
   }
 
   data.Set(kBrowsersField, std::move(window_list));

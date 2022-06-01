@@ -59,7 +59,12 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 bool ElectronHidDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
-  return GetChooserContext(browser_context)->CanRequestObjectPermission(origin);
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  return permission_helper->CheckHIDAccessPermission(
+      web_contents->GetMainFrame()->GetLastCommittedOrigin());
 }
 
 bool ElectronHidDelegate::HasDevicePermission(
@@ -83,9 +88,8 @@ device::mojom::HidManager* ElectronHidDelegate::GetHidManager(
   return GetChooserContext(browser_context)->GetHidManager();
 }
 
-void ElectronHidDelegate::AddObserver(
-    content::BrowserContext* browser_context,
-    Observer* observer) {
+void ElectronHidDelegate::AddObserver(content::BrowserContext* browser_context,
+                                      Observer* observer) {
   observer_list_.AddObserver(observer);
   auto* chooser_context = GetChooserContext(browser_context);
   if (!device_observation_.IsObserving())
