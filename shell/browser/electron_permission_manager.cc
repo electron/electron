@@ -150,7 +150,7 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
     StatusCallback response_callback) {
   RequestPermissionsWithDetails(
       std::vector<blink::PermissionType>(1, permission), render_frame_host,
-      requesting_origin, user_gesture, details,
+      user_gesture, details,
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
                      std::move(response_callback)));
 }
@@ -161,15 +161,13 @@ void ElectronPermissionManager::RequestPermissions(
     const GURL& requesting_origin,
     bool user_gesture,
     StatusesCallback response_callback) {
-  RequestPermissionsWithDetails(permissions, render_frame_host,
-                                requesting_origin, user_gesture, nullptr,
-                                std::move(response_callback));
+  RequestPermissionsWithDetails(permissions, render_frame_host, user_gesture,
+                                nullptr, std::move(response_callback));
 }
 
 void ElectronPermissionManager::RequestPermissionsWithDetails(
     const std::vector<blink::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
-    const GURL& requesting_origin,
     bool user_gesture,
     const base::DictionaryValue* details,
     StatusesCallback response_callback) {
@@ -235,6 +233,16 @@ void ElectronPermissionManager::ResetPermission(
     blink::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {}
+
+void ElectronPermissionManager::RequestPermissionsFromCurrentDocument(
+    const std::vector<blink::PermissionType>& permissions,
+    content::RenderFrameHost* render_frame_host,
+    bool user_gesture,
+    base::OnceCallback<void(const std::vector<blink::mojom::PermissionStatus>&)>
+        callback) {
+  RequestPermissionsWithDetails(permissions, render_frame_host, user_gesture,
+                                nullptr, std::move(callback));
+}
 
 blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
     blink::PermissionType permission,
@@ -349,18 +357,6 @@ void ElectronPermissionManager::RevokeDevicePermission(
   if (api_web_contents)
     api_web_contents->RevokeDevicePermission(origin, device, permission,
                                              render_frame_host);
-}
-
-blink::mojom::PermissionStatus
-ElectronPermissionManager::GetPermissionStatusForFrame(
-    blink::PermissionType permission,
-    content::RenderFrameHost* render_frame_host,
-    const GURL& requesting_origin) {
-  base::DictionaryValue details;
-  bool granted = CheckPermissionWithDetails(permission, render_frame_host,
-                                            requesting_origin, &details);
-  return granted ? blink::mojom::PermissionStatus::GRANTED
-                 : blink::mojom::PermissionStatus::DENIED;
 }
 
 blink::mojom::PermissionStatus

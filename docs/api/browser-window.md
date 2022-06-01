@@ -427,7 +427,7 @@ Possible values are:
   `notification`.
 * On macOS, possible types are `desktop`, `textured`.
   * The `textured` type adds metal gradient appearance
-    (`NSTexturedBackgroundWindowMask`).
+    (`NSWindowStyleMaskTexturedBackground`).
   * The `desktop` type places the window at the desktop background window level
     (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive

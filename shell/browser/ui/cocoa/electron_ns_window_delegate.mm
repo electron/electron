@@ -70,7 +70,7 @@ using FullScreenTransitionState =
   }
 
   // If the shift key is down, maximize.
-  if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
+  if ([[NSApp currentEvent] modifierFlags] & NSEventModifierFlagShift)
     return frame;
 
   // Get preferred width from observers. Usually the page width.

@@ -7,7 +7,7 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index cf88f696a46ff0ac84bcf466b44d1080438426c1..7672eee30a811001a0149edfa4eed9dc6a4b11f6 100644
+index 4d8f9f89f03653221fc0b509aa0e15ff20e73574..7bd5094db9b1a8e9af4ecc118fed7b78178e1e58 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,6 +9,7 @@
@@ -18,7 +18,7 @@ index cf88f696a46ff0ac84bcf466b44d1080438426c1..7672eee30a811001a0149edfa4eed9dc
  @interface NSWindow (PrivateBrowserNativeWidgetAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -63,10 +64,13 @@ - (NSRect)_draggableFrame NS_DEPRECATED_MAC(10_10, 10_11) {
+@@ -55,10 +56,13 @@ - (BOOL)_shouldCenterTrafficLights {
  
  @end
  
@@ -32,7 +32,7 @@ index cf88f696a46ff0ac84bcf466b44d1080438426c1..7672eee30a811001a0149edfa4eed9dc
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -81,6 +85,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -73,6 +77,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -95,7 +95,7 @@ index 67ebc56bd7ee267c03a5543e10a6a41042fcaa38..af3ed27dea51c22ab32ce14686dd7807
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 622b25c637ba14f287cbcdb4781967564d7e9eff..a21fe0aa19069a748b41e7d0781e20031c40fbfc 100644
+index 773158df97f36f69d2226c9ae748aa5eaade0c0b..ee17b53daf9e9c5b53f42704efbb565aeb8bfb01 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -16,7 +16,9 @@

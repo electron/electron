@@ -54,7 +54,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
     return false;
 
   // Send the event to the menu before sending it to the window
-  if (event.os_event.type == NSKeyDown &&
+  if (event.os_event.type == NSEventTypeKeyDown &&
       [[NSApp mainMenu] performKeyEquivalent:event.os_event])
     return true;
 

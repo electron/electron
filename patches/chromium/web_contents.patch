@@ -9,10 +9,10 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0303ae1c4d8681bc1bf56eb9ff1fc13afd678706..7a38e596eededae649e8380ab99c6ce7f472aa77 100644
+index 407f734b77d1ed4876f01327df958847d60e9128..ddfa7cf439244a6d58ab73dea014b341912f503f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3065,6 +3065,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
+@@ -3026,6 +3026,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
        site_instance.get(), params.renderer_initiated_creation,
        params.main_frame_name, GetOpener(), primary_main_frame_policy);
  
@@ -26,7 +26,7 @@ index 0303ae1c4d8681bc1bf56eb9ff1fc13afd678706..7a38e596eededae649e8380ab99c6ce7
    std::unique_ptr<WebContentsViewDelegate> delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -3075,6 +3082,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
+@@ -3036,6 +3043,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
      view_ = CreateWebContentsView(this, std::move(delegate),
                                    &render_view_host_delegate_view_);
    }
@@ -35,7 +35,7 @@ index 0303ae1c4d8681bc1bf56eb9ff1fc13afd678706..7a38e596eededae649e8380ab99c6ce7
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index c062c66f596f513e46da04fc9ea5f5969e7ee632..2f14f906b51ce73a69cd780d70ad6264285138ac 100644
+index e82a5b71eb8a6ee2df8478ccd3432b4afbb096aa..d5c2a922bba0ff0d5a4a22d9cd25be46fd09d4e1 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -93,10 +93,13 @@ class BrowserContext;
