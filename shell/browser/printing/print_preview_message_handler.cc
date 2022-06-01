@@ -226,7 +226,7 @@ void PrintPreviewMessageHandler::PrintToPDF(
     print_render_frame_->SetPrintPreviewUI(
         receiver_.BindNewEndpointAndPassRemote());
   }
-  print_render_frame_->PrintPreview(options.Clone());
+  print_render_frame_->PrintPreview(options.GetDict().Clone());
 }
 
 gin_helper::Promise<v8::Local<v8::Value>>

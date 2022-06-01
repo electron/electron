@@ -271,9 +271,11 @@ std::string NativeImage::ToDataURL(gin::Arguments* args) {
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap());
 }
 
+#if !defined(V8_SANDBOX)
 void SkUnref(char* data, void* hint) {
   reinterpret_cast<SkRefCnt*>(hint)->unref();
 }
+#endif
 
 v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
   float scale_factor = GetScaleFactorFromOptions(args);
@@ -283,11 +285,18 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
   SkPixelRef* ref = bitmap.pixelRef();
   if (!ref)
     return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+#if defined(V8_SANDBOX)
+  return node::Buffer::Copy(args->isolate(),
+                            reinterpret_cast<char*>(ref->pixels()),
+                            bitmap.computeByteSize())
+      .ToLocalChecked();
+#else
   ref->ref();
   return node::Buffer::New(args->isolate(),
                            reinterpret_cast<char*>(ref->pixels()),
                            bitmap.computeByteSize(), &SkUnref, ref)
       .ToLocalChecked();
+#endif
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(

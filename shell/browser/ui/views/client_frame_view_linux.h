@@ -45,9 +45,7 @@ class ClientFrameViewLinux : public FramelessView,
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
   // views::WindowButtonOrderObserver:
-  void OnWindowButtonOrderingChange(
-      const std::vector<views::FrameButton>& leading_buttons,
-      const std::vector<views::FrameButton>& trailing_buttons) override;
+  void OnWindowButtonOrderingChange() override;
 
   // Overriden from FramelessView:
   int ResizingBorderHitTest(const gfx::Point& point) override;
