@@ -83,6 +83,8 @@ class ElectronHidDelegate : public content::HidDelegate,
                      std::unique_ptr<HidChooserController>>
       controller_map_;
 
+  content::GlobalRenderFrameHostId render_frame_host_id_;
+
   base::WeakPtrFactory<ElectronHidDelegate> weak_factory_{this};
 };
 
