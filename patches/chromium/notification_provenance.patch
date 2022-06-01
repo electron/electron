@@ -133,7 +133,7 @@ index 424fae79eb1c93f1fac293ae8fdeb6d067f523cc..6a2f074ad981deb15b46bd91b6d7eb5d
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 8d0465d3135bb1a97e1708353f3b546263d2cea5..17ae8276a1cc10e0a05787193a2ce8025252f1b6 100644
+index 8d0465d3135bb1a97e1708353f3b546263d2cea5..acb485c6f1c1daf2759d6315d9edd533fb4a7ec9 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2058,8 +2058,9 @@ void RenderProcessHostImpl::CreateNotificationService(
@@ -147,6 +147,15 @@ index 8d0465d3135bb1a97e1708353f3b546263d2cea5..17ae8276a1cc10e0a05787193a2ce802
 +        std::move(receiver));
      return;
    }
+ 
+@@ -2067,7 +2068,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+   RenderFrameHost* rfh = RenderFrameHost::FromID(GetID(), render_frame_id);
+   CHECK(rfh);
+   storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
+-      this, origin, rfh->GetLastCommittedURL(), rfh->GetWeakDocumentPtr(),
++      this, rfh, origin, rfh->GetLastCommittedURL(), rfh->GetWeakDocumentPtr(),
+       std::move(receiver));
+ }
  
 diff --git a/content/public/browser/platform_notification_service.h b/content/public/browser/platform_notification_service.h
 index 9646cbeb31141e3518f51482801431f3a6010360..b13b6ab07b4931b892749c84879d9a6adb3bcb58 100644
