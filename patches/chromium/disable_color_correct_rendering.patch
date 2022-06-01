@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index bae9dd70c7657bf2bf66ab237d35440c14e7f6fb..796c3101103465bac8a7c177185c570dcc757fc1 100644
+index eef870d311cbdead96be496414240b0fcfa93aba..fcdaa98fd6588aa93f460e1a12b8801aeecaa6e2 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1863,6 +1863,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1848,6 +1848,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -228,7 +228,7 @@ index e0a8510a9e1d1475bfe92153db8cf860fbba74b5..5c01d58b3121ecf81d0971179ada834c
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index e0df775b22507336c249ed10fc0251dbbca088b8..2ba12303c28c39aa2e8f88b4a0e14a60e65b9df8 100644
+index 8ca8002b9680a5e1aa2280199fdb87cdcad15961..089e0e68292d9636973878b955204a6ae7a15299 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -229,6 +229,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -240,10 +240,10 @@ index e0df775b22507336c249ed10fc0251dbbca088b8..2ba12303c28c39aa2e8f88b4a0e14a60
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 8aa14d7cdb7edc5d53736fb959e3f9992d4fd896..da4830ccc3c3a160754dd9c89fc6292d7333ac67 100644
+index f70eb1d963cb7b7ee8a7d893ef0d2c93ed45162f..a9b616fa8aa0c4963c8807c546f2fcf96d801b35 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -199,6 +199,7 @@
+@@ -200,6 +200,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -251,7 +251,7 @@ index 8aa14d7cdb7edc5d53736fb959e3f9992d4fd896..da4830ccc3c3a160754dd9c89fc6292d
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3175,6 +3176,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3192,6 +3193,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -292,7 +292,7 @@ index 75d7af9a79d4e7f2cd39e45496ab5fff66407638..b4ddafdd126edd16172f00448bbbd56e
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 9a5903820308299a1a480ecaaa1cbca9655f4093..705f1fce4d05694b92b4eb6de1044ae2232bb8ed 100644
+index a45ff42324833d805f21d9b6ccbf27f17a510bba..573a99cdd64eab3fb1035f89f517bd14c99212a8 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@
@@ -303,7 +303,7 @@ index 9a5903820308299a1a480ecaaa1cbca9655f4093..705f1fce4d05694b92b4eb6de1044ae2
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -185,6 +186,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -178,6 +179,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
