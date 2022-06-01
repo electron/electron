@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index c983b5f4c20acba8a7d779a634cd1593ef69b1ae..e612764997277da3411d8040850756eb38996cca 100644
+index 32297a40a68ae618db358fbd0608e6b08543b551..bfa637f6667e2f21ae30f2fb114b9cab12a65a56 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6922,6 +6922,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6988,6 +6988,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index c983b5f4c20acba8a7d779a634cd1593ef69b1ae..e612764997277da3411d8040850756eb
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b94e87b6f90c986f115a87baf8214baeb8103826..987e437641b7978290aa2633755b67f9099e1d04 100644
+index f7b4b6764ccf5fb9250ed4153d1ee6221d184b89..a3c4510fea1bccded05181a2d3071ba4e781972b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3912,6 +3912,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3938,6 +3938,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index b94e87b6f90c986f115a87baf8214baeb8103826..987e437641b7978290aa2633755b67f9
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -3956,12 +3964,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3982,12 +3990,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -53,7 +53,7 @@ index b94e87b6f90c986f115a87baf8214baeb8103826..987e437641b7978290aa2633755b67f9
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 5aca51ea4154941512e989048295c7de0475c14c..278accd8c6f14a4d91cc2ff4e336e365279c7b9b 100644
+index bdcbb09cdd884dda769a5501e3dc94547f454be9..0b25def9601d8baadee6283f526687b3806db8f5 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -569,6 +569,10 @@ struct CreateNewWindowParams {
@@ -124,7 +124,7 @@ index daf9b4566396c6d681760329cf4ba6869bbb55e4..321d5cfc36e40f2a649e8ea5910f4082
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 04aa4d993b331396ee20464f6e1d2da10c91c834..2556c044b6e28501a5fac9b0040e623b8f35f497 100644
+index 348dcde05d71e7d16e4c7bb1d8d9f8718070e669..5a9cc64d6e0d9d01f5dc133c7fcab34101bc32db 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
@@ -220,15 +220,15 @@ index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index a25203186cc2df437fe3f9fe309599d86284aefb..b288472c5a00d76077859f02c0e1abca826aa8be 100644
+index 98e4b66ff58ac36cb789f71dc3f501caa86d1eb0..1bebc86b991039b82f0cafb63a81425fc046d759 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2103,6 +2103,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
- 
+@@ -2104,6 +2104,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
-+
-+  window_features.raw_features = features;
  
++  window_features.raw_features = features;
++
    // In fenced frames, we should always use `noopener`.
    if (GetFrame()->IsInFencedFrameTree()) {
+     window_features.noopener = true;

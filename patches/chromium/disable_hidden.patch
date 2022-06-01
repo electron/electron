@@ -34,7 +34,7 @@ index 65297e78ee11fb3e7f662408f65a263f9ae8c550..62d3bef655580b1bad1077de797cdadc
    // |routing_id| must not be MSG_ROUTING_NONE.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index dc52cc54d2a6078bef1cf9f09e8063011b4f5191..d9b9f49ea7fe9b0b6dec4ad49c112af4fc832691 100644
+index 870cdf73fd5eeab985fc43dc92d7919d18e4e622..04bfe1f1205b06a7e105f613014540fd72b17328 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -592,7 +592,7 @@ void RenderWidgetHostViewAura::HideImpl() {
