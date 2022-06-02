@@ -549,7 +549,7 @@ step-gn-check: &step-gn-check
 step-electron-build: &step-electron-build
   run:
     name: Electron build
-    no_output_timeout: 30m
+    no_output_timeout: 60m
     command: |
       # On arm platforms we generate a cross-arch ffmpeg that ninja does not seem
       # to realize is not correct / should be rebuilt.  We delete it here so it is
