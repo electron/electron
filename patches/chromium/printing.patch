@@ -362,9 +362,9 @@ index e74a2d0858c187b11ac322033b122e046a45967e..1e190f58d61a1a3767c7d1e1e11c27fa
  void PrintViewManagerBase::OnFailed() {
    TerminatePrintJob(true);
  }
-@@ -912,7 +949,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -912,7 +912,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
-   // Disconnect the current |print_job_|.
+   // Disconnect the current `print_job_`.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
 -  DisconnectFromCurrentPrintJob();
 +  if (callback_.is_null()) {
