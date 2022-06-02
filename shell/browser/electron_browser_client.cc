@@ -454,6 +454,9 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
       new extensions::MessagingAPIMessageFilter(process_id, browser_context));
 #endif
 
+  // Remove in case the host is reused after a crash, otherwise noop.
+  host->RemoveObserver(this);
+
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
 }
