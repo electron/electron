@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index fe988e3bbcf0c9deb5592f24fdeda3016114e3bf..da82b0458d0c87cf4de793007b826984d010cbb2 100644
+index 33e1f40fa0083843cfed7b145088a99b8e1a3d85..7b73bf1bb8e265eaec33d9ab0b44c30662be5d19 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -105,6 +105,8 @@ viz_component("service") {
@@ -94,10 +94,10 @@ index fe988e3bbcf0c9deb5592f24fdeda3016114e3bf..da82b0458d0c87cf4de793007b826984
      "display_embedder/software_output_surface.h",
      "display_embedder/vsync_parameter_listener.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider.h b/components/viz/service/display_embedder/output_surface_provider.h
-index 77d463e683d8b8d3a202681a6884eacaab79d70d..05d51cb2637d34c073cd0025e365803633459a86 100644
+index 2e9453c18f2f6623d31b477aa856152ddacc3e23..93b6080135c08bc9d4cf7020f4fcb15c06a01a60 100644
 --- a/components/viz/service/display_embedder/output_surface_provider.h
 +++ b/components/viz/service/display_embedder/output_surface_provider.h
-@@ -39,7 +39,8 @@ class OutputSurfaceProvider {
+@@ -38,7 +38,8 @@ class OutputSurfaceProvider {
        mojom::DisplayClient* display_client,
        DisplayCompositorMemoryAndTaskController* gpu_dependency,
        const RendererSettings& renderer_settings,
@@ -108,7 +108,7 @@ index 77d463e683d8b8d3a202681a6884eacaab79d70d..05d51cb2637d34c073cd0025e3658036
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 8a277c6337d446890bb32814a68db2a9d3d3cd72..1c967969a03c985e68f744cf4815cefbdd2c0f71 100644
+index 555b911352277820d9d58ca35eace175748e12bd..6e54db0452f6bcb324a03aa7b9a7659e235ddcd0 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,6 +23,7 @@
@@ -127,7 +127,7 @@ index 8a277c6337d446890bb32814a68db2a9d3d3cd72..1c967969a03c985e68f744cf4815cefb
  #include "ui/base/ui_base_switches.h"
  
  #if BUILDFLAG(IS_WIN)
-@@ -126,7 +128,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -107,7 +109,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -137,7 +137,7 @@ index 8a277c6337d446890bb32814a68db2a9d3d3cd72..1c967969a03c985e68f744cf4815cefb
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -119,7 +121,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -119,7 +122,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      output_surface = std::make_unique<SoftwareOutputSurface>(
@@ -146,7 +146,7 @@ index 8a277c6337d446890bb32814a68db2a9d3d3cd72..1c967969a03c985e68f744cf4815cefb
    } else {
      DCHECK(gpu_dependency);
      {
-@@ -243,10 +246,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -156,10 +159,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -171,10 +171,10 @@ index 8a277c6337d446890bb32814a68db2a9d3d3cd72..1c967969a03c985e68f744cf4815cefb
    return CreateSoftwareOutputDeviceWin(surface_handle, &output_device_backing_,
                                         display_client);
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
-index fa9bc45b5c12821789270907f73c7e6f3c0c1424..6d2ad1d88631db82f41de2852c3e9a6ad1431b2e 100644
+index 0dd6a4debc0587199acd2626e3decf4a6651e7a9..04d78d0c015c5eede01dec759a16d56dca4c19ae 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.h
-@@ -66,12 +66,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
+@@ -65,12 +65,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
        mojom::DisplayClient* display_client,
        DisplayCompositorMemoryAndTaskController* gpu_dependency,
        const RendererSettings& renderer_settings,
@@ -503,7 +503,7 @@ index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef2
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 4e38e0f49054cef3fd1a712c89608ce39003edeb..427882f8ed0d85c6e4170b213c3a3678b60a62df 100644
+index 8eeb87e2322821ac52e4bc0000cb777d69515a2c..5a7d1501aed1f01b1b67ae156cfb927ee696f83b 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -84,7 +84,8 @@ RootCompositorFrameSinkImpl::Create(

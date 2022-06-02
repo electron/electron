@@ -33,7 +33,7 @@ index f1806b49a24c1f78b5a34f3c286e09671cb782d9..07be5296842515bff655846e33259fb6
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 24b2d5aa3f522188a889716422e8d4a82f5c25e4..de5d8c17006a2a99d314f9441d6d7509f4a0b969 100644
+index c064308807866c039a4160d47ef65bf84b5e954a..be100268336239a17a24bb6424fec427eaf3ab10 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4546,7 +4546,7 @@ static_library("browser") {
@@ -46,7 +46,7 @@ index 24b2d5aa3f522188a889716422e8d4a82f5c25e4..de5d8c17006a2a99d314f9441d6d7509
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 69e39d5c7d2bedcefc68fbe15b21d9f72b6c67bc..f6f29f7aeba3fbee8f663e19e6189b7c62f1adbc 100644
+index 5f92e3b598fa3ad8767d20db975cb29329577613..9e122f609e67192c4fa58ed93d11dadc44c42b13 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5903,7 +5903,6 @@ test("unit_tests") {
@@ -68,7 +68,7 @@ index 69e39d5c7d2bedcefc68fbe15b21d9f72b6c67bc..f6f29f7aeba3fbee8f663e19e6189b7c
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6821,7 +6824,6 @@ test("unit_tests") {
+@@ -6822,7 +6825,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 69e39d5c7d2bedcefc68fbe15b21d9f72b6c67bc..f6f29f7aeba3fbee8f663e19e6189b7c
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6924,6 +6926,10 @@ test("unit_tests") {
+@@ -6926,6 +6928,10 @@ test("unit_tests") {
      }
    }
  

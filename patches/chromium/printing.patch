@@ -113,7 +113,7 @@ index 1e158ecd686e775f656d5a05a9d916ce8f075fa8..20613012d1e6f435c3211d78ec311cf0
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index e74a2d0858c187b11ac322033b122e046a45967e..1e190f58d61a1a3767c7d1e1e11c27fa972c1c03 100644
+index 88a2f2b88a729d0874094a1e7b906edf0e91d799..a50df7d3f2f1bf9948532b21f68e1fd37a059690 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,10 +30,10 @@
@@ -362,7 +362,7 @@ index e74a2d0858c187b11ac322033b122e046a45967e..1e190f58d61a1a3767c7d1e1e11c27fa
  void PrintViewManagerBase::OnFailed() {
    TerminatePrintJob(true);
  }
-@@ -912,7 +912,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -912,7 +946,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
    // Disconnect the current `print_job_`.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
