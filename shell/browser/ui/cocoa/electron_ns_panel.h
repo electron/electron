@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_COCOA_ELECTRON_NS_PANEL_H_
-#define SHELL_BROWSER_UI_COCOA_ELECTRON_NS_PANEL_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_PANEL_H_
+#define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_PANEL_H_
 
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 
@@ -14,4 +14,4 @@
           styleMask:(NSUInteger)styleMask;
 @end
 
-#endif  // SHELL_BROWSER_UI_COCOA_ELECTRON_NS_PANEL_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_PANEL_H_
