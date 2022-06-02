@@ -432,10 +432,10 @@ Possible values are:
     (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive
     input sparingly.
-  * The `panel` type enables the window to float on top of full-screened apps
-    by adding the `NSWindowStyleMaskNonactivatingPanel` style mask,normally
-    reserved for NSPanel, at runtime. Also, the window will appear on all
-    spaces (desktops).
+  * The `panel` type sets the window level to float (`NSFloatingWindowLevel`) and
+    makes it appear in all spaces. The `NSWindowStyleMaskNonactivatingPanel` style
+    mask is added on runtime, such that the window can float on top of full-screened
+    apps.
 * On Windows, possible type is `toolbar`.
 
 ### Instance Events
