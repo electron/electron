@@ -1039,7 +1039,7 @@ steps-native-tests: &steps-native-tests
     - attach_workspace:
         at: .
     - *step-depot-tools-add-to-path
-    - *install-python2-mac
+    - install-python2-mac
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
     - *step-wait-for-goma
