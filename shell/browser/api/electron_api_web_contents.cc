@@ -1720,7 +1720,8 @@ void WebContents::DidStopLoading() {
 
 bool WebContents::EmitNavigationEvent(
     const std::string& event,
-    content::NavigationHandle* navigation_handle) {
+    content::NavigationHandle* navigation_handle,
+    bool emit_is_same_document) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
   content::FrameTreeNode* frame_tree_node =
@@ -1738,10 +1739,15 @@ bool WebContents::EmitNavigationEvent(
     frame_process_id = frame_host->GetProcess()->GetID();
     frame_routing_id = frame_host->GetRoutingID();
   }
-  bool is_same_document = navigation_handle->IsSameDocument();
   auto url = navigation_handle->GetURL();
-  return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
-              frame_routing_id);
+  if (emit_is_same_document) {
+    bool is_same_document = navigation_handle->IsSameDocument();
+    return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
+                frame_routing_id);
+  } else {
+    return Emit(event, url, is_main_frame, frame_process_id,
+                frame_routing_id);
+  }
 }
 
 void WebContents::Message(bool internal,
@@ -1844,12 +1850,12 @@ void WebContents::UpdateDraggableRegions(
 
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
-  EmitNavigationEvent("did-start-navigation", navigation_handle);
+  EmitNavigationEvent("did-start-navigation", navigation_handle, /* emit_is_same_document */ true);
 }
 
 void WebContents::DidRedirectNavigation(
     content::NavigationHandle* navigation_handle) {
-  EmitNavigationEvent("did-redirect-navigation", navigation_handle);
+  EmitNavigationEvent("did-redirect-navigation", navigation_handle, /* emit_is_same_document */ true);
 }
 
 void WebContents::ReadyToCommitNavigation(

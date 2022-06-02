@@ -213,7 +213,6 @@ Returns:
 
 * `event` Event
 * `url` String
-* `isInPlace` Boolean
 * `isMainFrame` Boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
@@ -228,7 +227,7 @@ APIs like `webContents.loadURL` and `webContents.back`.
 
 It is also not emitted for in-page navigations, such as clicking anchor links
 or updating the `window.location.hash`. Use `did-navigate-in-page` event for
-this purpose. This means that `isInPlace` will always be `false`.
+this purpose.
 
 Calling `event.preventDefault()` will prevent the navigation.
 

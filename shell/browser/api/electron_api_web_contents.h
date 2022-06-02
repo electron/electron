@@ -345,7 +345,8 @@ class WebContents : public ExclusiveAccessContext,
   }
 
   bool EmitNavigationEvent(const std::string& event,
-                           content::NavigationHandle* navigation_handle);
+                           content::NavigationHandle* navigation_handle,
+                           bool emit_is_same_document);
 
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>

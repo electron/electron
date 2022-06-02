@@ -714,7 +714,7 @@ describe('BrowserWindow module', () => {
 
           let willFrameNavigateEmitted = false;
           let isMainFrameValue;
-          w.webContents.on('will-frame-navigate', (_event, _url, _isInPlace, isMainFrame) => {
+          w.webContents.on('will-frame-navigate', (_event, _url, isMainFrame) => {
             willFrameNavigateEmitted = true;
             isMainFrameValue = isMainFrame;
           });
@@ -754,7 +754,7 @@ describe('BrowserWindow module', () => {
 
           let willNavigateEmitted = false;
           let isMainFrameValue;
-          w.webContents.on('will-frame-navigate', (_event, _url, _isInPlace, isMainFrame) => {
+          w.webContents.on('will-frame-navigate', (_event, _url, isMainFrame) => {
             willNavigateEmitted = true;
             isMainFrameValue = isMainFrame;
           });
