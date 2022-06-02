@@ -77,7 +77,7 @@
   "scripts": {
     "asar": "asar",
     "generate-version-json": "node script/generate-version-json.js",
-    "lint": "node ./script/lint.js && npm run lint:clang-format && npm run lint:docs",
+    "lint": "node ./script/lint.js && npm run lint:docs",
     "lint:js": "node ./script/lint.js --js",
     "lint:clang-format": "python3 script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:clang-tidy": "ts-node ./script/run-clang-tidy.ts",
