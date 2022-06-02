@@ -628,7 +628,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)updateSegmentedControl:(NSCustomTouchBarItem*)item
-                  withSettings:(const gin_helper::PersistentDictionary&)settings {
+                  withSettings:
+                      (const gin_helper::PersistentDictionary&)settings {
   NSSegmentedControl* control = item.view;
 
   std::string segmentStyle;

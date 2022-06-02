@@ -443,10 +443,8 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   base::ScopedCFTypeRef<SecAccessControlRef> access_control =
       base::ScopedCFTypeRef<SecAccessControlRef>(
           SecAccessControlCreateWithFlags(
-              kCFAllocatorDefault,
-              kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-              kSecAccessControlPrivateKeyUsage |
-                  kSecAccessControlUserPresence,
+              kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+              kSecAccessControlPrivateKeyUsage | kSecAccessControlUserPresence,
               nullptr));
 
   scoped_refptr<base::SequencedTaskRunner> runner =

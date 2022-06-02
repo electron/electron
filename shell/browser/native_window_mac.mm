@@ -1604,7 +1604,7 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
     return false;
   } else {
     [window_ addTabbedWindow:window->GetNativeWindow().GetNativeNSWindow()
-                      ordered:NSWindowAbove];
+                     ordered:NSWindowAbove];
   }
   return true;
 }
