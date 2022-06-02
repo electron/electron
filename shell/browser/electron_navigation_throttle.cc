@@ -37,12 +37,12 @@ ElectronNavigationThrottle::WillStartRequest() {
     return PROCEED;
   }
 
-  if (handle->IsRendererInitiated() && handle->IsInMainFrame() &&
-      api_contents->EmitNavigationEvent("will-navigate", handle, /* emit_is_same_document */ false)) {
-    return CANCEL;
-  }
   if (handle->IsRendererInitiated() &&
       api_contents->EmitNavigationEvent("will-frame-navigate", handle, /* emit_is_same_document */ false)) {
+    return CANCEL;
+  }
+  if (handle->IsRendererInitiated() && handle->IsInMainFrame() &&
+      api_contents->EmitNavigationEvent("will-navigate", handle, /* emit_is_same_document */ false)) {
     return CANCEL;
   }
   return PROCEED;
