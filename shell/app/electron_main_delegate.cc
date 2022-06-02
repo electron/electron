@@ -460,8 +460,8 @@ ElectronMainDelegate::RunProcess(
     return std::move(main_function_params);
 }
 
-bool ElectronMainDelegate::ShouldCreateFeatureList() {
-  return false;
+bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {
+  return invoked_in == InvokedIn::kChildProcess;
 }
 
 bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
