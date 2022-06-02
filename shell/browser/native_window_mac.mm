@@ -848,7 +848,7 @@ void NativeWindowMac::SetMinimizable(bool minimizable) {
 }
 
 bool NativeWindowMac::IsMinimizable() {
-  return HasStyleMask(NSMiniaturizableWindowMask);
+  return HasStyleMask(NSWindowStyleMaskMiniaturizable);
 }
 
 void NativeWindowMac::SetMaximizable(bool maximizable) {
