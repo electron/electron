@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 32297a40a68ae618db358fbd0608e6b08543b551..bfa637f6667e2f21ae30f2fb114b9cab12a65a56 100644
+index c0c99d3a664868858edffa5662b854337bef5feb..0fb248e89875b9b6040cf37c455c8ba50de265e9 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6988,6 +6988,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6989,6 +6989,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -68,10 +68,10 @@ index bdcbb09cdd884dda769a5501e3dc94547f454be9..0b25def9601d8baadee6283f526687b3
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 82d33875526759dda05a1818543c0605382597f4..ec89c920f0e0ad3638749b1468bcd54f74b3cce5 100644
+index 08b6c6f89b4ec107c8ac459315f38eaf3fcc5c1a..ea55f2b41cc985a64e611d80caeb50cf5dc4a0fd 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -594,6 +594,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -595,6 +595,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -81,7 +81,7 @@ index 82d33875526759dda05a1818543c0605382597f4..ec89c920f0e0ad3638749b1468bcd54f
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e2c88a7e692406c9774a0e9783df612cbc38d7cd..4e069af9256eb106b50e84d1243c92353daf2015 100644
+index c048f7e16d543312bc5fc5adc023b06aa05fb4f6..ab229b15262a3c598bd93529cc96cc78d93ae750 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -165,6 +165,7 @@ class NetworkService;
