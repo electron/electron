@@ -192,7 +192,8 @@ void WebFrameMain::MaybeSetupMojoConnection() {
   if (render_frame_disposed_) {
     // RFH may not be set yet if called between when a new RFH is created and
     // before it's been swapped with an old RFH.
-    LOG(INFO) << "Attempt to setup WebFrameMain connection while render frame is disposed";
+    LOG(INFO) << "Attempt to setup WebFrameMain connection while render frame "
+                 "is disposed";
     return;
   }
 
