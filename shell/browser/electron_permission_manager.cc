@@ -307,25 +307,17 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
 bool ElectronPermissionManager::CheckDevicePermission(
     blink::PermissionType permission,
     const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents);
+    const base::Value& device,
+    ElectronBrowserContext* browser_context) const {
   if (device_permission_handler_.is_null()) {
-    if (api_web_contents) {
-      return api_web_contents->CheckDevicePermission(origin, device, permission,
-                                                     render_frame_host);
-    }
-    return false;
+    return browser_context->CheckDevicePermission(origin, device, permission);
   } else {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
                                         .Set("deviceType", permission)
                                         .Set("origin", origin.Serialize())
-                                        .Set("device", device->Clone())
-                                        .Set("frame", render_frame_host)
+                                        .Set("device", device.Clone())
                                         .Build();
     return device_permission_handler_.Run(details);
   }
@@ -334,29 +326,19 @@ bool ElectronPermissionManager::CheckDevicePermission(
 void ElectronPermissionManager::GrantDevicePermission(
     blink::PermissionType permission,
     const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
+    const base::Value& device,
+    ElectronBrowserContext* browser_context) const {
   if (device_permission_handler_.is_null()) {
-    auto* web_contents =
-        content::WebContents::FromRenderFrameHost(render_frame_host);
-    api::WebContents* api_web_contents = api::WebContents::From(web_contents);
-    if (api_web_contents)
-      api_web_contents->GrantDevicePermission(origin, device, permission,
-                                              render_frame_host);
+    browser_context->GrantDevicePermission(origin, device, permission);
   }
 }
 
 void ElectronPermissionManager::RevokeDevicePermission(
     blink::PermissionType permission,
     const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents);
-  if (api_web_contents)
-    api_web_contents->RevokeDevicePermission(origin, device, permission,
-                                             render_frame_host);
+    const base::Value& device,
+    ElectronBrowserContext* browser_context) const {
+  browser_context->RevokeDevicePermission(origin, device, permission);
 }
 
 blink::mojom::PermissionStatus

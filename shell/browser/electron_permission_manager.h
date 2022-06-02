@@ -12,6 +12,7 @@
 #include "base/containers/id_map.h"
 #include "content/public/browser/permission_controller_delegate.h"
 #include "gin/dictionary.h"
+#include "shell/browser/electron_browser_context.h"
 
 namespace base {
 class DictionaryValue;
@@ -91,19 +92,18 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
   bool CheckDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
-                             const base::Value* object,
-                             content::RenderFrameHost* render_frame_host) const;
+                             const base::Value& object,
+                             ElectronBrowserContext* browser_context) const;
 
   void GrantDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
-                             const base::Value* object,
-                             content::RenderFrameHost* render_frame_host) const;
+                             const base::Value& object,
+                             ElectronBrowserContext* browser_context) const;
 
-  void RevokeDevicePermission(
-      blink::PermissionType permission,
-      const url::Origin& origin,
-      const base::Value* object,
-      content::RenderFrameHost* render_frame_host) const;
+  void RevokeDevicePermission(blink::PermissionType permission,
+                              const url::Origin& origin,
+                              const base::Value& object,
+                              ElectronBrowserContext* browser_context) const;
 
  protected:
   void OnPermissionResponse(int request_id,

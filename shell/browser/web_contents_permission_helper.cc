@@ -85,39 +85,6 @@ bool WebContentsPermissionHelper::CheckPermission(
                                                         details);
 }
 
-bool WebContentsPermissionHelper::CheckDevicePermission(
-    blink::PermissionType permission,
-    const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
-  auto* permission_manager = static_cast<ElectronPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
-  return permission_manager->CheckDevicePermission(permission, origin, device,
-                                                   render_frame_host);
-}
-
-void WebContentsPermissionHelper::GrantDevicePermission(
-    blink::PermissionType permission,
-    const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
-  auto* permission_manager = static_cast<ElectronPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
-  permission_manager->GrantDevicePermission(permission, origin, device,
-                                            render_frame_host);
-}
-
-void WebContentsPermissionHelper::RevokeDevicePermission(
-    blink::PermissionType permission,
-    const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
-  auto* permission_manager = static_cast<ElectronPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
-  permission_manager->RevokeDevicePermission(permission, origin, device,
-                                             render_frame_host);
-}
-
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     base::OnceCallback<void(bool)> callback) {
   RequestPermission(
@@ -195,59 +162,6 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
   details.SetString("securityOrigin", embedding_origin.GetURL().spec());
   return CheckPermission(
       static_cast<blink::PermissionType>(PermissionType::SERIAL), &details);
-}
-
-bool WebContentsPermissionHelper::CheckSerialPortPermission(
-    const url::Origin& origin,
-    base::Value device,
-    content::RenderFrameHost* render_frame_host) const {
-  return CheckDevicePermission(
-      static_cast<blink::PermissionType>(PermissionType::SERIAL), origin,
-      &device, render_frame_host);
-}
-
-void WebContentsPermissionHelper::GrantSerialPortPermission(
-    const url::Origin& origin,
-    base::Value device,
-    content::RenderFrameHost* render_frame_host) const {
-  return GrantDevicePermission(
-      static_cast<blink::PermissionType>(PermissionType::SERIAL), origin,
-      &device, render_frame_host);
-}
-
-bool WebContentsPermissionHelper::CheckHIDAccessPermission(
-    const url::Origin& embedding_origin) const {
-  base::DictionaryValue details;
-  details.SetString("securityOrigin", embedding_origin.GetURL().spec());
-  return CheckPermission(
-      static_cast<blink::PermissionType>(PermissionType::HID), &details);
-}
-
-bool WebContentsPermissionHelper::CheckHIDDevicePermission(
-    const url::Origin& origin,
-    base::Value device,
-    content::RenderFrameHost* render_frame_host) const {
-  return CheckDevicePermission(
-      static_cast<blink::PermissionType>(PermissionType::HID), origin, &device,
-      render_frame_host);
-}
-
-void WebContentsPermissionHelper::GrantHIDDevicePermission(
-    const url::Origin& origin,
-    base::Value device,
-    content::RenderFrameHost* render_frame_host) const {
-  return GrantDevicePermission(
-      static_cast<blink::PermissionType>(PermissionType::HID), origin, &device,
-      render_frame_host);
-}
-
-void WebContentsPermissionHelper::RevokeHIDDevicePermission(
-    const url::Origin& origin,
-    base::Value device,
-    content::RenderFrameHost* render_frame_host) const {
-  return RevokeDevicePermission(
-      static_cast<blink::PermissionType>(PermissionType::HID), origin, &device,
-      render_frame_host);
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);

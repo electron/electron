@@ -196,8 +196,7 @@ void HidChooserController::OnDeviceChosen(gin::Arguments* args) {
       std::vector<device::mojom::HidDeviceInfoPtr> devices;
       devices.reserve(device_infos.size());
       for (auto& device : device_infos) {
-        chooser_context_->GrantDevicePermission(origin_, *device,
-                                                web_contents()->GetMainFrame());
+        chooser_context_->GrantDevicePermission(origin_, *device);
         devices.push_back(device->Clone());
       }
       RunCallback(std::move(devices));

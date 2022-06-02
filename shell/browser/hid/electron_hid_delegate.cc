@@ -10,10 +10,12 @@
 #include "base/command_line.h"
 #include "content/public/browser/web_contents.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/browser/hid/hid_chooser_context_factory.h"
 #include "shell/browser/hid/hid_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 
 namespace {
 
@@ -49,8 +51,6 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
   AddControllerForFrame(render_frame_host, std::move(filters),
                         std::move(exclusion_filters), std::move(callback));
 
-  render_frame_host_id_ = render_frame_host->GetGlobalId();
-
   // Return a nullptr because the return value isn't used for anything, eg
   // there is no mechanism to cancel navigator.hid.requestDevice(). The return
   // value is simply used in Chromium to cleanup the chooser UI once the serial
@@ -61,30 +61,30 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 bool ElectronHidDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
-  auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
-  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
-  auto* permission_helper =
-      WebContentsPermissionHelper::FromWebContents(web_contents);
-  return permission_helper->CheckHIDAccessPermission(
-      web_contents->GetMainFrame()->GetLastCommittedOrigin());
+  base::DictionaryValue details;
+  details.SetString("securityOrigin", origin.GetURL().spec());
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context->GetPermissionControllerDelegate());
+  return permission_manager->CheckPermissionWithDetails(
+      static_cast<blink::PermissionType>(
+          WebContentsPermissionHelper::PermissionType::HID),
+      nullptr, origin.GetURL(), &details);
 }
 
 bool ElectronHidDelegate::HasDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
   return GetChooserContext(browser_context)
-      ->HasDevicePermission(origin, device, rfh);
+      ->HasDevicePermission(origin, device);
 }
 
 void ElectronHidDelegate::RevokeDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
   return GetChooserContext(browser_context)
-      ->RevokeDevicePermission(origin, device, rfh);
+      ->RevokeDevicePermission(origin, device);
 }
 
 device::mojom::HidManager* ElectronHidDelegate::GetHidManager(
