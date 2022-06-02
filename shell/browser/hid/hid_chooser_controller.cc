@@ -262,7 +262,7 @@ bool HidChooserController::DisplayDevice(
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kDisableHidBlocklist)) {
     // Do not pass the device to the chooser if it is excluded by the blocklist.
-    if (device::HidBlocklist::IsDeviceExcluded(device))
+    if (device.is_excluded_by_blocklist)
       return false;
 
     // Do not pass the device to the chooser if it has a top-level collection
