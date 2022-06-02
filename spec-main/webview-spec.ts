@@ -426,11 +426,16 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
+
       const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
+      const loadPromise = emittedOnce(w.webContents, 'did-finish-load');
       const readyPromise = emittedOnce(ipcMain, 'webview-ready');
+
       w.loadFile(path.join(__dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'));
+
       const [, webview] = await attachPromise;
-      await readyPromise;
+      await Promise.all([readyPromise, loadPromise]);
+
       return [w, webview];
     };
 
@@ -538,6 +543,21 @@ describe('<webview> tag', function () {
       webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await leaveFSWebview;
       await leaveFSWindow;
+
+      const close = emittedOnce(w, 'closed');
+      w.close();
+      await close;
+    });
+
+    it('should support user gesture', async () => {
+      const [w, webview] = await loadWebViewWindow();
+
+      const waitForEnterHtmlFullScreen = emittedOnce(webview, 'enter-html-full-screen');
+
+      const jsScript = "document.querySelector('video').webkitRequestFullscreen()";
+      webview.executeJavaScript(jsScript, true);
+
+      await waitForEnterHtmlFullScreen;
 
       const close = emittedOnce(w, 'closed');
       w.close();
