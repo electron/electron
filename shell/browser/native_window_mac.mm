@@ -392,13 +392,9 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   // Create a tab only if tabbing identifier is specified and window has
   // a native title bar.
   if (tabbingIdentifier.empty() || transparent() || !has_frame()) {
-    if (@available(macOS 10.12, *)) {
-      [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
-    }
+    [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
   } else {
-    if (@available(macOS 10.12, *)) {
-      [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbingIdentifier)];
-    }
+    [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbingIdentifier)];
   }
 
   // Resize to content bounds.
@@ -1564,68 +1560,51 @@ void NativeWindowMac::UpdateFrame() {
 
 void NativeWindowMac::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
-  if (@available(macOS 10.12.2, *)) {
-    touch_bar_.reset([[ElectronTouchBar alloc]
-        initWithDelegate:window_delegate_.get()
-                  window:this
-                settings:std::move(items)]);
-    [window_ setTouchBar:nil];
-  }
+  touch_bar_.reset([[ElectronTouchBar alloc]
+      initWithDelegate:window_delegate_.get()
+                window:this
+              settings:std::move(items)]);
+  [window_ setTouchBar:nil];
 }
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
-  if (@available(macOS 10.12.2, *)) {
-    if (touch_bar_ && [window_ touchBar])
-      [touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
-  }
+  if (touch_bar_ && [window_ touchBar])
+    [touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
 }
 
 void NativeWindowMac::SetEscapeTouchBarItem(
     gin_helper::PersistentDictionary item) {
-  if (@available(macOS 10.12.2, *)) {
-    if (touch_bar_ && [window_ touchBar])
-      [touch_bar_ setEscapeTouchBarItem:std::move(item)
-                            forTouchBar:[window_ touchBar]];
-  }
+  if (touch_bar_ && [window_ touchBar])
+    [touch_bar_ setEscapeTouchBarItem:std::move(item)
+                          forTouchBar:[window_ touchBar]];
 }
 
 void NativeWindowMac::SelectPreviousTab() {
-  if (@available(macOS 10.12, *)) {
-    [window_ selectPreviousTab:nil];
-  }
+  [window_ selectPreviousTab:nil];
 }
 
 void NativeWindowMac::SelectNextTab() {
-  if (@available(macOS 10.12, *)) {
-    [window_ selectNextTab:nil];
-  }
+  [window_ selectNextTab:nil];
 }
 
 void NativeWindowMac::MergeAllWindows() {
-  if (@available(macOS 10.12, *)) {
-    [window_ mergeAllWindows:nil];
-  }
+  [window_ mergeAllWindows:nil];
 }
 
 void NativeWindowMac::MoveTabToNewWindow() {
-  if (@available(macOS 10.12, *)) {
-    [window_ moveTabToNewWindow:nil];
-  }
+  [window_ moveTabToNewWindow:nil];
 }
 
 void NativeWindowMac::ToggleTabBar() {
-  if (@available(macOS 10.12, *)) {
-    [window_ toggleTabBar:nil];
-  }
+  [window_ toggleTabBar:nil];
 }
 
 bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
   if (window_ == window->GetNativeWindow().GetNativeNSWindow()) {
     return false;
   } else {
-    if (@available(macOS 10.12, *))
-      [window_ addTabbedWindow:window->GetNativeWindow().GetNativeNSWindow()
-                       ordered:NSWindowAbove];
+    [window_ addTabbedWindow:window->GetNativeWindow().GetNativeNSWindow()
+                     ordered:NSWindowAbove];
   }
   return true;
 }
