@@ -84,7 +84,7 @@ diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
 index fe988e3bbcf0c9deb5592f24fdeda3016114e3bf..da82b0458d0c87cf4de793007b826984d010cbb2 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -139,6 +139,8 @@ viz_component("service") {
+@@ -105,6 +105,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
@@ -92,7 +92,7 @@ index fe988e3bbcf0c9deb5592f24fdeda3016114e3bf..da82b0458d0c87cf4de793007b826984
 +    "display_embedder/software_output_device_proxy.h",
      "display_embedder/software_output_surface.cc",
      "display_embedder/software_output_surface.h",
-     "display_embedder/viz_process_context_provider.cc",
+     "display_embedder/vsync_parameter_listener.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider.h b/components/viz/service/display_embedder/output_surface_provider.h
 index 77d463e683d8b8d3a202681a6884eacaab79d70d..05d51cb2637d34c073cd0025e365803633459a86 100644
 --- a/components/viz/service/display_embedder/output_surface_provider.h
@@ -111,22 +111,22 @@ diff --git a/components/viz/service/display_embedder/output_surface_provider_imp
 index 8a277c6337d446890bb32814a68db2a9d3d3cd72..1c967969a03c985e68f744cf4815cefbdd2c0f71 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -26,6 +26,7 @@
+@@ -23,6 +23,7 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
  #include "components/viz/service/display_embedder/software_output_surface.h"
- #include "components/viz/service/display_embedder/viz_process_context_provider.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
-@@ -39,6 +40,7 @@
+ #include "gpu/command_buffer/client/gpu_memory_buffer_manager.h"
+@@ -35,6 +36,7 @@
  #include "gpu/ipc/scheduler_sequence.h"
  #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
  #include "gpu/ipc/service/image_transport_surface.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
  #include "ui/base/ui_base_switches.h"
- #include "ui/gl/gl_context.h"
- #include "ui/gl/init/gl_factory.h"
+ 
+ #if BUILDFLAG(IS_WIN)
 @@ -126,7 +128,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
@@ -137,13 +137,13 @@ index 8a277c6337d446890bb32814a68db2a9d3d3cd72..1c967969a03c985e68f744cf4815cefb
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -138,7 +141,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -119,7 +121,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      output_surface = std::make_unique<SoftwareOutputSurface>(
 -        CreateSoftwareOutputDeviceForPlatform(surface_handle, display_client));
 +        CreateSoftwareOutputDeviceForPlatform(surface_handle, display_client, offscreen));
-   } else if (renderer_settings.use_skia_renderer) {
+   } else {
      DCHECK(gpu_dependency);
      {
 @@ -243,10 +246,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
@@ -507,7 +507,7 @@ index 4e38e0f49054cef3fd1a712c89608ce39003edeb..427882f8ed0d85c6e4170b213c3a3678
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -84,7 +84,8 @@ RootCompositorFrameSinkImpl::Create(
-       params->gpu_compositing, params->widget, params->renderer_settings);
+       params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
 -      display_controller.get(), params->renderer_settings, debug_settings);
