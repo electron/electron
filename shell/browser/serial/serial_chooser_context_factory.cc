@@ -19,7 +19,9 @@ SerialChooserContextFactory::~SerialChooserContextFactory() = default;
 
 KeyedService* SerialChooserContextFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {
-  return new SerialChooserContext();
+  auto* browser_context =
+      static_cast<electron::ElectronBrowserContext*>(context);
+  return new SerialChooserContext(browser_context);
 }
 
 // static

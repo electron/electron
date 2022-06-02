@@ -48,7 +48,7 @@ class SerialChooserContext : public KeyedService,
  public:
   using PortObserver = content::SerialDelegate::Observer;
 
-  SerialChooserContext();
+  explicit SerialChooserContext(ElectronBrowserContext* context);
   ~SerialChooserContext() override;
 
   // disable copy
@@ -103,6 +103,8 @@ class SerialChooserContext : public KeyedService,
   mojo::Remote<device::mojom::SerialPortManager> port_manager_;
   mojo::Receiver<device::mojom::SerialPortManagerClient> client_receiver_{this};
   base::ObserverList<PortObserver> port_observer_list_;
+
+  ElectronBrowserContext* browser_context_;
 
   base::WeakPtrFactory<SerialChooserContext> weak_factory_{this};
 };

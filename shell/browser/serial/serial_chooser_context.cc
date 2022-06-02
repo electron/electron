@@ -15,6 +15,7 @@
 #include "content/public/browser/device_service.h"
 #include "content/public/browser/web_contents.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
 
 namespace electron {
@@ -86,7 +87,8 @@ base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
   return value;
 }
 
-SerialChooserContext::SerialChooserContext() = default;
+SerialChooserContext::SerialChooserContext(ElectronBrowserContext* context)
+    : browser_context_(context) {}
 
 SerialChooserContext::~SerialChooserContext() = default;
 
@@ -99,26 +101,24 @@ void SerialChooserContext::GrantPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
     content::RenderFrameHost* render_frame_host) {
-  base::Value value = PortInfoToValue(port);
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  auto* permission_helper =
-      WebContentsPermissionHelper::FromWebContents(web_contents);
-  permission_helper->GrantSerialPortPermission(origin, std::move(value),
-                                               render_frame_host);
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  return permission_manager->GrantDevicePermission(
+      static_cast<blink::PermissionType>(
+          WebContentsPermissionHelper::PermissionType::SERIAL),
+      origin, PortInfoToValue(port), browser_context_);
 }
 
 bool SerialChooserContext::HasPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
     content::RenderFrameHost* render_frame_host) {
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  auto* permission_helper =
-      WebContentsPermissionHelper::FromWebContents(web_contents);
-  base::Value value = PortInfoToValue(port);
-  return permission_helper->CheckSerialPortPermission(origin, std::move(value),
-                                                      render_frame_host);
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  return permission_manager->CheckDevicePermission(
+      static_cast<blink::PermissionType>(
+          WebContentsPermissionHelper::PermissionType::SERIAL),
+      origin, PortInfoToValue(port), browser_context_);
 }
 
 void SerialChooserContext::RevokePortPermissionWebInitiated(

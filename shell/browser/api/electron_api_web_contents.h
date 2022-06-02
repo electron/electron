@@ -42,7 +42,6 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
-#include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 
@@ -94,11 +93,6 @@ class OffScreenWebContentsView;
 #endif
 
 namespace api {
-
-using DevicePermissionMap = std::map<
-    int,
-    std::map<blink::PermissionType,
-             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
 
 // Wrapper around the content::WebContents.
 class WebContents : public ExclusiveAccessContext,
@@ -438,28 +432,6 @@ class WebContents : public ExclusiveAccessContext,
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 
-  // Grants |origin| access to |device|.
-  // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
-  void GrantDevicePermission(const url::Origin& origin,
-                             const base::Value* device,
-                             blink::PermissionType permissionType,
-                             content::RenderFrameHost* render_frame_host);
-
-  // Revokes |origin| access to |device|.
-  // To be used in place of ObjectPermissionContextBase::RevokeObjectPermission.
-  void RevokeDevicePermission(const url::Origin& origin,
-                              const base::Value* device,
-                              blink::PermissionType permission_type,
-                              content::RenderFrameHost* render_frame_host);
-
-  // Returns the list of devices that |origin| has been granted permission to
-  // access. To be used in place of
-  // ObjectPermissionContextBase::GetGrantedObjects.
-  bool CheckDevicePermission(const url::Origin& origin,
-                             const base::Value* device,
-                             blink::PermissionType permissionType,
-                             content::RenderFrameHost* render_frame_host);
-
   // disable copy
   WebContents(const WebContents&) = delete;
   WebContents& operator=(const WebContents&) = delete;
@@ -755,10 +727,6 @@ class WebContents : public ExclusiveAccessContext,
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
 
-  bool DoesDeviceMatch(const base::Value* device,
-                       const base::Value* device_to_compare,
-                       blink::PermissionType permission_type);
-
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
@@ -842,9 +810,6 @@ class WebContents : public ExclusiveAccessContext,
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
-
-  // In-memory cache that holds objects that have been granted permissions.
-  DevicePermissionMap granted_devices_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };
