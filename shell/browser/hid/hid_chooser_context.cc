@@ -171,7 +171,7 @@ bool HidChooserContext::HasDevicePermission(
     content::RenderFrameHost* render_frame_host) {
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kDisableHidBlocklist) &&
-      device::HidBlocklist::IsDeviceExcluded(device))
+      device.is_excluded_by_blocklist)
     return false;
 
   auto it = ephemeral_devices_.find(origin);
