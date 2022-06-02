@@ -147,14 +147,8 @@ def run_clang_format_diff(args, file_name):
                 subprocess.list2cmdline(invocation), exc
             )
         )
-    proc_stdout = proc.stdout
-    proc_stderr = proc.stderr
-    if sys.version_info[0] < 3:
-        encoding = 'utf-8'
-        proc_stdout = codecs.getreader(encoding)(proc_stdout)
-        proc_stderr = codecs.getreader(encoding)(proc_stderr)
-    outs = list(proc_stdout.readlines())
-    errs = list(proc_stderr.readlines())
+    outs = list(proc.stdout.readlines())
+    errs = list(proc.stderr.readlines())
     proc.wait()
     if proc.returncode:
         raise DiffError("clang-format exited with status {}: '{}'".format(
@@ -299,14 +293,14 @@ def main():
 
     parse_files = []
     if args.changed:
-        results = subprocess.Popen(
+        stdout = subprocess.Popen(
             "git diff --name-only --cached",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             shell=True,
             universal_newlines=True
         ).communicate()[0].split("\n")
-        for line in results:
+        for line in stdout:
             file_name = line.rstrip()
             # don't check deleted files
             if os.path.isfile(file_name):
