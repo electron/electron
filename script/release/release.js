@@ -128,8 +128,9 @@ function assetsForVersion (version, validatingRelease) {
     `electron-${version}-mas-arm64-dsym-snapshot.zip`,
     `electron-${version}-mas-arm64-symbols.zip`,
     `electron-${version}-mas-arm64.zip`,
-    `electron-${version}-win32-ia32-pdb.zip`,
-    `electron-${version}-win32-ia32-symbols.zip`,
+    // TODO(vertedinde) Symbol generation on 32-bit Windows is temporarily disabled due to CI failures
+    // `electron-${version}-win32-ia32-pdb.zip`,
+    // `electron-${version}-win32-ia32-symbols.zip`,
     `electron-${version}-win32-ia32.zip`,
     `electron-${version}-win32-x64-pdb.zip`,
     `electron-${version}-win32-x64-symbols.zip`,
