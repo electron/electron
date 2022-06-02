@@ -4,6 +4,7 @@
 
 #include "shell/browser/extensions/electron_extensions_browser_client.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "base/bind.h"
@@ -297,7 +298,7 @@ ElectronExtensionsBrowserClient::GetComponentExtensionResourceManager() {
 void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     extensions::events::HistogramValue histogram_value,
     const std::string& event_name,
-    std::unique_ptr<base::ListValue> args,
+    base::Value::List args,
     bool dispatch_to_off_the_record_profiles) {
   if (!BrowserThread::CurrentlyOn(BrowserThread::UI)) {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -309,8 +310,11 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     return;
   }
 
-  auto event = std::make_unique<extensions::Event>(
-      histogram_value, event_name, std::move(*args).TakeListDeprecated());
+  std::vector<base::Value> event_args(args.size());
+  std::transform(args.begin(), args.end(), event_args.begin(),
+                 [](const base::Value& arg) { return arg.Clone(); });
+  auto event = std::make_unique<extensions::Event>(histogram_value, event_name,
+                                                   std::move(event_args));
   auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second) {

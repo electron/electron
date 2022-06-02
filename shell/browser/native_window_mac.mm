@@ -302,13 +302,13 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     styleMask = 0;
 
   if (minimizable)
-    styleMask |= NSMiniaturizableWindowMask;
+    styleMask |= NSWindowStyleMaskMiniaturizable;
   if (closable)
     styleMask |= NSWindowStyleMaskClosable;
   if (resizable)
-    styleMask |= NSResizableWindowMask;
+    styleMask |= NSWindowStyleMaskResizable;
   if (!useStandardWindow || transparent() || !has_frame())
-    styleMask |= NSTexturedBackgroundWindowMask;
+    styleMask |= NSWindowStyleMaskTexturedBackground;
 
   // Create views::Widget and assign window_ with it.
   // TODO(zcbenz): Get rid of the window_ in future.
@@ -841,11 +841,11 @@ bool NativeWindowMac::IsMovable() {
 }
 
 void NativeWindowMac::SetMinimizable(bool minimizable) {
-  SetStyleMask(minimizable, NSMiniaturizableWindowMask);
+  SetStyleMask(minimizable, NSWindowStyleMaskMiniaturizable);
 }
 
 bool NativeWindowMac::IsMinimizable() {
-  return [window_ styleMask] & NSMiniaturizableWindowMask;
+  return [window_ styleMask] & NSWindowStyleMaskMiniaturizable;
 }
 
 void NativeWindowMac::SetMaximizable(bool maximizable) {
@@ -901,9 +901,6 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
     level = NSPopUpMenuWindowLevel;
   } else if (level_name == "screen-saver") {
     level = NSScreenSaverWindowLevel;
-  } else if (level_name == "dock") {
-    // Deprecated by macOS, but kept for backwards compatibility
-    level = NSDockWindowLevel;
   }
 
   SetWindowLevel(level + relative_level);
@@ -927,8 +924,6 @@ std::string NativeWindowMac::GetAlwaysOnTopLevel() {
     level_name = "pop-up-menu";
   } else if (level == NSScreenSaverWindowLevel) {
     level_name = "screen-saver";
-  } else if (level == NSDockWindowLevel) {
-    level_name = "dock";
   }
 
   return level_name;

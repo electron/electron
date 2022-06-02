@@ -232,7 +232,7 @@ void SetupSaveDialogForProperties(NSSavePanel* dialog, int properties) {
 
 // Run modal dialog with parent window and return user's choice.
 int RunModalDialog(NSSavePanel* dialog, const DialogSettings& settings) {
-  __block int chosen = NSFileHandlingPanelCancelButton;
+  __block int chosen = NSModalResponseCancel;
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
     chosen = [dialog runModal];
@@ -324,7 +324,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   SetupOpenDialogForProperties(dialog, settings.properties);
 
   int chosen = RunModalDialog(dialog, settings);
-  if (chosen == NSFileHandlingPanelCancelButton)
+  if (chosen == NSModalResponseCancel)
     return false;
 
   ReadDialogPaths(dialog, paths);
@@ -337,7 +337,7 @@ void OpenDialogCompletion(int chosen,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
-  if (chosen == NSFileHandlingPanelCancelButton) {
+  if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
 #if defined(MAS_BUILD)
@@ -402,7 +402,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   SetupSaveDialogForProperties(dialog, settings.properties);
 
   int chosen = RunModalDialog(dialog, settings);
-  if (chosen == NSFileHandlingPanelCancelButton || ![[dialog URL] isFileURL])
+  if (chosen == NSModalResponseCancel || ![[dialog URL] isFileURL])
     return false;
 
   *path = base::FilePath(base::SysNSStringToUTF8([[dialog URL] path]));
@@ -415,7 +415,7 @@ void SaveDialogCompletion(int chosen,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
-  if (chosen == NSFileHandlingPanelCancelButton) {
+  if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
 #if defined(MAS_BUILD)

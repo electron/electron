@@ -108,21 +108,34 @@ class DataPipeReader {
     // Note that the lifetime of the native buffer belongs to us, and we will
     // free memory when JS buffer gets garbage collected.
     v8::HandleScope handle_scope(promise_.isolate());
+#if defined(V8_SANDBOX)
+    v8::Local<v8::Value> buffer =
+        node::Buffer::Copy(promise_.isolate(), &buffer_.front(), buffer_.size())
+            .ToLocalChecked();
+    promise_.Resolve(buffer);
+#else
     v8::Local<v8::Value> buffer =
         node::Buffer::New(promise_.isolate(), &buffer_.front(), buffer_.size(),
                           &DataPipeReader::FreeBuffer, this)
             .ToLocalChecked();
     promise_.Resolve(buffer);
+#endif
 
     // Destroy data pipe.
     handle_watcher_.Cancel();
+#if defined(V8_SANDBOX)
+    delete this;
+#else
     data_pipe_.reset();
     data_pipe_getter_.reset();
+#endif
   }
 
+#if !defined(V8_SANDBOX)
   static void FreeBuffer(char* data, void* self) {
     delete static_cast<DataPipeReader*>(self);
   }
+#endif
 
   gin_helper::Promise<v8::Local<v8::Value>> promise_;
 
