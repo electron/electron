@@ -21,10 +21,10 @@ index c0c99d3a664868858edffa5662b854337bef5feb..0fb248e89875b9b6040cf37c455c8ba5
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f7b4b6764ccf5fb9250ed4153d1ee6221d184b89..a3c4510fea1bccded05181a2d3071ba4e781972b 100644
+index 4893e261b7cfcd9828874b626797bc5bb3a3ffdc..1c2bf47241c6d54875501a065bf6fa380e8777a8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3938,6 +3938,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3942,6 +3942,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index f7b4b6764ccf5fb9250ed4153d1ee6221d184b89..a3c4510fea1bccded05181a2d3071ba4
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -3982,12 +3990,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3986,12 +3994,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -68,7 +68,7 @@ index bdcbb09cdd884dda769a5501e3dc94547f454be9..0b25def9601d8baadee6283f526687b3
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 08b6c6f89b4ec107c8ac459315f38eaf3fcc5c1a..ea55f2b41cc985a64e611d80caeb50cf5dc4a0fd 100644
+index 69bcd725d0f86bf3b175fde86bd2dbd85b59f002..b72d89b19024a9074108dde4c5c9cd0f45b719bb 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -595,6 +595,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -81,10 +81,10 @@ index 08b6c6f89b4ec107c8ac459315f38eaf3fcc5c1a..ea55f2b41cc985a64e611d80caeb50cf
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index c048f7e16d543312bc5fc5adc023b06aa05fb4f6..ab229b15262a3c598bd93529cc96cc78d93ae750 100644
+index d0b7aed3162b8ea7673ab3ef31d2a3302f4e6456..6328fc21548f2b8277b461f9938dbcc50f6853f1 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -165,6 +165,7 @@ class NetworkService;
+@@ -164,6 +164,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -92,7 +92,7 @@ index c048f7e16d543312bc5fc5adc023b06aa05fb4f6..ab229b15262a3c598bd93529cc96cc78
  }  // namespace network
  
  namespace sandbox {
-@@ -968,6 +969,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -967,6 +968,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,

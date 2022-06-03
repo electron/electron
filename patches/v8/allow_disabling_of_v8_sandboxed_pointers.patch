@@ -8,7 +8,7 @@ https://chromium-review.googlesource.com/c/v8/v8/+/3114136, so for
 now we need a way to disable v8 sandboxed pointers.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index f3b269bf948d7c8cb1b9c9157fc91924a5336ffc..4beb0cc5ff13cd5c8509ce7ef7c95150982650db 100644
+index 8c6ac4f405e8f1ddadb4e59db421898482683335..4cf7b3b94b878383b7f76b200cfabc2646d98e5c 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -508,9 +508,9 @@ if (v8_enable_sandbox == "") {
