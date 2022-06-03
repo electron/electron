@@ -132,9 +132,8 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   auto command_line_string =
       base::CommandLine::ForCurrentProcess()->GetCommandLineString();
   auto channel_string = std::string("Electron " ELECTRON_VERSION);
-  base::Value custom_constants =
-      base::Value::FromUniquePtrValue(net_log::GetPlatformConstantsForNetLog(
-          command_line_string, channel_string));
+  base::Value::Dict custom_constants = net_log::GetPlatformConstantsForNetLog(
+      command_line_string, channel_string);
 
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
@@ -156,7 +155,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
 
 void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
                                         uint64_t max_file_size,
-                                        base::Value custom_constants,
+                                        base::Value::Dict custom_constants,
                                         base::File output_file) {
   if (!net_log_exporter_) {
     // Theoretically the mojo pipe could have been closed by the time we get
@@ -204,7 +203,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
     // pointer lives long enough to resolve the promise. Moving it into the
     // callback will cause the instance variable to become empty.
     net_log_exporter_->Stop(
-        base::Value(base::Value::Type::DICTIONARY),
+        base::Value::Dict(),
         base::BindOnce(
             [](mojo::Remote<network::mojom::NetLogExporter>,
                gin_helper::Promise<void> promise, int32_t error) {
