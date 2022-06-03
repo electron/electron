@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index f1806b49a24c1f78b5a34f3c286e09671cb782d9..07be5296842515bff655846e33259fb662712007 100644
+index b6234183651923505bd2a4a8640ea21508033ef1..e486f92e909f43bb65633245b7dcb3145d0a7604 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -175,11 +175,16 @@ if (!is_android && !is_mac) {
@@ -33,7 +33,7 @@ index f1806b49a24c1f78b5a34f3c286e09671cb782d9..07be5296842515bff655846e33259fb6
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index c064308807866c039a4160d47ef65bf84b5e954a..be100268336239a17a24bb6424fec427eaf3ab10 100644
+index 1c21a9aa7c84aecf5253c23e00944514b9a3e32d..14a00be564a817f788c0b364dada20eec88fc30f 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4546,7 +4546,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index c064308807866c039a4160d47ef65bf84b5e954a..be100268336239a17a24bb6424fec427
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 5f92e3b598fa3ad8767d20db975cb29329577613..9e122f609e67192c4fa58ed93d11dadc44c42b13 100644
+index 1c1a7e5cdedf5842e72900af0dfc5a5102c582b2..90eb2e10f34a381797556b3acb35a5ac912375e1 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5903,7 +5903,6 @@ test("unit_tests") {
+@@ -5902,7 +5902,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 5f92e3b598fa3ad8767d20db975cb29329577613..9e122f609e67192c4fa58ed93d11dadc
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/browser:chrome_process_finder",
-@@ -5926,6 +5925,10 @@ test("unit_tests") {
+@@ -5925,6 +5924,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 5f92e3b598fa3ad8767d20db975cb29329577613..9e122f609e67192c4fa58ed93d11dadc
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6822,7 +6825,6 @@ test("unit_tests") {
+@@ -6821,7 +6824,6 @@ test("unit_tests") {
      }
  
      deps += [

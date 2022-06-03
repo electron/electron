@@ -42,7 +42,7 @@ index acb485c6f1c1daf2759d6315d9edd533fb4a7ec9..badf9f1b75b929970c503843dc273367
  
      auto file_data = std::make_unique<ChildProcessLauncherFileData>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 2c4bd947eca08223c541de53390a18d19208397e..6ef28fe7ebfd3dfa60995184772e3e2dd6f7f0d8 100644
+index af8173d4203150237387529aa2b974aeec7c5a41..9fadaa80a4547a583484355342c3fd98d53bcd27 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -31,6 +31,9 @@ namespace content {
@@ -55,7 +55,7 @@ index 2c4bd947eca08223c541de53390a18d19208397e..6ef28fe7ebfd3dfa60995184772e3e2d
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
-@@ -60,6 +60,9 @@ RendererSandboxedProcessLauncherDelegateWin::
+@@ -60,6 +63,9 @@ RendererSandboxedProcessLauncherDelegateWin::
            GetContentClient()->browser()->IsRendererCodeIntegrityEnabled()),
        renderer_app_container_disabled_(
            GetContentClient()->browser()->IsRendererAppContainerDisabled()) {
@@ -66,7 +66,7 @@ index 2c4bd947eca08223c541de53390a18d19208397e..6ef28fe7ebfd3dfa60995184772e3e2d
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index 576a2c0782bf49cb57c973434b5d1f2ec9fdcbc5..24d1854c261372353c9bf69a6cb0cf2d24e9ebef 100644
+index 3a0e25b38965de5b57fd0be1112cf62dfda846d7..f412080cfb49330d855fdf1cbc13ff8850530401 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
