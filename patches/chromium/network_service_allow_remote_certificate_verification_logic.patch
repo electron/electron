@@ -169,7 +169,7 @@ index bcd47e726ad4d320cac3c3341d87b9a3ca2c4065..620d7b7b733cc9749775c2bcabcebded
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index cc3f99007db46a488d7f8dacd3ede4a90e1d2ae3..0450b50b5545d9b8f9025553167bed2e78157130 100644
+index 9dc7502f8037550d3f0df786585eed8f870e6a21..51fb79a16c2d44e0052090b204107032a337a6df 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -282,6 +282,17 @@ struct NetworkContextFilePaths {

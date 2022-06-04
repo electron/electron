@@ -343,10 +343,10 @@ index ef6faf317dd4168adf6fd530a7da0b80f9166dec..f401659a81d4aeaf71039d71eb8fec48
    content::WebContents* CreateCustomWebContents(
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
-diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index 09ddc4b02ffc82344c08ef2a5ba1be1ed53c3926..e7e5601e580b5440259f65fbe643415ccb64f98d 100644
---- a/fuchsia/engine/browser/frame_impl.cc
-+++ b/fuchsia/engine/browser/frame_impl.cc
+diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
+index 889036afea9eadb5999080bc6d97494a1ccc08cf..a90d85460ffdfb9931772988f8c71f39cb4e0eaf 100644
+--- a/fuchsia_web/webengine/browser/frame_impl.cc
++++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -406,8 +406,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
@@ -357,10 +357,10 @@ index 09ddc4b02ffc82344c08ef2a5ba1be1ed53c3926..e7e5601e580b5440259f65fbe643415c
    // Specify a generous upper bound for unacknowledged popup windows, so that we
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
-diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index ea127a26537a2208039a6f3d63ea3a16f1cedcc0..6486d28bc28c77dda0c117b9693f31ec659939d7 100644
---- a/fuchsia/engine/browser/frame_impl.h
-+++ b/fuchsia/engine/browser/frame_impl.h
+diff --git a/fuchsia_web/webengine/browser/frame_impl.h b/fuchsia_web/webengine/browser/frame_impl.h
+index 0661fd642dcee69a7c8f955490dadf32dc0eb468..e3fa74da87513fbfcd035fa872dc938db96c2766 100644
+--- a/fuchsia_web/webengine/browser/frame_impl.h
++++ b/fuchsia_web/webengine/browser/frame_impl.h
 @@ -310,8 +310,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
