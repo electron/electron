@@ -16,7 +16,7 @@ win.loadURL('https://twitter.com')
 
 win.webContents.on(
   'did-frame-navigate',
-  (event, url, isMainFrame, frameProcessId, frameRoutingId) => {
+  (event, url, httpResponseCode, httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
     const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)
     if (frame) {
       const code = 'document.body.innerHTML = document.body.innerHTML.replaceAll("heck", "h*ck")'
