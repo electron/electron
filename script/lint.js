@@ -71,19 +71,14 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
-    const chunkedFilenames = chunkFilenames(filenames);
-
-    filenames = chunkedFilenames.shift();
-
-    while (filenames) {
+    for (const chunk of chunkFilenames(filenames))
+    {
       if (opts.fix) {
-        spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames]);
+        spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...chunk]);
       } else {
-        spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames]);
+        spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...chunk]);
       }
       cpplint(filenames);
-
-      filenames = chunkedFilenames.shift();
     }
   }
 }, {
