@@ -167,6 +167,7 @@ class NativeWindowMac : public NativeWindow,
   void UpdateVibrancyRadii(bool fullscreen);
 
   // Set the attribute of NSWindow while work around a bug of zoom button.
+  bool HasStyleMask(NSUInteger flag) const;
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
