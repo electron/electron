@@ -31,6 +31,23 @@ async function main () {
   const cxx = path.resolve(clangDir, 'clang++');
   const ld = path.resolve(clangDir, 'lld');
 
+  const platformSpecificFlags = [];
+  if (process.platform === 'darwin') {
+    const sdkPath = path.resolve(BASE, 'out', utils.getOutDir(), 'sdk', 'xcode_links');
+    const possibleSdks = (await fs.promises.readdir(sdkPath)).filter(fileName => fileName.endsWith('.sdk'));
+    const sdkToUse = possibleSdks[0];
+    if (!sdkToUse) {
+      console.error('Could not find an SDK to use for the NAN tests');
+      process.exit(1);
+    }
+    if (possibleSdks.length) {
+      console.warn(`Multiple SDKs found in the xcode_links directory, using the first one we found ${sdkToUse}`);
+    }
+    platformSpecificFlags.push(
+      `-isysroot ${path.resolve(sdkPath, sdkToUse)}`
+    );
+  }
+
   // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
   // Maybe it would be better to have this script literally open up that
   // file and pull cflags_cc from it instead of using bespoke code here?
@@ -38,10 +55,11 @@ async function main () {
   const cxxflags = [
     '-std=c++17',
     '-nostdinc++',
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
+    `-I"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
-    '-fPIC'
+    '-fPIC',
+    ...platformSpecificFlags
   ].join(' ');
 
   const ldflags = [
@@ -49,7 +67,8 @@ async function main () {
     '-fuse-ld=lld',
     `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
     `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++')}"`,
-    '-lc++abi'
+    '-lc++abi',
+    ...platformSpecificFlags
   ].join(' ');
 
   if (process.platform !== 'win32') {
