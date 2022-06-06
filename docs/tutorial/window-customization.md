@@ -115,7 +115,7 @@ const win = new BrowserWindow({
 })
 ```
 
-On Windows, you can also specify additional parameters. The color of the overlay and its symbols can be specified by setting `titleBarOverlay` to an object and using the `color` and `symbolColor` properties respectively. The height of the overlay can also be specified with the `height` property.
+On either platform `titleBarOverlay` can also be an object. On both macOS and Windows, the height of the overlay can be specified with the `height` property. On Windows, the color of the overlay and its symbols can be specified using the `color` and `symbolColor` properties respectively.
 
 If a color option is not specified, the color will default to its system color for the window control buttons. Similarly, if the height option is not specified it will default to the default height:
 
