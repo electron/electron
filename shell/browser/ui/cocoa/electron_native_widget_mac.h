@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NATIVE_WIDGET_MAC_H_
 
 #include <string>
+
 #include "ui/views/widget/native_widget_mac.h"
 
 namespace electron {
