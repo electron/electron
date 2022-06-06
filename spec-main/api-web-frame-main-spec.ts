@@ -230,7 +230,9 @@ describe('webFrameMain module', () => {
       // Keep reference to mainFrame alive throughout crash and recovery.
       const { mainFrame } = w.webContents;
       await w.webContents.loadURL(server.url);
+      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
       w.webContents.forcefullyCrashRenderer();
+      await crashEvent;
       await w.webContents.loadURL(server.url);
       // Log just to keep mainFrame in scope.
       console.log('mainFrame.url', mainFrame.url);
@@ -244,7 +246,9 @@ describe('webFrameMain module', () => {
       // Keep reference to mainFrame alive throughout crash and recovery.
       const { mainFrame } = w.webContents;
       await w.webContents.loadURL(server.url);
+      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
       w.webContents.forcefullyCrashRenderer();
+      await crashEvent;
       // A short wait seems to be required to reproduce the crash.
       await new Promise(resolve => setTimeout(resolve, 100));
       await w.webContents.loadURL(crossOriginUrl);
