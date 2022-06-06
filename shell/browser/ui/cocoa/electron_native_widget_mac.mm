@@ -5,6 +5,7 @@
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
 
 #include <string>
+
 #include "shell/browser/ui/cocoa/electron_ns_panel.h"
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 
