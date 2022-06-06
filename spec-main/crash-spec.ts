@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ifit } from './spec-helpers';
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
@@ -41,7 +42,8 @@ describe('crash cases', () => {
   const cases = fs.readdirSync(fixturePath);
 
   for (const crashCase of cases) {
-    it(`the "${crashCase}" case should not crash`, () => {
+    // TODO(jkleinsc) fix this flaky test on Windows 32-bit
+    ifit(process.platform !== 'win32' || process.arch !== 'ia32' || crashCase !== 'quit-on-crashed-event')(`the "${crashCase}" case should not crash`, () => {
       const fixture = path.resolve(fixturePath, crashCase);
       const argsFile = path.resolve(fixture, 'electron.args');
       const args = [fixture];
