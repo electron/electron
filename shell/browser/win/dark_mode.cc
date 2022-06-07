@@ -7,9 +7,8 @@
 #include <dwmapi.h>  // DwmSetWindowAttribute()
 
 #include "base/win/windows_version.h"
-#include "electron/fuses.h"
 
-#define DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 19
+// This flag works since Win10 20H1 but is not documented until Windows 11
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 
 // This namespace contains code originally from
@@ -17,31 +16,26 @@
 // governed by the MIT license and (c) Microsoft Corporation.
 namespace {
 
-// Use undocumented flags to set window theme on Windows 10
-HRESULT TrySetWindowThemeOnWin10(HWND hWnd, bool dark) {
-  const BOOL isDarkMode = dark;
-  if (FAILED(DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
-                                   &isDarkMode, sizeof(isDarkMode)))) {
-    HRESULT result =
-        DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1,
-                              &isDarkMode, sizeof(isDarkMode));
-    if (FAILED(result))
-      return result;
-  }
-
-  // Toggle the nonclient area active state to force a redraw (Win10 workaround)
-  HWND activeWindow = GetActiveWindow();
-  SendMessage(hWnd, WM_NCACTIVATE, hWnd != activeWindow, 0);
-  SendMessage(hWnd, WM_NCACTIVATE, hWnd == activeWindow, 0);
-
-  return S_OK;
-}
-
 // https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
 HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
   const BOOL isDarkMode = dark;
-  return DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &isDarkMode,
-                               sizeof(isDarkMode));
+  HRESULT result = DwmSetWindowAttribute(
+    hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &isDarkMode, sizeof(isDarkMode));
+
+  if (FAILED(result))
+    return result;
+
+  auto* os_info = base::win::OSInfo::GetInstance();
+  auto const version = os_info->version();
+
+  // Toggle the nonclient area active state to force a redraw (Win10 workaround)
+  if (version < base::win::Version::WIN11) {
+    HWND activeWindow = GetActiveWindow();
+    SendMessage(hWnd, WM_NCACTIVATE, hWnd != activeWindow, 0);
+    SendMessage(hWnd, WM_NCACTIVATE, hWnd == activeWindow, 0);
+  }
+
+  return S_OK;
 }
 
 }  // namespace
@@ -54,9 +48,7 @@ bool IsDarkModeSupported() {
   auto* os_info = base::win::OSInfo::GetInstance();
   auto const version = os_info->version();
 
-  return version >= base::win::Version::WIN11 ||
-         (version >= base::win::Version::WIN10 &&
-          electron::fuses::IsWindows10ImmersiveDarkModeEnabled());
+  return version >= base::win::Version::WIN10_20H1;
 }
 
 void SetDarkModeForWindow(HWND hWnd) {
@@ -64,14 +56,7 @@ void SetDarkModeForWindow(HWND hWnd) {
   bool dark =
       theme->ShouldUseDarkColors() && !theme->UserHasContrastPreference();
 
-  auto* os_info = base::win::OSInfo::GetInstance();
-  auto const version = os_info->version();
-
-  if (version >= base::win::Version::WIN11) {
-    TrySetWindowTheme(hWnd, dark);
-  } else {
-    TrySetWindowThemeOnWin10(hWnd, dark);
-  }
+  TrySetWindowTheme(hWnd, dark);
 }
 
 }  // namespace win
