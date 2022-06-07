@@ -612,6 +612,25 @@ Emitted when `webContents` wants to do basic auth.
 
 The usage is the same with [the `login` event of `app`](app.md#event-login).
 
+#### Event: 'dialog'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `messageText` string - Dialog message text.
+  * `defaultPromptText` string - Default prompt input text.
+  * `dialogType` string - 'alert' | 'confirm' | 'prompt'
+* `callback` Function
+  * `success` boolean - Indicates whether the dialog was closed successfully (OK) or not (Cancel).
+  * `result` string - The response string when accepting a prompt dialog.
+
+Emitted when `webContents` wants to show javascript dialog alert, confirm or prompt.
+
+Calling `event.preventDefault()` indicates that the dialog request is handled by the user.
+If you call `event.preventDefault()` make sure to call `callback()` afterwards.
+The renderer will be blocked until then.
+
 #### Event: 'found-in-page'
 
 Returns:
