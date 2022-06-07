@@ -447,7 +447,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   SetContentView(new views::View());
   AddContentViewLayers();
 
-  original_frame_ = [window_ frame];
+  UpdateWindowOriginalFrame();
   original_level_ = [window_ level];
 }
 
@@ -614,7 +614,7 @@ void NativeWindowMac::Maximize() {
 
   // Take note of the current window size
   if (IsNormal())
-    original_frame_ = [window_ frame];
+    UpdateWindowOriginalFrame();
   [window_ zoom:nil];
 
   if (!is_visible) {
@@ -658,7 +658,7 @@ void NativeWindowMac::Minimize() {
 
   // Take note of the current window size
   if (IsNormal())
-    original_frame_ = [window_ frame];
+    UpdateWindowOriginalFrame();
   [window_ miniaturize:nil];
 }
 
@@ -711,7 +711,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
 
   // Take note of the current window size
   if (IsNormal())
-    original_frame_ = [window_ frame];
+    UpdateWindowOriginalFrame();
 
   // This needs to be set here because it can be the case that
   // SetFullScreen is called by a user before windowWillEnterFullScreen
@@ -747,6 +747,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
 
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
   user_set_bounds_maximized_ = IsMaximized() ? true : false;
+  UpdateWindowOriginalFrame();
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
@@ -1019,7 +1020,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
 
     // Take note of the current window size and level
     if (IsNormal()) {
-      original_frame_ = [window_ frame];
+      UpdateWindowOriginalFrame();
       original_level_ = [window_ level];
     }
 
@@ -1414,6 +1415,10 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
       [window_ setCornerMask:maskImage];
     }
   }
+}
+
+void NativeWindowMac::UpdateWindowOriginalFrame() {
+  original_frame_ = [window_ frame];
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
