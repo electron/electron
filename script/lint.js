@@ -73,7 +73,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
     for (const chunk of chunkFilenames(filenames)) {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk]);
+      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk]);
       cpplint(chunk);
     }
   }
