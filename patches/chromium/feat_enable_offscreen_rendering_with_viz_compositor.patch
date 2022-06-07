@@ -108,26 +108,25 @@ index 2e9453c18f2f6623d31b477aa856152ddacc3e23..93b6080135c08bc9d4cf7020f4fcb15c
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 555b911352277820d9d58ca35eace175748e12bd..6e54db0452f6bcb324a03aa7b9a7659e235ddcd0 100644
+index 8585790795707cbe06ebe9c6cc87fb6da0a4a88b..dade8473dc350ebbc0246b30615a83fc22f735fd 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -23,6 +23,7 @@
+@@ -23,12 +23,14 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
- #include "gpu/command_buffer/client/gpu_memory_buffer_manager.h"
-@@ -35,6 +36,7 @@
+ #include "gpu/command_buffer/client/shared_memory_limits.h"
+ #include "gpu/config/gpu_finch_features.h"
+ #include "gpu/ipc/common/surface_handle.h"
  #include "gpu/ipc/scheduler_sequence.h"
- #include "gpu/ipc/service/gpu_channel_manager_delegate.h"
- #include "gpu/ipc/service/image_transport_surface.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
  #include "ui/base/ui_base_switches.h"
  
  #if BUILDFLAG(IS_WIN)
-@@ -107,7 +109,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -89,7 +91,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -137,7 +136,7 @@ index 555b911352277820d9d58ca35eace175748e12bd..6e54db0452f6bcb324a03aa7b9a7659e
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -119,7 +122,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -101,7 +104,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      output_surface = std::make_unique<SoftwareOutputSurface>(
@@ -146,7 +145,7 @@ index 555b911352277820d9d58ca35eace175748e12bd..6e54db0452f6bcb324a03aa7b9a7659e
    } else {
      DCHECK(gpu_dependency);
      {
-@@ -156,10 +159,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -138,10 +141,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -171,10 +170,10 @@ index 555b911352277820d9d58ca35eace175748e12bd..6e54db0452f6bcb324a03aa7b9a7659e
    return CreateSoftwareOutputDeviceWin(surface_handle, &output_device_backing_,
                                         display_client);
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
-index 0dd6a4debc0587199acd2626e3decf4a6651e7a9..04d78d0c015c5eede01dec759a16d56dca4c19ae 100644
+index be10797e6f517ae069b8bc579155440d8a110362..fb6848b70a80c9c6cda42605a8b86ffbeb2a5ec8 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.h
-@@ -65,12 +65,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
+@@ -49,12 +49,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
        mojom::DisplayClient* display_client,
        DisplayCompositorMemoryAndTaskController* gpu_dependency,
        const RendererSettings& renderer_settings,
@@ -190,7 +189,7 @@ index 0dd6a4debc0587199acd2626e3decf4a6651e7a9..04d78d0c015c5eede01dec759a16d56d
 +      bool offscreen);
  
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
-   const raw_ptr<gpu::CommandBufferTaskExecutor> task_executor_;
+ 
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
 index 33e12349a951ef533b964d1158f8fa124623e946..fc04bcaffefc277dd1d0cdd766168de017fedca8 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc

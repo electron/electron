@@ -94,7 +94,7 @@ index f0333177f885000fb22818ffa30a0c4ad520a161..03e82957f9d7bf009dcbf5fcd43718c9
        content::WebContents* source,
        const content::OpenURLParams& params) override;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index caa6c2dbc6dbf87081da9a2e5c42e9ac2e60c77f..ac0b7dbee8195be8c165444a141629475e97a107 100644
+index 1318d5e04d5448d2b357454c3ce4207264288760..3b0324c35d5b18ed2e29264aae860c4887cdd382 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 @@ -71,8 +71,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
@@ -108,10 +108,10 @@ index caa6c2dbc6dbf87081da9a2e5c42e9ac2e60c77f..ac0b7dbee8195be8c165444a14162947
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index b3338d65a44b337ad3762b4f5cd0e8178e2ddc2a..51d41557b26dfa99b2306b2eb6b93251188376ef 100644
+index 63d64acc7231821219a7bcd89ee02590637d4b79..007689d1cb803704dc91bd152351ccfc11bd55b7 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1799,12 +1799,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1801,12 +1801,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
