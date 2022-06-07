@@ -13,12 +13,6 @@ export const windowSetup = (isWebView: boolean, isHiddenPage: boolean) => {
     if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['close'], window.close);
   }
 
-  // But we do not support prompt().
-  window.prompt = function () {
-    throw new Error('prompt() is and will not be supported.');
-  };
-  if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
-
   if (isWebView) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
     // the actual <webview> element visibility) for backwards compatibility.
