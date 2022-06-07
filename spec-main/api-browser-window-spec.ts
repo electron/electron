@@ -1230,6 +1230,7 @@ describe('BrowserWindow module', () => {
           await resize;
           expectBoundsEqual(w.getNormalBounds(), w.getBounds());
         });
+
         it('checks normal bounds after move', async () => {
           const pos = [10, 10];
           const move = emittedOnce(w, 'move');
@@ -1248,6 +1249,51 @@ describe('BrowserWindow module', () => {
           await maximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
+        it('updates normal bounds after resize and maximize', async () => {
+          const size = [300, 400];
+          const resize = emittedOnce(w, 'resize');
+          w.setSize(size[0], size[1]);
+          await resize;
+          const original = w.getBounds();
+
+          const maximize = emittedOnce(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          const normal = w.getNormalBounds();
+          const bounds = w.getBounds();
+
+          expect(normal).to.deep.equal(original);
+          expect(normal).to.not.deep.equal(bounds);
+
+          const close = emittedOnce(w, 'close');
+          w.close();
+          await close;
+        });
+
+        it('updates normal bounds after move and maximize', async () => {
+          const pos = [10, 10];
+          const move = emittedOnce(w, 'move');
+          w.setPosition(pos[0], pos[1]);
+          await move;
+          const original = w.getBounds();
+
+          const maximize = emittedOnce(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          const normal = w.getNormalBounds();
+          const bounds = w.getBounds();
+
+          expect(normal).to.deep.equal(original);
+          expect(normal).to.not.deep.equal(bounds);
+
+          const close = emittedOnce(w, 'close');
+          w.close();
+          await close;
+        });
+
         it('checks normal bounds when unmaximized', async () => {
           const bounds = w.getBounds();
           w.once('maximize', () => {
@@ -1259,6 +1305,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
         it('does not change size for a frameless window with min size', async () => {
           w.destroy();
           w = new BrowserWindow({
@@ -1279,6 +1326,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
         it('correctly checks transparent window maximization state', async () => {
           w.destroy();
           w = new BrowserWindow({
@@ -1298,6 +1346,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expect(w.isMaximized()).to.equal(false);
         });
+
         it('returns the correct value for windows with an aspect ratio', async () => {
           w.destroy();
           w = new BrowserWindow({
@@ -1327,6 +1376,41 @@ describe('BrowserWindow module', () => {
           await minimize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
+        it('updates normal bounds after move and minimize', async () => {
+          const pos = [10, 10];
+          const move = emittedOnce(w, 'move');
+          w.setPosition(pos[0], pos[1]);
+          await move;
+          const original = w.getBounds();
+
+          const minimize = emittedOnce(w, 'minimize');
+          w.minimize();
+          await minimize;
+
+          const normal = w.getNormalBounds();
+
+          expect(original).to.deep.equal(normal);
+          expectBoundsEqual(normal, w.getBounds());
+        });
+
+        it('updates normal bounds after resize and minimize', async () => {
+          const size = [300, 400];
+          const resize = emittedOnce(w, 'resize');
+          w.setSize(size[0], size[1]);
+          await resize;
+          const original = w.getBounds();
+
+          const minimize = emittedOnce(w, 'minimize');
+          w.minimize();
+          await minimize;
+
+          const normal = w.getNormalBounds();
+
+          expect(original).to.deep.equal(normal);
+          expectBoundsEqual(normal, w.getBounds());
+        });
+
         it('checks normal bounds when restored', async () => {
           const bounds = w.getBounds();
           w.once('minimize', () => {
@@ -1338,6 +1422,7 @@ describe('BrowserWindow module', () => {
           await restore;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
         it('does not change size for a frameless window with min size', async () => {
           w.destroy();
           w = new BrowserWindow({
@@ -1383,6 +1468,50 @@ describe('BrowserWindow module', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds);
           });
 
+          it('updates normal bounds after resize and fullscreen', async () => {
+            const size = [300, 400];
+            const resize = emittedOnce(w, 'resize');
+            w.setSize(size[0], size[1]);
+            await resize;
+            const original = w.getBounds();
+
+            const fsc = emittedOnce(w, 'enter-full-screen');
+            w.fullScreen = true;
+            await fsc;
+
+            const normal = w.getNormalBounds();
+            const bounds = w.getBounds();
+
+            expect(normal).to.deep.equal(original);
+            expect(normal).to.not.deep.equal(bounds);
+
+            const close = emittedOnce(w, 'close');
+            w.close();
+            await close;
+          });
+
+          it('updates normal bounds after move and fullscreen', async () => {
+            const pos = [10, 10];
+            const move = emittedOnce(w, 'move');
+            w.setPosition(pos[0], pos[1]);
+            await move;
+            const original = w.getBounds();
+
+            const fsc = emittedOnce(w, 'enter-full-screen');
+            w.fullScreen = true;
+            await fsc;
+
+            const normal = w.getNormalBounds();
+            const bounds = w.getBounds();
+
+            expect(normal).to.deep.equal(original);
+            expect(normal).to.not.deep.equal(bounds);
+
+            const close = emittedOnce(w, 'close');
+            w.close();
+            await close;
+          });
+
           it('checks normal bounds when unfullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.once('enter-full-screen', () => {
@@ -1418,6 +1547,50 @@ describe('BrowserWindow module', () => {
             await enterFullScreen;
 
             expectBoundsEqual(w.getNormalBounds(), bounds);
+          });
+
+          it('updates normal bounds after resize and fullscreen', async () => {
+            const size = [300, 400];
+            const resize = emittedOnce(w, 'resize');
+            w.setSize(size[0], size[1]);
+            await resize;
+            const original = w.getBounds();
+
+            const fsc = emittedOnce(w, 'enter-full-screen');
+            w.setFullScreen(true);
+            await fsc;
+
+            const normal = w.getNormalBounds();
+            const bounds = w.getBounds();
+
+            expect(normal).to.deep.equal(original);
+            expect(normal).to.not.deep.equal(bounds);
+
+            const close = emittedOnce(w, 'close');
+            w.close();
+            await close;
+          });
+
+          it('updates normal bounds after move and fullscreen', async () => {
+            const pos = [10, 10];
+            const move = emittedOnce(w, 'move');
+            w.setPosition(pos[0], pos[1]);
+            await move;
+            const original = w.getBounds();
+
+            const fsc = emittedOnce(w, 'enter-full-screen');
+            w.setFullScreen(true);
+            await fsc;
+
+            const normal = w.getNormalBounds();
+            const bounds = w.getBounds();
+
+            expect(normal).to.deep.equal(original);
+            expect(normal).to.not.deep.equal(bounds);
+
+            const close = emittedOnce(w, 'close');
+            w.close();
+            await close;
           });
 
           it('checks normal bounds when unfullscreen\'ed', async () => {
