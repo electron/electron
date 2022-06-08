@@ -783,7 +783,6 @@ void App::OnNewWindowForTab() {
 void App::OnDidBecomeActive() {
   Emit("did-become-active");
 }
-
 #endif
 
 bool App::CanCreateWindow(
