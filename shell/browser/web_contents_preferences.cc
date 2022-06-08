@@ -316,8 +316,7 @@ bool WebContentsPreferences::IsSandboxed() const {
   if (sandbox_)
     return *sandbox_;
   bool sandbox_disabled_by_default = node_integration_ ||
-                                     node_integration_in_worker_ ||
-                                     node_integration_in_sub_frames_;
+                                     node_integration_in_worker_;
   return !sandbox_disabled_by_default;
 }
 
