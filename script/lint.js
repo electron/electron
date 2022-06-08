@@ -70,9 +70,9 @@ const LINTERS = [{
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
     if (opts.fix) {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames]);
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', '--fix', ...filenames]);
     } else {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames]);
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...filenames]);
     }
     cpplint(filenames);
   }
@@ -82,9 +82,9 @@ const LINTERS = [{
   test: filename => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
   run: (opts, filenames) => {
     if (opts.fix) {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames]);
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', '--fix', ...filenames]);
     } else {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames]);
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...filenames]);
     }
     const filter = [
       '-readability/braces',
