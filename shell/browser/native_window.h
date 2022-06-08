@@ -2,11 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NATIVE_WINDOW_H_
-#define SHELL_BROWSER_NATIVE_WINDOW_H_
+#ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_
+#define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_
 
 #include <list>
 #include <memory>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -46,7 +47,7 @@ namespace electron {
 class ElectronMenuModel;
 class NativeBrowserView;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 typedef NSView* NativeWindowHandle;
 #else
 typedef gfx::AcceleratedWidget NativeWindowHandle;
@@ -56,6 +57,10 @@ class NativeWindow : public base::SupportsUserData,
                      public views::WidgetDelegate {
  public:
   ~NativeWindow() override;
+
+  // disable copy
+  NativeWindow(const NativeWindow&) = delete;
+  NativeWindow& operator=(const NativeWindow&) = delete;
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
@@ -134,7 +139,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   virtual std::string GetAlwaysOnTopLevel() = 0;
   virtual void SetActive(bool is_key) = 0;
   virtual bool IsActive() const = 0;
@@ -205,7 +210,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetVibrancy(const std::string& type);
 
   // Traffic Light API
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;
   virtual bool GetWindowButtonVisibility() const = 0;
   virtual void SetTrafficLightPosition(absl::optional<gfx::Point> position) = 0;
@@ -265,7 +270,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
-  void NotifyWindowRequestPreferredWith(int* width);
+  void NotifyWindowRequestPreferredWidth(int* width);
   void NotifyWindowCloseButtonClicked();
   void NotifyWindowClosed();
   void NotifyWindowEndSession();
@@ -304,13 +309,24 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
 #endif
 
   void AddObserver(NativeWindowObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(NativeWindowObserver* obs) {
     observers_.RemoveObserver(obs);
+  }
+
+  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
+
+  // Handle fullscreen transitions.
+  void HandlePendingFullscreenTransitions();
+  void set_fullscreen_transition_state(FullScreenTransitionState state) {
+    fullscreen_transition_state_ = state;
+  }
+  FullScreenTransitionState fullscreen_transition_state() const {
+    return fullscreen_transition_state_;
   }
 
   views::Widget* widget() const { return widget_.get(); }
@@ -323,10 +339,16 @@ class NativeWindow : public base::SupportsUserData,
     kCustomButtonsOnHover,
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
+  int titlebar_overlay_height() const { return titlebar_overlay_height_; }
+  void set_titlebar_overlay_height(int height) {
+    titlebar_overlay_height_ = height;
+  }
+  bool titlebar_overlay_enabled() const { return titlebar_overlay_; }
 
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
+  bool has_client_frame() const { return has_client_frame_; }
   bool transparent() const { return transparent_; }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
@@ -358,8 +380,16 @@ class NativeWindow : public base::SupportsUserData,
   // The boolean parsing of the "titleBarOverlay" option
   bool titlebar_overlay_ = false;
 
+  // The custom height parsed from the "height" option in a Object
+  // "titleBarOverlay"
+  int titlebar_overlay_height_ = 0;
+
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
+
+  std::queue<bool> pending_transitions_;
+  FullScreenTransitionState fullscreen_transition_state_ =
+      FullScreenTransitionState::NONE;
 
  private:
   std::unique_ptr<views::Widget> widget_;
@@ -371,6 +401,11 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window has standard frame.
   bool has_frame_ = true;
+
+  // Whether window has standard frame, but it's drawn by Electron (the client
+  // application) instead of the OS. Currently only has meaning on Linux for
+  // Wayland hosts.
+  bool has_client_frame_ = false;
 
   // Whether window is transparent.
   bool transparent_ = false;
@@ -412,8 +447,6 @@ class NativeWindow : public base::SupportsUserData,
   gfx::Rect overlay_rect_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
 
 // This class provides a hook to get a NativeWindow from a WebContents.
@@ -431,11 +464,12 @@ class NativeWindowRelay
 
  private:
   friend class content::WebContentsUserData<NativeWindow>;
-  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window);
+  explicit NativeWindowRelay(content::WebContents* web_contents,
+                             base::WeakPtr<NativeWindow> window);
 
   base::WeakPtr<NativeWindow> native_window_;
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NATIVE_WINDOW_H_
+#endif  // ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_

@@ -8,7 +8,7 @@ const ChildProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 const { emittedOnce, waitForEvent } = require('./events-helpers');
 const { resolveGetters } = require('./expect-helpers');
-const { ifdescribe, delay } = require('./spec-helpers');
+const { ifit, ifdescribe, delay } = require('./spec-helpers');
 const features = process._linkedBinding('electron_common_features');
 
 /* Most of the APIs here don't use standard callbacks */
@@ -81,7 +81,8 @@ describe('chromium feature', () => {
       expect(event.data).to.equal(`size: ${width} ${height}`);
     });
 
-    it('disables node integration when it is disabled on the parent window', async () => {
+    // FIXME(zcbenz): This test is making the spec runner hang on exit on Windows.
+    ifit(process.platform !== 'win32')('disables node integration when it is disabled on the parent window', async () => {
       const windowUrl = require('url').format({
         pathname: `${fixtures}/pages/window-opener-no-node-integration.html`,
         protocol: 'file',
@@ -151,16 +152,6 @@ describe('chromium feature', () => {
       const event = await message;
       b.close();
       expect(event.data).to.equal('object');
-    });
-  });
-
-  describe('window.postMessage', () => {
-    it('throws an exception when the targetOrigin cannot be converted to a string', () => {
-      const b = window.open('');
-      expect(() => {
-        b.postMessage('test', { toString: null });
-      }).to.throw('Cannot convert object to primitive value');
-      b.close();
     });
   });
 
@@ -290,15 +281,14 @@ describe('chromium feature', () => {
         expect(event.data).to.equal('undefined undefined undefined undefined');
       });
 
-      // FIXME: disabled during chromium update due to crash in content::WorkerScriptFetchInitiator::CreateScriptLoaderOnIO
-      xit('has node integration with nodeIntegrationInWorker', async () => {
+      it('has node integration with nodeIntegrationInWorker', async () => {
         const webview = new WebView();
         webview.addEventListener('console-message', (e) => {
           console.log(e);
         });
         const eventPromise = waitForEvent(webview, 'ipc-message');
         webview.src = `file://${fixtures}/pages/shared_worker.html`;
-        webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker');
+        webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker, contextIsolation=no');
         document.body.appendChild(webview);
         const event = await eventPromise;
         webview.remove();

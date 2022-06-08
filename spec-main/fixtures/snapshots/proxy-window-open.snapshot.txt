@@ -22,8 +22,7 @@
         "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": "placeholder-opener-id"
+        "nodeIntegrationInSubFrames": false
       },
       "webContents": "[WebContents]"
     },
@@ -56,8 +55,7 @@
         "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": "placeholder-opener-id"
+        "nodeIntegrationInSubFrames": false
       },
       "webContents": "[WebContents]"
     },
@@ -87,8 +85,7 @@
         "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": "placeholder-opener-id"
+        "nodeIntegrationInSubFrames": false
       },
       "x": 100,
       "y": 100,
@@ -122,8 +119,7 @@
         "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": "placeholder-opener-id"
+        "nodeIntegrationInSubFrames": false
       },
       "webContents": "[WebContents]"
     },
@@ -156,8 +152,7 @@
         "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": "placeholder-opener-id"
+        "nodeIntegrationInSubFrames": false
       },
       "webContents": "[WebContents]"
     },

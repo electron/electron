@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_TRAY_ICON_OBSERVER_H_
-#define SHELL_BROWSER_UI_TRAY_ICON_OBSERVER_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_OBSERVER_H_
+#define ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_OBSERVER_H_
 
 #include <string>
 #include <vector>
@@ -45,4 +45,4 @@ class TrayIconObserver : public base::CheckedObserver {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_TRAY_ICON_OBSERVER_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_OBSERVER_H_

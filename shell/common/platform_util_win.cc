@@ -21,9 +21,9 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/stl_util.h"
+#include "base/strings/escape.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
 #include "base/win/registry.h"
@@ -32,7 +32,6 @@
 #include "base/win/windows_version.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "net/base/escape.h"
 #include "shell/common/electron_paths.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
@@ -243,7 +242,7 @@ std::string OpenExternalOnWorkerThread(
   // parameters unexpected by the external program. This url should already
   // have been escaped.
   std::wstring escaped_url =
-      L"\"" + base::UTF8ToWide(net::EscapeExternalHandlerValue(url.spec())) +
+      L"\"" + base::UTF8ToWide(base::EscapeExternalHandlerValue(url.spec())) +
       L"\"";
   std::wstring working_dir = options.working_dir.value();
 
@@ -251,7 +250,8 @@ std::string OpenExternalOnWorkerThread(
           ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
                         working_dir.empty() ? nullptr : working_dir.c_str(),
                         SW_SHOWNORMAL)) <= 32) {
-    return "Failed to open";
+    return "Failed to open: " +
+           logging::SystemErrorCodeToString(logging::GetLastSystemErrorCode());
   }
   return "";
 }
@@ -288,7 +288,7 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
     return;
 
   const ITEMIDLIST* highlight[] = {file_item};
-  hr = SHOpenFolderAndSelectItems(dir_item, base::size(highlight), highlight,
+  hr = SHOpenFolderAndSelectItems(dir_item, std::size(highlight), highlight,
                                   NULL);
   if (FAILED(hr)) {
     // On some systems, the above call mysteriously fails with "file not

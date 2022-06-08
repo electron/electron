@@ -22,7 +22,7 @@ const circleCIPublishWorkflows = [
 
 const circleCIPublishIndividualArches = {
   'macos-publish': ['osx-x64', 'mas-x64', 'osx-arm64', 'mas-arm64'],
-  'linux-publish': ['arm', 'arm64', 'ia32', 'x64']
+  'linux-publish': ['arm', 'arm64', 'x64']
 };
 
 const vstsArmJobs = [
@@ -59,16 +59,12 @@ async function circleCIcall (targetBranch, workflowName, options) {
   console.log(`Triggering CircleCI to run build job: ${workflowName} on branch: ${targetBranch} with release flag.`);
   const buildRequest = {
     branch: targetBranch,
-    parameters: {
-      'run-lint': false,
-      'run-build-linux': false,
-      'run-build-mac': false
-    }
+    parameters: {}
   };
   if (options.ghRelease) {
-    buildRequest.parameters['upload-to-s3'] = '0';
+    buildRequest.parameters['upload-to-storage'] = '0';
   } else {
-    buildRequest.parameters['upload-to-s3'] = '1';
+    buildRequest.parameters['upload-to-storage'] = '1';
   }
   buildRequest.parameters[`run-${workflowName}`] = true;
   if (options.arch) {
@@ -114,11 +110,12 @@ async function getCircleCIWorkflowId (pipelineId) {
     switch (pipelineInfo.state) {
       case 'created': {
         const workflows = await circleCIRequest(`${pipelineInfoUrl}/workflow`, 'GET');
-        if (workflows.items.length === 1) {
-          workflowId = workflows.items[0].id;
+        // The logic below expects three workflow.items: publish, lint, & setup
+        if (workflows.items.length === 3) {
+          workflowId = workflows.items.find(item => item.name.includes('publish')).id;
           break;
         }
-        console.log('Unxpected number of workflows, response was:', pipelineInfo);
+        console.log('Unxpected number of workflows, response was:', workflows);
         workflowId = -1;
         break;
       }
@@ -208,7 +205,7 @@ async function callAppVeyor (targetBranch, job, options) {
   };
 
   if (!options.ghRelease) {
-    environmentVariables.UPLOAD_TO_S3 = 1;
+    environmentVariables.UPLOAD_TO_STORAGE = 1;
   }
 
   const requestOpts = {

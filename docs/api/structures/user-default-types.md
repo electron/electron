@@ -1,11 +1,11 @@
 # UserDefaultTypes Object
 
-* `string` String
-* `boolean` Boolean
-* `integer` Number
-* `float` Number
-* `double` Number
-* `url` String
+* `string` string
+* `boolean` boolean
+* `integer` number
+* `float` number
+* `double` number
+* `url` string
 * `array` Array\<unknown>
 * `dictionary` Record\<string, unknown>
 

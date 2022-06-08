@@ -1,10 +1,12 @@
 <html>
 <body>
 <script>
-// `setImmediate` schedules a function to be run on the next UV tick, which
-//  ensures that `window.open` is run from `UvRunOnce()`.
-setImmediate(async () => {
-  if (!location.hash) {
+if (location.hash) {
+  window.opener.postMessage('foo', '*');
+} else {
+  // `setImmediate` schedules a function to be run on the next UV tick, which
+  //  ensures that `window.open` is run from `UvRunOnce()`.
+  setImmediate(async () => {
     const p = new Promise(resolve => {
       window.addEventListener('message', resolve, { once: true });
     });
@@ -12,10 +14,8 @@ setImmediate(async () => {
     const e = await p;
 
     window.close();
-  } else {
-    window.opener.postMessage('foo', '*');
-  }
-});
+  });
+}
 </script>
 </body>
 </html>

@@ -45,7 +45,7 @@ be dynamically modified.
 
 #### `Menu.sendActionToFirstResponder(action)` _macOS_
 
-* `action` String
+* `action` string
 
 Sends the `action` to the first responder of application. This is used for
 emulating default macOS menu behaviors. Usually you would use the
@@ -73,11 +73,11 @@ The `menu` object has the following instance methods:
 
 * `options` Object (optional)
   * `window` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
-  * `x` Number (optional) - Default is the current mouse cursor position.
+  * `x` number (optional) - Default is the current mouse cursor position.
     Must be declared if `y` is declared.
-  * `y` Number (optional) - Default is the current mouse cursor position.
+  * `y` number (optional) - Default is the current mouse cursor position.
     Must be declared if `x` is declared.
-  * `positioningItem` Number (optional) _macOS_ - The index of the menu item to
+  * `positioningItem` number (optional) _macOS_ - The index of the menu item to
     be positioned under the mouse cursor at the specified coordinates. Default
     is -1.
   * `callback` Function (optional) - Called when menu is closed.
@@ -98,7 +98,7 @@ Appends the `menuItem` to the menu.
 
 #### `menu.getMenuItemById(id)`
 
-* `id` String
+* `id` string
 
 Returns `MenuItem | null` the item with the specified `id`
 

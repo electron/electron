@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 16 Feb 2022 13:33:41 +0100
+Subject: fix: failing Node.js test on outdated
+ CurrentValueSerializerFormatVersion
+
+Corrects for a test that started failing as of https://chromium-review.googlesource.com/c/v8/v8/+/3417189
+becuase V8 updated the return value of CurrentValueSerializerFormatVersion()
+from 14 to 15, and Node.js still expected 14 (0x0e).
+
+This patch can be removed as soon as Node.js updates to a version of V8
+containing the above CL.
+
+diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
+index 586698129680cef29595c39e77c7d1c186f3d60a..43a3d9dd5907af6aa11b902b01f6ef7539768fbb 100644
+--- a/test/parallel/test-v8-serdes.js
++++ b/test/parallel/test-v8-serdes.js
+@@ -155,7 +155,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
+ }
+ 
+ {
+-  const buf = Buffer.from('ff0e6f2203666f6f5e007b01', 'hex');
++  const buf = Buffer.from('ff0f6f2203666f6f5e007b01', 'hex');
+ 
+   const des = new v8.DefaultDeserializer(buf);
+   des.readHeader();
+@@ -166,7 +166,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
+   ser.writeValue(des.readValue());
+ 
+   assert.deepStrictEqual(buf, ser.releaseBuffer());
+-  assert.strictEqual(des.getWireFormatVersion(), 0x0e);
++  assert.strictEqual(des.getWireFormatVersion(), 0x0f);
+ }
+ 
+ {

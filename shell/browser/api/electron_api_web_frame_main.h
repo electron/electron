@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
-#define SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
 
 #include <string>
 #include <vector>
@@ -59,6 +59,10 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   content::RenderFrameHost* render_frame_host() const { return render_frame_; }
 
+  // disable copy
+  WebFrameMain(const WebFrameMain&) = delete;
+  WebFrameMain& operator=(const WebFrameMain&) = delete;
+
  protected:
   explicit WebFrameMain(content::RenderFrameHost* render_frame);
   ~WebFrameMain() override;
@@ -78,6 +82,9 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   void UpdateRenderFrameHost(content::RenderFrameHost* rfh);
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
+  void MaybeSetupMojoConnection();
+  void TeardownMojoConnection();
+  void OnRendererConnectionError();
 
   // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
   // whether its been disposed of prior to accessing it.
@@ -108,8 +115,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
-  void OnRendererConnectionError();
-  void Connect();
   void DOMContentLoaded();
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
@@ -124,12 +129,10 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   bool render_frame_disposed_ = false;
 
   base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(WebFrameMain);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
-#define SHELL_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
 
 #include "ui/views/window/native_frame_view.h"
 
@@ -18,6 +18,10 @@ class NativeFrameView : public views::NativeFrameView {
   static const char kViewClassName[];
   NativeFrameView(NativeWindow* window, views::Widget* widget);
 
+  // disable copy
+  NativeFrameView(const NativeFrameView&) = delete;
+  NativeFrameView& operator=(const NativeFrameView&) = delete;
+
  protected:
   // views::View:
   gfx::Size GetMinimumSize() const override;
@@ -26,10 +30,8 @@ class NativeFrameView : public views::NativeFrameView {
 
  private:
   NativeWindow* window_;  // weak ref.
-
-  DISALLOW_COPY_AND_ASSIGN(NativeFrameView);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_

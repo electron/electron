@@ -2,4 +2,4 @@ expose_ripemd160.patch
 expose_aes-cfb.patch
 expose_des-ede3.patch
 fix_sync_evp_get_cipherbynid_and_evp_get_cipherbyname.patch
-add_maskhash_to_rsa_pss_params_st_for_compat.patch
+expose_blowfish_ciphers.patch

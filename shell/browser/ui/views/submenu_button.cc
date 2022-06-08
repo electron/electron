@@ -22,7 +22,7 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
                              const SkColor& background_color)
     : views::MenuButton(callback, gfx::RemoveAccelerator(title)),
       background_color_(background_color) {
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   // Dont' use native style border.
   SetBorder(CreateDefaultBorder());
 #endif

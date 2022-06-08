@@ -87,13 +87,13 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
   // Indenting the client area can fix this behavior.
   if (IsMaximized() && !native_window_view_->has_frame()) {
     // The insets would be eventually passed to WM_NCCALCSIZE, which takes
-    // the metrics under the DPI of _main_ monitor instead of current moniotr.
+    // the metrics under the DPI of _main_ monitor instead of current monitor.
     //
     // Please make sure you tested maximized frameless window under multiple
     // monitors with different DPIs before changing this code.
     const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
                           ::GetSystemMetrics(SM_CXPADDEDBORDER);
-    insets->Set(thickness, thickness, thickness, thickness);
+    *insets = gfx::Insets::TLBR(thickness, thickness, thickness, thickness);
     return true;
   }
   return false;

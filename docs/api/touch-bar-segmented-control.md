@@ -8,7 +8,7 @@ _This class is not exported from the `'electron'` module. It is only available a
 ### `new TouchBarSegmentedControl(options)`
 
 * `options` Object
-  * `segmentStyle` String (optional) - Style of the segments:
+  * `segmentStyle` string (optional) - Style of the segments:
     * `automatic` - Default. The appearance of the segmented control is
       automatically determined based on the type of window in which the control
       is displayed and the position within the window. Maps to `NSSegmentStyleAutomatic`.
@@ -22,7 +22,7 @@ _This class is not exported from the `'electron'` module. It is only available a
     * `small-square` - The control is displayed using the small square style. Maps to `NSSegmentStyleSmallSquare`.
     * `separated` - The segments in the control are displayed very close to each
       other but not touching. Maps to `NSSegmentStyleSeparated`.
-  * `mode` String (optional) - The selection mode of the control:
+  * `mode` string (optional) - The selection mode of the control:
     * `single` - Default. One item selected at a time, selecting one deselects the previously selected item. Maps to `NSSegmentSwitchTrackingSelectOne`.
     * `multiple` - Multiple items can be selected at a time. Maps to `NSSegmentSwitchTrackingSelectAny`.
     * `buttons` - Make the segments act as buttons, each segment can be pressed and released but never marked as active. Maps to `NSSegmentSwitchTrackingMomentary`.
@@ -30,7 +30,7 @@ _This class is not exported from the `'electron'` module. It is only available a
   * `selectedIndex` Integer (optional) - The index of the currently selected segment, will update automatically with user interaction. When the mode is `multiple` it will be the last selected item.
   * `change` Function (optional) - Called when the user selects a new segment.
     * `selectedIndex` Integer - The index of the segment the user selected.
-    * `isSelected` Boolean - Whether as a result of user selection the segment is selected or not.
+    * `isSelected` boolean - Whether as a result of user selection the segment is selected or not.
 
 ### Instance Properties
 
@@ -38,7 +38,7 @@ The following properties are available on instances of `TouchBarSegmentedControl
 
 #### `touchBarSegmentedControl.segmentStyle`
 
-A `String` representing the controls current segment style. Updating this value immediately updates the control
+A `string` representing the controls current segment style. Updating this value immediately updates the control
 in the touch bar.
 
 #### `touchBarSegmentedControl.segments`
@@ -53,4 +53,4 @@ in the touch bar. User interaction with the touch bar will update this value aut
 
 #### `touchBarSegmentedControl.mode`
 
-A `String` representing the current selection mode of the control.  Can be `single`, `multiple` or `buttons`.
+A `string` representing the current selection mode of the control.  Can be `single`, `multiple` or `buttons`.

@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 
-import { Menu } from 'electron/main';
+import { Menu, deprecate } from 'electron/main';
 
 const bindings = process._linkedBinding('electron_browser_app');
 const commandLine = process._linkedBinding('electron_common_command_line');
@@ -39,7 +39,8 @@ Object.assign(app, {
     hasSwitch: (theSwitch: string) => commandLine.hasSwitch(String(theSwitch)),
     getSwitchValue: (theSwitch: string) => commandLine.getSwitchValue(String(theSwitch)),
     appendSwitch: (theSwitch: string, value?: string) => commandLine.appendSwitch(String(theSwitch), typeof value === 'undefined' ? value : String(value)),
-    appendArgument: (arg: string) => commandLine.appendArgument(String(arg))
+    appendArgument: (arg: string) => commandLine.appendArgument(String(arg)),
+    removeSwitch: (theSwitch: string) => commandLine.removeSwitch(String(theSwitch))
   } as Electron.CommandLine
 });
 
@@ -110,3 +111,7 @@ for (const name of events) {
     webContents.emit(name, event, ...args);
   });
 }
+
+// Deprecation.
+deprecate.event(app, 'gpu-process-crashed', 'child-process-gone');
+deprecate.event(app, 'renderer-process-crashed', 'render-process-gone');

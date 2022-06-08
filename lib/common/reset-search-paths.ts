@@ -2,9 +2,6 @@ import * as path from 'path';
 
 const Module = require('module');
 
-// Clear Node's global search paths.
-Module.globalPaths.length = 0;
-
 // We do not want to allow use of the VM module in the renderer process as
 // it conflicts with Blink's V8::Context internal logic.
 if (process.type === 'renderer') {

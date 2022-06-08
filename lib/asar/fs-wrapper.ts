@@ -30,11 +30,13 @@ const getOrCreateArchive = (archivePath: string) => {
     return cachedArchives.get(archivePath);
   }
 
-  const newArchive = asar.createArchive(archivePath);
-  if (!newArchive) return null;
-
-  cachedArchives.set(archivePath, newArchive);
-  return newArchive;
+  try {
+    const newArchive = new asar.Archive(archivePath);
+    cachedArchives.set(archivePath, newArchive);
+    return newArchive;
+  } catch {
+    return null;
+  }
 };
 
 const asarRe = /\.asar/i;

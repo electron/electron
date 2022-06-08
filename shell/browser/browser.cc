@@ -41,7 +41,7 @@ void RunQuitClosure(base::OnceClosure quit) {
 
 }  // namespace
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 Browser::LaunchItem::LaunchItem() = default;
 Browser::LaunchItem::~LaunchItem() = default;
 Browser::LaunchItem::LaunchItem(const LaunchItem& other) = default;
@@ -65,7 +65,7 @@ Browser* Browser::Get() {
   return ElectronBrowserMainParts::Get()->browser();
 }
 
-#if defined(OS_WIN) || defined(OS_LINUX)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
 void Browser::Focus(gin::Arguments* args) {
   // Focus on the first visible window.
   for (auto* const window : WindowList::GetWindows()) {
@@ -275,7 +275,7 @@ void Browser::OnWindowAllClosed() {
   }
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 void Browser::NewWindowForTab() {
   for (BrowserObserver& observer : observers_)
     observer.OnNewWindowForTab();

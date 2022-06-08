@@ -99,7 +99,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   OSCrypt::RegisterLocalPrefs(pref_registry.get());
 #endif
 
@@ -110,7 +110,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   // Only use a persistent prefs store when cookie encryption is enabled as that
   // is the only key that needs it
   base::FilePath prefs_path;
-  CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &prefs_path));
+  CHECK(base::PathService::Get(electron::DIR_SESSION_DATA, &prefs_path));
   prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   scoped_refptr<JsonPrefStore> user_pref_store =
@@ -198,10 +198,6 @@ network::NetworkQualityTracker* BrowserProcessImpl::network_quality_tracker() {
   return nullptr;
 }
 
-WatchDogThread* BrowserProcessImpl::watchdog_thread() {
-  return nullptr;
-}
-
 policy::ChromeBrowserPolicyConnector*
 BrowserProcessImpl::browser_policy_connector() {
   return nullptr;
@@ -259,11 +255,6 @@ BrowserProcessImpl::subresource_filter_ruleset_service() {
   return nullptr;
 }
 
-federated_learning::FlocSortingLshClustersService*
-BrowserProcessImpl::floc_sorting_lsh_clusters_service() {
-  return nullptr;
-}
-
 component_updater::ComponentUpdateService*
 BrowserProcessImpl::component_updater() {
   return nullptr;
@@ -295,6 +286,10 @@ resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
 }
 
 SerialPolicyAllowedPorts* BrowserProcessImpl::serial_policy_allowed_ports() {
+  return nullptr;
+}
+
+HidPolicyAllowedDevices* BrowserProcessImpl::hid_policy_allowed_devices() {
   return nullptr;
 }
 

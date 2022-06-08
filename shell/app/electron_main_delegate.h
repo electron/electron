@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
-#define SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
+#ifndef ELECTRON_SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
+#define ELECTRON_SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
 
 #include <memory>
 #include <string>
@@ -26,6 +26,10 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   ElectronMainDelegate();
   ~ElectronMainDelegate() override;
 
+  // disable copy
+  ElectronMainDelegate(const ElectronMainDelegate&) = delete;
+  ElectronMainDelegate& operator=(const ElectronMainDelegate&) = delete;
+
  protected:
   // content::ContentMainDelegate:
   bool BasicStartupComplete(int* exit_code) override;
@@ -36,17 +40,17 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   content::ContentGpuClient* CreateContentGpuClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;
   content::ContentUtilityClient* CreateContentUtilityClient() override;
-  int RunProcess(
+  absl::variant<int, content::MainFunctionParams> RunProcess(
       const std::string& process_type,
-      const content::MainFunctionParams& main_function_params) override;
+      content::MainFunctionParams main_function_params) override;
   bool ShouldCreateFeatureList() override;
   bool ShouldLockSchemeRegistry() override;
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   void ZygoteForked() override;
 #endif
 
  private:
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   void OverrideChildProcessPath();
   void OverrideFrameworkBundlePath();
   void SetUpBundleOverrides();
@@ -58,10 +62,8 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   std::unique_ptr<content::ContentRendererClient> renderer_client_;
   std::unique_ptr<content::ContentUtilityClient> utility_client_;
   std::unique_ptr<tracing::TracingSamplerProfiler> tracing_sampler_profiler_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronMainDelegate);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
+#endif  // ELECTRON_SHELL_APP_ELECTRON_MAIN_DELEGATE_H_

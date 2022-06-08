@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <windows.h>
 #endif
 
@@ -19,7 +19,7 @@
 #include "content/public/common/main_function_params.h"
 #include "shell/common/electron_command_line.h"
 
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
 #include "base/posix/eintr_wrapper.h"
 #endif
 
@@ -27,7 +27,7 @@ namespace relauncher {
 
 namespace internal {
 
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
 const int kRelauncherSyncFD = STDERR_FILENO + 1;
 #endif
 
@@ -72,7 +72,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
 
   relaunch_argv.insert(relaunch_argv.end(), argv.begin(), argv.end());
 
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
   int pipe_fds[2];
   if (HANDLE_EINTR(pipe(pipe_fds)) != 0) {
     PLOG(ERROR) << "pipe";
@@ -98,11 +98,11 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
 #endif
 
   base::LaunchOptions options;
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
   options.fds_to_remap.push_back(
       std::make_pair(pipe_write_fd.get(), internal::kRelauncherSyncFD));
   base::Process process = base::LaunchProcess(relaunch_argv, options);
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   base::Process process = base::LaunchProcess(
       internal::ArgvToCommandLineString(relaunch_argv), options);
 #endif
@@ -114,7 +114,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
   // The relauncher process is now starting up, or has started up. The
   // original parent process continues.
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Synchronize with the relauncher process.
   StringType name = internal::GetWaitEventName(process.Pid());
   HANDLE wait_event = ::CreateEventW(NULL, TRUE, FALSE, name.c_str());
@@ -122,7 +122,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
     WaitForSingleObject(wait_event, 1000);
     CloseHandle(wait_event);
   }
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
   pipe_write_fd.reset();  // close(pipe_fds[1]);
 
   // Synchronize with the relauncher process.

@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Fri, 28 Jan 2022 13:50:21 -0800
+Subject: fix serdes test
+
+The V8 wire format version changed.
+
+diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
+index 4dffedd3c32b4b1b6eb75e46f8bfb447260046bb..586698129680cef29595c39e77c7d1c186f3d60a 100644
+--- a/test/parallel/test-v8-serdes.js
++++ b/test/parallel/test-v8-serdes.js
+@@ -155,7 +155,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
+ }
+ 
+ {
+-  const buf = Buffer.from('ff0d6f2203666f6f5e007b01', 'hex');
++  const buf = Buffer.from('ff0e6f2203666f6f5e007b01', 'hex');
+ 
+   const des = new v8.DefaultDeserializer(buf);
+   des.readHeader();
+@@ -166,13 +166,13 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
+   ser.writeValue(des.readValue());
+ 
+   assert.deepStrictEqual(buf, ser.releaseBuffer());
+-  assert.strictEqual(des.getWireFormatVersion(), 0x0d);
++  assert.strictEqual(des.getWireFormatVersion(), 0x0e);
+ }
+ 
+ {
+   // Unaligned Uint16Array read, with padding in the underlying array buffer.
+   let buf = Buffer.alloc(32 + 9);
+-  buf.write('ff0d5c0404addeefbe', 32, 'hex');
++  buf.write('ff0e5c0404addeefbe', 32, 'hex');
+   buf = buf.slice(32);
+ 
+   const expectedResult = os.endianness() === 'LE' ?

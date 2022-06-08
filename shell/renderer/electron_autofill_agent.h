@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_ELECTRON_AUTOFILL_AGENT_H_
-#define SHELL_RENDERER_ELECTRON_AUTOFILL_AGENT_H_
+#ifndef ELECTRON_SHELL_RENDERER_ELECTRON_AUTOFILL_AGENT_H_
+#define ELECTRON_SHELL_RENDERER_ELECTRON_AUTOFILL_AGENT_H_
 
 #include <vector>
 
@@ -28,6 +28,10 @@ class AutofillAgent : public content::RenderFrameObserver,
   explicit AutofillAgent(content::RenderFrame* frame,
                          blink::AssociatedInterfaceRegistry* registry);
   ~AutofillAgent() override;
+
+  // disable copy
+  AutofillAgent(const AutofillAgent&) = delete;
+  AutofillAgent& operator=(const AutofillAgent&) = delete;
 
   void BindReceiver(
       mojo::PendingAssociatedReceiver<mojom::ElectronAutofillAgent> receiver);
@@ -85,10 +89,8 @@ class AutofillAgent : public content::RenderFrameObserver,
   mojo::AssociatedReceiver<mojom::ElectronAutofillAgent> receiver_{this};
 
   base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(AutofillAgent);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_ELECTRON_AUTOFILL_AGENT_H_
+#endif  // ELECTRON_SHELL_RENDERER_ELECTRON_AUTOFILL_AGENT_H_

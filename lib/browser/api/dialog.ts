@@ -168,6 +168,7 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
     defaultId = -1,
     detail = '',
     icon = null,
+    textWidth = 0,
     noLink = false,
     message = '',
     title = '',
@@ -225,7 +226,8 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
     detail,
     checkboxLabel,
     checkboxChecked,
-    icon
+    icon,
+    textWidth
   };
 
   if (sync) {

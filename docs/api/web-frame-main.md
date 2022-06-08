@@ -16,7 +16,7 @@ win.loadURL('https://twitter.com')
 
 win.webContents.on(
   'did-frame-navigate',
-  (event, url, isMainFrame, frameProcessId, frameRoutingId) => {
+  (event, url, httpResponseCode, httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
     const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)
     if (frame) {
       const code = 'document.body.innerHTML = document.body.innerHTML.replaceAll("heck", "h*ck")'
@@ -81,8 +81,8 @@ Emitted when the document is loaded.
 
 #### `frame.executeJavaScript(code[, userGesture])`
 
-* `code` String
-* `userGesture` Boolean (optional) - Default is `false`.
+* `code` string
+* `userGesture` boolean (optional) - Default is `false`.
 
 Returns `Promise<unknown>` - A promise that resolves with the result of the executed
 code or is rejected if execution throws or results in a rejected promise.
@@ -99,7 +99,7 @@ Returns `boolean` - Whether the reload was initiated successfully. Only results 
 
 #### `frame.send(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Send an asynchronous message to the renderer process via `channel`, along with
@@ -113,7 +113,7 @@ The renderer process can handle the message by listening to `channel` with the
 
 #### `frame.postMessage(channel, message, [transfer])`
 
-* `channel` String
+* `channel` string
 * `message` any
 * `transfer` MessagePortMain[] (optional)
 
@@ -173,7 +173,7 @@ not used again.
 
 #### `frame.name` _Readonly_
 
-A `String` representing the frame name.
+A `string` representing the frame name.
 
 #### `frame.osProcessId` _Readonly_
 
@@ -195,3 +195,6 @@ have the same `routingId`.
 A `string` representing the [visibility state](https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilityState) of the frame.
 
 See also how the [Page Visibility API](browser-window.md#page-visibility) is affected by other Electron APIs.
+
+[SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
+[`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage

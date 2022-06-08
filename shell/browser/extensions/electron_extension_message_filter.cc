@@ -14,16 +14,15 @@
 #include "base/memory/ptr_util.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_system.h"
+#include "extensions/browser/l10n_file_util.h"
 #include "extensions/common/extension_messages.h"
 #include "extensions/common/extension_set.h"
-#include "extensions/common/file_util.h"
 #include "extensions/common/manifest_handlers/default_locale_handler.h"
 #include "extensions/common/manifest_handlers/shared_module_info.h"
 #include "extensions/common/message_bundle.h"
@@ -40,7 +39,7 @@ ElectronExtensionMessageFilter::ElectronExtensionMessageFilter(
     int render_process_id,
     content::BrowserContext* browser_context)
     : BrowserMessageFilter(kExtensionFilteredMessageClasses,
-                           base::size(kExtensionFilteredMessageClasses)),
+                           std::size(kExtensionFilteredMessageClasses)),
       render_process_id_(render_process_id),
       browser_context_(browser_context) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -78,7 +77,7 @@ void ElectronExtensionMessageFilter::OnDestruct() const {
   if (BrowserThread::CurrentlyOn(BrowserThread::UI)) {
     delete this;
   } else {
-    base::DeleteSoon(FROM_HERE, {BrowserThread::UI}, this);
+    content::GetUIThreadTaskRunner({})->DeleteSoon(FROM_HERE, this);
   }
 }
 
@@ -104,8 +103,8 @@ void ElectronExtensionMessageFilter::OnGetExtMessageBundle(
   if (default_locale.empty()) {
     // A little optimization: send the answer here to avoid an extra thread hop.
     std::unique_ptr<extensions::MessageBundle::SubstitutionMap> dictionary_map(
-        extensions::file_util::LoadNonLocalizedMessageBundleSubstitutionMap(
-            extension_id));
+        extensions::l10n_file_util::
+            LoadNonLocalizedMessageBundleSubstitutionMap(extension_id));
     ExtensionHostMsg_GetMessageBundle::WriteReplyParams(reply_msg,
                                                         *dictionary_map);
     Send(reply_msg);
@@ -147,7 +146,7 @@ void ElectronExtensionMessageFilter::OnGetExtMessageBundleAsync(
     extension_l10n_util::GzippedMessagesPermission gzip_permission,
     IPC::Message* reply_msg) {
   std::unique_ptr<extensions::MessageBundle::SubstitutionMap> dictionary_map(
-      extensions::file_util::LoadMessageBundleSubstitutionMapFromPaths(
+      extensions::l10n_file_util::LoadMessageBundleSubstitutionMapFromPaths(
           extension_paths, main_extension_id, default_locale, gzip_permission));
 
   ExtensionHostMsg_GetMessageBundle::WriteReplyParams(reply_msg,

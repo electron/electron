@@ -77,15 +77,8 @@ const isLocalhost = function () {
  *
  * @returns {boolean} Is a CSP with `unsafe-eval` set?
  */
-const isUnsafeEvalEnabled: () => Promise<boolean> = function () {
-  return webFrame.executeJavaScript(`(${(() => {
-    try {
-      eval(window.trustedTypes.emptyScript); // eslint-disable-line no-eval
-    } catch {
-      return false;
-    }
-    return true;
-  }).toString()})()`, false);
+const isUnsafeEvalEnabled = () => {
+  return webFrame._isEvalAllowed();
 };
 
 const moreInformation = `\nFor more information and help, consult
@@ -103,10 +96,14 @@ const warnAboutInsecureResources = function () {
     return;
   }
 
+  const isLocal = (url: URL): boolean =>
+    ['localhost', '127.0.0.1', '[::1]', ''].includes(url.hostname);
+  const isInsecure = (url: URL): boolean =>
+    ['http:', 'ftp:'].includes(url.protocol) && !isLocal(url);
+
   const resources = window.performance
     .getEntriesByType('resource')
-    .filter(({ name }) => /^(http|ftp):/gi.test(name || ''))
-    .filter(({ name }) => new URL(name).hostname !== 'localhost')
+    .filter(({ name }) => isInsecure(new URL(name)))
     .map(({ name }) => `- ${name}`)
     .join('\n');
 
@@ -170,16 +167,14 @@ const warnAboutDisabledWebSecurity = function (webPreferences?: Electron.WebPref
  * Logs a warning message about unset or insecure CSP
  */
 const warnAboutInsecureCSP = function () {
-  isUnsafeEvalEnabled().then((enabled) => {
-    if (!enabled) return;
+  if (!isUnsafeEvalEnabled()) return;
 
-    const warning = `This renderer process has either no Content Security
-    Policy set or a policy with "unsafe-eval" enabled. This exposes users of
-    this app to unnecessary security risks.\n${moreInformation}`;
+  const warning = `This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.\n${moreInformation}`;
 
-    console.warn('%cElectron Security Warning (Insecure Content-Security-Policy)',
-      'font-weight: bold;', warning);
-  }).catch(() => {});
+  console.warn('%cElectron Security Warning (Insecure Content-Security-Policy)',
+    'font-weight: bold;', warning);
 };
 
 /**
@@ -286,7 +281,7 @@ const getWebPreferences = async function () {
   }
 };
 
-export function securityWarnings (nodeIntegration = false) {
+export function securityWarnings (nodeIntegration: boolean) {
   const loadHandler = async function () {
     if (shouldLogSecurityWarnings()) {
       const webPreferences = await getWebPreferences();

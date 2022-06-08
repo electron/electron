@@ -15,9 +15,9 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 namespace electron {
@@ -207,7 +207,7 @@ void Browser::ShowAboutPanel() {
 
   if ((val = opts.FindListKey("authors"))) {
     std::vector<const char*> cstrs;
-    for (const auto& authorVal : val->GetList()) {
+    for (const auto& authorVal : val->GetListDeprecated()) {
       if (authorVal.is_string()) {
         cstrs.push_back(authorVal.GetString().c_str());
       }

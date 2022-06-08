@@ -10,7 +10,7 @@ Report security bugs in third-party modules to the person or team maintaining th
 
 ## The Electron Security Notification Process
 
-For context on Electron's security notification process, please see the [Notifications](https://github.com/electron/governance/blob/master/wg-security/membership-and-notifications.md#notifications) section of the Security WG's [Membership and Notifications](https://github.com/electron/governance/blob/master/wg-security/membership-and-notifications.md) Governance document.
+For context on Electron's security notification process, please see the [Notifications](https://github.com/electron/governance/blob/main/wg-security/membership-and-notifications.md#notifications) section of the Security WG's [Membership and Notifications](https://github.com/electron/governance/blob/main/wg-security/membership-and-notifications.md) Governance document.
 
 ## Learning More About Security
 

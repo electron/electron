@@ -15,7 +15,7 @@ namespace {
 struct TranslaterHolder {
   explicit TranslaterHolder(v8::Isolate* isolate)
       : handle(isolate, v8::External::New(isolate, this)) {
-    handle.SetWeak(this, &GC, v8::WeakCallbackType::kFinalizer);
+    handle.SetWeak(this, &GC, v8::WeakCallbackType::kParameter);
   }
   ~TranslaterHolder() {
     if (!handle.IsEmpty()) {
@@ -96,8 +96,6 @@ class RefCountedGlobal
 
  private:
   v8::Global<T> handle_;
-
-  DISALLOW_COPY_AND_ASSIGN(RefCountedGlobal);
 };
 
 SafeV8Function::SafeV8Function(v8::Isolate* isolate, v8::Local<v8::Value> value)
@@ -149,7 +147,7 @@ v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
   CHECK(!bind.IsEmpty());
   v8::Local<v8::Function> bind_func = bind.ToLocalChecked().As<v8::Function>();
   v8::Local<v8::Value> converted[] = {func, arg1, arg2};
-  return bind_func->Call(context, func, base::size(converted), converted)
+  return bind_func->Call(context, func, std::size(converted), converted)
       .ToLocalChecked();
 }
 

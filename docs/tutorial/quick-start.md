@@ -66,7 +66,7 @@ Your `package.json` file should look something like this:
 Then, install the `electron` package into your app's `devDependencies`.
 
 ```sh npm2yarn
-$ npm install --save-dev electron
+npm install --save-dev electron
 ```
 
 > Note: If you're encountering any issues with installing Electron, please
@@ -119,7 +119,7 @@ of your project.
 
 Before we can create a window for our application, we need to create the content that
 will be loaded into it. In Electron, each window displays web contents that can be loaded
-from either from a local HTML file or a remote URL.
+from either a local HTML file or a remote URL.
 
 For this tutorial, you will be doing the former. Create an `index.html` file in the root
 folder of your project:
@@ -131,7 +131,6 @@ folder of your project:
     <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <title>Hello World!</title>
   </head>
   <body>
@@ -404,7 +403,7 @@ app.on('window-all-closed', () => {
 ```js
 // preload.js
 
-// All of the Node.js APIs are available in the preload process.
+// All the Node.js APIs are available in the preload process.
 // It has the same sandbox as a Chrome extension.
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {
@@ -427,7 +426,6 @@ window.addEventListener('DOMContentLoaded', () => {
     <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <title>Hello World!</title>
   </head>
   <body>
@@ -463,46 +461,46 @@ The fastest way to distribute your newly created app is using
 1. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
 Forge's scaffolding:
 
-    ```sh npm2yarn
-    npm install --save-dev @electron-forge/cli
-    npx electron-forge import
+   ```sh npm2yarn
+   npm install --save-dev @electron-forge/cli
+   npx electron-forge import
 
-    ✔ Checking your system
-    ✔ Initializing Git Repository
-    ✔ Writing modified package.json file
-    ✔ Installing dependencies
-    ✔ Writing modified package.json file
-    ✔ Fixing .gitignore
+   ✔ Checking your system
+   ✔ Initializing Git Repository
+   ✔ Writing modified package.json file
+   ✔ Installing dependencies
+   ✔ Writing modified package.json file
+   ✔ Fixing .gitignore
 
-    We have ATTEMPTED to convert your app to be in a format that electron-forge understands.
+   We have ATTEMPTED to convert your app to be in a format that electron-forge understands.
 
-    Thanks for using "electron-forge"!!!
-    ```
+   Thanks for using "electron-forge"!!!
+   ```
 
-1. Create a distributable using Forge's `make` command:
+2. Create a distributable using Forge's `make` command:
 
-    ```sh npm2yarn
-    npm run make
+   ```sh npm2yarn
+   npm run make
 
-    > my-electron-app@1.0.0 make /my-electron-app
-    > electron-forge make
+   > my-electron-app@1.0.0 make /my-electron-app
+   > electron-forge make
 
-    ✔ Checking your system
-    ✔ Resolving Forge Config
-    We need to package your application before we can make it
-    ✔ Preparing to Package Application for arch: x64
-    ✔ Preparing native dependencies
-    ✔ Packaging Application
-    Making for the following targets: zip
-    ✔ Making for target: zip - On platform: darwin - For arch: x64
-    ```
+   ✔ Checking your system
+   ✔ Resolving Forge Config
+   We need to package your application before we can make it
+   ✔ Preparing to Package Application for arch: x64
+   ✔ Preparing native dependencies
+   ✔ Packaging Application
+   Making for the following targets: zip
+   ✔ Making for target: zip - On platform: darwin - For arch: x64
+   ```
 
-    Electron Forge creates the `out` folder where your package will be located:
+   Electron Forge creates the `out` folder where your package will be located:
 
-    ```plain
-    // Example for macOS
-    out/
-    ├── out/make/zip/darwin/x64/my-electron-app-darwin-x64-1.0.0.zip
-    ├── ...
-    └── out/my-electron-app-darwin-x64/my-electron-app.app/Contents/MacOS/my-electron-app
-    ```
+   ```plain
+   // Example for macOS
+   out/
+   ├── out/make/zip/darwin/x64/my-electron-app-darwin-x64-1.0.0.zip
+   ├── ...
+   └── out/my-electron-app-darwin-x64/my-electron-app.app/Contents/MacOS/my-electron-app
+   ```

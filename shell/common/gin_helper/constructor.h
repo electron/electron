@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_CONSTRUCTOR_H_
-#define SHELL_COMMON_GIN_HELPER_CONSTRUCTOR_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTOR_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTOR_H_
 
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/wrappable_base.h"
@@ -168,4 +168,4 @@ v8::Local<v8::Function> CreateConstructor(
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_CONSTRUCTOR_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTOR_H_

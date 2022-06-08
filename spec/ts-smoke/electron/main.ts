@@ -86,10 +86,11 @@ app.whenReady().then(() => {
   mainWindow.webContents.print()
 
   mainWindow.webContents.printToPDF({
-    marginsType: 1,
-    pageSize: 'A3',
+    margins: {
+      top: 1
+    },
     printBackground: true,
-    printSelectionOnly: true,
+    pageRanges: '1-3',
     landscape: true
   }).then((data: Buffer) => console.log(data))
 

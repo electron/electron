@@ -1,18 +1,16 @@
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import * as cp from 'child_process';
 import * as https from 'https';
 import * as http from 'http';
 import * as net from 'net';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit, waitUntil } from './spec-helpers';
 import split = require('split')
-
-const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
 
@@ -92,9 +90,9 @@ describe('app module', () => {
 
       it('overrides the name', () => {
         expect(app.name).to.equal('Electron Test Main');
-        app.name = 'test-name';
+        app.name = 'electron-test-name';
 
-        expect(app.name).to.equal('test-name');
+        expect(app.name).to.equal('electron-test-name');
         app.name = 'Electron Test Main';
       });
     });
@@ -106,9 +104,9 @@ describe('app module', () => {
 
       it('overrides the name', () => {
         expect(app.getName()).to.equal('Electron Test Main');
-        app.setName('test-name');
+        app.setName('electron-test-name');
 
-        expect(app.getName()).to.equal('test-name');
+        expect(app.getName()).to.equal('electron-test-name');
         app.setName('Electron Test Main');
       });
     });
@@ -207,9 +205,14 @@ describe('app module', () => {
   });
 
   describe('app.requestSingleInstanceLock', () => {
+    interface SingleInstanceLockTestArgs {
+      args: string[];
+      expectedAdditionalData: unknown;
+    }
+
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
       await emittedOnce(first.stdout, 'data');
       // Start second app when received output.
@@ -220,9 +223,16 @@ describe('app module', () => {
       expect(code1).to.equal(0);
     });
 
-    it('passes arguments to the second-instance event', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
-      const first = cp.spawn(process.execPath, [appPath]);
+    it('returns true when setting non-existent user data folder', async function () {
+      const appPath = path.join(fixturesPath, 'api', 'singleton-userdata');
+      const instance = cp.spawn(process.execPath, [appPath]);
+      const [code] = await emittedOnce(instance, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = emittedOnce(first, 'exit');
 
       // Wait for the first app to boot.
@@ -230,21 +240,103 @@ describe('app module', () => {
       while ((await emittedOnce(firstStdoutLines, 'data')).toString() !== 'started') {
         // wait.
       }
-      const data2Promise = emittedOnce(firstStdoutLines, 'data');
+      const additionalDataPromise = emittedOnce(firstStdoutLines, 'data');
 
-      const secondInstanceArgs = [process.execPath, appPath, '--some-switch', 'some-arg'];
+      const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
-      const [code2] = await emittedOnce(second, 'exit');
+      const secondExited = emittedOnce(second, 'exit');
+
+      const [code2] = await secondExited;
       expect(code2).to.equal(1);
       const [code1] = await firstExited;
       expect(code1).to.equal(0);
-      const data2 = (await data2Promise)[0].toString('ascii');
-      const secondInstanceArgsReceived: string[] = JSON.parse(data2.toString('ascii'));
+      const dataFromSecondInstance = await additionalDataPromise;
+      const [args, additionalData] = dataFromSecondInstance[0].toString('ascii').split('||');
+      const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
+      const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
         expect(secondInstanceArgsReceived).to.include(arg,
           `argument ${arg} is missing from received second args`);
+      }
+      expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
+        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`);
+    }
+
+    it('passes arguments to the second-instance event no additional data', async () => {
+      await testArgumentPassing({
+        args: [],
+        expectedAdditionalData: null
+      });
+    });
+
+    it('sends and receives JSON object data', async () => {
+      const expectedAdditionalData = {
+        level: 1,
+        testkey: 'testvalue1',
+        inner: {
+          level: 2,
+          testkey: 'testvalue2'
+        }
+      };
+      await testArgumentPassing({
+        args: ['--send-data'],
+        expectedAdditionalData
+      });
+    });
+
+    it('sends and receives numerical data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=2'],
+        expectedAdditionalData: 2
+      });
+    });
+
+    it('sends and receives string data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content="data"'],
+        expectedAdditionalData: 'data'
+      });
+    });
+
+    it('sends and receives boolean data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=false'],
+        expectedAdditionalData: false
+      });
+    });
+
+    it('sends and receives array data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=[2, 3, 4]'],
+        expectedAdditionalData: [2, 3, 4]
+      });
+    });
+
+    it('sends and receives mixed array data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=["2", true, 4]'],
+        expectedAdditionalData: ['2', true, 4]
+      });
+    });
+
+    it('sends and receives null data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=null'],
+        expectedAdditionalData: null
+      });
+    });
+
+    it('cannot send or receive undefined data', async () => {
+      try {
+        await testArgumentPassing({
+          args: ['--send-ack', '--ack-content="undefined"', '--prevent-default', '--send-data', '--data-content="undefined"'],
+          expectedAdditionalData: undefined
+        });
+        assert(false);
+      } catch (e) {
+        // This is expected.
       }
     });
   });
@@ -461,25 +553,6 @@ describe('app module', () => {
       const [, webContents, details] = await emitted;
       expect(webContents).to.equal(w.webContents);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
-    });
-
-    ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
-      it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'desktop-capturer-get-sources');
-        w.webContents.executeJavaScript('require(\'electron\').desktopCapturer.getSources({ types: [\'screen\'] })');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
     });
   });
 
@@ -949,6 +1022,54 @@ describe('app module', () => {
 
       expect(() => { app.getPath(badPath as any); }).to.throw();
     });
+
+    describe('sessionData', () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
+      const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
+      const userDataPath = path.join(app.getPath('appData'), appName);
+      const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
+
+      const sessionFiles = [
+        'Preferences',
+        'Code Cache',
+        'Local Storage',
+        'IndexedDB',
+        'Service Worker'
+      ];
+      const hasSessionFiles = (dir: string) => {
+        for (const file of sessionFiles) {
+          if (!fs.existsSync(path.join(dir, file))) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+      beforeEach(() => {
+        fs.removeSync(userDataPath);
+        fs.removeSync(tempBrowserDataPath);
+      });
+
+      it('writes to userData by default', () => {
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath]);
+        expect(hasSessionFiles(userDataPath)).to.equal(true);
+      });
+
+      it('can be changed', () => {
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
+      });
+
+      it('changing userData affects default sessionData', () => {
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
+      });
+    });
   });
 
   describe('setAppLogsPath(path)', () => {
@@ -1397,7 +1518,7 @@ describe('app module', () => {
     describe('when app.enableSandbox() is called', () => {
       it('adds --enable-sandbox to all renderer processes', done => {
         const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox']);
+        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
         server.once('error', error => { done(error); });
 
@@ -1422,7 +1543,7 @@ describe('app module', () => {
     describe('when the app is launched with --enable-sandbox', () => {
       it('adds --enable-sandbox to all renderer processes', done => {
         const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox']);
+        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
         server.once('error', error => { done(error); });
 
@@ -1450,6 +1571,23 @@ describe('app module', () => {
       expect(() => {
         app.disableDomainBlockingFor3DAPIs();
       }).to.throw(/before app is ready/);
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
+    describe('app.isHidden', () => {
+      it('returns true when the app is hidden', async () => {
+        app.hide();
+        await expect(
+          waitUntil(() => app.isHidden())
+        ).to.eventually.be.fulfilled();
+      });
+      it('returns false when the app is shown', async () => {
+        app.show();
+        await expect(
+          waitUntil(() => !app.isHidden())
+        ).to.eventually.be.fulfilled();
+      });
     });
   });
 
@@ -1621,6 +1759,21 @@ describe('app module', () => {
     it('returns an empty string when not present', async () => {
       const { getSwitchValue } = await runTestApp('command-line');
       expect(getSwitchValue).to.equal('');
+    });
+  });
+
+  describe('commandLine.removeSwitch', () => {
+    it('no-ops a non-existent switch', async () => {
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+    });
+
+    it('removes an existing switch', async () => {
+      app.commandLine.appendSwitch('foobar3', 'test');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(true);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
     });
   });
 

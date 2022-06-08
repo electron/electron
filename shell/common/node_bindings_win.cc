@@ -27,8 +27,6 @@ NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env)
   }
 }
 
-NodeBindingsWin::~NodeBindingsWin() = default;
-
 void NodeBindingsWin::PollEvents() {
   // If there are other kinds of events pending, uv_backend_timeout will
   // instruct us not to wait.

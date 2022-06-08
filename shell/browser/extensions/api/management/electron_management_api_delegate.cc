@@ -10,11 +10,9 @@
 #include <utility>
 
 #include "base/bind.h"
-#include "base/macros.h"
 #include "base/strings/strcat.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "chrome/common/extensions/extension_metrics.h"
 #include "chrome/common/extensions/manifest_handlers/app_launch_info.h"
 #include "chrome/common/webui_url_constants.h"
@@ -44,11 +42,15 @@ class ManagementSetEnabledFunctionInstallPromptDelegate
   }
   ~ManagementSetEnabledFunctionInstallPromptDelegate() override = default;
 
+  // disable copy
+  ManagementSetEnabledFunctionInstallPromptDelegate(
+      const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
+  ManagementSetEnabledFunctionInstallPromptDelegate& operator=(
+      const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
+
  private:
   base::WeakPtrFactory<ManagementSetEnabledFunctionInstallPromptDelegate>
       weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ManagementSetEnabledFunctionInstallPromptDelegate);
 };
 
 class ManagementUninstallFunctionUninstallDialogDelegate
@@ -63,8 +65,11 @@ class ManagementUninstallFunctionUninstallDialogDelegate
 
   ~ManagementUninstallFunctionUninstallDialogDelegate() override = default;
 
- private:
-  DISALLOW_COPY_AND_ASSIGN(ManagementUninstallFunctionUninstallDialogDelegate);
+  // disable copy
+  ManagementUninstallFunctionUninstallDialogDelegate(
+      const ManagementUninstallFunctionUninstallDialogDelegate&) = delete;
+  ManagementUninstallFunctionUninstallDialogDelegate& operator=(
+      const ManagementUninstallFunctionUninstallDialogDelegate&) = delete;
 };
 
 }  // namespace

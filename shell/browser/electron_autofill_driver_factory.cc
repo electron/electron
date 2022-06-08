@@ -17,49 +17,33 @@
 
 namespace electron {
 
-namespace {
-
-std::unique_ptr<AutofillDriver> CreateDriver(
-    content::RenderFrameHost* render_frame_host,
-    mojom::ElectronAutofillDriverAssociatedRequest request) {
-  return std::make_unique<AutofillDriver>(render_frame_host,
-                                          std::move(request));
-}
-
-}  // namespace
-
 AutofillDriverFactory::~AutofillDriverFactory() = default;
 
 // static
 void AutofillDriverFactory::BindAutofillDriver(
-    mojom::ElectronAutofillDriverAssociatedRequest request,
+    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+        pending_receiver,
     content::RenderFrameHost* render_frame_host) {
+  DCHECK(render_frame_host);
+
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
-  if (!web_contents)
-    return;
+  DCHECK(web_contents);
 
-  AutofillDriverFactory* factory =
-      AutofillDriverFactory::FromWebContents(web_contents);
-  if (!factory)
+  AutofillDriverFactory* factory = FromWebContents(web_contents);
+  if (!factory) {
+    // The message pipe will be closed and raise a connection error to peer
+    // side. The peer side can reconnect later when needed.
     return;
+  }
 
-  AutofillDriver* driver = factory->DriverForFrame(render_frame_host);
-  if (!driver)
-    factory->AddDriverForFrame(
-        render_frame_host,
-        base::BindOnce(CreateDriver, render_frame_host, std::move(request)));
+  if (auto* driver = factory->DriverForFrame(render_frame_host))
+    driver->BindPendingReceiver(std::move(pending_receiver));
 }
 
 AutofillDriverFactory::AutofillDriverFactory(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {
-  const std::vector<content::RenderFrameHost*> frames =
-      web_contents->GetAllFrames();
-  for (content::RenderFrameHost* frame : frames) {
-    if (frame->IsRenderFrameLive())
-      RenderFrameCreated(frame);
-  }
-}
+    : content::WebContentsObserver(web_contents),
+      content::WebContentsUserData<AutofillDriverFactory>(*web_contents) {}
 
 void AutofillDriverFactory::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
@@ -80,8 +64,34 @@ void AutofillDriverFactory::DidFinishNavigation(
 
 AutofillDriver* AutofillDriverFactory::DriverForFrame(
     content::RenderFrameHost* render_frame_host) {
-  auto mapping = driver_map_.find(render_frame_host);
-  return mapping == driver_map_.end() ? nullptr : mapping->second.get();
+  auto insertion_result = driver_map_.emplace(render_frame_host, nullptr);
+  std::unique_ptr<AutofillDriver>& driver = insertion_result.first->second;
+  bool insertion_happened = insertion_result.second;
+  if (insertion_happened) {
+    // The `render_frame_host` may already be deleted (or be in the process of
+    // being deleted). In this case, we must not create a new driver. Otherwise,
+    // a driver might hold a deallocated RFH.
+    //
+    // For example, `render_frame_host` is deleted in the following sequence:
+    // 1. `render_frame_host->~RenderFrameHostImpl()` starts and marks
+    //    `render_frame_host` as deleted.
+    // 2. `ContentAutofillDriverFactory::RenderFrameDeleted(render_frame_host)`
+    //    destroys the driver of `render_frame_host`.
+    // 3. `SomeOtherWebContentsObserver::RenderFrameDeleted(render_frame_host)`
+    //    calls `DriverForFrame(render_frame_host)`.
+    // 5. `render_frame_host->~RenderFrameHostImpl()` finishes.
+    if (render_frame_host->IsRenderFrameCreated()) {
+      driver = std::make_unique<AutofillDriver>(render_frame_host);
+      DCHECK_EQ(driver_map_.find(render_frame_host)->second.get(),
+                driver.get());
+    } else {
+      driver_map_.erase(insertion_result.first);
+      DCHECK_EQ(driver_map_.count(render_frame_host), 0u);
+      return nullptr;
+    }
+  }
+  DCHECK(driver.get());
+  return driver.get();
 }
 
 void AutofillDriverFactory::AddDriverForFrame(
@@ -106,6 +116,6 @@ void AutofillDriverFactory::CloseAllPopups() {
   }
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(AutofillDriverFactory)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(AutofillDriverFactory);
 
 }  // namespace electron

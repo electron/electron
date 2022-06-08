@@ -16,7 +16,6 @@
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "components/remote_cocoa/browser/scoped_cg_window_id.h"
 #include "content/public/browser/browser_accessibility_state.h"
@@ -51,7 +50,7 @@
 
 // This view would inform Chromium to resize the hosted views::View.
 //
-// The overrided methods should behave the same with BridgedContentView.
+// The overridden methods should behave the same with BridgedContentView.
 @interface ElectronAdaptedContentView : NSView {
  @private
   views::NativeWidgetMacNSWindowHost* bridge_host_;
@@ -295,21 +294,21 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   NSUInteger styleMask = NSWindowStyleMaskTitled;
 
-  // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
-  // for framless window.
+  // Removing NSWindowStyleMaskTitled removes window title, which removes
+  // rounded corners of window.
   bool rounded_corner = true;
   options.Get(options::kRoundedCorners, &rounded_corner);
   if (!rounded_corner && !has_frame())
-    styleMask = NSWindowStyleMaskFullSizeContentView;
+    styleMask = 0;
 
   if (minimizable)
-    styleMask |= NSMiniaturizableWindowMask;
+    styleMask |= NSWindowStyleMaskMiniaturizable;
   if (closable)
     styleMask |= NSWindowStyleMaskClosable;
   if (resizable)
-    styleMask |= NSResizableWindowMask;
+    styleMask |= NSWindowStyleMaskResizable;
   if (!useStandardWindow || transparent() || !has_frame())
-    styleMask |= NSTexturedBackgroundWindowMask;
+    styleMask |= NSWindowStyleMaskTexturedBackground;
 
   // Create views::Widget and assign window_ with it.
   // TODO(zcbenz): Get rid of the window_ in future.
@@ -323,6 +322,15 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
+
+  RegisterDeleteDelegateCallback(base::BindOnce(
+      [](NativeWindowMac* window) {
+        if (window->window_)
+          window->window_ = nil;
+        if (window->buttons_proxy_)
+          window->buttons_proxy_.reset();
+      },
+      this));
 
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
@@ -355,17 +363,19 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     // Don't show title bar.
     [window_ setTitlebarAppearsTransparent:YES];
     [window_ setTitleVisibility:NSWindowTitleHidden];
-    // Remove non-transparent corners, see http://git.io/vfonD.
+    // Remove non-transparent corners, see
+    // https://github.com/electron/electron/issues/517.
     [window_ setOpaque:NO];
     // Show window buttons if titleBarStyle is not "normal".
     if (title_bar_style_ == TitleBarStyle::kNormal) {
       InternalSetWindowButtonVisibility(false);
     } else {
       buttons_proxy_.reset([[WindowButtonsProxy alloc] initWithWindow:window_]);
+      [buttons_proxy_ setHeight:titlebar_overlay_height()];
       if (traffic_light_position_) {
         [buttons_proxy_ setMargin:*traffic_light_position_];
       } else if (title_bar_style_ == TitleBarStyle::kHiddenInset) {
-        // For macOS >= 11, while this value does not match offical macOS apps
+        // For macOS >= 11, while this value does not match official macOS apps
         // like Safari or Notes, it matches titleBarStyle's old implementation
         // before Electron <= 12.
         [buttons_proxy_ setMargin:gfx::Point(12, 11)];
@@ -373,7 +383,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
       if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
         [buttons_proxy_ setShowOnHover:YES];
       } else {
-        // customButtonsOnHover does not show buttons initialiy.
+        // customButtonsOnHover does not show buttons initially.
         InternalSetWindowButtonVisibility(true);
       }
     }
@@ -382,13 +392,9 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   // Create a tab only if tabbing identifier is specified and window has
   // a native title bar.
   if (tabbingIdentifier.empty() || transparent() || !has_frame()) {
-    if (@available(macOS 10.12, *)) {
-      [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
-    }
+    [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
   } else {
-    if (@available(macOS 10.12, *)) {
-      [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbingIdentifier)];
-    }
+    [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbingIdentifier)];
   }
 
   // Resize to content bounds.
@@ -464,6 +470,11 @@ void NativeWindowMac::Close() {
     return;
   }
 
+  if (fullscreen_transition_state() != FullScreenTransitionState::NONE) {
+    SetHasDeferredWindowClose(true);
+    return;
+  }
+
   // If a sheet is attached to the window when we call
   // [window_ performClose:nil], the window won't close properly
   // even after the user has ended the sheet.
@@ -496,6 +507,7 @@ void NativeWindowMac::Focus(bool focus) {
     [[NSApplication sharedApplication] activateIgnoringOtherApps:NO];
     [window_ makeKeyAndOrderFront:nil];
   } else {
+    [window_ orderOut:nil];
     [window_ orderBack:nil];
   }
 }
@@ -554,7 +566,7 @@ void NativeWindowMac::Hide() {
     }
   }
 
-  // Deattach the window from the parent before.
+  // Detach the window from the parent before.
   if (parent())
     InternalSetParentWindow(parent(), false);
 
@@ -568,11 +580,6 @@ bool NativeWindowMac::IsVisible() {
   // foreground of the app, which means that it should not be minimized or
   // occluded
   return [window_ isVisible] && !occluded && !IsMinimized();
-}
-
-void NativeWindowMac::SetFullScreenTransitionState(
-    FullScreenTransitionState state) {
-  fullscreen_transition_state_ = state;
 }
 
 bool NativeWindowMac::IsEnabled() {
@@ -592,33 +599,52 @@ void NativeWindowMac::SetEnabled(bool enable) {
 }
 
 void NativeWindowMac::Maximize() {
-  if (IsMaximized())
+  const bool is_visible = [window_ isVisible];
+
+  if (IsMaximized()) {
+    if (!is_visible)
+      ShowInactive();
     return;
+  }
 
   // Take note of the current window size
   if (IsNormal())
     original_frame_ = [window_ frame];
   [window_ zoom:nil];
+
+  if (!is_visible) {
+    ShowInactive();
+    NotifyWindowMaximize();
+  }
 }
 
 void NativeWindowMac::Unmaximize() {
-  if (!IsMaximized())
+  // Bail if the last user set bounds were the same size as the window
+  // screen (e.g. the user set the window to maximized via setBounds)
+  //
+  // Per docs during zoom:
+  // > If there’s no saved user state because there has been no previous
+  // > zoom,the size and location of the window don’t change.
+  //
+  // However, in classic Apple fashion, this is not the case in practice,
+  // and the frame inexplicably becomes very tiny. We should prevent
+  // zoom from being called if the window is being unmaximized and its
+  // unmaximized window bounds are themselves functionally maximized.
+  if (!IsMaximized() || user_set_bounds_maximized_)
     return;
 
   [window_ zoom:nil];
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0) {
+  if (HasStyleMask(NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
-  } else {
-    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
-    NSRect rectWindow = [window_ frame];
-    return (rectScreen.origin.x == rectWindow.origin.x &&
-            rectScreen.origin.y == rectWindow.origin.y &&
-            rectScreen.size.width == rectWindow.size.width &&
-            rectScreen.size.height == rectWindow.size.height);
-  }
+
+  NSRect rectScreen = GetAspectRatio() > 0.0
+                          ? default_frame_for_zoom()
+                          : [[NSScreen mainScreen] visibleFrame];
+
+  return NSEqualRects([window_ frame], rectScreen);
 }
 
 void NativeWindowMac::Minimize() {
@@ -639,13 +665,13 @@ bool NativeWindowMac::IsMinimized() {
   return [window_ isMiniaturized];
 }
 
-void NativeWindowMac::HandlePendingFullscreenTransitions() {
-  if (pending_transitions_.empty())
-    return;
-
-  bool next_transition = pending_transitions_.front();
-  pending_transitions_.pop();
-  SetFullScreen(next_transition);
+bool NativeWindowMac::HandleDeferredClose() {
+  if (has_deferred_window_close_) {
+    SetHasDeferredWindowClose(false);
+    Close();
+    return true;
+  }
+  return false;
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
@@ -685,7 +711,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
 }
 
 bool NativeWindowMac::IsFullscreen() const {
-  return [window_ styleMask] & NSWindowStyleMaskFullScreen;
+  return HasStyleMask(NSWindowStyleMaskFullScreen);
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
@@ -706,6 +732,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
   cocoa_bounds.origin.y = NSHeight([screen frame]) - size.height() - bounds.y();
 
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
+  user_set_bounds_maximized_ = IsMaximized() ? true : false;
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
@@ -784,7 +811,10 @@ void NativeWindowMac::SetResizable(bool resizable) {
 }
 
 bool NativeWindowMac::IsResizable() {
-  return [window_ styleMask] & NSWindowStyleMaskResizable;
+  bool in_fs_transition =
+      fullscreen_transition_state() != FullScreenTransitionState::NONE;
+  bool has_rs_mask = HasStyleMask(NSWindowStyleMaskResizable);
+  return has_rs_mask && !IsFullscreen() && !in_fs_transition;
 }
 
 void NativeWindowMac::SetMovable(bool movable) {
@@ -796,11 +826,11 @@ bool NativeWindowMac::IsMovable() {
 }
 
 void NativeWindowMac::SetMinimizable(bool minimizable) {
-  SetStyleMask(minimizable, NSMiniaturizableWindowMask);
+  SetStyleMask(minimizable, NSWindowStyleMaskMiniaturizable);
 }
 
 bool NativeWindowMac::IsMinimizable() {
-  return [window_ styleMask] & NSMiniaturizableWindowMask;
+  return HasStyleMask(NSWindowStyleMaskMiniaturizable);
 }
 
 void NativeWindowMac::SetMaximizable(bool maximizable) {
@@ -830,7 +860,7 @@ void NativeWindowMac::SetClosable(bool closable) {
 }
 
 bool NativeWindowMac::IsClosable() {
-  return [window_ styleMask] & NSWindowStyleMaskClosable;
+  return HasStyleMask(NSWindowStyleMaskClosable);
 }
 
 void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
@@ -856,9 +886,6 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
     level = NSPopUpMenuWindowLevel;
   } else if (level_name == "screen-saver") {
     level = NSScreenSaverWindowLevel;
-  } else if (level_name == "dock") {
-    // Deprecated by macOS, but kept for backwards compatibility
-    level = NSDockWindowLevel;
   }
 
   SetWindowLevel(level + relative_level);
@@ -882,8 +909,6 @@ std::string NativeWindowMac::GetAlwaysOnTopLevel() {
     level_name = "pop-up-menu";
   } else if (level == NSScreenSaverWindowLevel) {
     level_name = "screen-saver";
-  } else if (level == NSDockWindowLevel) {
-    level_name = "dock";
   }
 
   return level_name;
@@ -968,8 +993,8 @@ void NativeWindowMac::OnDisplayMetricsChanged(const display::Display& display,
   if (!is_simple_fullscreen_)
     return;
 
-  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(&NativeWindow::UpdateFrame, GetWeakPtr()));
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&NativeWindow::UpdateFrame, GetWeakPtr()));
 }
 
 void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
@@ -1343,8 +1368,7 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
   NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (vibrantView != nil && !vibrancy_type_.empty()) {
-    const bool no_rounded_corner =
-        [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
+    const bool no_rounded_corner = !HasStyleMask(NSWindowStyleMaskTitled);
     if (!has_frame() && !is_modal() && !no_rounded_corner) {
       CGFloat radius;
       if (fullscreen) {
@@ -1410,24 +1434,21 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancyType = NSVisualEffectMaterialTitlebar;
   }
 
-  if (@available(macOS 10.11, *)) {
-    if (type == "selection") {
-      vibrancyType = NSVisualEffectMaterialSelection;
-    } else if (type == "menu") {
-      vibrancyType = NSVisualEffectMaterialMenu;
-    } else if (type == "popover") {
-      vibrancyType = NSVisualEffectMaterialPopover;
-    } else if (type == "sidebar") {
-      vibrancyType = NSVisualEffectMaterialSidebar;
-    } else if (type == "medium-light") {
-      EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
-                  "electron");
-      vibrancyType = NSVisualEffectMaterialMediumLight;
-    } else if (type == "ultra-dark") {
-      EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
-                  "electron");
-      vibrancyType = NSVisualEffectMaterialUltraDark;
-    }
+  if (type == "selection") {
+    vibrancyType = NSVisualEffectMaterialSelection;
+  } else if (type == "menu") {
+    vibrancyType = NSVisualEffectMaterialMenu;
+  } else if (type == "popover") {
+    vibrancyType = NSVisualEffectMaterialPopover;
+  } else if (type == "sidebar") {
+    vibrancyType = NSVisualEffectMaterialSidebar;
+  } else if (type == "medium-light") {
+    EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
+                "electron");
+    vibrancyType = NSVisualEffectMaterialMediumLight;
+  } else if (type == "ultra-dark") {
+    EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn, "electron");
+    vibrancyType = NSVisualEffectMaterialUltraDark;
   }
 
   if (@available(macOS 10.14, *)) {
@@ -1527,68 +1548,51 @@ void NativeWindowMac::UpdateFrame() {
 
 void NativeWindowMac::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
-  if (@available(macOS 10.12.2, *)) {
-    touch_bar_.reset([[ElectronTouchBar alloc]
-        initWithDelegate:window_delegate_.get()
-                  window:this
-                settings:std::move(items)]);
-    [window_ setTouchBar:nil];
-  }
+  touch_bar_.reset([[ElectronTouchBar alloc]
+      initWithDelegate:window_delegate_.get()
+                window:this
+              settings:std::move(items)]);
+  [window_ setTouchBar:nil];
 }
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
-  if (@available(macOS 10.12.2, *)) {
-    if (touch_bar_ && [window_ touchBar])
-      [touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
-  }
+  if (touch_bar_ && [window_ touchBar])
+    [touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
 }
 
 void NativeWindowMac::SetEscapeTouchBarItem(
     gin_helper::PersistentDictionary item) {
-  if (@available(macOS 10.12.2, *)) {
-    if (touch_bar_ && [window_ touchBar])
-      [touch_bar_ setEscapeTouchBarItem:std::move(item)
-                            forTouchBar:[window_ touchBar]];
-  }
+  if (touch_bar_ && [window_ touchBar])
+    [touch_bar_ setEscapeTouchBarItem:std::move(item)
+                          forTouchBar:[window_ touchBar]];
 }
 
 void NativeWindowMac::SelectPreviousTab() {
-  if (@available(macOS 10.12, *)) {
-    [window_ selectPreviousTab:nil];
-  }
+  [window_ selectPreviousTab:nil];
 }
 
 void NativeWindowMac::SelectNextTab() {
-  if (@available(macOS 10.12, *)) {
-    [window_ selectNextTab:nil];
-  }
+  [window_ selectNextTab:nil];
 }
 
 void NativeWindowMac::MergeAllWindows() {
-  if (@available(macOS 10.12, *)) {
-    [window_ mergeAllWindows:nil];
-  }
+  [window_ mergeAllWindows:nil];
 }
 
 void NativeWindowMac::MoveTabToNewWindow() {
-  if (@available(macOS 10.12, *)) {
-    [window_ moveTabToNewWindow:nil];
-  }
+  [window_ moveTabToNewWindow:nil];
 }
 
 void NativeWindowMac::ToggleTabBar() {
-  if (@available(macOS 10.12, *)) {
-    [window_ toggleTabBar:nil];
-  }
+  [window_ toggleTabBar:nil];
 }
 
 bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
   if (window_ == window->GetNativeWindow().GetNativeNSWindow()) {
     return false;
   } else {
-    if (@available(macOS 10.12, *))
-      [window_ addTabbedWindow:window->GetNativeWindow().GetNativeNSWindow()
-                       ordered:NSWindowAbove];
+    [window_ addTabbedWindow:window->GetNativeWindow().GetNativeNSWindow()
+                     ordered:NSWindowAbove];
   }
   return true;
 }
@@ -1598,10 +1602,15 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
   NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
 
   // Reset the behaviour to default if aspect_ratio is set to 0 or less.
-  if (aspect_ratio > 0.0)
-    [window_ setContentAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
-  else
+  if (aspect_ratio > 0.0) {
+    NSSize aspect_ratio_size = NSMakeSize(aspect_ratio, 1.0);
+    if (has_frame())
+      [window_ setContentAspectRatio:aspect_ratio_size];
+    else
+      [window_ setAspectRatio:aspect_ratio_size];
+  } else {
     [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
+  }
 }
 
 void NativeWindowMac::PreviewFile(const std::string& path,
@@ -1710,39 +1719,47 @@ void NativeWindowMac::OverrideNSWindowContentView() {
   AddContentViewLayers();
 }
 
+bool NativeWindowMac::HasStyleMask(NSUInteger flag) const {
+  return [window_ styleMask] & flag;
+}
+
 void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
   // Changing the styleMask of a frameless windows causes it to change size so
   // we explicitly disable resizing while setting it.
   ScopedDisableResize disable_resize;
 
-  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setStyleMask:[window_ styleMask] | flag];
   else
     [window_ setStyleMask:[window_ styleMask] & (~flag)];
+
   // Change style mask will make the zoom button revert to default, probably
   // a bug of Cocoa or macOS.
-  SetMaximizable(was_maximizable);
+  SetMaximizable(maximizable_);
 }
 
 void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
-  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setCollectionBehavior:[window_ collectionBehavior] | flag];
   else
     [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
+
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
-  SetMaximizable(was_maximizable);
+  SetMaximizable(maximizable_);
 }
 
 views::View* NativeWindowMac::GetContentsView() {
   return root_view_.get();
 }
 
+bool NativeWindowMac::CanMaximize() const {
+  return maximizable_;
+}
+
 void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&NativeWindow::RedrawTrafficLights, GetWeakPtr()));
 }
 
@@ -1825,7 +1842,12 @@ gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
     NSRect buttons = [buttons_proxy_ getButtonsContainerBounds];
     gfx::Rect overlay;
     overlay.set_width(GetContentSize().width() - NSWidth(buttons));
-    overlay.set_height(NSHeight(buttons));
+    if ([buttons_proxy_ useCustomHeight]) {
+      overlay.set_height(titlebar_overlay_height());
+    } else {
+      overlay.set_height(NSHeight(buttons));
+    }
+
     if (!base::i18n::IsRTL())
       overlay.set_x(NSMaxX(buttons));
     return overlay;

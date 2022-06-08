@@ -18,7 +18,7 @@ void ElectronCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
 
   // NOTE: uv_setup_args does nothing on Windows, so we don't need to call it.
   // Otherwise we'd have to convert the arguments from UTF16.
-#if !defined(OS_WIN)
+#if !BUILDFLAG(IS_WIN)
   // Hack around with the argv pointer. Used for process.title = "blah"
   argv = uv_setup_args(argc, argv);
 #endif
@@ -26,7 +26,7 @@ void ElectronCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
   argv_.assign(argv, argv + argc);
 }
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 // static
 void ElectronCommandLine::InitializeFromCommandLine() {
   argv_ = base::CommandLine::ForCurrentProcess()->argv();

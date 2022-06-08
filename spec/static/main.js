@@ -28,6 +28,13 @@ v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 app.commandLine.appendSwitch('ignore-certificate-errors');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
+// Some ports are considered to be "unsafe" by Chromium
+// but Windows on Microsoft-hosted agents sometimes assigns one of them
+// to a Node.js server. Chromium refuses to establish a connection
+// and the whole app crashes with the "Error: net::ERR_UNSAFE_PORT" error.
+// Let's allow connections to those ports to avoid test failures.
+// Use a comma-separated list of ports as a flag value, e.g. "666,667,668".
+app.commandLine.appendSwitch('explicitly-allowed-ports', '2049');
 
 // Disable security warnings (the security warnings test will enable them)
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true;
@@ -86,8 +93,14 @@ app.on('window-all-closed', function () {
   app.quit();
 });
 
-app.on('gpu-process-crashed', (event, killed) => {
-  console.log(`GPU process crashed (killed=${killed})`);
+app.on('child-process-gone', (event, details) => {
+  if (details.type === 'GPU' && details.reason !== 'clean-exit') {
+    if (details.reason === 'crashed') {
+      console.log('GPU process crashed');
+    } else {
+      console.log(`GPU process exited with code ${details.exitCode}`);
+    }
+  }
 });
 
 app.on('renderer-process-crashed', (event, contents, killed) => {
@@ -109,8 +122,7 @@ app.whenReady().then(async function () {
       backgroundThrottling: false,
       nodeIntegration: true,
       webviewTag: true,
-      contextIsolation: false,
-      nativeWindowOpen: false
+      contextIsolation: false
     }
   });
   window.loadFile('static/index.html', {
@@ -139,6 +151,12 @@ ipcMain.on('prevent-next-will-attach-webview', (event) => {
   event.sender.once('will-attach-webview', event => event.preventDefault());
 });
 
+ipcMain.on('break-next-will-attach-webview', (event, id) => {
+  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
+    params.instanceId = null;
+  });
+});
+
 ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
   event.sender.once('will-attach-webview', (event, webPreferences, params) => {
     params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`;
@@ -150,7 +168,6 @@ ipcMain.on('disable-preload-on-next-will-attach-webview', (event, id) => {
   event.sender.once('will-attach-webview', (event, webPreferences, params) => {
     params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'webview-stripped-preload.html')}`;
     delete webPreferences.preload;
-    delete webPreferences.preloadURL;
   });
 });
 

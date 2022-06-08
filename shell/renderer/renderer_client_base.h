@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
-#define SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
+#ifndef ELECTRON_SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
+#define ELECTRON_SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
 
 #include <memory>
 #include <string>
@@ -16,12 +16,8 @@
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
-#include "chrome/renderer/media/chrome_key_systems_provider.h"  // nogncheck
-#endif
-
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "chrome/renderer/pepper/chrome_pdf_print_client.h"  // nogncheck
+#include "components/pdf/renderer/internal_plugin_renderer_helpers.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -104,16 +100,15 @@ class RendererClientBase : public content::ContentRendererClient
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
-  void AddSupportedKeySystems(
-      std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems)
-      override;
-  bool IsKeySystemsUpdateNeeded() override;
+  void GetSupportedKeySystems(media::GetSupportedKeySystemsCB cb) override;
   void DidSetUserAgent(const std::string& user_agent) override;
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
                                  const GURL& original_url,
                                  const std::string& mime_type) override;
-  bool IsOriginIsolatedPepperPlugin(const base::FilePath& plugin_path) override;
+  v8::Local<v8::Object> GetScriptableObject(
+      const blink::WebElement& plugin_element,
+      v8::Isolate* isolate) override;
 
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
@@ -154,9 +149,6 @@ class RendererClientBase : public content::ContentRendererClient
   std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
-  ChromeKeySystemsProvider key_systems_provider_;
-#endif
   std::string renderer_client_id_;
   // An increasing ID used for identifying an V8 context in this process.
   int64_t next_context_id_ = 0;
@@ -164,11 +156,8 @@ class RendererClientBase : public content::ContentRendererClient
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   std::unique_ptr<SpellCheck> spellcheck_;
 #endif
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  std::unique_ptr<ChromePDFPrintClient> pdf_print_client_;
-#endif
 };
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_RENDERER_CLIENT_BASE_H_
+#endif  // ELECTRON_SHELL_RENDERER_RENDERER_CLIENT_BASE_H_

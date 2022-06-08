@@ -41,8 +41,8 @@ const runners = new Map([
 const specHashPath = path.resolve(__dirname, '../spec/.hash');
 
 let runnersToRun = null;
-if (args.runners) {
-  runnersToRun = args.runners.split(',');
+if (args.runners !== undefined) {
+  runnersToRun = args.runners.split(',').filter(value => value);
   if (!runnersToRun.every(r => [...runners.keys()].includes(r))) {
     console.log(`${fail} ${runnersToRun} must be a subset of [${[...runners.keys()].join(' | ')}]`);
     process.exit(1);
@@ -230,8 +230,13 @@ async function runMainProcessElectronTests () {
 }
 
 async function installSpecModules (dir) {
+  // v8 headers use c++17 so override the gyp default of -std=c++14,
+  // but don't clobber any other CXXFLAGS that were passed into spec-runner.js
+  const CXXFLAGS = ['-std=c++17', process.env.CXXFLAGS].filter(x => !!x).join(' ');
+
   const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
   const env = Object.assign({}, process.env, {
+    CXXFLAGS,
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019',
     npm_config_yes: 'true'

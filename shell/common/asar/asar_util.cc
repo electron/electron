@@ -71,7 +71,7 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
   // if we can create it, return it
   auto archive = std::make_shared<Archive>(path);
   if (archive->Init()) {
-    base::TryEmplace(map, lower, path, archive);
+    map.try_emplace(lower, path, archive);
     return archive;
   }
 

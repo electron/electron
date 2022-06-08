@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_V8_VALUE_CONVERTER_H_
-#define SHELL_COMMON_V8_VALUE_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_V8_VALUE_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_V8_VALUE_CONVERTER_H_
 
 #include <memory>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace base {
@@ -22,6 +21,10 @@ namespace electron {
 class V8ValueConverter {
  public:
   V8ValueConverter();
+
+  // disable copy
+  V8ValueConverter(const V8ValueConverter&) = delete;
+  V8ValueConverter& operator=(const V8ValueConverter&) = delete;
 
   void SetRegExpAllowed(bool val);
   void SetFunctionAllowed(bool val);
@@ -68,10 +71,8 @@ class V8ValueConverter {
   // If true, undefined and null values are ignored when converting v8 objects
   // into Values.
   bool strip_null_from_objects_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(V8ValueConverter);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_V8_VALUE_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_V8_VALUE_CONVERTER_H_

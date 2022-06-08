@@ -37,7 +37,6 @@
 #include "shell/renderer/electron_autofill_agent.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
-#include "third_party/blink/public/platform/media/multi_buffer_data_source.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -46,14 +45,19 @@
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_security_policy.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/platform/media/multi_buffer_data_source.h"  // nogncheck
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 #include "base/strings/sys_string_conversions.h"
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <shlobj.h>
+#endif
+
+#if defined(WIDEVINE_CDM_AVAILABLE)
+#include "chrome/renderer/media/chrome_key_systems.h"  // nogncheck
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -62,6 +66,9 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/common/pdf_util.h"
+#include "components/pdf/common/internal_plugin_helpers.h"
+#include "components/pdf/renderer/pdf_internal_plugin_delegate.h"
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
@@ -71,7 +78,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/renderer/print_render_frame_helper.h"
-#include "printing/print_settings.h"  // nogncheck
+#include "printing/metafile_agent.h"  // nogncheck
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
@@ -104,6 +111,25 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
 }
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+class ChromePdfInternalPluginDelegate final
+    : public pdf::PdfInternalPluginDelegate {
+ public:
+  ChromePdfInternalPluginDelegate() = default;
+  ChromePdfInternalPluginDelegate(const ChromePdfInternalPluginDelegate&) =
+      delete;
+  ChromePdfInternalPluginDelegate& operator=(
+      const ChromePdfInternalPluginDelegate&) = delete;
+  ~ChromePdfInternalPluginDelegate() override = default;
+
+  // `pdf::PdfInternalPluginDelegate`:
+  bool IsAllowedOrigin(const url::Origin& origin) const override {
+    return origin.scheme() == extensions::kExtensionScheme &&
+           origin.host() == extension_misc::kPdfExtensionId;
+  }
+};
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 // static
 RendererClientBase* g_renderer_client_base = nullptr;
@@ -186,12 +212,6 @@ void RendererClientBase::RenderThreadStarted() {
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
 #endif
 
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  // Enables printing from Chrome PDF viewer.
-  pdf_print_client_ = std::make_unique<ChromePDFPrintClient>();
-  pdf::PepperPDFHost::SetPrintClient(pdf_print_client_.get());
-#endif
-
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   spellcheck_ = std::make_unique<SpellCheck>(this);
 #endif
@@ -235,7 +255,7 @@ void RendererClientBase::RenderThreadStarted() {
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // Set ApplicationUserModelID in renderer process.
   std::wstring app_id =
       command_line->GetSwitchValueNative(switches::kAppUserModelId);
@@ -315,10 +335,16 @@ bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
-  if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-      params.mime_type.Utf8() == kPdfPluginMimeType ||
+  if (params.mime_type.Utf8() == pdf::kInternalPluginMimeType) {
+    *plugin = pdf::CreateInternalPlugin(
+        std::move(params), render_frame,
+        std::make_unique<ChromePdfInternalPluginDelegate>());
+    return true;
+  }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+  if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
       render_frame->GetBlinkPreferences().enable_plugins)
     return false;
 
@@ -326,18 +352,10 @@ bool RendererClientBase::OverrideCreatePlugin(
   return true;
 }
 
-void RendererClientBase::AddSupportedKeySystems(
-    std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
+void RendererClientBase::GetSupportedKeySystems(
+    media::GetSupportedKeySystemsCB cb) {
 #if defined(WIDEVINE_CDM_AVAILABLE)
-  key_systems_provider_.AddSupportedKeySystems(key_systems);
-#endif
-}
-
-bool RendererClientBase::IsKeySystemsUpdateNeeded() {
-#if defined(WIDEVINE_CDM_AVAILABLE)
-  return key_systems_provider_.IsKeySystemsUpdateNeeded();
-#else
-  return false;
+  GetChromeKeySystems(std::move(cb));
 #endif
 }
 
@@ -355,16 +373,34 @@ bool RendererClientBase::IsPluginHandledExternally(
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   DCHECK(plugin_element.HasHTMLTagName("object") ||
          plugin_element.HasHTMLTagName("embed"));
+  if (mime_type == pdf::kInternalPluginMimeType) {
+    if (IsPdfInternalPluginAllowedOrigin(
+            render_frame->GetWebFrame()->GetSecurityOrigin())) {
+      return true;
+    }
+
+    content::WebPluginInfo info;
+    info.type = content::WebPluginInfo::PLUGIN_TYPE_PEPPER_OUT_OF_PROCESS;
+    info.name = base::ASCIIToUTF16(kPDFInternalPluginName);
+    info.path = base::FilePath(kPdfPluginPath);
+    info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
+    info.mime_types.emplace_back(pdf::kInternalPluginMimeType, "pdf",
+                                 "Portable Document Format");
+    return extensions::MimeHandlerViewContainerManager::Get(
+               content::RenderFrame::FromWebFrame(
+                   plugin_element.GetDocument().GetFrame()),
+               true /* create_if_does_not_exist */)
+        ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
+  }
+
   // TODO(nornagon): this info should be shared with the data in
   // electron_content_client.cc / ComputeBuiltInPlugins.
   content::WebPluginInfo info;
   info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
-  const char16_t kPDFExtensionPluginName[] = u"Chromium PDF Viewer";
-  info.name = kPDFExtensionPluginName;
+  info.name = base::ASCIIToUTF16(kPDFExtensionPluginName);
   info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
   info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
-  info.mime_types.emplace_back("application/pdf", "pdf",
-                               "Portable Document Format");
+  info.mime_types.emplace_back(kPDFMimeType, "pdf", "Portable Document Format");
   return extensions::MimeHandlerViewContainerManager::Get(
              content::RenderFrame::FromWebFrame(
                  plugin_element.GetDocument().GetFrame()),
@@ -375,10 +411,21 @@ bool RendererClientBase::IsPluginHandledExternally(
 #endif
 }
 
-bool RendererClientBase::IsOriginIsolatedPepperPlugin(
-    const base::FilePath& plugin_path) {
-  // Isolate all Pepper plugins, including the PDF plugin.
-  return true;
+v8::Local<v8::Object> RendererClientBase::GetScriptableObject(
+    const blink::WebElement& plugin_element,
+    v8::Isolate* isolate) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // If there is a MimeHandlerView that can provide the scriptable object then
+  // MaybeCreateMimeHandlerView must have been called before and a container
+  // manager should exist.
+  auto* container_manager = extensions::MimeHandlerViewContainerManager::Get(
+      content::RenderFrame::FromWebFrame(
+          plugin_element.GetDocument().GetFrame()),
+      false /* create_if_does_not_exist */);
+  if (container_manager)
+    return container_manager->GetScriptableObject(plugin_element, isolate);
+#endif
+  return v8::Local<v8::Object>();
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>
@@ -554,7 +601,7 @@ void RendererClientBase::AllowGuestViewElementDefinition(
     v8::Local<v8::Object> context,
     v8::Local<v8::Function> register_cb) {
   v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context->CreationContext());
+  v8::Context::Scope context_scope(context->GetCreationContextChecked());
   blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
 
   content::RenderFrame* render_frame = GetRenderFrame(context);
@@ -562,8 +609,8 @@ void RendererClientBase::AllowGuestViewElementDefinition(
     return;
 
   render_frame->GetWebFrame()->RequestExecuteV8Function(
-      context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
-      nullptr);
+      context->GetCreationContextChecked(), register_cb, v8::Null(isolate), 0,
+      nullptr, nullptr);
 }
 
 }  // namespace electron

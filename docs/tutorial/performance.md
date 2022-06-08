@@ -1,3 +1,11 @@
+---
+title: Performance
+description: A set of guidelines for building performant Electron apps
+slug: performance
+hide_title: true
+toc_max_heading_level: 3
+---
+
 # Performance
 
 Developers frequently ask about strategies to optimize the performance of
@@ -49,7 +57,7 @@ at once, consider the [Chrome Tracing](https://www.chromium.org/developers/how-t
 * [Get Started With Analyzing Runtime Performance][chrome-devtools-tutorial]
 * [Talk: "Visual Studio Code - The First Second"][vscode-first-second]
 
-## Checklist
+## Checklist: Performance recommendations
 
 Chances are that your app could be a little leaner, faster, and generally less
 resource-hungry if you attempt these steps.
@@ -62,7 +70,7 @@ resource-hungry if you attempt these steps.
 6. [Unnecessary or blocking network requests](#6-unnecessary-or-blocking-network-requests)
 7. [Bundle your code](#7-bundle-your-code)
 
-## 1) Carelessly including modules
+### 1. Carelessly including modules
 
 Before adding a Node.js module to your application, examine said module. How
 many dependencies does that module include? What kind of resources does
@@ -70,7 +78,7 @@ it need to simply be called in a `require()` statement? You might find
 that the module with the most downloads on the NPM package registry or the most stars on GitHub
 is not in fact the leanest or smallest one available.
 
-### Why?
+#### Why?
 
 The reasoning behind this recommendation is best illustrated with a real-world
 example. During the early days of Electron, reliable detection of network
@@ -99,7 +107,7 @@ running Linux might be bad news for your app's performance. In this particular
 example, the correct solution was to use no module at all, and to instead use
 connectivity checks included in later versions of Chromium.
 
-### How?
+#### How?
 
 When considering a module, we recommend that you check:
 
@@ -120,15 +128,15 @@ file in the directory you executed it in. Both files can be analyzed using
 the Chrome Developer Tools, using the `Performance` and `Memory` tabs
 respectively.
 
-![Performance CPU Profile][performance-cpu-prof]
+![Performance CPU Profile](../images/performance-cpu-prof.png)
 
-![Performance Heap Memory Profile][performance-heap-prof]
+![Performance Heap Memory Profile](../images/performance-heap-prof.png)
 
 In this example, on the author's machine, we saw that loading `request` took
 almost half a second, whereas `node-fetch` took dramatically less memory
 and less than 50ms.
 
-## 2) Loading and running code too soon
+### 2. Loading and running code too soon
 
 If you have expensive setup operations, consider deferring those. Inspect all
 the work being executed right after the application starts. Instead of firing
@@ -141,7 +149,7 @@ using the same strategy _and_ are using sizable modules that you do not
 immediately need, apply the same strategy and defer loading to a more
 opportune time.
 
-### Why?
+#### Why?
 
 Loading modules is a surprisingly expensive operation, especially on Windows.
 When your app starts, it should not make users wait for operations that are
@@ -157,14 +165,14 @@ immediately display the file to you without any code highlighting, prioritizing
 your ability to interact with the text. Once it has done that work, it will
 move on to code highlighting.
 
-### How?
+#### How?
 
 Let's consider an example and assume that your application is parsing files
 in the fictitious `.foo` format. In order to do that, it relies on the
 equally fictitious `foo-parser` module. In traditional Node.js development,
 you might write code that eagerly loads dependencies:
 
-```js
+```js title='parser.js'
 const fs = require('fs')
 const fooParser = require('foo-parser')
 
@@ -187,7 +195,7 @@ In the above example, we're doing a lot of work that's being executed as soon
 as the file is loaded. Do we need to get parsed files right away? Could we
 do this work a little later, when `getParsedFiles()` is actually called?
 
-```js
+```js title='parser.js'
 // "fs" is likely already being loaded, so the `require()` call is cheap
 const fs = require('fs')
 
@@ -223,7 +231,7 @@ module.exports = { parser }
 In short, allocate resources "just in time" rather than allocating them all
 when your app starts.
 
-## 3) Blocking the main process
+### 3. Blocking the main process
 
 Electron's main process (sometimes called "browser process") is special: It is
 the parent process to all your app's other processes and the primary process
@@ -235,7 +243,7 @@ Under no circumstances should you block this process and the UI thread with
 long-running operations. Blocking the UI thread means that your entire app
 will freeze until the main process is ready to continue processing.
 
-### Why?
+#### Why?
 
 The main process and its UI thread are essentially the control tower for major
 operations inside your app. When the operating system tells your app about a
@@ -246,31 +254,31 @@ the GPU process about that – once again going through the main process.
 Electron and Chromium are careful to put heavy disk I/O and CPU-bound operations
 onto new threads to avoid blocking the UI thread. You should do the same.
 
-### How?
+#### How?
 
 Electron's powerful multi-process architecture stands ready to assist you with
 your long-running tasks, but also includes a small number of performance traps.
 
-1) For long running CPU-heavy tasks, make use of
+1. For long running CPU-heavy tasks, make use of
 [worker threads][worker-threads], consider moving them to the BrowserWindow, or
 (as a last resort) spawn a dedicated process.
 
-2) Avoid using the synchronous IPC and the `remote` module as much as possible.
-While there are legitimate use cases, it is far too easy to unknowingly block
-the UI thread using the `remote` module.
+2. Avoid using the synchronous IPC and the `@electron/remote` module as much
+as possible. While there are legitimate use cases, it is far too easy to
+unknowingly block the UI thread.
 
-3) Avoid using blocking I/O operations in the main process. In short, whenever
+3. Avoid using blocking I/O operations in the main process. In short, whenever
 core Node.js modules (like `fs` or `child_process`) offer a synchronous or an
 asynchronous version, you should prefer the asynchronous and non-blocking
 variant.
 
-## 4) Blocking the renderer process
+### 4. Blocking the renderer process
 
 Since Electron ships with a current version of Chrome, you can make use of the
 latest and greatest features the Web Platform offers to defer or offload heavy
 operations in a way that keeps your app smooth and responsive.
 
-### Why?
+#### Why?
 
 Your app probably has a lot of JavaScript to run in the renderer process. The
 trick is to execute operations as quickly as possible without taking away
@@ -280,7 +288,7 @@ at 60fps.
 Orchestrating the flow of operations in your renderer's code is
 particularly useful if users complain about your app sometimes "stuttering".
 
-### How?
+#### How?
 
 Generally speaking, all advice for building performant web apps for modern
 browsers apply to Electron's renderers, too. The two primary tools at your
@@ -300,14 +308,14 @@ some caveats to consider – consult Electron's
 for any operation that requires a lot of CPU power for an extended period of
 time.
 
-## 5) Unnecessary polyfills
+### 5. Unnecessary polyfills
 
 One of Electron's great benefits is that you know exactly which engine will
 parse your JavaScript, HTML, and CSS. If you're re-purposing code that was
 written for the web at large, make sure to not polyfill features included in
 Electron.
 
-### Why?
+#### Why?
 
 When building a web application for today's Internet, the oldest environments
 dictate what features you can and cannot use. Even though Electron supports
@@ -323,7 +331,7 @@ It is rare for a JavaScript-based polyfill to be faster than the equivalent
 native feature in Electron. Do not slow down your Electron app by shipping your
 own version of standard web platform features.
 
-### How?
+#### How?
 
 Operate under the assumption that polyfills in current versions of Electron
 are unnecessary. If you have doubts, check [caniuse.com](https://caniuse.com/)
@@ -338,12 +346,12 @@ If you're using a transpiler/compiler like TypeScript, examine its configuration
 and ensure that you're targeting the latest ECMAScript version supported by
 Electron.
 
-## 6) Unnecessary or blocking network requests
+### 6. Unnecessary or blocking network requests
 
 Avoid fetching rarely changing resources from the internet if they could easily
 be bundled with your application.
 
-### Why?
+#### Why?
 
 Many users of Electron start with an entirely web-based app that they're
 turning into a desktop application. As web developers, we are used to loading
@@ -360,7 +368,7 @@ will take care of the rest.
 When building an Electron app, your users are better served if you download
 the fonts and include them in your app's bundle.
 
-### How?
+#### How?
 
 In an ideal world, your application wouldn't need the network to operate at
 all. To get there, you must understand what resources your app is downloading
@@ -387,21 +395,21 @@ without shipping an application update is a powerful strategy. For advanced
 control over how resources are being loaded, consider investing in
 [Service Workers][service-workers].
 
-## 7) Bundle your code
+### 7. Bundle your code
 
 As already pointed out in
 "[Loading and running code too soon](#2-loading-and-running-code-too-soon)",
 calling `require()` is an expensive operation. If you are able to do so,
 bundle your application's code into a single file.
 
-### Why?
+#### Why?
 
 Modern JavaScript development usually involves many files and modules. While
 that's perfectly fine for developing with Electron, we heavily recommend that
 you bundle all your code into one single file to ensure that the overhead
 included in calling `require()` is only paid once when your application loads.
 
-### How?
+#### How?
 
 There are numerous JavaScript bundlers out there and we know better than to
 anger the community by recommending one tool over another. We do however
@@ -412,8 +420,6 @@ As of writing this article, the popular choices include [Webpack][webpack],
 [Parcel][parcel], and [rollup.js][rollup].
 
 [security]: ./security.md
-[performance-cpu-prof]: ../images/performance-cpu-prof.png
-[performance-heap-prof]: ../images/performance-heap-prof.png
 [chrome-devtools-tutorial]: https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/
 [worker-threads]: https://nodejs.org/api/worker_threads.html
 [web-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers

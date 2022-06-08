@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as WebSocket from 'ws';
 import { emittedOnce, emittedNTimes, emittedUntil } from './events-helpers';
+import { ifit } from './spec-helpers';
 
 const uuid = require('uuid');
 
@@ -107,6 +108,12 @@ describe('chrome extensions', () => {
     await w.loadURL(url);
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
     expect(bg).to.equal('red');
+  });
+
+  it('does not crash when loading an extension with missing manifest', async () => {
+    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const promise = customSession.loadExtension(path.join(fixtures, 'extensions', 'missing-manifest'));
+    await expect(promise).to.eventually.be.rejectedWith(/Manifest file is missing or unreadable/);
   });
 
   it('does not crash when failing to load an extension', async () => {
@@ -210,7 +217,7 @@ describe('chrome extensions', () => {
     });
     it('getAcceptLanguages()', async () => {
       const result = await exec('getAcceptLanguages');
-      expect(result).to.be.an('array').and.deep.equal(['en-US']);
+      expect(result).to.be.an('array').and.deep.equal(['en-US', 'en']);
     });
     it('getMessage()', async () => {
       const result = await exec('getMessage');
@@ -502,7 +509,8 @@ describe('chrome extensions', () => {
       });
     };
 
-    it('loads a devtools extension', async () => {
+    // TODO(jkleinsc) fix this flaky test on WOA
+    ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads a devtools extension', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       customSession.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
       const winningMessage = emittedOnce(ipcMain, 'winning');

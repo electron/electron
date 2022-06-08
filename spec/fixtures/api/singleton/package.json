@@ -1,5 +1,5 @@
 {
-  "name": "electron-app-singleton",
+  "name": "electron-test-singleton",
   "main": "main.js"
 }
 

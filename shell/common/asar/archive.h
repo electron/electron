@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_ASAR_ARCHIVE_H_
-#define SHELL_COMMON_ASAR_ARCHIVE_H_
+#ifndef ELECTRON_SHELL_COMMON_ASAR_ARCHIVE_H_
+#define ELECTRON_SHELL_COMMON_ASAR_ARCHIVE_H_
 
 #include <memory>
 #include <string>
@@ -62,6 +62,10 @@ class Archive {
   explicit Archive(const base::FilePath& path);
   virtual ~Archive();
 
+  // disable copy
+  Archive(const Archive&) = delete;
+  Archive& operator=(const Archive&) = delete;
+
   // Read and parse the header.
   bool Init();
 
@@ -107,10 +111,8 @@ class Archive {
   std::unordered_map<base::FilePath::StringType,
                      std::unique_ptr<ScopedTemporaryFile>>
       external_files_;
-
-  DISALLOW_COPY_AND_ASSIGN(Archive);
 };
 
 }  // namespace asar
 
-#endif  // SHELL_COMMON_ASAR_ARCHIVE_H_
+#endif  // ELECTRON_SHELL_COMMON_ASAR_ARCHIVE_H_

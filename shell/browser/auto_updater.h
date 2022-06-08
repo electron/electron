@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_AUTO_UPDATER_H_
-#define SHELL_BROWSER_AUTO_UPDATER_H_
+#ifndef ELECTRON_SHELL_BROWSER_AUTO_UPDATER_H_
+#define ELECTRON_SHELL_BROWSER_AUTO_UPDATER_H_
 
 #include <map>
 #include <string>
 
-#include "base/macros.h"
 #include "build/build_config.h"
 
 namespace base {
@@ -53,6 +52,12 @@ class AutoUpdater {
  public:
   typedef std::map<std::string, std::string> HeaderMap;
 
+  AutoUpdater() = delete;
+
+  // disable copy
+  AutoUpdater(const AutoUpdater&) = delete;
+  AutoUpdater& operator=(const AutoUpdater&) = delete;
+
   // Gets/Sets the delegate.
   static Delegate* GetDelegate();
   static void SetDelegate(Delegate* delegate);
@@ -67,10 +72,8 @@ class AutoUpdater {
 
  private:
   static Delegate* delegate_;
-
-  DISALLOW_IMPLICIT_CONSTRUCTORS(AutoUpdater);
 };
 
 }  // namespace auto_updater
 
-#endif  // SHELL_BROWSER_AUTO_UPDATER_H_
+#endif  // ELECTRON_SHELL_BROWSER_AUTO_UPDATER_H_

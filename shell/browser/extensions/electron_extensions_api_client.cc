@@ -19,7 +19,6 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/browser/print_manager_utils.h"
-#include "shell/browser/printing/print_preview_message_handler.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
@@ -37,15 +36,18 @@ class ElectronGuestViewManagerDelegate
       : ExtensionsGuestViewManagerDelegate(context) {}
   ~ElectronGuestViewManagerDelegate() override = default;
 
+  // disable copy
+  ElectronGuestViewManagerDelegate(const ElectronGuestViewManagerDelegate&) =
+      delete;
+  ElectronGuestViewManagerDelegate& operator=(
+      const ElectronGuestViewManagerDelegate&) = delete;
+
   // GuestViewManagerDelegate:
   void OnGuestAdded(content::WebContents* guest_web_contents) const override {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::HandleScope scope(isolate);
     electron::api::WebContents::FromOrCreate(isolate, guest_web_contents);
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronGuestViewManagerDelegate);
 };
 
 class ElectronMimeHandlerViewGuestDelegate
@@ -54,8 +56,14 @@ class ElectronMimeHandlerViewGuestDelegate
   ElectronMimeHandlerViewGuestDelegate() = default;
   ~ElectronMimeHandlerViewGuestDelegate() override = default;
 
+  // disable copy
+  ElectronMimeHandlerViewGuestDelegate(
+      const ElectronMimeHandlerViewGuestDelegate&) = delete;
+  ElectronMimeHandlerViewGuestDelegate& operator=(
+      const ElectronMimeHandlerViewGuestDelegate&) = delete;
+
   // MimeHandlerViewGuestDelegate.
-  bool HandleContextMenu(content::WebContents* web_contents,
+  bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
                          const content::ContextMenuParams& params) override {
     // TODO(nornagon): surface this event to JS
     LOG(INFO) << "HCM";
@@ -63,9 +71,6 @@ class ElectronMimeHandlerViewGuestDelegate
   }
   void RecordLoadMetric(bool in_main_frame,
                         const std::string& mime_type) override {}
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronMimeHandlerViewGuestDelegate);
 };
 
 ElectronExtensionsAPIClient::ElectronExtensionsAPIClient() = default;
@@ -80,7 +85,6 @@ MessagingDelegate* ElectronExtensionsAPIClient::GetMessagingDelegate() {
 void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
 #if BUILDFLAG(ENABLE_PRINTING)
-  electron::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
   electron::PrintViewManagerElectron::CreateForWebContents(web_contents);
 #endif
 

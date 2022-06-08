@@ -15,7 +15,7 @@ OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
     const OnPaintCallback& callback)
     : transparent_(transparent), callback_(callback) {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   PlatformCreate();
 #endif
 }
@@ -24,7 +24,7 @@ OffScreenWebContentsView::~OffScreenWebContentsView() {
   if (native_window_)
     native_window_->RemoveObserver(this);
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   PlatformDestroy();
 #endif
 }
@@ -66,7 +66,7 @@ gfx::Size OffScreenWebContentsView::GetSize() {
   return native_window_ ? native_window_->GetSize() : gfx::Size();
 }
 
-#if !defined(OS_MAC)
+#if !BUILDFLAG(IS_MAC)
 gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
   if (!native_window_)
     return gfx::NativeView();
@@ -152,11 +152,13 @@ void OffScreenWebContentsView::RenderViewHostChanged(
 
 void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {}
 
-#if defined(OS_MAC)
+void OffScreenWebContentsView::OnCapturerCountChanged() {}
+
+#if BUILDFLAG(IS_MAC)
 bool OffScreenWebContentsView::CloseTabAfterEventTrackingIfNeeded() {
   return false;
 }
-#endif  // defined(OS_MAC)
+#endif  // BUILDFLAG(IS_MAC)
 
 void OffScreenWebContentsView::StartDragging(
     const content::DropData& drop_data,

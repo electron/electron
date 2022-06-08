@@ -55,7 +55,7 @@ const getCustomOptions = () => {
 async function main () {
   const options = args.default ? defaultOptions : getCustomOptions();
 
-  const testChild = cp.spawn('python', options, {
+  const testChild = cp.spawn('python3', options, {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true',

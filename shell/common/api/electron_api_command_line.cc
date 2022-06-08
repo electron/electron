@@ -42,6 +42,11 @@ void AppendSwitch(const std::string& switch_string,
     command_line->AppendSwitch(switch_string);
 }
 
+void RemoveSwitch(const std::string& switch_string) {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  command_line->RemoveSwitch(switch_string);
+}
+
 void AppendArg(const std::string& arg) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
@@ -56,6 +61,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("hasSwitch", &HasSwitch);
   dict.SetMethod("getSwitchValue", &GetSwitchValue);
   dict.SetMethod("appendSwitch", &AppendSwitch);
+  dict.SetMethod("removeSwitch", &RemoveSwitch);
   dict.SetMethod("appendArgument", &AppendArg);
 }
 

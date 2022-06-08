@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/handle.h"
@@ -39,15 +38,15 @@ void NativeTheme::OnNativeThemeUpdatedOnUI() {
 }
 
 void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
-  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
                                 base::Unretained(this)));
 }
 
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
   ui_theme_->set_theme_source(override);
   web_theme_->set_theme_source(override);
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   // Update the macOS appearance setting for this new override value
   UpdateMacOSAppearanceForOverrideValue(override);
 #endif
@@ -67,14 +66,18 @@ bool NativeTheme::ShouldUseHighContrastColors() {
   return ui_theme_->UserHasContrastPreference();
 }
 
-#if defined(OS_MAC)
+bool NativeTheme::InForcedColorsMode() {
+  return ui_theme_->InForcedColorsMode();
+}
+
+#if BUILDFLAG(IS_MAC)
 const CFStringRef WhiteOnBlack = CFSTR("whiteOnBlack");
 const CFStringRef UniversalAccessDomain = CFSTR("com.apple.universalaccess");
 #endif
 
 // TODO(MarshallOfSound): Implement for Linux
 bool NativeTheme::ShouldUseInvertedColorScheme() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   CFPreferencesAppSynchronize(UniversalAccessDomain);
   Boolean keyExistsAndHasValidFormat = false;
   Boolean is_inverted = CFPreferencesGetAppBooleanValue(
@@ -106,7 +109,8 @@ gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
       .SetProperty("shouldUseHighContrastColors",
                    &NativeTheme::ShouldUseHighContrastColors)
       .SetProperty("shouldUseInvertedColorScheme",
-                   &NativeTheme::ShouldUseInvertedColorScheme);
+                   &NativeTheme::ShouldUseInvertedColorScheme)
+      .SetProperty("inForcedColorsMode", &NativeTheme::InForcedColorsMode);
 }
 
 const char* NativeTheme::GetTypeName() {

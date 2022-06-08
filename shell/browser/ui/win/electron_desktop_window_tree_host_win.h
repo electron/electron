@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WIN_ELECTRON_DESKTOP_WINDOW_TREE_HOST_WIN_H_
-#define SHELL_BROWSER_UI_WIN_ELECTRON_DESKTOP_WINDOW_TREE_HOST_WIN_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WIN_ELECTRON_DESKTOP_WINDOW_TREE_HOST_WIN_H_
+#define ELECTRON_SHELL_BROWSER_UI_WIN_ELECTRON_DESKTOP_WINDOW_TREE_HOST_WIN_H_
 
 #include <windows.h>
 
@@ -20,6 +20,12 @@ class ElectronDesktopWindowTreeHostWin
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~ElectronDesktopWindowTreeHostWin() override;
 
+  // disable copy
+  ElectronDesktopWindowTreeHostWin(const ElectronDesktopWindowTreeHostWin&) =
+      delete;
+  ElectronDesktopWindowTreeHostWin& operator=(
+      const ElectronDesktopWindowTreeHostWin&) = delete;
+
  protected:
   bool PreHandleMSG(UINT message,
                     WPARAM w_param,
@@ -33,10 +39,8 @@ class ElectronDesktopWindowTreeHostWin
 
  private:
   NativeWindowViews* native_window_view_;  // weak ref
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronDesktopWindowTreeHostWin);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_WIN_ELECTRON_DESKTOP_WINDOW_TREE_HOST_WIN_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WIN_ELECTRON_DESKTOP_WINDOW_TREE_HOST_WIN_H_

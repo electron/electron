@@ -1,4 +1,5 @@
 libcxxabi_headers = [
+  "//buildtools/third_party/libc++abi/trunk/include/CMakeLists.txt",
   "//buildtools/third_party/libc++abi/trunk/include/__cxxabi_config.h",
   "//buildtools/third_party/libc++abi/trunk/include/cxxabi.h",
 ]

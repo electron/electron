@@ -63,16 +63,19 @@ using FullScreenTransitionState =
 // menu to determine the "standard size" of the window.
 - (NSRect)windowWillUseStandardFrame:(NSWindow*)window
                         defaultFrame:(NSRect)frame {
-  if (!shell_->zoom_to_page_width())
+  if (!shell_->zoom_to_page_width()) {
+    if (shell_->GetAspectRatio() > 0.0)
+      shell_->set_default_frame_for_zoom(frame);
     return frame;
+  }
 
   // If the shift key is down, maximize.
-  if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
+  if ([[NSApp currentEvent] modifierFlags] & NSEventModifierFlagShift)
     return frame;
 
   // Get preferred width from observers. Usually the page width.
   int preferred_width = 0;
-  shell_->NotifyWindowRequestPreferredWith(&preferred_width);
+  shell_->NotifyWindowRequestPreferredWidth(&preferred_width);
 
   // Never shrink from the current size on zoom.
   NSRect window_frame = [window frame];
@@ -88,6 +91,9 @@ using FullScreenTransitionState =
 
   // Set the width. Don't touch y or height.
   frame.size.width = zoomed_width;
+
+  if (shell_->GetAspectRatio() > 0.0)
+    shell_->set_default_frame_for_zoom(frame);
 
   return frame;
 }
@@ -228,34 +234,42 @@ using FullScreenTransitionState =
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
-  shell_->SetFullScreenTransitionState(FullScreenTransitionState::ENTERING);
+  // Store resizable mask so it can be restored after exiting fullscreen.
+  is_resizable_ = shell_->HasStyleMask(NSWindowStyleMaskResizable);
+
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::ENTERING);
 
   shell_->NotifyWindowWillEnterFullScreen();
 
-  // Setting resizable to true before entering fullscreen.
-  is_resizable_ = shell_->IsResizable();
+  // Set resizable to true before entering fullscreen.
   shell_->SetResizable(true);
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
-  shell_->SetFullScreenTransitionState(FullScreenTransitionState::NONE);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::NONE);
 
   shell_->NotifyWindowEnterFullScreen();
+
+  if (shell_->HandleDeferredClose())
+    return;
 
   shell_->HandlePendingFullscreenTransitions();
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
-  shell_->SetFullScreenTransitionState(FullScreenTransitionState::EXITING);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::EXITING);
 
   shell_->NotifyWindowWillLeaveFullScreen();
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  shell_->SetFullScreenTransitionState(FullScreenTransitionState::NONE);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::NONE);
 
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowLeaveFullScreen();
+
+  if (shell_->HandleDeferredClose())
+    return;
 
   shell_->HandlePendingFullscreenTransitions();
 }
@@ -317,8 +331,7 @@ using FullScreenTransitionState =
 #pragma mark - NSTouchBarDelegate
 
 - (NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
-      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier
-    API_AVAILABLE(macosx(10.12.2)) {
+      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
   if (touchBar && shell_->touch_bar())
     return [shell_->touch_bar() makeItemForIdentifier:identifier];
   else

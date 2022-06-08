@@ -10,7 +10,6 @@
 #include "base/mac/scoped_sending_event.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"
@@ -170,7 +169,6 @@ void MenuMac::ClosePopupAt(int32_t window_id) {
                                                    std::move(close_popup));
 }
 
-#if DCHECK_IS_ON()
 std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
   // A least effort to get the real shortcut text of NSMenuItem, the code does
   // not need to be perfect since it is test only.
@@ -206,7 +204,6 @@ std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
     text += key;
   return text;
 }
-#endif
 
 void MenuMac::ClosePopupOnUI(int32_t window_id) {
   auto controller = popup_controllers_.find(window_id);

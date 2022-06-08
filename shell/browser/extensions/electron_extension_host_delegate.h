@@ -2,13 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_HOST_DELEGATE_H_
-#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_HOST_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_HOST_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_HOST_DELEGATE_H_
 
 #include <memory>
 #include <string>
 
-#include "base/macros.h"
 #include "extensions/browser/extension_host_delegate.h"
 
 namespace extensions {
@@ -18,6 +17,11 @@ class ElectronExtensionHostDelegate : public ExtensionHostDelegate {
  public:
   ElectronExtensionHostDelegate();
   ~ElectronExtensionHostDelegate() override;
+
+  // disable copy
+  ElectronExtensionHostDelegate(const ElectronExtensionHostDelegate&) = delete;
+  ElectronExtensionHostDelegate& operator=(
+      const ElectronExtensionHostDelegate&) = delete;
 
   // ExtensionHostDelegate implementation.
   void OnExtensionHostCreated(content::WebContents* web_contents) override;
@@ -37,15 +41,10 @@ class ElectronExtensionHostDelegate : public ExtensionHostDelegate {
                                   blink::mojom::MediaStreamType type,
                                   const Extension* extension) override;
   content::PictureInPictureResult EnterPictureInPicture(
-      content::WebContents* web_contents,
-      const viz::SurfaceId& surface_id,
-      const gfx::Size& natural_size) override;
+      content::WebContents* web_contents) override;
   void ExitPictureInPicture() override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionHostDelegate);
 };
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_HOST_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_HOST_DELEGATE_H_

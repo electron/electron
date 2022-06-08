@@ -34,10 +34,10 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "url/origin.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "device/fido/features.h"
 #include "device/fido/win/webauthn_api.h"
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 namespace extensions {
 
@@ -58,7 +58,7 @@ bool ContainsAppIdByHash(const base::ListValue& list,
     return false;
   }
 
-  for (const auto& i : list.GetList()) {
+  for (const auto& i : list.GetListDeprecated()) {
     const std::string& s = i.GetString();
     if (s.find('/') == std::string::npos) {
       // No slashes mean that this is a webauthn RP ID, not a U2F AppID.
@@ -222,7 +222,7 @@ CryptotokenPrivateCanAppIdGetAttestationFunction::Run() {
     return RespondNow(OneArgument(base::Value(true)));
   }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // If the request was handled by the Windows WebAuthn API on a version of
   // Windows that shows an attestation permission prompt, don't show another
   // one.
@@ -237,7 +237,7 @@ CryptotokenPrivateCanAppIdGetAttestationFunction::Run() {
           WEBAUTHN_API_VERSION_2) {
     return RespondNow(OneArgument(base::Value(true)));
   }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
   // Otherwise, show a permission prompt and pass the user's decision back.
   const GURL app_id_url(app_id);

@@ -14,6 +14,7 @@
 #include "base/containers/contains.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/logging.h"
 #include "base/nix/xdg_util.h"
 #include "base/no_destructor.h"
 #include "base/posix/eintr_wrapper.h"
@@ -27,7 +28,7 @@
 #include "dbus/object_proxy.h"
 #include "shell/common/platform_util_internal.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 #include "url/gurl.h"
 
 #define ELECTRON_TRASH "ELECTRON_TRASH"
@@ -118,7 +119,7 @@ class ShowItemHelper {
       bool owned = false;
 
       if (!reader.PopBool(&owned)) {
-        LOG(ERROR) << "Failed to read " << kMethodNameHasOwner << " resposne";
+        LOG(ERROR) << "Failed to read " << kMethodNameHasOwner << " response";
       } else if (owned) {
         is_running = true;
       }
