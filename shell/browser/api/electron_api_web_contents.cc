@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "components/embedder_support/user_agent_utils.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -661,11 +662,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
 
-  /*
-  web_contents->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
-                                         GetBrowserContext()->GetUserAgent()),
-                                     false);
-                                     */
+  absl::optional<std::string> user_agent_override = GetBrowserContext()->GetUserAgentOverride();
+  if (user_agent_override)
+    SetUserAgent(*user_agent_override);
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
@@ -871,11 +870,9 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  /*
-  web_contents()->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
-                                           GetBrowserContext()->GetUserAgent()),
-                                       false);
-                                       */
+  absl::optional<std::string> user_agent_override = GetBrowserContext()->GetUserAgentOverride();
+  if (user_agent_override)
+    SetUserAgent(*user_agent_override);
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;
@@ -2153,8 +2150,7 @@ void WebContents::LoadURL(const GURL& url,
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    web_contents()->SetUserAgentOverride(
-        blink::UserAgentOverride::UserAgentOnly(user_agent), false);
+    SetUserAgent(user_agent);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -2369,8 +2365,12 @@ void WebContents::ForcefullyCrashRenderer() {
 }
 
 void WebContents::SetUserAgent(const std::string& user_agent) {
-  web_contents()->SetUserAgentOverride(
-      blink::UserAgentOverride::UserAgentOnly(user_agent), false);
+  blink::UserAgentOverride ua_override;
+  ua_override.ua_string_override = user_agent;
+  if (!user_agent.empty())
+    ua_override.ua_metadata_override = embedder_support::GetUserAgentMetadata();
+
+  web_contents()->SetUserAgentOverride(ua_override, false);
 }
 
 std::string WebContents::GetUserAgent() {
