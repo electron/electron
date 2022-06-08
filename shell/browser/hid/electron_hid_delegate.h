@@ -31,6 +31,7 @@ class ElectronHidDelegate : public content::HidDelegate,
   std::unique_ptr<content::HidChooser> RunChooser(
       content::RenderFrameHost* render_frame_host,
       std::vector<blink::mojom::HidDeviceFilterPtr> filters,
+      std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
       content::HidChooser::Callback callback) override;
   bool CanRequestDevicePermission(
       content::RenderFrameHost* render_frame_host) override;
@@ -67,6 +68,7 @@ class ElectronHidDelegate : public content::HidDelegate,
   HidChooserController* AddControllerForFrame(
       content::RenderFrameHost* render_frame_host,
       std::vector<blink::mojom::HidDeviceFilterPtr> filters,
+      std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
       content::HidChooser::Callback callback);
 
   base::ScopedObservation<HidChooserContext,

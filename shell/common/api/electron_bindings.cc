@@ -250,7 +250,6 @@ void ElectronBindings::DidReceiveMemoryDump(
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
   v8::Isolate* isolate = promise.isolate();
-  gin_helper::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   gin_helper::MicrotasksScope microtasks_scope(isolate, true);
   v8::Context::Scope context_scope(

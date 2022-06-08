@@ -34,14 +34,6 @@ void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   window_ = window;
   frame_ = frame;
 
-  // Prevent events from trickling down the views hierarchy here, since
-  // when a given resizable window is frameless we only want to use
-  // FramelessView's ResizingBorderHitTest in
-  // ShouldDescendIntoChildForEventHandling. See
-  // https://chromium-review.googlesource.com/c/chromium/src/+/3251980.
-  if (!window_->has_frame() && window_->IsResizable())
-    frame_->client_view()->SetCanProcessEventsWithinSubtree(false);
-
   if (window->IsWindowControlsOverlayEnabled()) {
     caption_button_container_ =
         AddChildView(std::make_unique<WinCaptionButtonContainer>(this));
@@ -63,8 +55,8 @@ SkColor WinFrameView::GetReadableFeatureColor(SkColor background_color) {
 }
 
 void WinFrameView::InvalidateCaptionButtons() {
-  // Ensure that the caption buttons container exists
-  DCHECK(caption_button_container_);
+  if (!caption_button_container_)
+    return;
 
   caption_button_container_->InvalidateLayout();
   caption_button_container_->SchedulePaint();
@@ -81,6 +73,25 @@ int WinFrameView::FrameBorderThickness() const {
   return (IsMaximized() || frame()->IsFullscreen())
              ? 0
              : display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME);
+}
+
+views::View* WinFrameView::TargetForRect(views::View* root,
+                                         const gfx::Rect& rect) {
+  if (NonClientHitTest(rect.origin()) != HTCLIENT) {
+    // Custom system titlebar returns non HTCLIENT value, however event should
+    // be handled by the view, not by the system, because there are no system
+    // buttons underneath.
+    if (!ShouldCustomDrawSystemTitlebar()) {
+      return this;
+    }
+    auto local_point = rect.origin();
+    ConvertPointToTarget(parent(), caption_button_container_, &local_point);
+    if (!caption_button_container_->HitTestPoint(local_point)) {
+      return this;
+    }
+  }
+
+  return NonClientFrameView::TargetForRect(root, rect);
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
@@ -132,7 +143,7 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
         // show the resize cursor when resizing is possible. The cost of which
         // is also maybe showing it over the portion of the DIP that isn't the
         // outermost pixel.
-        buttons.Inset(0, kCaptionButtonTopInset, 0, 0);
+        buttons.Inset(gfx::Insets::TLBR(0, kCaptionButtonTopInset, 0, 0));
         if (buttons.Contains(point))
           return HTNOWHERE;
       }
@@ -143,8 +154,8 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     // pixels at the end of the top and bottom edges trigger diagonal resizing.
     constexpr int kResizeCornerWidth = 16;
     int window_component = GetHTComponentForFrame(
-        point, gfx::Insets(top_border_thickness, 0, 0, 0), top_border_thickness,
-        kResizeCornerWidth - FrameBorderThickness(),
+        point, gfx::Insets::TLBR(top_border_thickness, 0, 0, 0),
+        top_border_thickness, kResizeCornerWidth - FrameBorderThickness(),
         frame()->widget_delegate()->CanResize());
     if (window_component != HTNOWHERE)
       return window_component;

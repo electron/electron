@@ -66,7 +66,7 @@ index eb3f3431a3774c3a05afd4c7350f3801e9c8c684..b8970ef9ddb69d6a9fc6d106293e7605
  
    bool is_listening_ = false;
 diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index 0f344ee352a48497e77a72bb298146c61e7fcf2a..3bad4263ea552fc63445bf5613f8add746a3a374 100644
+index 2778a18b6c28f3342c6b43d1de71fbbd46c72f06..85af551f87b8b0f9aed7a2a395ecf79f81f5a0a1 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_win.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
 @@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
@@ -117,7 +117,7 @@ index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index ada705fb42e88d4bfa05b212c84111be9057a50e..a866b975687dd08ad88031a63f161b3164e82455 100644
+index 0bed8d1e2e2ed4a8cfc9d51ec3d68ac75bd9ff82..6914758849ca485f0f882d0b4a9ded9b02b197a8 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {

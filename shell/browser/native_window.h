@@ -7,6 +7,7 @@
 
 #include <list>
 #include <memory>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -269,7 +270,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
-  void NotifyWindowRequestPreferredWith(int* width);
+  void NotifyWindowRequestPreferredWidth(int* width);
   void NotifyWindowCloseButtonClicked();
   void NotifyWindowClosed();
   void NotifyWindowEndSession();
@@ -315,6 +316,17 @@ class NativeWindow : public base::SupportsUserData,
   void AddObserver(NativeWindowObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(NativeWindowObserver* obs) {
     observers_.RemoveObserver(obs);
+  }
+
+  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
+
+  // Handle fullscreen transitions.
+  void HandlePendingFullscreenTransitions();
+  void set_fullscreen_transition_state(FullScreenTransitionState state) {
+    fullscreen_transition_state_ = state;
+  }
+  FullScreenTransitionState fullscreen_transition_state() const {
+    return fullscreen_transition_state_;
   }
 
   views::Widget* widget() const { return widget_.get(); }
@@ -374,6 +386,10 @@ class NativeWindow : public base::SupportsUserData,
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
+
+  std::queue<bool> pending_transitions_;
+  FullScreenTransitionState fullscreen_transition_state_ =
+      FullScreenTransitionState::NONE;
 
  private:
   std::unique_ptr<views::Widget> widget_;

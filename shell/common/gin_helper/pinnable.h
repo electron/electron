@@ -14,7 +14,6 @@ class Pinnable {
  protected:
   // Prevent the object from being garbage collected until Unpin() is called.
   void Pin(v8::Isolate* isolate) {
-    v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     v8::Local<v8::Value> wrapper;
     if (static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper)) {

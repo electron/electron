@@ -9,7 +9,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
-index 99b4dffbd41dd5d53e4f8e7e0bfbbf3ecc6fcb43..db57e78efa22a26b71426d2960aeb7919ae6cf47 100644
+index 88262d4dd82b3a954ed09492c508ad83dece0256..81fad8ca63479737885f09be7cf05b8eada1f104 100644
 --- a/ui/gfx/platform_font_mac.mm
 +++ b/ui/gfx/platform_font_mac.mm
 @@ -25,9 +25,11 @@
@@ -24,7 +24,7 @@ index 99b4dffbd41dd5d53e4f8e7e0bfbbf3ecc6fcb43..db57e78efa22a26b71426d2960aeb791
  
  namespace {
  
-@@ -232,7 +234,13 @@ NSInteger ToNSFontManagerWeight(Weight weight) {
+@@ -220,7 +222,13 @@ NSInteger ToNSFontManagerWeight(Weight weight) {
    // TODO(avi, etienneb): Figure out this font stuff.
    base::ScopedCFTypeRef<CTFontDescriptorRef> descriptor(
        CTFontCopyFontDescriptor(font));

@@ -481,7 +481,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
-             node::EnvironmentFlags::kNoInitializeInspector;
+             node::EnvironmentFlags::kNoCreateInspector;
   }
 
   if (!electron::fuses::IsNodeCliInspectEnabled()) {
@@ -585,7 +585,16 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
-void NodeBindings::PrepareMessageLoop() {
+void NodeBindings::PrepareEmbedThread() {
+  // IOCP does not change for the process until the loop is recreated,
+  // we ensure that there is only a single polling thread satisfying
+  // the concurrency limit set from CreateIoCompletionPort call by
+  // uv_loop_init for the lifetime of this process.
+  // More background can be found at:
+  // https://github.com/microsoft/vscode/issues/142786#issuecomment-1061673400
+  if (initialized_)
+    return;
+
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
@@ -595,7 +604,15 @@ void NodeBindings::PrepareMessageLoop() {
   uv_thread_create(&embed_thread_, EmbedThreadRunner, this);
 }
 
-void NodeBindings::RunMessageLoop() {
+void NodeBindings::StartPolling() {
+  // Avoid calling UvRunOnce if the loop is already active,
+  // otherwise it can lead to situations were the number of active
+  // threads processing on IOCP is greater than the concurrency limit.
+  if (initialized_)
+    return;
+
+  initialized_ = true;
+
   // The MessageLoop should have been created, remember the one in main thread.
   task_runner_ = base::ThreadTaskRunnerHandle::Get();
 
@@ -612,8 +629,6 @@ void NodeBindings::UvRunOnce() {
   if (!env)
     return;
 
-  // Use Locker in browser process.
-  gin_helper::Locker locker(env->isolate());
   v8::HandleScope handle_scope(env->isolate());
 
   // Enter node context while dealing with uv events.

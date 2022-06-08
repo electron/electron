@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import glob
 import os
@@ -14,8 +14,8 @@ def is_fs_case_sensitive():
 sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
-from lib.config import PLATFORM, s3_config
-from lib.util import get_electron_branding, execute, s3put, \
+from lib.config import PLATFORM
+from lib.util import get_electron_branding, execute, store_artifact, \
                      get_out_dir, ELECTRON_DIR
 
 RELEASE_DIR = get_out_dir()
@@ -56,7 +56,7 @@ def main():
 
   files += glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')
 
-  # The file upload needs to be atom-shell/symbols/:symbol_name/:hash/:symbol
+  # The file upload needs to be symbols/:symbol_name/:hash/:symbol
   os.chdir(SYMBOLS_DIR)
   files = [os.path.relpath(f, os.getcwd()) for f in files]
 
@@ -76,16 +76,15 @@ def main():
   for f in files:
     assert os.path.exists(f)
 
-  bucket, access_key, secret_key = s3_config()
-  upload_symbols(bucket, access_key, secret_key, files)
+  upload_symbols(files)
 
 
 def run_symstore(pdb, dest, product):
   execute(['symstore', 'add', '/r', '/f', pdb, '/s', dest, '/t', product])
 
 
-def upload_symbols(bucket, access_key, secret_key, files):
-  s3put(bucket, access_key, secret_key, SYMBOLS_DIR, 'atom-shell/symbols',
+def upload_symbols(files):
+  store_artifact(SYMBOLS_DIR, 'symbols',
         files)
 
 

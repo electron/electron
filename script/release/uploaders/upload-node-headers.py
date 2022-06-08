@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import glob
@@ -9,8 +9,9 @@ import sys
 sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
-from lib.config import PLATFORM, get_target_arch, s3_config
-from lib.util import safe_mkdir, scoped_cwd, s3put, get_out_dir, get_dist_dir
+from lib.config import PLATFORM, get_target_arch
+from lib.util import safe_mkdir, scoped_cwd, store_artifact, get_out_dir, \
+  get_dist_dir
 
 DIST_DIR    = get_dist_dir()
 OUT_DIR     = get_out_dir()
@@ -26,9 +27,8 @@ HEADER_TAR_NAMES = [
 def main():
   args = parse_args()
 
-  # Upload node's headers to S3.
-  bucket, access_key, secret_key = s3_config()
-  upload_node(bucket, access_key, secret_key, args.version)
+  # Upload node's headers to artifact storage.
+  upload_node(args.version)
 
 
 def parse_args():
@@ -38,17 +38,17 @@ def parse_args():
   return parser.parse_args()
 
 
-def upload_node(bucket, access_key, secret_key, version):
+def upload_node(version):
   with scoped_cwd(GEN_DIR):
     generated_tar = os.path.join(GEN_DIR, 'node_headers.tar.gz')
     for header_tar in HEADER_TAR_NAMES:
       versioned_header_tar = header_tar.format(version)
       shutil.copy2(generated_tar, os.path.join(GEN_DIR, versioned_header_tar))
 
-    s3put(bucket, access_key, secret_key, GEN_DIR,
-          'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
-    s3put(bucket, access_key, secret_key, GEN_DIR,
-          'atom-shell/dist/{0}'.format(version), glob.glob('iojs-*.tar.gz'))
+    store_artifact(GEN_DIR, 'headers/dist/{0}'.format(version),
+                   glob.glob('node-*.tar.gz'))
+    store_artifact(GEN_DIR, 'headers/dist/{0}'.format(version),
+                   glob.glob('iojs-*.tar.gz'))
 
   if PLATFORM == 'win32':
     if get_target_arch() == 'ia32':
@@ -73,16 +73,14 @@ def upload_node(bucket, access_key, secret_key, version):
     shutil.copy2(electron_lib, v4_node_lib)
 
     # Upload the node.lib.
-    s3put(bucket, access_key, secret_key, DIST_DIR,
-          'atom-shell/dist/{0}'.format(version), [node_lib])
+    store_artifact(DIST_DIR, 'headers/dist/{0}'.format(version), [node_lib])
 
     # Upload the iojs.lib.
-    s3put(bucket, access_key, secret_key, DIST_DIR,
-          'atom-shell/dist/{0}'.format(version), [iojs_lib])
+    store_artifact(DIST_DIR, 'headers/dist/{0}'.format(version), [iojs_lib])
 
     # Upload the v4 node.lib.
-    s3put(bucket, access_key, secret_key, DIST_DIR,
-          'atom-shell/dist/{0}'.format(version), [v4_node_lib])
+    store_artifact(DIST_DIR, 'headers/dist/{0}'.format(version),
+                   [v4_node_lib])
 
 
 if __name__ == '__main__':

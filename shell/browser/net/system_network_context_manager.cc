@@ -288,10 +288,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       base::FeatureList::IsEnabled(features::kAsyncDns),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
 
-  // Initializes first party sets component
-  // CL: https://chromium-review.googlesource.com/c/chromium/src/+/3449280
-  content::GetNetworkService()->SetFirstPartySets(base::File());
-
   std::string app_name = electron::Browser::Get()->GetName();
 #if BUILDFLAG(IS_MAC)
   KeychainPassword::GetServiceName() = app_name + " Safe Storage";

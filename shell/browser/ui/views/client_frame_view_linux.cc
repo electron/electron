@@ -22,7 +22,7 @@
 #include "ui/gfx/skia_util.h"
 #include "ui/gfx/text_constants.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"    // nogncheck
 #include "ui/native_theme/native_theme.h"
 #include "ui/strings/grit/ui_strings.h"
 #include "ui/views/controls/button/image_button.h"
@@ -31,6 +31,7 @@
 #include "ui/views/style/typography.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/frame_buttons.h"
+#include "ui/views/window/window_button_order_provider.h"
 
 namespace electron {
 
@@ -83,11 +84,16 @@ ClientFrameViewLinux::ClientFrameViewLinux()
   AddChildView(title_);
 
   native_theme_observer_.Observe(theme_);
-  window_button_order_observer_.Observe(views::LinuxUI::instance());
+
+  if (views::LinuxUI* ui = views::LinuxUI::instance()) {
+    ui->AddWindowButtonOrderObserver(this);
+    OnWindowButtonOrderingChange();
+  }
 }
 
 ClientFrameViewLinux::~ClientFrameViewLinux() {
-  views::LinuxUI::instance()->RemoveWindowButtonOrderObserver(this);
+  if (views::LinuxUI* ui = views::LinuxUI::instance())
+    ui->RemoveWindowButtonOrderObserver(this);
   theme_->RemoveObserver(this);
 }
 
@@ -159,11 +165,10 @@ void ClientFrameViewLinux::OnNativeThemeUpdated(
   UpdateThemeValues();
 }
 
-void ClientFrameViewLinux::OnWindowButtonOrderingChange(
-    const std::vector<views::FrameButton>& leading_buttons,
-    const std::vector<views::FrameButton>& trailing_buttons) {
-  leading_frame_buttons_ = leading_buttons;
-  trailing_frame_buttons_ = trailing_buttons;
+void ClientFrameViewLinux::OnWindowButtonOrderingChange() {
+  auto* provider = views::WindowButtonOrderProvider::GetInstance();
+  leading_frame_buttons_ = provider->leading_buttons();
+  trailing_frame_buttons_ = provider->trailing_buttons();
 
   InvalidateLayout();
 }
@@ -178,7 +183,8 @@ gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
   gfx::Rect client_bounds = bounds();
   if (!frame_->IsFullscreen()) {
     client_bounds.Inset(GetBorderDecorationInsets());
-    client_bounds.Inset(0, GetTitlebarBounds().height(), 0, 0);
+    client_bounds.Inset(
+        gfx::Insets::TLBR(0, GetTitlebarBounds().height(), 0, 0));
   }
   return client_bounds;
 }

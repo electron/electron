@@ -174,7 +174,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   const int text_align =
       is_rtl ? gfx::Canvas::TEXT_ALIGN_RIGHT : gfx::Canvas::TEXT_ALIGN_LEFT;
   gfx::Rect value_rect = entry_rect;
-  value_rect.Inset(kEndPadding, 0);
+  value_rect.Inset(gfx::Insets::VH(kEndPadding, 0));
 
   int x_align_left = value_rect.x();
   const int value_width = gfx::GetStringWidth(

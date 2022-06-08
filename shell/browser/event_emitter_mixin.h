@@ -29,7 +29,6 @@ class EventEmitterMixin {
   template <typename... Args>
   bool Emit(base::StringPiece name, Args&&... args) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))

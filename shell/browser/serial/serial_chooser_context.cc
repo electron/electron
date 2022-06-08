@@ -90,6 +90,11 @@ SerialChooserContext::SerialChooserContext() = default;
 
 SerialChooserContext::~SerialChooserContext() = default;
 
+void SerialChooserContext::OnPermissionRevoked(const url::Origin& origin) {
+  for (auto& observer : port_observer_list_)
+    observer.OnPermissionRevoked(origin);
+}
+
 void SerialChooserContext::GrantPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
@@ -114,6 +119,16 @@ bool SerialChooserContext::HasPortPermission(
   base::Value value = PortInfoToValue(port);
   return permission_helper->CheckSerialPortPermission(origin, std::move(value),
                                                       render_frame_host);
+}
+
+void SerialChooserContext::RevokePortPermissionWebInitiated(
+    const url::Origin& origin,
+    const base::UnguessableToken& token) {
+  auto it = port_info_.find(token);
+  if (it == port_info_.end())
+    return;
+
+  return OnPermissionRevoked(origin);
 }
 
 // static
@@ -148,6 +163,13 @@ bool SerialChooserContext::CanStorePersistentEntry(
 
   return true;
 #endif  // BUILDFLAG(IS_WIN)
+}
+
+const device::mojom::SerialPortInfo* SerialChooserContext::GetPortInfo(
+    const base::UnguessableToken& token) {
+  DCHECK(is_initialized_);
+  auto it = port_info_.find(token);
+  return it == port_info_.end() ? nullptr : it->second.get();
 }
 
 device::mojom::SerialPortManager* SerialChooserContext::GetPortManager() {

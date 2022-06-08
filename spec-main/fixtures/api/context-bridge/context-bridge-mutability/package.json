@@ -1,4 +1,4 @@
 {
-    "name": "context-bridge-mutability",
+    "name": "electron-test-context-bridge-mutability",
     "main": "main.js"
 }

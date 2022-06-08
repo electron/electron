@@ -3,13 +3,13 @@ import * as cp from 'child_process';
 import * as https from 'https';
 import * as http from 'http';
 import * as net from 'net';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit, waitUntil } from './spec-helpers';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
@@ -90,9 +90,9 @@ describe('app module', () => {
 
       it('overrides the name', () => {
         expect(app.name).to.equal('Electron Test Main');
-        app.name = 'test-name';
+        app.name = 'electron-test-name';
 
-        expect(app.name).to.equal('test-name');
+        expect(app.name).to.equal('electron-test-name');
         app.name = 'Electron Test Main';
       });
     });
@@ -104,9 +104,9 @@ describe('app module', () => {
 
       it('overrides the name', () => {
         expect(app.getName()).to.equal('Electron Test Main');
-        app.setName('test-name');
+        app.setName('electron-test-name');
 
-        expect(app.getName()).to.equal('test-name');
+        expect(app.getName()).to.equal('electron-test-name');
         app.setName('Electron Test Main');
       });
     });
@@ -208,24 +208,26 @@ describe('app module', () => {
     interface SingleInstanceLockTestArgs {
       args: string[];
       expectedAdditionalData: unknown;
-      expectedAck: unknown;
     }
 
     it('prevents the second launch of app', async function () {
-      this.timeout(60000);
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
+      this.timeout(120000);
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
-      const firstExited = emittedOnce(first, 'exit');
       await emittedOnce(first.stdout, 'data');
-
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const secondExited = emittedOnce(second, 'exit');
-
-      const [code2] = await secondExited;
+      const [code2] = await emittedOnce(second, 'exit');
       expect(code2).to.equal(1);
-      const [code1] = await firstExited;
+      const [code1] = await emittedOnce(first, 'exit');
       expect(code1).to.equal(0);
+    });
+
+    it('returns true when setting non-existent user data folder', async function () {
+      const appPath = path.join(fixturesPath, 'api', 'singleton-userdata');
+      const instance = cp.spawn(process.execPath, [appPath]);
+      const [code] = await emittedOnce(instance, 'exit');
+      expect(code).to.equal(0);
     });
 
     async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
@@ -243,11 +245,6 @@ describe('app module', () => {
       const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
       const secondExited = emittedOnce(second, 'exit');
-      const secondStdoutLines = second.stdout.pipe(split());
-      let ackData;
-      while ((ackData = await emittedOnce(secondStdoutLines, 'data'))[0].toString().length === 0) {
-        // This isn't valid data.
-      }
 
       const [code2] = await secondExited;
       expect(code2).to.equal(1);
@@ -257,7 +254,6 @@ describe('app module', () => {
       const [args, additionalData] = dataFromSecondInstance[0].toString('ascii').split('||');
       const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
       const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
-      const dataAckReceived = JSON.parse(ackData[0].toString('ascii'));
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
@@ -266,113 +262,69 @@ describe('app module', () => {
       }
       expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
         `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`);
-      expect(dataAckReceived).to.be.deep.equal(testArgs.expectedAck,
-        `received data ${JSON.stringify(dataAckReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAck)}.`);
     }
 
-    const expectedAdditionalData = {
-      level: 1,
-      testkey: 'testvalue1',
-      inner: {
-        level: 2,
-        testkey: 'testvalue2'
-      }
-    };
-
-    const expectedAck = {
-      level: 1,
-      testkey: 'acktestvalue1',
-      inner: {
-        level: 2,
-        testkey: 'acktestvalue2'
-      }
-    };
-
-    it('passes arguments to the second-instance event with no additional data', async () => {
+    it('passes arguments to the second-instance event no additional data', async () => {
       await testArgumentPassing({
         args: [],
-        expectedAdditionalData: null,
-        expectedAck: null
+        expectedAdditionalData: null
       });
     });
 
-    it('passes arguments to the second-instance event', async () => {
+    it('sends and receives JSON object data', async () => {
+      const expectedAdditionalData = {
+        level: 1,
+        testkey: 'testvalue1',
+        inner: {
+          level: 2,
+          testkey: 'testvalue2'
+        }
+      };
       await testArgumentPassing({
         args: ['--send-data'],
-        expectedAdditionalData,
-        expectedAck: null
-      });
-    });
-
-    it('gets back an ack after preventing default', async () => {
-      await testArgumentPassing({
-        args: ['--send-ack', '--prevent-default'],
-        expectedAdditionalData: null,
-        expectedAck
-      });
-    });
-
-    it('is able to send back empty ack after preventing default', async () => {
-      await testArgumentPassing({
-        args: ['--prevent-default'],
-        expectedAdditionalData: null,
-        expectedAck: null
-      });
-    });
-
-    it('sends and receives data', async () => {
-      await testArgumentPassing({
-        args: ['--send-ack', '--prevent-default', '--send-data'],
-        expectedAdditionalData,
-        expectedAck
+        expectedAdditionalData
       });
     });
 
     it('sends and receives numerical data', async () => {
       await testArgumentPassing({
-        args: ['--send-ack', '--ack-content=1', '--prevent-default', '--send-data', '--data-content=2'],
-        expectedAdditionalData: 2,
-        expectedAck: 1
+        args: ['--send-data', '--data-content=2'],
+        expectedAdditionalData: 2
       });
     });
 
     it('sends and receives string data', async () => {
       await testArgumentPassing({
-        args: ['--send-ack', '--ack-content="ack"', '--prevent-default', '--send-data', '--data-content="data"'],
-        expectedAdditionalData: 'data',
-        expectedAck: 'ack'
+        args: ['--send-data', '--data-content="data"'],
+        expectedAdditionalData: 'data'
       });
     });
 
     it('sends and receives boolean data', async () => {
       await testArgumentPassing({
-        args: ['--send-ack', '--ack-content=true', '--prevent-default', '--send-data', '--data-content=false'],
-        expectedAdditionalData: false,
-        expectedAck: true
+        args: ['--send-data', '--data-content=false'],
+        expectedAdditionalData: false
       });
     });
 
     it('sends and receives array data', async () => {
       await testArgumentPassing({
-        args: ['--send-ack', '--ack-content=[1, 2, 3]', '--prevent-default', '--send-data', '--data-content=[2, 3, 4]'],
-        expectedAdditionalData: [2, 3, 4],
-        expectedAck: [1, 2, 3]
+        args: ['--send-data', '--data-content=[2, 3, 4]'],
+        expectedAdditionalData: [2, 3, 4]
       });
     });
 
     it('sends and receives mixed array data', async () => {
       await testArgumentPassing({
-        args: ['--send-ack', '--ack-content=["1", true, 3]', '--prevent-default', '--send-data', '--data-content=["2", false, 4]'],
-        expectedAdditionalData: ['2', false, 4],
-        expectedAck: ['1', true, 3]
+        args: ['--send-data', '--data-content=["2", true, 4]'],
+        expectedAdditionalData: ['2', true, 4]
       });
     });
 
     it('sends and receives null data', async () => {
       await testArgumentPassing({
-        args: ['--send-ack', '--ack-content=null', '--prevent-default', '--send-data', '--data-content=null'],
-        expectedAdditionalData: null,
-        expectedAck: null
+        args: ['--send-data', '--data-content=null'],
+        expectedAdditionalData: null
       });
     });
 
@@ -380,8 +332,7 @@ describe('app module', () => {
       try {
         await testArgumentPassing({
           args: ['--send-ack', '--ack-content="undefined"', '--prevent-default', '--send-data', '--data-content="undefined"'],
-          expectedAdditionalData: undefined,
-          expectedAck: undefined
+          expectedAdditionalData: undefined
         });
         assert(false);
       } catch (e) {
@@ -1071,6 +1022,54 @@ describe('app module', () => {
 
       expect(() => { app.getPath(badPath as any); }).to.throw();
     });
+
+    describe('sessionData', () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
+      const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
+      const userDataPath = path.join(app.getPath('appData'), appName);
+      const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
+
+      const sessionFiles = [
+        'Preferences',
+        'Code Cache',
+        'Local Storage',
+        'IndexedDB',
+        'Service Worker'
+      ];
+      const hasSessionFiles = (dir: string) => {
+        for (const file of sessionFiles) {
+          if (!fs.existsSync(path.join(dir, file))) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+      beforeEach(() => {
+        fs.removeSync(userDataPath);
+        fs.removeSync(tempBrowserDataPath);
+      });
+
+      it('writes to userData by default', () => {
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath]);
+        expect(hasSessionFiles(userDataPath)).to.equal(true);
+      });
+
+      it('can be changed', () => {
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
+      });
+
+      it('changing userData affects default sessionData', () => {
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
+        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
+      });
+    });
   });
 
   describe('setAppLogsPath(path)', () => {
@@ -1572,6 +1571,23 @@ describe('app module', () => {
       expect(() => {
         app.disableDomainBlockingFor3DAPIs();
       }).to.throw(/before app is ready/);
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
+    describe('app.isHidden', () => {
+      it('returns true when the app is hidden', async () => {
+        app.hide();
+        await expect(
+          waitUntil(() => app.isHidden())
+        ).to.eventually.be.fulfilled();
+      });
+      it('returns false when the app is shown', async () => {
+        app.show();
+        await expect(
+          waitUntil(() => !app.isHidden())
+        ).to.eventually.be.fulfilled();
+      });
     });
   });
 

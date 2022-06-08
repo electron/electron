@@ -7,7 +7,7 @@ const { emittedOnce, waitForEvent } = require('./events-helpers');
 const { ifdescribe, ifit, delay } = require('./spec-helpers');
 
 const features = process._linkedBinding('electron_common_features');
-const nativeModulesEnabled = process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
+const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -910,20 +910,6 @@ describe('<webview> tag', function () {
   });
 
   describe('executeJavaScript', () => {
-    it('should support user gesture', async () => {
-      await loadWebView(webview, {
-        src: `file://${fixtures}/pages/fullscreen.html`
-      });
-
-      // Event handler has to be added before js execution.
-      const waitForEnterHtmlFullScreen = waitForEvent(webview, 'enter-html-full-screen');
-
-      const jsScript = "document.querySelector('video').webkitRequestFullscreen()";
-      webview.executeJavaScript(jsScript, true);
-
-      return waitForEnterHtmlFullScreen;
-    });
-
     it('can return the result of the executed script', async () => {
       await loadWebView(webview, {
         src: 'about:blank'
@@ -1110,14 +1096,16 @@ describe('<webview> tag', function () {
   ifdescribe(features.isPrintingEnabled())('<webview>.printToPDF()', () => {
     it('rejects on incorrectly typed parameters', async () => {
       const badTypes = {
-        marginsType: 'terrible',
-        scaleFactor: 'not-a-number',
         landscape: [],
-        pageRanges: { oops: 'im-not-the-right-key' },
-        headerFooter: '123',
-        printSelectionOnly: 1,
+        displayHeaderFooter: '123',
         printBackground: 2,
-        pageSize: 'IAmAPageSize'
+        scale: 'not-a-number',
+        pageSize: 'IAmAPageSize',
+        margins: 'terrible',
+        pageRanges: { oops: 'im-not-the-right-key' },
+        headerTemplate: [1, 2, 3],
+        footerTemplate: [4, 5, 6],
+        preferCSSPageSize: 'no'
       };
 
       // These will hard crash in Chromium unless we type-check

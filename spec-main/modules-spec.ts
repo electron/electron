@@ -21,7 +21,11 @@ describe('modules support', () => {
       it('can be required in renderer', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript('{ require(\'echo\'); null }')).to.be.fulfilled();
+        await expect(
+          w.webContents.executeJavaScript(
+            "{ require('@electron-ci/echo'); null }"
+          )
+        ).to.be.fulfilled();
       });
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
@@ -53,7 +57,7 @@ describe('modules support', () => {
       it('can be required in renderer', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript('{ require(\'uv-dlopen\'); null }')).to.be.fulfilled();
+        await expect(w.webContents.executeJavaScript('{ require(\'@electron-ci/uv-dlopen\'); null }')).to.be.fulfilled();
       });
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {

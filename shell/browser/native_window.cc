@@ -479,7 +479,7 @@ void NativeWindow::SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect) {
   overlay_rect_ = overlay_rect;
 }
 
-void NativeWindow::NotifyWindowRequestPreferredWith(int* width) {
+void NativeWindow::NotifyWindowRequestPreferredWidth(int* width) {
   for (NativeWindowObserver& observer : observers_)
     observer.RequestPreferredWidth(width);
 }
@@ -716,6 +716,15 @@ void NativeWindow::SetAccessibleTitle(const std::string& title) {
 
 std::string NativeWindow::GetAccessibleTitle() {
   return base::UTF16ToUTF8(accessible_title_);
+}
+
+void NativeWindow::HandlePendingFullscreenTransitions() {
+  if (pending_transitions_.empty())
+    return;
+
+  bool next_transition = pending_transitions_.front();
+  pending_transitions_.pop();
+  SetFullScreen(next_transition);
 }
 
 // static

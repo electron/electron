@@ -17,10 +17,10 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index f830da2cfba18ae2f7ad02fa862122780c956c80..51b26af969d5c84c741563297fda45426038d199 100644
+index a5aa39c23c1708ac27564a1a77a9f05fc07791e2..630a3400e74f20b1dbee17027c7dbe8688fed4b2 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
-@@ -176,7 +176,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -162,7 +162,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    const unsigned char* buf;
    size_t len;
    size_t rem;
@@ -29,7 +29,7 @@ index f830da2cfba18ae2f7ad02fa862122780c956c80..51b26af969d5c84c741563297fda4542
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -189,13 +189,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -175,13 +175,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    len = (buf[0] << 8) | buf[1];
    if (len + 2 != rem) return nullptr;
    return reinterpret_cast<const char*>(buf + 3);
@@ -46,7 +46,7 @@ index f830da2cfba18ae2f7ad02fa862122780c956c80..51b26af969d5c84c741563297fda4542
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_server_name,
-@@ -217,6 +219,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+@@ -203,6 +205,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
    if (len + 2 > rem)
      return nullptr;
    return reinterpret_cast<const char*>(buf + 5);
@@ -55,7 +55,7 @@ index f830da2cfba18ae2f7ad02fa862122780c956c80..51b26af969d5c84c741563297fda4542
  }
  
  const char* GetServerName(SSL* ssl) {
-@@ -224,7 +228,10 @@ const char* GetServerName(SSL* ssl) {
+@@ -210,7 +214,10 @@ const char* GetServerName(SSL* ssl) {
  }
  
  bool SetGroups(SecureContext* sc, const char* groups) {
@@ -66,7 +66,7 @@ index f830da2cfba18ae2f7ad02fa862122780c956c80..51b26af969d5c84c741563297fda4542
  }
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
-@@ -1126,14 +1133,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -1101,14 +1108,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -304,7 +304,7 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
  }  // namespace
  
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 5060fc3f2fbd67d8b33975f2512cbd7cf7fedf1a..4f86810f8366b490ca2293cd1a811e69a199f708 100644
+index c431159e6f77f8c86844bcadb86012b056d03372..0ce3a8f219a2952f660ff72a6ce36ee109add649 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
 @@ -16,7 +16,9 @@

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import contextlib
@@ -155,17 +155,17 @@ def get_electron_version():
   with open(version_file) as f:
     return 'v' + f.read().strip()
 
-def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
+def store_artifact(prefix, key_prefix, files):
+  # Azure Storage
+  azput(prefix, key_prefix, files)
+
+def azput(prefix, key_prefix, files):
   env = os.environ.copy()
-  env['AWS_ACCESS_KEY_ID'] = access_key
-  env['AWS_SECRET_ACCESS_KEY'] = secret_key
   output = execute([
     'node',
-    os.path.join(os.path.dirname(__file__), 's3put.js'),
-    '--bucket', bucket,
+    os.path.join(os.path.dirname(__file__), 'azput.js'),
     '--prefix', prefix,
     '--key_prefix', key_prefix,
-    '--grant', 'public-read',
   ] + files, env)
   print(output)
 

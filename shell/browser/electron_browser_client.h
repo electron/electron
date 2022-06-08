@@ -181,7 +181,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<content::DevToolsManagerDelegate>
   CreateDevToolsManagerDelegate() override;
   std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
-      content::MainFunctionParams params) override;
+      bool /* is_integration_test */) override;
   base::FilePath GetDefaultDownloadDirectory() override;
   scoped_refptr<network::SharedURLLoaderFactory>
   GetSystemSharedURLLoaderFactory() override;

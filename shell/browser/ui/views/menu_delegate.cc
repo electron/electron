@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/views/menu_bar.h"
@@ -134,8 +133,8 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     button_to_open_ = button;
     // Switching menu asynchronously to avoid crash.
     if (!switch_in_progress) {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce(&views::MenuRunner::Cancel,
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE, base::BindOnce(&views::MenuRunner::Cancel,
                                     base::Unretained(menu_runner_.get())));
     }
   }

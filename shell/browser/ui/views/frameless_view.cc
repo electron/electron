@@ -112,6 +112,16 @@ void FramelessView::UpdateWindowTitle() {}
 
 void FramelessView::SizeConstraintsChanged() {}
 
+views::View* FramelessView::TargetForRect(views::View* root,
+                                          const gfx::Rect& rect) {
+  CHECK_EQ(root, this);
+
+  if (NonClientHitTest(rect.origin()) != HTCLIENT)
+    return this;
+
+  return NonClientFrameView::TargetForRect(root, rect);
+}
+
 gfx::Size FramelessView::CalculatePreferredSize() const {
   return frame_->non_client_view()
       ->GetWindowBoundsForClientBounds(

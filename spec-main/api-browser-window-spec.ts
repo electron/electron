@@ -2,10 +2,8 @@ import { expect } from 'chai';
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
-import * as semver from 'semver';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
 
@@ -694,12 +692,12 @@ describe('BrowserWindow module', () => {
     });
 
     describe('BrowserWindow.show()', () => {
-      it('should focus on window', () => {
-        w.show();
+      it('should focus on window', async () => {
+        await emittedOnce(w, 'focus', () => w.show());
         expect(w.isFocused()).to.equal(true);
       });
-      it('should make the window visible', () => {
-        w.show();
+      it('should make the window visible', async () => {
+        await emittedOnce(w, 'focus', () => w.show());
         expect(w.isVisible()).to.equal(true);
       });
       it('emits when window is shown', async () => {
@@ -760,18 +758,142 @@ describe('BrowserWindow module', () => {
         w.focus();
         expect(w.isVisible()).to.equal(false);
       });
+
+      ifit(process.platform !== 'win32')('focuses a blurred window', async () => {
+        {
+          const isBlurred = emittedOnce(w, 'blur');
+          const isShown = emittedOnce(w, 'show');
+          w.show();
+          w.blur();
+          await isShown;
+          await isBlurred;
+        }
+        expect(w.isFocused()).to.equal(false);
+        w.focus();
+        expect(w.isFocused()).to.equal(true);
+      });
+
+      ifit(process.platform !== 'linux')('acquires focus status from the other windows', async () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+        const w3 = new BrowserWindow({ show: false });
+        {
+          const isFocused3 = emittedOnce(w3, 'focus');
+          const isShown1 = emittedOnce(w1, 'show');
+          const isShown2 = emittedOnce(w2, 'show');
+          const isShown3 = emittedOnce(w3, 'show');
+          w1.show();
+          w2.show();
+          w3.show();
+          await isShown1;
+          await isShown2;
+          await isShown3;
+          await isFocused3;
+        }
+        // TODO(RaisinTen): Investigate why this assertion fails only on Linux.
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(true);
+
+        w1.focus();
+        expect(w1.isFocused()).to.equal(true);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(false);
+
+        w2.focus();
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(true);
+        expect(w3.isFocused()).to.equal(false);
+
+        w3.focus();
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(true);
+
+        {
+          const isClosed1 = emittedOnce(w1, 'closed');
+          const isClosed2 = emittedOnce(w2, 'closed');
+          const isClosed3 = emittedOnce(w3, 'closed');
+          w1.destroy();
+          w2.destroy();
+          w3.destroy();
+          await isClosed1;
+          await isClosed2;
+          await isClosed3;
+        }
+      });
     });
 
-    describe('BrowserWindow.blur()', () => {
-      it('removes focus from window', () => {
+    // TODO(RaisinTen): Make this work on Windows too.
+    // Refs: https://github.com/electron/electron/issues/20464.
+    ifdescribe(process.platform !== 'win32')('BrowserWindow.blur()', () => {
+      it('removes focus from window', async () => {
+        {
+          const isFocused = emittedOnce(w, 'focus');
+          const isShown = emittedOnce(w, 'show');
+          w.show();
+          await isShown;
+          await isFocused;
+        }
+        expect(w.isFocused()).to.equal(true);
         w.blur();
         expect(w.isFocused()).to.equal(false);
+      });
+
+      ifit(process.platform !== 'linux')('transfers focus status to the next window', async () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+        const w3 = new BrowserWindow({ show: false });
+        {
+          const isFocused3 = emittedOnce(w3, 'focus');
+          const isShown1 = emittedOnce(w1, 'show');
+          const isShown2 = emittedOnce(w2, 'show');
+          const isShown3 = emittedOnce(w3, 'show');
+          w1.show();
+          w2.show();
+          w3.show();
+          await isShown1;
+          await isShown2;
+          await isShown3;
+          await isFocused3;
+        }
+        // TODO(RaisinTen): Investigate why this assertion fails only on Linux.
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(true);
+
+        w3.blur();
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(true);
+        expect(w3.isFocused()).to.equal(false);
+
+        w2.blur();
+        expect(w1.isFocused()).to.equal(true);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(false);
+
+        w1.blur();
+        expect(w1.isFocused()).to.equal(false);
+        expect(w2.isFocused()).to.equal(false);
+        expect(w3.isFocused()).to.equal(true);
+
+        {
+          const isClosed1 = emittedOnce(w1, 'closed');
+          const isClosed2 = emittedOnce(w2, 'closed');
+          const isClosed3 = emittedOnce(w3, 'closed');
+          w1.destroy();
+          w2.destroy();
+          w3.destroy();
+          await isClosed1;
+          await isClosed2;
+          await isClosed3;
+        }
       });
     });
 
     describe('BrowserWindow.getFocusedWindow()', () => {
       it('returns the opener window when dev tools window is focused', async () => {
-        w.show();
+        await emittedOnce(w, 'focus', () => w.show());
         w.webContents.openDevTools({ mode: 'undocked' });
         await emittedOnce(w.webContents, 'devtools-focused');
         expect(BrowserWindow.getFocusedWindow()).to.equal(w);
@@ -1704,7 +1826,7 @@ describe('BrowserWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
-    let appProcess: childProcess.ChildProcessWithoutNullStreams | undefined;
+    let appProcess: childProcess.ChildProcessWithoutNullStreams | childProcess.ChildProcess | undefined;
 
     afterEach(() => {
       if (appProcess && !appProcess.killed) {
@@ -1735,7 +1857,9 @@ describe('BrowserWindow module', () => {
     it('Allows setting a transparent window via CSS', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'apps', 'background-color-transparent');
 
-      appProcess = childProcess.spawn(process.execPath, [appPath]);
+      appProcess = childProcess.spawn(process.execPath, [appPath], {
+        stdio: 'inherit'
+      });
 
       const [code] = await emittedOnce(appProcess, 'exit');
       expect(code).to.equal(0);
@@ -1810,6 +1934,26 @@ describe('BrowserWindow module', () => {
     it('returns the window with id', () => {
       const w = new BrowserWindow({ show: false });
       expect(BrowserWindow.fromId(w.id)!.id).to.equal(w.id);
+    });
+  });
+
+  describe('Opening a BrowserWindow from a link', () => {
+    let appProcess: childProcess.ChildProcessWithoutNullStreams | undefined;
+
+    afterEach(() => {
+      if (appProcess && !appProcess.killed) {
+        appProcess.kill();
+        appProcess = undefined;
+      }
+    });
+
+    it('can properly open and load a new window from a link', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'open-new-window-from-link');
+
+      appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+      const [code] = await emittedOnce(appProcess, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
@@ -2004,7 +2148,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarStyle" option', () => {
+  ifdescribe(['win32', 'darwin'].includes(process.platform))('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
         show: false,
@@ -2043,8 +2187,10 @@ describe('BrowserWindow module', () => {
       const [, newOverlayRect] = await geometryChange;
       expect(newOverlayRect.width).to.equal(overlayRect.width + 400);
     };
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
     it('creates browser window with hidden title bar', () => {
       const w = new BrowserWindow({
         show: false,
@@ -2073,7 +2219,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarOverlay" option', () => {
+  ifdescribe(['win32', 'darwin'].includes(process.platform))('"titleBarOverlay" option', () => {
     const testWindowsOverlayHeight = async (size: any) => {
       const w = new BrowserWindow({
         show: false,
@@ -2099,9 +2245,15 @@ describe('BrowserWindow module', () => {
       const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
       expect(overlayEnabled).to.be.true('overlayEnabled');
       const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
-      await w.maximize();
-      const max = await w.isMaximized();
-      expect(max).to.equal(true);
+
+      if (!w.isMaximized()) {
+        const maximize = emittedOnce(w, 'maximize');
+        w.show();
+        w.maximize();
+        await maximize;
+      }
+
+      expect(w.isMaximized()).to.be.true('not maximized');
       const overlayRectPostMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
       expect(overlayRectPreMax.y).to.equal(0);
@@ -2116,10 +2268,93 @@ describe('BrowserWindow module', () => {
       // Confirm that maximization only affected the height of the buttons and not the title bar
       expect(overlayRectPostMax.height).to.equal(size);
     };
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
+    });
+  });
+
+  ifdescribe(process.platform === 'win32')('BrowserWindow.setTitlebarOverlay', () => {
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
+
+    it('does not crash when an invalid titleBarStyle was initially set', () => {
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          color: '#0000f0',
+          symbolColor: '#ffffff'
+        },
+        titleBarStyle: 'hiddenInset'
+      });
+
+      expect(() => {
+        win.setTitleBarOverlay({
+          color: '#000000'
+        });
+      }).to.not.throw();
+    });
+
+    it('correctly updates the height of the overlay', async () => {
+      const testOverlay = async (w: BrowserWindow, size: Number, firstRun: boolean) => {
+        const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+        const overlayReady = emittedOnce(ipcMain, 'geometrychange');
+        await w.loadFile(overlayHTML);
+        if (firstRun) {
+          await overlayReady;
+        }
+
+        const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
+        expect(overlayEnabled).to.be.true('overlayEnabled');
+        const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+
+        if (!w.isMaximized()) {
+          const maximize = emittedOnce(w, 'maximize');
+          w.show();
+          w.maximize();
+          await maximize;
+        }
+
+        expect(w.isMaximized()).to.be.true('not maximized');
+        const { x, y, width, height } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+        expect(x).to.equal(0);
+        expect(y).to.equal(0);
+        expect(width).to.be.greaterThan(0);
+        expect(height).to.equal(size);
+        expect(preMaxHeight).to.equal(size);
+      };
+
+      const INITIAL_SIZE = 40;
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          height: INITIAL_SIZE
+        }
+      });
+
+      await testOverlay(w, INITIAL_SIZE, true);
+
+      w.setTitleBarOverlay({
+        height: INITIAL_SIZE + 10
+      });
+
+      await testOverlay(w, INITIAL_SIZE + 10, false);
     });
   });
 
@@ -3392,9 +3627,14 @@ describe('BrowserWindow module', () => {
   describe('beginFrameSubscription method', () => {
     it('does not crash when callback returns nothing', (done) => {
       const w = new BrowserWindow({ show: false });
+      let called = false;
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
       w.webContents.on('dom-ready', () => {
         w.webContents.beginFrameSubscription(function () {
+          // This callback might be called twice.
+          if (called) return;
+          called = true;
+
           // Pending endFrameSubscription to next tick can reliably reproduce
           // a crash which happens when nothing is returned in the callback.
           setTimeout(() => {
@@ -3579,22 +3819,24 @@ describe('BrowserWindow module', () => {
   // TODO(dsanders11): Enable once maximize event works on Linux again on CI
   ifdescribe(process.platform !== 'linux')('BrowserWindow.maximize()', () => {
     afterEach(closeAllWindows);
-    // TODO(dsanders11): Disabled on macOS, see https://github.com/electron/electron/issues/32947
-    ifit(process.platform !== 'darwin')('should show the window if it is not currently shown', async () => {
+    it('should show the window if it is not currently shown', async () => {
       const w = new BrowserWindow({ show: false });
       const hidden = emittedOnce(w, 'hide');
-      const shown = emittedOnce(w, 'show');
+      let shown = emittedOnce(w, 'show');
       const maximize = emittedOnce(w, 'maximize');
       expect(w.isVisible()).to.be.false('visible');
       w.maximize();
       await maximize;
+      await shown;
+      expect(w.isMaximized()).to.be.true('maximized');
       expect(w.isVisible()).to.be.true('visible');
       // Even if the window is already maximized
       w.hide();
       await hidden;
       expect(w.isVisible()).to.be.false('visible');
+      shown = emittedOnce(w, 'show');
       w.maximize();
-      await shown; // Ensure a 'show' event happens when it becomes visible
+      await shown;
       expect(w.isVisible()).to.be.true('visible');
     });
   });
@@ -3631,6 +3873,22 @@ describe('BrowserWindow module', () => {
       await delay(1000);
       expectBoundsEqual(w.getSize(), initialSize);
       expectBoundsEqual(w.getPosition(), initialPosition);
+    });
+
+    ifit(process.platform === 'darwin')('should not change size or position of a window which is functionally maximized', async () => {
+      const { workArea } = screen.getPrimaryDisplay();
+
+      const bounds = {
+        x: workArea.x,
+        y: workArea.y,
+        width: workArea.width,
+        height: workArea.height
+      };
+
+      const w = new BrowserWindow(bounds);
+      w.unmaximize();
+      await delay(1000);
+      expectBoundsEqual(w.getBounds(), bounds);
     });
   });
 
@@ -4392,18 +4650,34 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('fullscreen state with resizable set', () => {
-      it('resizable flag should be set to true and restored', async () => {
+      it('resizable flag should be set to false and restored', async () => {
         const w = new BrowserWindow({ resizable: false });
+
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
         w.setFullScreen(true);
         await enterFullScreen;
-        expect(w.resizable).to.be.true('resizable');
+        expect(w.resizable).to.be.false('resizable');
 
         await delay();
         const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
         w.setFullScreen(false);
         await leaveFullScreen;
         expect(w.resizable).to.be.false('resizable');
+      });
+
+      it('default resizable flag should be restored after entering/exiting fullscreen', async () => {
+        const w = new BrowserWindow();
+
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+        expect(w.resizable).to.be.false('resizable');
+
+        await delay();
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+        expect(w.resizable).to.be.true('resizable');
       });
     });
 
@@ -4457,19 +4731,80 @@ describe('BrowserWindow module', () => {
         expect(w.isFullScreen()).to.be.false('is fullscreen');
       });
 
+      it('handles several HTML fullscreen transitions', async () => {
+        const w = new BrowserWindow();
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await enterFullScreen;
+        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+        await leaveFullScreen;
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        await delay();
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await enterFullScreen;
+        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+        await leaveFullScreen;
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+      });
+
       it('handles several transitions in close proximity', async () => {
         const w = new BrowserWindow();
 
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
+        const enterFS = emittedNTimes(w, 'enter-full-screen', 2);
+        const leaveFS = emittedNTimes(w, 'leave-full-screen', 2);
+
         w.setFullScreen(true);
         w.setFullScreen(false);
         w.setFullScreen(true);
+        w.setFullScreen(false);
 
-        const enterFullScreen = emittedNTimes(w, 'enter-full-screen', 2);
-        await enterFullScreen;
+        await Promise.all([enterFS, leaveFS]);
 
-        expect(w.isFullScreen()).to.be.true('not fullscreen');
+        expect(w.isFullScreen()).to.be.false('not fullscreen');
+      });
+
+      it('handles several chromium-initiated transitions in close proximity', async () => {
+        const w = new BrowserWindow();
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        let enterCount = 0;
+        let exitCount = 0;
+
+        const done = new Promise<void>(resolve => {
+          const checkDone = () => {
+            if (enterCount === 2 && exitCount === 2) resolve();
+          };
+
+          w.webContents.on('enter-html-full-screen', () => {
+            enterCount++;
+            checkDone();
+          });
+
+          w.webContents.on('leave-html-full-screen', () => {
+            exitCount++;
+            checkDone();
+          });
+        });
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await w.webContents.executeJavaScript('document.exitFullscreen()');
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await w.webContents.executeJavaScript('document.exitFullscreen()');
+        await done;
       });
 
       it('does not crash when exiting simpleFullScreen (properties)', async () => {

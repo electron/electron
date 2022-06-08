@@ -17,7 +17,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -372,7 +371,6 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   if (item->IsSavePackageDownload())
     return;
 
-  v8::Locker locker(isolate_);
   v8::HandleScope handle_scope(isolate_);
   auto handle = DownloadItem::FromOrCreate(isolate_, item);
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
@@ -623,7 +621,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
       [](ElectronPermissionManager::RequestHandler* handler,
          content::WebContents* web_contents,
-         content::PermissionType permission_type,
+         blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
         handler->Run(web_contents, permission_type,
@@ -952,8 +950,8 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
   }
 
   DCHECK_GT(num_sockets_to_preconnect, 0);
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&StartPreconnectOnUI, base::Unretained(browser_context_),
                      url, num_sockets_to_preconnect));
 }

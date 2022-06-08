@@ -69,6 +69,7 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.h",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.cc",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
+    "//chrome/browser/ui/native_window_tracker.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
@@ -88,6 +89,8 @@ static_library("chrome") {
       "//chrome/browser/icon_loader_mac.mm",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
@@ -119,6 +122,8 @@ static_library("chrome") {
   if (use_aura) {
     sources += [
       "//chrome/browser/platform_util_aura.cc",
+      "//chrome/browser/ui/aura/native_window_tracker_aura.cc",
+      "//chrome/browser/ui/aura/native_window_tracker_aura.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc",
     ]
   }
@@ -211,6 +216,8 @@ static_library("chrome") {
       "//chrome/browser/printing/printer_query.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
+      "//components/printing/browser/print_to_pdf/pdf_print_utils.cc",
+      "//components/printing/browser/print_to_pdf/pdf_print_utils.h",
     ]
 
     if (enable_oop_printing) {
@@ -307,6 +314,10 @@ static_library("chrome") {
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]
+      deps += [
+        "//components/pdf/browser",
+        "//components/pdf/renderer",
+      ]
     }
   }
 
@@ -334,15 +345,6 @@ source_set("plugins") {
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc",
     "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
   ]
-  deps += [
-    "//media:media_buildflags",
-    "//ppapi/buildflags",
-    "//ppapi/proxy:ipc",
-    "//services/device/public/mojom",
-  ]
-  if (enable_pdf_viewer) {
-    deps += [ "//components/pdf/browser" ]
-  }
 
   # renderer side
   sources += [
@@ -351,17 +353,18 @@ source_set("plugins") {
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
   ]
-  if (enable_pdf_viewer) {
-    deps += [ "//components/pdf/renderer" ]
-  }
+
   deps += [
     "//components/strings",
     "//media:media_buildflags",
+    "//ppapi/buildflags",
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/proxy:ipc",
     "//ppapi/shared_impl",
+    "//services/device/public/mojom",
     "//skia",
+    "//storage/browser",
   ]
 }
 

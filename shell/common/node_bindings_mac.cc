@@ -17,30 +17,6 @@ namespace electron {
 NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env)
     : NodeBindings(browser_env) {}
 
-NodeBindingsMac::~NodeBindingsMac() = default;
-
-void NodeBindingsMac::PrepareMessageLoop() {
-  int handle = uv_backend_fd(uv_loop_);
-
-  // If the backend fd hasn't changed, don't proceed.
-  if (handle == handle_)
-    return;
-
-  NodeBindings::PrepareMessageLoop();
-}
-
-void NodeBindingsMac::RunMessageLoop() {
-  int handle = uv_backend_fd(uv_loop_);
-
-  // If the backend fd hasn't changed, don't proceed.
-  if (handle == handle_)
-    return;
-
-  handle_ = handle;
-
-  NodeBindings::RunMessageLoop();
-}
-
 void NodeBindingsMac::PollEvents() {
   struct timeval tv;
   int timeout = uv_backend_timeout(uv_loop_);

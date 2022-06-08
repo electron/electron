@@ -21,22 +21,17 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/stl_util.h"
+#include "base/strings/escape.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/pdf/chrome_pdf_stream_delegate.h"
-#include "chrome/browser/plugins/pdf_iframe_navigation_throttle.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
-#include "components/pdf/browser/pdf_navigation_throttle.h"
-#include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
-#include "components/pdf/common/internal_plugin_helpers.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/site_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_main_runner.h"
@@ -52,17 +47,16 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/tts_controller.h"
 #include "content/public/browser/tts_platform.h"
+#include "content/public/browser/url_loader_request_interceptor.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/buildflags/buildflags.h"
-#include "electron/grit/electron_resources.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
-#include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
@@ -212,7 +206,12 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/browser/pdf/chrome_pdf_stream_delegate.h"
+#include "chrome/browser/plugins/pdf_iframe_navigation_throttle.h"  // nogncheck
+#include "components/pdf/browser/pdf_navigation_throttle.h"
+#include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
 #include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
+#include "components/pdf/common/internal_plugin_helpers.h"
 #endif
 
 using content::BrowserThread;
@@ -395,9 +394,8 @@ ElectronBrowserClient* ElectronBrowserClient::Get() {
 // static
 void ElectronBrowserClient::SetApplicationLocale(const std::string& locale) {
   if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
-      !base::PostTask(
-          FROM_HERE, {BrowserThread::IO},
-          base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
+      !content::GetIOThreadTaskRunner({})->PostTask(
+          FROM_HERE, base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
     g_io_thread_application_locale.Get() = locale;
   }
   *g_application_locale = locale;
@@ -452,6 +450,9 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(
       new extensions::MessagingAPIMessageFilter(process_id, browser_context));
 #endif
+
+  // Remove in case the host is reused after a crash, otherwise noop.
+  host->RemoveObserver(this);
 
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
@@ -964,10 +965,8 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 }
 
 std::unique_ptr<content::BrowserMainParts>
-ElectronBrowserClient::CreateBrowserMainParts(
-    content::MainFunctionParams params) {
-  auto browser_main_parts =
-      std::make_unique<ElectronBrowserMainParts>(std::move(params));
+ElectronBrowserClient::CreateBrowserMainParts(bool /* is_integration_test */) {
+  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>();
 
 #if BUILDFLAG(IS_MAC)
   browser_main_parts_ = browser_main_parts.get();
@@ -1038,7 +1037,7 @@ void HandleExternalProtocolInUI(
   if (!permission_helper)
     return;
 
-  GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
+  GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
   permission_helper->RequestOpenExternalPermission(std::move(callback),
                                                    has_user_gesture, url);
@@ -1057,8 +1056,8 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     const absl::optional<url::Origin>& initiating_origin,
     content::RenderFrameHost* initiator_document,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
-  base::PostTask(
-      FROM_HERE, {BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&HandleExternalProtocolInUI, url,
                      std::move(web_contents_getter), has_user_gesture));
   return true;
@@ -1139,11 +1138,11 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 
 std::vector<base::FilePath>
 ElectronBrowserClient::GetNetworkContextsParentDirectory() {
-  base::FilePath user_data_dir;
-  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
-  DCHECK(!user_data_dir.empty());
+  base::FilePath session_data;
+  base::PathService::Get(DIR_SESSION_DATA, &session_data);
+  DCHECK(!session_data.empty());
 
-  return {user_data_dir};
+  return {session_data};
 }
 
 std::string ElectronBrowserClient::GetProduct() {
@@ -1332,6 +1331,11 @@ void ElectronBrowserClient::
   DCHECK(browser_context);
   DCHECK(factories);
 
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context);
+  protocol_registry->RegisterURLLoaderFactories(factories,
+                                                false /* allow_file_access */);
+
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   factories->emplace(
       extensions::kExtensionScheme,
@@ -1478,10 +1482,8 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol_registry->intercept_handlers(),
       render_process_id,
-      frame_host ? frame_host->GetRoutingID() : MSG_ROUTING_NONE,
-      frame_host ? frame_host->GetRenderViewHost()->GetRoutingID()
-                 : MSG_ROUTING_NONE,
-      &next_id_, std::move(navigation_ui_data), std::move(navigation_id),
+      frame_host ? frame_host->GetRoutingID() : MSG_ROUTING_NONE, &next_id_,
+      std::move(navigation_ui_data), std::move(navigation_id),
       std::move(proxied_receiver), std::move(target_factory_remote),
       std::move(header_client_receiver), type);
 

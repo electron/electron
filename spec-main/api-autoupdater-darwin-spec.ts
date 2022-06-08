@@ -7,6 +7,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { AddressInfo } from 'net';
 import { ifdescribe, ifit } from './spec-helpers';
+import * as uuid from 'uuid';
+import { systemPreferences } from 'electron';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -132,7 +134,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
         await signApp(secondAppPath);
         await mutateAppPostSign?.mutate(secondAppPath);
         updateZipPath = path.resolve(dir, 'update.zip');
-        await spawn('zip', ['-r', '--symlinks', updateZipPath, './'], {
+        await spawn('zip', ['-0', '-r', '--symlinks', updateZipPath, './'], {
           cwd: dir
         });
       }, false);
@@ -318,6 +320,64 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
         expect(requests).to.have.lengthOf(3);
         expect(requests[2].url).to.equal('/update-check/updated/2.0.0');
         expect(requests[2].header('user-agent')).to.include('Electron/');
+      });
+    });
+
+    describe('with SquirrelMacEnableDirectContentsWrite enabled', () => {
+      let previousValue: any;
+
+      beforeEach(() => {
+        previousValue = systemPreferences.getUserDefault('SquirrelMacEnableDirectContentsWrite', 'boolean');
+        systemPreferences.setUserDefault('SquirrelMacEnableDirectContentsWrite', 'boolean', true as any);
+      });
+
+      afterEach(() => {
+        systemPreferences.setUserDefault('SquirrelMacEnableDirectContentsWrite', 'boolean', previousValue as any);
+      });
+
+      it('should hit the download endpoint when an update is available and update successfully when the zip is provided leaving the parent directory untouched', async () => {
+        await withUpdatableApp({
+          nextVersion: '2.0.0',
+          startFixture: 'update',
+          endFixture: 'update'
+        }, async (appPath, updateZipPath) => {
+          const randomID = uuid.v4();
+          cp.spawnSync('xattr', ['-w', 'spec-id', randomID, appPath]);
+          server.get('/update-file', (req, res) => {
+            res.download(updateZipPath);
+          });
+          server.get('/update-check', (req, res) => {
+            res.json({
+              url: `http://localhost:${port}/update-file`,
+              name: 'My Release Name',
+              notes: 'Theses are some release notes innit',
+              pub_date: (new Date()).toString()
+            });
+          });
+          const relaunchPromise = new Promise<void>((resolve) => {
+            server.get('/update-check/updated/:version', (req, res) => {
+              res.status(204).send();
+              resolve();
+            });
+          });
+          const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+          logOnError(launchResult, () => {
+            expect(launchResult).to.have.property('code', 0);
+            expect(launchResult.out).to.include('Update Downloaded');
+            expect(requests).to.have.lengthOf(2);
+            expect(requests[0]).to.have.property('url', '/update-check');
+            expect(requests[1]).to.have.property('url', '/update-file');
+            expect(requests[0].header('user-agent')).to.include('Electron/');
+            expect(requests[1].header('user-agent')).to.include('Electron/');
+          });
+
+          await relaunchPromise;
+          expect(requests).to.have.lengthOf(3);
+          expect(requests[2].url).to.equal('/update-check/updated/2.0.0');
+          expect(requests[2].header('user-agent')).to.include('Electron/');
+          const result = cp.spawnSync('xattr', ['-l', appPath]);
+          expect(result.stdout.toString()).to.include(`spec-id: ${randomID}`);
+        });
       });
     });
 

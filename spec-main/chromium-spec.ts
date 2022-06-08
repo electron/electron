@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, delay, defer } from './spec-helpers';
+import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
@@ -238,8 +238,7 @@ describe('web security', () => {
     await p;
   });
 
-  // TODO(codebytere): Re-enable after Chromium fixes upstream v8_scriptormodule_legacy_lifetime crash.
-  xit('bypasses CORB when web security is disabled', async () => {
+  it('bypasses CORB when web security is disabled', async () => {
     const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true, contextIsolation: false } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,
@@ -1591,7 +1590,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  it('can fullscreen from out-of-process iframes (OOPIFs)', async () => {
+  ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
       '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
@@ -1615,8 +1614,37 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     expect(width).to.equal(0);
   });
 
+  ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
+    await emittedOnce(w, 'enter-full-screen');
+    const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
+    const html =
+      '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
+    w.loadURL(`data:text/html,${html}`);
+    await fullscreenChange;
+
+    const fullscreenWidth = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(fullscreenWidth > 0).to.be.true();
+
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
+    );
+    await emittedOnce(w.webContents, 'leave-html-full-screen');
+
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
+
+    w.setFullScreen(false);
+    await emittedOnce(w, 'leave-full-screen');
+  });
+
   // TODO(jkleinsc) fix this flaky test on WOA
   ifit(process.platform !== 'win32' || process.arch !== 'arm64')('can fullscreen from in-process iframes', async () => {
+    if (process.platform === 'darwin') await emittedOnce(w, 'enter-full-screen');
+
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
     await fullscreenChange;
@@ -1679,11 +1707,39 @@ describe('navigator.serial', () => {
   });
 
   it('returns a port when select-serial-port event is defined', async () => {
+    let havePorts = false;
     w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
-      callback(portList[0].portId);
+      if (portList.length > 0) {
+        havePorts = true;
+        callback(portList[0].portId);
+      } else {
+        callback('');
+      }
     });
     const port = await getPorts();
-    expect(port).to.equal('[object SerialPort]');
+    if (havePorts) {
+      expect(port).to.equal('[object SerialPort]');
+    } else {
+      expect(port).to.equal('NotFoundError: No port selected by the user.');
+    }
+  });
+
+  it('navigator.serial.getPorts() returns values', async () => {
+    let havePorts = false;
+
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      if (portList.length > 0) {
+        havePorts = true;
+        callback(portList[0].portId);
+      } else {
+        callback('');
+      }
+    });
+    await getPorts();
+    if (havePorts) {
+      const grantedPorts = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
+      expect(grantedPorts).to.not.be.empty();
+    }
   });
 });
 
@@ -1891,7 +1947,7 @@ describe('navigator.hid', () => {
     serverUrl = `http://localhost:${(server.address() as any).port}`;
   });
 
-  const getDevices: any = () => {
+  const requestDevices: any = () => {
     return w.webContents.executeJavaScript(`
       navigator.hid.requestDevice({filters: []}).then(device => device.toString()).catch(err => err.toString());
     `, true);
@@ -1909,7 +1965,7 @@ describe('navigator.hid', () => {
 
   it('does not return a device if select-hid-device event is not defined', async () => {
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    const device = await getDevices();
+    const device = await requestDevices();
     expect(device).to.equal('');
   });
 
@@ -1920,7 +1976,7 @@ describe('navigator.hid', () => {
       callback();
     });
     session.defaultSession.setPermissionCheckHandler(() => false);
-    const device = await getDevices();
+    const device = await requestDevices();
     expect(selectFired).to.be.false();
     expect(device).to.equal('');
   });
@@ -1938,7 +1994,7 @@ describe('navigator.hid', () => {
         callback();
       }
     });
-    const device = await getDevices();
+    const device = await requestDevices();
     expect(selectFired).to.be.true();
     if (haveDevices) {
       expect(device).to.contain('[object HIDDevice]');
@@ -1987,13 +2043,90 @@ describe('navigator.hid', () => {
       return true;
     });
     await w.webContents.executeJavaScript('navigator.hid.getDevices();', true);
-    const device = await getDevices();
+    const device = await requestDevices();
     expect(selectFired).to.be.true();
     if (haveDevices) {
       expect(device).to.contain('[object HIDDevice]');
       expect(gotDevicePerms).to.be.true();
     } else {
       expect(device).to.equal('');
+    }
+  });
+
+  it('excludes a device when a exclusionFilter is specified', async () => {
+    const exclusionFilters = <any>[];
+    let haveDevices = false;
+    let checkForExcludedDevice = false;
+
+    w.webContents.session.on('select-hid-device', (event, details, callback) => {
+      if (details.deviceList.length > 0) {
+        details.deviceList.find((device) => {
+          if (device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '') {
+            if (checkForExcludedDevice) {
+              const compareDevice = {
+                vendorId: device.vendorId,
+                productId: device.productId
+              };
+              expect(compareDevice).to.not.equal(exclusionFilters[0], 'excluded device should not be returned');
+            } else {
+              haveDevices = true;
+              exclusionFilters.push({
+                vendorId: device.vendorId,
+                productId: device.productId
+              });
+              return true;
+            }
+          }
+        });
+      }
+      callback();
+    });
+
+    await requestDevices();
+    if (haveDevices) {
+      // We have devices to exclude, so check if exculsionFilters work
+      checkForExcludedDevice = true;
+      await w.webContents.executeJavaScript(`
+        navigator.hid.requestDevice({filters: [], exclusionFilters: ${JSON.stringify(exclusionFilters)}}).then(device => device.toString()).catch(err => err.toString());
+
+      `, true);
+    }
+  });
+
+  it('supports device.forget()', async () => {
+    let deletedDeviceFromEvent;
+    let haveDevices = false;
+    w.webContents.session.on('select-hid-device', (event, details, callback) => {
+      if (details.deviceList.length > 0) {
+        haveDevices = true;
+        callback(details.deviceList[0].deviceId);
+      } else {
+        callback();
+      }
+    });
+    w.webContents.session.on('hid-device-revoked', (event, details) => {
+      deletedDeviceFromEvent = details.device;
+    });
+    await requestDevices();
+    if (haveDevices) {
+      const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
+      if (grantedDevices.length > 0) {
+        const deletedDevice = await w.webContents.executeJavaScript(`
+          navigator.hid.getDevices().then(devices => {
+            devices[0].forget();
+            return {
+              vendorId: devices[0].vendorId,
+              productId: devices[0].productId,
+              name: devices[0].productName
+            }
+          })
+        `);
+        const grantedDevices2 = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
+        expect(grantedDevices2.length).to.be.lessThan(grantedDevices.length);
+        if (deletedDevice.name !== '' && deletedDevice.productId && deletedDevice.vendorId) {
+          expect(deletedDeviceFromEvent).to.include(deletedDevice);
+        }
+      }
     }
   });
 });

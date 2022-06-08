@@ -146,7 +146,6 @@ void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
 base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
   // return ((callback, ref) => { callback() }).bind(null, callback, this)
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> self;
   if (GetWrapper(isolate).ToLocal(&self)) {

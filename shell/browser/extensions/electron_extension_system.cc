@@ -13,8 +13,8 @@
 #include "base/files/file_util.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/path_service.h"
-#include "base/task/post_task.h"
 #include "chrome/common/chrome_paths.h"
+#include "chrome/grit/browser_resources.h"
 #include "components/value_store/value_store_factory_impl.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -23,7 +23,6 @@
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/notification_source.h"
 #include "electron/buildflags/buildflags.h"
-#include "electron/grit/electron_resources.h"
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/info_map.h"
@@ -204,11 +203,12 @@ AppSorting* ElectronExtensionSystem::app_sorting() {
 void ElectronExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
     base::OnceClosure callback) {
-  base::PostTaskAndReply(FROM_HERE, {BrowserThread::IO},
-                         base::BindOnce(&InfoMap::AddExtension, info_map(),
-                                        base::RetainedRef(extension),
-                                        base::Time::Now(), false, false),
-                         std::move(callback));
+  content::GetIOThreadTaskRunner({})->PostTaskAndReply(
+      FROM_HERE,
+      base::BindOnce(&InfoMap::AddExtension, info_map(),
+                     base::RetainedRef(extension), base::Time::Now(), false,
+                     false),
+      std::move(callback));
 }
 
 void ElectronExtensionSystem::UnregisterExtensionWithRequestContexts(

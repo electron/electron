@@ -3,11 +3,7 @@
   "async-hooks/test-crypto-pbkdf2",
   "async-hooks/test-crypto-randomBytes",
   "parallel/test-bootstrap-modules",
-  "parallel/test-buffer-backing-arraybuffer",
-  "parallel/test-buffer-constructor-node-modules-paths",
-  "parallel/test-buffer-constructor-outside-node-modules",
   "parallel/test-child-process-fork-exec-path",
-  "parallel/test-child-process-stdio-overlapped",
   "parallel/test-cli-node-print-help",
   "parallel/test-cluster-bind-privileged-port",
   "parallel/test-cluster-shared-handle-bind-privileged-port",
@@ -30,6 +26,7 @@
   "parallel/test-http2-clean-output",
   "parallel/test-https-agent-session-reuse",
   "parallel/test-https-options-boolean-check",
+  "parallel/test-icu-minimum-version",
   "parallel/test-inspector-multisession-ws",
   "parallel/test-inspector-port-zero-cluster",
   "parallel/test-inspector-tracing-domain",
@@ -128,6 +125,8 @@
   "report/test-report-uv-handles",
   "report/test-report-worker",
   "report/test-report-writereport",
+  "sequential/test-cpu-prof-kill",
+  "sequential/test-diagnostic-dir-cpu-prof",
   "sequential/test-tls-connect",
   "wpt/test-webcrypto"
 ]

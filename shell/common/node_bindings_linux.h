@@ -13,19 +13,12 @@ namespace electron {
 class NodeBindingsLinux : public NodeBindings {
  public:
   explicit NodeBindingsLinux(BrowserEnvironment browser_env);
-  ~NodeBindingsLinux() override;
-
-  void PrepareMessageLoop() override;
-  void RunMessageLoop() override;
 
  private:
   void PollEvents() override;
 
   // Epoll to poll for uv's backend fd.
   int epoll_;
-
-  // uv's backend fd.
-  int handle_ = -1;
 };
 
 }  // namespace electron

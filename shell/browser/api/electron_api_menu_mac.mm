@@ -10,7 +10,6 @@
 #include "base/mac/scoped_sending_event.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"

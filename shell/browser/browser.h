@@ -158,6 +158,7 @@ class Browser : public WindowListObserver {
 
   // Hide the application.
   void Hide();
+  bool IsHidden();
 
   // Show the application.
   void Show();

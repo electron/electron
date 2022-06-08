@@ -10,10 +10,10 @@ breakpad independently, as a "browser" process. This patches
 crash annotation.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 43f6d476f3ee2759cf41c492f932522994e7ddec..8df14f416ee321e1259433715a61fa6025207d80 100644
+index 3933fa761768b5a45891bfef4c2c2123b92fc276..2eb52b71d7ebc7525cceffbecc99db6751429afd 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -718,8 +718,13 @@ bool CrashDone(const MinidumpDescriptor& minidump,
+@@ -719,8 +719,13 @@ bool CrashDone(const MinidumpDescriptor& minidump,
    log_path[log_path_len] = '\0';
    info.log_filename = log_path;
  #endif
@@ -29,7 +29,7 @@ index 43f6d476f3ee2759cf41c492f932522994e7ddec..8df14f416ee321e1259433715a61fa60
    info.distro = base::g_linux_distro;
    info.distro_length = my_strlen(base::g_linux_distro);
    info.upload = upload;
-@@ -2025,8 +2030,13 @@ void InitCrashReporter(const std::string& process_type) {
+@@ -2027,8 +2032,13 @@ void InitCrashReporter(const std::string& process_type) {
        process_type == kWebViewSingleProcessType ||
        process_type == kBrowserProcessType ||
  #endif
@@ -40,6 +40,6 @@ index 43f6d476f3ee2759cf41c492f932522994e7ddec..8df14f416ee321e1259433715a61fa60
 +    g_is_node = true;
 +  }
 +
- #if !BUILDFLAG(IS_CHROMEOS_ASH)
+ #if !BUILDFLAG(IS_CHROMEOS)
    SetUploadURL(GetCrashReporterClient()->GetUploadUrl());
  #endif

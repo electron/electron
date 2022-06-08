@@ -4,7 +4,6 @@
 
 #include <string>
 
-#include "base/task/post_task.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
