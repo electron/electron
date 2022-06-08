@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 40a552fc5b083c261b1c5904286dec7542f61a1d..5f1d26f37b6d734d8d94c3de18abdcc55b18b460 100644
+index 968649f75690e5bbc4419e1cba47eb0028301b79..052fc36cd8e622051fcf74444f6c4c04a3153a41 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -128,6 +128,11 @@
@@ -128,7 +128,7 @@ index 40a552fc5b083c261b1c5904286dec7542f61a1d..5f1d26f37b6d734d8d94c3de18abdcc5
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2302,6 +2399,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2298,6 +2395,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -139,7 +139,7 @@ index 40a552fc5b083c261b1c5904286dec7542f61a1d..5f1d26f37b6d734d8d94c3de18abdcc5
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index bcd47e726ad4d320cac3c3341d87b9a3ca2c4065..620d7b7b733cc9749775c2bcabcebdedafe6ba0b 100644
+index 56b00635a9cd9c572a7158b249edb00009bb75cf..06055e3b52dcbac06d90f1d538b76a6c0be6beba 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -105,6 +105,7 @@ class URLMatcher;
@@ -169,7 +169,7 @@ index bcd47e726ad4d320cac3c3341d87b9a3ca2c4065..620d7b7b733cc9749775c2bcabcebded
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 9dc7502f8037550d3f0df786585eed8f870e6a21..51fb79a16c2d44e0052090b204107032a337a6df 100644
+index a310af306f07fceb58d5973def0d7e88b6ece741..bfbf7d61cfb8aef7948e825866b3e5d518ba6b58 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -282,6 +282,17 @@ struct NetworkContextFilePaths {

@@ -288,7 +288,7 @@ index 5a9cc64d6e0d9d01f5dc133c7fcab34101bc32db..166e506f1afbcb1a3a661479d489e71d
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index bddbd37ca73369adb82dad5bb8b25f0ab2a7f878..9bf28cd7f926f41041f40d4bc0a497c8b8730b86 100644
+index 8349c8cb2078d09c9550024ae5ca845bdebfbd35..e3763eaa2c6f7ce842cf8964bf5590efd3892c61 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 @@ -213,8 +213,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
@@ -316,7 +316,7 @@ index 7350382146178f58960a9bf68cd959076d2d9790..a70a94d14bdfa993feab60b8e4f32e10
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index b652f1f30ce7043a0c8434d05a3b1da653aee1fc..259c62c60f302abebf167709b4a1c68ad5607129 100644
+index aef9d1a79fcea0e73541cf8257b498e167c9dfeb..1f0c4209d1c6be31e1abd6bcfcaf181fd2d4858c 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -402,8 +402,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -344,7 +344,7 @@ index ef6faf317dd4168adf6fd530a7da0b80f9166dec..f401659a81d4aeaf71039d71eb8fec48
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 889036afea9eadb5999080bc6d97494a1ccc08cf..a90d85460ffdfb9931772988f8c71f39cb4e0eaf 100644
+index b77eed7c0673a82f26dc8f9ff153ffa55c9c56ef..5e2dc590089c830ae174468955c9b03998beb724 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -406,8 +406,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
@@ -372,7 +372,7 @@ index 0661fd642dcee69a7c8f955490dadf32dc0eb468..e3fa74da87513fbfcd035fa872dc938d
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 899b8beabdf1131a08583470ace5b468576eeab6..21ab4ae22c54846af78518e897dc23ebe4ce8317 100644
+index 9108af112833f022f82d2645193eb99326633292..882cd523b2ff8b2e51ad5b23a7ba967d473217fc 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -177,8 +177,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

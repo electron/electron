@@ -144,7 +144,7 @@ index e482fbddbe8c9a7bb221801f8911b2127ac82d77..31b3a582276cfb5e7bf55bdf0e0e06e2
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index d545b333b73676ac4d501031ae6a264e49c711f4..d16108f62548e5e2378fb329799c1ba3c372d899 100644
+index 6bddb19e692f274afd077bd58145fcb68d59c4a2..08b95c71575e31e5b4d87e4d95ea7d7c8d318d29 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -522,6 +522,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
