@@ -82,7 +82,7 @@ $ sudo apt-get install libc6-dev-arm64-cross linux-libc-dev-arm64-cross \
                        g++-aarch64-linux-gnu
 ```
 
-And to cross-compile for `arm` or `ia32` targets, you should pass the
+And to cross-compile for `arm` or targets, you should pass the
 `target_cpu` parameter to `gn gen`:
 
 ```sh

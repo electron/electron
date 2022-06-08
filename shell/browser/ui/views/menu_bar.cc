@@ -14,7 +14,7 @@
 #include "ui/views/layout/box_layout.h"
 
 #if BUILDFLAG(IS_LINUX)
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -38,8 +38,7 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
   RefreshColorCache(theme);
   UpdateViewColors();
 #if BUILDFLAG(IS_WIN)
-  SetBackground(
-      views::CreateThemedSolidBackground(this, ui::kColorMenuBackground));
+  SetBackground(views::CreateThemedSolidBackground(ui::kColorMenuBackground));
   background_color_ = GetBackground()->get_color();
 #endif
   SetFocusBehavior(FocusBehavior::ALWAYS);

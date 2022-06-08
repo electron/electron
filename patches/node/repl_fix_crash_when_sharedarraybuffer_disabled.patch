@@ -25,7 +25,7 @@ index a771b1813731edf4f0dd60f3505799e389f1d876..b9461677e2d7d1df192e752496e62cca
    bench.start();
    for (let i = 0; i < n; i++)
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index 65827ecd593ffb050484152fc6d31411fd3e4dcc..2e5d6b01d86e34549c1c7a3d3128350cad2b0c47 100644
+index a8167b86ca2e5a11b2628e20063849e85a200a8c..110a3ed1637b642b1d83fb36549cced151b9c5cd 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
 @@ -9,7 +9,7 @@ const {
@@ -37,7 +37,7 @@ index 65827ecd593ffb050484152fc6d31411fd3e4dcc..2e5d6b01d86e34549c1c7a3d3128350c
  } = primordials;
  
  const {
-@@ -142,6 +142,9 @@ port.on('message', (message) => {
+@@ -146,6 +146,9 @@ port.on('message', (message) => {
      const originalCwd = process.cwd;
  
      process.cwd = function() {

@@ -25,6 +25,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/device_service.h"
+#include "content/public/browser/first_party_sets_handler.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
@@ -69,13 +70,15 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
+#include "electron/electron_gtk_stubs.h"
 #include "ui/base/cursor/cursor_factory.h"
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gfx/color_utils.h"
-#include "ui/gtk/gtk_ui_factory.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_compat.h"  // nogncheck
+#include "ui/gtk/gtk_util.h"    // nogncheck
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/linux_ui/linux_ui.h"
+#include "ui/views/linux_ui/linux_ui_factory.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -176,8 +179,7 @@ class DarkThemeObserver : public ui::NativeThemeObserver {
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
-ElectronBrowserMainParts::ElectronBrowserMainParts(
-    const content::MainFunctionParams& params)
+ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
       browser_(std::make_unique<Browser>()),
       node_bindings_(
@@ -275,9 +277,6 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
   screen_ = views::CreateDesktopScreen();
   display::Screen::SetScreenInstance(screen_.get());
-#if BUILDFLAG(IS_LINUX)
-  views::LinuxUI::instance()->UpdateDeviceScaleFactor();
-#endif
 #endif
 
   if (!views::LayoutProvider::Get())
@@ -344,8 +343,8 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 }
 
 void ElectronBrowserMainParts::PostCreateThreads() {
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::IO},
+  content::GetIOThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
 }
 
@@ -363,9 +362,14 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
-  auto linux_ui = BuildGtkUi();
-  linux_ui->Initialize();
+  auto linux_ui = CreateLinuxUi();
   DCHECK(ui::LinuxInputMethodContextFactory::instance());
+
+  // Try loading gtk symbols used by Electron.
+  electron::InitializeElectron_gtk(gtk::GetLibGtk());
+  if (!electron::IsElectron_gtkInitialized()) {
+    electron::UninitializeElectron_gtk();
+  }
 
   // Chromium does not respect GTK dark theme setting, but they may change
   // in future and this code might be no longer needed. Check the Chromium
@@ -432,8 +436,8 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
     // --remote-debugging-pipe
     auto on_disconnect = base::BindOnce([]() {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce([]() { Browser::Get()->Quit(); }));
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE, base::BindOnce([]() { Browser::Get()->Quit(); }));
     });
     content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler(
         std::move(on_disconnect));
@@ -487,7 +491,7 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
   config->should_use_preference =
       command_line.HasSwitch(::switches::kEnableEncryptionSelection);
-  base::PathService::Get(chrome::DIR_USER_DATA, &config->user_data_path);
+  base::PathService::Get(DIR_SESSION_DATA, &config->user_data_path);
   OSCrypt::SetConfig(std::move(config));
 #endif
 #if BUILDFLAG(IS_POSIX)

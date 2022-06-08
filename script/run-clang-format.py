@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """A wrapper script around clang-format, suitable for linting multiple files
 and to use for continuous integration.
 This is an alternative API for the clang-format command line.
@@ -55,8 +55,7 @@ def list_files(files, recursive=False, extensions=None, exclude=None):
                         x for x in fpaths if not fnmatch.fnmatch(x, pattern)
                     ]
                 for fp in fpaths:
-                    ext = os.path.splitext(f)[1][1:]
-                    print(ext)
+                    ext = os.path.splitext(fp)[1][1:]
                     if ext in extensions:
                         out.append(fp)
         else:

@@ -69,6 +69,7 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.h",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.cc",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
+    "//chrome/browser/ui/native_window_tracker.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
@@ -88,6 +89,8 @@ static_library("chrome") {
       "//chrome/browser/icon_loader_mac.mm",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
@@ -119,6 +122,8 @@ static_library("chrome") {
   if (use_aura) {
     sources += [
       "//chrome/browser/platform_util_aura.cc",
+      "//chrome/browser/ui/aura/native_window_tracker_aura.cc",
+      "//chrome/browser/ui/aura/native_window_tracker_aura.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc",
     ]
   }
@@ -211,6 +216,8 @@ static_library("chrome") {
       "//chrome/browser/printing/printer_query.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
+      "//components/printing/browser/print_to_pdf/pdf_print_utils.cc",
+      "//components/printing/browser/print_to_pdf/pdf_print_utils.h",
     ]
 
     if (enable_oop_printing) {
@@ -357,6 +364,7 @@ source_set("plugins") {
     "//ppapi/shared_impl",
     "//services/device/public/mojom",
     "//skia",
+    "//storage/browser",
   ]
 }
 

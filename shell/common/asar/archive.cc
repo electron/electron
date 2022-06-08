@@ -15,7 +15,6 @@
 #include "base/logging.h"
 #include "base/pickle.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/task/post_task.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/values.h"
 #include "electron/fuses.h"

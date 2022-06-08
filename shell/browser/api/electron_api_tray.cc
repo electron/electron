@@ -389,7 +389,6 @@ gfx::Rect Tray::GetBounds() {
 bool Tray::CheckAlive() {
   if (!tray_icon_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::ErrorThrower(isolate).ThrowError("Tray is destroyed");
     return false;

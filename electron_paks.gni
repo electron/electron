@@ -19,14 +19,12 @@ template("electron_repack_percent") {
     # All sources should also have deps for completeness.
     sources = [
       "$root_gen_dir/components/components_resources_${percent}_percent.pak",
-      "$root_gen_dir/content/app/resources/content_resources_${percent}_percent.pak",
       "$root_gen_dir/third_party/blink/public/resources/blink_scaled_resources_${percent}_percent.pak",
       "$root_gen_dir/ui/resources/ui_resources_${percent}_percent.pak",
     ]
 
     deps = [
       "//components/resources",
-      "//content/app/resources",
       "//third_party/blink/public:scaled_resources_${percent}_percent",
       "//ui/resources",
     ]
@@ -67,7 +65,6 @@ template("electron_extra_paks") {
       "$root_gen_dir/net/net_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/inspector_overlay_resources.pak",
-      "$root_gen_dir/ui/resources/webui_resources.pak",
       "$target_gen_dir/electron_resources.pak",
     ]
     deps = [
@@ -183,7 +180,9 @@ template("electron_paks") {
       "${root_gen_dir}/components/strings/components_locale_settings_",
       "${root_gen_dir}/components/strings/components_strings_",
       "${root_gen_dir}/device/bluetooth/strings/bluetooth_strings_",
+      "${root_gen_dir}/extensions/strings/extensions_strings_",
       "${root_gen_dir}/services/strings/services_strings_",
+      "${root_gen_dir}/third_party/blink/public/strings/blink_accessibility_strings_",
       "${root_gen_dir}/third_party/blink/public/strings/blink_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
       "${root_gen_dir}/ui/strings/ax_strings_",
@@ -196,8 +195,10 @@ template("electron_paks") {
       "//components/strings:components_locale_settings",
       "//components/strings:components_strings",
       "//device/bluetooth/strings",
+      "//extensions/strings",
       "//services/strings",
       "//third_party/blink/public/strings",
+      "//third_party/blink/public/strings:accessibility_strings",
       "//ui/strings:app_locale_settings",
       "//ui/strings:ax_strings",
       "//ui/strings:ui_strings",

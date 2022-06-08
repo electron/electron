@@ -148,7 +148,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
   if (showing_frame) {
     insets = view->GetBorderDecorationInsets();
     if (base::i18n::IsRTL()) {
-      insets.Set(insets.top(), insets.right(), insets.bottom(), insets.left());
+      insets.set_left_right(insets.right(), insets.left());
     }
 
     input_insets = view->GetInputInsets();

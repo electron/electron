@@ -99,7 +99,7 @@ You should at least follow these steps to improve the security of your applicati
 
 1. [Only load secure content](#1-only-load-secure-content)
 2. [Disable the Node.js integration in all renderers that display remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
-3. [Enable context isolation in all renderers that display remote content](#3-enable-context-isolation-for-remote-content)
+3. [Enable context isolation in all renderers](#3-enable-context-isolation)
 4. [Enable process sandboxing](#4-enable-process-sandboxing)
 5. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#5-handle-session-permission-requests-from-remote-content)
 6. [Do not disable `webSecurity`](#6-do-not-disable-websecurity)
@@ -225,7 +225,7 @@ do consume Node.js modules or features. Preload scripts continue to have access
 to `require` and other Node.js features, allowing developers to expose a custom
 API to remotely loaded content via the [contextBridge API](../api/context-bridge.md).
 
-### 3. Enable Context Isolation for remote content
+### 3. Enable Context Isolation
 
 :::info
 This recommendation is the default behavior in Electron since 12.0.0.

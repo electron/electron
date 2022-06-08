@@ -17,7 +17,6 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
@@ -46,14 +45,14 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
 
   switch (settings.type) {
     case MessageBoxType::kInformation:
-      alert.alertStyle = NSInformationalAlertStyle;
+      alert.alertStyle = NSAlertStyleInformational;
       break;
     case MessageBoxType::kWarning:
     case MessageBoxType::kError:
-      // NSWarningAlertStyle shows the app icon while NSCriticalAlertStyle
+      // NSWarningAlertStyle shows the app icon while NSAlertStyleCritical
       // shows a warning icon with an app icon badge. Since there is no
-      // error variant, lets just use NSCriticalAlertStyle.
-      alert.alertStyle = NSCriticalAlertStyle;
+      // error variant, lets just use NSAlertStyleCritical.
+      alert.alertStyle = NSAlertStyleCritical;
       break;
     default:
       break;
@@ -178,8 +177,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
       // users will run in the callback, we have to delay running the callback
       // until next tick, otherwise crash like this may happen:
       // https://github.com/electron/electron/issues/26884
-      base::PostTask(
-          FROM_HERE, {content::BrowserThread::UI},
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
           base::BindOnce(std::move(callback_), response, suppressed));
     };
     [alert beginSheetModalForWindow:window completionHandler:handler];
@@ -199,7 +198,7 @@ void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   NSAlert* alert = [[NSAlert alloc] init];
   [alert setMessageText:base::SysUTF16ToNSString(title)];
   [alert setInformativeText:base::SysUTF16ToNSString(content)];
-  [alert setAlertStyle:NSCriticalAlertStyle];
+  [alert setAlertStyle:NSAlertStyleCritical];
   [alert runModal];
   [alert release];
 }

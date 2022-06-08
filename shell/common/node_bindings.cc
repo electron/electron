@@ -480,7 +480,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
-             node::EnvironmentFlags::kNoInitializeInspector;
+             node::EnvironmentFlags::kNoCreateInspector;
   }
 
   if (!electron::fuses::IsNodeCliInspectEnabled()) {
@@ -628,8 +628,6 @@ void NodeBindings::UvRunOnce() {
   if (!env)
     return;
 
-  // Use Locker in browser process.
-  gin_helper::Locker locker(env->isolate());
   v8::HandleScope handle_scope(env->isolate());
 
   // Enter node context while dealing with uv events.

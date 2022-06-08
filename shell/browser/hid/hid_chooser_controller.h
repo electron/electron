@@ -42,14 +42,20 @@ class HidChooserController
   // is closed, either by selecting an item or by dismissing the chooser dialog.
   // The callback is called with the selected device, or nullptr if no device is
   // selected.
-  HidChooserController(content::RenderFrameHost* render_frame_host,
-                       std::vector<blink::mojom::HidDeviceFilterPtr> filters,
-                       content::HidChooser::Callback callback,
-                       content::WebContents* web_contents,
-                       base::WeakPtr<ElectronHidDelegate> hid_delegate);
+  HidChooserController(
+      content::RenderFrameHost* render_frame_host,
+      std::vector<blink::mojom::HidDeviceFilterPtr> filters,
+      std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
+      content::HidChooser::Callback callback,
+      content::WebContents* web_contents,
+      base::WeakPtr<ElectronHidDelegate> hid_delegate);
   HidChooserController(HidChooserController&) = delete;
   HidChooserController& operator=(HidChooserController&) = delete;
   ~HidChooserController() override;
+
+  // static
+  static std::string PhysicalDeviceIdFromDeviceInfo(
+      const device::mojom::HidDeviceInfo& device);
 
   // HidChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::HidDeviceInfo& device_info) override;
@@ -68,6 +74,7 @@ class HidChooserController
   void OnGotDevices(std::vector<device::mojom::HidDeviceInfoPtr> devices);
   bool DisplayDevice(const device::mojom::HidDeviceInfo& device) const;
   bool FilterMatchesAny(const device::mojom::HidDeviceInfo& device) const;
+  bool IsExcluded(const device::mojom::HidDeviceInfo& device) const;
 
   // Add |device_info| to |device_map_|. The device is added to the chooser item
   // representing the physical device. If the chooser item does not yet exist, a
@@ -88,6 +95,7 @@ class HidChooserController
   void OnDeviceChosen(gin::Arguments* args);
 
   std::vector<blink::mojom::HidDeviceFilterPtr> filters_;
+  std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters_;
   content::HidChooser::Callback callback_;
   const url::Origin origin_;
   const int frame_tree_node_id_;

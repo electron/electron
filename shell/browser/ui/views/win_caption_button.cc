@@ -50,7 +50,7 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
   const SkAlpha theme_alpha = SkColorGetA(bg_color);
 
   gfx::Rect bounds = GetContentsBounds();
-  bounds.Inset(0, 0, 0, 0);
+  bounds.Inset(gfx::Insets::TLBR(0, 0, 0, 0));
 
   canvas->FillRect(bounds, SkColorSetA(bg_color, theme_alpha));
 
@@ -145,7 +145,7 @@ void DrawRect(gfx::Canvas* canvas,
               const cc::PaintFlags& flags) {
   gfx::RectF rect_f(rect);
   float stroke_half_width = flags.getStrokeWidth() / 2;
-  rect_f.Inset(stroke_half_width, stroke_half_width);
+  rect_f.Inset(gfx::InsetsF::VH(stroke_half_width, stroke_half_width));
   canvas->DrawRect(rect_f, flags);
 }
 
@@ -197,7 +197,7 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
     case VIEW_ID_RESTORE_BUTTON: {
       // Bottom left ("in front") square.
       const int separation = std::floor(2 * scale);
-      symbol_rect.Inset(0, separation, separation, 0);
+      symbol_rect.Inset(gfx::Insets::TLBR(0, separation, separation, 0));
       DrawRect(canvas, symbol_rect, flags);
 
       // Top right ("behind") square.

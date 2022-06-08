@@ -21,6 +21,7 @@ async function createWindow () {
     transparent: true,
     vibrancy: 'under-window',
     webPreferences: {
+      backgroundThrottling: false,
       contextIsolation: false,
       nodeIntegration: true
     }
@@ -43,6 +44,7 @@ ipcMain.on('set-transparent', async () => {
   colors.transparent = result[0].hex();
 
   const { green, transparent } = colors;
+  console.log({ green, transparent });
   process.exit(green === transparent ? 1 : 0);
 });
 

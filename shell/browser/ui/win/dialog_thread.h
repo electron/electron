@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "base/memory/scoped_refptr.h"
-#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
 namespace dialog_thread {
@@ -33,8 +33,8 @@ void Run(base::OnceCallback<R()> execute, base::OnceCallback<void(R)> done) {
           [](TaskRunner task_runner, base::OnceCallback<R()> execute,
              base::OnceCallback<void(R)> done) {
             R r = std::move(execute).Run();
-            base::PostTask(
-                FROM_HERE, {content::BrowserThread::UI},
+            content::GetUIThreadTaskRunner({})->PostTask(
+                FROM_HERE,
                 base::BindOnce(
                     [](TaskRunner task_runner, base::OnceCallback<void(R)> done,
                        R r) {

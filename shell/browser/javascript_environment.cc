@@ -11,6 +11,7 @@
 
 #include "base/allocator/partition_alloc_features.h"
 #include "base/allocator/partition_allocator/partition_alloc.h"
+#include "base/bits.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/task/current_thread.h"
@@ -72,81 +73,6 @@ struct base::trace_event::TraceValue::Helper<
 
 namespace electron {
 
-class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
- public:
-  enum InitializationPolicy { kZeroInitialize, kDontInitialize };
-
-  ArrayBufferAllocator() {
-    // Ref.
-    // https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/wtf/allocator/partitions.cc;l=94;drc=062c315a858a87f834e16a144c2c8e9591af2beb
-    allocator_->init({base::PartitionOptions::AlignedAlloc::kDisallowed,
-                      base::PartitionOptions::ThreadCache::kDisabled,
-                      base::PartitionOptions::Quarantine::kAllowed,
-                      base::PartitionOptions::Cookie::kAllowed,
-                      base::PartitionOptions::BackupRefPtr::kDisabled,
-                      base::PartitionOptions::UseConfigurablePool::kNo});
-  }
-
-  // Allocate() methods return null to signal allocation failure to V8, which
-  // should respond by throwing a RangeError, per
-  // http://www.ecma-international.org/ecma-262/6.0/#sec-createbytedatablock.
-  void* Allocate(size_t size) override {
-    void* result = AllocateMemoryOrNull(size, kZeroInitialize);
-    return result;
-  }
-
-  void* AllocateUninitialized(size_t size) override {
-    void* result = AllocateMemoryOrNull(size, kDontInitialize);
-    return result;
-  }
-
-  void Free(void* data, size_t size) override {
-    allocator_->root()->Free(data);
-  }
-
- private:
-  static void* AllocateMemoryOrNull(size_t size, InitializationPolicy policy) {
-    return AllocateMemoryWithFlags(size, policy,
-                                   partition_alloc::AllocFlags::kReturnNull);
-  }
-
-  static void* AllocateMemoryWithFlags(size_t size,
-                                       InitializationPolicy policy,
-                                       int flags) {
-    // The array buffer contents are sometimes expected to be 16-byte aligned in
-    // order to get the best optimization of SSE, especially in case of audio
-    // and video buffers.  Hence, align the given size up to 16-byte boundary.
-    // Technically speaking, 16-byte aligned size doesn't mean 16-byte aligned
-    // address, but this heuristics works with the current implementation of
-    // PartitionAlloc (and PartitionAlloc doesn't support a better way for now).
-    if (base::kAlignment <
-        16) {  // base::kAlignment is a compile-time constant.
-      size_t aligned_size = base::bits::AlignUp(size, 16);
-      if (size == 0) {
-        aligned_size = 16;
-      }
-      if (aligned_size >= size) {  // Only when no overflow
-        size = aligned_size;
-      }
-    }
-
-    if (policy == kZeroInitialize) {
-      flags |= partition_alloc::AllocFlags::kZeroFill;
-    }
-    void* data = allocator_->root()->AllocWithFlags(flags, size, "Electron");
-    if (base::kAlignment < 16) {
-      char* ptr = reinterpret_cast<char*>(data);
-      DCHECK_EQ(base::bits::AlignUp(ptr, 16), ptr)
-          << "Pointer " << ptr << " not 16B aligned for size " << size;
-    }
-    return data;
-  }
-
-  static base::NoDestructor<base::PartitionAllocator> allocator_;
-};
-
-base::NoDestructor<base::PartitionAllocator> ArrayBufferAllocator::allocator_{};
-
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
     : isolate_(Initialize(event_loop)),
       isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
@@ -154,8 +80,6 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
                       gin::IsolateHolder::kAllowAtomicsWait,
                       gin::IsolateHolder::IsolateType::kUtility,
                       gin::IsolateHolder::IsolateCreationMode::kNormal,
-                      nullptr,
-                      nullptr,
                       nullptr,
                       nullptr,
                       isolate_),
@@ -172,7 +96,6 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   platform_->DrainTasks(isolate_);
 
   {
-    v8::Locker locker(isolate_);
     v8::HandleScope scope(isolate_);
     context_.Get(isolate_)->Exit();
   }
@@ -344,9 +267,11 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
 
   v8::V8::InitializePlatform(platform_);
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
-                                 new ArrayBufferAllocator(),
+                                 gin::ArrayBufferAllocator::SharedInstance(),
                                  nullptr /* external_reference_table */,
-                                 js_flags, false /* create_v8_platform */);
+                                 js_flags, nullptr /* fatal_error_callback */,
+                                 nullptr /* oom_error_callback */,
+                                 false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
@@ -370,7 +295,6 @@ void JavascriptEnvironment::OnMessageLoopCreated() {
 void JavascriptEnvironment::OnMessageLoopDestroying() {
   DCHECK(microtasks_runner_);
   {
-    v8::Locker locker(isolate_);
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();
   }

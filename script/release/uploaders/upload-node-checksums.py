@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import hashlib
@@ -29,7 +29,7 @@ def main():
   ]
 
   if args.target_dir is None:
-    store_artifact(directory, 'atom-shell/dist/{0}'.format(args.version),
+    store_artifact(directory, 'headers/dist/{0}'.format(args.version),
                    checksums)
   else:
     copy_files(checksums, args.target_dir)

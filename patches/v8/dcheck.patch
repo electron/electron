@@ -6,32 +6,32 @@ Subject: dcheck.patch
 https://github.com/auchenberg/volkswagen
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index e5a0e9fc7655bcc2359578e299b64952d6daa8a8..f15ccd03bc500b9a0095cb8581c6ffc143b29710 100644
+index 03bb3f062c5510292c2c983508d284f8cfde5b41..6d0622863ae436dfae6413126884e0f941a3f0b6 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -9080,7 +9080,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
+@@ -9168,7 +9168,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
  }
  
  void Isolate::PerformMicrotaskCheckpoint() {
 -  DCHECK_NE(MicrotasksPolicy::kScoped, GetMicrotasksPolicy());
-+  //DCHECK_NE(MicrotasksPolicy::kScoped, GetMicrotasksPolicy());
-   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
-   isolate->default_microtask_queue()->PerformCheckpoint(this);
++  // DCHECK_NE(MicrotasksPolicy::kScoped, GetMicrotasksPolicy());
+   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(this);
+   i_isolate->default_microtask_queue()->PerformCheckpoint(this);
  }
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index f0ba31671416f1d77d3b1a5ecb76a0dd3954c8c2..0436b896522b31904512694d20f883470a646a0f 100644
+index a2a22674d1d50926fefac037f837d0e33d9b5220..214c0ac8d83fc74d40eb00d4d2641f329500e33c 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
-@@ -6151,9 +6151,9 @@ void Heap::TearDown() {
+@@ -6208,9 +6208,9 @@ void Heap::TearDown() {
  void Heap::AddGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
                                   GCType gc_type, void* data) {
    DCHECK_NOT_NULL(callback);
 -  DCHECK(gc_prologue_callbacks_.end() ==
 -         std::find(gc_prologue_callbacks_.begin(), gc_prologue_callbacks_.end(),
 -                   GCCallbackTuple(callback, gc_type, data)));
-+//  DCHECK(gc_prologue_callbacks_.end() ==
-+//         std::find(gc_prologue_callbacks_.begin(), gc_prologue_callbacks_.end(),
-+//                   GCCallbackTuple(callback, gc_type, data)));
++  // DCHECK(gc_prologue_callbacks_.end() ==
++  //        std::find(gc_prologue_callbacks_.begin(), gc_prologue_callbacks_.end(),
++  //                  GCCallbackTuple(callback, gc_type, data)));
    gc_prologue_callbacks_.emplace_back(callback, gc_type, data);
  }
  

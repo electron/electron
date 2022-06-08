@@ -122,7 +122,7 @@ index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 3f7dce0281f7b5a540d7b9377ef14a8a6aa9a2fa..11d8419791f3e45d5242081422d452d4fc703833 100644
+index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e02ac49cf 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -42,6 +42,7 @@
@@ -141,8 +141,8 @@ index 3f7dce0281f7b5a540d7b9377ef14a8a6aa9a2fa..11d8419791f3e45d5242081422d452d4
  
  namespace {
  
-@@ -123,8 +125,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
-       controller_state_function_(
+@@ -114,8 +116,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+     : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
 +#ifndef MAS_BUILD
@@ -152,7 +152,7 @@ index 3f7dce0281f7b5a540d7b9377ef14a8a6aa9a2fa..11d8419791f3e45d5242081422d452d4
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        low_energy_discovery_manager_(
-@@ -365,8 +369,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -356,8 +360,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -166,7 +166,7 @@ index 3f7dce0281f7b5a540d7b9377ef14a8a6aa9a2fa..11d8419791f3e45d5242081422d452d4
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index ebe37172d254e8441fe2b8c290bd5a59af38d754..6a131f5c41f3e43a1467efeec2ce63f6903691b7 100644
+index 1b849df0ee4c40a765a14bfaa75720f5570d4846..1f7a4fe36a96d076ddcfd9c9f092f95132d579dc 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -173,6 +173,12 @@ source_set("audio") {
@@ -183,10 +183,10 @@ index ebe37172d254e8441fe2b8c290bd5a59af38d754..6a131f5c41f3e43a1467efeec2ce63f6
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index ebdc6364312ee710d416318836c03aeec9bfb65c..aa9b50de7efaf0e1b64effea93204984c91790b5 100644
+index eb0aff29b2f4fd2b035ef96186fd58d976876b05..8a68a8885ec42715c9b9dab0f04d1b90eb9baa6e 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -886,7 +886,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -885,7 +885,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());

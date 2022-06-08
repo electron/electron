@@ -21,11 +21,11 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/stl_util.h"
+#include "base/strings/escape.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
@@ -57,7 +57,6 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
-#include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
@@ -395,9 +394,8 @@ ElectronBrowserClient* ElectronBrowserClient::Get() {
 // static
 void ElectronBrowserClient::SetApplicationLocale(const std::string& locale) {
   if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
-      !base::PostTask(
-          FROM_HERE, {BrowserThread::IO},
-          base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
+      !content::GetIOThreadTaskRunner({})->PostTask(
+          FROM_HERE, base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
     g_io_thread_application_locale.Get() = locale;
   }
   *g_application_locale = locale;
@@ -452,6 +450,9 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(
       new extensions::MessagingAPIMessageFilter(process_id, browser_context));
 #endif
+
+  // Remove in case the host is reused after a crash, otherwise noop.
+  host->RemoveObserver(this);
 
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
@@ -964,10 +965,8 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 }
 
 std::unique_ptr<content::BrowserMainParts>
-ElectronBrowserClient::CreateBrowserMainParts(
-    content::MainFunctionParams params) {
-  auto browser_main_parts =
-      std::make_unique<ElectronBrowserMainParts>(std::move(params));
+ElectronBrowserClient::CreateBrowserMainParts(bool /* is_integration_test */) {
+  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>();
 
 #if BUILDFLAG(IS_MAC)
   browser_main_parts_ = browser_main_parts.get();
@@ -1038,7 +1037,7 @@ void HandleExternalProtocolInUI(
   if (!permission_helper)
     return;
 
-  GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
+  GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
   permission_helper->RequestOpenExternalPermission(std::move(callback),
                                                    has_user_gesture, url);
@@ -1057,8 +1056,8 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     const absl::optional<url::Origin>& initiating_origin,
     content::RenderFrameHost* initiator_document,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
-  base::PostTask(
-      FROM_HERE, {BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&HandleExternalProtocolInUI, url,
                      std::move(web_contents_getter), has_user_gesture));
   return true;
@@ -1139,11 +1138,11 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 
 std::vector<base::FilePath>
 ElectronBrowserClient::GetNetworkContextsParentDirectory() {
-  base::FilePath user_data_dir;
-  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
-  DCHECK(!user_data_dir.empty());
+  base::FilePath session_data;
+  base::PathService::Get(DIR_SESSION_DATA, &session_data);
+  DCHECK(!session_data.empty());
 
-  return {user_data_dir};
+  return {session_data};
 }
 
 std::string ElectronBrowserClient::GetProduct() {
@@ -1331,6 +1330,11 @@ void ElectronBrowserClient::
         NonNetworkURLLoaderFactoryMap* factories) {
   DCHECK(browser_context);
   DCHECK(factories);
+
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context);
+  protocol_registry->RegisterURLLoaderFactories(factories,
+                                                false /* allow_file_access */);
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
   factories->emplace(

@@ -61,6 +61,9 @@ class WinFrameView : public FramelessView {
 
   int FrameBorderThickness() const;
 
+  // views::ViewTargeterDelegate:
+  views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
+
   // Returns the thickness of the window border for the top edge of the frame,
   // which is sometimes different than FrameBorderThickness(). Does not include
   // the titlebar/tabstrip area. If |restored| is true, this is calculated as if

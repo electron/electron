@@ -1,20 +1,22 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Mon, 25 Oct 2021 21:45:57 +0200
-Subject: fix: patch out permissions checks in exclusive_access
+Subject: fix: adapt exclusive_access for electron needs
 
 This patch is necessary in order to properly enable
 navigator.keyboard.{(un)?lock}() functionality. We don't have a concept
 of PermissionManager nor of a Profile, so this would not affect usage of
 the API.
 
-We might consider potentially using our own permissions handler,
-but it's not strictly necessary for this API to work to spec.
-
-Profile check has been upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3247196
+We also need to ensure that NotifyExclusiveTabAccessLost is called
+on all platforms in FullscreenController::ExitFullscreenModeInternal()
+and not just macOS, since Electron's native window impls report state
+change fairly instantly as well, and so pressing escape won't work on
+Linux or Windows to un-fullscreen in some circumstances without this
+change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d54a5b39da 100644
+index ac9f8b06b066adb53a92cb1768e21d6b6e9be2a8..ebc0f0fe568d7219486360bbe4b6c65e415735e4 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -34,7 +36,7 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
  #include "chrome/common/chrome_switches.h"
  #include "content/public/browser/navigation_details.h"
  #include "content/public/browser/navigation_entry.h"
-@@ -161,6 +165,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -165,6 +169,7 @@ void FullscreenController::EnterFullscreenModeForTab(
      return;
    }
  
@@ -42,15 +44,15 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
    if (base::FeatureList::IsEnabled(
            blink::features::kWindowPlacementFullscreenCompanionWindow)) {
      if (!popunder_preventer_)
-@@ -168,6 +173,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -172,6 +177,7 @@ void FullscreenController::EnterFullscreenModeForTab(
      else
        popunder_preventer_->WillActivateWebContents(web_contents);
    }
 +#endif
  
-   SetTabWithExclusiveAccess(web_contents);
-   requesting_origin_ =
-@@ -203,7 +209,9 @@ void FullscreenController::EnterFullscreenModeForTab(
+   // Keep the current state. |SetTabWithExclusiveAccess| may change the return
+   // value of |IsWindowFullscreenForTabOrPending|.
+@@ -221,7 +227,9 @@ void FullscreenController::EnterFullscreenModeForTab(
  }
  
  void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
@@ -60,7 +62,7 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
  
    if (MaybeToggleFullscreenWithinTab(web_contents, false)) {
      // During tab capture of fullscreen-within-tab views, the browser window
-@@ -248,11 +256,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -276,11 +284,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
@@ -74,7 +76,7 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -402,13 +412,9 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -443,17 +453,15 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -88,29 +90,51 @@ index f1b9597ea5070ac1847355833a751c72abc0e917..caa82d39fbab39ce7c90dcec401aa8d5
      return;
 -  }
  #endif
- 
+   started_fullscreen_transition_ = true;
    toggled_into_fullscreen_ = true;
-@@ -421,6 +427,7 @@ void FullscreenController::EnterFullscreenModeInternal(
++#if 0
+   bool entering_tab_fullscreen = option == TAB && !tab_fullscreen_;
++#endif
+   GURL url;
+   if (option == TAB) {
+     url = GetRequestingOrigin();
+@@ -463,6 +471,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        url = extension_caused_fullscreen_;
    }
  
 +#if 0
-   if (display_id != display::kInvalidDisplayId) {
+   if (option == TAB && display_id != display::kInvalidDisplayId) {
      // Check, but do not prompt, for permission to request a specific screen.
      // Sites generally need permission to get the display id in the first place.
-@@ -434,6 +441,7 @@ void FullscreenController::EnterFullscreenModeInternal(
-       display_id = display::kInvalidDisplayId;
+@@ -480,6 +489,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+           GetDisplayId(WebContents::FromRenderFrameHost(requesting_frame));
      }
    }
 +#endif
  
    if (option == BROWSER)
      base::RecordAction(base::UserMetricsAction("ToggleFullscreen"));
+@@ -507,12 +517,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
+   RecordExitingUMA();
+   toggled_into_fullscreen_ = false;
+   started_fullscreen_transition_ = true;
+-#if BUILDFLAG(IS_MAC)
+-  // Mac windows report a state change instantly, and so we must also clear
++
++  // Electron native windows report a state change instantly, and so we must also clear
+   // state_prior_to_tab_fullscreen_ to match them else other logic using
+   // state_prior_to_tab_fullscreen_ will be incorrect.
+   NotifyTabExclusiveAccessLost();
+-#endif
++
+   exclusive_access_manager()->context()->ExitFullscreen();
+   extension_caused_fullscreen_ = GURL();
+ 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index 7bd40f52ef5f6b04a7ea114ec4d18c8a98ec6d42..fb04fed5cc1e2e255c9e67c180fababe1fbb3fe0 100644
+index f0841982cb296079c8b943067564d74bc1b7067c..49f59fc2c12c98faada52e0e7c8c9c6e6251b599 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-@@ -222,10 +222,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+@@ -242,10 +242,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
    // Used in testing to set the state to tab fullscreen.
    bool is_tab_fullscreen_for_testing_ = false;
  

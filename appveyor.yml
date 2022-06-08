@@ -11,7 +11,7 @@
 #  - "TARGET_ARCH" Choose from {'ia32', 'x64', 'arm', 'arm64', 'mips64el'}.
 #      Is used in some publishing scripts, but does NOT affect the Electron binary.
 #      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "NPM_CONFIG_ARCH" value.
-#  - "UPLOAD_TO_S3" Set it to '1' upload a release to the S3 bucket.
+#  - "UPLOAD_TO_STORAGE" Set it to '1' upload a release to the Azure bucket.
 #      Otherwise the release will be uploaded to the Github Releases.
 #      (The value is only checked if "ELECTRON_RELEASE" is defined.)
 #
@@ -25,7 +25,7 @@
 
 version: 1.0.{build}
 build_cloud: electron-16-core
-image: vs2019bt-16.6.2
+image: vs2019bt-16.16.11
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -150,6 +150,12 @@ build_script:
         if ($LASTEXITCODE -ne 0) {
           Write-warning "Failed to add third_party\angle\.git; continuing anyway"
         }
+        # build time generation of file dawn/common/Version_autogen.h depends on third_party/dawn/.git/HEAD
+        # https://dawn-review.googlesource.com/c/dawn/+/83901        
+        $(7z a $zipfile src\third_party\dawn\.git)
+        if ($LASTEXITCODE -ne 0) {
+          Write-warning "Failed to add third_party\dawn\.git; continuing anyway"
+        }
       }
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
@@ -172,7 +178,7 @@ build_script:
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
   - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
-  - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+  - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - 7z a node_headers.zip out\Default\gen\node_headers
   # Temporarily disable symbol generation on 32-bit Windows due to failures  
   - ps: >-
@@ -208,10 +214,9 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
-  # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
-  - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
-  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeperately --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
-  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )  
+  - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log )
+  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeperately --enable-logging=file --log-file=%cd%\electron.log )
+  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log )  
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"
@@ -223,9 +228,9 @@ deploy_script:
   - cd electron
   - ps: >-
       if (Test-Path Env:\ELECTRON_RELEASE) {
-        if (Test-Path Env:\UPLOAD_TO_S3) {
-          Write-Output "Uploading Electron release distribution to s3"
-          & python script\release\uploaders\upload.py --verbose --upload_to_s3
+        if (Test-Path Env:\UPLOAD_TO_STORAGE) {
+          Write-Output "Uploading Electron release distribution to azure"
+          & python script\release\uploaders\upload.py --verbose --upload_to_storage
         } else {
           Write-Output "Uploading Electron release distribution to github releases"
           & python script\release\uploaders\upload.py --verbose

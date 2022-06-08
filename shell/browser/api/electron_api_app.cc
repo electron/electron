@@ -35,6 +35,7 @@
 #include "crypto/crypto_buildflags.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
+#include "net/dns/public/dns_over_https_server_config.h"
 #include "net/dns/public/util.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -473,6 +474,8 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 int GetPathConstant(const std::string& name) {
   if (name == "appData")
     return DIR_APP_DATA;
+  else if (name == "sessionData")
+    return DIR_SESSION_DATA;
   else if (name == "userData")
     return chrome::DIR_USER_DATA;
   else if (name == "cache")
@@ -519,24 +522,21 @@ bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
         void(const base::CommandLine& command_line,
              const base::FilePath& current_directory,
-             const std::vector<uint8_t> additional_data,
-             const ProcessSingleton::NotificationAckCallback& ack_callback)>&
-        callback,
+             const std::vector<const uint8_t> additional_data)>& callback,
     const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const std::vector<uint8_t> additional_data,
-    const ProcessSingleton::NotificationAckCallback& ack_callback) {
+    const std::vector<const uint8_t> additional_data) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(cmd, cwd, std::move(additional_data), ack_callback);
+    callback.Run(cmd, cwd, std::move(additional_data));
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
 
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(
-        FROM_HERE, base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
-                                  std::move(additional_data), ack_callback));
+    task_runner->PostTask(FROM_HERE,
+                          base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
+                                         std::move(additional_data)));
   }
   // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();
@@ -802,7 +802,6 @@ bool App::CanCreateWindow(
     bool opener_suppressed,
     bool* no_javascript_access) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
@@ -828,7 +827,6 @@ void App::AllowCertificateError(
     base::OnceCallback<void(content::CertificateRequestResultType)> callback) {
   auto adapted_callback = base::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   bool prevent_default = Emit(
       "certificate-error", WebContents::FromOrCreate(isolate, web_contents),
@@ -881,9 +879,8 @@ void App::OnGpuInfoUpdate() {
   Emit("gpu-info-update");
 }
 
-void App::OnGpuProcessCrashed(base::TerminationStatus status) {
-  Emit("gpu-process-crashed",
-       status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
+void App::OnGpuProcessCrashed() {
+  Emit("gpu-process-crashed", true);
 }
 
 void App::BrowserChildProcessLaunchedAndConnected(
@@ -1084,54 +1081,14 @@ std::string App::GetLocaleCountryCode() {
   return region.size() == 2 ? region : std::string();
 }
 
-void App::OnFirstInstanceAck(
-    const base::span<const uint8_t>* first_instance_data) {
+void App::OnSecondInstance(const base::CommandLine& cmd,
+                           const base::FilePath& cwd,
+                           const std::vector<const uint8_t> additional_data) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  base::Value data_to_send;
-  if (first_instance_data) {
-    // Don't send back the local directly, because it might be empty.
-    v8::Local<v8::Value> data_local;
-    data_local = DeserializeV8Value(isolate, *first_instance_data);
-    if (!data_local.IsEmpty()) {
-      gin::ConvertFromV8(isolate, data_local, &data_to_send);
-    }
-  }
-  Emit("first-instance-ack", data_to_send);
-}
-
-// This function handles the user calling
-// the callback parameter sent out by the second-instance event.
-static void AckCallbackWrapper(
-    const ProcessSingleton::NotificationAckCallback& ack_callback,
-    gin::Arguments* args) {
-  blink::CloneableMessage ack_message;
-  args->GetNext(&ack_message);
-  if (!ack_message.encoded_message.empty()) {
-    ack_callback.Run(&ack_message.encoded_message);
-  } else {
-    ack_callback.Run(nullptr);
-  }
-}
-
-void App::OnSecondInstance(
-    const base::CommandLine& cmd,
-    const base::FilePath& cwd,
-    const std::vector<uint8_t> additional_data,
-    const ProcessSingleton::NotificationAckCallback& ack_callback) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> data_value =
       DeserializeV8Value(isolate, std::move(additional_data));
-  auto cb = base::BindRepeating(&AckCallbackWrapper, ack_callback);
-  bool prevent_default =
-      Emit("second-instance", cmd.argv(), cwd, data_value, cb);
-  if (!prevent_default) {
-    // Call the callback ourselves, and send back nothing.
-    ack_callback.Run(nullptr);
-  }
+  Emit("second-instance", cmd.argv(), cwd, data_value);
 }
 
 bool App::HasSingleInstanceLock() const {
@@ -1152,9 +1109,6 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   base::CreateDirectoryAndGetError(user_dir, nullptr);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
-  auto wrapped_cb = base::BindRepeating(NotificationCallbackWrapper, cb);
-  auto ack_cb =
-      base::BindRepeating(&App::OnFirstInstanceAck, base::Unretained(this));
 
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
@@ -1163,10 +1117,11 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(
       program_name, user_dir, additional_data_message.encoded_message,
-      app_is_sandboxed, wrapped_cb, ack_cb);
+      app_is_sandboxed, base::BindRepeating(NotificationCallbackWrapper, cb));
 #else
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, additional_data_message.encoded_message, wrapped_cb, ack_cb);
+      user_dir, additional_data_message.encoded_message,
+      base::BindRepeating(NotificationCallbackWrapper, cb));
 #endif
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
@@ -1683,17 +1638,18 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
     // Validate individual server templates prior to batch-assigning to
     // doh_config.
+    std::vector<net::DnsOverHttpsServerConfig> servers;
     for (const std::string& server_template : secure_dns_server_strings) {
-      absl::optional<net::DnsOverHttpsConfig> server_config =
-          net::DnsOverHttpsConfig::FromString(server_template);
+      absl::optional<net::DnsOverHttpsServerConfig> server_config =
+          net::DnsOverHttpsServerConfig::FromString(server_template);
       if (!server_config.has_value()) {
         thrower.ThrowTypeError(std::string("not a valid DoH template: ") +
                                server_template);
         return;
       }
+      servers.push_back(*server_config);
     }
-    doh_config = *net::DnsOverHttpsConfig::FromStrings(
-        std::move(secure_dns_server_strings));
+    doh_config = net::DnsOverHttpsConfig(std::move(servers));
   }
 
   if (opts.Has("enableAdditionalDnsQueryTypes") &&

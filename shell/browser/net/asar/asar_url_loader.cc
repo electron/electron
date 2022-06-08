@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/strings/stringprintf.h"
-#include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
 #include "electron/fuses.h"
@@ -270,9 +269,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       head->headers->AddHeader(net::HttpRequestHeaders::kContentType,
                                head->mime_type.c_str());
     }
-    client_->OnReceiveResponse(std::move(head),
-                               mojo::ScopedDataPipeConsumerHandle());
-    client_->OnStartLoadingResponseBody(std::move(consumer_handle));
+    client_->OnReceiveResponse(std::move(head), std::move(consumer_handle));
 
     if (total_bytes_to_send == 0) {
       // There's definitely no more data, so we're already done.

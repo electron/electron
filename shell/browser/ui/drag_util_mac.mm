@@ -30,7 +30,8 @@ void AddFilesToPasteboard(NSPasteboard* pasteboard,
 void DragFileItems(const std::vector<base::FilePath>& files,
                    const gfx::Image& icon,
                    gfx::NativeView view) {
-  NSPasteboard* pasteboard = [NSPasteboard pasteboardWithName:NSDragPboard];
+  NSPasteboard* pasteboard =
+      [NSPasteboard pasteboardWithName:NSPasteboardNameDrag];
   AddFilesToPasteboard(pasteboard, files);
 
   // Synthesize a drag event, since we don't have access to the actual event
@@ -38,9 +39,9 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   NSWindow* window = [view.GetNativeNSView() window];
   NSPoint position = [window mouseLocationOutsideOfEventStream];
   NSTimeInterval eventTime = [[NSApp currentEvent] timestamp];
-  NSEvent* dragEvent = [NSEvent mouseEventWithType:NSLeftMouseDragged
+  NSEvent* dragEvent = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDragged
                                           location:position
-                                     modifierFlags:NSLeftMouseDraggedMask
+                                     modifierFlags:NSEventMaskLeftMouseDragged
                                          timestamp:eventTime
                                       windowNumber:[window windowNumber]
                                            context:nil

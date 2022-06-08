@@ -15,15 +15,15 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index f273749bd026abb287ba33e03208a286e80a57a1..0159cd61a8e95d6cca51cdc855f1dea3ec965d6b 100644
+index 7d9068b87eee4dbc3435ed6f67285d428dc85f52..c0b8c6e5b49390b8a87d6a9d19605f6b6a1c3562 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -59,7 +59,8 @@ IsolateHolder::IsolateHolder(
+     IsolateType isolate_type,
+     IsolateCreationMode isolate_creation_mode,
      v8::CreateHistogramCallback create_histogram_callback,
-     v8::AddHistogramSampleCallback add_histogram_sample_callback,
-     v8::FatalErrorCallback fatal_error_callback,
--    v8::OOMErrorCallback oom_error_callback)
-+    v8::OOMErrorCallback oom_error_callback,
+-    v8::AddHistogramSampleCallback add_histogram_sample_callback)
++    v8::AddHistogramSampleCallback add_histogram_sample_callback,
 +    v8::Isolate* isolate)
      : access_mode_(access_mode), isolate_type_(isolate_type) {
    CHECK(Initialized())
@@ -38,15 +38,15 @@ index f273749bd026abb287ba33e03208a286e80a57a1..0159cd61a8e95d6cca51cdc855f1dea3
                                                     access_mode_, task_runner);
    if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 178023d52c9e8ef716ee215e7a243b1800357818..979fdc27efbe69c276894e0dc82e53ac2c4db7b4 100644
+index 4efc13c79ae742fa1925d064318627452ba852b2..978c0d144370162e65038cf8a2e125fbfd0f7ebf 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -84,7 +84,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -82,7 +82,8 @@ class GIN_EXPORT IsolateHolder {
+       IsolateType isolate_type,
+       IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
        v8::CreateHistogramCallback create_histogram_callback = nullptr,
-       v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr,
-       v8::FatalErrorCallback fatal_error_callback = nullptr,
--      v8::OOMErrorCallback oom_error_callback = nullptr);
-+      v8::OOMErrorCallback oom_error_callback = nullptr,
+-      v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr);
++      v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr,
 +      v8::Isolate* isolate = nullptr);
    IsolateHolder(const IsolateHolder&) = delete;
    IsolateHolder& operator=(const IsolateHolder&) = delete;

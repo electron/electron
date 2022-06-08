@@ -17,7 +17,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 namespace electron {

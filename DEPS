@@ -2,14 +2,11 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '102.0.4971.0',
+    '104.0.5073.0',
   'node_version':
-    'v16.14.2',
+    'v16.15.1',
   'nan_version':
-    # The following commit hash of NAN is v2.14.2 with *only* changes to the
-    # test suite. This should be updated to a specific tag when one becomes
-    # available.
-    '65b32af46e9d7fab2e4ff657751205b3865f4920',
+    '16fa32231e2ccd89d2804b3f765319128b20c4ac',
   'squirrel.mac_version':
     '0e5d146ba13101a1302d59ea6e6e0b3cace4ae38',
 

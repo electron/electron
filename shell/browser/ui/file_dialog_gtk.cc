@@ -2,8 +2,6 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <gmodule.h>
-
 #include <memory>
 #include <string>
 
@@ -11,6 +9,7 @@
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "base/threading/thread_restrictions.h"
+#include "electron/electron_gtk_stubs.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -18,31 +17,10 @@
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "ui/base/glib/glib_signal.h"
-#include "ui/gtk/gtk_ui.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_ui.h"    // nogncheck
+#include "ui/gtk/gtk_util.h"  // nogncheck
 
 namespace file_dialog {
-
-static GModule* gtk_module;
-static absl::optional<bool> supports_gtk_file_chooser_native;
-
-using dl_gtk_native_dialog_show_t = void (*)(void*);
-using dl_gtk_native_dialog_destroy_t = void (*)(void*);
-using dl_gtk_native_dialog_set_modal_t = void (*)(void*, gboolean);
-using dl_gtk_native_dialog_run_t = int (*)(void*);
-using dl_gtk_native_dialog_hide_t = void (*)(void*);
-using dl_gtk_file_chooser_native_new_t = void* (*)(const char*,
-                                                   GtkWindow*,
-                                                   GtkFileChooserAction,
-                                                   const char*,
-                                                   const char*);
-
-static dl_gtk_native_dialog_show_t dl_gtk_native_dialog_show;
-static dl_gtk_native_dialog_destroy_t dl_gtk_native_dialog_destroy;
-static dl_gtk_native_dialog_set_modal_t dl_gtk_native_dialog_set_modal;
-static dl_gtk_native_dialog_run_t dl_gtk_native_dialog_run;
-static dl_gtk_native_dialog_hide_t dl_gtk_native_dialog_hide;
-static dl_gtk_file_chooser_native_new_t dl_gtk_file_chooser_native_new;
 
 DialogSettings::DialogSettings() = default;
 DialogSettings::DialogSettings(const DialogSettings&) = default;
@@ -53,71 +31,23 @@ namespace {
 static const int kPreviewWidth = 256;
 static const int kPreviewHeight = 512;
 
-void InitGtkFileChooserNativeSupport() {
-  // Return early if we have already setup the native functions or we have tried
-  // once before and failed. Avoid running expensive dynamic library operations.
-  if (supports_gtk_file_chooser_native) {
-    return;
+std::string MakeCaseInsensitivePattern(const std::string& extension) {
+  std::string pattern("*.");
+
+  for (std::size_t i = 0, n = extension.size(); i < n; i++) {
+    char ch = extension[i];
+    if (!base::IsAsciiAlpha(ch)) {
+      pattern.push_back(ch);
+      continue;
+    }
+
+    pattern.push_back('[');
+    pattern.push_back(base::ToLowerASCII(ch));
+    pattern.push_back(base::ToUpperASCII(ch));
+    pattern.push_back(']');
   }
 
-  // Mark that we have attempted to initialize support at least once
-  supports_gtk_file_chooser_native = false;
-
-  if (!g_module_supported()) {
-    return;
-  }
-
-  gtk_module = g_module_open("libgtk-3.so", G_MODULE_BIND_LAZY);
-  if (!gtk_module) {
-    return;
-  }
-
-  // Will never be unloaded
-  g_module_make_resident(gtk_module);
-
-  bool found = g_module_symbol(
-      gtk_module, "gtk_file_chooser_native_new",
-      reinterpret_cast<void**>(&dl_gtk_file_chooser_native_new));
-  if (!found) {
-    return;
-  }
-
-  found = g_module_symbol(
-      gtk_module, "gtk_native_dialog_set_modal",
-      reinterpret_cast<void**>(&dl_gtk_native_dialog_set_modal));
-  if (!found) {
-    return;
-  }
-
-  found =
-      g_module_symbol(gtk_module, "gtk_native_dialog_destroy",
-                      reinterpret_cast<void**>(&dl_gtk_native_dialog_destroy));
-  if (!found) {
-    return;
-  }
-
-  found = g_module_symbol(gtk_module, "gtk_native_dialog_show",
-                          reinterpret_cast<void**>(&dl_gtk_native_dialog_show));
-  if (!found) {
-    return;
-  }
-
-  found = g_module_symbol(gtk_module, "gtk_native_dialog_hide",
-                          reinterpret_cast<void**>(&dl_gtk_native_dialog_hide));
-  if (!found) {
-    return;
-  }
-
-  found = g_module_symbol(gtk_module, "gtk_native_dialog_run",
-                          reinterpret_cast<void**>(&dl_gtk_native_dialog_run));
-  if (!found) {
-    return;
-  }
-
-  supports_gtk_file_chooser_native =
-      dl_gtk_file_chooser_native_new && dl_gtk_native_dialog_set_modal &&
-      dl_gtk_native_dialog_destroy && dl_gtk_native_dialog_run &&
-      dl_gtk_native_dialog_show && dl_gtk_native_dialog_hide;
+  return pattern;
 }
 
 class FileChooserDialog {
@@ -126,12 +56,10 @@ class FileChooserDialog {
       : parent_(
             static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    InitGtkFileChooserNativeSupport();
-
     auto label = settings.button_label;
 
-    if (*supports_gtk_file_chooser_native) {
-      dialog_ = GTK_FILE_CHOOSER(dl_gtk_file_chooser_native_new(
+    if (electron::IsElectron_gtkInitialized()) {
+      dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_native_new(
           settings.title.c_str(), NULL, action,
           label.empty() ? nullptr : label.c_str(), nullptr));
     } else {
@@ -150,8 +78,8 @@ class FileChooserDialog {
 
     if (parent_) {
       parent_->SetEnabled(false);
-      if (*supports_gtk_file_chooser_native) {
-        dl_gtk_native_dialog_set_modal(static_cast<void*>(dialog_), TRUE);
+      if (electron::IsElectron_gtkInitialized()) {
+        gtk_native_dialog_set_modal(GTK_NATIVE_DIALOG(dialog_), TRUE);
       } else {
         gtk::SetGtkTransientForAura(GTK_WIDGET(dialog_),
                                     parent_->GetNativeWindow());
@@ -188,7 +116,7 @@ class FileChooserDialog {
     // org.freedesktop.portal.FileChooser portal. In the case of running through
     // the org.freedesktop.portal.FileChooser portal, anything having to do with
     // the update-preview signal or the preview widget will just be ignored.
-    if (!*supports_gtk_file_chooser_native) {
+    if (!electron::IsElectron_gtkInitialized()) {
       preview_ = gtk_image_new();
       g_signal_connect(dialog_, "update-preview",
                        G_CALLBACK(OnUpdatePreviewThunk), this);
@@ -197,8 +125,8 @@ class FileChooserDialog {
   }
 
   ~FileChooserDialog() {
-    if (*supports_gtk_file_chooser_native) {
-      dl_gtk_native_dialog_destroy(static_cast<void*>(dialog_));
+    if (electron::IsElectron_gtkInitialized()) {
+      gtk_native_dialog_destroy(GTK_NATIVE_DIALOG(dialog_));
     } else {
       gtk_widget_destroy(GTK_WIDGET(dialog_));
     }
@@ -236,8 +164,8 @@ class FileChooserDialog {
   void RunAsynchronous() {
     g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponseThunk),
                      this);
-    if (*supports_gtk_file_chooser_native) {
-      dl_gtk_native_dialog_show(static_cast<void*>(dialog_));
+    if (electron::IsElectron_gtkInitialized()) {
+      gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog_));
     } else {
       gtk_widget_show_all(GTK_WIDGET(dialog_));
       gtk::GtkUi::GetPlatform()->ShowGtkWindow(GTK_WINDOW(dialog_));
@@ -305,8 +233,8 @@ class FileChooserDialog {
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
-  if (*supports_gtk_file_chooser_native) {
-    dl_gtk_native_dialog_hide(static_cast<void*>(dialog_));
+  if (electron::IsElectron_gtkInitialized()) {
+    gtk_native_dialog_hide(GTK_NATIVE_DIALOG(dialog_));
   } else {
     gtk_widget_hide(GTK_WIDGET(dialog_));
   }
@@ -343,12 +271,8 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     GtkFileFilter* gtk_filter = gtk_file_filter_new();
 
     for (const auto& extension : filter.second) {
-      // guarantee a pure lowercase variant
-      std::string file_extension = base::ToLowerASCII("*." + extension);
-      gtk_file_filter_add_pattern(gtk_filter, file_extension.c_str());
-      // guarantee a pure uppercase variant
-      file_extension = base::ToUpperASCII("*." + extension);
-      gtk_file_filter_add_pattern(gtk_filter, file_extension.c_str());
+      std::string pattern = MakeCaseInsensitivePattern(extension);
+      gtk_file_filter_add_pattern(gtk_filter, pattern.c_str());
     }
 
     gtk_file_filter_set_name(gtk_filter, filter.first.c_str());
@@ -371,7 +295,7 @@ bool CanPreview(const struct stat& st) {
 }
 
 void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
-  CHECK(!*supports_gtk_file_chooser_native);
+  CHECK(!electron::IsElectron_gtkInitialized());
   gchar* filename = gtk_file_chooser_get_preview_filename(chooser);
   if (!filename) {
     gtk_file_chooser_set_preview_widget_active(chooser, FALSE);
@@ -400,15 +324,15 @@ void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
 
 void ShowFileDialog(const FileChooserDialog& dialog) {
   // gtk_native_dialog_run() will call gtk_native_dialog_show() for us.
-  if (!*supports_gtk_file_chooser_native) {
+  if (!electron::IsElectron_gtkInitialized()) {
     gtk_widget_show_all(GTK_WIDGET(dialog.dialog()));
   }
 }
 
 int RunFileDialog(const FileChooserDialog& dialog) {
   int response = 0;
-  if (*supports_gtk_file_chooser_native) {
-    response = dl_gtk_native_dialog_run(static_cast<void*>(dialog.dialog()));
+  if (electron::IsElectron_gtkInitialized()) {
+    response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(dialog.dialog()));
   } else {
     response = gtk_dialog_run(GTK_DIALOG(dialog.dialog()));
   }

@@ -300,11 +300,6 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnTransferSizeUpdated(
   target_client_->OnTransferSizeUpdated(transfer_size_diff);
 }
 
-void ProxyingURLLoaderFactory::InProgressRequest::OnStartLoadingResponseBody(
-    mojo::ScopedDataPipeConsumerHandle body) {
-  target_client_->OnStartLoadingResponseBody(std::move(body));
-}
-
 void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
     const network::URLLoaderCompletionStatus& status) {
   if (status.error_code != net::OK) {

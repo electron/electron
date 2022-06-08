@@ -21,7 +21,6 @@
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
-#include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -43,11 +42,11 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "shell/browser/printing/print_preview_message_handler.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
@@ -61,7 +60,8 @@ class ScriptExecutor;
 
 namespace blink {
 struct DeviceEmulationParams;
-}
+// enum class PermissionType;
+}  // namespace blink
 
 namespace gin_helper {
 class Dictionary;
@@ -97,7 +97,7 @@ namespace api {
 
 using DevicePermissionMap = std::map<
     int,
-    std::map<content::PermissionType,
+    std::map<blink::PermissionType,
              std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
 
 // Wrapper around the content::WebContents.
@@ -222,7 +222,7 @@ class WebContents : public ExclusiveAccessContext,
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void OnGetDefaultPrinter(base::Value print_settings,
+  void OnGetDefaultPrinter(base::Value::Dict print_settings,
                            printing::CompletionCallback print_callback,
                            std::u16string device_name,
                            bool silent,
@@ -230,7 +230,10 @@ class WebContents : public ExclusiveAccessContext,
                            std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
-  v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
+  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
+  void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
+                    PrintViewManagerElectron::PrintResult print_result,
+                    scoped_refptr<base::RefCountedMemory> data);
 #endif
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
@@ -439,16 +442,23 @@ class WebContents : public ExclusiveAccessContext,
   // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
   void GrantDevicePermission(const url::Origin& origin,
                              const base::Value* device,
-                             content::PermissionType permissionType,
+                             blink::PermissionType permissionType,
                              content::RenderFrameHost* render_frame_host);
+
+  // Revokes |origin| access to |device|.
+  // To be used in place of ObjectPermissionContextBase::RevokeObjectPermission.
+  void RevokeDevicePermission(const url::Origin& origin,
+                              const base::Value* device,
+                              blink::PermissionType permission_type,
+                              content::RenderFrameHost* render_frame_host);
 
   // Returns the list of devices that |origin| has been granted permission to
   // access. To be used in place of
   // ObjectPermissionContextBase::GetGrantedObjects.
-  std::vector<base::Value> GetGrantedDevices(
-      const url::Origin& origin,
-      content::PermissionType permissionType,
-      content::RenderFrameHost* render_frame_host);
+  bool CheckDevicePermission(const url::Origin& origin,
+                             const base::Value* device,
+                             blink::PermissionType permissionType,
+                             content::RenderFrameHost* render_frame_host);
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -744,6 +754,10 @@ class WebContents : public ExclusiveAccessContext,
   void SetHtmlApiFullscreen(bool enter_fullscreen);
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
+
+  bool DoesDeviceMatch(const base::Value* device,
+                       const base::Value* device_to_compare,
+                       blink::PermissionType permission_type);
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;

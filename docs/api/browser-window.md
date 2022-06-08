@@ -4,6 +4,9 @@
 
 Process: [Main](../glossary.md#main-process)
 
+This module cannot be used until the `ready` event of the `app`
+module is emitted.
+
 ```javascript
 // In the main process.
 const { BrowserWindow } = require('electron')
@@ -424,7 +427,7 @@ Possible values are:
   `notification`.
 * On macOS, possible types are `desktop`, `textured`.
   * The `textured` type adds metal gradient appearance
-    (`NSTexturedBackgroundWindowMask`).
+    (`NSWindowStyleMaskTexturedBackground`).
   * The `desktop` type places the window at the desktop background window level
     (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive

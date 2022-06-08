@@ -10,7 +10,6 @@
 
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
@@ -83,8 +82,8 @@
   }
 
   // Send the callback to the browser thread.
-  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(std::move(callback_), converted));
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(std::move(callback_), converted));
 
   [self release];
 }
@@ -221,11 +220,9 @@
                    withLocal:product.priceLocale] UTF8String];
 
       // Currency Information
-      if (@available(macOS 10.12, *)) {
-        if (product.priceLocale.currencyCode != nil) {
-          productStruct.currencyCode =
-              [product.priceLocale.currencyCode UTF8String];
-        }
+      if (product.priceLocale.currencyCode != nil) {
+        productStruct.currencyCode =
+            [product.priceLocale.currencyCode UTF8String];
       }
     }
   }
