@@ -304,10 +304,10 @@ ElectronBrowserContext::GetSpecialStoragePolicy() {
 
 std::string ElectronBrowserContext::GetUserAgent() const {
   return user_agent_.value_or(ElectronBrowserClient::Get()->GetUserAgent());
-
 }
 
-absl::optional<std::string> ElectronBrowserContext::GetUserAgentOverride() const {
+absl::optional<std::string> ElectronBrowserContext::GetUserAgentOverride()
+    const {
   return user_agent_;
 }
 

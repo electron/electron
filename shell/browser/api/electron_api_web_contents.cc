@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "components/embedder_support/user_agent_utils.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -30,6 +29,7 @@
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
+#include "components/embedder_support/user_agent_utils.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
@@ -662,7 +662,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
 
-  absl::optional<std::string> user_agent_override = GetBrowserContext()->GetUserAgentOverride();
+  absl::optional<std::string> user_agent_override =
+      GetBrowserContext()->GetUserAgentOverride();
   if (user_agent_override)
     SetUserAgent(*user_agent_override);
   web_contents->SetUserData(kElectronApiWebContentsKey,
@@ -870,7 +871,8 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  absl::optional<std::string> user_agent_override = GetBrowserContext()->GetUserAgentOverride();
+  absl::optional<std::string> user_agent_override =
+      GetBrowserContext()->GetUserAgentOverride();
   if (user_agent_override)
     SetUserAgent(*user_agent_override);
 
