@@ -5,7 +5,7 @@
  * out-of-process (cross-origin) are created here. "Embedder" roughly means
  * "parent."
  */
-import { BrowserWindow, deprecate } from 'electron/main';
+import { BrowserWindow } from 'electron/main';
 import type { BrowserWindowConstructorOptions, Referrer, WebContents, LoadURLOptions } from 'electron/main';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 
@@ -24,13 +24,8 @@ const getGuestWindowByFrameName = (name: string) => frameNamesToWindow.get(name)
 /**
  * `openGuestWindow` is called to create and setup event handling for the new
  * window.
- *
- * Until its removal in 12.0.0, the `new-window` event is fired, allowing the
- * user to preventDefault() on the passed event (which ends up calling
- * DestroyWebContents).
  */
-export function openGuestWindow ({ event, embedder, guest, referrer, disposition, postData, overrideBrowserWindowOptions, windowOpenArgs, outlivesOpener }: {
-  event: { sender: WebContents, defaultPrevented: boolean },
+export function openGuestWindow ({ embedder, guest, referrer, disposition, postData, overrideBrowserWindowOptions, windowOpenArgs, outlivesOpener }: {
   embedder: WebContents,
   guest?: WebContents,
   referrer: Referrer,
@@ -41,23 +36,14 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   outlivesOpener: boolean,
 }): BrowserWindow | undefined {
   const { url, frameName, features } = windowOpenArgs;
-  const browserWindowOptions = makeBrowserWindowOptions({
-    embedder,
-    features,
-    overrideOptions: overrideBrowserWindowOptions
-  });
-
-  const didCancelEvent = emitDeprecatedNewWindowEvent({
-    event,
-    embedder,
-    guest,
-    browserWindowOptions,
-    windowOpenArgs,
-    disposition,
-    postData,
-    referrer
-  });
-  if (didCancelEvent) return;
+  const { options: parsedOptions } = parseFeatures(features);
+  const browserWindowOptions = {
+    show: true,
+    width: 800,
+    height: 600,
+    ...parsedOptions,
+    ...overrideBrowserWindowOptions
+  };
 
   // To spec, subsequent window.open calls with the same frame name (`target` in
   // spec parlance) will reuse the previous window.
@@ -134,68 +120,6 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName, outl
   }
 };
 
-/**
- * Deprecated in favor of `webContents.setWindowOpenHandler` and
- * `did-create-window` in 11.0.0. Will be removed in 12.0.0.
- */
-function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs, browserWindowOptions, disposition, referrer, postData }: {
-  event: { sender: WebContents, defaultPrevented: boolean, newGuest?: BrowserWindow },
-  embedder: WebContents,
-  guest?: WebContents,
-  windowOpenArgs: WindowOpenArgs,
-  browserWindowOptions: BrowserWindowConstructorOptions,
-  disposition: string,
-  referrer: Referrer,
-  postData?: PostData,
-}): boolean {
-  const { url, frameName } = windowOpenArgs;
-  const isWebViewWithPopupsDisabled = embedder.getType() === 'webview' && embedder.getLastWebPreferences()!.disablePopups;
-  const postBody = postData ? {
-    data: postData,
-    ...parseContentTypeFormat(postData)
-  } : null;
-
-  if (embedder.listenerCount('new-window') > 0) {
-    deprecate.log('The new-window event is deprecated and will be removed. Please use contents.setWindowOpenHandler() instead.');
-  }
-
-  embedder.emit(
-    'new-window',
-    event,
-    url,
-    frameName,
-    disposition,
-    {
-      ...browserWindowOptions,
-      webContents: guest
-    },
-    [], // additionalFeatures
-    referrer,
-    postBody
-  );
-
-  const { newGuest } = event;
-  if (isWebViewWithPopupsDisabled) return true;
-  if (event.defaultPrevented) {
-    if (newGuest) {
-      if (guest === newGuest.webContents) {
-        // The webContents is not changed, so set defaultPrevented to false to
-        // stop the callers of this event from destroying the webContents.
-        event.defaultPrevented = false;
-      }
-
-      handleWindowLifecycleEvents({
-        embedder: event.sender,
-        guest: newGuest,
-        frameName,
-        outlivesOpener: false
-      });
-    }
-    return true;
-  }
-  return false;
-}
-
 // Security options that child windows will always inherit from parent windows
 const securityWebPreferences: { [key: string]: boolean } = {
   contextIsolation: true,
@@ -206,31 +130,6 @@ const securityWebPreferences: { [key: string]: boolean } = {
   nodeIntegrationInSubFrames: false,
   enableWebSQL: false
 };
-
-function makeBrowserWindowOptions ({ embedder, features, overrideOptions }: {
-  embedder: WebContents,
-  features: string,
-  overrideOptions?: BrowserWindowConstructorOptions,
-}) {
-  const { options: parsedOptions, webPreferences: parsedWebPreferences } = parseFeatures(features);
-
-  return {
-    show: true,
-    width: 800,
-    height: 600,
-    ...parsedOptions,
-    ...overrideOptions,
-    // Note that for normal code path an existing WebContents created by
-    // Chromium will be used, with web preferences parsed in the
-    // |-will-add-new-contents| event.
-    // The |webPreferences| here is only used by the |new-window| event.
-    webPreferences: makeWebPreferences({
-      embedder,
-      insecureParsedWebPreferences: parsedWebPreferences,
-      secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences
-    })
-  } as Electron.BrowserViewConstructorOptions;
-}
 
 export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {}, insecureParsedWebPreferences: parsedWebPreferences = {} }: {
   embedder: WebContents,

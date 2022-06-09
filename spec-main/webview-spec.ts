@@ -668,31 +668,6 @@ describe('<webview> tag', function () {
       expect(content).to.equal(expectedContent);
     });
 
-    it('emits a new-window event', async () => {
-      // Don't wait for loading to finish.
-      const attributes = {
-        allowpopups: 'on',
-        nodeintegration: 'on',
-        webpreferences: 'contextIsolation=no',
-        src: `file://${fixtures}/pages/window-open.html`
-      };
-      const { url, frameName } = await w.webContents.executeJavaScript(`
-        new Promise((resolve, reject) => {
-          const webview = document.createElement('webview')
-          for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
-            webview.setAttribute(k, v)
-          }
-          document.body.appendChild(webview)
-          webview.addEventListener('new-window', (e) => {
-            resolve({url: e.url, frameName: e.frameName})
-          })
-        })
-      `);
-
-      expect(url).to.equal('http://host/');
-      expect(frameName).to.equal('host');
-    });
-
     it('emits a browser-window-created event', async () => {
       // Don't wait for loading to finish.
       loadWebView(w.webContents, {
@@ -1434,28 +1409,6 @@ describe('<webview> tag', function () {
       }`);
     });
     after(closeAllWindows);
-
-    describe('new-window event', () => {
-      it('emits when window.open is called', async () => {
-        const { url, frameName } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/window-open.html`,
-          allowpopups: 'true'
-        }, 'new-window');
-
-        expect(url).to.equal('http://host/');
-        expect(frameName).to.equal('host');
-      });
-
-      it('emits when link with target is called', async () => {
-        const { url, frameName } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/target-name.html`,
-          allowpopups: 'true'
-        }, 'new-window');
-
-        expect(url).to.equal('http://host/');
-        expect(frameName).to.equal('target');
-      });
-    });
 
     describe('ipc-message event', () => {
       it('emits when guest sends an ipc message to browser', async () => {
