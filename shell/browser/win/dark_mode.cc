@@ -19,8 +19,8 @@ namespace {
 // https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
 HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
   const BOOL isDarkMode = dark;
-  HRESULT result = DwmSetWindowAttribute(
-    hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &isDarkMode, sizeof(isDarkMode));
+  HRESULT result = DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
+                                         &isDarkMode, sizeof(isDarkMode));
 
   if (FAILED(result))
     return result;
