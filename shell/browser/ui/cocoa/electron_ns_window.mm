@@ -13,7 +13,7 @@
 
 namespace electron {
 
-bool ScopedDisableResize::disable_resize_ = false;
+int ScopedDisableResize::disable_resize_ = 0;
 
 }  // namespace electron
 
