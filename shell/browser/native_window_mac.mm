@@ -816,6 +816,7 @@ void NativeWindowMac::MoveTop() {
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
+  ScopedDisableResize disable_resize;
   SetStyleMask(resizable, NSWindowStyleMaskResizable);
   SetCanResize(resizable);
 }
