@@ -59,6 +59,7 @@ jobs:
             ^((?!docs/).)*$ run-docs-only false
       - run:
           command: |
+            echo "Test.... pumpkineater"
             cd .circleci/config
             yarn
             export CIRCLECI_BINARY="$HOME/circleci"
