@@ -900,8 +900,12 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('{ b = window.open(\'\', \'__proto__\'); null }');
-      const [, , frameName] = await emittedOnce(w.webContents, 'new-window');
-
+      const frameName = await new Promise((resolve) => {
+        w.webContents.setWindowOpenHandler(details => {
+          setImmediate(() => resolve(details.frameName));
+          return { action: 'allow' };
+        });
+      });
       expect(frameName).to.equal('__proto__');
     });
   });
