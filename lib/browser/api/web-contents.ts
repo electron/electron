@@ -505,14 +505,7 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
     return defaultResponse;
   }
 
-  let response;
-  try {
-    response = this._windowOpenHandler(details);
-  } catch (e: any) {
-    event.preventDefault();
-    console.log(`Error in windowOpenHandler: ${e.message}`);
-    return defaultResponse;
-  }
+  const response = this._windowOpenHandler(details);
 
   if (typeof response !== 'object') {
     event.preventDefault();
@@ -674,7 +667,15 @@ WebContents.prototype._init = function () {
         postBody,
         disposition
       };
-      const result = this._callWindowOpenHandler(event, details);
+
+      let result;
+      try {
+        result = this._callWindowOpenHandler(event, details);
+      } catch (err) {
+        event.preventDefault();
+        throw err;
+      }
+
       const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
@@ -705,7 +706,15 @@ WebContents.prototype._init = function () {
         referrer,
         postBody
       };
-      const result = this._callWindowOpenHandler(event, details);
+
+      let result;
+      try {
+        result = this._callWindowOpenHandler(event, details);
+      } catch (err) {
+        event.preventDefault();
+        throw err;
+      }
+
       windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
