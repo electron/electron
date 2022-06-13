@@ -504,7 +504,15 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   if (!this._windowOpenHandler) {
     return defaultResponse;
   }
-  const response = this._windowOpenHandler(details);
+
+  let response;
+  try {
+    response = this._windowOpenHandler(details);
+  } catch (e: any) {
+    event.preventDefault();
+    console.log(`Error in windowOpenHandler: ${e.message}`);
+    return defaultResponse;
+  }
 
   if (typeof response !== 'object') {
     event.preventDefault();
