@@ -8,7 +8,7 @@ Without this define native modules will be built trying to link to _LIBCPP_ABI_N
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/3655638
 
 diff --git a/common.gypi b/common.gypi
-index fd4e0b38eb6ecf81b23186ec663499d1e685fdf8..a737e37ba0d4fb76e2f0e170781e56129510d34a 100644
+index bdfe81d11cc50f492c93fe48f6946765b6fb5238..559b7f7c220cb98946285bb15d0d63e203bbcea4 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -288,6 +288,7 @@
