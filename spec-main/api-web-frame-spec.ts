@@ -3,6 +3,7 @@ import * as path from 'path';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { executeJavaScriptInPreloadContext } from './spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -69,5 +70,43 @@ describe('webFrame module', () => {
     const [words, callbackDefined] = await spellCheckerFeedback;
     expect(words.sort()).to.deep.equal(['spleling', 'test', 'you\'re', 'you', 're'].sort());
     expect(callbackDefined).to.be.true();
+  });
+
+  describe('WebFrame.windowFeatures', () => {
+    let w: Electron.BrowserWindow;
+    const windowOptions = {
+      show: false,
+      webPreferences: {
+        sandbox: true,
+        nodeIntegration: true,
+        contextIsolation: true,
+        preload: path.join(fixtures, 'pages', 'test-preload.js')
+      }
+    };
+
+    beforeEach(async () => {
+      w = new BrowserWindow(windowOptions);
+      w.webContents.setWindowOpenHandler(() => {
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: windowOptions
+        };
+      });
+      await w.loadURL('about:blank');
+    });
+
+    it('returns blank for primary window', async () => {
+      const windowFeatures = await executeJavaScriptInPreloadContext(w.webContents, 'requireForTest("electron").webFrame.windowFeatures');
+      expect(windowFeatures).to.equal('');
+    });
+
+    it('returns feature list for child window', async () => {
+      const customFeatures = 'left=20,custom=true';
+      const windowPromise = emittedOnce(w.webContents, 'did-create-window');
+      await w.webContents.executeJavaScript(`window.open("about:blank", null, "${customFeatures}"); void 0;`, true);
+      const [childWindow] = await windowPromise;
+      const windowFeatures = await executeJavaScriptInPreloadContext(childWindow.webContents, 'requireForTest("electron").webFrame.windowFeatures');
+      expect(windowFeatures).to.equal(customFeatures);
+    });
   });
 });

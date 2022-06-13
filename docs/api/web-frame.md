@@ -314,3 +314,8 @@ current renderer process.
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct WebFrame instances that refer to the same underlying frame will have
 the same `routingId`.
+
+### `webFrame.windowFeatures` _Readonly_
+
+A `String` representing the encoded list of window features passed into
+`window.open(url, target, windowFeatures)`.

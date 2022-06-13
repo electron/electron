@@ -51,6 +51,8 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/frame/csp/content_security_policy.h"  // nogncheck
+#include "third_party/blink/renderer/core/frame/local_frame.h"  // nogncheck
+#include "third_party/blink/renderer/core/page/page.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
@@ -396,7 +398,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetProperty("top", &WebFrameRenderer::GetTop)
         .SetProperty("firstChild", &WebFrameRenderer::GetFirstChild)
         .SetProperty("nextSibling", &WebFrameRenderer::GetNextSibling)
-        .SetProperty("routingId", &WebFrameRenderer::GetRoutingId);
+        .SetProperty("routingId", &WebFrameRenderer::GetRoutingId)
+        .SetProperty("windowFeatures", &WebFrameRenderer::GetWindowFeatures);
   }
 
   const char* GetTypeName() override { return "WebFrameRenderer"; }
@@ -903,6 +906,16 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return 0;
 
     return render_frame->GetRoutingID();
+  }
+
+  std::string GetWindowFeatures(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "windowFeatures", &render_frame))
+      return "";
+
+    blink::LocalFrameToken frame_token = render_frame->GetWebFrame()->GetLocalFrameToken();
+    blink::LocalFrame* frame = blink::LocalFrame::FromFrameToken(frame_token);
+    return frame ? frame->GetPage()->GetWindowFeatures().raw_features.Utf8() : "";
   }
 };
 

@@ -145,3 +145,7 @@ export async function repeatedly<T> (
     if (+new Date() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
   }
 }
+
+export function executeJavaScriptInPreloadContext (webContents: Electron.WebContents, code: string, userGesture?: boolean): ReturnType<Electron.WebContents['executeJavaScript']> {
+  return webContents.executeJavaScriptInIsolatedWorld(999, [{ code }], userGesture);
+}
