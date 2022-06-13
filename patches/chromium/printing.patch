@@ -113,7 +113,7 @@ index 1e158ecd686e775f656d5a05a9d916ce8f075fa8..20613012d1e6f435c3211d78ec311cf0
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index e665eb42fad5f47b1643315d2cdcdf2eb66b069d..bf43235b5c205eb5b2bcef131a8f27d18c6bd41d 100644
+index e665eb42fad5f47b1643315d2cdcdf2eb66b069d..21451d9ae0cbb647cafe0e9ae47f067068aef1b7 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,8 +30,6 @@
@@ -161,14 +161,16 @@ index e665eb42fad5f47b1643315d2cdcdf2eb66b069d..bf43235b5c205eb5b2bcef131a8f27d1
    if (printer_query->last_status() == mojom::ResultCode::kSuccess &&
        printer_query->settings().dpi()) {
      RenderParamsFromPrintSettings(printer_query->settings(),
-@@ -181,6 +185,7 @@ void OnDidScriptedPrint(
+@@ -181,7 +185,8 @@ void OnDidScriptedPrint(
    }
    bool has_valid_cookie = params->params->document_cookie;
    bool has_dpi = !params->params->dpi.IsEmpty();
+-  std::move(callback).Run(std::move(params));
 +  bool canceled = printer_query->last_status() == mojom::ResultCode::kCanceled;
-   std::move(callback).Run(std::move(params));
++  std::move(callback).Run(std::move(params), canceled);
  
    if (has_dpi && has_valid_cookie) {
+     queue->QueuePrinterQuery(std::move(printer_query));
 @@ -196,12 +201,14 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
      : PrintManager(web_contents),
        queue_(g_browser_process->print_job_manager()->queue()) {
