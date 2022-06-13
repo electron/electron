@@ -94,15 +94,6 @@ if (is_linux) {
     logging_function = "LogNoop()"
     logging_include = "ui/gtk/log_noop.h"
   }
-
-  generate_stubs("electron_gdk_pixbuf_stubs") {
-    sigs = [ "shell/browser/ui/electron_gdk_pixbuf.sigs" ]
-    extra_header = "shell/browser/ui/electron_gdk_pixbuf.fragment"
-    output_name = "electron_gdk_pixbuf_stubs"
-    public_deps = [ "//ui/gtk:gtk_config" ]
-    logging_function = "LogNoop()"
-    logging_include = "ui/gtk/log_noop.h"
-  }
 }
 
 declare_args() {
@@ -562,7 +553,6 @@ source_set("electron_lib") {
   if (is_linux) {
     libs = [ "xshmfence" ]
     deps += [
-      ":electron_gdk_pixbuf_stubs",
       ":electron_gtk_stubs",
       ":libnotify_loader",
       "//build/config/linux/gtk",
