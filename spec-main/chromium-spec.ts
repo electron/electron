@@ -788,10 +788,10 @@ describe('chromium features', () => {
 
         defer(() => { w.close(); });
 
-        const newWindow = emittedOnce(w.webContents, 'new-window');
+        const promise = emittedOnce(app, 'browser-window-created');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-        const [,,,, options] = await newWindow;
-        expect(options.show).to.equal(true);
+        const [, newWindow] = await promise;
+        expect(newWindow.isVisible()).to.equal(true);
       });
     }
 
