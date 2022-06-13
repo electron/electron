@@ -79,12 +79,20 @@ describe('webContents.setWindowOpenHandler', () => {
 
   afterEach(closeAllWindows);
 
-  it('does not fire window creation events if the handler callback throws an error', async () => {
-    const error = new Promise((resolve) => {
-      browserWindow.webContents.setWindowOpenHandler(() => {
-        setTimeout(resolve);
-        throw new Error('oh no');
-      });
+  it('does not fire window creation events if the handler callback throws an error', (done) => {
+    const error = new Error('oh no');
+    const listeners = process.listeners('uncaughtException');
+    process.removeAllListeners('uncaughtException');
+    process.on('uncaughtException', (thrown) => {
+      try {
+        expect(thrown).to.equal(error);
+        done();
+      } catch (e) {
+        done(e);
+      } finally {
+        process.removeAllListeners('uncaughtException');
+        listeners.forEach((listener) => process.on('uncaughtException', listener));
+      }
     });
 
     browserWindow.webContents.on('new-window', () => {
@@ -97,7 +105,9 @@ describe('webContents.setWindowOpenHandler', () => {
 
     browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
 
-    await error;
+    browserWindow.webContents.setWindowOpenHandler(() => {
+      throw error;
+    });
   });
 
   it('does not fire window creation events if the handler callback returns a bad result', async () => {
