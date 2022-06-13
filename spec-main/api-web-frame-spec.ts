@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import * as path from 'path';
+import * as url from 'url';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
@@ -7,6 +8,7 @@ import { executeJavaScriptInPreloadContext } from './spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+  const mainFixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
 
   afterEach(closeAllWindows);
 
@@ -78,8 +80,6 @@ describe('webFrame module', () => {
       show: false,
       webPreferences: {
         sandbox: true,
-        nodeIntegration: true,
-        contextIsolation: true,
         preload: path.join(fixtures, 'pages', 'test-preload.js')
       }
     };
@@ -92,6 +92,7 @@ describe('webFrame module', () => {
           overrideBrowserWindowOptions: windowOptions
         };
       });
+      w.openDevTools({ mode: 'detach' });
       await w.loadURL('about:blank');
     });
 
@@ -100,12 +101,23 @@ describe('webFrame module', () => {
       expect(windowFeatures).to.equal('');
     });
 
-    it('returns feature list for child window', async () => {
+    it('returns feature list of child window', async () => {
       const customFeatures = 'left=20,custom=true';
       const windowPromise = emittedOnce(w.webContents, 'did-create-window');
       await w.webContents.executeJavaScript(`window.open("about:blank", null, "${customFeatures}"); void 0;`, true);
       const [childWindow] = await windowPromise;
       const windowFeatures = await executeJavaScriptInPreloadContext(childWindow.webContents, 'requireForTest("electron").webFrame.windowFeatures');
+      expect(windowFeatures).to.equal(customFeatures);
+    });
+
+    it('returns feature list of subframe', async () => {
+      w.loadFile(path.join(mainFixtures, 'sub-frames', 'frame.html'));
+      const frameUrl = url.pathToFileURL(path.join(mainFixtures, 'sub-frames', 'frame-container.html'));
+      const customFeatures = 'left=20,custom=true';
+      const windowPromise = emittedOnce(w.webContents, 'did-create-window');
+      await w.webContents.executeJavaScript(`window.open("${frameUrl}", null, "${customFeatures}"); void 0;`, true);
+      const [childWindow] = await windowPromise;
+      const windowFeatures = await executeJavaScriptInPreloadContext(childWindow.webContents, 'requireForTest("electron").webFrame.firstChild.windowFeatures');
       expect(windowFeatures).to.equal(customFeatures);
     });
   });
