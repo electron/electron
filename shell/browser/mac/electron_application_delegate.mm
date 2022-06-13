@@ -109,16 +109,6 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 
   electron::Browser::Get()->DidFinishLaunching(
       electron::NSDictionaryToDictionaryValue(notification_info));
-
-#if BUILDFLAG(USE_ALLOCATOR_SHIM)
-  // Disable fatal OOM to hack around an OS bug https://crbug.com/654695.
-  if (base::mac::IsOS10_12()) {
-    g_swizzle_imk_input_session = new base::mac::ScopedObjCClassSwizzler(
-        NSClassFromString(@"IMKInputSession"),
-        [OOMDisabledIMKInputSession class],
-        @selector(_coreAttributesFromRange:whichAttributes:completionHandler:));
-  }
-#endif
 }
 
 - (void)applicationDidBecomeActive:(NSNotification*)notification {
