@@ -49,7 +49,7 @@ void GPUInfoEnumerator::EndGPUDevice() {
   auto& top_value = value_stack.top();
   // GPUDevice can be more than one. So create a list of all.
   // The first one is the active GPU device.
-  if (top_value->HasKey(kGPUDeviceKey)) {
+  if (top_value->FindKey(kGPUDeviceKey)) {
     base::ListValue* list;
     top_value->GetList(kGPUDeviceKey, &list);
     list->Append(base::Value::FromUniquePtrValue(std::move(current)));
