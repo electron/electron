@@ -3265,9 +3265,6 @@ describe('BrowserWindow module', () => {
           action: 'allow',
           overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nodeIntegrationInSubFrames: true } }
         }));
-        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.show = false;
-        });
 
         const webviewLoaded = emittedOnce(ipcMain, 'webview-loaded');
         w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'));

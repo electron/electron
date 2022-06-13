@@ -788,10 +788,10 @@ describe('chromium features', () => {
 
         defer(() => { w.close(); });
 
-        const newWindow = emittedOnce(w.webContents, 'new-window');
+        const promise = emittedOnce(app, 'browser-window-created');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-        const [,,,, options] = await newWindow;
-        expect(options.show).to.equal(true);
+        const [, newWindow] = await promise;
+        expect(newWindow.isVisible()).to.equal(true);
       });
     }
 
@@ -900,8 +900,12 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('{ b = window.open(\'\', \'__proto__\'); null }');
-      const [, , frameName] = await emittedOnce(w.webContents, 'new-window');
-
+      const frameName = await new Promise((resolve) => {
+        w.webContents.setWindowOpenHandler(details => {
+          setImmediate(() => resolve(details.frameName));
+          return { action: 'allow' };
+        });
+      });
       expect(frameName).to.equal('__proto__');
     });
   });
