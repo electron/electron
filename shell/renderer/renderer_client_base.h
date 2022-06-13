@@ -93,6 +93,9 @@ class RendererClientBase : public content::ContentRendererClient
                    gin_helper::Dictionary* process,
                    content::RenderFrame* render_frame);
 
+  bool ShouldLoadPreload(v8::Handle<v8::Context> context,
+                         content::RenderFrame* render_frame) const;
+
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;

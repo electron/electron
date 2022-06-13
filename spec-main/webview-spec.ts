@@ -32,9 +32,12 @@ describe('<webview> tag', function () {
   afterEach(closeAllWindows);
 
   function hideChildWindows (e: any, wc: WebContents) {
-    wc.on('new-window', (event, url, frameName, disposition, options) => {
-      options.show = false;
-    });
+    wc.setWindowOpenHandler(() => ({
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        show: false
+      }
+    }));
   }
 
   before(() => {

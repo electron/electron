@@ -788,10 +788,10 @@ describe('chromium features', () => {
 
         defer(() => { w.close(); });
 
-        const newWindow = emittedOnce(w.webContents, 'new-window');
+        const promise = emittedOnce(app, 'browser-window-created');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-        const [,,,, options] = await newWindow;
-        expect(options.show).to.equal(true);
+        const [, newWindow] = await promise;
+        expect(newWindow.isVisible()).to.equal(true);
       });
     }
 
@@ -900,8 +900,12 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('{ b = window.open(\'\', \'__proto__\'); null }');
-      const [, , frameName] = await emittedOnce(w.webContents, 'new-window');
-
+      const frameName = await new Promise((resolve) => {
+        w.webContents.setWindowOpenHandler(details => {
+          setImmediate(() => resolve(details.frameName));
+          return { action: 'allow' };
+        });
+      });
       expect(frameName).to.equal('__proto__');
     });
   });
@@ -1506,6 +1510,68 @@ describe('chromium features', () => {
         'document.hasFocus()'
       );
       expect(focus).to.be.false();
+    });
+  });
+
+  describe('navigator.userAgentData', () => {
+    // These tests are done on an http server because navigator.userAgentData
+    // requires a secure context.
+    let server: http.Server;
+    let serverUrl: string;
+    before(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('');
+      });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      serverUrl = `http://localhost:${(server.address() as any).port}`;
+    });
+    after(() => {
+      server.close();
+    });
+
+    describe('is not empty', () => {
+      it('by default', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(serverUrl);
+        const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).not.to.be.empty();
+      });
+
+      it('when there is a session-wide UA override', async () => {
+        const ses = session.fromPartition(`${Math.random()}`);
+        ses.setUserAgent('foobar');
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadURL(serverUrl);
+        const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).not.to.be.empty();
+      });
+
+      it('when there is a WebContents-specific UA override', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.webContents.setUserAgent('foo');
+        await w.loadURL(serverUrl);
+        const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).not.to.be.empty();
+      });
+
+      it('when there is a WebContents-specific UA override at load time', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(serverUrl, {
+          userAgent: 'foo'
+        });
+        const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).not.to.be.empty();
+      });
+    });
+
+    describe('brand list', () => {
+      it('contains chromium', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(serverUrl);
+        const brands = await w.webContents.executeJavaScript('navigator.userAgentData.brands');
+        expect(brands.map((b: any) => b.brand)).to.include('Chromium');
+      });
     });
   });
 });
