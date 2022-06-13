@@ -196,7 +196,7 @@ std::string RecursiveDumpAXPlatformNodeAsString(
     }
   }
   str += "\n";
-  for (int i = 0; i < node->GetDelegate()->GetChildCount(); i++) {
+  for (size_t i = 0; i < node->GetDelegate()->GetChildCount(); i++) {
     gfx::NativeViewAccessible child = node->GetDelegate()->ChildAtIndex(i);
     const ui::AXPlatformNode* child_node =
         ui::AXPlatformNode::FromNativeViewAccessible(child);
