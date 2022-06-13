@@ -1,7 +1,7 @@
-From 21139756239bdcc79779320bb7f950b240169f40 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ari Chivukula <arichiv@chromium.org>
 Date: Tue, 17 May 2022 18:17:07 +0000
-Subject: [PATCH] {M102 PICK} [IndexedDB] Use-After-Free Fix
+Subject: {M102 PICK} [IndexedDB] Use-After-Free Fix
 
 We can't guarantee order in the task the constructor dispatches the same
 way we could before due to all the async changes. Let's be sure all the
@@ -15,13 +15,12 @@ Reviewed-by: Ayu Ishii <ayui@chromium.org>
 Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5005@{#812}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/content/browser/indexed_db/indexed_db_context_impl.cc b/content/browser/indexed_db/indexed_db_context_impl.cc
-index b9e8f893..e709365 100644
+index 6a7d303385aaf9bd8e0581c580ab328096ef5950..3afb1edf4cdc0baef105b680ec82007c66b40940 100644
 --- a/content/browser/indexed_db/indexed_db_context_impl.cc
 +++ b/content/browser/indexed_db/indexed_db_context_impl.cc
-@@ -166,38 +166,32 @@
+@@ -167,38 +167,32 @@ IndexedDBContextImpl::IndexedDBContextImpl(
        std::move(quota_client_remote),
        storage::QuotaClientType::kIndexedDatabase,
        {blink::mojom::StorageType::kTemporary});
@@ -86,10 +85,10 @@ index b9e8f893..e709365 100644
  
  void IndexedDBContextImpl::Bind(
 diff --git a/content/browser/indexed_db/indexed_db_context_impl.h b/content/browser/indexed_db/indexed_db_context_impl.h
-index f9910a6..241956c 100644
+index 4b874b244778d831e0fa8ca3bbfd7e751897923e..ad2f984e130ece867c0f0dc7ca9ae52b8ec12ae9 100644
 --- a/content/browser/indexed_db/indexed_db_context_impl.h
 +++ b/content/browser/indexed_db/indexed_db_context_impl.h
-@@ -224,6 +224,14 @@
+@@ -224,6 +224,14 @@ class CONTENT_EXPORT IndexedDBContextImpl
  
    ~IndexedDBContextImpl() override;
  
@@ -104,7 +103,7 @@ index f9910a6..241956c 100644
    // Binds receiver on bucket retrieval to ensure that a bucket always exists
    // for a storage key.
    void BindIndexedDBWithBucket(
-@@ -282,6 +290,8 @@
+@@ -282,6 +290,8 @@ class CONTENT_EXPORT IndexedDBContextImpl
    mojo::Receiver<storage::mojom::QuotaClient> quota_client_receiver_;
    const std::unique_ptr<storage::FilesystemProxy> filesystem_proxy_;
  
