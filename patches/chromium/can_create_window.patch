@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index c0c99d3a664868858edffa5662b854337bef5feb..0fb248e89875b9b6040cf37c455c8ba50de265e9 100644
+index d41589eeeb422bde81e2fe1cfac7f41bc505fa5d..3e8d1ec107a4620601b4e88c5385501670a7f3ae 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6989,6 +6989,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6966,6 +6966,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index c0c99d3a664868858edffa5662b854337bef5feb..0fb248e89875b9b6040cf37c455c8ba5
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4893e261b7cfcd9828874b626797bc5bb3a3ffdc..1c2bf47241c6d54875501a065bf6fa380e8777a8 100644
+index 33f6efe4df4eecabcbcd08f908ed3ef12d056eb2..0e1e25d40ebf3ca92c57dfdfb52c5269198aa6f7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3942,6 +3942,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3947,6 +3947,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 4893e261b7cfcd9828874b626797bc5bb3a3ffdc..1c2bf47241c6d54875501a065bf6fa38
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -3986,12 +3994,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3991,12 +3999,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -53,10 +53,10 @@ index 4893e261b7cfcd9828874b626797bc5bb3a3ffdc..1c2bf47241c6d54875501a065bf6fa38
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index bdcbb09cdd884dda769a5501e3dc94547f454be9..0b25def9601d8baadee6283f526687b3806db8f5 100644
+index 9c3a03faeee19f6f0a250680db36906ee64bf55a..0450700d02c74e047fa5124aa43b9f75b869917d 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -569,6 +569,10 @@ struct CreateNewWindowParams {
+@@ -566,6 +566,10 @@ struct CreateNewWindowParams {
  
    // Governs how downloads are handled if `target_url` results in a download.
    blink.mojom.NavigationDownloadPolicy download_policy;
@@ -102,7 +102,7 @@ index d0b7aed3162b8ea7673ab3ef31d2a3302f4e6456..6328fc21548f2b8277b461f9938dbcc5
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index daf9b4566396c6d681760329cf4ba6869bbb55e4..321d5cfc36e40f2a649e8ea5910f4082b71b62e1 100644
+index ef3889063b562a37fbd945fe30db0d776ecaee7a..99e8449e9c515dd70ed88546a71f83ae139178fe 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
