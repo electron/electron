@@ -9,10 +9,6 @@ export interface GuestViewDelegate {
   reset(): void;
 }
 
-const DEPRECATED_EVENTS: Record<string, string> = {
-  'page-title-updated': 'page-title-set'
-} as const;
-
 export function registerEvents (viewInstanceId: number, delegate: GuestViewDelegate) {
   ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${viewInstanceId}`, function () {
     delegate.reset();
@@ -20,10 +16,6 @@ export function registerEvents (viewInstanceId: number, delegate: GuestViewDeleg
   });
 
   ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`, function (event, eventName, props) {
-    if (DEPRECATED_EVENTS[eventName] != null) {
-      delegate.dispatchEvent(DEPRECATED_EVENTS[eventName], props);
-    }
-
     delegate.dispatchEvent(eventName, props);
   });
 }
