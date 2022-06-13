@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, delay, defer } from './spec-helpers';
+import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
@@ -788,10 +788,10 @@ describe('chromium features', () => {
 
         defer(() => { w.close(); });
 
-        const newWindow = emittedOnce(w.webContents, 'new-window');
+        const promise = emittedOnce(app, 'browser-window-created');
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
-        const [,,,, options] = await newWindow;
-        expect(options.show).to.equal(true);
+        const [, newWindow] = await promise;
+        expect(newWindow.isVisible()).to.equal(true);
       });
     }
 
@@ -900,8 +900,12 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('{ b = window.open(\'\', \'__proto__\'); null }');
-      const [, , frameName] = await emittedOnce(w.webContents, 'new-window');
-
+      const frameName = await new Promise((resolve) => {
+        w.webContents.setWindowOpenHandler(details => {
+          setImmediate(() => resolve(details.frameName));
+          return { action: 'allow' };
+        });
+      });
       expect(frameName).to.equal('__proto__');
     });
   });
@@ -1508,6 +1512,68 @@ describe('chromium features', () => {
       expect(focus).to.be.false();
     });
   });
+
+  describe('navigator.userAgentData', () => {
+    // These tests are done on an http server because navigator.userAgentData
+    // requires a secure context.
+    let server: http.Server;
+    let serverUrl: string;
+    before(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('');
+      });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      serverUrl = `http://localhost:${(server.address() as any).port}`;
+    });
+    after(() => {
+      server.close();
+    });
+
+    describe('is not empty', () => {
+      it('by default', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(serverUrl);
+        const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).not.to.be.empty();
+      });
+
+      it('when there is a session-wide UA override', async () => {
+        const ses = session.fromPartition(`${Math.random()}`);
+        ses.setUserAgent('foobar');
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadURL(serverUrl);
+        const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).not.to.be.empty();
+      });
+
+      it('when there is a WebContents-specific UA override', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.webContents.setUserAgent('foo');
+        await w.loadURL(serverUrl);
+        const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).not.to.be.empty();
+      });
+
+      it('when there is a WebContents-specific UA override at load time', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(serverUrl, {
+          userAgent: 'foo'
+        });
+        const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).not.to.be.empty();
+      });
+    });
+
+    describe('brand list', () => {
+      it('contains chromium', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(serverUrl);
+        const brands = await w.webContents.executeJavaScript('navigator.userAgentData.brands');
+        expect(brands.map((b: any) => b.brand)).to.include('Chromium');
+      });
+    });
+  });
 });
 
 describe('font fallback', () => {
@@ -1590,7 +1656,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  it('can fullscreen from out-of-process iframes (OOPIFs)', async () => {
+  ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
       '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
@@ -1614,8 +1680,37 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     expect(width).to.equal(0);
   });
 
+  ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
+    await emittedOnce(w, 'enter-full-screen');
+    const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
+    const html =
+      '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
+    w.loadURL(`data:text/html,${html}`);
+    await fullscreenChange;
+
+    const fullscreenWidth = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(fullscreenWidth > 0).to.be.true();
+
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
+    );
+    await emittedOnce(w.webContents, 'leave-html-full-screen');
+
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
+
+    w.setFullScreen(false);
+    await emittedOnce(w, 'leave-full-screen');
+  });
+
   // TODO(jkleinsc) fix this flaky test on WOA
   ifit(process.platform !== 'win32' || process.arch !== 'arm64')('can fullscreen from in-process iframes', async () => {
+    if (process.platform === 'darwin') await emittedOnce(w, 'enter-full-screen');
+
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
     await fullscreenChange;

@@ -91,6 +91,7 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
+  absl::optional<std::string> GetUserAgentOverride() const;
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
   ResolveProxyHelper* GetResolveProxyHelper();
@@ -199,7 +200,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
   std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
-  std::string user_agent_;
+  absl::optional<std::string> user_agent_;
   base::FilePath path_;
   bool in_memory_ = false;
   bool use_cache_ = true;

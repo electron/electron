@@ -8,7 +8,6 @@
 #import <Cocoa/Cocoa.h>
 
 #include <memory>
-#include <queue>
 #include <string>
 #include <vector>
 
@@ -166,16 +165,14 @@ class NativeWindowMac : public NativeWindow,
 
   void UpdateVibrancyRadii(bool fullscreen);
 
+  void UpdateWindowOriginalFrame();
+
   // Set the attribute of NSWindow while work around a bug of zoom button.
+  bool HasStyleMask(NSUInteger flag) const;
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
 
-  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
-
-  // Handle fullscreen transitions.
-  void SetFullScreenTransitionState(FullScreenTransitionState state);
-  void HandlePendingFullscreenTransitions();
   bool HandleDeferredClose();
   void SetHasDeferredWindowClose(bool defer_close) {
     has_deferred_window_close_ = defer_close;
@@ -245,13 +242,6 @@ class NativeWindowMac : public NativeWindow,
   bool is_kiosk_ = false;
   bool zoom_to_page_width_ = false;
   absl::optional<gfx::Point> traffic_light_position_;
-
-  std::queue<bool> pending_transitions_;
-  FullScreenTransitionState fullscreen_transition_state() const {
-    return fullscreen_transition_state_;
-  }
-  FullScreenTransitionState fullscreen_transition_state_ =
-      FullScreenTransitionState::NONE;
 
   // Trying to close an NSWindow during a fullscreen transition will cause the
   // window to lock up. Use this to track if CloseWindow was called during a

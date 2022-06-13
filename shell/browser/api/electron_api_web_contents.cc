@@ -29,6 +29,7 @@
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
+#include "components/embedder_support/user_agent_utils.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
@@ -661,9 +662,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
 
-  web_contents->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
-                                         GetBrowserContext()->GetUserAgent()),
-                                     false);
+  absl::optional<std::string> user_agent_override =
+      GetBrowserContext()->GetUserAgentOverride();
+  if (user_agent_override)
+    SetUserAgent(*user_agent_override);
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
@@ -869,9 +871,10 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  web_contents()->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
-                                           GetBrowserContext()->GetUserAgent()),
-                                       false);
+  absl::optional<std::string> user_agent_override =
+      GetBrowserContext()->GetUserAgentOverride();
+  if (user_agent_override)
+    SetUserAgent(*user_agent_override);
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;
@@ -2138,8 +2141,7 @@ void WebContents::LoadURL(const GURL& url,
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    web_contents()->SetUserAgentOverride(
-        blink::UserAgentOverride::UserAgentOnly(user_agent), false);
+    SetUserAgent(user_agent);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -2354,8 +2356,12 @@ void WebContents::ForcefullyCrashRenderer() {
 }
 
 void WebContents::SetUserAgent(const std::string& user_agent) {
-  web_contents()->SetUserAgentOverride(
-      blink::UserAgentOverride::UserAgentOnly(user_agent), false);
+  blink::UserAgentOverride ua_override;
+  ua_override.ua_string_override = user_agent;
+  if (!user_agent.empty())
+    ua_override.ua_metadata_override = embedder_support::GetUserAgentMetadata();
+
+  web_contents()->SetUserAgentOverride(ua_override, false);
 }
 
 std::string WebContents::GetUserAgent() {
@@ -3536,7 +3542,12 @@ void WebContents::EnumerateDirectory(
 
 bool WebContents::IsFullscreenForTabOrPending(
     const content::WebContents* source) {
-  return html_fullscreen_;
+  bool transition_fs = owner_window()
+                           ? owner_window()->fullscreen_transition_state() !=
+                                 NativeWindow::FullScreenTransitionState::NONE
+                           : false;
+
+  return html_fullscreen_ || transition_fs;
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
@@ -3859,9 +3870,8 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
           ? !web_preferences->ShouldDisableHtmlFullscreenWindowResize()
           : true;
 
-  if (html_fullscreenable) {
+  if (html_fullscreenable)
     owner_window_->SetFullScreen(enter_fullscreen);
-  }
 
   UpdateHtmlApiFullscreen(enter_fullscreen);
   native_fullscreen_ = false;

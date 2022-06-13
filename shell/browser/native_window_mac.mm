@@ -447,7 +447,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   SetContentView(new views::View());
   AddContentViewLayers();
 
-  original_frame_ = [window_ frame];
+  UpdateWindowOriginalFrame();
   original_level_ = [window_ level];
 }
 
@@ -582,11 +582,6 @@ bool NativeWindowMac::IsVisible() {
   return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
-void NativeWindowMac::SetFullScreenTransitionState(
-    FullScreenTransitionState state) {
-  fullscreen_transition_state_ = state;
-}
-
 bool NativeWindowMac::IsEnabled() {
   return [window_ attachedSheet] == nil;
 }
@@ -614,7 +609,7 @@ void NativeWindowMac::Maximize() {
 
   // Take note of the current window size
   if (IsNormal())
-    original_frame_ = [window_ frame];
+    UpdateWindowOriginalFrame();
   [window_ zoom:nil];
 
   if (!is_visible) {
@@ -642,7 +637,7 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0)
+  if (HasStyleMask(NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
 
   NSRect rectScreen = GetAspectRatio() > 0.0
@@ -658,7 +653,7 @@ void NativeWindowMac::Minimize() {
 
   // Take note of the current window size
   if (IsNormal())
-    original_frame_ = [window_ frame];
+    UpdateWindowOriginalFrame();
   [window_ miniaturize:nil];
 }
 
@@ -668,15 +663,6 @@ void NativeWindowMac::Restore() {
 
 bool NativeWindowMac::IsMinimized() {
   return [window_ isMiniaturized];
-}
-
-void NativeWindowMac::HandlePendingFullscreenTransitions() {
-  if (pending_transitions_.empty())
-    return;
-
-  bool next_transition = pending_transitions_.front();
-  pending_transitions_.pop();
-  SetFullScreen(next_transition);
 }
 
 bool NativeWindowMac::HandleDeferredClose() {
@@ -711,7 +697,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
 
   // Take note of the current window size
   if (IsNormal())
-    original_frame_ = [window_ frame];
+    UpdateWindowOriginalFrame();
 
   // This needs to be set here because it can be the case that
   // SetFullScreen is called by a user before windowWillEnterFullScreen
@@ -725,7 +711,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
 }
 
 bool NativeWindowMac::IsFullscreen() const {
-  return [window_ styleMask] & NSWindowStyleMaskFullScreen;
+  return HasStyleMask(NSWindowStyleMaskFullScreen);
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
@@ -747,6 +733,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
 
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
   user_set_bounds_maximized_ = IsMaximized() ? true : false;
+  UpdateWindowOriginalFrame();
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
@@ -825,7 +812,10 @@ void NativeWindowMac::SetResizable(bool resizable) {
 }
 
 bool NativeWindowMac::IsResizable() {
-  return [window_ styleMask] & NSWindowStyleMaskResizable;
+  bool in_fs_transition =
+      fullscreen_transition_state() != FullScreenTransitionState::NONE;
+  bool has_rs_mask = HasStyleMask(NSWindowStyleMaskResizable);
+  return has_rs_mask && !IsFullscreen() && !in_fs_transition;
 }
 
 void NativeWindowMac::SetMovable(bool movable) {
@@ -841,7 +831,7 @@ void NativeWindowMac::SetMinimizable(bool minimizable) {
 }
 
 bool NativeWindowMac::IsMinimizable() {
-  return [window_ styleMask] & NSWindowStyleMaskMiniaturizable;
+  return HasStyleMask(NSWindowStyleMaskMiniaturizable);
 }
 
 void NativeWindowMac::SetMaximizable(bool maximizable) {
@@ -871,7 +861,7 @@ void NativeWindowMac::SetClosable(bool closable) {
 }
 
 bool NativeWindowMac::IsClosable() {
-  return [window_ styleMask] & NSWindowStyleMaskClosable;
+  return HasStyleMask(NSWindowStyleMaskClosable);
 }
 
 void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
@@ -1016,7 +1006,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
 
     // Take note of the current window size and level
     if (IsNormal()) {
-      original_frame_ = [window_ frame];
+      UpdateWindowOriginalFrame();
       original_level_ = [window_ level];
     }
 
@@ -1379,8 +1369,7 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
   NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (vibrantView != nil && !vibrancy_type_.empty()) {
-    const bool no_rounded_corner =
-        !([window_ styleMask] & NSWindowStyleMaskTitled);
+    const bool no_rounded_corner = !HasStyleMask(NSWindowStyleMaskTitled);
     if (!has_frame() && !is_modal() && !no_rounded_corner) {
       CGFloat radius;
       if (fullscreen) {
@@ -1412,6 +1401,10 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
       [window_ setCornerMask:maskImage];
     }
   }
+}
+
+void NativeWindowMac::UpdateWindowOriginalFrame() {
+  original_frame_ = [window_ frame];
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
@@ -1729,6 +1722,10 @@ void NativeWindowMac::OverrideNSWindowContentView() {
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [window_ setContentView:container_view_];
   AddContentViewLayers();
+}
+
+bool NativeWindowMac::HasStyleMask(NSUInteger flag) const {
+  return [window_ styleMask] & flag;
 }
 
 void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {

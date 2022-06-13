@@ -18,7 +18,8 @@ const args = require('minimist')(process.argv.slice(2), {
 });
 
 async function main () {
-  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
+  const outDir = utils.getOutDir({ shouldLog: true });
+  const nodeDir = path.resolve(BASE, 'out', outDir, 'gen', 'node_headers');
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019',
@@ -31,19 +32,21 @@ async function main () {
   const cxx = path.resolve(clangDir, 'clang++');
   const ld = path.resolve(clangDir, 'lld');
 
-  const platformSpecificFlags = [];
+  const platformFlags = [];
   if (process.platform === 'darwin') {
-    const sdkPath = path.resolve(BASE, 'out', utils.getOutDir(), 'sdk', 'xcode_links');
-    const possibleSdks = (await fs.promises.readdir(sdkPath)).filter(fileName => fileName.endsWith('.sdk'));
-    const sdkToUse = possibleSdks[0];
+    const sdkPath = path.resolve(BASE, 'out', outDir, 'sdk', 'xcode_links');
+    const sdks = (await fs.promises.readdir(sdkPath)).filter(fileName => fileName.endsWith('.sdk'));
+    const sdkToUse = sdks[0];
     if (!sdkToUse) {
       console.error('Could not find an SDK to use for the NAN tests');
       process.exit(1);
     }
-    if (possibleSdks.length) {
-      console.warn(`Multiple SDKs found in the xcode_links directory, using the first one we found ${sdkToUse}`);
+
+    if (sdks.length) {
+      console.warn(`Multiple SDKs found in the xcode_links directory - using ${sdkToUse}`);
     }
-    platformSpecificFlags.push(
+
+    platformFlags.push(
       `-isysroot ${path.resolve(sdkPath, sdkToUse)}`
     );
   }
@@ -59,16 +62,16 @@ async function main () {
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
     '-fPIC',
-    ...platformSpecificFlags
+    ...platformFlags
   ].join(' ');
 
   const ldflags = [
     '-stdlib=libc++',
     '-fuse-ld=lld',
-    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
-    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++')}"`,
+    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
+    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'buildtools', 'third_party', 'libc++')}"`,
     '-lc++abi',
-    ...platformSpecificFlags
+    ...platformFlags
   ].join(' ');
 
   if (process.platform !== 'win32') {
@@ -85,6 +88,7 @@ async function main () {
     cwd: NAN_DIR,
     stdio: 'inherit'
   });
+
   if (buildStatus !== 0) {
     console.error('Failed to build nan test modules');
     return process.exit(buildStatus);
