@@ -158,6 +158,16 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     });
   });
 
+  // Dispatch guest's frame navigation event to embedder.
+  guest.on('will-frame-navigate', function (event, url, details: Electron.WillFrameNavigateDetails) {
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'will-frame-navigate', {
+      url,
+      isMainFrame: details.isMainFrame,
+      frameProcessId: details.frame.processId,
+      frameRoutingId: details.frame.routingId
+    });
+  });
+
   // Notify guest of embedder window visibility when it is ready
   // FIXME Remove once https://github.com/electron/electron/issues/6828 is fixed
   guest.on('dom-ready', function () {
