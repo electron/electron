@@ -1,7 +1,7 @@
-From f1504440487fc6461b085a472e3c46ed7796dd5b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Justin Novosad <junov@chromium.org>
-Date: Thu, 02 Jun 2022 19:35:57 +0000
-Subject: [PATCH] PaintOpReader: Harden PaintImage deserialization
+Date: Thu, 2 Jun 2022 19:35:57 +0000
+Subject: PaintOpReader: Harden PaintImage deserialization
 
 This fix prevents the deserialization of PaintImage pixel data from
 reading data out of bounds when the block of serialized pixel data isn't
@@ -23,13 +23,12 @@ Auto-Submit: Srinivas Sista <srinivassista@chromium.org>
 Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5005@{#1093}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/cc/paint/paint_op_reader.cc b/cc/paint/paint_op_reader.cc
-index 006aad39..3958479 100644
+index d71230cfc47944ca538ec8e007f652640e752b63..e34a5fb540dfa2626ab4d0a655e4ba85aa2b8921 100644
 --- a/cc/paint/paint_op_reader.cc
 +++ b/cc/paint/paint_op_reader.cc
-@@ -332,6 +332,10 @@
+@@ -329,6 +329,10 @@ void PaintOpReader::Read(PaintImage* image) {
  
          SkImageInfo image_info =
              SkImageInfo::Make(width, height, color_type, kPremul_SkAlphaType);
@@ -41,10 +40,10 @@ index 006aad39..3958479 100644
          if (!valid_)
            return;
 diff --git a/cc/paint/paint_op_reader.h b/cc/paint/paint_op_reader.h
-index 61ea287..c5b5e6e 100644
+index 201cdfde5eea3a07e31a3d6a50a5119485d5c1fc..af784145a9365ea2f776a1020145c0b83c63f16d 100644
 --- a/cc/paint/paint_op_reader.h
 +++ b/cc/paint/paint_op_reader.h
-@@ -183,8 +183,9 @@
+@@ -180,8 +180,9 @@ class CC_PAINT_EXPORT PaintOpReader {
      kSharedImageProviderNoAccess = 50,
      kSharedImageProviderSkImageCreationFailed = 51,
      kZeroSkColorFilterBytes = 52,
@@ -56,10 +55,10 @@ index 61ea287..c5b5e6e 100644
  
    template <typename T>
 diff --git a/tools/metrics/histograms/enums.xml b/tools/metrics/histograms/enums.xml
-index 0561eb9..d07d4eb 100644
+index 5faaf3cfd3c0231ad34f651023aeec5d74d9c19b..e15f292c099cfc8bf9cb8613f73517f2f241d91f 100644
 --- a/tools/metrics/histograms/enums.xml
 +++ b/tools/metrics/histograms/enums.xml
-@@ -70047,6 +70047,7 @@
+@@ -66406,6 +66406,7 @@ Called by update_net_trust_anchors.py.-->
    <int value="50" label="SharedImageProvider no access"/>
    <int value="51" label="SharedImageProvider SkImage creation failed"/>
    <int value="52" label="Zero SkColorFilter bytes"/>
