@@ -1,7 +1,7 @@
-From 6661eb4900dae62cbe9af5023f9c1e7105798b50 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
-Date: Mon, 02 May 2022 15:42:23 -0400
-Subject: [PATCH] [M102] Fix validation cache when deleting a Transform Feedback.
+Date: Mon, 2 May 2022 15:42:23 -0400
+Subject: Fix validation cache when deleting a Transform Feedback.
 
 Bug: chromium:1320024
 Change-Id: I76ef85a3c65c663c138d8caebd4ef2c0da53cd4f
@@ -12,13 +12,12 @@ Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
 (cherry picked from commit 84e42c3b04da9e2c9d93d35bb6f2b1830fef22f4)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3650697
 Reviewed-by: Geoff Lang <geofflang@chromium.org>
----
 
 diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
-index bd9e3cd..75385dd 100644
+index 141d106c8ea4c92ecf1e01b3fa7c3bf11ba7d5d3..e74d323b833d66e2891eaf77deb4225d98766036 100644
 --- a/src/libANGLE/Context.cpp
 +++ b/src/libANGLE/Context.cpp
-@@ -3115,6 +3115,7 @@
+@@ -3020,6 +3020,7 @@ void Context::detachTransformFeedback(TransformFeedbackID transformFeedback)
      if (mState.removeTransformFeedbackBinding(this, transformFeedback))
      {
          bindTransformFeedback(GL_TRANSFORM_FEEDBACK, {0});
