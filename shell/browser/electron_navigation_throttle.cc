@@ -38,11 +38,11 @@ ElectronNavigationThrottle::WillStartRequest() {
   }
 
   if (handle->IsRendererInitiated() &&
-      api_contents->EmitNavigationEvent("will-frame-navigate", handle, /* emit_is_same_document */ false)) {
+      api_contents->EmitNavigationEventDetails("will-frame-navigate", handle)) {
     return CANCEL;
   }
   if (handle->IsRendererInitiated() && handle->IsInMainFrame() &&
-      api_contents->EmitNavigationEvent("will-navigate", handle, /* emit_is_same_document */ false)) {
+      api_contents->EmitNavigationEventDetails("will-navigate", handle)) {
     return CANCEL;
   }
   return PROCEED;
@@ -65,7 +65,7 @@ ElectronNavigationThrottle::WillRedirectRequest() {
     return PROCEED;
   }
 
-  if (api_contents->EmitNavigationEvent("will-redirect", handle, /* emit_is_same_document */ true)) {
+  if (api_contents->EmitNavigationEvent("will-redirect", handle)) {
     return CANCEL;
   }
   return PROCEED;

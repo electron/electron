@@ -343,10 +343,14 @@ class WebContents : public ExclusiveAccessContext,
     if (!observers_.empty())
       observers_.RemoveObserver(obs);
   }
+  
+  content::RenderFrameHost* GetRenderFrameHost(content::NavigationHandle* navigation_handle);
+
+  bool EmitNavigationEventDetails(const std::string& event,
+                                  content::NavigationHandle* navigation_handle);
 
   bool EmitNavigationEvent(const std::string& event,
-                           content::NavigationHandle* navigation_handle,
-                           bool emit_is_same_document);
+                           content::NavigationHandle* navigation_handle);
 
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>

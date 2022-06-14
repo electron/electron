@@ -1718,11 +1718,8 @@ void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
-bool WebContents::EmitNavigationEvent(
-    const std::string& event,
-    content::NavigationHandle* navigation_handle,
-    bool emit_is_same_document) {
-  bool is_main_frame = navigation_handle->IsInMainFrame();
+content::RenderFrameHost* WebContents::GetRenderFrameHost(
+  content::NavigationHandle* navigation_handle) {
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
   content::FrameTreeNode* frame_tree_node =
       content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
@@ -1734,20 +1731,43 @@ bool WebContents::EmitNavigationEvent(
     if (!frame_host)
       frame_host = render_manager->current_frame_host();
   }
+
+  return frame_host;
+}
+
+bool WebContents::EmitNavigationEventDetails(
+    const std::string& event,
+    content::NavigationHandle* navigation_handle) {
+
+  bool is_main_frame = navigation_handle->IsInMainFrame();
+  auto url = navigation_handle->GetURL();
+
+  content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
+  auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_host->GetFrameTreeNodeId());
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary details = gin::Dictionary::CreateEmpty(isolate);
+  details.Set("isMainFrame", is_main_frame);
+  details.Set("frame", web_frame);
+
+  return Emit(event, url, details);
+}
+
+bool WebContents::EmitNavigationEvent(
+    const std::string& event,
+    content::NavigationHandle* navigation_handle) {
+  bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_process_id = -1, frame_routing_id = -1;
+  content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
   if (frame_host) {
     frame_process_id = frame_host->GetProcess()->GetID();
     frame_routing_id = frame_host->GetRoutingID();
   }
   auto url = navigation_handle->GetURL();
-  if (emit_is_same_document) {
-    bool is_same_document = navigation_handle->IsSameDocument();
-    return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
-                frame_routing_id);
-  } else {
-    return Emit(event, url, is_main_frame, frame_process_id,
-                frame_routing_id);
-  }
+  bool is_same_document = navigation_handle->IsSameDocument();
+  return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
+              frame_routing_id);
 }
 
 void WebContents::Message(bool internal,
@@ -1850,12 +1870,12 @@ void WebContents::UpdateDraggableRegions(
 
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
-  EmitNavigationEvent("did-start-navigation", navigation_handle, /* emit_is_same_document */ true);
+  EmitNavigationEvent("did-start-navigation", navigation_handle);
 }
 
 void WebContents::DidRedirectNavigation(
     content::NavigationHandle* navigation_handle) {
-  EmitNavigationEvent("did-redirect-navigation", navigation_handle, /* emit_is_same_document */ true);
+  EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
 void WebContents::ReadyToCommitNavigation(
