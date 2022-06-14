@@ -278,8 +278,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
 int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
-  screen_ = views::CreateDesktopScreen();
-  display::Screen::SetScreenInstance(screen_.get());
+  if (!display::Screen::GetScreen()) {
+    screen_ = views::CreateDesktopScreen();
+  }
 #endif
 
   if (!views::LayoutProvider::Get())
