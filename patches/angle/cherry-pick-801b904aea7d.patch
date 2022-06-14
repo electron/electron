@@ -1,7 +1,7 @@
-From 801b904aea7de49234dcd99114e01cb77e21bc52 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
 Date: Fri, 20 May 2022 10:26:15 -0400
-Subject: [PATCH] [M102] D3D: Fix race condition with parallel shader compile.
+Subject: D3D: Fix race condition with parallel shader compile.
 
 Bug: chromium:1317673
 Change-Id: I0fb7c9a66248852e41e8700e80c295393ef941e8
@@ -12,13 +12,12 @@ Commit-Queue: Jamie Madill <jmadill@chromium.org>
 (cherry picked from commit 4a20c9143abbf29c649cf643182735e8952089e3)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3691050
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
----
 
 diff --git a/src/libANGLE/renderer/d3d/ProgramD3D.cpp b/src/libANGLE/renderer/d3d/ProgramD3D.cpp
-index eb57441..166403e 100644
+index 59fe34fc46a1bfbc7b4be1aad6ad84b6da303b5b..3256357a80d69739661ec1fd32220d3037145875 100644
 --- a/src/libANGLE/renderer/d3d/ProgramD3D.cpp
 +++ b/src/libANGLE/renderer/d3d/ProgramD3D.cpp
-@@ -1684,12 +1684,6 @@
+@@ -1687,12 +1687,6 @@ class ProgramD3D::GetVertexExecutableTask : public ProgramD3D::GetExecutableTask
      angle::Result run() override
      {
          ANGLE_TRACE_EVENT0("gpu.angle", "ProgramD3D::GetVertexExecutableTask::run");
@@ -31,7 +30,7 @@ index eb57441..166403e 100644
  
          ANGLE_TRY(mProgram->getVertexExecutableForCachedInputLayout(this, &mExecutable, &mInfoLog));
  
-@@ -2166,6 +2160,11 @@
+@@ -2147,6 +2141,11 @@ std::unique_ptr<LinkEvent> ProgramD3D::link(const gl::Context *context,
  
          linkResources(resources);
  
@@ -44,10 +43,10 @@ index eb57441..166403e 100644
      }
  }
 diff --git a/src/tests/gl_tests/ParallelShaderCompileTest.cpp b/src/tests/gl_tests/ParallelShaderCompileTest.cpp
-index bcd88ef..a98aff5 100644
+index bcd88ef01308759085c8244ad2058efe68686f2b..a98aff540c642617bba366b2e238519942d7e349 100644
 --- a/src/tests/gl_tests/ParallelShaderCompileTest.cpp
 +++ b/src/tests/gl_tests/ParallelShaderCompileTest.cpp
-@@ -58,9 +58,10 @@
+@@ -58,9 +58,10 @@ class ParallelShaderCompileTest : public ANGLETest
          Task(int id) : mID(id) {}
          virtual ~Task() {}
  
@@ -61,7 +60,7 @@ index bcd88ef..a98aff5 100644
          virtual void runAndVerify(ParallelShaderCompileTest *test) = 0;
  
          bool isLinkCompleted()
-@@ -71,7 +72,7 @@
+@@ -71,7 +72,7 @@ class ParallelShaderCompileTest : public ANGLETest
          }
  
        protected:
@@ -70,7 +69,7 @@ index bcd88ef..a98aff5 100644
          {
              RNG rng;
              std::ostringstream ostream;
-@@ -80,7 +81,7 @@
+@@ -80,7 +81,7 @@ class ParallelShaderCompileTest : public ANGLETest
              return ostream.str();
          }
  
@@ -79,7 +78,7 @@ index bcd88ef..a98aff5 100644
          {
              GLuint shader = glCreateShader(type);
  
-@@ -90,7 +91,14 @@
+@@ -90,7 +91,14 @@ class ParallelShaderCompileTest : public ANGLETest
              return shader;
          }
  
@@ -95,7 +94,7 @@ index bcd88ef..a98aff5 100644
          {
              GLint compileResult;
              glGetShaderiv(shader, GL_COMPILE_STATUS, &compileResult);
-@@ -129,7 +137,7 @@
+@@ -129,7 +137,7 @@ class ParallelShaderCompileTest : public ANGLETest
          TaskRunner() {}
          ~TaskRunner() {}
  
@@ -104,7 +103,7 @@ index bcd88ef..a98aff5 100644
          {
  
              std::vector<std::unique_ptr<T>> compileTasks;
-@@ -151,6 +159,7 @@
+@@ -151,6 +159,7 @@ class ParallelShaderCompileTest : public ANGLETest
                      if (task->isCompileCompleted())
                      {
                          bool isLinking = task->link();
@@ -112,7 +111,7 @@ index bcd88ef..a98aff5 100644
                          ASSERT_TRUE(isLinking);
                          linkTasks.push_back(std::move(task));
                          compileTasks.erase(compileTasks.begin() + i);
-@@ -158,7 +167,10 @@
+@@ -158,7 +167,10 @@ class ParallelShaderCompileTest : public ANGLETest
                      }
                      ++i;
                  }
@@ -124,7 +123,7 @@ index bcd88ef..a98aff5 100644
              }
  
              while (!linkTasks.empty())
-@@ -173,9 +185,16 @@
+@@ -173,9 +185,16 @@ class ParallelShaderCompileTest : public ANGLETest
                          linkTasks.erase(linkTasks.begin() + i);
                          continue;
                      }
@@ -142,7 +141,7 @@ index bcd88ef..a98aff5 100644
              }
          }
      };
-@@ -192,9 +211,9 @@
+@@ -192,9 +211,9 @@ class ParallelShaderCompileTest : public ANGLETest
          bool compile() override
          {
              mVertexShader =
@@ -154,7 +153,7 @@ index bcd88ef..a98aff5 100644
              return (mVertexShader != 0 && mFragmentShader != 0);
          }
  
-@@ -213,7 +232,7 @@
+@@ -213,7 +232,7 @@ class ParallelShaderCompileTest : public ANGLETest
          bool link() override
          {
              mProgram = 0;
@@ -163,7 +162,7 @@ index bcd88ef..a98aff5 100644
              {
                  mProgram = glCreateProgram();
                  glAttachShader(mProgram, mVertexShader);
-@@ -244,10 +263,25 @@
+@@ -244,10 +263,25 @@ class ParallelShaderCompileTest : public ANGLETest
              ASSERT_GL_NO_ERROR();
          }
  
@@ -190,7 +189,7 @@ index bcd88ef..a98aff5 100644
      };
  
      class ImageLoadStore : public Task
-@@ -268,7 +302,7 @@
+@@ -268,7 +302,7 @@ void main()
      imageStore(uImage_2, ivec2(gl_LocalInvocationID.xy), value);
  })";
  
@@ -199,7 +198,7 @@ index bcd88ef..a98aff5 100644
              return mShader != 0;
          }
  
-@@ -282,7 +316,7 @@
+@@ -282,7 +316,7 @@ void main()
          bool link() override
          {
              mProgram = 0;
@@ -208,7 +207,7 @@ index bcd88ef..a98aff5 100644
              {
                  mProgram = glCreateProgram();
                  glAttachShader(mProgram, mShader);
-@@ -370,7 +404,18 @@
+@@ -370,7 +404,18 @@ TEST_P(ParallelShaderCompileTest, LinkAndDrawManyPrograms)
      ANGLE_SKIP_TEST_IF(!ensureParallelShaderCompileExtensionAvailable());
  
      TaskRunner<ClearColorWithDraw> runner;
@@ -228,7 +227,7 @@ index bcd88ef..a98aff5 100644
  }
  
  class ParallelShaderCompileTestES31 : public ParallelShaderCompileTest
-@@ -389,7 +434,7 @@
+@@ -389,7 +434,7 @@ TEST_P(ParallelShaderCompileTestES31, LinkAndDispatchManyPrograms)
      ANGLE_SKIP_TEST_IF(!ensureParallelShaderCompileExtensionAvailable());
  
      TaskRunner<ImageLoadStore> runner;
