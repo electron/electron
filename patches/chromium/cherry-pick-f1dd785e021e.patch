@@ -1,0 +1,231 @@
+From f1dd785e021eee989af8fbe7570f424e96cb0b16 Mon Sep 17 00:00:00 2001
+From: Austin Sullivan <asully@chromium.org>
+Date: Mon, 16 May 2022 18:20:27 +0000
+Subject: [PATCH] M102: FSA: Sanitize .scf files
+
+.scf files can be used to execute code without opening the file.
+Sanitize these files the same way we sanitize .lnk files.
+
+Also updates filename sanitization logic to be consistent in blocking
+.lnk and .local extensions on all OSes.
+
+(cherry picked from commit 988164c6c4a563c3d4c0dedba295d09472dfc15f)
+
+Bug: 1227995
+Change-Id: I4b018f1ba524c783547e18630db9addc9fb126e6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3089422
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1002147}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3648322
+Auto-Submit: Austin Sullivan <asully@chromium.org>
+Commit-Queue: Austin Sullivan <asully@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5005@{#759}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+---
+
+diff --git a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+index eb91c33..4d3b2d1 100644
+--- a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
++++ b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+@@ -438,10 +438,13 @@
+ bool IsShellIntegratedExtension(const base::FilePath::StringType& extension) {
+   base::FilePath::StringType extension_lower = base::ToLowerASCII(extension);
+ 
+-  // .lnk files may be used to execute arbitrary code (see
+-  // https://nvd.nist.gov/vuln/detail/CVE-2010-2568).
+-  if (extension_lower == FILE_PATH_LITERAL("lnk"))
++  // .lnk and .scf files may be used to execute arbitrary code (see
++  // https://nvd.nist.gov/vuln/detail/CVE-2010-2568 and
++  // https://crbug.com/1227995, respectively).
++  if (extension_lower == FILE_PATH_LITERAL("lnk") ||
++      extension_lower == FILE_PATH_LITERAL("scf")) {
+     return true;
++  }
+ 
+   // Setting a file's extension to a CLSID may conceal its actual file type on
+   // some Windows versions (see https://nvd.nist.gov/vuln/detail/CVE-2004-0420).
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
+index 0293eb3..976d97c 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
+@@ -529,6 +529,16 @@
+     suggested_name_path =
+         net::GenerateFileName(GURL(), std::string(), std::string(),
+                               suggested_name, std::string(), std::string());
++
++    auto suggested_extension = suggested_name_path.Extension();
++    // Our version of `IsShellIntegratedExtension()` is more stringent than
++    // the version used in `net::GenerateFileName()`. See
++    // `FileSystemChooser::IsShellIntegratedExtension()` for details.
++    if (FileSystemChooser::IsShellIntegratedExtension(suggested_extension)) {
++      suggested_extension = FILE_PATH_LITERAL("download");
++      suggested_name_path =
++          suggested_name_path.ReplaceExtension(suggested_extension);
++    }
+   }
+ 
+   FileSystemChooser::Options file_system_chooser_options(
+diff --git a/content/browser/file_system_access/file_system_chooser.cc b/content/browser/file_system_access/file_system_chooser.cc
+index 8f28997..f8cd9d5 100644
+--- a/content/browser/file_system_access/file_system_chooser.cc
++++ b/content/browser/file_system_access/file_system_chooser.cc
+@@ -70,33 +70,6 @@
+              : extension;
+ }
+ 
+-// Returns whether the specified extension receives special handling by the
+-// Windows shell.
+-bool IsShellIntegratedExtension(const base::FilePath::StringType& extension) {
+-  // TODO(https://crbug.com/1154757): Figure out some way to unify this with
+-  // net::IsSafePortablePathComponent, with the result probably ending up in
+-  // base/i18n/file_util_icu.h.
+-  base::FilePath::StringType extension_lower = base::ToLowerASCII(extension);
+-
+-  // .lnk files may be used to execute arbitrary code (see
+-  // https://nvd.nist.gov/vuln/detail/CVE-2010-2568). .local files are used by
+-  // Windows to determine which DLLs to load for an application.
+-  if ((extension_lower == FILE_PATH_LITERAL("local")) ||
+-      (extension_lower == FILE_PATH_LITERAL("lnk"))) {
+-    return true;
+-  }
+-
+-  // Setting a file's extension to a CLSID may conceal its actual file type on
+-  // some Windows versions (see https://nvd.nist.gov/vuln/detail/CVE-2004-0420).
+-  if (!extension_lower.empty() &&
+-      (extension_lower.front() == FILE_PATH_LITERAL('{')) &&
+-      (extension_lower.back() == FILE_PATH_LITERAL('}'))) {
+-    return true;
+-  }
+-
+-  return false;
+-}
+-
+ // Extension validation primarily takes place in the renderer. This checks for a
+ // subset of invalid extensions in the event the renderer is compromised.
+ bool IsInvalidExtension(base::FilePath::StringType& extension) {
+@@ -104,7 +77,7 @@
+   auto extension16 = base::UTF8ToUTF16(component8);
+ 
+   return !base::i18n::IsFilenameLegal(extension16) ||
+-         IsShellIntegratedExtension(GetLastExtension(extension));
++         FileSystemChooser::IsShellIntegratedExtension(extension);
+ }
+ 
+ // Converts the accepted mime types and extensions from `option` into a list
+@@ -289,6 +262,40 @@
+       /*params=*/nullptr);
+ }
+ 
++// static
++bool FileSystemChooser::IsShellIntegratedExtension(
++    const base::FilePath::StringType& extension) {
++  // TODO(https://crbug.com/1154757): Figure out some way to unify this with
++  // net::IsSafePortablePathComponent, with the result probably ending up in
++  // base/i18n/file_util_icu.h.
++  // - For the sake of consistency across platforms, we sanitize '.lnk' and
++  //   '.local' files on all platforms (not just Windows)
++  // - There are some extensions (i.e. '.scf') we would like to sanitize which
++  //   `net::GenerateFileName()` does not
++  base::FilePath::StringType extension_lower =
++      base::ToLowerASCII(GetLastExtension(extension));
++
++  // .lnk and .scf files may be used to execute arbitrary code (see
++  // https://nvd.nist.gov/vuln/detail/CVE-2010-2568 and
++  // https://crbug.com/1227995, respectively). .local files are used by Windows
++  // to determine which DLLs to load for an application.
++  if ((extension_lower == FILE_PATH_LITERAL("lnk")) ||
++      (extension_lower == FILE_PATH_LITERAL("local")) ||
++      (extension_lower == FILE_PATH_LITERAL("scf"))) {
++    return true;
++  }
++
++  // Setting a file's extension to a CLSID may conceal its actual file type on
++  // some Windows versions (see https://nvd.nist.gov/vuln/detail/CVE-2004-0420).
++  if (!extension_lower.empty() &&
++      (extension_lower.front() == FILE_PATH_LITERAL('{')) &&
++      (extension_lower.back() == FILE_PATH_LITERAL('}'))) {
++    return true;
++  }
++
++  return false;
++}
++
+ FileSystemChooser::FileSystemChooser(ui::SelectFileDialog::Type type,
+                                      ResultCallback callback,
+                                      base::ScopedClosureRunner fullscreen_block)
+diff --git a/content/browser/file_system_access/file_system_chooser.h b/content/browser/file_system_access/file_system_chooser.h
+index 07c8e7f..925df7f 100644
+--- a/content/browser/file_system_access/file_system_chooser.h
++++ b/content/browser/file_system_access/file_system_chooser.h
+@@ -68,6 +68,12 @@
+                             ResultCallback callback,
+                             base::ScopedClosureRunner fullscreen_block);
+ 
++  // Returns whether the specified extension receives special handling by the
++  // Windows shell. These extensions should be sanitized before being shown in
++  // the "save as" file picker.
++  static bool IsShellIntegratedExtension(
++      const base::FilePath::StringType& extension);
++
+   FileSystemChooser(ui::SelectFileDialog::Type type,
+                     ResultCallback callback,
+                     base::ScopedClosureRunner fullscreen_block);
+diff --git a/content/browser/file_system_access/file_system_chooser_browsertest.cc b/content/browser/file_system_access/file_system_chooser_browsertest.cc
+index dc310d0..9ea4db7 100644
+--- a/content/browser/file_system_access/file_system_chooser_browsertest.cc
++++ b/content/browser/file_system_access/file_system_chooser_browsertest.cc
+@@ -1556,22 +1556,28 @@
+   name_infos.push_back({"not_matching.jpg", ListValueOf(".txt"), false,
+                         "not_matching.jpg", false});
+ 
+-#if BUILDFLAG(IS_WIN)
+-  // ".local" and ".lnk" extensions should be sanitized on Windows.
++  // ".lnk", ".local", and ".scf" extensions should be sanitized.
+   name_infos.push_back({"dangerous_extension.local", ListValueOf(".local"),
+                         true, "dangerous_extension.download", false});
+   name_infos.push_back({"dangerous_extension.lnk", ListValueOf(".lnk"), true,
+                         "dangerous_extension.download", false});
+-#else
+-  // ".local" and ".lnk" extensions should be allowed on other OSes.
+-  // TODO(https://crbug.com/1154757): `expected_exclude_accept_all_option` is
+-  // false here because ".local" and ".lnk" extensions are not allowed in
+-  // `accepts`, but are only sanitized by net::GenerateSafeFileName on Windows.
+-  name_infos.push_back({"dangerous_extension.local", ListValueOf(".local"),
+-                        true, "dangerous_extension.local", false});
+-  name_infos.push_back({"dangerous_extension.lnk", ListValueOf(".lnk"), true,
+-                        "dangerous_extension.lnk", false});
+-#endif
++  name_infos.push_back({"dangerous_extension.scf", ListValueOf(".scf"), true,
++                        "dangerous_extension.download", false});
++  // Compound extensions ending in a dangerous extension should be sanitized.
++  name_infos.push_back({"dangerous_extension.png.local", ListValueOf(".local"),
++                        true, "dangerous_extension.png.download", false});
++  name_infos.push_back({"dangerous_extension.png.lnk", ListValueOf(".lnk"),
++                        true, "dangerous_extension.png.download", false});
++  name_infos.push_back({"dangerous_extension.png.scf", ListValueOf(".scf"),
++                        true, "dangerous_extension.png.download", false});
++  // Compound extensions not ending in a dangerous extension should not be
++  // sanitized.
++  name_infos.push_back({"dangerous_extension.local.png", ListValueOf(".png"),
++                        true, "dangerous_extension.local.png", true});
++  name_infos.push_back({"dangerous_extension.lnk.png", ListValueOf(".png"),
++                        true, "dangerous_extension.lnk.png", true});
++  name_infos.push_back({"dangerous_extension.scf.png", ListValueOf(".png"),
++                        true, "dangerous_extension.scf.png", true});
+   // Invalid characters should be sanitized.
+   name_infos.push_back({R"(inv*l:d\\ch%rבאמת!a<ters🤓.txt)",
+                         ListValueOf(".txt"), true,
+diff --git a/content/browser/file_system_access/file_system_chooser_unittest.cc b/content/browser/file_system_access/file_system_chooser_unittest.cc
+index 373de41..9b27d63 100644
+--- a/content/browser/file_system_access/file_system_chooser_unittest.cc
++++ b/content/browser/file_system_access/file_system_chooser_unittest.cc
+@@ -189,7 +189,7 @@
+   accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
+       u"", std::vector<std::string>({}),
+       std::vector<std::string>(
+-          {"lnk", "foo.lnk", "foo.bar.local", "text", "local"})));
++          {"lnk", "foo.lnk", "foo.bar.local", "text", "local", "scf"})));
+   SyncShowDialog(std::move(accepts), /*include_accepts_all=*/false);
+ 
+   ASSERT_TRUE(dialog_params.file_types);
