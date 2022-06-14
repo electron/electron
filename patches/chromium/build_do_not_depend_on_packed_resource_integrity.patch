@@ -33,10 +33,10 @@ index b6234183651923505bd2a4a8640ea21508033ef1..e486f92e909f43bb65633245b7dcb314
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index b747d7fdc7ec697d64ffc479252620a5507f0551..cfaf2000fd96f359cd90cd261e1247dfd9db4dc1 100644
+index 31f4dd7c9a8e1016a65c7bf338d1addbe1ff87a1..0c23157da2b3faef1225a06a9b5d366f92fc963c 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4559,7 +4559,7 @@ static_library("browser") {
+@@ -4552,7 +4552,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index b747d7fdc7ec697d64ffc479252620a5507f0551..cfaf2000fd96f359cd90cd261e1247df
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 7727b11ad1e8d4c3109ddd5eb4e000636cd901c5..8fd69f99bc37ab88688fdf1bb1a0f5c1a7244feb 100644
+index d7424f9b3dbb88a5a3e24b891ef6dc6e0a040faa..1a5f05882a1764a59ed40a1c0f1cf666127fba93 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5897,7 +5897,6 @@ test("unit_tests") {
+@@ -5902,7 +5902,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 7727b11ad1e8d4c3109ddd5eb4e000636cd901c5..8fd69f99bc37ab88688fdf1bb1a0f5c1
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/browser:chrome_process_finder",
-@@ -5921,6 +5920,10 @@ test("unit_tests") {
+@@ -5926,6 +5925,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,15 +68,15 @@ index 7727b11ad1e8d4c3109ddd5eb4e000636cd901c5..8fd69f99bc37ab88688fdf1bb1a0f5c1
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6812,7 +6815,6 @@ test("unit_tests") {
+@@ -6818,7 +6821,6 @@ test("unit_tests") {
      }
  
      deps += [
 -      "//chrome:packed_resources_integrity_hash",
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
-       "//chrome/browser/media/router:test_support",
-@@ -6919,6 +6921,10 @@ test("unit_tests") {
+       "//chrome/browser/autofill_assistant/password_change/proto:proto",
+@@ -6926,6 +6928,10 @@ test("unit_tests") {
      }
    }
  

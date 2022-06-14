@@ -8,10 +8,10 @@ https://chromium-review.googlesource.com/c/v8/v8/+/3114136, so for
 now we need a way to disable v8 sandboxed pointers.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index c7b3a664f8d05e2ca2a548f8254b6c1349106a3d..e98ba25f30853bc511b000521f3cb5bdfd89a01c 100644
+index 68249e1299a483df48704862c35ce211a4a70e91..f39e93fdbae347e22864338df996d2d04eee0aee 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -508,9 +508,9 @@ if (v8_enable_sandbox == "") {
+@@ -506,9 +506,9 @@ if (v8_enable_sandbox == "") {
        v8_enable_external_code_space && target_os != "fuchsia"
  }
  
