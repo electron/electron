@@ -122,9 +122,9 @@ if (nodeIntegration) {
   }
 }
 
-const { preloadScripts } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
+const { preloadPaths } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
 // Load the preload scripts.
-for (const { preloadPath: preloadScript } of preloadScripts) {
+for (const preloadScript of preloadPaths) {
   try {
     Module._load(preloadScript);
   } catch (error) {
