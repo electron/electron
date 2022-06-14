@@ -1490,7 +1490,15 @@ describe('<webview> tag', function () {
     });
 
     describe('will-frame-navigate event', () => {
-      it('emits when a url that leads to outside of the page is loaded', async () => {
+      it('emits when a link that leads to outside of the page is loaded', async () => {
+        const { url, isMainFrame } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/webview-will-navigate.html`
+        }, 'will-frame-navigate');
+        expect(url).to.equal('http://host/');
+        expect(isMainFrame).to.be.true();
+      });
+
+      it('emits when a link within an iframe, which leads to outside of the page, is loaded', async () => {
         await loadWebView(w, {
           src: `file://${fixtures}/pages/webview-will-navigate.html`
         });
