@@ -1743,13 +1743,14 @@ bool WebContents::EmitNavigationEventDetails(
   auto url = navigation_handle->GetURL();
 
   content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
-  auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_host->GetFrameTreeNodeId());
+  gin::Handle<WebFrameMain> web_frame_main =
+      WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame_host);
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("isMainFrame", is_main_frame);
-  details.Set("frame", web_frame);
+  details.Set("frame", web_frame_main);
 
   return Emit(event, url, details);
 }
