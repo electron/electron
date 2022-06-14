@@ -716,14 +716,6 @@ source_set("electron_lib") {
 
   sources += get_target_outputs(":electron_fuses")
 
-  if (is_win && enable_win_dark_mode_window_ui) {
-    sources += [
-      "shell/browser/win/dark_mode.cc",
-      "shell/browser/win/dark_mode.h",
-    ]
-    libs += [ "uxtheme.lib" ]
-  }
-
   if (allow_runtime_configurable_key_storage) {
     defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
   }
