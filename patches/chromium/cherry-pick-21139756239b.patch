@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ari Chivukula <arichiv@chromium.org>
+Date: Tue, 17 May 2022 18:17:07 +0000
+Subject: {M102 PICK} [IndexedDB] Use-After-Free Fix
+
+We can't guarantee order in the task the constructor dispatches the same
+way we could before due to all the async changes. Let's be sure all the
+objects exist before using them now. Long term, we need to address
+ownership of the idb context.
+
+Bug: 1324864, 1218100
+Change-Id: Id5753297a4c966432028a1e7e063c5f1bed6f619
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3646994
+Reviewed-by: Ayu Ishii <ayui@chromium.org>
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5005@{#812}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+
+diff --git a/content/browser/indexed_db/indexed_db_context_impl.cc b/content/browser/indexed_db/indexed_db_context_impl.cc
+index 9472e762729312bf68073c95056ce09e324148da..219904d80798f71f0be23ee9ffeb5c58d030fb55 100644
+--- a/content/browser/indexed_db/indexed_db_context_impl.cc
++++ b/content/browser/indexed_db/indexed_db_context_impl.cc
+@@ -167,38 +167,32 @@ IndexedDBContextImpl::IndexedDBContextImpl(
+       std::move(quota_client_remote),
+       storage::QuotaClientType::kIndexedDatabase,
+       {blink::mojom::StorageType::kTemporary});
++  IDBTaskRunner()->PostTask(
++      FROM_HERE, base::BindOnce(&IndexedDBContextImpl::BindPipesOnIDBSequence,
++                                weak_factory_.GetWeakPtr(),
++                                std::move(quota_client_receiver),
++                                std::move(blob_storage_context),
++                                std::move(file_system_access_context)));
++}
+ 
+-  // This is safe because the IndexedDBContextImpl must be destructed on the
+-  // IDBTaskRunner, and this task will always happen before that.
+-  idb_task_runner_->PostTask(
+-      FROM_HERE,
+-      base::BindOnce(
+-          [](mojo::Remote<storage::mojom::BlobStorageContext>*
+-                 blob_storage_context,
+-             mojo::Remote<storage::mojom::FileSystemAccessContext>*
+-                 file_system_access_context,
+-             mojo::Receiver<storage::mojom::QuotaClient>* quota_client_receiver,
+-             mojo::PendingRemote<storage::mojom::BlobStorageContext>
+-                 pending_blob_storage_context,
+-             mojo::PendingRemote<storage::mojom::FileSystemAccessContext>
+-                 pending_file_system_access_context,
+-             mojo::PendingReceiver<storage::mojom::QuotaClient>
+-                 quota_client_pending_receiver) {
+-            quota_client_receiver->Bind(
+-                std::move(quota_client_pending_receiver));
+-            if (pending_blob_storage_context) {
+-              blob_storage_context->Bind(
+-                  std::move(pending_blob_storage_context));
+-            }
+-            if (pending_file_system_access_context) {
+-              file_system_access_context->Bind(
+-                  std::move(pending_file_system_access_context));
+-            }
+-          },
+-          &blob_storage_context_, &file_system_access_context_,
+-          &quota_client_receiver_, std::move(blob_storage_context),
+-          std::move(file_system_access_context),
+-          std::move(quota_client_receiver)));
++void IndexedDBContextImpl::BindPipesOnIDBSequence(
++    mojo::PendingReceiver<storage::mojom::QuotaClient>
++        pending_quota_client_receiver,
++    mojo::PendingRemote<storage::mojom::BlobStorageContext>
++        pending_blob_storage_context,
++    mojo::PendingRemote<storage::mojom::FileSystemAccessContext>
++        pending_file_system_access_context) {
++  DCHECK(IDBTaskRunner()->RunsTasksInCurrentSequence());
++  if (pending_quota_client_receiver) {
++    quota_client_receiver_.Bind(std::move(pending_quota_client_receiver));
++  }
++  if (pending_blob_storage_context) {
++    blob_storage_context_.Bind(std::move(pending_blob_storage_context));
++  }
++  if (pending_file_system_access_context) {
++    file_system_access_context_.Bind(
++        std::move(pending_file_system_access_context));
++  }
+ }
+ 
+ void IndexedDBContextImpl::Bind(
+diff --git a/content/browser/indexed_db/indexed_db_context_impl.h b/content/browser/indexed_db/indexed_db_context_impl.h
+index 4b874b244778d831e0fa8ca3bbfd7e751897923e..ad2f984e130ece867c0f0dc7ca9ae52b8ec12ae9 100644
+--- a/content/browser/indexed_db/indexed_db_context_impl.h
++++ b/content/browser/indexed_db/indexed_db_context_impl.h
+@@ -224,6 +224,14 @@ class CONTENT_EXPORT IndexedDBContextImpl
+ 
+   ~IndexedDBContextImpl() override;
+ 
++  void BindPipesOnIDBSequence(
++      mojo::PendingReceiver<storage::mojom::QuotaClient>
++          pending_quota_client_receiver,
++      mojo::PendingRemote<storage::mojom::BlobStorageContext>
++          pending_blob_storage_context,
++      mojo::PendingRemote<storage::mojom::FileSystemAccessContext>
++          pending_file_system_access_context);
++
+   // Binds receiver on bucket retrieval to ensure that a bucket always exists
+   // for a storage key.
+   void BindIndexedDBWithBucket(
+@@ -282,6 +290,8 @@ class CONTENT_EXPORT IndexedDBContextImpl
+   mojo::Receiver<storage::mojom::QuotaClient> quota_client_receiver_;
+   const std::unique_ptr<storage::FilesystemProxy> filesystem_proxy_;
+ 
++  // weak_factory_->GetWeakPtr() may be used on any thread, but the resulting
++  // pointer must only be checked/used on idb_task_runner_.
+   base::WeakPtrFactory<IndexedDBContextImpl> weak_factory_{this};
+ };
+ 
