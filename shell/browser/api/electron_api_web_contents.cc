@@ -1719,7 +1719,7 @@ void WebContents::DidStopLoading() {
 }
 
 content::RenderFrameHost* WebContents::GetRenderFrameHost(
-  content::NavigationHandle* navigation_handle) {
+    content::NavigationHandle* navigation_handle) {
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
   content::FrameTreeNode* frame_tree_node =
       content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
@@ -1738,7 +1738,6 @@ content::RenderFrameHost* WebContents::GetRenderFrameHost(
 bool WebContents::EmitNavigationEventDetails(
     const std::string& event,
     content::NavigationHandle* navigation_handle) {
-
   bool is_main_frame = navigation_handle->IsInMainFrame();
   auto url = navigation_handle->GetURL();
 
