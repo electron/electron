@@ -1,7 +1,10 @@
-From 919b1ffe1fe75aa7f77213c0291e6396a6a60e43 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alex Rudenko <alexrudenko@chromium.org>
 Date: Tue, 26 Apr 2022 05:53:56 +0000
-Subject: [PATCH] [M102] DevTools: store weak references to nodes in inspect_tools
+Subject: DevTools: store weak references to nodes in inspect_tools
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 This CL changes how the configuration for persistent overlays is stored.
 Instead of trying to save a strong reference to a DOM node, we can
@@ -24,13 +27,12 @@ Reviewed-by: Simon Zünd <szuend@chromium.org>
 Commit-Queue: Simon Zünd <szuend@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5005@{#163}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/third_party/blink/renderer/core/inspector/inspect_tools.cc b/third_party/blink/renderer/core/inspector/inspect_tools.cc
-index e1495ab89..0f2d8bc 100644
+index 7a417795a2fae0936cf1f168fc2b046fb2a0b0fd..2f8335981ac7679a9e8c3d0059dfff4b8a025ac4 100644
 --- a/third_party/blink/renderer/core/inspector/inspect_tools.cc
 +++ b/third_party/blink/renderer/core/inspector/inspect_tools.cc
-@@ -486,14 +486,14 @@
+@@ -477,14 +477,14 @@ bool PersistentTool::HideOnMouseMove() {
  void PersistentTool::Draw(float scale) {
    for (auto& entry : grid_node_highlights_) {
      std::unique_ptr<protocol::Value> highlight =
@@ -47,7 +49,7 @@ index e1495ab89..0f2d8bc 100644
      if (!highlight)
        continue;
      overlay_->EvaluateInOverlay("drawFlexContainerHighlight",
-@@ -501,7 +501,7 @@
+@@ -492,7 +492,7 @@ void PersistentTool::Draw(float scale) {
    }
    for (auto& entry : scroll_snap_configs_) {
      std::unique_ptr<protocol::Value> highlight =
@@ -56,7 +58,7 @@ index e1495ab89..0f2d8bc 100644
      if (!highlight)
        continue;
      overlay_->EvaluateInOverlay("drawScrollSnapHighlight",
-@@ -509,17 +509,15 @@
+@@ -500,17 +500,15 @@ void PersistentTool::Draw(float scale) {
    }
    for (auto& entry : container_query_configs_) {
      std::unique_ptr<protocol::Value> highlight =
@@ -77,7 +79,7 @@ index e1495ab89..0f2d8bc 100644
      if (!highlight)
        continue;
      overlay_->EvaluateInOverlay("drawIsolatedElementHighlight",
-@@ -557,9 +555,11 @@
+@@ -548,9 +546,11 @@ void PersistentTool::Dispatch(const ScriptValue& message,
  
    Element* element = nullptr;
    if (highlight_type == "isolatedElement") {
@@ -92,7 +94,7 @@ index e1495ab89..0f2d8bc 100644
      }
    }
  
-@@ -580,7 +580,7 @@
+@@ -571,7 +571,7 @@ PersistentTool::GetGridInspectorHighlightsAsJson() const {
        protocol::ListValue::create();
    for (auto& entry : grid_node_highlights_) {
      std::unique_ptr<protocol::Value> highlight =
@@ -101,7 +103,7 @@ index e1495ab89..0f2d8bc 100644
      if (!highlight)
        continue;
      highlights->pushValue(std::move(highlight));
-@@ -593,6 +593,15 @@
+@@ -584,6 +584,15 @@ PersistentTool::GetGridInspectorHighlightsAsJson() const {
    return result;
  }
  
@@ -118,10 +120,10 @@ index e1495ab89..0f2d8bc 100644
  
  SourceOrderTool::SourceOrderTool(
 diff --git a/third_party/blink/renderer/core/inspector/inspect_tools.h b/third_party/blink/renderer/core/inspector/inspect_tools.h
-index dd55eac..92abdca3 100644
+index 1f558bec19b510fc80b884a6fe00144123c8aee3..2c45dc42dac388df5dbfe95949c41721944e14c4 100644
 --- a/third_party/blink/renderer/core/inspector/inspect_tools.h
 +++ b/third_party/blink/renderer/core/inspector/inspect_tools.h
-@@ -145,23 +145,20 @@
+@@ -145,23 +145,20 @@ class SourceOrderTool : public InspectTool {
  };
  
  // -----------------------------------------------------------------------------
@@ -157,7 +159,7 @@ index dd55eac..92abdca3 100644
  
  class PersistentTool : public InspectTool {
    using InspectTool::InspectTool;
-@@ -181,6 +178,8 @@
+@@ -181,6 +178,8 @@ class PersistentTool : public InspectTool {
    std::unique_ptr<protocol::DictionaryValue> GetGridInspectorHighlightsAsJson()
        const;
  
@@ -167,10 +169,10 @@ index dd55eac..92abdca3 100644
    bool ForwardEventsToOverlay() override;
    bool HideOnMouseMove() override;
 diff --git a/third_party/blink/renderer/core/inspector/inspector_highlight.cc b/third_party/blink/renderer/core/inspector/inspector_highlight.cc
-index 8532089..4e0af3b 100644
+index 74edb4b3c0b557988e7ac297a2e502497c792eec..357aea702b828bbb7797377677bdbddbaa50e3b9 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_highlight.cc
 +++ b/third_party/blink/renderer/core/inspector/inspector_highlight.cc
-@@ -2426,8 +2426,7 @@
+@@ -2428,8 +2428,7 @@ std::unique_ptr<protocol::DictionaryValue> InspectorContainerQueryHighlight(
  
  std::unique_ptr<protocol::DictionaryValue> InspectorIsolatedElementHighlight(
      Element* element,
@@ -180,7 +182,7 @@ index 8532089..4e0af3b 100644
    LocalFrameView* frame_view = element->GetDocument().View();
    if (!frame_view)
      return nullptr;
-@@ -2439,7 +2438,7 @@
+@@ -2441,7 +2440,7 @@ std::unique_ptr<protocol::DictionaryValue> InspectorIsolatedElementHighlight(
    if (!isolated_element_info)
      return nullptr;
  
@@ -190,10 +192,10 @@ index 8532089..4e0af3b 100644
  }
  
 diff --git a/third_party/blink/renderer/core/inspector/inspector_highlight.h b/third_party/blink/renderer/core/inspector/inspector_highlight.h
-index 5c8d7230..1e6d6f0 100644
+index 53884fd75b8a861df3b33cc730304d344f5cda2a..897445629fdc6bbfe36c750027acce992a965d46 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_highlight.h
 +++ b/third_party/blink/renderer/core/inspector/inspector_highlight.h
-@@ -145,6 +145,7 @@
+@@ -145,6 +145,7 @@ struct CORE_EXPORT InspectorIsolationModeHighlightConfig {
    Color resizer_color;
    Color resizer_handle_color;
    Color mask_color;
@@ -201,7 +203,7 @@ index 5c8d7230..1e6d6f0 100644
  };
  
  struct CORE_EXPORT InspectorHighlightConfig {
-@@ -300,8 +301,7 @@
+@@ -300,8 +301,7 @@ std::unique_ptr<protocol::DictionaryValue> InspectorContainerQueryHighlight(
  
  std::unique_ptr<protocol::DictionaryValue> InspectorIsolatedElementHighlight(
      Element* element,
@@ -212,10 +214,10 @@ index 5c8d7230..1e6d6f0 100644
  // CORE_EXPORT is required to make these functions available for unit tests.
  std::unique_ptr<protocol::DictionaryValue> CORE_EXPORT
 diff --git a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
-index a5b4b03..7b769c5 100644
+index f061849584a4a228b86cffb20ce3ab74c0a25409..d8c9a48da6ed4b08681268d495a2e60efb8308b6 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
 +++ b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
-@@ -707,7 +707,7 @@
+@@ -711,7 +711,7 @@ Response InspectorOverlayAgent::setShowGridOverlays(
          MakeGarbageCollected<PersistentTool>(this, GetFrontend());
    }
  
@@ -224,7 +226,7 @@ index a5b4b03..7b769c5 100644
        configs;
    for (std::unique_ptr<protocol::Overlay::GridNodeHighlightConfig>& config :
         *grid_node_highlight_configs) {
-@@ -715,9 +715,8 @@
+@@ -719,9 +719,8 @@ Response InspectorOverlayAgent::setShowGridOverlays(
      Response response = dom_agent_->AssertNode(config->getNodeId(), node);
      if (!response.IsSuccess())
        return response;
@@ -236,7 +238,7 @@ index a5b4b03..7b769c5 100644
    }
  
    persistent_tool_->SetGridConfigs(std::move(configs));
-@@ -735,8 +734,8 @@
+@@ -739,8 +738,8 @@ Response InspectorOverlayAgent::setShowFlexOverlays(
          MakeGarbageCollected<PersistentTool>(this, GetFrontend());
    }
  
@@ -247,7 +249,7 @@ index a5b4b03..7b769c5 100644
        configs;
  
    for (std::unique_ptr<protocol::Overlay::FlexNodeHighlightConfig>& config :
-@@ -745,9 +744,8 @@
+@@ -749,9 +748,8 @@ Response InspectorOverlayAgent::setShowFlexOverlays(
      Response response = dom_agent_->AssertNode(config->getNodeId(), node);
      if (!response.IsSuccess())
        return response;
@@ -259,7 +261,7 @@ index a5b4b03..7b769c5 100644
    }
  
    persistent_tool_->SetFlexContainerConfigs(std::move(configs));
-@@ -766,9 +764,8 @@
+@@ -770,9 +768,8 @@ Response InspectorOverlayAgent::setShowScrollSnapOverlays(
          MakeGarbageCollected<PersistentTool>(this, GetFrontend());
    }
  
@@ -271,7 +273,7 @@ index a5b4b03..7b769c5 100644
        configs;
  
    for (std::unique_ptr<protocol::Overlay::ScrollSnapHighlightConfig>& config :
-@@ -777,9 +774,9 @@
+@@ -781,9 +778,9 @@ Response InspectorOverlayAgent::setShowScrollSnapOverlays(
      Response response = dom_agent_->AssertNode(config->getNodeId(), node);
      if (!response.IsSuccess())
        return response;
@@ -284,7 +286,7 @@ index a5b4b03..7b769c5 100644
    }
  
    persistent_tool_->SetScrollSnapConfigs(std::move(configs));
-@@ -798,9 +795,8 @@
+@@ -802,9 +799,8 @@ Response InspectorOverlayAgent::setShowContainerQueryOverlays(
          MakeGarbageCollected<PersistentTool>(this, GetFrontend());
    }
  
@@ -296,7 +298,7 @@ index a5b4b03..7b769c5 100644
        configs;
  
    for (std::unique_ptr<protocol::Overlay::ContainerQueryHighlightConfig>&
-@@ -809,9 +805,9 @@
+@@ -813,9 +809,9 @@ Response InspectorOverlayAgent::setShowContainerQueryOverlays(
      Response response = dom_agent_->AssertNode(config->getNodeId(), node);
      if (!response.IsSuccess())
        return response;
@@ -308,7 +310,7 @@ index a5b4b03..7b769c5 100644
    }
  
    persistent_tool_->SetContainerQueryConfigs(std::move(configs));
-@@ -830,10 +826,11 @@
+@@ -834,10 +830,11 @@ Response InspectorOverlayAgent::setShowIsolatedElements(
          MakeGarbageCollected<PersistentTool>(this, GetFrontend());
    }
  
@@ -322,7 +324,7 @@ index a5b4b03..7b769c5 100644
    for (std::unique_ptr<protocol::Overlay::IsolatedElementHighlightConfig>&
             config : *isolated_element_highlight_configs) {
      Element* element = nullptr;
-@@ -841,9 +838,10 @@
+@@ -845,9 +842,10 @@ Response InspectorOverlayAgent::setShowIsolatedElements(
      Response response = dom_agent_->AssertElement(config->getNodeId(), element);
      if (!response.IsSuccess())
        return response;
@@ -336,7 +338,7 @@ index a5b4b03..7b769c5 100644
    }
  
    persistent_tool_->SetIsolatedElementConfigs(std::move(configs));
-@@ -948,16 +946,16 @@
+@@ -951,16 +949,16 @@ Response InspectorOverlayAgent::getGridHighlightObjectsForTest(
      std::unique_ptr<protocol::Array<int>> node_ids,
      std::unique_ptr<protocol::DictionaryValue>* highlights) {
    PersistentTool persistent_tool(this, GetFrontend());
@@ -357,7 +359,7 @@ index a5b4b03..7b769c5 100644
    }
    persistent_tool.SetGridConfigs(std::move(configs));
    *highlights = persistent_tool.GetGridInspectorHighlightsAsJson();
-@@ -1750,7 +1748,8 @@
+@@ -1728,7 +1726,8 @@ InspectorOverlayAgent::ToFlexItemHighlightConfig(
  // static
  std::unique_ptr<InspectorIsolationModeHighlightConfig>
  InspectorOverlayAgent::ToIsolationModeHighlightConfig(
@@ -367,7 +369,7 @@ index a5b4b03..7b769c5 100644
    if (!config) {
      return nullptr;
    }
-@@ -1762,6 +1761,7 @@
+@@ -1740,6 +1739,7 @@ InspectorOverlayAgent::ToIsolationModeHighlightConfig(
        InspectorDOMAgent::ParseColor(config->getResizerHandleColor(nullptr));
    highlight_config->mask_color =
        InspectorDOMAgent::ParseColor(config->getMaskColor(nullptr));
@@ -376,10 +378,10 @@ index a5b4b03..7b769c5 100644
    return highlight_config;
  }
 diff --git a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
-index bc6797f..ae9e177 100644
+index ee9963de2b918cba7fd786c85f6c1ad1884ae5f8..d70123303569c7626a4c3117d542d66e0c375ac1 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
 +++ b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
-@@ -163,7 +163,8 @@
+@@ -161,7 +161,8 @@ class CORE_EXPORT InspectorOverlayAgent final
    ToFlexItemHighlightConfig(protocol::Overlay::FlexItemHighlightConfig*);
    static std::unique_ptr<InspectorIsolationModeHighlightConfig>
    ToIsolationModeHighlightConfig(
