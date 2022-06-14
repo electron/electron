@@ -1,0 +1,469 @@
+From 0719a6584ed2150c9265881e184a77d36cc3dac0 Mon Sep 17 00:00:00 2001
+From: Joyee Cheung <joyee@igalia.com>
+Date: Mon, 16 May 2022 19:04:00 +0800
+Subject: [PATCH] Merged: [ic] handle access check for private names
+
+Previously the LookupIterator ignores private symbols
+(including private names) for the access check. This patch
+removes these exceptions so that they are always checked.
+
+Drive-by: removes the unused should_throw parameter in
+Runtime::DefineObjectOwnProperty()
+
+Bug: chromium:1321899
+(cherry picked from commit bb98b3873558b32e38f11fdcd8578fb817163148)
+
+Change-Id: I21f22c003a6e156ab2448a5232e37ffd709a7492
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3687698
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.2@{#10}
+Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
+Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
+---
+
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index b0572bc..1fdf724 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -1849,19 +1849,10 @@
+       IsAnyDefineOwn() ? LookupIterator::OWN : LookupIterator::DEFAULT);
+ 
+   if (name->IsPrivate()) {
+-    bool exists = it.IsFound();
+-    if (name->IsPrivateName() && exists == IsDefineKeyedOwnIC()) {
+-      Handle<String> name_string(
+-          String::cast(Symbol::cast(*name).description()), isolate());
+-      if (exists) {
+-        MessageTemplate message =
+-            name->IsPrivateBrand()
+-                ? MessageTemplate::kInvalidPrivateBrandReinitialization
+-                : MessageTemplate::kInvalidPrivateFieldReinitialization;
+-        return TypeError(message, object, name_string);
+-      } else {
+-        return TypeError(MessageTemplate::kInvalidPrivateMemberWrite, object,
+-                         name_string);
++    if (name->IsPrivateName()) {
++      DCHECK(!IsDefineNamedOwnIC());
++      if (!JSReceiver::CheckPrivateNameStore(&it, IsDefineKeyedOwnIC())) {
++        return MaybeHandle<Object>();
+       }
+     }
+ 
+diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
+index 3f806f5..4335a7c 100644
+--- a/src/objects/js-objects.cc
++++ b/src/objects/js-objects.cc
+@@ -186,6 +186,55 @@
+ }
+ 
+ // static
++bool JSReceiver::CheckPrivateNameStore(LookupIterator* it, bool is_define) {
++  DCHECK(it->GetName()->IsPrivateName());
++  Isolate* isolate = it->isolate();
++  Handle<String> name_string(
++      String::cast(Handle<Symbol>::cast(it->GetName())->description()),
++      isolate);
++  bool should_throw = GetShouldThrow(isolate, Nothing<ShouldThrow>()) ==
++                      ShouldThrow::kThrowOnError;
++  for (; it->IsFound(); it->Next()) {
++    switch (it->state()) {
++      case LookupIterator::TRANSITION:
++      case LookupIterator::INTERCEPTOR:
++      case LookupIterator::JSPROXY:
++      case LookupIterator::NOT_FOUND:
++      case LookupIterator::INTEGER_INDEXED_EXOTIC:
++      case LookupIterator::ACCESSOR:
++        UNREACHABLE();
++      case LookupIterator::ACCESS_CHECK:
++        if (!it->HasAccess()) {
++          isolate->ReportFailedAccessCheck(
++              Handle<JSObject>::cast(it->GetReceiver()));
++          RETURN_VALUE_IF_SCHEDULED_EXCEPTION(isolate, false);
++          return false;
++        }
++        break;
++      case LookupIterator::DATA:
++        if (is_define && should_throw) {
++          MessageTemplate message =
++              it->GetName()->IsPrivateBrand()
++                  ? MessageTemplate::kInvalidPrivateBrandReinitialization
++                  : MessageTemplate::kInvalidPrivateFieldReinitialization;
++          isolate->Throw(*(isolate->factory()->NewTypeError(
++              message, name_string, it->GetReceiver())));
++          return false;
++        }
++        return true;
++    }
++  }
++  DCHECK(!it->IsFound());
++  if (!is_define && should_throw) {
++    isolate->Throw(*(isolate->factory()->NewTypeError(
++        MessageTemplate::kInvalidPrivateMemberWrite, name_string,
++        it->GetReceiver())));
++    return false;
++  }
++  return true;
++}
++
++// static
+ Maybe<bool> JSReceiver::CheckIfCanDefine(Isolate* isolate, LookupIterator* it,
+                                          Handle<Object> value,
+                                          Maybe<ShouldThrow> should_throw) {
+diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
+index d6a96a8..4edb34d 100644
+--- a/src/objects/js-objects.h
++++ b/src/objects/js-objects.h
+@@ -161,6 +161,11 @@
+       Isolate* isolate, Handle<JSReceiver> object, Handle<Object> key,
+       PropertyDescriptor* desc, Maybe<ShouldThrow> should_throw);
+ 
++  // Check if private name property can be store on the object. It will return
++  // false with an error when it cannot.
++  V8_WARN_UNUSED_RESULT static bool CheckPrivateNameStore(LookupIterator* it,
++                                                          bool is_define);
++
+   // Check if a data property can be created on the object. It will fail with
+   // an error when it cannot.
+   V8_WARN_UNUSED_RESULT static Maybe<bool> CheckIfCanDefine(
+diff --git a/src/objects/lookup.cc b/src/objects/lookup.cc
+index 81f8330..df9e219 100644
+--- a/src/objects/lookup.cc
++++ b/src/objects/lookup.cc
+@@ -1264,7 +1264,9 @@
+       }
+ #endif  // V8_ENABLE_WEBASSEMBLY
+       if (map.is_access_check_needed()) {
+-        if (is_element || !name_->IsPrivate(isolate_)) return ACCESS_CHECK;
++        if (is_element || !name_->IsPrivate(isolate_) ||
++            name_->IsPrivateName(isolate_))
++          return ACCESS_CHECK;
+       }
+       V8_FALLTHROUGH;
+     case ACCESS_CHECK:
+diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
+index e4da1da..4241abe 100644
+--- a/src/runtime/runtime-object.cc
++++ b/src/runtime/runtime-object.cc
+@@ -48,6 +48,9 @@
+       LookupIterator(isolate, receiver, lookup_key, lookup_start_object);
+ 
+   MaybeHandle<Object> result = Object::GetProperty(&it);
++  if (result.is_null()) {
++    return result;
++  }
+   if (is_found) *is_found = it.IsFound();
+ 
+   if (!it.IsFound() && key->IsSymbol() &&
+@@ -572,15 +575,9 @@
+   PropertyKey lookup_key(isolate, key, &success);
+   if (!success) return MaybeHandle<Object>();
+   LookupIterator it(isolate, object, lookup_key);
+-
+-  if (!it.IsFound() && key->IsSymbol() &&
+-      Symbol::cast(*key).is_private_name()) {
+-    Handle<Object> name_string(Symbol::cast(*key).description(), isolate);
+-    DCHECK(name_string->IsString());
+-    THROW_NEW_ERROR(isolate,
+-                    NewTypeError(MessageTemplate::kInvalidPrivateMemberWrite,
+-                                 name_string, object),
+-                    Object);
++  if (key->IsSymbol() && Symbol::cast(*key).is_private_name() &&
++      !JSReceiver::CheckPrivateNameStore(&it, false)) {
++    return MaybeHandle<Object>();
+   }
+ 
+   MAYBE_RETURN_NULL(
+@@ -589,10 +586,11 @@
+   return value;
+ }
+ 
+-MaybeHandle<Object> Runtime::DefineObjectOwnProperty(
+-    Isolate* isolate, Handle<Object> object, Handle<Object> key,
+-    Handle<Object> value, StoreOrigin store_origin,
+-    Maybe<ShouldThrow> should_throw) {
++MaybeHandle<Object> Runtime::DefineObjectOwnProperty(Isolate* isolate,
++                                                     Handle<Object> object,
++                                                     Handle<Object> key,
++                                                     Handle<Object> value,
++                                                     StoreOrigin store_origin) {
+   if (object->IsNullOrUndefined(isolate)) {
+     THROW_NEW_ERROR(
+         isolate,
+@@ -607,20 +605,15 @@
+   LookupIterator it(isolate, object, lookup_key, LookupIterator::OWN);
+ 
+   if (key->IsSymbol() && Symbol::cast(*key).is_private_name()) {
+-    Handle<Symbol> private_symbol = Handle<Symbol>::cast(key);
+-    if (it.IsFound()) {
+-      Handle<Object> name_string(private_symbol->description(), isolate);
+-      DCHECK(name_string->IsString());
+-      MessageTemplate message =
+-          private_symbol->is_private_brand()
+-              ? MessageTemplate::kInvalidPrivateBrandReinitialization
+-              : MessageTemplate::kInvalidPrivateFieldReinitialization;
+-      THROW_NEW_ERROR(isolate, NewTypeError(message, name_string), Object);
+-    } else {
+-      MAYBE_RETURN_NULL(JSReceiver::AddPrivateField(&it, value, should_throw));
++    if (!JSReceiver::CheckPrivateNameStore(&it, true)) {
++      return MaybeHandle<Object>();
+     }
++    DCHECK(!it.IsFound());
++    MAYBE_RETURN_NULL(
++        JSReceiver::AddPrivateField(&it, value, Nothing<ShouldThrow>()));
+   } else {
+-    MAYBE_RETURN_NULL(JSReceiver::CreateDataProperty(&it, value, should_throw));
++    MAYBE_RETURN_NULL(
++        JSReceiver::CreateDataProperty(&it, value, Nothing<ShouldThrow>()));
+   }
+ 
+   return value;
+diff --git a/src/runtime/runtime.h b/src/runtime/runtime.h
+index a140f9b..877b277 100644
+--- a/src/runtime/runtime.h
++++ b/src/runtime/runtime.h
+@@ -821,10 +821,9 @@
+   // private field definition), this method throws if the field already exists
+   // on object.
+   V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT static MaybeHandle<Object>
+-  DefineObjectOwnProperty(
+-      Isolate* isolate, Handle<Object> object, Handle<Object> key,
+-      Handle<Object> value, StoreOrigin store_origin,
+-      Maybe<ShouldThrow> should_throw = Nothing<ShouldThrow>());
++  DefineObjectOwnProperty(Isolate* isolate, Handle<Object> object,
++                          Handle<Object> key, Handle<Object> value,
++                          StoreOrigin store_origin);
+ 
+   // When "receiver" is not passed, it defaults to "lookup_start_object".
+   V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT static MaybeHandle<Object>
+diff --git a/test/mjsunit/regress/regress-crbug-1321899-1.js b/test/mjsunit/regress/regress-crbug-1321899-1.js
+new file mode 100644
+index 0000000..03990a7
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1321899-1.js
+@@ -0,0 +1,21 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++d8.file.execute('test/mjsunit/regress/regress-crbug-1321899.js');
++
++// Detached global should not have access
++const realm = Realm.createAllowCrossRealmAccess();
++const detached = Realm.global(realm);
++Realm.detachGlobal(realm);
++
++assertThrows(() => new B(detached), Error, /no access/);
++assertThrows(() => new C(detached), Error, /no access/);
++assertThrows(() => new D(detached), Error, /no access/);
++assertThrows(() => new E(detached), Error, /no access/);
++assertThrows(() => B.setField(detached), Error, /no access/);
++assertThrows(() => C.setField(detached), Error, /no access/);
++assertThrows(() => D.setAccessor(detached), Error, /no access/);
++assertThrows(() => E.setMethod(detached), Error, /no access/);
++assertThrows(() => D.getAccessor(detached), Error, /no access/);
++assertThrows(() => E.getMethod(detached), Error, /no access/);
+diff --git a/test/mjsunit/regress/regress-crbug-1321899-2.js b/test/mjsunit/regress/regress-crbug-1321899-2.js
+new file mode 100644
+index 0000000..ff1c9a1
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1321899-2.js
+@@ -0,0 +1,7 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --no-lazy-feedback-allocation
++
++d8.file.execute('test/mjsunit/regress/regress-crbug-1321899-1.js');
+diff --git a/test/mjsunit/regress/regress-crbug-1321899-3.js b/test/mjsunit/regress/regress-crbug-1321899-3.js
+new file mode 100644
+index 0000000..5d513a9
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1321899-3.js
+@@ -0,0 +1,65 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++d8.file.execute('test/mjsunit/regress/regress-crbug-1321899.js');
++
++// Attached global should have access
++const realm = Realm.createAllowCrossRealmAccess();
++const globalProxy = Realm.global(realm);
++
++assertThrows(() => B.setField(globalProxy), TypeError, /Cannot write private member #b to an object whose class did not declare it/);
++assertThrows(() => B.getField(globalProxy), TypeError, /Cannot read private member #b from an object whose class did not declare it/);
++
++new B(globalProxy);
++assertEquals(B.getField(globalProxy), 1);
++B.setField(globalProxy);
++assertEquals(B.getField(globalProxy), 'b');  // Fast case
++B.setField(globalProxy);  // Fast case
++assertEquals(B.getField(globalProxy), 'b');  // Fast case
++assertThrows(() => new B(globalProxy), TypeError, /Cannot initialize #b twice on the same object/);
++
++assertThrows(() => C.setField(globalProxy), TypeError, /Cannot write private member #c to an object whose class did not declare it/);
++assertThrows(() => C.getField(globalProxy), TypeError, /Cannot read private member #c from an object whose class did not declare it/);
++
++new C(globalProxy);
++assertEquals(C.getField(globalProxy), undefined);
++C.setField(globalProxy);
++assertEquals(C.getField(globalProxy), 'c');  // Fast case
++C.setField(globalProxy);  // Fast case
++assertEquals(C.getField(globalProxy), 'c');  // Fast case
++assertThrows(() => new C(globalProxy), TypeError, /Cannot initialize #c twice on the same object/);
++
++assertThrows(() => D.setAccessor(globalProxy), TypeError, /Receiver must be an instance of class D/);
++assertThrows(() => D.getAccessor(globalProxy), TypeError, /Receiver must be an instance of class D/);
++
++new D(globalProxy);
++assertEquals(D.getAccessor(globalProxy), 0);
++D.setAccessor(globalProxy);
++assertEquals(D.getAccessor(globalProxy), 'd');  // Fast case
++D.setAccessor(globalProxy);  // Fast case
++assertEquals(D.getAccessor(globalProxy), 'd');  // Fast case
++assertThrows(() => new D(globalProxy), TypeError, /Cannot initialize private methods of class D twice on the same object/);
++
++assertThrows(() => E.setMethod(globalProxy), TypeError, /Receiver must be an instance of class E/);
++assertThrows(() => E.getMethod(globalProxy), TypeError, /Receiver must be an instance of class E/);
++
++new E(globalProxy);
++assertEquals(E.getMethod(globalProxy)(), 0);
++assertThrows(() => E.setMethod(globalProxy), TypeError, /Private method '#e' is not writable/);
++assertEquals(E.getMethod(globalProxy)(), 0);  // Fast case
++assertThrows(() => new E(globalProxy), TypeError, /Cannot initialize private methods of class E twice on the same object/);
++
++// Access should fail after detaching
++Realm.detachGlobal(realm);
++
++assertThrows(() => new B(globalProxy), Error, /no access/);
++assertThrows(() => new C(globalProxy), Error, /no access/);
++assertThrows(() => new D(globalProxy), Error, /no access/);
++assertThrows(() => new E(globalProxy), Error, /no access/);
++assertThrows(() => B.setField(globalProxy), Error, /no access/);
++assertThrows(() => C.setField(globalProxy), Error, /no access/);
++assertThrows(() => D.setAccessor(globalProxy), Error, /no access/);
++assertThrows(() => E.setMethod(globalProxy), Error, /no access/);
++assertThrows(() => D.getAccessor(globalProxy), Error, /no access/);
++assertThrows(() => E.getMethod(globalProxy), Error, /no access/);
+diff --git a/test/mjsunit/regress/regress-crbug-1321899-4.js b/test/mjsunit/regress/regress-crbug-1321899-4.js
+new file mode 100644
+index 0000000..1f23dac
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1321899-4.js
+@@ -0,0 +1,7 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --no-lazy-feedback-allocation
++
++d8.file.execute('test/mjsunit/regress/regress-crbug-1321899-3.js');
+diff --git a/test/mjsunit/regress/regress-crbug-1321899-5.js b/test/mjsunit/regress/regress-crbug-1321899-5.js
+new file mode 100644
+index 0000000..d3bff2f
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1321899-5.js
+@@ -0,0 +1,19 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++d8.file.execute('test/mjsunit/regress/regress-crbug-1321899.js');
++
++const realm = Realm.create();
++const globalProxy = Realm.global(realm);
++
++assertThrows(() => new B(globalProxy), Error, /no access/);
++assertThrows(() => new C(globalProxy), Error, /no access/);
++assertThrows(() => new D(globalProxy), Error, /no access/);
++assertThrows(() => new E(globalProxy), Error, /no access/);
++assertThrows(() => B.setField(globalProxy), Error, /no access/);
++assertThrows(() => C.setField(globalProxy), Error, /no access/);
++assertThrows(() => D.setAccessor(globalProxy), Error, /no access/);
++assertThrows(() => E.setMethod(globalProxy), Error, /no access/);
++assertThrows(() => D.getAccessor(globalProxy), Error, /no access/);
++assertThrows(() => E.getMethod(globalProxy), Error, /no access/);
+diff --git a/test/mjsunit/regress/regress-crbug-1321899-6.js b/test/mjsunit/regress/regress-crbug-1321899-6.js
+new file mode 100644
+index 0000000..a49542a
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1321899-6.js
+@@ -0,0 +1,7 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --no-lazy-feedback-allocation
++
++d8.file.execute('test/mjsunit/regress/regress-crbug-1321899-5.js');
+diff --git a/test/mjsunit/regress/regress-crbug-1321899.js b/test/mjsunit/regress/regress-crbug-1321899.js
+new file mode 100644
+index 0000000..be1996e
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1321899.js
+@@ -0,0 +1,63 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++class A {
++  constructor(arg) {
++    return arg;
++  }
++}
++
++class B extends A {
++  #b = 1;  // ACCESS_CHECK -> DATA
++  constructor(arg) {
++    super(arg);
++  }
++  static setField(obj) {
++    obj.#b = 'b';  // KeyedStoreIC
++  }
++  static getField(obj) {
++    return obj.#b;
++  }
++}
++
++class C extends A {
++  #c;  // DefineKeyedOwnIC: ACCESS_CHECK -> NOT_FOUND
++  constructor(arg) {
++    super(arg);
++  }
++  static setField(obj) {
++    obj.#c = 'c';  // KeyedStoreIC
++  }
++  static getField(obj) {
++    return obj.#c;
++  }
++}
++
++let d = 0;
++class D extends A {
++  get #d() { return d; }
++  set #d(val) { d = val;}
++  constructor(arg) {
++    super(arg);  // KeyedStoreIC for private brand
++  }
++  static setAccessor(obj) {
++    obj.#d = 'd';  // KeyedLoadIC for private brand
++  }
++  static getAccessor(obj) {
++    return obj.#d;  // KeyedLoadIC for private brand
++  }
++}
++
++class E extends A {
++  #e() { return 0; }
++  constructor(arg) {
++    super(arg);  // KeyedStoreIC for private brand
++  }
++  static setMethod(obj) {
++    obj.#e = 'e';  // KeyedLoadIC for private brand
++  }
++  static getMethod(obj) {
++    return obj.#e;  // KeyedLoadIC for private brand
++  }
++}
