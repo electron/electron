@@ -1,7 +1,7 @@
-From f1dd785e021eee989af8fbe7570f424e96cb0b16 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Sullivan <asully@chromium.org>
 Date: Mon, 16 May 2022 18:20:27 +0000
-Subject: [PATCH] M102: FSA: Sanitize .scf files
+Subject: M102: FSA: Sanitize .scf files
 
 .scf files can be used to execute code without opening the file.
 Sanitize these files the same way we sanitize .lnk files.
@@ -22,13 +22,12 @@ Auto-Submit: Austin Sullivan <asully@chromium.org>
 Commit-Queue: Austin Sullivan <asully@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5005@{#759}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
-index eb91c33..4d3b2d1 100644
+index 56863d50d543470de597e8df62e2f5b43b7b0fbe..df922b5a6cb917457570bb0f11a48d7a1710c627 100644
 --- a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
 +++ b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
-@@ -438,10 +438,13 @@
+@@ -438,10 +438,13 @@ namespace {
  bool IsShellIntegratedExtension(const base::FilePath::StringType& extension) {
    base::FilePath::StringType extension_lower = base::ToLowerASCII(extension);
  
@@ -46,10 +45,10 @@ index eb91c33..4d3b2d1 100644
    // Setting a file's extension to a CLSID may conceal its actual file type on
    // some Windows versions (see https://nvd.nist.gov/vuln/detail/CVE-2004-0420).
 diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
-index 0293eb3..976d97c 100644
+index b265ba0f405cecc03cbcc1c0b217204d3e7b25f6..689f7fc7093b5483fa36af5fd7832a25adf9c23b 100644
 --- a/content/browser/file_system_access/file_system_access_manager_impl.cc
 +++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
-@@ -529,6 +529,16 @@
+@@ -530,6 +530,16 @@ void FileSystemAccessManagerImpl::SetDefaultPathAndShowPicker(
      suggested_name_path =
          net::GenerateFileName(GURL(), std::string(), std::string(),
                                suggested_name, std::string(), std::string());
@@ -67,10 +66,10 @@ index 0293eb3..976d97c 100644
  
    FileSystemChooser::Options file_system_chooser_options(
 diff --git a/content/browser/file_system_access/file_system_chooser.cc b/content/browser/file_system_access/file_system_chooser.cc
-index 8f28997..f8cd9d5 100644
+index 6f0acccd3458ed758dbe14c8a3008a52569d8055..86b9af148a86e64f9f4aedb6e39998bf83668745 100644
 --- a/content/browser/file_system_access/file_system_chooser.cc
 +++ b/content/browser/file_system_access/file_system_chooser.cc
-@@ -70,33 +70,6 @@
+@@ -71,33 +71,6 @@ base::FilePath::StringType GetLastExtension(
               : extension;
  }
  
@@ -104,7 +103,7 @@ index 8f28997..f8cd9d5 100644
  // Extension validation primarily takes place in the renderer. This checks for a
  // subset of invalid extensions in the event the renderer is compromised.
  bool IsInvalidExtension(base::FilePath::StringType& extension) {
-@@ -104,7 +77,7 @@
+@@ -105,7 +78,7 @@ bool IsInvalidExtension(base::FilePath::StringType& extension) {
    auto extension16 = base::UTF8ToUTF16(component8);
  
    return !base::i18n::IsFilenameLegal(extension16) ||
@@ -113,7 +112,7 @@ index 8f28997..f8cd9d5 100644
  }
  
  // Converts the accepted mime types and extensions from `option` into a list
-@@ -289,6 +262,40 @@
+@@ -290,6 +263,40 @@ void FileSystemChooser::CreateAndShow(
        /*params=*/nullptr);
  }
  
@@ -155,10 +154,10 @@ index 8f28997..f8cd9d5 100644
                                       ResultCallback callback,
                                       base::ScopedClosureRunner fullscreen_block)
 diff --git a/content/browser/file_system_access/file_system_chooser.h b/content/browser/file_system_access/file_system_chooser.h
-index 07c8e7f..925df7f 100644
+index 07c8e7fda7d96496f58ed9a9e6cba6558c8c37df..925df7f5ef1d1bb94926afbe29beda248ae5aabc 100644
 --- a/content/browser/file_system_access/file_system_chooser.h
 +++ b/content/browser/file_system_access/file_system_chooser.h
-@@ -68,6 +68,12 @@
+@@ -68,6 +68,12 @@ class CONTENT_EXPORT FileSystemChooser : public ui::SelectFileDialog::Listener {
                              ResultCallback callback,
                              base::ScopedClosureRunner fullscreen_block);
  
@@ -172,10 +171,10 @@ index 07c8e7f..925df7f 100644
                      ResultCallback callback,
                      base::ScopedClosureRunner fullscreen_block);
 diff --git a/content/browser/file_system_access/file_system_chooser_browsertest.cc b/content/browser/file_system_access/file_system_chooser_browsertest.cc
-index dc310d0..9ea4db7 100644
+index dc310d04fb29ed4fa9c9cdac7ab726d4ca9f9f37..9ea4db7807f6bbac799452fd138848b2a650d6fd 100644
 --- a/content/browser/file_system_access/file_system_chooser_browsertest.cc
 +++ b/content/browser/file_system_access/file_system_chooser_browsertest.cc
-@@ -1556,22 +1556,28 @@
+@@ -1556,22 +1556,28 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest, SuggestedName) {
    name_infos.push_back({"not_matching.jpg", ListValueOf(".txt"), false,
                          "not_matching.jpg", false});
  
@@ -217,10 +216,10 @@ index dc310d0..9ea4db7 100644
    name_infos.push_back({R"(inv*l:d\\ch%rבאמת!a<ters🤓.txt)",
                          ListValueOf(".txt"), true,
 diff --git a/content/browser/file_system_access/file_system_chooser_unittest.cc b/content/browser/file_system_access/file_system_chooser_unittest.cc
-index 373de41..9b27d63 100644
+index 373de41cf5ddead27b5e036c1cc14448a731250a..9b27d6305bd00a19d94b5ec49f21a7ecff7ddc48 100644
 --- a/content/browser/file_system_access/file_system_chooser_unittest.cc
 +++ b/content/browser/file_system_access/file_system_chooser_unittest.cc
-@@ -189,7 +189,7 @@
+@@ -189,7 +189,7 @@ TEST_F(FileSystemChooserTest, IgnoreShellIntegratedExtensions) {
    accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
        u"", std::vector<std::string>({}),
        std::vector<std::string>(
