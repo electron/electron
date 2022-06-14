@@ -1,7 +1,7 @@
-From 0719a6584ed2150c9265881e184a77d36cc3dac0 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Joyee Cheung <joyee@igalia.com>
 Date: Mon, 16 May 2022 19:04:00 +0800
-Subject: [PATCH] Merged: [ic] handle access check for private names
+Subject: Merged: [ic] handle access check for private names
 
 Previously the LookupIterator ignores private symbols
 (including private names) for the access check. This patch
@@ -20,18 +20,17 @@ Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.2@{#10}
 Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
 Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
----
 
 diff --git a/src/ic/ic.cc b/src/ic/ic.cc
-index b0572bc..1fdf724 100644
+index d46ed22782cdc796912b8f53337e70b6b7b7fe16..4557eb60e0f2ee4a2165bb6ee9d7fb4f59e1c167 100644
 --- a/src/ic/ic.cc
 +++ b/src/ic/ic.cc
-@@ -1849,19 +1849,10 @@
-       IsAnyDefineOwn() ? LookupIterator::OWN : LookupIterator::DEFAULT);
+@@ -1844,19 +1844,10 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
+       IsAnyStoreOwn() ? LookupIterator::OWN : LookupIterator::DEFAULT);
  
    if (name->IsPrivate()) {
 -    bool exists = it.IsFound();
--    if (name->IsPrivateName() && exists == IsDefineKeyedOwnIC()) {
+-    if (name->IsPrivateName() && exists == IsDefineOwnIC()) {
 -      Handle<String> name_string(
 -          String::cast(Symbol::cast(*name).description()), isolate());
 -      if (exists) {
@@ -51,13 +50,14 @@ index b0572bc..1fdf724 100644
      }
  
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 3f806f5..4335a7c 100644
+index f3dc3ff9cade5f7d87eaf98fb7a6fe013599d166..d69fe4a242483ae29b536d5c667701b443a7e4c7 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -186,6 +186,55 @@
+@@ -184,6 +184,55 @@ Maybe<bool> JSReceiver::HasInPrototypeChain(Isolate* isolate,
+   }
  }
  
- // static
++// static
 +bool JSReceiver::CheckPrivateNameStore(LookupIterator* it, bool is_define) {
 +  DCHECK(it->GetName()->IsPrivateName());
 +  Isolate* isolate = it->isolate();
@@ -106,15 +106,14 @@ index 3f806f5..4335a7c 100644
 +  return true;
 +}
 +
-+// static
+ // static
  Maybe<bool> JSReceiver::CheckIfCanDefine(Isolate* isolate, LookupIterator* it,
                                           Handle<Object> value,
-                                          Maybe<ShouldThrow> should_throw) {
 diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
-index d6a96a8..4edb34d 100644
+index c47687c560db6241c763fbe2d9aa213d6e634941..084767810b69cde26729b0a0c44e8afca2352c88 100644
 --- a/src/objects/js-objects.h
 +++ b/src/objects/js-objects.h
-@@ -161,6 +161,11 @@
+@@ -161,6 +161,11 @@ class JSReceiver : public TorqueGeneratedJSReceiver<JSReceiver, HeapObject> {
        Isolate* isolate, Handle<JSReceiver> object, Handle<Object> key,
        PropertyDescriptor* desc, Maybe<ShouldThrow> should_throw);
  
@@ -127,10 +126,10 @@ index d6a96a8..4edb34d 100644
    // an error when it cannot.
    V8_WARN_UNUSED_RESULT static Maybe<bool> CheckIfCanDefine(
 diff --git a/src/objects/lookup.cc b/src/objects/lookup.cc
-index 81f8330..df9e219 100644
+index f95dfe61e8477aaef63a23ab69f3d5301f2f393c..ddb14947712a83084aa68fe2f76304ce407df230 100644
 --- a/src/objects/lookup.cc
 +++ b/src/objects/lookup.cc
-@@ -1264,7 +1264,9 @@
+@@ -1221,7 +1221,9 @@ LookupIterator::State LookupIterator::LookupInSpecialHolder(
        }
  #endif  // V8_ENABLE_WEBASSEMBLY
        if (map.is_access_check_needed()) {
@@ -142,10 +141,10 @@ index 81f8330..df9e219 100644
        V8_FALLTHROUGH;
      case ACCESS_CHECK:
 diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
-index e4da1da..4241abe 100644
+index 7084dac1c97160e32e18bdbdf2a101cbf86dda1b..ca16fd8d3d67d391a50f02cbfd5a61917f266395 100644
 --- a/src/runtime/runtime-object.cc
 +++ b/src/runtime/runtime-object.cc
-@@ -48,6 +48,9 @@
+@@ -45,6 +45,9 @@ MaybeHandle<Object> Runtime::GetObjectProperty(
        LookupIterator(isolate, receiver, lookup_key, lookup_start_object);
  
    MaybeHandle<Object> result = Object::GetProperty(&it);
@@ -155,7 +154,7 @@ index e4da1da..4241abe 100644
    if (is_found) *is_found = it.IsFound();
  
    if (!it.IsFound() && key->IsSymbol() &&
-@@ -572,15 +575,9 @@
+@@ -570,15 +573,9 @@ MaybeHandle<Object> Runtime::SetObjectProperty(
    PropertyKey lookup_key(isolate, key, &success);
    if (!success) return MaybeHandle<Object>();
    LookupIterator it(isolate, object, lookup_key);
@@ -174,7 +173,7 @@ index e4da1da..4241abe 100644
    }
  
    MAYBE_RETURN_NULL(
-@@ -589,10 +586,11 @@
+@@ -587,10 +584,11 @@ MaybeHandle<Object> Runtime::SetObjectProperty(
    return value;
  }
  
@@ -190,39 +189,37 @@ index e4da1da..4241abe 100644
    if (object->IsNullOrUndefined(isolate)) {
      THROW_NEW_ERROR(
          isolate,
-@@ -607,20 +605,15 @@
+@@ -604,15 +602,16 @@ MaybeHandle<Object> Runtime::DefineObjectOwnProperty(
+   if (!success) return MaybeHandle<Object>();
    LookupIterator it(isolate, object, lookup_key, LookupIterator::OWN);
  
-   if (key->IsSymbol() && Symbol::cast(*key).is_private_name()) {
+-  if (it.IsFound() && key->IsSymbol() && Symbol::cast(*key).is_private_name()) {
 -    Handle<Symbol> private_symbol = Handle<Symbol>::cast(key);
--    if (it.IsFound()) {
--      Handle<Object> name_string(private_symbol->description(), isolate);
--      DCHECK(name_string->IsString());
--      MessageTemplate message =
--          private_symbol->is_private_brand()
--              ? MessageTemplate::kInvalidPrivateBrandReinitialization
--              : MessageTemplate::kInvalidPrivateFieldReinitialization;
--      THROW_NEW_ERROR(isolate, NewTypeError(message, name_string), Object);
--    } else {
--      MAYBE_RETURN_NULL(JSReceiver::AddPrivateField(&it, value, should_throw));
+-    Handle<Object> name_string(private_symbol->description(), isolate);
+-    DCHECK(name_string->IsString());
+-    MessageTemplate message =
+-        private_symbol->is_private_brand()
+-            ? MessageTemplate::kInvalidPrivateBrandReinitialization
+-            : MessageTemplate::kInvalidPrivateFieldReinitialization;
+-    THROW_NEW_ERROR(isolate, NewTypeError(message, name_string), Object);
++  if (key->IsSymbol() && Symbol::cast(*key).is_private_name()) {
 +    if (!JSReceiver::CheckPrivateNameStore(&it, true)) {
 +      return MaybeHandle<Object>();
-     }
++    }
 +    DCHECK(!it.IsFound());
 +    MAYBE_RETURN_NULL(
 +        JSReceiver::AddPrivateField(&it, value, Nothing<ShouldThrow>()));
-   } else {
--    MAYBE_RETURN_NULL(JSReceiver::CreateDataProperty(&it, value, should_throw));
++  } else {
 +    MAYBE_RETURN_NULL(
 +        JSReceiver::CreateDataProperty(&it, value, Nothing<ShouldThrow>()));
    }
  
-   return value;
+   MAYBE_RETURN_NULL(
 diff --git a/src/runtime/runtime.h b/src/runtime/runtime.h
-index a140f9b..877b277 100644
+index 701b6b03de36c88b1cc3dd57fd16c9126178c0e3..3cae6a2c13ad2f32fcf2b4aa91a11a2a7d17aef8 100644
 --- a/src/runtime/runtime.h
 +++ b/src/runtime/runtime.h
-@@ -821,10 +821,9 @@
+@@ -805,10 +805,9 @@ class Runtime : public AllStatic {
    // private field definition), this method throws if the field already exists
    // on object.
    V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT static MaybeHandle<Object>
@@ -238,7 +235,7 @@ index a140f9b..877b277 100644
    V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT static MaybeHandle<Object>
 diff --git a/test/mjsunit/regress/regress-crbug-1321899-1.js b/test/mjsunit/regress/regress-crbug-1321899-1.js
 new file mode 100644
-index 0000000..03990a7
+index 0000000000000000000000000000000000000000..03990a774dba04bb0c47f58d6ddb59eef65d32a1
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1321899-1.js
 @@ -0,0 +1,21 @@
@@ -265,7 +262,7 @@ index 0000000..03990a7
 +assertThrows(() => E.getMethod(detached), Error, /no access/);
 diff --git a/test/mjsunit/regress/regress-crbug-1321899-2.js b/test/mjsunit/regress/regress-crbug-1321899-2.js
 new file mode 100644
-index 0000000..ff1c9a1
+index 0000000000000000000000000000000000000000..ff1c9a1772c613e7df2ccaed25dcba62984cf0cc
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1321899-2.js
 @@ -0,0 +1,7 @@
@@ -278,7 +275,7 @@ index 0000000..ff1c9a1
 +d8.file.execute('test/mjsunit/regress/regress-crbug-1321899-1.js');
 diff --git a/test/mjsunit/regress/regress-crbug-1321899-3.js b/test/mjsunit/regress/regress-crbug-1321899-3.js
 new file mode 100644
-index 0000000..5d513a9
+index 0000000000000000000000000000000000000000..5d513a9eca8ab84bf581888b2607a5f62efa2c61
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1321899-3.js
 @@ -0,0 +1,65 @@
@@ -349,7 +346,7 @@ index 0000000..5d513a9
 +assertThrows(() => E.getMethod(globalProxy), Error, /no access/);
 diff --git a/test/mjsunit/regress/regress-crbug-1321899-4.js b/test/mjsunit/regress/regress-crbug-1321899-4.js
 new file mode 100644
-index 0000000..1f23dac
+index 0000000000000000000000000000000000000000..1f23dac13ea4d8b3ef0624d20f1d51700a9d8970
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1321899-4.js
 @@ -0,0 +1,7 @@
@@ -362,7 +359,7 @@ index 0000000..1f23dac
 +d8.file.execute('test/mjsunit/regress/regress-crbug-1321899-3.js');
 diff --git a/test/mjsunit/regress/regress-crbug-1321899-5.js b/test/mjsunit/regress/regress-crbug-1321899-5.js
 new file mode 100644
-index 0000000..d3bff2f
+index 0000000000000000000000000000000000000000..d3bff2fbbeedc74615beab5413f0d5910832e98c
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1321899-5.js
 @@ -0,0 +1,19 @@
@@ -387,7 +384,7 @@ index 0000000..d3bff2f
 +assertThrows(() => E.getMethod(globalProxy), Error, /no access/);
 diff --git a/test/mjsunit/regress/regress-crbug-1321899-6.js b/test/mjsunit/regress/regress-crbug-1321899-6.js
 new file mode 100644
-index 0000000..a49542a
+index 0000000000000000000000000000000000000000..a49542a3b76fb01ea155ca2b264e87d4cba7da16
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1321899-6.js
 @@ -0,0 +1,7 @@
@@ -400,7 +397,7 @@ index 0000000..a49542a
 +d8.file.execute('test/mjsunit/regress/regress-crbug-1321899-5.js');
 diff --git a/test/mjsunit/regress/regress-crbug-1321899.js b/test/mjsunit/regress/regress-crbug-1321899.js
 new file mode 100644
-index 0000000..be1996e
+index 0000000000000000000000000000000000000000..be1996ef3064e016845434d7e2d6260ba3f1f5d9
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1321899.js
 @@ -0,0 +1,63 @@
