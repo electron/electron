@@ -1,7 +1,7 @@
-From 9768648fffc94a434a7d400a2542ce3706224417 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: SeongHwan Park <ggabu423@gmail.com>
 Date: Tue, 31 May 2022 02:41:32 +0900
-Subject: [PATCH] [M102] Fix to invalidate cache when binding Transform Feedback.
+Subject: Fix to invalidate cache when binding Transform Feedback.
 
 Bug: chromium:1330379
 Change-Id: I091116286ac511c50f9abcffa4d3cf350be920b4
@@ -11,13 +11,12 @@ Reviewed-by: Jamie Madill <jmadill@chromium.org>
 (cherry picked from commit d96cee6685099f6bcc392a4d20d28c8ec484673a)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3691799
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
----
 
 diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
-index 75385dd..baf881d 100644
+index 6b4d8d826ef3518ad11b1b39c78634f05d464b39..141d106c8ea4c92ecf1e01b3fa7c3bf11ba7d5d3 100644
 --- a/src/libANGLE/Context.cpp
 +++ b/src/libANGLE/Context.cpp
-@@ -1364,6 +1364,7 @@
+@@ -1306,6 +1306,7 @@ void Context::bindTransformFeedback(GLenum target, TransformFeedbackID transform
      TransformFeedback *transformFeedback =
          checkTransformFeedbackAllocation(transformFeedbackHandle);
      mState.setTransformFeedbackBinding(this, transformFeedback);
