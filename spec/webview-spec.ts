@@ -1500,11 +1500,16 @@ describe('<webview> tag', function () {
           if (details.isMainFrame) return false;
           if (hasFrameNavigatedOnce) return true;
 
+          // First navigation is the initial iframe load within the <webview>
+          expect(details.url.endsWith('webview-will-navigate.html')).to.be.true();
           hasFrameNavigatedOnce = true;
           return false;
         });
 
-        expect(navigationEvents[navigationEvents.length-1].url).to.equal('http://host/');
+        const { url, frameProcessId, frameRoutingId } = navigationEvents[navigationEvents.length-1];
+        expect(url).to.equal('http://host/');
+        expect(frameProcessId).to.be.a('number');
+        expect(frameRoutingId).to.be.a('number');
       });
     });
 

@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import * as assert from 'assert';
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -664,17 +663,14 @@ describe('BrowserWindow module', () => {
 
             w.webContents.on('did-stop-loading', () => {
               const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-              if (frame === undefined) {
-                assert.fail('Failed to find embedded frame');
-              } else {
-                if (willNavigate) {
-                  // i.e. it shouldn't have had '?navigated' appended to it.
-                  try {
-                    expect(frame.url.endsWith('/navigate-iframe-immediately')).to.be.true();
-                    done();
-                  } catch (e) {
-                    done(e);
-                  }
+              expect(frame).to.not.be.undefined();
+              if (willNavigate) {
+                // i.e. it shouldn't have had '?navigated' appended to it.
+                try {
+                  expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true();
+                  done();
+                } catch (e) {
+                  done(e);
                 }
               }
             });
@@ -714,7 +710,7 @@ describe('BrowserWindow module', () => {
 
           let willFrameNavigateEmitted = false;
           let isMainFrameValue;
-          w.webContents.on('will-frame-navigate', (_event, _url, isMainFrame) => {
+          w.webContents.on('will-frame-navigate', (_event, _url, { isMainFrame }) => {
             willFrameNavigateEmitted = true;
             isMainFrameValue = isMainFrame;
           });
@@ -754,7 +750,7 @@ describe('BrowserWindow module', () => {
 
           let willNavigateEmitted = false;
           let isMainFrameValue;
-          w.webContents.on('will-frame-navigate', (_event, _url, isMainFrame) => {
+          w.webContents.on('will-frame-navigate', (_event, _url, { isMainFrame }) => {
             willNavigateEmitted = true;
             isMainFrameValue = isMainFrame;
           });
