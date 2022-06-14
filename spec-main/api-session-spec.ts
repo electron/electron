@@ -216,7 +216,8 @@ describe('session module', () => {
       });
     });
 
-    it('should survive an app restart for persistent partition', async () => {
+    it('should survive an app restart for persistent partition', async function () {
+      this.timeout(60000);
       const appPath = path.join(fixtures, 'api', 'cookie-app');
 
       const runAppWithPhase = (phase: string) => {
@@ -1118,6 +1119,20 @@ describe('session module', () => {
 
     it('returns different paths for different partitions', () => {
       expect(session.fromPartition('persist:one').storagePath).to.not.equal(session.fromPartition('persist:two').storagePath);
+    });
+  });
+
+  describe('session.setCodeCachePath()', () => {
+    it('throws when relative or empty path is provided', () => {
+      expect(() => {
+        session.defaultSession.setCodeCachePath('../fixtures');
+      }).to.throw('Absolute path must be provided to store code cache.');
+      expect(() => {
+        session.defaultSession.setCodeCachePath('');
+      }).to.throw('Absolute path must be provided to store code cache.');
+      expect(() => {
+        session.defaultSession.setCodeCachePath(path.join(app.getPath('userData'), 'electron-test-code-cache'));
+      }).to.not.throw();
     });
   });
 

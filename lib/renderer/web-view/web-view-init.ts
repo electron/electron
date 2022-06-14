@@ -20,11 +20,11 @@ function handleFocusBlur () {
   });
 }
 
-export function webViewInit (contextIsolation: boolean, webviewTag: boolean, isWebView: boolean) {
+export function webViewInit (webviewTag: boolean, isWebView: boolean) {
   // Don't allow recursive `<webview>`.
   if (webviewTag && !isWebView) {
     const guestViewInternal = require('@electron/internal/renderer/web-view/guest-view-internal') as typeof guestViewInternalModule;
-    if (contextIsolation) {
+    if (process.contextIsolated) {
       v8Util.setHiddenValue(window, 'guestViewInternal', guestViewInternal);
     } else {
       const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;

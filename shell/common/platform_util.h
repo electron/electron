@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_PLATFORM_UTIL_H_
-#define SHELL_COMMON_PLATFORM_UTIL_H_
+#ifndef ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
+#define ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
 
 #include <string>
 
@@ -42,17 +42,17 @@ void TrashItem(const base::FilePath& full_path,
 
 void Beep();
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 // SHGetFolderPath calls not covered by Chromium
 bool GetFolderPath(int key, base::FilePath* result);
 #endif
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 bool GetLoginItemEnabled();
 bool SetLoginItemEnabled(bool enabled);
 #endif
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 // Returns a success flag.
 // Unlike libgtkui, does *not* use "chromium-browser.desktop" as a fallback.
 bool GetDesktopName(std::string* setme);
@@ -60,4 +60,4 @@ bool GetDesktopName(std::string* setme);
 
 }  // namespace platform_util
 
-#endif  // SHELL_COMMON_PLATFORM_UTIL_H_
+#endif  // ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_

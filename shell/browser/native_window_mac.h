@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
-#define SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
+#ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
+#define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
 
 #import <Cocoa/Cocoa.h>
 
 #include <memory>
-#include <queue>
 #include <string>
 #include <vector>
 
@@ -166,16 +165,18 @@ class NativeWindowMac : public NativeWindow,
 
   void UpdateVibrancyRadii(bool fullscreen);
 
+  void UpdateWindowOriginalFrame();
+
   // Set the attribute of NSWindow while work around a bug of zoom button.
+  bool HasStyleMask(NSUInteger flag) const;
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
 
-  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
-
-  // Handle fullscreen transitions.
-  void SetFullScreenTransitionState(FullScreenTransitionState state);
-  void HandlePendingFullscreenTransitions();
+  bool HandleDeferredClose();
+  void SetHasDeferredWindowClose(bool defer_close) {
+    has_deferred_window_close_ = defer_close;
+  }
 
   enum class VisualEffectState {
     kFollowWindow,
@@ -242,12 +243,11 @@ class NativeWindowMac : public NativeWindow,
   bool zoom_to_page_width_ = false;
   absl::optional<gfx::Point> traffic_light_position_;
 
-  std::queue<bool> pending_transitions_;
-  FullScreenTransitionState fullscreen_transition_state() const {
-    return fullscreen_transition_state_;
-  }
-  FullScreenTransitionState fullscreen_transition_state_ =
-      FullScreenTransitionState::NONE;
+  // Trying to close an NSWindow during a fullscreen transition will cause the
+  // window to lock up. Use this to track if CloseWindow was called during a
+  // fullscreen transition, to defer the -[NSWindow close] call until the
+  // transition is complete.
+  bool has_deferred_window_close_ = false;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 
@@ -267,6 +267,8 @@ class NativeWindowMac : public NativeWindow,
   // Maximizable window state; necessary for persistence through redraws.
   bool maximizable_ = true;
 
+  bool user_set_bounds_maximized_ = false;
+
   // Simple (pre-Lion) Fullscreen Settings
   bool always_simple_fullscreen_ = false;
   bool is_simple_fullscreen_ = false;
@@ -282,10 +284,8 @@ class NativeWindowMac : public NativeWindow,
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
+#endif  // ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_H_

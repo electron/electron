@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_H_
-#define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_H_
 
 #include <memory>
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/one_shot_event.h"
@@ -38,6 +37,10 @@ class ElectronExtensionSystem : public ExtensionSystem {
   explicit ElectronExtensionSystem(content::BrowserContext* browser_context);
   ~ElectronExtensionSystem() override;
 
+  // disable copy
+  ElectronExtensionSystem(const ElectronExtensionSystem&) = delete;
+  ElectronExtensionSystem& operator=(const ElectronExtensionSystem&) = delete;
+
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
   void LoadExtension(
@@ -59,12 +62,12 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // ExtensionSystem implementation:
   void InitForRegularProfile(bool extensions_enabled) override;
   ExtensionService* extension_service() override;
-  RuntimeData* runtime_data() override;
   ManagementPolicy* management_policy() override;
   ServiceWorkerManager* service_worker_manager() override;
   UserScriptManager* user_script_manager() override;
   StateStore* state_store() override;
   StateStore* rules_store() override;
+  StateStore* dynamic_user_scripts_store() override;
   scoped_refptr<value_store::ValueStoreFactory> store_factory() override;
   InfoMap* info_map() override;
   QuotaService* quota_service() override;
@@ -73,8 +76,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
       const Extension* extension,
       base::OnceClosure callback) override;
   void UnregisterExtensionWithRequestContexts(
-      const std::string& extension_id,
-      const UnloadedExtensionReason reason) override;
+      const std::string& extension_id) override;
   const base::OneShotEvent& ready() const override;
   bool is_ready() const override;
   ContentVerifier* content_verifier() override;
@@ -102,7 +104,6 @@ class ElectronExtensionSystem : public ExtensionSystem {
   scoped_refptr<InfoMap> info_map_;
 
   std::unique_ptr<ServiceWorkerManager> service_worker_manager_;
-  std::unique_ptr<RuntimeData> runtime_data_;
   std::unique_ptr<QuotaService> quota_service_;
   std::unique_ptr<UserScriptManager> user_script_manager_;
   std::unique_ptr<AppSorting> app_sorting_;
@@ -116,10 +117,8 @@ class ElectronExtensionSystem : public ExtensionSystem {
   base::OneShotEvent ready_;
 
   base::WeakPtrFactory<ElectronExtensionSystem> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionSystem);
 };
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_H_

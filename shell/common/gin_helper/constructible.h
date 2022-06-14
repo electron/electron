@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
-#define SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
 
 #include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
@@ -66,4 +66,4 @@ class Constructible {
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_

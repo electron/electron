@@ -122,7 +122,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
         head->headers->AddHeader(iter.first, iter.second.GetString());
       } else if (iter.second.is_list()) {
         // key: [values...]
-        for (const auto& item : iter.second.GetList()) {
+        for (const auto& item : iter.second.GetListDeprecated()) {
           if (item.is_string())
             head->headers->AddHeader(iter.first, item.GetString());
         }
@@ -554,12 +554,6 @@ void ElectronURLLoaderFactory::StartLoadingStream(
   } else if (stream->IsNullOrUndefined()) {
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
         std::move(client));
-    // "data" was explicitly passed as null or undefined, assume the user wants
-    // to send an empty body.
-    //
-    // Note that We must submit a empty body otherwise NetworkService would
-    // crash.
-    client_remote->OnReceiveResponse(std::move(head));
     mojo::ScopedDataPipeProducerHandle producer;
     mojo::ScopedDataPipeConsumerHandle consumer;
     if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
@@ -567,8 +561,13 @@ void ElectronURLLoaderFactory::StartLoadingStream(
           network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
       return;
     }
+    // "data" was explicitly passed as null or undefined, assume the user wants
+    // to send an empty body.
+    //
+    // Note that We must submit a empty body otherwise NetworkService would
+    // crash.
+    client_remote->OnReceiveResponse(std::move(head), std::move(consumer));
     producer.reset();  // The data pipe is empty.
-    client_remote->OnStartLoadingResponseBody(std::move(consumer));
     client_remote->OnComplete(network::URLLoaderCompletionStatus(net::OK));
     return;
   } else if (!stream->IsObject()) {
@@ -604,7 +603,6 @@ void ElectronURLLoaderFactory::SendContents(
 
   // Add header to ignore CORS.
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
-  client_remote->OnReceiveResponse(std::move(head));
 
   // Code below follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
@@ -615,7 +613,7 @@ void ElectronURLLoaderFactory::SendContents(
     return;
   }
 
-  client_remote->OnStartLoadingResponseBody(std::move(consumer));
+  client_remote->OnReceiveResponse(std::move(head), std::move(consumer));
 
   auto write_data = std::make_unique<WriteData>();
   write_data->client = std::move(client_remote);

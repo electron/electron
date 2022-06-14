@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_GTK_GTK_STATUS_ICON_H_
-#define SHELL_BROWSER_UI_GTK_GTK_STATUS_ICON_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_GTK_GTK_STATUS_ICON_H_
+#define ELECTRON_SHELL_BROWSER_UI_GTK_GTK_STATUS_ICON_H_
 
 #include <memory>
 
-#include "base/macros.h"
 #include "ui/base/glib/glib_integers.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/views/linux_ui/status_icon_linux.h"
@@ -34,6 +33,10 @@ class GtkStatusIcon : public views::StatusIconLinux {
   GtkStatusIcon(const gfx::ImageSkia& image, const std::u16string& tool_tip);
   ~GtkStatusIcon() override;
 
+  // disable copy
+  GtkStatusIcon(const GtkStatusIcon&) = delete;
+  GtkStatusIcon& operator=(const GtkStatusIcon&) = delete;
+
   // Overridden from views::StatusIconLinux:
   void SetIcon(const gfx::ImageSkia& image) override;
   void SetToolTip(const std::u16string& tool_tip) override;
@@ -53,12 +56,10 @@ class GtkStatusIcon : public views::StatusIconLinux {
   ::GtkStatusIcon* gtk_status_icon_;
 
   std::unique_ptr<AppIndicatorIconMenu> menu_;
-
-  DISALLOW_COPY_AND_ASSIGN(GtkStatusIcon);
 };
 
 }  // namespace gtkui
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_GTK_GTK_STATUS_ICON_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_GTK_GTK_STATUS_ICON_H_

@@ -17,6 +17,8 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image_skia.h"
@@ -43,14 +45,14 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
 
   switch (settings.type) {
     case MessageBoxType::kInformation:
-      alert.alertStyle = NSInformationalAlertStyle;
+      alert.alertStyle = NSAlertStyleInformational;
       break;
     case MessageBoxType::kWarning:
     case MessageBoxType::kError:
-      // NSWarningAlertStyle shows the app icon while NSCriticalAlertStyle
+      // NSWarningAlertStyle shows the app icon while NSAlertStyleCritical
       // shows a warning icon with an app icon badge. Since there is no
-      // error variant, lets just use NSCriticalAlertStyle.
-      alert.alertStyle = NSCriticalAlertStyle;
+      // error variant, lets just use NSAlertStyleCritical.
+      alert.alertStyle = NSAlertStyleCritical;
       break;
     default:
       break;
@@ -160,20 +162,26 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     __block absl::optional<int> id = std::move(settings.id);
     __block int cancel_id = settings.cancel_id;
 
-    [alert beginSheetModalForWindow:window
-                  completionHandler:^(NSModalResponse response) {
-                    if (id)
-                      GetDialogsMap().erase(*id);
-                    // When the alert is cancelled programmatically, the
-                    // response would be something like -1000. This currently
-                    // only happens when users call CloseMessageBox API, and we
-                    // should return cancelId as result.
-                    if (response < 0)
-                      response = cancel_id;
-                    std::move(callback_).Run(
-                        response, alert.suppressionButton.state == NSOnState);
-                    [alert release];
-                  }];
+    auto handler = ^(NSModalResponse response) {
+      if (id)
+        GetDialogsMap().erase(*id);
+      // When the alert is cancelled programmatically, the response would be
+      // something like -1000. This currently only happens when users call
+      // CloseMessageBox API, and we should return cancelId as result.
+      if (response < 0)
+        response = cancel_id;
+      bool suppressed = alert.suppressionButton.state == NSOnState;
+      [alert release];
+      // The completionHandler runs inside a transaction commit, and we should
+      // not do any runModal inside it. However since we can not control what
+      // users will run in the callback, we have to delay running the callback
+      // until next tick, otherwise crash like this may happen:
+      // https://github.com/electron/electron/issues/26884
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
+          base::BindOnce(std::move(callback_), response, suppressed));
+    };
+    [alert beginSheetModalForWindow:window completionHandler:handler];
   }
 }
 
@@ -190,7 +198,7 @@ void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   NSAlert* alert = [[NSAlert alloc] init];
   [alert setMessageText:base::SysUTF16ToNSString(title)];
   [alert setInformativeText:base::SysUTF16ToNSString(content)];
-  [alert setAlertStyle:NSCriticalAlertStyle];
+  [alert setAlertStyle:NSAlertStyleCritical];
   [alert runModal];
   [alert release];
 }

@@ -54,6 +54,14 @@ SkColor WinFrameView::GetReadableFeatureColor(SkColor background_color) {
                                                   : SK_ColorBLACK;
 }
 
+void WinFrameView::InvalidateCaptionButtons() {
+  if (!caption_button_container_)
+    return;
+
+  caption_button_container_->InvalidateLayout();
+  caption_button_container_->SchedulePaint();
+}
+
 gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
   return views::GetWindowBoundsForClientBounds(
@@ -65,6 +73,25 @@ int WinFrameView::FrameBorderThickness() const {
   return (IsMaximized() || frame()->IsFullscreen())
              ? 0
              : display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME);
+}
+
+views::View* WinFrameView::TargetForRect(views::View* root,
+                                         const gfx::Rect& rect) {
+  if (NonClientHitTest(rect.origin()) != HTCLIENT) {
+    // Custom system titlebar returns non HTCLIENT value, however event should
+    // be handled by the view, not by the system, because there are no system
+    // buttons underneath.
+    if (!ShouldCustomDrawSystemTitlebar()) {
+      return this;
+    }
+    auto local_point = rect.origin();
+    ConvertPointToTarget(parent(), caption_button_container_, &local_point);
+    if (!caption_button_container_->HitTestPoint(local_point)) {
+      return this;
+    }
+  }
+
+  return NonClientFrameView::TargetForRect(root, rect);
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
@@ -116,7 +143,7 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
         // show the resize cursor when resizing is possible. The cost of which
         // is also maybe showing it over the portion of the DIP that isn't the
         // outermost pixel.
-        buttons.Inset(0, kCaptionButtonTopInset, 0, 0);
+        buttons.Inset(gfx::Insets::TLBR(0, kCaptionButtonTopInset, 0, 0));
         if (buttons.Contains(point))
           return HTNOWHERE;
       }
@@ -127,8 +154,8 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     // pixels at the end of the top and bottom edges trigger diagonal resizing.
     constexpr int kResizeCornerWidth = 16;
     int window_component = GetHTComponentForFrame(
-        point, gfx::Insets(top_border_thickness, 0, 0, 0), top_border_thickness,
-        kResizeCornerWidth - FrameBorderThickness(),
+        point, gfx::Insets::TLBR(top_border_thickness, 0, 0, 0),
+        top_border_thickness, kResizeCornerWidth - FrameBorderThickness(),
         frame()->widget_delegate()->CanResize());
     if (window_component != HTNOWHERE)
       return window_component;
@@ -193,13 +220,20 @@ int WinFrameView::TitlebarMaximizedVisualHeight() const {
   return maximized_height;
 }
 
-int WinFrameView::TitlebarHeight(bool restored) const {
-  if (frame()->IsFullscreen() && !restored)
+// NOTE(@mlaurencin): Usage of IsWebUITabStrip simplified out from Chromium
+int WinFrameView::TitlebarHeight(int custom_height) const {
+  if (frame()->IsFullscreen() && !IsMaximized())
     return 0;
 
-  return TitlebarMaximizedVisualHeight() + FrameTopBorderThickness(false);
+  int height = TitlebarMaximizedVisualHeight() +
+               FrameTopBorderThickness(false) - WindowTopY();
+  if (custom_height > TitlebarMaximizedVisualHeight())
+    height = custom_height - WindowTopY();
+
+  return height;
 }
 
+// NOTE(@mlaurencin): Usage of IsWebUITabStrip simplified out from Chromium
 int WinFrameView::WindowTopY() const {
   // The window top is SM_CYSIZEFRAME pixels when maximized (see the comment in
   // FrameTopBorderThickness()) and floor(system dsf) pixels when restored.
@@ -222,27 +256,35 @@ void WinFrameView::LayoutCaptionButtons() {
   }
 
   caption_button_container_->SetVisible(true);
-
   const gfx::Size preferred_size =
       caption_button_container_->GetPreferredSize();
-  int height = preferred_size.height();
 
-  height = IsMaximized() ? TitlebarMaximizedVisualHeight()
-                         : TitlebarHeight(false) - WindowTopY();
+  int custom_height = window()->titlebar_overlay_height();
+  int height = TitlebarHeight(custom_height);
 
-  // TODO(mlaurencin): This -1 creates a 1 pixel gap between the right
-  // edge of the overlay and the edge of the window, allowing for this edge
-  // portion to return the correct hit test and be manually resized properly.
-  // Alternatives can be explored, but the differences in view structures
-  // between Electron and Chromium may result in this as the best option.
+  // TODO(mlaurencin): This -1 creates a 1 pixel margin between the right
+  // edge of the button container and the edge of the window, allowing for this
+  // edge portion to return the correct hit test and be manually resized
+  // properly. Alternatives can be explored, but the differences in view
+  // structures between Electron and Chromium may result in this as the best
+  // option.
   int variable_width =
       IsMaximized() ? preferred_size.width() : preferred_size.width() - 1;
   caption_button_container_->SetBounds(width() - preferred_size.width(),
                                        WindowTopY(), variable_width, height);
+
+  // Needed for heights larger than default
+  caption_button_container_->SetButtonSize(gfx::Size(0, height));
 }
 
 void WinFrameView::LayoutWindowControlsOverlay() {
-  int overlay_height = caption_button_container_->size().height();
+  int overlay_height = window()->titlebar_overlay_height();
+  if (overlay_height == 0) {
+    // Accounting for the 1 pixel margin at the top of the button container
+    overlay_height = IsMaximized()
+                         ? caption_button_container_->size().height()
+                         : caption_button_container_->size().height() + 1;
+  }
   int overlay_width = caption_button_container_->size().width();
   int bounding_rect_width = width() - overlay_width;
   auto bounding_rect =

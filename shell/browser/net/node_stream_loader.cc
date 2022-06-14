@@ -30,7 +30,6 @@ NodeStreamLoader::NodeStreamLoader(
 }
 
 NodeStreamLoader::~NodeStreamLoader() {
-  v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
 
@@ -59,8 +58,7 @@ void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
   }
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
-  client_->OnReceiveResponse(std::move(head));
-  client_->OnStartLoadingResponseBody(std::move(consumer));
+  client_->OnReceiveResponse(std::move(head), std::move(consumer));
 
   auto weak = weak_factory_.GetWeakPtr();
   On("end",
@@ -153,7 +151,6 @@ void NodeStreamLoader::DidWrite(MojoResult result) {
 }
 
 void NodeStreamLoader::On(const char* event, EventCallback callback) {
-  v8::Locker locker(isolate_);
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
 

@@ -18,12 +18,10 @@
       "y": 5,
       "webPreferences": {
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "sandbox": true,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "nodeIntegrationInSubFrames": false
       },
       "webContents": "[WebContents]"
     },
@@ -52,12 +50,10 @@
       "webPreferences": {
         "zoomFactor": "2",
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "sandbox": true,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "nodeIntegrationInSubFrames": false
       },
       "webContents": "[WebContents]"
     },
@@ -83,12 +79,10 @@
       "backgroundColor": "gray",
       "webPreferences": {
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "sandbox": true,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "nodeIntegrationInSubFrames": false
       },
       "x": 100,
       "y": 100,
@@ -118,12 +112,10 @@
       "title": "sup",
       "webPreferences": {
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "sandbox": true,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "nodeIntegrationInSubFrames": false
       },
       "webContents": "[WebContents]"
     },
@@ -152,12 +144,10 @@
       "y": 1,
       "webPreferences": {
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "sandbox": true,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "nodeIntegrationInSubFrames": false
       },
       "webContents": "[WebContents]"
     },

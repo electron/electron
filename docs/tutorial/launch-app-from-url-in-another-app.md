@@ -1,11 +1,11 @@
 ---
-title: Launching Your Electron App From a URL In Another App
-description: This guide will take you through the process of setting your electron app as the default handler for a specific protocol.
+title: Deep Links
+description: Set your Electron app as the default handler for a specific protocol.
 slug: launch-app-from-url-in-another-app
 hide_title: true
 ---
 
-# Launching Your Electron App From A URL In Another App
+# Deep Links
 
 ## Overview
 

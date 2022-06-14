@@ -8,31 +8,33 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
-index 9d2799c3c9ac3b216c2289ae4e037dd228844d23..5b31df1207d4417a6f9b784574e3779650ba21d2 100644
+index b184a0d9ae3434af746be269495e9e4c80c58091..899d5a906683e8967746e10a6de452e99e236903 100644
 --- a/lib/internal/bootstrap/pre_execution.js
 +++ b/lib/internal/bootstrap/pre_execution.js
-@@ -105,10 +105,12 @@ function patchProcessObject(expandArgv1) {
+@@ -103,11 +103,13 @@ function patchProcessObject(expandArgv1) {
    if (expandArgv1 && process.argv[1] &&
        !StringPrototypeStartsWith(process.argv[1], '-')) {
      // Expand process.argv[1] into a full path.
 -    const path = require('path');
 -    try {
 -      process.argv[1] = path.resolve(process.argv[1]);
--    } catch {}
+-    } catch {
+-      // Continue regardless of error.
 +    if (!process.argv[1] || !process.argv[1].startsWith('electron/js2c')) {
 +      const path = require('path');
 +      try {
 +        process.argv[1] = path.resolve(process.argv[1]);
-+      } catch {}
-+    }
++      } catch {
++        // Continue regardless of error.
++      }
+     }
    }
  
-   // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 5d75a0e6cb9692a303be6599226f20783e7863b8..eb7f4346035f0897d0f2b140277e48b3c7bb7546 100644
+index 5195ff2da0496f2bfb9112d336c38040f662087b..5c62e367f2dd7d112096551f1c34ee67ce1a5c3a 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1075,6 +1075,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1079,6 +1079,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.

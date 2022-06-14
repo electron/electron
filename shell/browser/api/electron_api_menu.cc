@@ -19,7 +19,7 @@
 #include "shell/common/node_includes.h"
 #include "ui/base/models/image_model.h"
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 
 namespace gin {
 
@@ -54,7 +54,7 @@ Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
   model_->AddObserver(this);
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
     ElectronMenuModel::SharingItem item;
@@ -117,7 +117,7 @@ bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
                           command_id);
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 bool Menu::GetSharingItemForCommandId(
     int command_id,
     ElectronMenuModel::SharingItem* item) const {
@@ -146,7 +146,6 @@ void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
 base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
   // return ((callback, ref) => { callback() }).bind(null, callback, this)
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> self;
   if (GetWrapper(isolate).ToLocal(&self)) {
@@ -296,7 +295,7 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
       .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
 #endif
       .Build();
@@ -318,7 +317,7 @@ void Initialize(v8::Local<v8::Object> exports,
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Menu", Menu::GetConstructor(context));
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",
                  &Menu::SendActionToFirstResponder);

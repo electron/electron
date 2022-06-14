@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_
 
 #include <string>
 
@@ -37,18 +37,20 @@ class DataPipeHolder : public gin::Wrappable<DataPipeHolder> {
   // The unique ID that can be used to receive the object.
   const std::string& id() const { return id_; }
 
+  // disable copy
+  DataPipeHolder(const DataPipeHolder&) = delete;
+  DataPipeHolder& operator=(const DataPipeHolder&) = delete;
+
  private:
   explicit DataPipeHolder(const network::DataElement& element);
   ~DataPipeHolder() override;
 
   std::string id_;
   mojo::Remote<network::mojom::DataPipeGetter> data_pipe_;
-
-  DISALLOW_COPY_AND_ASSIGN(DataPipeHolder);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_

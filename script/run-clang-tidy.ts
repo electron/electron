@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import * as klaw from 'klaw';
@@ -143,7 +142,7 @@ async function runClangTidy (
   jobs: number = 1
 ): Promise<boolean> {
   const cmd = path.resolve(LLVM_BIN, 'clang-tidy');
-  const args = [`-p=${outDir}`];
+  const args = [`-p=${outDir}`, '--use-color'];
 
   if (checks) args.push(`--checks=${checks}`);
 
@@ -202,38 +201,7 @@ async function runClangTidy (
     while (filenames) {
       results.push(
         await spawnAsync(cmd, [...args, ...filenames], {}).then((result) => {
-          // We lost color, so recolorize because it's much more legible
-          // There's a --use-color flag for clang-tidy but it has no effect
-          // on Windows at the moment, so just recolor for everyone
-          let state = null;
-
-          for (const line of result.stdout.split('\n')) {
-            if (line.includes(' warning: ')) {
-              console.log(
-                line
-                  .split(' warning: ')
-                  .map((part) => chalk.whiteBright(part))
-                  .join(chalk.magentaBright(' warning: '))
-              );
-              state = 'code-line';
-            } else if (line.includes(' note: ')) {
-              const lineParts = line.split(' note: ');
-              lineParts[0] = chalk.whiteBright(lineParts[0]);
-              console.log(lineParts.join(chalk.grey(' note: ')));
-              state = 'code-line';
-            } else if (line.startsWith('error:')) {
-              console.log(
-                chalk.redBright('error: ') + line.split(' ').slice(1).join(' ')
-              );
-            } else if (state === 'code-line') {
-              console.log(line);
-              state = 'post-code-line';
-            } else if (state === 'post-code-line') {
-              console.log(chalk.greenBright(line));
-            } else {
-              console.log(line);
-            }
-          }
+          console.log(result.stdout);
 
           if (result.status !== 0) {
             console.error(result.stderr);

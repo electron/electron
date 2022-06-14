@@ -2,13 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_DISPATCHER_DELEGATE_H_
-#define SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_DISPATCHER_DELEGATE_H_
+#ifndef ELECTRON_SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_DISPATCHER_DELEGATE_H_
+#define ELECTRON_SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_DISPATCHER_DELEGATE_H_
 
 #include <set>
 #include <string>
 
-#include "base/macros.h"
 #include "extensions/renderer/dispatcher_delegate.h"
 
 class ElectronExtensionsDispatcherDelegate
@@ -16,6 +15,12 @@ class ElectronExtensionsDispatcherDelegate
  public:
   ElectronExtensionsDispatcherDelegate();
   ~ElectronExtensionsDispatcherDelegate() override;
+
+  // disable copy
+  ElectronExtensionsDispatcherDelegate(
+      const ElectronExtensionsDispatcherDelegate&) = delete;
+  ElectronExtensionsDispatcherDelegate& operator=(
+      const ElectronExtensionsDispatcherDelegate&) = delete;
 
  private:
   // extensions::DispatcherDelegate implementation.
@@ -32,8 +37,6 @@ class ElectronExtensionsDispatcherDelegate
   void InitializeBindingsSystem(
       extensions::Dispatcher* dispatcher,
       extensions::NativeExtensionBindingsSystem* bindings_system) override;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsDispatcherDelegate);
 };
 
-#endif  // SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_DISPATCHER_DELEGATE_H_
+#endif  // ELECTRON_SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_DISPATCHER_DELEGATE_H_

@@ -82,7 +82,7 @@ index a3fb077b9b9e66d1bc524fd7987622e73aa4776a..852b76bea69988e0b3ac76a17b603128
  
  void EVP_MD_do_all(void (*callback)(const EVP_MD *cipher, const char *name,
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index fa7616896b6cc7422dc0171db29316f20fb25de8..6c19a0f0d454bef1abf16ebfeef380a53fb21e5c 100644
+index 6e889993edc1caa7e10670529dd270c337b5ae4c..f61f7e5009a9b4f5630cda2c3a5a21b44e5b88d8 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
 @@ -90,6 +90,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);

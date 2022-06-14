@@ -15,7 +15,7 @@
 #include "third_party/skia/src/core/SkDevice.h"
 #include "ui/gfx/skia_util.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "skia/ext/skia_utils_win.h"
 #endif
 
@@ -97,7 +97,7 @@ void OffScreenHostDisplayClient::CreateLayeredWindowUpdater(
   layered_window_updater_->SetActive(active_);
 }
 
-#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)
 void OffScreenHostDisplayClient::DidCompleteSwapWithNewSize(
     const gfx::Size& size) {}
 #endif

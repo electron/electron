@@ -133,8 +133,10 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
         net::HttpContentDisposition header(value, std::string());
         std::string decodedFilename =
             header.is_attachment() ? " attachment" : " inline";
-        decodedFilename += "; filename=" + header.filename();
-        value = decodedFilename;
+        // The filename must be encased in double quotes for serialization
+        // to happen correctly.
+        std::string filename = "\"" + header.filename() + "\"";
+        value = decodedFilename + "; filename=" + filename;
       }
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
@@ -162,8 +164,8 @@ void ToDictionary(gin_helper::Dictionary* details,
                  HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
-  auto* render_frame_host =
-      content::RenderFrameHost::FromID(info->render_process_id, info->frame_id);
+  auto* render_frame_host = content::RenderFrameHost::FromID(
+      info->render_process_id, info->frame_routing_id);
   if (render_frame_host) {
     details->SetGetter("frame", render_frame_host);
     auto* web_contents =

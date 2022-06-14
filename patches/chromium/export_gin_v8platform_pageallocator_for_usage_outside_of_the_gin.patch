@@ -9,7 +9,7 @@ correctly tagged with MAP_JIT we need to use gins page allocator instead
 of the default V8 allocator.  This probably can't be usptreamed.
 
 diff --git a/gin/public/v8_platform.h b/gin/public/v8_platform.h
-index e5da06566ffef8d0b394c0d7fde3916ce49da06e..76bbdf35f4751c87a6d25cc5e8db7aebf43bc821 100644
+index c9b535eb083c250f4f874d8e6bd0c29ea9f3a10f..f220b8669507a4aea616b0dfbabda509647b714c 100644
 --- a/gin/public/v8_platform.h
 +++ b/gin/public/v8_platform.h
 @@ -30,6 +30,7 @@ class GIN_EXPORT V8Platform : public v8::Platform {
@@ -18,13 +18,13 @@ index e5da06566ffef8d0b394c0d7fde3916ce49da06e..76bbdf35f4751c87a6d25cc5e8db7aeb
    PageAllocator* GetPageAllocator() override;
 +  static PageAllocator* PageAllocator();
    void OnCriticalMemoryPressure() override;
+   v8::ZoneBackingAllocator* GetZoneBackingAllocator() override;
  #endif
- 
 diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
-index 44f8ffeda27cbfebcfc57e1312e9e9f4ca3ab576..356b5a7c8f39fab97ff434850038f8f6cee750c8 100644
+index 1a41a282f054d8ca93db19dc5df7f1de14cb8e44..452372aa40947531452c7ad7226a4ee6b0adfccb 100644
 --- a/gin/v8_platform.cc
 +++ b/gin/v8_platform.cc
-@@ -368,6 +368,10 @@ PageAllocator* V8Platform::GetPageAllocator() {
+@@ -367,6 +367,10 @@ PageAllocator* V8Platform::GetPageAllocator() {
    return g_page_allocator.Pointer();
  }
  

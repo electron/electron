@@ -36,8 +36,10 @@ the WebHID API:
   can be used to select a HID device when a call to
   `navigator.hid.requestDevice` is made.  Additionally the [`hid-device-added`](../api/session.md#event-hid-device-added)
   and [`hid-device-removed`](../api/session.md#event-hid-device-removed) events
-  on the Session can be used to handle devices being plugged in or unplugged during the
-  `navigator.hid.requestDevice` process.
+  on the Session can be used to handle devices being plugged in or unplugged
+  when handling the `select-hid-device` event.
+  **Note:** These events only fire until the callback from `select-hid-device`
+  is called.  They are not intended to be used as a generic hid device listener.
 * [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
   can be used to provide default permissioning to devices without first calling
   for permission to devices via `navigator.hid.requestDevice`.  Additionally,
@@ -82,8 +84,11 @@ There are several additional APIs for working with the Web Serial API:
 
 * The [`serial-port-added`](../api/session.md#event-serial-port-added)
   and [`serial-port-removed`](../api/session.md#event-serial-port-removed) events
-  on the Session can be used to handle devices being plugged in or unplugged during the
-  `navigator.serial.requestPort` process.
+  on the Session can be used to handle devices being plugged in or unplugged
+  when handling the `select-serial-port` event.
+  **Note:** These events only fire until the callback from `select-serial-port`
+  is called.  They are not intended to be used as a generic serial port
+  listener.
 * [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
   can be used to provide default permissioning to devices without first calling
   for permission to devices via `navigator.serial.requestPort`.  Additionally,

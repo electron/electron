@@ -12,13 +12,16 @@ body:
         required: true
       - label: I agree to follow the [Code of Conduct](https://github.com/electron/electron/blob/main/CODE_OF_CONDUCT.md) that this project adheres to.
         required: true
-      - label: I have searched the [issue tracker](https://www.github.com/electron/electron/issues) for a feature request that matches the one I want to file, without success.
+      - label: I have searched the [issue tracker](https://www.github.com/electron/electron/issues) for a bug report that matches the one I want to file, without success.
         required: true
 - type: input
   attributes:
     label: Electron Version
-    description: What version of Electron are you using?
-    placeholder: 12.0.0
+    description: |
+      What version of Electron are you using?
+      
+      Note: Please only report issues for [currently supported versions of Electron](https://www.electronjs.org/docs/latest/tutorial/support#currently-supported-versions).
+    placeholder: 17.0.0
   validations:
     required: true
 - type: dropdown
@@ -53,7 +56,7 @@ body:
   attributes:
     label: Last Known Working Electron version
     description: What is the last version of Electron this worked in, if applicable?
-    placeholder: 11.0.0
+    placeholder: 16.0.0
 - type: textarea
   attributes:
     label: Expected Behavior

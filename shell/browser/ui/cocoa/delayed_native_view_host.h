@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_COCOA_DELAYED_NATIVE_VIEW_HOST_H_
-#define SHELL_BROWSER_UI_COCOA_DELAYED_NATIVE_VIEW_HOST_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_DELAYED_NATIVE_VIEW_HOST_H_
+#define ELECTRON_SHELL_BROWSER_UI_COCOA_DELAYED_NATIVE_VIEW_HOST_H_
 
 #include "ui/views/controls/native/native_view_host.h"
 
@@ -16,16 +16,18 @@ class DelayedNativeViewHost : public views::NativeViewHost {
   explicit DelayedNativeViewHost(gfx::NativeView native_view);
   ~DelayedNativeViewHost() override;
 
+  // disable copy
+  DelayedNativeViewHost(const DelayedNativeViewHost&) = delete;
+  DelayedNativeViewHost& operator=(const DelayedNativeViewHost&) = delete;
+
   // views::View:
   void ViewHierarchyChanged(
       const views::ViewHierarchyChangedDetails& details) override;
 
  private:
   gfx::NativeView native_view_;
-
-  DISALLOW_COPY_AND_ASSIGN(DelayedNativeViewHost);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_COCOA_DELAYED_NATIVE_VIEW_HOST_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_DELAYED_NATIVE_VIEW_HOST_H_

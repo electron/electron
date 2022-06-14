@@ -274,8 +274,8 @@ By default inspector websocket url is available in stderr and under /json/list e
 [ready]: app.md#event-ready
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md
-[logging]: https://source.chromium.org/chromium/chromium/src/+/master:base/logging.h
+[logging]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h
 [node-cli]: https://nodejs.org/api/cli.html
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [ready]: app.md#event-ready
-[severities]: https://source.chromium.org/chromium/chromium/src/+/master:base/logging.h?q=logging::LogSeverity&ss=chromium
+[severities]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h?q=logging::LogSeverity&ss=chromium

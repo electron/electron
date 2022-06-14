@@ -1,4 +1,11 @@
-# Representing Files in a BrowserWindow (macOS)
+---
+title: Representing Files in a BrowserWindow
+description: Set a represented file in the macOS title bar.
+slug: represented-file
+hide_title: true
+---
+
+# Representing Files in a BrowserWindow
 
 ## Overview
 

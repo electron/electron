@@ -36,17 +36,14 @@ const discardableDuplicateHeaders = new Set([
 ]);
 
 class IncomingMessage extends Readable {
-  _shouldPush: boolean;
-  _data: (Buffer | null)[];
+  _shouldPush: boolean = false;
+  _data: (Buffer | null)[] = [];
   _responseHead: NodeJS.ResponseHead;
-  _resume: (() => void) | null;
+  _resume: (() => void) | null = null;
 
   constructor (responseHead: NodeJS.ResponseHead) {
     super();
-    this._shouldPush = false;
-    this._data = [];
     this._responseHead = responseHead;
-    this._resume = null;
   }
 
   get statusCode () {
@@ -61,29 +58,39 @@ class IncomingMessage extends Readable {
     const filteredHeaders: Record<string, string | string[]> = {};
     const { rawHeaders } = this._responseHead;
     rawHeaders.forEach(header => {
-      if (Object.prototype.hasOwnProperty.call(filteredHeaders, header.key) &&
-          discardableDuplicateHeaders.has(header.key)) {
+      const keyLowerCase = header.key.toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase) &&
+          discardableDuplicateHeaders.has(keyLowerCase)) {
         // do nothing with discardable duplicate headers
       } else {
-        if (header.key === 'set-cookie') {
+        if (keyLowerCase === 'set-cookie') {
           // keep set-cookie as an array per Node.js rules
           // see https://nodejs.org/api/http.html#http_message_headers
-          if (Object.prototype.hasOwnProperty.call(filteredHeaders, header.key)) {
-            (filteredHeaders[header.key] as string[]).push(header.value);
+          if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase)) {
+            (filteredHeaders[keyLowerCase] as string[]).push(header.value);
           } else {
-            filteredHeaders[header.key] = [header.value];
+            filteredHeaders[keyLowerCase] = [header.value];
           }
         } else {
           // for non-cookie headers, the values are joined together with ', '
-          if (Object.prototype.hasOwnProperty.call(filteredHeaders, header.key)) {
-            filteredHeaders[header.key] += `, ${header.value}`;
+          if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase)) {
+            filteredHeaders[keyLowerCase] += `, ${header.value}`;
           } else {
-            filteredHeaders[header.key] = header.value;
+            filteredHeaders[keyLowerCase] = header.value;
           }
         }
       }
     });
     return filteredHeaders;
+  }
+
+  get rawHeaders () {
+    const rawHeadersArr: string[] = [];
+    const { rawHeaders } = this._responseHead;
+    rawHeaders.forEach(header => {
+      rawHeadersArr.push(header.key, header.value);
+    });
+    return rawHeadersArr;
   }
 
   get httpVersion () {
@@ -188,7 +195,7 @@ class ChunkedBodyStream extends Writable {
     this._downstream = pipe;
     if (this._pendingChunk) {
       const doneWriting = (maybeError: Error | void) => {
-        // If the underlying request has been aborted, we honeslty don't care about the error
+        // If the underlying request has been aborted, we honestly don't care about the error
         // all work should cease as soon as we abort anyway, this error is probably a
         // "mojo pipe disconnected" error (code=9)
         if (this._clientRequest._aborted) return;

@@ -33,7 +33,11 @@ void FramelessView::Init(NativeWindowViews* window, views::Widget* frame) {
 }
 
 int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
-  // Check the frame first, as we allow a small area overlapping the contents
+  return ResizingBorderHitTestImpl(point, gfx::Insets(kResizeInsideBoundsSize));
+}
+
+int FramelessView::ResizingBorderHitTestImpl(const gfx::Point& point,
+                                             const gfx::Insets& resize_border) {
   // to be used for resize handles.
   bool can_ever_resize = frame_->widget_delegate()
                              ? frame_->widget_delegate()->CanResize()
@@ -47,12 +51,11 @@ int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
 
   // Don't allow overlapping resize handles when the window is maximized or
   // fullscreen, as it can't be resized in those states.
-  int resize_border = frame_->IsMaximized() || frame_->IsFullscreen()
-                          ? 0
-                          : kResizeInsideBoundsSize;
-  return GetHTComponentForFrame(point, gfx::Insets(resize_border),
-                                kResizeAreaCornerSize, kResizeAreaCornerSize,
-                                can_ever_resize);
+  bool allow_overlapping_handles =
+      !frame_->IsMaximized() && !frame_->IsFullscreen();
+  return GetHTComponentForFrame(
+      point, allow_overlapping_handles ? resize_border : gfx::Insets(),
+      kResizeAreaCornerSize, kResizeAreaCornerSize, can_ever_resize);
 }
 
 gfx::Rect FramelessView::GetBoundsForClientView() const {
@@ -108,6 +111,16 @@ void FramelessView::UpdateWindowIcon() {}
 void FramelessView::UpdateWindowTitle() {}
 
 void FramelessView::SizeConstraintsChanged() {}
+
+views::View* FramelessView::TargetForRect(views::View* root,
+                                          const gfx::Rect& rect) {
+  CHECK_EQ(root, this);
+
+  if (NonClientHitTest(rect.origin()) != HTCLIENT)
+    return this;
+
+  return NonClientFrameView::TargetForRect(root, rect);
+}
 
 gfx::Size FramelessView::CalculatePreferredSize() const {
   return frame_->non_client_view()

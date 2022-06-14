@@ -31,7 +31,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a20
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..b21eb4b97ad778304b3a4e8d549e109614350dfb 100644
+index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0de416463 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -50,7 +50,9 @@ const errMessages = {
@@ -391,7 +391,7 @@ index dd073274aef765e8f1e403aa2c8baf9694b521cb..fc6339e040debe61ecc61a3eb5b26823
  }
  
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index cae9301517c37c7e90292d71fe5a6086cf55e0be..b9bc86e4d8b897cec583dea16f64f680252d2efa 100644
+index 18721fcf289e5545408e309db050a2ff0f4b0140..e5235e0a5fbd68416b4a9480818901b411ed91bd 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -49,7 +49,7 @@ for (const bits of [-1, 0, 1]) {
@@ -421,7 +421,7 @@ index cae9301517c37c7e90292d71fe5a6086cf55e0be..b9bc86e4d8b897cec583dea16f64f680
    };
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -155,18 +155,17 @@ assert.strictEqual(secret1, secret4);
+@@ -133,18 +133,17 @@ assert.strictEqual(secret1, secret4);
  let wrongBlockLength;
  if (common.hasOpenSSL3) {
    wrongBlockLength = {
@@ -590,7 +590,7 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 6893f0c0e6d49a8e171ec9f156f74656dab9fd06..4c8ccd10e0dcd64669cccca1e8c2e5279d683595 100644
+index b2c14b1efcd68bd20e9c946106f1ab5fb58627c5..eef0bfe638b641c68fdadd95226a74df044921cb 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,6 +29,7 @@ const keySize = 2048;
@@ -673,20 +673,19 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd55efd6605 100644
+index d1782359277dc52d7a60830a6dd958544d610e6b..4c781f062bc505b860b821773070551f4cd80067 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -104,7 +104,8 @@ const der = Buffer.from(
-     '84:AC:5B:08:9A:20:89:B6:8F:D6'
+@@ -110,7 +110,7 @@ const der = Buffer.from(
+     'A3:06:C5:CE:43:C1:7F:2D:7E:5F:44:A5:EE:A3:CB:97:05:A3:E3:68'
    );
    assert.strictEqual(x509.keyUsage, undefined);
 -  assert.strictEqual(x509.serialNumber, 'ECC9B856270DA9A8');
-+
 +  assert.match(x509.serialNumber, /ECC9B856270DA9A8/i);
  
    assert.deepStrictEqual(x509.raw, der);
  
-@@ -190,6 +191,12 @@ const der = Buffer.from(
+@@ -196,6 +196,12 @@ const der = Buffer.from(
    });
    mc.port2.postMessage(x509);
  
@@ -699,7 +698,7 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd5
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: 'C=US\n' +
-@@ -213,11 +220,7 @@ const der = Buffer.from(
+@@ -219,11 +225,7 @@ const der = Buffer.from(
          'CA Issuers - URI:http://ca.nodejs.org/ca.cert' :
          'OCSP - URI:http://ocsp.nodejs.org/\n' +
          'CA Issuers - URI:http://ca.nodejs.org/ca.cert\n',
@@ -712,16 +711,16 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd5
      bits: 1024,
      exponent: '0x10001',
      valid_from: 'Nov 16 18:42:21 2018 GMT',
-@@ -226,7 +229,7 @@ const der = Buffer.from(
-     fingerprint256:
-       'B0:BE:46:49:B8:29:63:E0:6F:63:C8:8A:57:9C:3F:9B:72:' +
-       'C6:F5:89:E3:0D:84:AC:5B:08:9A:20:89:B6:8F:D6',
+@@ -237,7 +239,7 @@ const der = Buffer.from(
+       'D0:39:97:54:B6:D0:B4:46:5B:DE:13:5B:68:86:B6:F2:A8:' +
+       '95:22:D5:6E:8B:35:DA:89:29:CA:A3:06:C5:CE:43:C1:7F:' +
+       '2D:7E:5F:44:A5:EE:A3:CB:97:05:A3:E3:68',
 -    serialNumber: 'ECC9B856270DA9A8'
 +    serialNumberPattern: /ECC9B856270DA9A8/i
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -235,7 +238,7 @@ const der = Buffer.from(
+@@ -246,7 +248,7 @@ const der = Buffer.from(
    assert.strictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.strictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.strictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
@@ -730,7 +729,7 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd5
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -244,7 +247,5 @@ const der = Buffer.from(
+@@ -255,7 +257,5 @@ const der = Buffer.from(
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
@@ -740,7 +739,7 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd5
 +  assert.match(legacyObject.serialNumber, legacyObjectCheck.serialNumberPattern);
  }
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9cb14f0e1 100644
+index a8ceb169de2b3de73f062083c42292babc673e73..a3bb574d0e5dc85b4ba3fb0b3bd8782fbb8c8700 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
 @@ -67,7 +67,7 @@ assert.throws(() => {
@@ -770,16 +769,16 @@ index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9
           !('opensslErrorStack' in err);
  });
  
-@@ -137,8 +137,6 @@ assert(crypto.getHashes().includes('sha1'));
+@@ -150,8 +150,6 @@ assert(crypto.getHashes().includes('sha1'));
  assert(crypto.getHashes().includes('sha256'));
  assert(!crypto.getHashes().includes('SHA1'));
  assert(!crypto.getHashes().includes('SHA256'));
 -assert(crypto.getHashes().includes('RSA-SHA1'));
 -assert(!crypto.getHashes().includes('rsa-sha1'));
  validateList(crypto.getHashes());
- 
- // Assume that we have at least secp384r1.
-@@ -172,7 +170,7 @@ const encodingError = {
+ // Make sure all of the hashes are supported by OpenSSL
+ for (const algo of crypto.getHashes())
+@@ -188,7 +186,7 @@ const encodingError = {
  // hex input that's not a power of two should throw, not assert in C++ land.
  ['createCipher', 'createDecipher'].forEach((funcName) => {
    assert.throws(
@@ -788,7 +787,7 @@ index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9
      (error) => {
        assert.ok(!('opensslErrorStack' in error));
        if (common.hasFipsCrypto) {
-@@ -224,15 +222,15 @@ assert.throws(() => {
+@@ -240,15 +238,15 @@ assert.throws(() => {
      library: 'rsa routines',
    } : {
      name: 'Error',
@@ -809,7 +808,7 @@ index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9
  if (!common.hasOpenSSL3) {
    assert.throws(() => {
      // The correct header inside `rsa_private_pkcs8_bad.pem` should have been
-@@ -260,7 +258,7 @@ if (!common.hasOpenSSL3) {
+@@ -276,7 +274,7 @@ if (!common.hasOpenSSL3) {
      return true;
    });
  }
@@ -1011,3 +1010,36 @@ index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c
  };
  
  function generateWrappingKeys() {
+diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
+index 99418e4c0bf21c26d5ba0ad9d617419abc625593..fc129b26ea13895353d6ede26bb2d91695c94ba4 100644
+--- a/test/parallel/test-x509-escaping.js
++++ b/test/parallel/test-x509-escaping.js
+@@ -425,11 +425,11 @@ const { hasOpenSSL3 } = common;
+   assert.strictEqual(certX509.subjectAltName, 'DNS:evil.example.com');
+ 
+   // The newer X509Certificate API allows customizing this behavior:
+-  assert.strictEqual(certX509.checkHost(servername), servername);
++  assert.strictEqual(certX509.checkHost(servername), undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'default' }),
+                      undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'always' }),
+-                     servername);
++                     undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'never' }),
+                      undefined);
+ 
+@@ -464,11 +464,11 @@ const { hasOpenSSL3 } = common;
+   assert.strictEqual(certX509.subjectAltName, 'IP Address:1.2.3.4');
+ 
+   // The newer X509Certificate API allows customizing this behavior:
+-  assert.strictEqual(certX509.checkHost(servername), servername);
++  assert.strictEqual(certX509.checkHost(servername), undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'default' }),
+-                     servername);
++                     undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'always' }),
+-                     servername);
++                     undefined);
+   assert.strictEqual(certX509.checkHost(servername, { subject: 'never' }),
+                      undefined);
+ 

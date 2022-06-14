@@ -17,9 +17,9 @@
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
-#include "base/single_thread_task_runner.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
@@ -221,7 +221,7 @@ void SetNodeCliFlags() {
   args.emplace_back("electron");
 
   for (const auto& arg : argv) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
@@ -301,7 +301,7 @@ namespace electron {
 namespace {
 
 base::FilePath GetResourcesPath() {
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
 #else
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -322,6 +322,9 @@ NodeBindings::NodeBindings(BrowserEnvironment browser_env)
   } else {
     uv_loop_ = uv_default_loop();
   }
+
+  // Interrupt embed polling when a handle is started.
+  uv_loop_configure(uv_loop_, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
 }
 
 NodeBindings::~NodeBindings() {
@@ -365,9 +368,8 @@ bool NodeBindings::IsInitialized() {
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
-  node::g_upstream_node_mode = false;
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
   // Get real command line in renderer process forked by zygote.
   if (browser_env_ != BrowserEnvironment::kBrowser)
     ElectronCommandLine::InitializeFromCommandLine();
@@ -381,14 +383,17 @@ void NodeBindings::Initialize() {
 
   auto env = base::Environment::Create();
   SetNodeOptions(env.get());
-  node::Environment::should_read_node_options_from_env_ =
-      fuses::IsNodeOptionsEnabled();
 
   std::vector<std::string> argv = {"electron"};
   std::vector<std::string> exec_argv;
   std::vector<std::string> errors;
+  uint64_t process_flags = node::ProcessFlags::kEnableStdioInheritance;
+  if (!fuses::IsNodeOptionsEnabled())
+    process_flags |= node::ProcessFlags::kDisableNodeOptionsEnv;
 
-  int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
+  int exit_code = node::InitializeNodeWithArgs(
+      &argv, &exec_argv, &errors,
+      static_cast<node::ProcessFlags::Flags>(process_flags));
 
   for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
@@ -396,7 +401,7 @@ void NodeBindings::Initialize() {
   if (exit_code != 0)
     exit(exit_code);
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
   if (browser_env_ == BrowserEnvironment::kBrowser ||
@@ -410,7 +415,7 @@ void NodeBindings::Initialize() {
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   auto& atom_args = ElectronCommandLine::argv();
   std::vector<std::string> args(atom_args.size());
   std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
@@ -462,8 +467,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  isolate_data_ =
-      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
+  if (!isolate_data_)
+    isolate_data_ = node::CreateIsolateData(isolate, uv_loop_, platform);
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
@@ -475,25 +480,31 @@ node::Environment* NodeBindings::CreateEnvironment(
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
-             node::EnvironmentFlags::kNoInitializeInspector;
-    v8::TryCatch try_catch(context->GetIsolate());
-    env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
-    DCHECK(env);
-
-    // This will only be caught when something has gone terrible wrong as all
-    // electron scripts are wrapped in a try {} catch {} by webpack
-    if (try_catch.HasCaught()) {
-      LOG(ERROR) << "Failed to initialize node environment in process: "
-                 << process_type;
-    }
-  } else {
-    env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(flags));
-    DCHECK(env);
+             node::EnvironmentFlags::kNoCreateInspector;
   }
+
+  if (!electron::fuses::IsNodeCliInspectEnabled()) {
+    // If --inspect and friends are disabled we also shouldn't listen for
+    // SIGUSR1
+    flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
+  }
+
+  v8::TryCatch try_catch(isolate);
+  env = node::CreateEnvironment(
+      isolate_data_, context, args, exec_args,
+      static_cast<node::EnvironmentFlags::Flags>(flags));
+
+  if (try_catch.HasCaught()) {
+    std::string err_msg =
+        "Failed to initialize node environment in process: " + process_type;
+    v8::Local<v8::Message> message = try_catch.Message();
+    std::string msg;
+    if (!message.IsEmpty() && gin::ConvertFromV8(isolate, message->Get(), &msg))
+      err_msg += " , with error: " + msg;
+    LOG(ERROR) << err_msg;
+  }
+
+  DCHECK(env);
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
@@ -573,16 +584,15 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
-void NodeBindings::PrepareMessageLoop() {
-#if !defined(OS_WIN)
-  int handle = uv_backend_fd(uv_loop_);
-
-  // If the backend fd hasn't changed, don't proceed.
-  if (handle == handle_)
+void NodeBindings::PrepareEmbedThread() {
+  // IOCP does not change for the process until the loop is recreated,
+  // we ensure that there is only a single polling thread satisfying
+  // the concurrency limit set from CreateIoCompletionPort call by
+  // uv_loop_init for the lifetime of this process.
+  // More background can be found at:
+  // https://github.com/microsoft/vscode/issues/142786#issuecomment-1061673400
+  if (initialized_)
     return;
-
-  handle_ = handle;
-#endif
 
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
@@ -593,7 +603,15 @@ void NodeBindings::PrepareMessageLoop() {
   uv_thread_create(&embed_thread_, EmbedThreadRunner, this);
 }
 
-void NodeBindings::RunMessageLoop() {
+void NodeBindings::StartPolling() {
+  // Avoid calling UvRunOnce if the loop is already active,
+  // otherwise it can lead to situations were the number of active
+  // threads processing on IOCP is greater than the concurrency limit.
+  if (initialized_)
+    return;
+
+  initialized_ = true;
+
   // The MessageLoop should have been created, remember the one in main thread.
   task_runner_ = base::ThreadTaskRunnerHandle::Get();
 
@@ -610,8 +628,6 @@ void NodeBindings::UvRunOnce() {
   if (!env)
     return;
 
-  // Use Locker in browser process.
-  gin_helper::Locker locker(env->isolate());
   v8::HandleScope handle_scope(env->isolate());
 
   // Enter node context while dealing with uv events.

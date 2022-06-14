@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_GUID_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_GUID_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_GUID_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_GUID_CONVERTER_H_
 
 #include <string>
 
 #include "gin/converter.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 // c.f.:
 // https://chromium-review.googlesource.com/c/chromium/src/+/3076480
 // REFGUID is currently incorrectly inheriting its type
@@ -27,7 +27,7 @@
 #include "base/win/win_util.h"
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 typedef GUID UUID;
 #else
 typedef struct {
@@ -41,7 +41,7 @@ struct Converter<UUID> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      UUID* out) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     std::string guid;
     if (!gin::ConvertFromV8(isolate, val, &guid))
       return false;
@@ -67,7 +67,7 @@ struct Converter<UUID> {
 #endif
   }
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, UUID val) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     const GUID GUID_NULL = {};
     if (val == GUID_NULL) {
       return StringToV8(isolate, "");
@@ -83,4 +83,4 @@ struct Converter<UUID> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_GUID_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_GUID_CONVERTER_H_

@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
-#define SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
+#define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 
 #include "base/values.h"
 #include "content/public/browser/media_stream_request.h"
-#include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 
 namespace electron {
 
@@ -19,8 +19,13 @@ class WebContentsPermissionHelper
  public:
   ~WebContentsPermissionHelper() override;
 
+  // disable copy
+  WebContentsPermissionHelper(const WebContentsPermissionHelper&) = delete;
+  WebContentsPermissionHelper& operator=(const WebContentsPermissionHelper&) =
+      delete;
+
   enum class PermissionType {
-    POINTER_LOCK = static_cast<int>(content::PermissionType::NUM) + 1,
+    POINTER_LOCK = static_cast<int>(blink::PermissionType::NUM) + 1,
     FULLSCREEN,
     OPEN_EXTERNAL,
     SERIAL,
@@ -31,9 +36,13 @@ class WebContentsPermissionHelper
   void RequestFullscreenPermission(base::OnceCallback<void(bool)> callback);
   void RequestMediaAccessPermission(const content::MediaStreamRequest& request,
                                     content::MediaResponseCallback callback);
+  void RequestPointerLockPermission(
+      bool user_gesture,
+      bool last_unlocked_by_target,
+      base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
+          callback);
   void RequestWebNotificationPermission(
       base::OnceCallback<void(bool)> callback);
-  void RequestPointerLockPermission(bool user_gesture);
   void RequestOpenExternalPermission(base::OnceCallback<void(bool)> callback,
                                      bool user_gesture,
                                      const GURL& url);
@@ -59,36 +68,46 @@ class WebContentsPermissionHelper
       const url::Origin& origin,
       base::Value device,
       content::RenderFrameHost* render_frame_host) const;
+  void RevokeHIDDevicePermission(
+      const url::Origin& origin,
+      base::Value device,
+      content::RenderFrameHost* render_frame_host) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
   friend class content::WebContentsUserData<WebContentsPermissionHelper>;
 
-  void RequestPermission(content::PermissionType permission,
+  void RequestPermission(blink::PermissionType permission,
                          base::OnceCallback<void(bool)> callback,
                          bool user_gesture = false,
                          const base::DictionaryValue* details = nullptr);
 
-  bool CheckPermission(content::PermissionType permission,
+  bool CheckPermission(blink::PermissionType permission,
                        const base::DictionaryValue* details) const;
 
-  bool CheckDevicePermission(content::PermissionType permission,
+  bool CheckDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
                              const base::Value* device,
                              content::RenderFrameHost* render_frame_host) const;
 
-  void GrantDevicePermission(content::PermissionType permission,
+  void GrantDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
                              const base::Value* device,
                              content::RenderFrameHost* render_frame_host) const;
 
+  void RevokeDevicePermission(
+      blink::PermissionType permission,
+      const url::Origin& origin,
+      const base::Value* device,
+      content::RenderFrameHost* render_frame_host) const;
+
+  // TODO(clavin): refactor to use the WebContents provided by the
+  // WebContentsUserData base class instead of storing a duplicate ref
   content::WebContents* web_contents_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsPermissionHelper);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_

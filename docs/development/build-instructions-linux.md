@@ -7,21 +7,7 @@ Follow the guidelines below for building **Electron itself** on Linux, for the p
 ## Prerequisites
 
 * At least 25GB disk space and 8GB RAM.
-* Python 2.7.x. Some distributions like CentOS 6.x still use Python 2.6.x
-  so you may need to check your Python version with `python -V`.
-
-  Please also ensure that your system and Python version support at least TLS 1.2.
-  For a quick test, run the following script:
-
-  ```sh
-  $ npx @electron/check-python-tls
-  ```
-
-  If the script returns that your configuration is using an outdated security
-  protocol, use your system's package manager to update Python to the latest
-  version in the 2.7.x branch. Alternatively, visit https://www.python.org/downloads/
-  for detailed instructions.
-
+* Python >= 3.7.
 * Node.js. There are various ways to install Node. You can download
   source code from [nodejs.org](https://nodejs.org) and compile it.
   Doing so permits installing Node on your own home directory as a standard user.
@@ -29,7 +15,17 @@ Follow the guidelines below for building **Electron itself** on Linux, for the p
 * [clang](https://clang.llvm.org/get_started.html) 3.4 or later.
 * Development headers of GTK 3 and libnotify.
 
-On Ubuntu, install the following libraries:
+On Ubuntu >= 20.04, install the following libraries:
+
+```sh
+$ sudo apt-get install build-essential clang libdbus-1-dev libgtk-3-dev \
+                       libnotify-dev libasound2-dev libcap-dev \
+                       libcups2-dev libxtst-dev \
+                       libxss1 libnss3-dev gcc-multilib g++-multilib curl \
+                       gperf bison python3-dbusmock openjdk-8-jre
+```
+
+On Ubuntu < 20.04, install the following libraries:
 
 ```sh
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk-3-dev \
@@ -86,7 +82,7 @@ $ sudo apt-get install libc6-dev-arm64-cross linux-libc-dev-arm64-cross \
                        g++-aarch64-linux-gnu
 ```
 
-And to cross-compile for `arm` or `ia32` targets, you should pass the
+And to cross-compile for `arm` or targets, you should pass the
 `target_cpu` parameter to `gn gen`:
 
 ```sh

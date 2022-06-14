@@ -96,19 +96,20 @@ void WebFrameMain::Destroyed() {
 void WebFrameMain::MarkRenderFrameDisposed() {
   render_frame_ = nullptr;
   render_frame_disposed_ = true;
+  TeardownMojoConnection();
 }
 
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   // Should only be called when swapping frames.
-  DCHECK(render_frame_);
+  render_frame_disposed_ = false;
   render_frame_ = rfh;
-  renderer_api_.reset();
+  TeardownMojoConnection();
+  MaybeSetupMojoConnection();
 }
 
 bool WebFrameMain::CheckRenderFrame() const {
   if (render_frame_disposed_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Render frame was disposed before WebFrameMain could be accessed");
@@ -182,20 +183,42 @@ void WebFrameMain::Send(v8::Isolate* isolate,
 }
 
 const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::GetRendererApi() {
-  if (!renderer_api_) {
-    pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
-    if (render_frame_->IsRenderFrameCreated()) {
-      render_frame_->GetRemoteInterfaces()->GetInterface(
-          std::move(pending_receiver_));
-    }
-    renderer_api_.set_disconnect_handler(base::BindOnce(
-        &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
-  }
+  MaybeSetupMojoConnection();
   return renderer_api_;
 }
 
-void WebFrameMain::OnRendererConnectionError() {
+void WebFrameMain::MaybeSetupMojoConnection() {
+  if (render_frame_disposed_) {
+    // RFH may not be set yet if called between when a new RFH is created and
+    // before it's been swapped with an old RFH.
+    LOG(INFO) << "Attempt to setup WebFrameMain connection while render frame "
+                 "is disposed";
+    return;
+  }
+
+  if (!renderer_api_) {
+    pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
+    renderer_api_.set_disconnect_handler(base::BindOnce(
+        &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
+  }
+
+  DCHECK(render_frame_);
+
+  // Wait for RenderFrame to be created in renderer before accessing remote.
+  if (pending_receiver_ && render_frame_ &&
+      render_frame_->IsRenderFrameCreated()) {
+    render_frame_->GetRemoteInterfaces()->GetInterface(
+        std::move(pending_receiver_));
+  }
+}
+
+void WebFrameMain::TeardownMojoConnection() {
   renderer_api_.reset();
+  pending_receiver_.reset();
+}
+
+void WebFrameMain::OnRendererConnectionError() {
+  TeardownMojoConnection();
 }
 
 void WebFrameMain::PostMessage(v8::Isolate* isolate,
@@ -210,7 +233,7 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
   }
 
   std::vector<gin::Handle<MessagePort>> wrapped_ports;
-  if (transfer) {
+  if (transfer && !transfer.value()->IsUndefined()) {
     if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
       isolate->ThrowException(v8::Exception::Error(
           gin::StringToV8(isolate, "Invalid value for transfer")));
@@ -313,13 +336,6 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
       &frame_hosts));
 
   return frame_hosts;
-}
-
-void WebFrameMain::Connect() {
-  if (pending_receiver_) {
-    render_frame_->GetRemoteInterfaces()->GetInterface(
-        std::move(pending_receiver_));
-  }
 }
 
 void WebFrameMain::DOMContentLoaded() {

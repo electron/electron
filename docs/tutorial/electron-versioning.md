@@ -48,7 +48,7 @@ Stabilization branches are branches that run parallel to `main`, taking in only 
 
 Since Electron 8, stabilization branches are always **major** version lines, and named against the following template `$MAJOR-x-y` e.g. `8-x-y`.  Prior to that we used **minor** version lines and named them as `$MAJOR-$MINOR-x` e.g. `2-0-x`.
 
-We allow for multiple stabilization branches to exist simultaneously, one for each supported version. For more details on which versions are supported, see our [Electron Release Timelines](./electron-timelines.md) doc.
+We allow for multiple stabilization branches to exist simultaneously, one for each supported version. For more details on which versions are supported, see our [Electron Releases](./electron-timelines.md) doc.
 
 ![Multiple Stability Branches](../images/versioning-sketch-2.png)
 
@@ -106,6 +106,15 @@ An example lifecycle in pictures:
 A few examples of how various SemVer ranges will pick up new releases:
 
 ![Semvers and Releases](../images/versioning-sketch-7.png)
+
+### Backport request process
+
+All supported release lines will accept external pull requests to backport
+fixes previously merged to `main`, though this may be on a case-by-case
+basis for some older supported lines. All contested decisions around release
+line backports will be resolved by the
+[Releases Working Group](https://github.com/electron/governance/tree/main/wg-releases)
+as an agenda item at their weekly meeting the week the backport PR is raised.
 
 ## Feature flags
 

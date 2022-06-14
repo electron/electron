@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_PROMISE_H_
-#define SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 
 #include <string>
 #include <tuple>
@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "base/strings/string_piece.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -33,6 +32,10 @@ class PromiseBase {
   PromiseBase(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle);
   ~PromiseBase();
 
+  // disable copy
+  PromiseBase(const PromiseBase&) = delete;
+  PromiseBase& operator=(const PromiseBase&) = delete;
+
   // Support moving.
   PromiseBase(PromiseBase&&);
   PromiseBase& operator=(PromiseBase&&);
@@ -44,8 +47,8 @@ class PromiseBase {
   static void RejectPromise(PromiseBase&& promise, base::StringPiece errmsg) {
     if (gin_helper::Locker::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTask(
-          FROM_HERE, {content::BrowserThread::UI},
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
           base::BindOnce(
               // Note that this callback can not take StringPiece,
               // as StringPiece only references string internally and
@@ -75,8 +78,6 @@ class PromiseBase {
   v8::Isolate* isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Promise::Resolver> resolver_;
-
-  DISALLOW_COPY_AND_ASSIGN(PromiseBase);
 };
 
 // Template implementation that returns values.
@@ -89,8 +90,8 @@ class Promise : public PromiseBase {
   static void ResolvePromise(Promise<RT> promise, RT result) {
     if (gin_helper::Locker::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce([](Promise<RT> promise,
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE, base::BindOnce([](Promise<RT> promise,
                                        RT result) { promise.Resolve(result); },
                                     std::move(promise), std::move(result)));
     } else {
@@ -104,6 +105,12 @@ class Promise : public PromiseBase {
     Promise<RT> resolved(isolate);
     resolved.Resolve(result);
     return resolved.GetHandle();
+  }
+
+  // Convert to another type.
+  template <typename NT>
+  Promise<NT> As() {
+    return Promise<NT>(isolate(), GetInner());
   }
 
   // Promise resolution is a microtask
@@ -173,4 +180,4 @@ struct Converter<gin_helper::Promise<T>> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_

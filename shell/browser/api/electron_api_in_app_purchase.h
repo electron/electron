@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_IN_APP_PURCHASE_H_
-#define SHELL_BROWSER_API_ELECTRON_API_IN_APP_PURCHASE_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_IN_APP_PURCHASE_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_IN_APP_PURCHASE_H_
 
 #include <string>
 #include <vector>
@@ -32,6 +32,10 @@ class InAppPurchase : public gin::Wrappable<InAppPurchase>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  InAppPurchase(const InAppPurchase&) = delete;
+  InAppPurchase& operator=(const InAppPurchase&) = delete;
+
  protected:
   InAppPurchase();
   ~InAppPurchase() override;
@@ -45,13 +49,10 @@ class InAppPurchase : public gin::Wrappable<InAppPurchase>,
   // TransactionObserver:
   void OnTransactionsUpdated(
       const std::vector<in_app_purchase::Transaction>& transactions) override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(InAppPurchase);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_IN_APP_PURCHASE_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_IN_APP_PURCHASE_H_

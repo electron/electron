@@ -63,7 +63,7 @@ declare namespace Electron {
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
-    _callWindowOpenHandler(event: any, details: Electron.HandlerDetails): Electron.BrowserWindowConstructorOptions | null;
+    _callWindowOpenHandler(event: any, details: Electron.HandlerDetails): {browserWindowConstructorOptions: Electron.BrowserWindowConstructorOptions | null, outlivesOpener: boolean};
     _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
     _send(internal: boolean, channel: string, args: any): boolean;
     _sendToFrameInternal(frameId: number | [number, number], channel: string, ...args: any[]): boolean;
@@ -71,6 +71,7 @@ declare namespace Electron {
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrinters(): Electron.PrinterInfo[];
+    _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
     canGoToIndex(index: number): boolean;
     getActiveIndex(): number;
@@ -80,6 +81,7 @@ declare namespace Electron {
     attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
     detachFromOuterFrame(): void;
     setEmbedder(embedder: Electron.WebContents): void;
+    attachParams?: { instanceId: number; src: string, opts: LoadURLOptions };
     viewInstanceId: number;
   }
 
@@ -89,10 +91,12 @@ declare namespace Electron {
     _postMessage(channel: string, message: any, transfer?: any[]): void;
   }
 
+  interface WebFrame {
+    _isEvalAllowed(): boolean;
+  }
+
   interface WebPreferences {
-    openerId?: number | null;
     disablePopups?: boolean;
-    preloadURL?: string;
     embedder?: Electron.WebContents;
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
@@ -258,6 +262,11 @@ declare namespace ElectronInternal {
     height_microns: number,
     width_microns: number,
     is_default?: 'true',
+  }
+
+  type PageSize = {
+    width: number,
+    height: number,
   }
 
   type ModuleLoader = () => any;

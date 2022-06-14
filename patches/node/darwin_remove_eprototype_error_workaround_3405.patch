@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Noordhuis <info@bnoordhuis.nl>
+Date: Sun, 9 Jan 2022 12:20:15 +0100
+Subject: darwin: remove EPROTOTYPE error workaround (#3405)
+
+It's been reported in the past that OS X 10.10, because of a race
+condition in the XNU kernel, sometimes returns a transient EPROTOTYPE
+error when trying to write to a socket. Libuv handles that by retrying
+the operation until it succeeds or fails with a different error.
+
+Recently it's been reported that current versions of the operating
+system formerly known as OS X fail permanently with EPROTOTYPE under
+certain conditions, resulting in an infinite loop.
+
+Because Apple isn't exactly forthcoming with bug fixes or even details,
+I'm opting to simply remove the workaround and have the error bubble up.
+
+Refs: https://github.com/libuv/libuv/pull/482
+
+diff --git a/deps/uv/src/unix/stream.c b/deps/uv/src/unix/stream.c
+index 5858258d2868c3352e0e9e3313045aa29ff4a873..c5cd6ddc0b627eeb047e0cb08677f65b4601b89b 100644
+--- a/deps/uv/src/unix/stream.c
++++ b/deps/uv/src/unix/stream.c
+@@ -58,20 +58,6 @@ struct uv__stream_select_s {
+   fd_set* swrite;
+   size_t swrite_sz;
+ };
+-
+-/* Due to a possible kernel bug at least in OS X 10.10 "Yosemite",
+- * EPROTOTYPE can be returned while trying to write to a socket that is
+- * shutting down. If we retry the write, we should get the expected EPIPE
+- * instead.
+- */
+-# define RETRY_ON_WRITE_ERROR(errno) (errno == EINTR || errno == EPROTOTYPE)
+-# define IS_TRANSIENT_WRITE_ERROR(errno, send_handle) \
+-    (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOBUFS || \
+-     (errno == EMSGSIZE && send_handle != NULL))
+-#else
+-# define RETRY_ON_WRITE_ERROR(errno) (errno == EINTR)
+-# define IS_TRANSIENT_WRITE_ERROR(errno, send_handle) \
+-    (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOBUFS)
+ #endif /* defined(__APPLE__) */
+ 
+ static void uv__stream_connect(uv_stream_t*);
+@@ -866,17 +852,17 @@ static int uv__try_write(uv_stream_t* stream,
+ 
+     do
+       n = sendmsg(uv__stream_fd(stream), &msg, 0);
+-    while (n == -1 && RETRY_ON_WRITE_ERROR(errno));
++    while (n == -1 && errno == EINTR);
+   } else {
+     do
+       n = uv__writev(uv__stream_fd(stream), iov, iovcnt);
+-    while (n == -1 && RETRY_ON_WRITE_ERROR(errno));
++    while (n == -1 && errno == EINTR);
+   }
+ 
+   if (n >= 0)
+     return n;
+ 
+-  if (IS_TRANSIENT_WRITE_ERROR(errno, send_handle))
++  if (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOBUFS)
+     return UV_EAGAIN;
+ 
+   return UV__ERR(errno);

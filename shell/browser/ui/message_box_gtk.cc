@@ -18,13 +18,10 @@
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/image/image_skia.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_ui.h"    // nogncheck
+#include "ui/gtk/gtk_util.h"  // nogncheck
 
-#if defined(USE_X11)
-#include "ui/events/platform/x11/x11_event_source.h"
-#endif
-
-#if defined(USE_OZONE) || defined(USE_X11)
+#if defined(USE_OZONE)
 #include "ui/base/ui_base_features.h"
 #endif
 
@@ -127,6 +124,10 @@ class GtkMessageBox : public NativeWindowObserver {
     }
   }
 
+  // disable copy
+  GtkMessageBox(const GtkMessageBox&) = delete;
+  GtkMessageBox& operator=(const GtkMessageBox&) = delete;
+
   GtkMessageType GetMessageType(MessageBoxType type) {
     switch (type) {
       case MessageBoxType::kInformation:
@@ -157,14 +158,7 @@ class GtkMessageBox : public NativeWindowObserver {
 
   void Show() {
     gtk_widget_show(dialog_);
-
-#if defined(USE_X11)
-    // We need to call gtk_window_present after making the widgets visible to
-    // make sure window gets correctly raised and gets focus.
-    x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
-    gtk_window_present_with_time(GTK_WINDOW(dialog_),
-                                 static_cast<uint32_t>(time));
-#endif
+    gtk::GtkUi::GetPlatform()->ShowGtkWindow(GTK_WINDOW(dialog_));
   }
 
   int RunSynchronous() {
@@ -205,8 +199,6 @@ class GtkMessageBox : public NativeWindowObserver {
   NativeWindow* parent_;
   GtkWidget* dialog_;
   MessageBoxCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(GtkMessageBox);
 };
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {

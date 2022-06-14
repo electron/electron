@@ -7,12 +7,9 @@
 #include "base/win/windows_version.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/views/win_frame_view.h"
+#include "shell/browser/win/dark_mode.h"
 #include "ui/base/win/hwnd_metrics.h"
 #include "ui/base/win/shell.h"
-
-#if BUILDFLAG(ENABLE_WIN_DARK_MODE_WINDOW_UI)
-#include "shell/browser/win/dark_mode.h"
-#endif
 
 namespace electron {
 
@@ -29,14 +26,13 @@ bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                     WPARAM w_param,
                                                     LPARAM l_param,
                                                     LRESULT* result) {
-#if BUILDFLAG(ENABLE_WIN_DARK_MODE_WINDOW_UI)
-  if (message == WM_NCCREATE) {
-    HWND const hwnd = GetAcceleratedWidget();
-    auto const theme_source =
-        ui::NativeTheme::GetInstanceForNativeUi()->theme_source();
-    win::SetDarkModeForWindow(hwnd, theme_source);
+  const bool dark_mode_supported = win::IsDarkModeSupported();
+  if (dark_mode_supported && message == WM_NCCREATE) {
+    win::SetDarkModeForWindow(GetAcceleratedWidget());
+    ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
+  } else if (dark_mode_supported && message == WM_DESTROY) {
+    ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   }
-#endif
 
   return native_window_view_->PreHandleMSG(message, w_param, l_param, result);
 }
@@ -87,16 +83,21 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
   // Indenting the client area can fix this behavior.
   if (IsMaximized() && !native_window_view_->has_frame()) {
     // The insets would be eventually passed to WM_NCCALCSIZE, which takes
-    // the metrics under the DPI of _main_ monitor instead of current moniotr.
+    // the metrics under the DPI of _main_ monitor instead of current monitor.
     //
     // Please make sure you tested maximized frameless window under multiple
     // monitors with different DPIs before changing this code.
     const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
                           ::GetSystemMetrics(SM_CXPADDEDBORDER);
-    insets->Set(thickness, thickness, thickness, thickness);
+    *insets = gfx::Insets::TLBR(thickness, thickness, thickness, thickness);
     return true;
   }
   return false;
+}
+
+void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(
+    ui::NativeTheme* observed_theme) {
+  win::SetDarkModeForWindow(GetAcceleratedWidget());
 }
 
 }  // namespace electron

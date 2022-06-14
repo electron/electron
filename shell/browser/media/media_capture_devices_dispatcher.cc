@@ -60,20 +60,20 @@ MediaCaptureDevicesDispatcher::GetVideoCaptureDevices() {
 void MediaCaptureDevicesDispatcher::GetDefaultDevices(
     bool audio,
     bool video,
-    blink::MediaStreamDevices* devices) {
+    blink::mojom::StreamDevices& devices) {  // NOLINT(runtime/references)
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   DCHECK(audio || video);
 
   if (audio) {
     const blink::MediaStreamDevice* device = GetFirstAvailableAudioDevice();
     if (device)
-      devices->push_back(*device);
+      devices.audio_device = *device;
   }
 
   if (video) {
     const blink::MediaStreamDevice* device = GetFirstAvailableVideoDevice();
     if (device)
-      devices->push_back(*device);
+      devices.video_device = *device;
   }
 }
 

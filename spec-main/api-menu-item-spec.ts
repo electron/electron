@@ -351,9 +351,15 @@ describe('MenuItems', () => {
         expect(item.submenu!.items[7].role).to.equal('delete');
         expect(item.submenu!.items[8].role).to.equal('selectall');
         expect(item.submenu!.items[9].type).to.equal('separator');
-        expect(item.submenu!.items[10].label).to.equal('Speech');
-        expect(item.submenu!.items[10].submenu!.items[0].role).to.equal('startspeaking');
-        expect(item.submenu!.items[10].submenu!.items[1].role).to.equal('stopspeaking');
+        expect(item.submenu!.items[10].label).to.equal('Substitutions');
+        expect(item.submenu!.items[10].submenu!.items[0].role).to.equal('showsubstitutions');
+        expect(item.submenu!.items[10].submenu!.items[1].type).to.equal('separator');
+        expect(item.submenu!.items[10].submenu!.items[2].role).to.equal('togglesmartquotes');
+        expect(item.submenu!.items[10].submenu!.items[3].role).to.equal('togglesmartdashes');
+        expect(item.submenu!.items[10].submenu!.items[4].role).to.equal('toggletextreplacement');
+        expect(item.submenu!.items[11].label).to.equal('Speech');
+        expect(item.submenu!.items[11].submenu!.items[0].role).to.equal('startspeaking');
+        expect(item.submenu!.items[11].submenu!.items[1].role).to.equal('stopspeaking');
       } else {
         expect(item.submenu!.items[6].role).to.equal('delete');
         expect(item.submenu!.items[7].type).to.equal('separator');

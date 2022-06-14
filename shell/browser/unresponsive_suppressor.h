@@ -2,10 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_
-#define SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_
-
-#include "base/macros.h"
+#ifndef ELECTRON_SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_
+#define ELECTRON_SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_
 
 namespace electron {
 
@@ -16,10 +14,11 @@ class UnresponsiveSuppressor {
   UnresponsiveSuppressor();
   ~UnresponsiveSuppressor();
 
- private:
-  DISALLOW_COPY_AND_ASSIGN(UnresponsiveSuppressor);
+  // disable copy
+  UnresponsiveSuppressor(const UnresponsiveSuppressor&) = delete;
+  UnresponsiveSuppressor& operator=(const UnresponsiveSuppressor&) = delete;
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_
+#endif  // ELECTRON_SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_

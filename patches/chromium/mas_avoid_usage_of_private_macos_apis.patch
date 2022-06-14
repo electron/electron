@@ -1,0 +1,240 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 4 Mar 2019 14:43:36 -0800
+Subject: mas: avoid usage of private macOS APIs
+
+Disable usage of the following private APIs in MAS builds:
+* abort_report_np
+* pthread_fchdir_np
+* pthread_chdir_np
+* SetApplicationIsDaemon
+* _LSSetApplicationLaunchServicesServerConnectionStatus
+* AreDeviceAndUserJoinedToDomain
+* _CFIsObjC
+* AudioDeviceDuck
+
+diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
+index dd14c8cfa32ab0bb2e92f192c54a494c4f5b4fb7..2c6f0b336c97bc23995e9fe8cdc7f72a69f54e64 100644
+--- a/base/enterprise_util_mac.mm
++++ b/base/enterprise_util_mac.mm
+@@ -189,6 +189,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
+ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+   static DeviceUserDomainJoinState state = [] {
+     DeviceUserDomainJoinState state{false, false};
++#if defined(MAS_BUILD)
++    return state;
++  }();
++
++  return state;
++}
++#else
+ 
+     @autoreleasepool {
+       ODSession* session = [ODSession defaultSession];
+@@ -295,5 +302,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+ 
+   return state;
+ }
++#endif
+ 
+ }  // namespace base
+diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
+index 61641e1ad8a47a4910918ff61523a23854745b81..d4a3e2282256f5a43235b40b4c9f46caa725c507 100644
+--- a/base/mac/foundation_util.mm
++++ b/base/mac/foundation_util.mm
+@@ -30,12 +30,6 @@
+ #if !BUILDFLAG(IS_IOS)
+ CFTypeID SecACLGetTypeID();
+ CFTypeID SecTrustedApplicationGetTypeID();
+-// The NSFont/CTFont toll-free bridging is broken before 10.15.
+-// http://www.openradar.me/15341349 rdar://15341349
+-//
+-// TODO(https://crbug.com/1076527): This is fixed in 10.15. When 10.15 is the
+-// minimum OS for Chromium, remove this SPI declaration.
+-Boolean _CFIsObjC(CFTypeID typeID, CFTypeRef obj);
+ #endif
+ }  // extern "C"
+ 
+@@ -316,8 +310,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
+       const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
+   DCHECK(!cf_val ||
+          CTFontGetTypeID() == CFGetTypeID(cf_val) ||
+-         (_CFIsObjC(CTFontGetTypeID(), cf_val) &&
+-          [ns_val isKindOfClass:[NSFont class]]));
++         ([ns_val isKindOfClass:[NSFont class]]));
+   return ns_val;
+ }
+ 
+@@ -388,9 +381,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+     return (CTFontRef)(cf_val);
+   }
+ 
+-  if (!_CFIsObjC(CTFontGetTypeID(), cf_val))
+-    return NULL;
+-
+   id<NSObject> ns_val = reinterpret_cast<id>(const_cast<void*>(cf_val));
+   if ([ns_val isKindOfClass:[NSFont class]]) {
+     return (CTFontRef)(cf_val);
+diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
+index e12c36384ddc05554ed362bba2c0a8b418634f0a..1c740410de70ee5a888ee7cf406dfa3bccc28c9b 100644
+--- a/base/process/launch_mac.cc
++++ b/base/process/launch_mac.cc
+@@ -19,14 +19,19 @@
+ #include "base/threading/scoped_blocking_call.h"
+ #include "base/threading/thread_restrictions.h"
+ #include "base/trace_event/base_tracing.h"
++#if defined(MAS_BUILD)
++#include <sys/syscall.h>
++#endif
+ 
+ extern "C" {
+ // Changes the current thread's directory to a path or directory file
+ // descriptor. libpthread only exposes a syscall wrapper starting in
+ // macOS 10.12, but the system call dates back to macOS 10.5. On older OSes,
+ // the syscall is issued directly.
++#if !defined(MAS_BUILD)
+ int pthread_chdir_np(const char* dir) API_AVAILABLE(macosx(10.12));
+ int pthread_fchdir_np(int fd) API_AVAILABLE(macosx(10.12));
++#endif
+ 
+ int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
+     API_AVAILABLE(macosx(10.14));
+@@ -95,13 +100,27 @@ class PosixSpawnFileActions {
+ };
+ 
+ int ChangeCurrentThreadDirectory(const char* path) {
++#if defined(MAS_BUILD)
++  #pragma clang diagnostic push
++  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
++  return syscall(SYS___pthread_chdir, path);
++  #pragma clang diagnostic pop
++#else
+   return pthread_chdir_np(path);
++#endif
+ }
+ 
+ // The recommended way to unset a per-thread cwd is to set a new value to an
+ // invalid file descriptor, per libpthread-218.1.3/private/private.h.
+ int ResetCurrentThreadDirectory() {
++#if defined(MAS_BUILD)
++  #pragma clang diagnostic push
++  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
++  return syscall(SYS___pthread_fchdir, -1);
++  #pragma clang diagnostic pop
++#else
+   return pthread_fchdir_np(-1);
++#endif
+ }
+ 
+ struct GetAppOutputOptions {
+@@ -221,11 +240,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+     file_actions.Inherit(STDERR_FILENO);
+   }
+ 
++#if 0
+   if (options.disclaim_responsibility) {
+     if (__builtin_available(macOS 10.14, *)) {
+       DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
+     }
+   }
++#endif
+ 
+   std::vector<char*> argv_cstr;
+   argv_cstr.reserve(argv.size() + 1);
+diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
+index 0e842caf7b6487d94978c7b68fb5b222e330581f..5eafcd163ee1a05203a5eb76592a449f5a84e71f 100644
+--- a/media/audio/mac/audio_low_latency_input_mac.cc
++++ b/media/audio/mac/audio_low_latency_input_mac.cc
+@@ -34,19 +34,23 @@
+ 
+ namespace {
+ extern "C" {
++#ifndef MAS_BUILD
+ // See:
+ // https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/PAL/pal/spi/cf/CoreAudioSPI.h?rev=228264
+ OSStatus AudioDeviceDuck(AudioDeviceID inDevice,
+                          Float32 inDuckedLevel,
+                          const AudioTimeStamp* __nullable inStartTime,
+                          Float32 inRampDuration) __attribute__((weak_import));
++#endif
+ }
+ 
+ void UndoDucking(AudioDeviceID output_device_id) {
++#ifndef MAS_BUILD
+   if (AudioDeviceDuck != nullptr) {
+     // Ramp the volume back up over half a second.
+     AudioDeviceDuck(output_device_id, 1.0, nullptr, 0.5);
+   }
++#endif
+ }
+ 
+ }  // namespace
+diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
+index f071b192208fdfb1b9da932fcbbf64f0712d8f8b..7481ec29aaaa7b9f40af4a1180dd779e60131ea5 100644
+--- a/sandbox/mac/sandbox_logging.cc
++++ b/sandbox/mac/sandbox_logging.cc
+@@ -32,9 +32,11 @@
+   }
+ #endif
+ 
++#if !defined(MAS_BUILD)
+ extern "C" {
+ void abort_report_np(const char*, ...);
+ }
++#endif
+ 
+ namespace sandbox::logging {
+ 
+@@ -71,9 +73,11 @@ void SendOsLog(Level level, const char* message) {
+ 
+   os_log_with_type(log.get(), os_log_type, "%{public}s", message);
+ 
++#if !defined(MAS_BUILD)
+   if (level == Level::FATAL) {
+     abort_report_np(message);
+   }
++#endif
+ }
+ 
+ // |error| is strerror(errno) when a P* logging function is called. Pass
+diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
+index 9f5261425162791668c2d15b7ffba091f831d652..c37f3dc05cb8372c7a6c4caef7a280b6f2f48e98 100644
+--- a/sandbox/mac/system_services.cc
++++ b/sandbox/mac/system_services.cc
+@@ -9,6 +9,7 @@
+ 
+ #include "base/mac/mac_logging.h"
+ 
++#if !defined(MAS_BUILD)
+ extern "C" {
+ OSStatus SetApplicationIsDaemon(Boolean isDaemon);
+ void _LSSetApplicationLaunchServicesServerConnectionStatus(
+@@ -19,10 +20,12 @@ void _LSSetApplicationLaunchServicesServerConnectionStatus(
+ // https://github.com/WebKit/webkit/commit/8da694b0b3febcc262653d01a45e946ce91845ed.
+ void _CSCheckFixDisable() API_AVAILABLE(macosx(10.15));
+ }  // extern "C"
++#endif
+ 
+ namespace sandbox {
+ 
+ void DisableLaunchServices() {
++  #if !defined(MAS_BUILD)
+   // Allow the process to continue without a LaunchServices ASN. The
+   // INIT_Process function in HIServices will abort if it cannot connect to
+   // launchservicesd to get an ASN. By setting this flag, HIServices skips
+@@ -36,12 +39,15 @@ void DisableLaunchServices() {
+       0, ^bool(CFDictionaryRef options) {
+         return false;
+       });
++  #endif
+ }
+ 
+ void DisableCoreServicesCheckFix() {
++#if !defined(MAS_BUILD)
+   if (__builtin_available(macOS 10.15, *)) {
+     _CSCheckFixDisable();
+   }
++#endif
+ }
+ 
+ }  // namespace sandbox

@@ -41,6 +41,10 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
   TCPServerSocketFactory(const std::string& address, int port)
       : address_(address), port_(port) {}
 
+  // disable copy
+  TCPServerSocketFactory(const TCPServerSocketFactory&) = delete;
+  TCPServerSocketFactory& operator=(const TCPServerSocketFactory&) = delete;
+
  private:
   // content::ServerSocketFactory.
   std::unique_ptr<net::ServerSocket> CreateForHttpServer() override {
@@ -58,8 +62,6 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
 
   std::string address_;
   uint16_t port_;
-
-  DISALLOW_COPY_AND_ASSIGN(TCPServerSocketFactory);
 };
 
 std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
@@ -89,10 +91,10 @@ const char kBrowserCloseMethod[] = "Browser.close";
 
 // static
 void DevToolsManagerDelegate::StartHttpHandler() {
-  base::FilePath user_dir;
-  base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
+  base::FilePath session_data;
+  base::PathService::Get(DIR_SESSION_DATA, &session_data);
   content::DevToolsAgentHost::StartRemoteDebuggingServer(
-      CreateSocketFactory(), user_dir, base::FilePath());
+      CreateSocketFactory(), session_data, base::FilePath());
 }
 
 DevToolsManagerDelegate::DevToolsManagerDelegate() = default;
@@ -115,8 +117,8 @@ void DevToolsManagerDelegate::HandleCommand(
     // Since we only have one method and it is supposed to close Electron,
     // we don't need to add this complexity. Should we decide to support
     // methods like Browser.setWindowBounds, we'll need to do it though.
-    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                   base::BindOnce([]() { Browser::Get()->Quit(); }));
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce([]() { Browser::Get()->Quit(); }));
     return;
   }
   std::move(callback).Run(message);

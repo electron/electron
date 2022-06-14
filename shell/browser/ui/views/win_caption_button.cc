@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Modified from chrome/browser/ui/views/frame/windows_10_caption_button.cc
+
 #include "shell/browser/ui/views/win_caption_button.h"
 
 #include <utility>
 
 #include "base/i18n/rtl.h"
 #include "base/numerics/safe_conversions.h"
-#include "chrome/browser/ui/frame/window_frame_util.h"
 #include "chrome/grit/theme_resources.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/common/color_util.h"
@@ -37,9 +38,8 @@ WinCaptionButton::WinCaptionButton(PressedCallback callback,
 gfx::Size WinCaptionButton::CalculatePreferredSize() const {
   // TODO(bsep): The sizes in this function are for 1x device scale and don't
   // match Windows button sizes at hidpi.
-  int height = WindowFrameUtil::kWindows10GlassCaptionButtonHeightRestored;
-  int base_width = WindowFrameUtil::kWindows10GlassCaptionButtonWidth;
-  return gfx::Size(base_width + GetBetweenButtonSpacing(), height);
+
+  return gfx::Size(base_width_ + GetBetweenButtonSpacing(), height_);
 }
 
 void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
@@ -50,7 +50,7 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
   const SkAlpha theme_alpha = SkColorGetA(bg_color);
 
   gfx::Rect bounds = GetContentsBounds();
-  bounds.Inset(0, 0, 0, 0);
+  bounds.Inset(gfx::Insets::TLBR(0, 0, 0, 0));
 
   canvas->FillRect(bounds, SkColorSetA(bg_color, theme_alpha));
 
@@ -86,6 +86,22 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
 
 void WinCaptionButton::PaintButtonContents(gfx::Canvas* canvas) {
   PaintSymbol(canvas);
+}
+
+gfx::Size WinCaptionButton::GetSize() const {
+  return gfx::Size(base_width_, height_);
+}
+
+void WinCaptionButton::SetSize(gfx::Size size) {
+  int width = size.width();
+  int height = size.height();
+
+  if (width > 0)
+    base_width_ = width;
+  if (height > 0)
+    height_ = height;
+
+  InvalidateLayout();
 }
 
 int WinCaptionButton::GetBetweenButtonSpacing() const {
@@ -129,7 +145,7 @@ void DrawRect(gfx::Canvas* canvas,
               const cc::PaintFlags& flags) {
   gfx::RectF rect_f(rect);
   float stroke_half_width = flags.getStrokeWidth() / 2;
-  rect_f.Inset(stroke_half_width, stroke_half_width);
+  rect_f.Inset(gfx::InsetsF::VH(stroke_half_width, stroke_half_width));
   canvas->DrawRect(rect_f, flags);
 }
 
@@ -181,7 +197,7 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
     case VIEW_ID_RESTORE_BUTTON: {
       // Bottom left ("in front") square.
       const int separation = std::floor(2 * scale);
-      symbol_rect.Inset(0, separation, separation, 0);
+      symbol_rect.Inset(gfx::Insets::TLBR(0, separation, separation, 0));
       DrawRect(canvas, symbol_rect, flags);
 
       // Top right ("behind") square.

@@ -19,7 +19,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/values.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -142,7 +141,7 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 
 double GetNextZoomLevel(double level, bool out) {
   double factor = blink::PageZoomLevelToZoomFactor(level);
-  size_t size = base::size(kPresetZoomFactors);
+  size_t size = std::size(kPresetZoomFactors);
   for (size_t i = 0; i < size; ++i) {
     if (!blink::PageZoomValuesEqual(kPresetZoomFactors[i], factor))
       continue;
@@ -168,9 +167,12 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
-constexpr base::TimeDelta kInitialBackoffDelay =
-    base::TimeDelta::FromMilliseconds(250);
-constexpr base::TimeDelta kMaxBackoffDelay = base::TimeDelta::FromSeconds(10);
+void OnOpenItemComplete(const base::FilePath& path, const std::string& result) {
+  platform_util::ShowItemInFolder(path);
+}
+
+constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
+constexpr base::TimeDelta kMaxBackoffDelay = base::Seconds(10);
 
 }  // namespace
 
@@ -570,11 +572,11 @@ void InspectableWebContents::LoadCompleted() {
     SetIsDocked(DispatchCallback(), false);
   } else {
     if (dock_state_.empty()) {
-      const base::DictionaryValue* prefs =
+      const base::Value* prefs =
           pref_service_->GetDictionary(kDevToolsPreferences);
-      std::string current_dock_state;
-      prefs->GetString("currentDockState", &current_dock_state);
-      base::RemoveChars(current_dock_state, "\"", &dock_state_);
+      const std::string* current_dock_state =
+          prefs->FindStringKey("currentDockState");
+      base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
@@ -727,9 +729,8 @@ void InspectableWebContents::ShowItemInFolder(
     return;
 
   base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-
-  // Pass empty callback here; we can ignore errors
-  platform_util::OpenPath(path, platform_util::OpenCallback());
+  platform_util::OpenPath(path.DirName(),
+                          base::BindOnce(&OnOpenItemComplete, path));
 }
 
 void InspectableWebContents::SaveToFile(const std::string& url,
@@ -855,9 +856,21 @@ void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
 }
 
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
-  const base::DictionaryValue* prefs =
-      pref_service_->GetDictionary(kDevToolsPreferences);
+  const base::Value* prefs = pref_service_->GetDictionary(kDevToolsPreferences);
   std::move(callback).Run(prefs);
+}
+
+void InspectableWebContents::GetPreference(DispatchCallback callback,
+                                           const std::string& name) {
+  if (auto* pref =
+          pref_service_->GetDictionary(kDevToolsPreferences)->FindKey(name)) {
+    std::move(callback).Run(pref);
+    return;
+  }
+
+  // Pref wasn't found, return an empty value
+  base::Value no_pref;
+  std::move(callback).Run(&no_pref);
 }
 
 void InspectableWebContents::SetPreference(const std::string& name,
@@ -872,8 +885,14 @@ void InspectableWebContents::RemovePreference(const std::string& name) {
 }
 
 void InspectableWebContents::ClearPreferences() {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->Clear();
+  DictionaryPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
+  unsynced_update.Get()->DictClear();
+}
+
+void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
+  base::Value result(base::Value::Type::DICTIONARY);
+  result.SetBoolKey("isSyncActive", false);
+  std::move(callback).Run(&result);
 }
 
 void InspectableWebContents::ConnectionReady() {}
@@ -909,7 +928,7 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
   int id = message.FindIntKey(kFrontendHostId).value_or(0);
   std::vector<base::Value> params_list;
   if (params)
-    params_list = std::move(*params).TakeList();
+    params_list = std::move(*params).TakeListDeprecated();
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
@@ -1033,7 +1052,7 @@ void InspectableWebContents::DidFinishNavigation(
       !navigation_handle->HasCommitted())
     return;
   content::RenderFrameHost* frame = navigation_handle->GetRenderFrameHost();
-  auto origin = navigation_handle->GetURL().GetOrigin().spec();
+  auto origin = navigation_handle->GetURL().DeprecatedGetOriginAsURL().spec();
   auto it = extensions_api_.find(origin);
   if (it == extensions_api_.end())
     return;

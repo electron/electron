@@ -8,25 +8,26 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index c1b09024a3f7d46d91f60a30aecf1ca1f0318030..ff1c59766569053b6d32c49c525d00c829e5abe6 100644
+index bb9b9d0ce53ce427075fd92ab1da119c08f6e591..6792e64b2f0f4a5080beb57804f861d8297524d2 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -802,9 +802,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
- 
- bool WebContentsViewAura::IsValidDragTarget(
-     RenderWidgetHostImpl* target_rwh) const {
--  return target_rwh->GetProcess()->GetID() == drag_start_process_id_ ||
+@@ -899,10 +899,7 @@ bool WebContentsViewAura::IsValidDragTarget(
+   // for the outermost view. Inner `WebContents` will have a
+   // `WebContentsViewChildFrame` so when dragging between an inner
+   // `WebContents` and its embedder the view IDs will be the same.
+-  bool cross_tab_drag =
 -      GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
--      drag_start_view_id_;
+-      drag_start_->view_id;
+-  return cross_tab_drag;
 +  return true;
  }
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index 9d2f771327838ff9b63a34e89573a1843eedd77d..a4c3d1951a6def856437cc589c4d20da7d9b39a3 100644
+index dab3703cc4469802bae9e4d45c3e7d0f0857f577..ecd8af37c681ae5c97060af00bbeb8ebddb72b26 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -385,9 +385,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
+@@ -388,9 +388,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {

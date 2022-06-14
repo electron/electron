@@ -206,7 +206,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 
     wchar_t file_name[MAX_PATH];
     hr = GetFileNameFromShellItem(item, SIGDN_FILESYSPATH, file_name,
-                                  base::size(file_name));
+                                  std::size(file_name));
 
     if (FAILED(hr))
       return false;
@@ -221,7 +221,6 @@ void ShowOpenDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
                  bool success, std::vector<base::FilePath> result) {
-    v8::Locker locker(promise.isolate());
     v8::HandleScope handle_scope(promise.isolate());
     gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", !success);
@@ -271,7 +270,6 @@ void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
                  bool success, base::FilePath result) {
-    v8::Locker locker(promise.isolate());
     v8::HandleScope handle_scope(promise.isolate());
     gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", !success);

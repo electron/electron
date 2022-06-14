@@ -7,7 +7,7 @@
 
 // Rip global off of window (which is also global) so that webpack doesn't
 // auto replace it with a looped reference to this file
-const _global = typeof globalThis !== 'undefined' ? globalThis.global : (self as any || window as any).global as NodeJS.Global;
+const _global = typeof globalThis !== 'undefined' ? globalThis.global : (self || window).global;
 const process = _global.process;
 const Buffer = _global.Buffer;
 

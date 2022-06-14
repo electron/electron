@@ -2,12 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_WEB_UI_CONTROLLER_FACTORY_H_
-#define SHELL_BROWSER_ELECTRON_WEB_UI_CONTROLLER_FACTORY_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_WEB_UI_CONTROLLER_FACTORY_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_WEB_UI_CONTROLLER_FACTORY_H_
 
 #include <memory>
 
-#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 
@@ -24,6 +23,12 @@ class ElectronWebUIControllerFactory : public content::WebUIControllerFactory {
   ElectronWebUIControllerFactory();
   ~ElectronWebUIControllerFactory() override;
 
+  // disable copy
+  ElectronWebUIControllerFactory(const ElectronWebUIControllerFactory&) =
+      delete;
+  ElectronWebUIControllerFactory& operator=(
+      const ElectronWebUIControllerFactory&) = delete;
+
   // content::WebUIControllerFactory:
   content::WebUI::TypeID GetWebUIType(content::BrowserContext* browser_context,
                                       const GURL& url) override;
@@ -35,10 +40,8 @@ class ElectronWebUIControllerFactory : public content::WebUIControllerFactory {
 
  private:
   friend struct base::DefaultSingletonTraits<ElectronWebUIControllerFactory>;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronWebUIControllerFactory);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_WEB_UI_CONTROLLER_FACTORY_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_WEB_UI_CONTROLLER_FACTORY_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
-#define SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
 
 #include "shell/browser/api/electron_api_menu.h"
 
@@ -48,12 +48,10 @@ class MenuMac : public Menu {
   std::map<int32_t, scoped_nsobject<ElectronMenuController>> popup_controllers_;
 
   base::WeakPtrFactory<MenuMac> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(MenuMac);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_

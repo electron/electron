@@ -12,8 +12,7 @@
 #include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
-#include "base/single_thread_task_runner.h"
-#include "base/task/post_task.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
 #include "components/viz/common/features.h"
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
@@ -83,19 +82,19 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   int button_flags = 0;
   switch (event.button) {
     case blink::WebMouseEvent::Button::kBack:
-      button_flags |= ui::EventFlags::EF_BACK_MOUSE_BUTTON;
+      button_flags |= ui::EF_BACK_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kForward:
-      button_flags |= ui::EventFlags::EF_FORWARD_MOUSE_BUTTON;
+      button_flags |= ui::EF_FORWARD_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kLeft:
-      button_flags |= ui::EventFlags::EF_LEFT_MOUSE_BUTTON;
+      button_flags |= ui::EF_LEFT_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kMiddle:
-      button_flags |= ui::EventFlags::EF_MIDDLE_MOUSE_BUTTON;
+      button_flags |= ui::EF_MIDDLE_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kRight:
-      button_flags |= ui::EventFlags::EF_RIGHT_MOUSE_BUTTON;
+      button_flags |= ui::EF_RIGHT_MOUSE_BUTTON;
       break;
     default:
       button_flags = 0;
@@ -127,6 +126,12 @@ class ElectronDelegatedFrameHostClient
  public:
   explicit ElectronDelegatedFrameHostClient(OffScreenRenderWidgetHostView* view)
       : view_(view) {}
+
+  // disable copy
+  ElectronDelegatedFrameHostClient(const ElectronDelegatedFrameHostClient&) =
+      delete;
+  ElectronDelegatedFrameHostClient& operator=(
+      const ElectronDelegatedFrameHostClient&) = delete;
 
   ui::Layer* DelegatedFrameHostGetLayer() const override {
     return view_->GetRootLayer();
@@ -163,8 +168,6 @@ class ElectronDelegatedFrameHostClient
 
  private:
   OffScreenRenderWidgetHostView* const view_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronDelegatedFrameHostClient);
 };
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
@@ -189,15 +192,11 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   DCHECK(render_widget_host_);
   DCHECK(!render_widget_host_->GetView());
 
-  // Initialize a display struct as needed, to cache the scale factor.
-  if (display_list_.displays().empty()) {
-    display_list_ = display::DisplayList(
-        {display::Display(display::kDefaultDisplayId)},
-        display::kDefaultDisplayId, display::kDefaultDisplayId);
+  // Initialize a screen_infos_ struct as needed, to cache the scale factor.
+  if (screen_infos_.screen_infos.empty()) {
+    UpdateScreenInfo();
   }
-  display::Display current_display = display_list_.GetCurrentDisplay();
-  current_display.set_device_scale_factor(kDefaultScaleFactor);
-  display_list_.UpdateDisplay(current_display);
+  screen_infos_.mutable_current().device_scale_factor = kDefaultScaleFactor;
 
   delegated_frame_host_allocator_.GenerateId();
   delegated_frame_host_surface_id_ =
@@ -297,7 +296,8 @@ bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() {
   return GetDelegatedFrameHost()->CanCopyFromCompositingSurface();
 }
 
-void OffScreenRenderWidgetHostView::Show() {
+void OffScreenRenderWidgetHostView::ShowWithVisibility(
+    content::PageVisibilityState /*page_visibility*/) {
   if (is_showing_)
     return;
 
@@ -396,7 +396,7 @@ void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
     content::RenderWidgetHostView* parent_host_view,
-    const gfx::Rect& pos,
+    const gfx::Rect& bounds,
     const gfx::Rect& anchor_rect) {
   DCHECK_EQ(parent_host_view_, parent_host_view);
   DCHECK_EQ(widget_type_, content::WidgetType::kPopup);
@@ -410,13 +410,10 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
       base::BindRepeating(&OffScreenRenderWidgetHostView::OnPopupPaint,
                           parent_host_view_->weak_ptr_factory_.GetWeakPtr());
 
-  popup_position_ = pos;
+  popup_position_ = bounds;
 
-  ResizeRootLayer(false);
+  ResizeRootLayer(true);
   SetPainting(parent_host_view_->IsPainting());
-  if (video_consumer_) {
-    video_consumer_->SizeChanged();
-  }
   Show();
 }
 
@@ -480,16 +477,17 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
                                                       std::move(callback));
 }
 
-void OffScreenRenderWidgetHostView::GetScreenInfo(
-    display::ScreenInfo* screen_info) {
-  screen_info->depth = 24;
-  screen_info->depth_per_component = 8;
-  screen_info->orientation_angle = 0;
-  screen_info->device_scale_factor = GetCurrentDeviceScaleFactor();
-  screen_info->orientation_type =
+display::ScreenInfo OffScreenRenderWidgetHostView::GetScreenInfo() const {
+  display::ScreenInfo screen_info;
+  screen_info.depth = 24;
+  screen_info.depth_per_component = 8;
+  screen_info.orientation_angle = 0;
+  screen_info.device_scale_factor = GetDeviceScaleFactor();
+  screen_info.orientation_type =
       display::mojom::ScreenOrientation::kLandscapePrimary;
-  screen_info->rect = gfx::Rect(size_);
-  screen_info->available_rect = gfx::Rect(size_);
+  screen_info.rect = gfx::Rect(size_);
+  screen_info.available_rect = gfx::Rect(size_);
+  return screen_info;
 }
 
 void OffScreenRenderWidgetHostView::TransformPointToRootSurface(
@@ -525,7 +523,7 @@ void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
 
 gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
   return gfx::ScaleToCeiledSize(GetRequestedRendererSize(),
-                                GetCurrentDeviceScaleFactor());
+                                GetDeviceScaleFactor());
 }
 
 ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() {
@@ -649,7 +647,7 @@ bool OffScreenRenderWidgetHostView::InstallTransparency() {
   return false;
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 void OffScreenRenderWidgetHostView::SetActive(bool active) {}
 
 void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}
@@ -685,14 +683,9 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
 }
 
 gfx::Size OffScreenRenderWidgetHostView::SizeInPixels() {
-  float sf = GetCurrentDeviceScaleFactor();
-  if (IsPopupWidget()) {
-    return gfx::ToFlooredSize(
-        gfx::ConvertSizeToPixels(popup_position_.size(), sf));
-  } else {
-    return gfx::ToFlooredSize(
-        gfx::ConvertSizeToPixels(GetViewBounds().size(), sf));
-  }
+  float sf = GetDeviceScaleFactor();
+  return gfx::ToFlooredSize(
+      gfx::ConvertSizeToPixels(GetViewBounds().size(), sf));
 }
 
 void OffScreenRenderWidgetHostView::CompositeFrame(
@@ -707,7 +700,7 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
   if (proxy_views_.empty() && !popup_host_view_) {
     frame = GetBacking();
   } else {
-    float sf = GetCurrentDeviceScaleFactor();
+    float sf = GetDeviceScaleFactor();
     frame.allocN32Pixels(size_in_pixels.width(), size_in_pixels.height(),
                          false);
     if (!GetBacking().drawsNothing()) {
@@ -742,13 +735,13 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
 
 void OffScreenRenderWidgetHostView::OnPopupPaint(const gfx::Rect& damage_rect) {
   InvalidateBounds(gfx::ToEnclosingRect(
-      gfx::ConvertRectToPixels(damage_rect, GetCurrentDeviceScaleFactor())));
+      gfx::ConvertRectToPixels(damage_rect, GetDeviceScaleFactor())));
 }
 
 void OffScreenRenderWidgetHostView::OnProxyViewPaint(
     const gfx::Rect& damage_rect) {
   InvalidateBounds(gfx::ToEnclosingRect(
-      gfx::ConvertRectToPixels(damage_rect, GetCurrentDeviceScaleFactor())));
+      gfx::ConvertRectToPixels(damage_rect, GetDeviceScaleFactor())));
 }
 
 void OffScreenRenderWidgetHostView::HoldResize() {
@@ -763,8 +756,8 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
   hold_resize_ = false;
   if (pending_resize_) {
     pending_resize_ = false;
-    base::PostTask(
-        FROM_HERE, {content::BrowserThread::UI},
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
         base::BindOnce(
             &OffScreenRenderWidgetHostView::SynchronizeVisualProperties,
             weak_ptr_factory_.GetWeakPtr()));
@@ -868,8 +861,8 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
         // Scrolling outside of the popup widget so destroy it.
         // Execute asynchronously to avoid deleting the widget from inside some
         // other callback.
-        base::PostTask(
-            FROM_HERE, {content::BrowserThread::UI},
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }
@@ -974,8 +967,7 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 
   if (compositor_) {
     compositor_->SetDisplayVSyncParameters(
-        base::TimeTicks::Now(),
-        base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
+        base::TimeTicks::Now(), base::Microseconds(frame_rate_threshold_us_));
   }
 }
 
@@ -993,27 +985,18 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   display::Display display =
       display::Screen::GetScreen()->GetDisplayNearestView(GetNativeView());
   const float scaleFactor = display.device_scale_factor();
-  float sf = GetCurrentDeviceScaleFactor();
-  const bool scaleFactorDidChange = scaleFactor != sf;
+  float sf = GetDeviceScaleFactor();
+  const bool sf_did_change = scaleFactor != sf;
 
-  // Initialize a display struct as needed, to cache the scale factor.
-  if (display_list_.displays().empty()) {
-    display_list_ = display::DisplayList(
-        {display::Display(display::kDefaultDisplayId)},
-        display::kDefaultDisplayId, display::kDefaultDisplayId);
+  // Initialize a screen_infos_ struct as needed, to cache the scale factor.
+  if (screen_infos_.screen_infos.empty()) {
+    UpdateScreenInfo();
   }
-  display::Display current_display = display_list_.GetCurrentDisplay();
-  current_display.set_device_scale_factor(scaleFactor);
-  display_list_.UpdateDisplay(current_display);
+  screen_infos_.mutable_current().device_scale_factor = scaleFactor;
 
-  gfx::Size size;
-  if (!IsPopupWidget())
-    size = GetViewBounds().size();
-  else
-    size = popup_position_.size();
+  gfx::Size size = GetViewBounds().size();
 
-  if (!force && !scaleFactorDidChange &&
-      size == GetRootLayer()->bounds().size())
+  if (!force && !sf_did_change && size == GetRootLayer()->bounds().size())
     return;
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
@@ -1058,6 +1041,21 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
   bool opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
   GetRootLayer()->SetColor(color);
+}
+
+void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(
+    blink::mojom::RecordContentToVisibleTimeRequestPtr) {
+  NOTREACHED();
+}
+
+void OffScreenRenderWidgetHostView::RequestPresentationTimeFromHostOrDelegate(
+    blink::mojom::RecordContentToVisibleTimeRequestPtr) {
+  NOTREACHED();
+}
+
+void OffScreenRenderWidgetHostView::
+    CancelPresentationTimeRequestForHostAndDelegate() {
+  NOTREACHED();
 }
 
 }  // namespace electron

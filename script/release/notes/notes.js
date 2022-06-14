@@ -114,6 +114,8 @@ const getNoteFromClerk = async (ghKey) => {
         .slice(PERSIST_LEAD.length).trim() // remove PERSIST_LEAD
         .split(/\r?\n/) // split into lines
         .map(line => line.trim())
+        .map(line => line.replace('&lt;', '<'))
+        .map(line => line.replace('&gt;', '>'))
         .filter(line => line.startsWith(QUOTE_LEAD)) // notes are quoted
         .map(line => line.slice(QUOTE_LEAD.length)); // unquote the lines
 
@@ -594,10 +596,14 @@ function renderDescription (commit) {
 const renderNote = (commit, excludeBranch) =>
   `* ${renderDescription(commit)} ${renderLink(commit)} ${renderTrops(commit, excludeBranch)}\n`;
 
-const renderNotes = (notes) => {
+const renderNotes = (notes, unique = false) => {
   const rendered = [`# Release Notes for ${notes.name}\n\n`];
 
-  const renderSection = (title, commits) => {
+  const renderSection = (title, commits, unique) => {
+    if (unique) {
+      // omit changes that also landed in other branches
+      commits = commits.filter((commit) => renderTrops(commit, notes.toBranch).length === 0);
+    }
     if (commits.length > 0) {
       rendered.push(
         `## ${title}\n\n`,
@@ -606,17 +612,17 @@ const renderNotes = (notes) => {
     }
   };
 
-  renderSection('Breaking Changes', notes.breaking);
-  renderSection('Features', notes.feat);
-  renderSection('Fixes', notes.fix);
-  renderSection('Other Changes', notes.other);
+  renderSection('Breaking Changes', notes.breaking, unique);
+  renderSection('Features', notes.feat, unique);
+  renderSection('Fixes', notes.fix, unique);
+  renderSection('Other Changes', notes.other, unique);
 
   if (notes.docs.length) {
     const docs = notes.docs.map(commit => renderLink(commit)).sort();
     rendered.push('## Documentation\n\n', ` * Documentation changes: ${docs.join(', ')}\n`, '\n');
   }
 
-  renderSection('Unknown', notes.unknown);
+  renderSection('Unknown', notes.unknown, unique);
 
   return rendered.join('');
 };

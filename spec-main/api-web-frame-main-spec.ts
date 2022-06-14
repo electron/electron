@@ -6,7 +6,7 @@ import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain } from 'electron/mai
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
-import { waitUntil } from './spec-helpers';
+import { ifit, waitUntil } from './spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
@@ -137,7 +137,9 @@ describe('webFrameMain module', () => {
   });
 
   describe('WebFrame.visibilityState', () => {
-    it('should match window state', async () => {
+    // TODO(MarshallOfSound): Fix flaky test
+    // @flaky-test
+    it.skip('should match window state', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       const webFrame = w.webContents.mainFrame;
@@ -201,7 +203,8 @@ describe('webFrameMain module', () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
     });
 
-    it('throws upon accessing properties when disposed', async () => {
+    // TODO(jkleinsc) fix this flaky test on linux
+    ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       const { mainFrame } = w.webContents;
       w.destroy();
@@ -220,6 +223,37 @@ describe('webFrameMain module', () => {
       await w.loadURL(crossOriginUrl);
       expect(w.webContents.mainFrame).to.equal(mainFrame);
       expect(mainFrame.url).to.equal(crossOriginUrl);
+    });
+
+    it('recovers from renderer crash on same-origin', async () => {
+      const server = await createServer();
+      // Keep reference to mainFrame alive throughout crash and recovery.
+      const { mainFrame } = w.webContents;
+      await w.webContents.loadURL(server.url);
+      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+      w.webContents.forcefullyCrashRenderer();
+      await crashEvent;
+      await w.webContents.loadURL(server.url);
+      // Log just to keep mainFrame in scope.
+      console.log('mainFrame.url', mainFrame.url);
+    });
+
+    // Fixed by #34411
+    it('recovers from renderer crash on cross-origin', async () => {
+      const server = await createServer();
+      // 'localhost' is treated as a separate origin.
+      const crossOriginUrl = server.url.replace('127.0.0.1', 'localhost');
+      // Keep reference to mainFrame alive throughout crash and recovery.
+      const { mainFrame } = w.webContents;
+      await w.webContents.loadURL(server.url);
+      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+      w.webContents.forcefullyCrashRenderer();
+      await crashEvent;
+      // A short wait seems to be required to reproduce the crash.
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await w.webContents.loadURL(crossOriginUrl);
+      // Log just to keep mainFrame in scope.
+      console.log('mainFrame.url', mainFrame.url);
     });
   });
 

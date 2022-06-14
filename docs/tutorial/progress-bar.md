@@ -1,4 +1,11 @@
-# Taskbar Progress Bar (Windows & macOS)
+---
+title: Progress Bars
+description: Provide progress information to users outside of a BrowserWindow.
+slug: progress-bar
+hide_title: true
+---
+
+# Progress Bars
 
 ## Overview
 
@@ -7,7 +14,7 @@ without the need of switching to the window itself.
 
 On Windows, you can use a taskbar button to display a progress bar.
 
-![Windows Progress Bar][https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png]
+![Windows Progress Bar](../images/windows-progress-bar.png)
 
 On macOS, the progress bar will be displayed as a part of the dock icon.
 

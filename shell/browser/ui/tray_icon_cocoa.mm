@@ -10,7 +10,6 @@
 #include "base/message_loop/message_pump_mac.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
@@ -93,6 +92,15 @@
 
 - (void)setAlternateImage:(NSImage*)image {
   [[statusItem_ button] setAlternateImage:image];
+
+  // We need to change the button type here because the default button type for
+  // NSStatusItem, NSStatusBarButton, does not display alternate content when
+  // clicked. NSButtonTypeMomentaryChange displays its alternate content when
+  // clicked and returns to its normal content when the user releases it, which
+  // is the behavior users would expect when clicking a button with an alternate
+  // image set.
+  [[statusItem_ button] setButtonType:NSButtonTypeMomentaryChange];
+  [self updateDimensions];
 }
 
 - (void)setIgnoreDoubleClickEvents:(BOOL)ignore {
@@ -181,9 +189,9 @@
       gfx::ScreenPointFromNSPoint([event locationInWindow]),
       ui::EventFlagsFromModifiers([event modifierFlags]));
 
-  // Pass click to superclass to show menu. Custom mouseUp handler won't be
-  // invoked.
-  if (menuController_) {
+  // Pass click to superclass to show menu if one exists and has a non-zero
+  // number of items. Custom mouseUp handler won't be invoked in this case.
+  if (menuController_ && [[menuController_ menu] numberOfItems] > 0) {
     [self handleClickNotifications:event];
     [super mouseDown:event];
   } else {
@@ -356,8 +364,8 @@ void TrayIconCocoa::PopUpOnUI(ElectronMenuModel* menu_model) {
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
                                      ElectronMenuModel* menu_model) {
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
                      base::Unretained(menu_model)));
 }

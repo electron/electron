@@ -36,6 +36,9 @@ const char kRoundedCorners[] = "roundedCorners";
 const char kOverlayButtonColor[] = "color";
 const char kOverlaySymbolColor[] = "symbolColor";
 
+// The custom height for Window Controls Overlay.
+const char kOverlayHeight[] = "height";
+
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
 
@@ -117,9 +120,6 @@ const char kPreloadScript[] = "preload";
 
 const char kPreloadScripts[] = "preloadScripts";
 
-// Like --preload, but the passed argument is an URL.
-const char kPreloadURL[] = "preloadURL";
-
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
@@ -128,9 +128,6 @@ const char kContextIsolation[] = "contextIsolation";
 
 // Web runtime features.
 const char kExperimentalFeatures[] = "experimentalFeatures";
-
-// Opener window's ID.
-const char kOpenerID[] = "openerId";
 
 // Enable the rubber banding effect.
 const char kScrollBounce[] = "scrollBounce";
@@ -146,8 +143,6 @@ const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
 
 // Enable the web view tag.
 const char kWebviewTag[] = "webviewTag";
-
-const char kNativeWindowOpen[] = "nativeWindowOpen";
 
 const char kCustomArgs[] = "additionalArguments";
 

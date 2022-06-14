@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WIN_DIALOG_THREAD_H_
-#define SHELL_BROWSER_UI_WIN_DIALOG_THREAD_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WIN_DIALOG_THREAD_H_
+#define ELECTRON_SHELL_BROWSER_UI_WIN_DIALOG_THREAD_H_
 
 #include <utility>
 
 #include "base/memory/scoped_refptr.h"
-#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
 namespace dialog_thread {
@@ -33,8 +33,8 @@ void Run(base::OnceCallback<R()> execute, base::OnceCallback<void(R)> done) {
           [](TaskRunner task_runner, base::OnceCallback<R()> execute,
              base::OnceCallback<void(R)> done) {
             R r = std::move(execute).Run();
-            base::PostTask(
-                FROM_HERE, {content::BrowserThread::UI},
+            content::GetUIThreadTaskRunner({})->PostTask(
+                FROM_HERE,
                 base::BindOnce(
                     [](TaskRunner task_runner, base::OnceCallback<void(R)> done,
                        R r) {
@@ -77,4 +77,4 @@ void Run(base::OnceCallback<bool(R*)> execute,
 
 }  // namespace dialog_thread
 
-#endif  // SHELL_BROWSER_UI_WIN_DIALOG_THREAD_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WIN_DIALOG_THREAD_H_

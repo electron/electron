@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_
-#define SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_
+#ifndef ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_
+#define ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_
 
 #include <map>
 #include <memory>
@@ -76,6 +76,9 @@ class HidChooserContext : public KeyedService,
   void GrantDevicePermission(const url::Origin& origin,
                              const device::mojom::HidDeviceInfo& device,
                              content::RenderFrameHost* render_frame_host);
+  void RevokeDevicePermission(const url::Origin& origin,
+                              const device::mojom::HidDeviceInfo& device,
+                              content::RenderFrameHost* render_frame_host);
   bool HasDevicePermission(const url::Origin& origin,
                            const device::mojom::HidDeviceInfo& device,
                            content::RenderFrameHost* render_frame_host);
@@ -111,6 +114,15 @@ class HidChooserContext : public KeyedService,
       std::vector<device::mojom::HidDeviceInfoPtr> devices);
   void OnHidManagerConnectionError();
 
+  // HID-specific interface for revoking device permissions.
+  void RevokePersistentDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::HidDeviceInfo& device,
+      content::RenderFrameHost* render_frame_host);
+  void RevokeEphemeralDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::HidDeviceInfo& device);
+
   ElectronBrowserContext* browser_context_;
 
   bool is_initialized_ = false;
@@ -133,4 +145,4 @@ class HidChooserContext : public KeyedService,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_
+#endif  // ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_

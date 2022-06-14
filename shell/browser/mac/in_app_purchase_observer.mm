@@ -8,7 +8,6 @@
 
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
@@ -75,8 +74,8 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
   }
 
   // Send the callback to the browser thread.
-  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(callback_, converted));
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(callback_, converted));
 }
 
 /**
@@ -95,6 +94,25 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
 }
 
 /**
+ * Convert a SKPaymentDiscount object to a PaymentDiscount structure.
+ *
+ * @param paymentDiscount - The SKPaymentDiscount object to convert.
+ */
+- (in_app_purchase::PaymentDiscount)skPaymentDiscountToStruct:
+    (SKPaymentDiscount*)paymentDiscount API_AVAILABLE(macosx(10.14.4)) {
+  in_app_purchase::PaymentDiscount paymentDiscountStruct;
+
+  paymentDiscountStruct.identifier = [paymentDiscount.identifier UTF8String];
+  paymentDiscountStruct.keyIdentifier =
+      [paymentDiscount.keyIdentifier UTF8String];
+  paymentDiscountStruct.nonce = [[paymentDiscount.nonce UUIDString] UTF8String];
+  paymentDiscountStruct.signature = [paymentDiscount.signature UTF8String];
+  paymentDiscountStruct.timestamp = [paymentDiscount.timestamp intValue];
+
+  return paymentDiscountStruct;
+}
+
+/**
  * Convert a SKPayment object to a Payment structure.
  *
  * @param payment - The SKPayment object to convert.
@@ -108,6 +126,18 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
 
   if (payment.quantity >= 1) {
     paymentStruct.quantity = (int)payment.quantity;
+  }
+
+  if (payment.applicationUsername != nil) {
+    paymentStruct.applicationUsername =
+        [payment.applicationUsername UTF8String];
+  }
+
+  if (@available(macOS 10.14.4, *)) {
+    if (payment.paymentDiscount != nil) {
+      paymentStruct.paymentDiscount =
+          [self skPaymentDiscountToStruct:payment.paymentDiscount];
+    }
   }
 
   return paymentStruct;
@@ -177,6 +207,14 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
 // ============================================================================
 
 namespace in_app_purchase {
+
+PaymentDiscount::PaymentDiscount() = default;
+PaymentDiscount::PaymentDiscount(const PaymentDiscount&) = default;
+PaymentDiscount::~PaymentDiscount() = default;
+
+Payment::Payment() = default;
+Payment::Payment(const Payment&) = default;
+Payment::~Payment() = default;
 
 Transaction::Transaction() = default;
 Transaction::Transaction(const Transaction&) = default;

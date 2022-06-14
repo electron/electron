@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
-#define SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
+#define ELECTRON_SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
 
 #include <map>
 #include <memory>
@@ -34,6 +34,10 @@ class NodeStreamLoader : public network::mojom::URLLoader {
                    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> emitter);
+
+  // disable copy
+  NodeStreamLoader(const NodeStreamLoader&) = delete;
+  NodeStreamLoader& operator=(const NodeStreamLoader&) = delete;
 
  private:
   ~NodeStreamLoader() override;
@@ -95,10 +99,8 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   std::map<std::string, v8::Global<v8::Value>> handlers_;
 
   base::WeakPtrFactory<NodeStreamLoader> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NodeStreamLoader);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_

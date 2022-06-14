@@ -1,8 +1,8 @@
 <html>
 <body>
-<script src="../../static/jquery-2.0.3.min.js"></script>
 <script type="text/javascript" charset="utf-8">
-  var port = location.search.substr("?port=".length);
+  const url = new URL(location.href);
+  const port = url.searchParams.get('port');
   document.write("<img src='http://127.0.0.1:" + port + "/logo.png' />");
 </script>
 </body>

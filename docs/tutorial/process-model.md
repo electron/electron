@@ -40,7 +40,7 @@ to `require` modules and use all of Node.js APIs.
 
 ### Window management
 
-The main process' primary purpose is to create and manage application windows with the
+The primary purpose of the main process is to create and manage application windows with the
 [`BrowserWindow`][browser-window] module.
 
 Each instance of the `BrowserWindow` class creates an application window that loads

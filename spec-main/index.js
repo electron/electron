@@ -27,7 +27,7 @@ const { app, protocol } = require('electron');
 
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
-// Prevent the spec runner quiting when the first window closes
+// Prevent the spec runner quitting when the first window closes
 app.on('window-all-closed', () => null);
 
 // Use fake device for Media Stream to replace actual camera and microphone.

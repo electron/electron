@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
-#define SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
 
 #include <map>
 #include <vector>
@@ -29,6 +29,10 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  GlobalShortcut(const GlobalShortcut&) = delete;
+  GlobalShortcut& operator=(const GlobalShortcut&) = delete;
+
  protected:
   explicit GlobalShortcut(v8::Isolate* isolate);
   ~GlobalShortcut() override;
@@ -50,12 +54,10 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
   void OnKeyPressed(const ui::Accelerator& accelerator) override;
 
   AcceleratorCallbackMap accelerator_callback_map_;
-
-  DISALLOW_COPY_AND_ASSIGN(GlobalShortcut);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_

@@ -7,14 +7,13 @@
 // will return NULL if the service is not available, so callers must check for
 // this condition.
 
-#ifndef SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
-#define SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#ifndef ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#define ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
 
 #include <memory>
 #include <string>
 
 #include "base/command_line.h"
-#include "base/macros.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
@@ -35,6 +34,10 @@ class BrowserProcessImpl : public BrowserProcess {
  public:
   BrowserProcessImpl();
   ~BrowserProcessImpl() override;
+
+  // disable copy
+  BrowserProcessImpl(const BrowserProcessImpl&) = delete;
+  BrowserProcessImpl& operator=(const BrowserProcessImpl&) = delete;
 
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
@@ -64,7 +67,6 @@ class BrowserProcessImpl : public BrowserProcess {
   NotificationPlatformBridge* notification_platform_bridge() override;
   SystemNetworkContextManager* system_network_context_manager() override;
   network::NetworkQualityTracker* network_quality_tracker() override;
-  WatchDogThread* watchdog_thread() override;
   policy::ChromeBrowserPolicyConnector* browser_policy_connector() override;
   policy::PolicyService* policy_service() override;
   IconManager* icon_manager() override;
@@ -80,8 +82,6 @@ class BrowserProcessImpl : public BrowserProcess {
   safe_browsing::SafeBrowsingService* safe_browsing_service() override;
   subresource_filter::RulesetService* subresource_filter_ruleset_service()
       override;
-  federated_learning::FlocSortingLshClustersService*
-  floc_sorting_lsh_clusters_service() override;
   component_updater::ComponentUpdateService* component_updater() override;
   MediaFileSystemRegistry* media_file_system_registry() override;
   WebRtcLogUploader* webrtc_log_uploader() override;
@@ -91,11 +91,12 @@ class BrowserProcessImpl : public BrowserProcess {
       override;
   resource_coordinator::TabManager* GetTabManager() override;
   SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
+  HidPolicyAllowedDevices* hid_policy_allowed_devices() override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(
       std::unique_ptr<BackgroundModeManager> manager) override {}
-#if (defined(OS_WIN) || defined(OS_LINUX))
+#if (BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX))
   void StartAutoupdateTimer() override {}
 #endif
   void SetApplicationLocale(const std::string& locale) override;
@@ -109,8 +110,6 @@ class BrowserProcessImpl : public BrowserProcess {
 #endif
   std::unique_ptr<PrefService> local_state_;
   std::string locale_;
-
-  DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);
 };
 
-#endif  // SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_

@@ -15,7 +15,7 @@ export class IpcMainImpl extends EventEmitter {
       try {
         e._reply(await Promise.resolve(fn(e, ...args)));
       } catch (err) {
-        e._throw(err);
+        e._throw(err as Error);
       }
     });
   }

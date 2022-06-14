@@ -16,6 +16,19 @@ Check the build prerequisites for your platform before proceeding
 
 [Electron's Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. If you wish to set up the environment manually, the instructions are listed below.
 
+Electron uses [GN](https://gn.googlesource.com/gn) for project generation and
+[ninja](https://ninja-build.org/) for building. Project configurations can
+be found in the `.gn` and `.gni` files.
+
+## GN Files
+
+The following `gn` files contain the main rules for building Electron:
+
+* `BUILD.gn` defines how Electron itself is built and
+  includes the default configurations for linking with Chromium.
+* `build/args/{testing,release,all}.gn` contain the default build arguments for
+  building Electron.
+
 ## GN prerequisites
 
 You'll need to install [`depot_tools`][depot-tools], the toolset
@@ -85,45 +98,40 @@ $ gclient sync -f
 
 ## Building
 
+**Set the environment variable for chromium build tools**
+
+On Linux & MacOS
+
 ```sh
 $ cd src
 $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-$ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS"
 ```
 
-Or on Windows (without the optional argument):
+On Windows:
 
 ```sh
 $ cd src
 $ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
+```
+
+**To generate Testing build config of Electron:**
+
+```sh
 $ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\")"
 ```
 
-This will generate a build directory `out/Testing` under `src/` with
-the testing build configuration. You can replace `Testing` with another name,
-but it should be a subdirectory of `out`.
-Also you shouldn't have to run `gn gen` again—if you want to change the
-build arguments, you can run `gn args out/Testing` to bring up an editor.
-
-To see the list of available build configuration options, run `gn args
-out/Testing --list`.
-
-**For generating Testing build config of
-Electron:**
+**To generate Release build config of Electron:**
 
 ```sh
-$ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS"
+$ gn gen out/Release --args="import(\"//electron/build/args/release.gn\")"
 ```
 
-**For generating Release (aka "non-component" or "static") build config of
-Electron:**
+**Note:** This will generate a `out/Testing` or `out/Release` build directory under `src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
 
-```sh
-$ gn gen out/Release --args="import(\"//electron/build/args/release.gn\") $GN_EXTRA_ARGS"
-```
+Also you shouldn't have to run `gn gen` again—if you want to change the build arguments, you can run `gn args out/Testing` to bring up an editor. To see the list of available build configuration options, run `gn args out/Testing --list`.
 
 **To build, run `ninja` with the `electron` target:**
-Nota Bene: This will also take a while and probably heat up your lap.
+Note: This will also take a while and probably heat up your lap.
 
 For the testing configuration:
 
@@ -156,13 +164,13 @@ $ ./out/Testing/electron
 On linux, first strip the debugging and symbol information:
 
 ```sh
-electron/script/strip-binaries.py -d out/Release
+$ electron/script/strip-binaries.py -d out/Release
 ```
 
 To package the electron build as a distributable zip file:
 
 ```sh
-ninja -C out/Release electron:electron_dist_zip
+$ ninja -C out/Release electron:electron_dist_zip
 ```
 
 ### Cross-compiling
@@ -188,12 +196,12 @@ If you test other combinations and find them to work, please update this documen
 See the GN reference for allowable values of [`target_os`][target_os values]
 and [`target_cpu`][target_cpu values].
 
-[target_os values]: https://gn.googlesource.com/gn/+/master/docs/reference.md#built_in-predefined-variables-target_os_the-desired-operating-system-for-the-build-possible-values
-[target_cpu values]: https://gn.googlesource.com/gn/+/master/docs/reference.md#built_in-predefined-variables-target_cpu_the-desired-cpu-architecture-for-the-build-possible-values
+[target_os values]: https://gn.googlesource.com/gn/+/main/docs/reference.md#built_in-predefined-variables-target_os_the-desired-operating-system-for-the-build-possible-values
+[target_cpu values]: https://gn.googlesource.com/gn/+/main/docs/reference.md#built_in-predefined-variables-target_cpu_the-desired-cpu-architecture-for-the-build-possible-values
 
 #### Windows on Arm (experimental)
 
-To cross-compile for Windows on Arm, [follow Chromium's guide](https://chromium.googlesource.com/chromium/src/+/refs/heads/master/docs/windows_build_instructions.md#Visual-Studio) to get the necessary dependencies, SDK and libraries, then build with `ELECTRON_BUILDING_WOA=1` in your environment before running `gclient sync`.
+To cross-compile for Windows on Arm, [follow Chromium's guide](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/windows_build_instructions.md#Visual-Studio) to get the necessary dependencies, SDK and libraries, then build with `ELECTRON_BUILDING_WOA=1` in your environment before running `gclient sync`.
 
 ```bat
 set ELECTRON_BUILDING_WOA=1

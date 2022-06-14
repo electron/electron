@@ -73,7 +73,7 @@ url = ELECTRON_MIRROR + ELECTRON_CUSTOM_DIR + '/' + ELECTRON_CUSTOM_FILENAME
 For instance, to use the China CDN mirror:
 
 ```shell
-ELECTRON_MIRROR="https://cdn.npm.taobao.org/dist/electron/"
+ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
 ```
 
 By default, `ELECTRON_CUSTOM_DIR` is set to `v$VERSION`. To change the format,
@@ -83,15 +83,15 @@ resolves to `version-5.0.0`, `{{ version }}` resolves to `5.0.0`, and
 use the China non-CDN mirror:
 
 ```shell
-ELECTRON_MIRROR="https://npm.taobao.org/mirrors/electron/"
+ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
 ELECTRON_CUSTOM_DIR="{{ version }}"
 ```
 
 The above configuration will download from URLs such as
-`https://npm.taobao.org/mirrors/electron/8.0.0/electron-v8.0.0-linux-x64.zip`.
+`https://npmmirror.com/mirrors/electron/8.0.0/electron-v8.0.0-linux-x64.zip`.
 
 If your mirror serves artifacts with different checksums to the official
-Electron release you may have to set `ELECTRON_USE_REMOTE_CHECKSUMS=1` to
+Electron release you may have to set `electron_use_remote_checksums=1` to
 force Electron to use the remote `SHASUMS256.txt` file to verify the checksum
 instead of the embedded checksums.
 
@@ -112,30 +112,12 @@ cache also in `~/.electron`.
 You can also override the local cache location by providing a `electron_config_cache`
 environment variable.
 
-The cache contains the version's official zip file as well as a checksum, stored as
-a text file. A typical cache might look like this:
+The cache contains the version's official zip file as well as a checksum, and is stored as
+`[checksum]/[filename]`. A typical cache might look like this:
 
 ```sh
-├── httpsgithub.comelectronelectronreleasesdownloadv1.7.9electron-v1.7.9-darwin-x64.zip
-│   └── electron-v1.7.9-darwin-x64.zip
-├── httpsgithub.comelectronelectronreleasesdownloadv1.7.9SHASUMS256.txt
-│   └── SHASUMS256.txt
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.1electron-v1.8.1-darwin-x64.zip
-│   └── electron-v1.8.1-darwin-x64.zip
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.1SHASUMS256.txt
-│   └── SHASUMS256.txt
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.1electron-v1.8.2-beta.1-darwin-x64.zip
-│   └── electron-v1.8.2-beta.1-darwin-x64.zip
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.1SHASUMS256.txt
-│   └── SHASUMS256.txt
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.2electron-v1.8.2-beta.2-darwin-x64.zip
-│   └── electron-v1.8.2-beta.2-darwin-x64.zip
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.2SHASUMS256.txt
-│   └── SHASUMS256.txt
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.3electron-v1.8.2-beta.3-darwin-x64.zip
-│   └── electron-v1.8.2-beta.3-darwin-x64.zip
-└── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.3SHASUMS256.txt
-    └── SHASUMS256.txt
+├── a91b089b5dc5b1279966511344b805ec84869b6cd60af44f800b363bba25b915
+│   └── electron-v15.3.1-darwin-x64.zip
 ```
 
 ## Skip binary download

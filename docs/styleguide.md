@@ -162,7 +162,7 @@ The methods chapter must be in the following form:
 ```markdown
 ### `objectName.methodName(required[, optional]))`
 
-* `required` String - A parameter description.
+* `required` string - A parameter description.
 * `optional` Integer (optional) - Another parameter description.
 
 ...
@@ -194,14 +194,14 @@ required[, optional]
 
 More detailed information on each of the arguments is noted in an unordered list
 below the method. The type of argument is notated by either JavaScript primitives
-(e.g. `String`, `Promise`, or `Object`), a custom API structure like Electron's
+(e.g. `string`, `Promise`, or `Object`), a custom API structure like Electron's
 [`Cookie`](api/structures/cookie.md), or the wildcard `any`.
 
 If the argument is of type `Array`, use `[]` shorthand with the type of value
-inside the array (for example,`any[]` or `String[]`).
+inside the array (for example,`any[]` or `string[]`).
 
 If the argument is of type `Promise`, parametrize the type with what the promise
-resolves to (for example, `Promise<void>` or `Promise<String>`).
+resolves to (for example, `Promise<void>` or `Promise<string>`).
 
 If an argument can be of multiple types, separate the types with `|`.
 
@@ -215,7 +215,7 @@ denoted using a space-delimited italicized list following the datatype. Values
 can be `macOS`, `Windows` or `Linux`.
 
 ```markdown
-* `animate` Boolean (optional) _macOS_ _Windows_ - Animate the thing.
+* `animate` boolean (optional) _macOS_ _Windows_ - Animate the thing.
 ```
 
 ### Events
@@ -227,7 +227,7 @@ The events chapter must be in following form:
 
 Returns:
 
-* `time` String
+* `time` string
 
 ...
 ```

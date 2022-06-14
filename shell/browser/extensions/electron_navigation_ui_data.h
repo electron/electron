@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
-#define SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
 
 #include <memory>
 
-#include "base/macros.h"
 #include "content/public/browser/navigation_ui_data.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 
@@ -25,6 +24,10 @@ class ElectronNavigationUIData : public content::NavigationUIData {
       content::NavigationHandle* navigation_handle);
   ~ElectronNavigationUIData() override;
 
+  // disable copy
+  ElectronNavigationUIData(const ElectronNavigationUIData&) = delete;
+  ElectronNavigationUIData& operator=(const ElectronNavigationUIData&) = delete;
+
   // Creates a new ChromeNavigationUIData that is a deep copy of the original.
   // Any changes to the original after the clone is created will not be
   // reflected in the clone.  |extension_data_| is deep copied.
@@ -40,10 +43,8 @@ class ElectronNavigationUIData : public content::NavigationUIData {
  private:
   // Manages the lifetime of optional ExtensionNavigationUIData information.
   std::unique_ptr<ExtensionNavigationUIData> extension_data_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronNavigationUIData);
 };
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_

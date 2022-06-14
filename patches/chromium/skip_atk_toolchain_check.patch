@@ -21,7 +21,7 @@ See //ui/accessibility/BUILD.gn:297:20: which caused the file to be included.
 which we don't build
 
 diff --git a/build/config/linux/atk/BUILD.gn b/build/config/linux/atk/BUILD.gn
-index 92baff2a9b6eea1bcfaa53a9e70b4857b68cea77..8fd6031dda6afa42e9ed0742ccc4e71a93df7583 100644
+index 647bef697ec8f6bf02d60e3984ae3ad01f480552..be79a50aad1213a299c606f2a00f6b5bbf8eab2a 100644
 --- a/build/config/linux/atk/BUILD.gn
 +++ b/build/config/linux/atk/BUILD.gn
 @@ -11,7 +11,7 @@ import("//build/config/ui.gni")
@@ -34,7 +34,7 @@ index 92baff2a9b6eea1bcfaa53a9e70b4857b68cea77..8fd6031dda6afa42e9ed0742ccc4e71a
  if (use_atk) {
    assert(use_glib, "use_atk=true requires that use_glib=true")
 diff --git a/build/config/linux/atspi2/BUILD.gn b/build/config/linux/atspi2/BUILD.gn
-index 988a9956813617456ee1945de8e857d43543e411..e6e17e9e8f5ff99404b52c0a42d508f97c61e7fc 100644
+index d103d09a39a519e65daab6db40ef7896de49b0ee..bfdef652886382eb87d5a19d2f9ed90dc91c14d2 100644
 --- a/build/config/linux/atspi2/BUILD.gn
 +++ b/build/config/linux/atspi2/BUILD.gn
 @@ -6,7 +6,6 @@ import("//build/config/linux/pkg_config.gni")

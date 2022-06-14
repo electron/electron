@@ -16,7 +16,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/synchronization/lock.h"
-#include "base/task/post_task.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
@@ -48,7 +47,7 @@ std::map<int, std::unique_ptr<HWND>>& GetDialogsMap() {
   return *dialogs;
 }
 
-// Speical HWND used by the dialogs map.
+// Special HWND used by the dialogs map.
 //
 // - ID is used but window has not been created yet.
 const HWND kHwndReserve = reinterpret_cast<HWND>(-1);
@@ -171,8 +170,9 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
 
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
+  std::wstring app_name;
   if (title.empty()) {
-    std::wstring app_name = base::UTF8ToWide(Browser::Get()->GetName());
+    app_name = base::UTF8ToWide(Browser::Get()->GetName());
     config.pszWindowTitle = app_name.c_str();
   } else {
     config.pszWindowTitle = base::as_wcstr(title);

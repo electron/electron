@@ -22,7 +22,8 @@ if (isInstalled()) {
 const platform = process.env.npm_config_platform || process.platform;
 let arch = process.env.npm_config_arch || process.arch;
 
-if (platform === 'darwin' && process.platform === 'darwin' && arch === 'x64') {
+if (platform === 'darwin' && process.platform === 'darwin' && arch === 'x64' &&
+    process.env.npm_config_arch === undefined) {
   // When downloading for macOS ON macOS and we think we need x64 we should
   // check if we're running under rosetta and download the arm64 version if appropriate
   try {
@@ -69,17 +70,8 @@ function isInstalled () {
 
 // unzips and makes path.txt point at the correct executable
 function extractFile (zipPath) {
-  return new Promise((resolve, reject) => {
-    extract(zipPath, { dir: path.join(__dirname, 'dist') }, err => {
-      if (err) return reject(err);
-
-      fs.writeFile(path.join(__dirname, 'path.txt'), platformPath, err => {
-        if (err) return reject(err);
-
-        resolve();
-      });
-    });
-  });
+  return extract(zipPath, { dir: path.join(__dirname, 'dist') })
+    .then(() => fs.promises.writeFile(path.join(__dirname, 'path.txt'), platformPath));
 }
 
 function getPlatformPath () {

@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
 
 #include <utility>
 
-#include "content/public/browser/permission_type.h"
 #include "content/public/common/referrer.h"
 #include "content/public/common/stop_find_action.h"
 #include "gin/converter.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "third_party/blink/public/mojom/choosers/popup_menu.mojom.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 
@@ -47,9 +47,9 @@ struct Converter<blink::mojom::PermissionStatus> {
 };
 
 template <>
-struct Converter<content::PermissionType> {
+struct Converter<blink::PermissionType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const content::PermissionType& val);
+                                   const blink::PermissionType& val);
 };
 
 template <>
@@ -88,4 +88,4 @@ struct Converter<content::NativeWebKeyboardEvent> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_

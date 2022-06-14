@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
-#define SHELL_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
 
 #include <memory>
 
@@ -24,6 +24,10 @@ class MenuDelegate : public views::MenuDelegate {
  public:
   explicit MenuDelegate(MenuBar* menu_bar);
   ~MenuDelegate() override;
+
+  // disable copy
+  MenuDelegate(const MenuDelegate&) = delete;
+  MenuDelegate& operator=(const MenuDelegate&) = delete;
 
   void RunMenu(ElectronMenuModel* model,
                views::Button* button,
@@ -72,10 +76,8 @@ class MenuDelegate : public views::MenuDelegate {
   bool hold_first_switch_ = false;
 
   base::ObserverList<Observer>::Unchecked observers_;
-
-  DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_MENU_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_MENU_DELEGATE_H_

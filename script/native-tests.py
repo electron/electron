@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 
@@ -97,11 +97,11 @@ def main():
     if args.binary is not None:
       return tests_list.run(args.binary, args.output_dir, args.verbosity,
                             args.disabled_tests_policy)
-    else:
-      return tests_list.run_all(args.output_dir, args.verbosity,
-                                args.disabled_tests_policy)
 
-  assert False, "unexpected command '{}'".format(args.command)
+    return tests_list.run_all(args.output_dir, args.verbosity,
+                              args.disabled_tests_policy)
+
+  raise AssertionError("unexpected command '{}'".format(args.command))
 
 
 if __name__ == '__main__':

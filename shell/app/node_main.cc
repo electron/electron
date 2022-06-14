@@ -30,11 +30,11 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include "components/crash/core/app/breakpad_linux.h"
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
 #endif
 
@@ -65,7 +65,7 @@ int SetNodeCliFlags() {
   args.emplace_back("electron");
 
   for (const auto& arg : argv) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
@@ -100,7 +100,7 @@ void ClearCrashKeyStub(const std::string& key) {}
 
 namespace electron {
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 void CrashReporterStart(gin_helper::Dictionary options) {
   std::string submit_url;
   bool upload_to_server = true;
@@ -140,7 +140,7 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   v8_crashpad_support::SetUp();
 #endif
 
@@ -148,7 +148,7 @@ int NodeMain(int argc, char* argv[]) {
   ElectronCrashReporterClient::Create();
 #endif
 
-#if defined(OS_WIN) || (defined(OS_MAC) && !defined(MAS_BUILD))
+#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !defined(MAS_BUILD))
   crash_reporter::InitializeCrashpad(false, "node");
 #endif
 
@@ -186,7 +186,7 @@ int NodeMain(int argc, char* argv[]) {
       exit(result.exit_code);
 
     gin::V8Initializer::LoadV8Snapshot(
-        gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
+        gin::V8SnapshotFileType::kWithAdditionalContext);
 
     // V8 requires a task scheduler.
     base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");
@@ -210,8 +210,11 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      env = node::CreateEnvironment(isolate_data, gin_env.context(),
-                                    result.args, result.exec_args);
+      uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                       node::EnvironmentFlags::kHideConsoleWindows;
+      env = node::CreateEnvironment(
+          isolate_data, gin_env.context(), result.args, result.exec_args,
+          static_cast<node::EnvironmentFlags::Flags>(flags));
       CHECK_NE(nullptr, env);
 
       node::IsolateSettings is;
@@ -222,7 +225,7 @@ int NodeMain(int argc, char* argv[]) {
 
       // Setup process.crashReporter in child node processes
       gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
       reporter.SetMethod("start", &CrashReporterStart);
 #endif
 

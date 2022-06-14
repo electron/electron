@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_H_
-#define SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_H_
+#define ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_H_
 
 #include <memory>
 #include <string>
 
 #include "base/files/file_path.h"
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/nix/xdg_util.h"
+#include "third_party/skia/include/core/SkImage.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/views/linux_ui/status_icon_linux.h"
 
@@ -43,6 +43,10 @@ class AppIndicatorIcon : public views::StatusIconLinux {
                    const gfx::ImageSkia& image,
                    const std::u16string& tool_tip);
   ~AppIndicatorIcon() override;
+
+  // disable copy
+  AppIndicatorIcon(const AppIndicatorIcon&) = delete;
+  AppIndicatorIcon& operator=(const AppIndicatorIcon&) = delete;
 
   // Indicates whether libappindicator so could be opened.
   static bool CouldOpen();
@@ -105,12 +109,10 @@ class AppIndicatorIcon : public views::StatusIconLinux {
   int icon_change_count_ = 0;
 
   base::WeakPtrFactory<AppIndicatorIcon> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(AppIndicatorIcon);
 };
 
 }  // namespace gtkui
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_H_

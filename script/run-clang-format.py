@@ -1,6 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """A wrapper script around clang-format, suitable for linting multiple files
 and to use for continuous integration.
+
 This is an alternative API for the clang-format command line.
 It runs over multiple files and directories in parallel.
 A diff output is produced and a sensible exit code is returned.
@@ -11,6 +12,7 @@ from __future__ import print_function, unicode_literals
 import argparse
 import codecs
 import difflib
+import errno
 import fnmatch
 import io
 import multiprocessing
@@ -26,13 +28,28 @@ from functools import partial
 from lib.util import get_buildtools_executable
 
 DEFAULT_EXTENSIONS = 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx,mm'
-
+DEFAULT_CLANG_FORMAT_IGNORE = '.clang-format-ignore'
 
 class ExitStatus:
     SUCCESS = 0
     DIFF = 1
     TROUBLE = 2
 
+def excludes_from_file(ignore_file):
+    excludes = []
+    try:
+        with io.open(ignore_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('#'):
+                    continue
+                pattern = line.rstrip()
+                if not pattern:
+                    continue
+                excludes.append(pattern)
+    except EnvironmentError as e:
+        if e.errno != errno.ENOENT:
+            raise
+    return excludes
 
 def list_files(files, recursive=False, extensions=None, exclude=None):
     if extensions is None:
@@ -55,8 +72,7 @@ def list_files(files, recursive=False, extensions=None, exclude=None):
                         x for x in fpaths if not fnmatch.fnmatch(x, pattern)
                     ]
                 for fp in fpaths:
-                    ext = os.path.splitext(f)[1][1:]
-                    print(ext)
+                    ext = os.path.splitext(fp)[1][1:]
                     if ext in extensions:
                         out.append(fp)
         else:
@@ -78,13 +94,13 @@ def make_diff(diff_file, original, reformatted):
 
 class DiffError(Exception):
     def __init__(self, message, errs=None):
-        super(DiffError, self).__init__(message)
+        super().__init__(message)
         self.errs = errs or []
 
 
 class UnexpectedError(Exception):
     def __init__(self, message, exc=None):
-        super(UnexpectedError, self).__init__(message)
+        super().__init__(message)
         self.formatted_traceback = traceback.format_exc()
         self.exc = exc
 
@@ -96,6 +112,7 @@ def run_clang_format_diff_wrapper(args, file_name):
     except DiffError:
         raise
     except Exception as e:
+        # pylint: disable=W0707
         raise UnexpectedError('{}: {}: {}'.format(
             file_name, e.__class__.__name__, e), e)
 
@@ -105,10 +122,16 @@ def run_clang_format_diff(args, file_name):
         with io.open(file_name, 'r', encoding='utf-8') as f:
             original = f.readlines()
     except IOError as exc:
+        # pylint: disable=W0707
         raise DiffError(str(exc))
     invocation = [args.clang_format_executable, file_name]
     if args.fix:
         invocation.append('-i')
+    if args.style:
+        invocation.extend(['--style', args.style])
+    if args.dry_run:
+        print(" ".join(invocation))
+        return [], []
     try:
         proc = subprocess.Popen(
             ' '.join(invocation),
@@ -117,19 +140,14 @@ def run_clang_format_diff(args, file_name):
             universal_newlines=True,
             shell=True)
     except OSError as exc:
-        raise DiffError(str(exc))
-    proc_stdout = proc.stdout
-    proc_stderr = proc.stderr
-    if sys.version_info[0] == 3:
-        proc_stdout = proc_stdout.detach()
-        proc_stderr = proc_stderr.detach()
-    # make the pipes compatible with Python 3,
-    # reading lines should output unicode
-    encoding = 'utf-8'
-    proc_stdout = codecs.getreader(encoding)(proc_stdout)
-    proc_stderr = codecs.getreader(encoding)(proc_stderr)
-    outs = list(proc_stdout.readlines())
-    errs = list(proc_stderr.readlines())
+        # pylint: disable=W0707
+        raise DiffError(
+            "Command '{}' failed to start: {}".format(
+                subprocess.list2cmdline(invocation), exc
+            )
+        )
+    outs = list(proc.stdout.readlines())
+    errs = list(proc.stderr.readlines())
     proc.wait()
     if proc.returncode:
         raise DiffError("clang-format exited with status {}: '{}'".format(
@@ -208,6 +226,11 @@ def main():
         '--recursive',
         action='store_true',
         help='run recursively over directories')
+    parser.add_argument(
+        '-d',
+        '--dry-run',
+        action='store_true',
+        help='just print the list of files')
     parser.add_argument('files', metavar='file', nargs='+')
     parser.add_argument(
         '-q',
@@ -238,6 +261,10 @@ def main():
         default=[],
         help='exclude paths matching the given glob-like pattern(s)'
         ' from recursive search')
+    parser.add_argument(
+        '--style',
+        help='formatting style to apply '
+        '(LLVM/Google/Chromium/Mozilla/WebKit)')
 
     args = parser.parse_args()
 
@@ -265,13 +292,14 @@ def main():
 
     parse_files = []
     if args.changed:
-        popen = subprocess.Popen(
-            'git diff --name-only --cached',
+        stdout = subprocess.Popen(
+            "git diff --name-only --cached",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            shell=True
-        )
-        for line in popen.stdout:
+            shell=True,
+            universal_newlines=True
+        ).communicate()[0].split("\n")
+        for line in stdout:
             file_name = line.rstrip()
             # don't check deleted files
             if os.path.isfile(file_name):
@@ -280,14 +308,17 @@ def main():
     else:
         parse_files = args.files
 
+    excludes = excludes_from_file(DEFAULT_CLANG_FORMAT_IGNORE)
+    excludes.extend(args.exclude)
+
     files = list_files(
         parse_files,
         recursive=args.recursive,
-        exclude=args.exclude,
+        exclude=excludes,
         extensions=args.extensions.split(','))
 
     if not files:
-        return
+        return ExitStatus.SUCCESS
 
     njobs = args.j
     if njobs == 0:

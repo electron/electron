@@ -17,10 +17,11 @@
 #include "third_party/skia/include/core/SkUnPreMultiply.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 
-namespace gtk_util {
-
 // The following utilities are pulled from
 // https://source.chromium.org/chromium/chromium/src/+/main:ui/gtk/select_file_dialog_impl_gtk.cc;l=43-74
+namespace gtk_util {
+
+namespace {
 
 const char* GettextPackage() {
   static base::NoDestructor<std::string> gettext_package(
@@ -32,44 +33,34 @@ const char* GtkGettext(const char* str) {
   return g_dgettext(GettextPackage(), str);
 }
 
+}  // namespace
+
 const char* GetCancelLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-cancel";  // In GTK3, this is GTK_STOCK_CANCEL.
   static const char* cancel = GtkGettext("_Cancel");
   return cancel;
 }
 
 const char* GetOpenLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-open";  // In GTK3, this is GTK_STOCK_OPEN.
   static const char* open = GtkGettext("_Open");
   return open;
 }
 
 const char* GetSaveLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-save";  // In GTK3, this is GTK_STOCK_SAVE.
   static const char* save = GtkGettext("_Save");
   return save;
 }
 
 const char* GetOkLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-ok";  // In GTK3, this is GTK_STOCK_OK.
   static const char* ok = GtkGettext("_Ok");
   return ok;
 }
 
 const char* GetNoLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-no";  // In GTK3, this is GTK_STOCK_NO.
   static const char* no = GtkGettext("_No");
   return no;
 }
 
 const char* GetYesLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-yes";  // In GTK3, this is GTK_STOCK_YES.
   static const char* yes = GtkGettext("_Yes");
   return yes;
 }

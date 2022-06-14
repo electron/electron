@@ -46,7 +46,7 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
   if (origin_url.SchemeIsFile()) {
     origin = origin_url.path();
   } else {
-    origin = origin_url.GetOrigin().spec();
+    origin = origin_url.DeprecatedGetOriginAsURL().spec();
   }
 
   if (origin_counts_[origin] == kUserWantsNoMoreDialogs) {
