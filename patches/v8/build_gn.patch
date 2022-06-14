@@ -3,24 +3,12 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Tue, 16 Apr 2019 10:43:04 -0700
 Subject: build_gn.patch
 
-We force V8 into 'shared library' mode so that it exports its symbols, which is
-necessary for native modules to load.
-
-Also, some fixes relating to mksnapshot on ARM.
+Some fixes relating to mksnapshot on ARM.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 744ae6a11ffff47872da4141b3f0e4af5130fff9..31dfdf8a3facd470c3f92c58a5a12566af96521a 100644
+index 744ae6a11ffff47872da4141b3f0e4af5130fff9..2efaec502e084c72598152af19b61420f2ad051e 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -620,7 +620,7 @@ config("internal_config") {
-     ":cppgc_header_features",
-   ]
- 
--  if (is_component_build) {
-+  if (is_component_build || is_electron_build) {
-     defines += [ "BUILDING_V8_SHARED" ]
-   }
- 
 @@ -5905,7 +5905,7 @@ if (current_toolchain == v8_generator_toolchain) {
        "src/interpreter/bytecodes.h",
      ]
