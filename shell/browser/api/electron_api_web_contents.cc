@@ -1765,8 +1765,8 @@ bool WebContents::EmitNavigationEvent(
     frame_process_id = frame_host->GetProcess()->GetID();
     frame_routing_id = frame_host->GetRoutingID();
   }
-  auto url = navigation_handle->GetURL();
   bool is_same_document = navigation_handle->IsSameDocument();
+  auto url = navigation_handle->GetURL();
   return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
               frame_routing_id);
 }
