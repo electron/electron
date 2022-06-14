@@ -1,7 +1,7 @@
-From 2782c7bc5bbe0829ad39907866f59bad65777df5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Marijn Kruisselbrink <mek@chromium.org>
 Date: Wed, 27 Apr 2022 20:51:50 +0000
-Subject: [PATCH] Reland "Close a MessagePort if it is created in a destroyed context."
+Subject: Reland "Close a MessagePort if it is created in a destroyed context."
 
 This is a reland of commit 068f13cc5aa5f7a6e9faf28d8731275e64cb657b
 
@@ -31,13 +31,12 @@ Commit-Queue: Jeremy Roman <jbroman@chromium.org>
 Reviewed-by: Jeremy Roman <jbroman@chromium.org>
 Auto-Submit: Marijn Kruisselbrink <mek@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#996880}
----
 
 diff --git a/third_party/blink/renderer/core/messaging/message_port.cc b/third_party/blink/renderer/core/messaging/message_port.cc
-index a284d18..b72ede6 100644
+index 6f67b21803fcdc2498ef207878d1541e04822fca..7f3df8ea567f91cd063122aab63a5c5424ab7919 100644
 --- a/third_party/blink/renderer/core/messaging/message_port.cc
 +++ b/third_party/blink/renderer/core/messaging/message_port.cc
-@@ -56,7 +56,11 @@
+@@ -55,7 +55,11 @@
  namespace blink {
  
  MessagePort::MessagePort(ExecutionContext& execution_context)
@@ -50,7 +49,7 @@ index a284d18..b72ede6 100644
        task_runner_(execution_context.GetTaskRunner(TaskType::kPostedMessage)) {}
  
  MessagePort::~MessagePort() {
-@@ -168,10 +172,21 @@
+@@ -168,10 +172,21 @@ void MessagePort::Entangle(MessagePortDescriptor port) {
    DCHECK(port.IsValid());
    DCHECK(!connector_);
  
@@ -73,10 +72,10 @@ index a284d18..b72ede6 100644
    connector_->set_connection_error_handler(
        WTF::Bind(&MessagePort::close, WrapWeakPersistent(this)));
 diff --git a/third_party/blink/renderer/core/messaging/message_port.h b/third_party/blink/renderer/core/messaging/message_port.h
-index c5e0fef..30d13d1 100644
+index 83d7901d99ad01ba039ea1ffa3dbee2595fc31ff..f9baba3c6d13992508da48a13c97bb10c8ec56e0 100644
 --- a/third_party/blink/renderer/core/messaging/message_port.h
 +++ b/third_party/blink/renderer/core/messaging/message_port.h
-@@ -141,7 +141,7 @@
+@@ -148,7 +148,7 @@ class CORE_EXPORT MessagePort : public EventTargetWithInlineData,
    std::unique_ptr<mojo::Connector> connector_;
  
    bool started_ = false;
@@ -87,7 +86,7 @@ index c5e0fef..30d13d1 100644
  
 diff --git a/third_party/blink/web_tests/external/wpt/webmessaging/message-channels/detached-iframe.window.js b/third_party/blink/web_tests/external/wpt/webmessaging/message-channels/detached-iframe.window.js
 new file mode 100644
-index 0000000..c1effaf
+index 0000000000000000000000000000000000000000..c1effaf141b7246320883e293b58dabbc3572123
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/webmessaging/message-channels/detached-iframe.window.js
 @@ -0,0 +1,47 @@
