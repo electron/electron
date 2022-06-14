@@ -32,8 +32,11 @@ static const int kPreviewWidth = 256;
 static const int kPreviewHeight = 512;
 
 std::string MakeCaseInsensitivePattern(const std::string& extension) {
-  std::string pattern("*.");
+  // If the extension is the "all files" extension, no change needed.
+  if (extension == "*")
+    return extension;
 
+  std::string pattern("*.");
   for (std::size_t i = 0, n = extension.size(); i < n; i++) {
     char ch = extension[i];
     if (!base::IsAsciiAlpha(ch)) {
