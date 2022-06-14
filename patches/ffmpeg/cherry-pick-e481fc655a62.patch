@@ -1,0 +1,28 @@
+From e481fc655a6287e657a88e8c2bcd6f411d254d70 Mon Sep 17 00:00:00 2001
+From: Dan Sanders <sandersd@chromium.org>
+Date: Tue, 03 May 2022 14:39:37 -0700
+Subject: [PATCH] Do not parse late SEI messages during decoding.
+
+Bug: 1306751
+Change-Id: I2088b9ff89bd8eee8ab82675258af302d9bfccf9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/3625832
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+---
+
+diff --git a/libavcodec/h264dec.c b/libavcodec/h264dec.c
+index 5ef2550..1e000ca 100644
+--- a/libavcodec/h264dec.c
++++ b/libavcodec/h264dec.c
+@@ -672,6 +672,12 @@
+             avpriv_request_sample(avctx, "data partitioning");
+             break;
+         case H264_NAL_SEI:
++            // If setup is finished, threads can contend over the contents of
++            // the active SEI.
++            if (h->setup_finished) {
++              av_log(h->avctx, AV_LOG_DEBUG, "Late SEI\n");
++              break;
++            }
+             ret = ff_h264_sei_decode(&h->sei, &nal->gb, &h->ps, avctx);
+             h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
+             if (avctx->debug & FF_DEBUG_GREEN_MD)
