@@ -2679,7 +2679,7 @@ describe('BrowserWindow module', () => {
         for (const isolatedGlobal of isolated.globals) {
           notIsolatedGlobals.delete(isolatedGlobal);
         }
-        expect([...notIsolatedGlobals]).to.deep.equal([], 'non-isoalted renderer should have no additional globals');
+        expect([...notIsolatedGlobals]).to.deep.equal([], 'non-isolated renderer should have no additional globals');
       });
 
       it('loads the script before other scripts in window', async () => {
