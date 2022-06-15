@@ -244,8 +244,6 @@ step-depot-tools-get: &step-depot-tools-get
       else
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
       fi
-      # Run update_depot_tools to make sure ninja gets downloaded
-      depot_tools/update_depot_tools
 
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
   run:
@@ -483,6 +481,8 @@ step-fix-sync: &step-fix-sync
       cd src/third_party/angle
       git remote set-url origin https://chromium.googlesource.com/angle/angle.git
       git fetch
+      # Run update_depot_tools to make sure ninja gets downloaded
+      update_depot_tools
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
   run:
