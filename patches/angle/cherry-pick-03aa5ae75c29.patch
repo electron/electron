@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@google.com>
+Date: Wed, 1 Jun 2022 11:22:42 -0400
+Subject: M102: Ignore eglBind/ReleaseTexImage calls for lost contexts.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+eglBindTexImage and eglReleaseTexImage no-op when no context is
+current. Extend this to lost contexts to match the behaviour of making
+a GL call on a lost context.
+
+This avoids potential unexpected bad accesses in the backends.
+
+Bug: chromium:1316578
+Change-Id: I7b309c297e0c803019720733dee2950abb4c4b5f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3683869
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Reviewed-by: Alexis Hétu <sugoi@google.com>
+Reviewed-by: Alexis Hétu <sugoi@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit bfab7e60a15dc6f72e34406d3f2a3996cd8d0be2)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3691180
+
+diff --git a/src/libANGLE/validationEGL.cpp b/src/libANGLE/validationEGL.cpp
+index 7d2d43afa2cacf4445c528209b1fba6c1c6485c4..49d92219af76cbc8049f5c29a60fba3b26459bd0 100644
+--- a/src/libANGLE/validationEGL.cpp
++++ b/src/libANGLE/validationEGL.cpp
+@@ -4762,7 +4762,7 @@ bool ValidateBindTexImage(const ValidationContext *val,
+     }
+ 
+     gl::Context *context = val->eglThread->getContext();
+-    if (context)
++    if (context && !context->isContextLost())
+     {
+         gl::TextureType type = egl_gl::EGLTextureTargetToTextureType(surface->getTextureTarget());
+         gl::Texture *textureObject = context->getTextureByType(type);
+diff --git a/src/libGLESv2/egl_stubs.cpp b/src/libGLESv2/egl_stubs.cpp
+index fa37ae68e8e87aefd111440463611f737665691b..0b9d155d0d74f5b6b60667243d03182cc8b4d442 100644
+--- a/src/libGLESv2/egl_stubs.cpp
++++ b/src/libGLESv2/egl_stubs.cpp
+@@ -61,7 +61,7 @@ EGLBoolean BindTexImage(Thread *thread, Display *display, Surface *eglSurface, E
+                          GetDisplayIfValid(display), EGL_FALSE);
+ 
+     gl::Context *context = thread->getContext();
+-    if (context)
++    if (context && !context->isContextLost())
+     {
+         gl::TextureType type =
+             egl_gl::EGLTextureTargetToTextureType(eglSurface->getTextureTarget());
+@@ -569,15 +569,18 @@ EGLBoolean ReleaseTexImage(Thread *thread, Display *display, Surface *eglSurface
+ {
+     ANGLE_EGL_TRY_RETURN(thread, display->prepareForCall(), "eglReleaseTexImage",
+                          GetDisplayIfValid(display), EGL_FALSE);
+-    gl::Texture *texture = eglSurface->getBoundTexture();
+-
+-    if (texture)
++    gl::Context *context = thread->getContext();
++    if (context && !context->isContextLost())
+     {
+-        ANGLE_EGL_TRY_RETURN(thread, eglSurface->releaseTexImage(thread->getContext(), buffer),
+-                             "eglReleaseTexImage", GetSurfaceIfValid(display, eglSurface),
+-                             EGL_FALSE);
+-    }
++        gl::Texture *texture = eglSurface->getBoundTexture();
+ 
++        if (texture)
++        {
++            ANGLE_EGL_TRY_RETURN(thread, eglSurface->releaseTexImage(thread->getContext(), buffer),
++                                 "eglReleaseTexImage", GetSurfaceIfValid(display, eglSurface),
++                                 EGL_FALSE);
++        }
++    }
+     thread->setSuccess();
+     return EGL_TRUE;
+ }
