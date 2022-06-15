@@ -483,7 +483,13 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
     return defaultResponse;
   }
 
-  const response = this._windowOpenHandler(details);
+  let response;
+  try {
+    response = this._windowOpenHandler(details);
+  } catch (err) {
+    event.preventDefault();
+    throw err;
+  }
 
   if (typeof response !== 'object') {
     event.preventDefault();
@@ -646,13 +652,7 @@ WebContents.prototype._init = function () {
         disposition
       };
 
-      let result;
-      try {
-        result = this._callWindowOpenHandler(event, details);
-      } catch (err) {
-        event.preventDefault();
-        throw err;
-      }
+      const result = this._callWindowOpenHandler(event, details);
 
       const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
@@ -685,13 +685,7 @@ WebContents.prototype._init = function () {
         postBody
       };
 
-      let result;
-      try {
-        result = this._callWindowOpenHandler(event, details);
-      } catch (err) {
-        event.preventDefault();
-        throw err;
-      }
+      const result = this._callWindowOpenHandler(event, details);
 
       windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
