@@ -1,0 +1,393 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Rudenko <alexrudenko@chromium.org>
+Date: Tue, 26 Apr 2022 05:53:56 +0000
+Subject: DevTools: store weak references to nodes in inspect_tools
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This CL changes how the configuration for persistent overlays is stored.
+Instead of trying to save a strong reference to a DOM node, we can
+store weak references instead. This requires using a HeapHashMap as
+vectors don't support weak reference elements.
+
+(cherry picked from commit 2e0a0b83e1340e948a27cdc319bea8f32849d414)
+
+Fixed: 1314310
+Change-Id: I27ce12730d7598bc84d01adf421923af9a53dc67
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3593092
+Reviewed-by: Danil Somsikov <dsv@chromium.org>
+Reviewed-by: Changhao Han <changhaohan@chromium.org>
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Commit-Queue: Alex Rudenko <alexrudenko@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#994866}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3604262
+Auto-Submit: Alex Rudenko <alexrudenko@chromium.org>
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5005@{#163}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+
+diff --git a/third_party/blink/renderer/core/inspector/inspect_tools.cc b/third_party/blink/renderer/core/inspector/inspect_tools.cc
+index b3c08bd77e792481ee7ce5754e48a0d429ef0595..6a43cc041e1adefcfca56dac86eb138c0b118127 100644
+--- a/third_party/blink/renderer/core/inspector/inspect_tools.cc
++++ b/third_party/blink/renderer/core/inspector/inspect_tools.cc
+@@ -477,14 +477,14 @@ bool PersistentTool::HideOnMouseMove() {
+ void PersistentTool::Draw(float scale) {
+   for (auto& entry : grid_node_highlights_) {
+     std::unique_ptr<protocol::Value> highlight =
+-        InspectorGridHighlight(entry.first.Get(), *(entry.second));
++        InspectorGridHighlight(entry.key, *(entry.value));
+     if (!highlight)
+       continue;
+     overlay_->EvaluateInOverlay("drawGridHighlight", std::move(highlight));
+   }
+   for (auto& entry : flex_container_configs_) {
+     std::unique_ptr<protocol::Value> highlight =
+-        InspectorFlexContainerHighlight(entry.first.Get(), *(entry.second));
++        InspectorFlexContainerHighlight(entry.key, *(entry.value));
+     if (!highlight)
+       continue;
+     overlay_->EvaluateInOverlay("drawFlexContainerHighlight",
+@@ -492,7 +492,7 @@ void PersistentTool::Draw(float scale) {
+   }
+   for (auto& entry : scroll_snap_configs_) {
+     std::unique_ptr<protocol::Value> highlight =
+-        InspectorScrollSnapHighlight(entry.first.Get(), *(entry.second));
++        InspectorScrollSnapHighlight(entry.key, *(entry.value));
+     if (!highlight)
+       continue;
+     overlay_->EvaluateInOverlay("drawScrollSnapHighlight",
+@@ -500,17 +500,15 @@ void PersistentTool::Draw(float scale) {
+   }
+   for (auto& entry : container_query_configs_) {
+     std::unique_ptr<protocol::Value> highlight =
+-        InspectorContainerQueryHighlight(entry.first.Get(), *(entry.second));
++        InspectorContainerQueryHighlight(entry.key, *(entry.value));
+     if (!highlight)
+       continue;
+     overlay_->EvaluateInOverlay("drawContainerQueryHighlight",
+                                 std::move(highlight));
+   }
+-  for (wtf_size_t i = 0; i < isolated_element_configs_.size(); ++i) {
+-    auto& entry = isolated_element_configs_.at(i);
++  for (auto& entry : isolated_element_configs_) {
+     std::unique_ptr<protocol::Value> highlight =
+-        InspectorIsolatedElementHighlight(entry.first.Get(), *(entry.second),
+-                                          i);
++        InspectorIsolatedElementHighlight(entry.key, *(entry.value));
+     if (!highlight)
+       continue;
+     overlay_->EvaluateInOverlay("drawIsolatedElementHighlight",
+@@ -548,9 +546,11 @@ void PersistentTool::Dispatch(const ScriptValue& message,
+ 
+   Element* element = nullptr;
+   if (highlight_type == "isolatedElement") {
+-    if (index < static_cast<int>(isolated_element_configs_.size()) &&
+-        index >= 0) {
+-      element = isolated_element_configs_.at(index).first.Get();
++    for (auto& entry : isolated_element_configs_) {
++      if (entry.value->highlight_index == index) {
++        element = entry.key;
++        break;
++      }
+     }
+   }
+ 
+@@ -571,7 +571,7 @@ PersistentTool::GetGridInspectorHighlightsAsJson() const {
+       protocol::ListValue::create();
+   for (auto& entry : grid_node_highlights_) {
+     std::unique_ptr<protocol::Value> highlight =
+-        InspectorGridHighlight(entry.first.Get(), *(entry.second));
++        InspectorGridHighlight(entry.key, *(entry.value));
+     if (!highlight)
+       continue;
+     highlights->pushValue(std::move(highlight));
+@@ -584,6 +584,15 @@ PersistentTool::GetGridInspectorHighlightsAsJson() const {
+   return result;
+ }
+ 
++void PersistentTool::Trace(Visitor* visitor) const {
++  InspectTool::Trace(visitor);
++  visitor->Trace(grid_node_highlights_);
++  visitor->Trace(flex_container_configs_);
++  visitor->Trace(scroll_snap_configs_);
++  visitor->Trace(container_query_configs_);
++  visitor->Trace(isolated_element_configs_);
++}
++
+ // SourceOrderTool -----------------------------------------------------------
+ 
+ SourceOrderTool::SourceOrderTool(
+diff --git a/third_party/blink/renderer/core/inspector/inspect_tools.h b/third_party/blink/renderer/core/inspector/inspect_tools.h
+index dd55eacf154da0895e04b6113d28e52085dcff6d..92abdca382bd8edd95714be6194eddc84bee7e06 100644
+--- a/third_party/blink/renderer/core/inspector/inspect_tools.h
++++ b/third_party/blink/renderer/core/inspector/inspect_tools.h
+@@ -145,23 +145,20 @@ class SourceOrderTool : public InspectTool {
+ };
+ 
+ // -----------------------------------------------------------------------------
+-
+-using GridConfigs = Vector<
+-    std::pair<Member<Node>, std::unique_ptr<InspectorGridHighlightConfig>>>;
++using GridConfigs = HeapHashMap<WeakMember<Node>,
++                                std::unique_ptr<InspectorGridHighlightConfig>>;
+ using FlexContainerConfigs =
+-    Vector<std::pair<Member<Node>,
+-                     std::unique_ptr<InspectorFlexContainerHighlightConfig>>>;
+-using ScrollSnapConfigs = Vector<
+-    std::pair<Member<Node>,
+-              std::unique_ptr<InspectorScrollSnapContainerHighlightConfig>>>;
+-
+-using ContainerQueryConfigs = Vector<std::pair<
+-    Member<Node>,
+-    std::unique_ptr<InspectorContainerQueryContainerHighlightConfig>>>;
+-
++    HeapHashMap<WeakMember<Node>,
++                std::unique_ptr<InspectorFlexContainerHighlightConfig>>;
++using ScrollSnapConfigs =
++    HeapHashMap<WeakMember<Node>,
++                std::unique_ptr<InspectorScrollSnapContainerHighlightConfig>>;
++using ContainerQueryConfigs = HeapHashMap<
++    WeakMember<Node>,
++    std::unique_ptr<InspectorContainerQueryContainerHighlightConfig>>;
+ using IsolatedElementConfigs =
+-    Vector<std::pair<Member<Element>,
+-                     std::unique_ptr<InspectorIsolationModeHighlightConfig>>>;
++    HeapHashMap<WeakMember<Element>,
++                std::unique_ptr<InspectorIsolationModeHighlightConfig>>;
+ 
+ class PersistentTool : public InspectTool {
+   using InspectTool::InspectTool;
+@@ -181,6 +178,8 @@ class PersistentTool : public InspectTool {
+   std::unique_ptr<protocol::DictionaryValue> GetGridInspectorHighlightsAsJson()
+       const;
+ 
++  void Trace(Visitor* visitor) const override;
++
+  private:
+   bool ForwardEventsToOverlay() override;
+   bool HideOnMouseMove() override;
+diff --git a/third_party/blink/renderer/core/inspector/inspector_highlight.cc b/third_party/blink/renderer/core/inspector/inspector_highlight.cc
+index 3ad3081f4f6143c1b38fa1ffc5892eb810344d93..1abb20541977adcece43f7e61db8d34f5170e6c6 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_highlight.cc
++++ b/third_party/blink/renderer/core/inspector/inspector_highlight.cc
+@@ -2415,8 +2415,7 @@ std::unique_ptr<protocol::DictionaryValue> InspectorContainerQueryHighlight(
+ 
+ std::unique_ptr<protocol::DictionaryValue> InspectorIsolatedElementHighlight(
+     Element* element,
+-    const InspectorIsolationModeHighlightConfig& config,
+-    int highlight_index) {
++    const InspectorIsolationModeHighlightConfig& config) {
+   LocalFrameView* frame_view = element->GetDocument().View();
+   if (!frame_view)
+     return nullptr;
+@@ -2428,7 +2427,7 @@ std::unique_ptr<protocol::DictionaryValue> InspectorIsolatedElementHighlight(
+   if (!isolated_element_info)
+     return nullptr;
+ 
+-  isolated_element_info->setInteger("highlightIndex", highlight_index);
++  isolated_element_info->setInteger("highlightIndex", config.highlight_index);
+   return isolated_element_info;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/inspector/inspector_highlight.h b/third_party/blink/renderer/core/inspector/inspector_highlight.h
+index ba4e3f9487b05140aef0068bbafc209a2047235b..4c6423063a4f3ee4ace988fd4e45b41592308c03 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_highlight.h
++++ b/third_party/blink/renderer/core/inspector/inspector_highlight.h
+@@ -145,6 +145,7 @@ struct CORE_EXPORT InspectorIsolationModeHighlightConfig {
+   Color resizer_color;
+   Color resizer_handle_color;
+   Color mask_color;
++  int highlight_index = 0;
+ };
+ 
+ struct CORE_EXPORT InspectorHighlightConfig {
+@@ -300,8 +301,7 @@ std::unique_ptr<protocol::DictionaryValue> InspectorContainerQueryHighlight(
+ 
+ std::unique_ptr<protocol::DictionaryValue> InspectorIsolatedElementHighlight(
+     Element* element,
+-    const InspectorIsolationModeHighlightConfig& config,
+-    int highlight_index);
++    const InspectorIsolationModeHighlightConfig& config);
+ 
+ // CORE_EXPORT is required to make these functions available for unit tests.
+ std::unique_ptr<protocol::DictionaryValue> CORE_EXPORT
+diff --git a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
+index 6bdf410f2d7606ebc946dba903ed6094d8c7cfb4..17ba8a9fc32d6d8d4573aec0d352889dce8fe15e 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
++++ b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
+@@ -707,7 +707,7 @@ Response InspectorOverlayAgent::setShowGridOverlays(
+         MakeGarbageCollected<PersistentTool>(this, GetFrontend());
+   }
+ 
+-  Vector<std::pair<Member<Node>, std::unique_ptr<InspectorGridHighlightConfig>>>
++  HeapHashMap<WeakMember<Node>, std::unique_ptr<InspectorGridHighlightConfig>>
+       configs;
+   for (std::unique_ptr<protocol::Overlay::GridNodeHighlightConfig>& config :
+        *grid_node_highlight_configs) {
+@@ -715,9 +715,8 @@ Response InspectorOverlayAgent::setShowGridOverlays(
+     Response response = dom_agent_->AssertNode(config->getNodeId(), node);
+     if (!response.IsSuccess())
+       return response;
+-    configs.push_back(
+-        std::make_pair(node, InspectorOverlayAgent::ToGridHighlightConfig(
+-                                 config->getGridHighlightConfig())));
++    configs.insert(node, InspectorOverlayAgent::ToGridHighlightConfig(
++                             config->getGridHighlightConfig()));
+   }
+ 
+   persistent_tool_->SetGridConfigs(std::move(configs));
+@@ -735,8 +734,8 @@ Response InspectorOverlayAgent::setShowFlexOverlays(
+         MakeGarbageCollected<PersistentTool>(this, GetFrontend());
+   }
+ 
+-  Vector<std::pair<Member<Node>,
+-                   std::unique_ptr<InspectorFlexContainerHighlightConfig>>>
++  HeapHashMap<WeakMember<Node>,
++              std::unique_ptr<InspectorFlexContainerHighlightConfig>>
+       configs;
+ 
+   for (std::unique_ptr<protocol::Overlay::FlexNodeHighlightConfig>& config :
+@@ -745,9 +744,8 @@ Response InspectorOverlayAgent::setShowFlexOverlays(
+     Response response = dom_agent_->AssertNode(config->getNodeId(), node);
+     if (!response.IsSuccess())
+       return response;
+-    configs.push_back(std::make_pair(
+-        node, InspectorOverlayAgent::ToFlexContainerHighlightConfig(
+-                  config->getFlexContainerHighlightConfig())));
++    configs.insert(node, InspectorOverlayAgent::ToFlexContainerHighlightConfig(
++                             config->getFlexContainerHighlightConfig()));
+   }
+ 
+   persistent_tool_->SetFlexContainerConfigs(std::move(configs));
+@@ -766,9 +764,8 @@ Response InspectorOverlayAgent::setShowScrollSnapOverlays(
+         MakeGarbageCollected<PersistentTool>(this, GetFrontend());
+   }
+ 
+-  Vector<
+-      std::pair<Member<Node>,
+-                std::unique_ptr<InspectorScrollSnapContainerHighlightConfig>>>
++  HeapHashMap<WeakMember<Node>,
++              std::unique_ptr<InspectorScrollSnapContainerHighlightConfig>>
+       configs;
+ 
+   for (std::unique_ptr<protocol::Overlay::ScrollSnapHighlightConfig>& config :
+@@ -777,9 +774,9 @@ Response InspectorOverlayAgent::setShowScrollSnapOverlays(
+     Response response = dom_agent_->AssertNode(config->getNodeId(), node);
+     if (!response.IsSuccess())
+       return response;
+-    configs.push_back(std::make_pair(
+-        node, InspectorOverlayAgent::ToScrollSnapContainerHighlightConfig(
+-                  config->getScrollSnapContainerHighlightConfig())));
++    configs.insert(node,
++                   InspectorOverlayAgent::ToScrollSnapContainerHighlightConfig(
++                       config->getScrollSnapContainerHighlightConfig()));
+   }
+ 
+   persistent_tool_->SetScrollSnapConfigs(std::move(configs));
+@@ -798,9 +795,8 @@ Response InspectorOverlayAgent::setShowContainerQueryOverlays(
+         MakeGarbageCollected<PersistentTool>(this, GetFrontend());
+   }
+ 
+-  Vector<std::pair<
+-      Member<Node>,
+-      std::unique_ptr<InspectorContainerQueryContainerHighlightConfig>>>
++  HeapHashMap<WeakMember<Node>,
++              std::unique_ptr<InspectorContainerQueryContainerHighlightConfig>>
+       configs;
+ 
+   for (std::unique_ptr<protocol::Overlay::ContainerQueryHighlightConfig>&
+@@ -809,9 +805,9 @@ Response InspectorOverlayAgent::setShowContainerQueryOverlays(
+     Response response = dom_agent_->AssertNode(config->getNodeId(), node);
+     if (!response.IsSuccess())
+       return response;
+-    configs.push_back(std::make_pair(
++    configs.insert(
+         node, InspectorOverlayAgent::ToContainerQueryContainerHighlightConfig(
+-                  config->getContainerQueryContainerHighlightConfig())));
++                  config->getContainerQueryContainerHighlightConfig()));
+   }
+ 
+   persistent_tool_->SetContainerQueryConfigs(std::move(configs));
+@@ -830,10 +826,11 @@ Response InspectorOverlayAgent::setShowIsolatedElements(
+         MakeGarbageCollected<PersistentTool>(this, GetFrontend());
+   }
+ 
+-  Vector<std::pair<Member<Element>,
+-                   std::unique_ptr<InspectorIsolationModeHighlightConfig>>>
++  HeapHashMap<WeakMember<Element>,
++              std::unique_ptr<InspectorIsolationModeHighlightConfig>>
+       configs;
+ 
++  int idx = 0;
+   for (std::unique_ptr<protocol::Overlay::IsolatedElementHighlightConfig>&
+            config : *isolated_element_highlight_configs) {
+     Element* element = nullptr;
+@@ -841,9 +838,10 @@ Response InspectorOverlayAgent::setShowIsolatedElements(
+     Response response = dom_agent_->AssertElement(config->getNodeId(), element);
+     if (!response.IsSuccess())
+       return response;
+-    configs.push_back(std::make_pair(
+-        element, InspectorOverlayAgent::ToIsolationModeHighlightConfig(
+-                     config->getIsolationModeHighlightConfig())));
++    configs.insert(element,
++                   InspectorOverlayAgent::ToIsolationModeHighlightConfig(
++                       config->getIsolationModeHighlightConfig(), idx));
++    idx++;
+   }
+ 
+   persistent_tool_->SetIsolatedElementConfigs(std::move(configs));
+@@ -947,16 +945,16 @@ Response InspectorOverlayAgent::getGridHighlightObjectsForTest(
+     std::unique_ptr<protocol::Array<int>> node_ids,
+     std::unique_ptr<protocol::DictionaryValue>* highlights) {
+   PersistentTool persistent_tool(this, GetFrontend());
+-  Vector<std::pair<Member<Node>, std::unique_ptr<InspectorGridHighlightConfig>>>
++
++  HeapHashMap<WeakMember<Node>, std::unique_ptr<InspectorGridHighlightConfig>>
+       configs;
+   for (const int node_id : *node_ids) {
+     Node* node = nullptr;
+     Response response = dom_agent_->AssertNode(node_id, node);
+     if (!response.IsSuccess())
+       return response;
+-    configs.push_back(
+-        std::make_pair(node, std::make_unique<InspectorGridHighlightConfig>(
+-                                 InspectorHighlight::DefaultGridConfig())));
++    configs.insert(node, std::make_unique<InspectorGridHighlightConfig>(
++                             InspectorHighlight::DefaultGridConfig()));
+   }
+   persistent_tool.SetGridConfigs(std::move(configs));
+   *highlights = persistent_tool.GetGridInspectorHighlightsAsJson();
+@@ -1748,7 +1746,8 @@ InspectorOverlayAgent::ToFlexItemHighlightConfig(
+ // static
+ std::unique_ptr<InspectorIsolationModeHighlightConfig>
+ InspectorOverlayAgent::ToIsolationModeHighlightConfig(
+-    protocol::Overlay::IsolationModeHighlightConfig* config) {
++    protocol::Overlay::IsolationModeHighlightConfig* config,
++    int idx) {
+   if (!config) {
+     return nullptr;
+   }
+@@ -1760,6 +1759,7 @@ InspectorOverlayAgent::ToIsolationModeHighlightConfig(
+       InspectorDOMAgent::ParseColor(config->getResizerHandleColor(nullptr));
+   highlight_config->mask_color =
+       InspectorDOMAgent::ParseColor(config->getMaskColor(nullptr));
++  highlight_config->highlight_index = idx;
+ 
+   return highlight_config;
+ }
+diff --git a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
+index 00226ea419fbd6c8004635c5adf205e8e1bbbd4e..7cb62900eedcb7c6de9666a92b701a57ec31f52d 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
++++ b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
+@@ -161,7 +161,8 @@ class CORE_EXPORT InspectorOverlayAgent final
+   ToFlexItemHighlightConfig(protocol::Overlay::FlexItemHighlightConfig*);
+   static std::unique_ptr<InspectorIsolationModeHighlightConfig>
+   ToIsolationModeHighlightConfig(
+-      protocol::Overlay::IsolationModeHighlightConfig*);
++      protocol::Overlay::IsolationModeHighlightConfig*,
++      int highlight_index);
+   static absl::optional<LineStyle> ToLineStyle(protocol::Overlay::LineStyle*);
+   static absl::optional<BoxStyle> ToBoxStyle(protocol::Overlay::BoxStyle*);
+   static std::unique_ptr<InspectorHighlightConfig> ToHighlightConfig(
