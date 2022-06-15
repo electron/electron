@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 4f56a1d27b9eb228584536b91eb518aa3b9f9517..65f3f3d7df55aa0397ead192e4c52b5256aafa28 100644
+index 651fb0c56655753fcb3bcbb00b28d9bfea99962f..4bdcaa18377e930be967dd2deb2ebe8fc7beb965 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -7114,6 +7114,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 4f56a1d27b9eb228584536b91eb518aa3b9f9517..65f3f3d7df55aa0397ead192e4c52b52
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e712e65247a1ed50ac893290f477325a305ea569..c71620750611d39c204c95c385dfa2a3726dfc1d 100644
+index f5bfc3537aac75e8839c45cfadc2c5e6c8dea688..a88875c1502629364cc05159ea3604081dd1cc8f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3953,6 +3953,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -53,10 +53,10 @@ index e712e65247a1ed50ac893290f477325a305ea569..c71620750611d39c204c95c385dfa2a3
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 9c3a03faeee19f6f0a250680db36906ee64bf55a..0450700d02c74e047fa5124aa43b9f75b869917d 100644
+index 3aafb44665ed475084355144663a3c7395a009d5..d32b572673e24f14c60b27e8a1fab683b7aa3e8e 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -566,6 +566,10 @@ struct CreateNewWindowParams {
+@@ -575,6 +575,10 @@ struct CreateNewWindowParams {
  
    // Governs how downloads are handled if `target_url` results in a download.
    blink.mojom.NavigationDownloadPolicy download_policy;
@@ -150,18 +150,10 @@ index 348dcde05d71e7d16e4c7bb1d8d9f8718070e669..5a9cc64d6e0d9d01f5dc133c7fcab341
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 03b637c4d3a68a2bff5a4e06f421f23f97f40911..6235fd626a377643851dbb98d4d089e5a59366db 100644
+index 9b42426f878a741290c89fb6b641b6c44423aa6f..d0c99c26116f6affc801ac59657b89c2ae159a0c 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -32,6 +32,7 @@
- #include "third_party/blink/public/mojom/page/page.mojom.h"
- #include "third_party/blink/public/platform/modules/video_capture/web_video_capture_impl_manager.h"
- #include "third_party/blink/public/platform/url_conversion.h"
-+#include "third_party/blink/public/platform/web_url_request_util.h"
- #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
- #include "third_party/blink/public/web/web_frame_widget.h"
- #include "third_party/blink/public/web/web_local_frame.h"
-@@ -302,6 +303,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -308,6 +308,10 @@ WebView* RenderViewImpl::CreateView(
        /*openee_can_access_opener_origin=*/true, !creator->IsAllowedToDownload(),
        creator->IsAdSubframe());
  

@@ -75,7 +75,7 @@ index 24e53fa62c2c4a11494ad3d43f0c5a806930fcdd..9b691baa6cc90cc3f9ada307c43f44c4
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index 39fb479eba509f7ba1528cafecd1c6b21f3b0e76..a28b88d078560f05fa295f29dcf8b1865839285c 100644
+index 7159bea91a25700f0cb36c48cab62fe2d616b3bd..9bcc5ae7e870c27c3533534c06daa890de5a4816 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
 @@ -170,6 +170,7 @@ bool PlatformCrashpadInitialization(
@@ -97,9 +97,9 @@ index 39fb479eba509f7ba1528cafecd1c6b21f3b0e76..a28b88d078560f05fa295f29dcf8b186
 +      arguments.push_back("--no-upload-gzip");
 +    }
 +
-     bool result =
-         client.StartHandler(handler_path, *database_path, metrics_path, url,
-                             annotations, arguments, false, false);
+     CHECK(client.StartHandler(handler_path, *database_path, metrics_path, url,
+                               annotations, arguments, false, false));
+   } else {
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
 index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a59bf46b96 100644
 --- a/components/crash/core/app/crashpad_mac.mm

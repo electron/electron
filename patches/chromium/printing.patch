@@ -500,7 +500,7 @@ index f2c17a8fecc36ea18de71598b582e206661763c5..599b34690da042b57fcd78d0c0557d18
    // Tells the browser that there are invalid printer settings.
    ShowInvalidPrinterSettingsError();
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 1664ac8233e74cadcf19ebc53e41cef37d13019c..aa341dd9a6f2b6e2ebb6e8048d2d9a3e5c3e89ea 100644
+index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804fe5039b8 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -42,6 +42,7 @@
