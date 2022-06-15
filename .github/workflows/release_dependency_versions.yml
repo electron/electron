@@ -10,7 +10,7 @@ env:
 jobs:
   check_tag:
     runs-on: ubuntu-latest
-    id: check_tag
+    steps:
     - uses: actions/checkout@v3
     - name: Check Tag
       run: |
