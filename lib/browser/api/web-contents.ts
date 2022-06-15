@@ -482,6 +482,7 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   if (!this._windowOpenHandler) {
     return defaultResponse;
   }
+
   const response = this._windowOpenHandler(details);
 
   if (typeof response !== 'object') {
@@ -644,7 +645,15 @@ WebContents.prototype._init = function () {
         postBody,
         disposition
       };
-      const result = this._callWindowOpenHandler(event, details);
+
+      let result;
+      try {
+        result = this._callWindowOpenHandler(event, details);
+      } catch (err) {
+        event.preventDefault();
+        throw err;
+      }
+
       const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
@@ -675,7 +684,15 @@ WebContents.prototype._init = function () {
         referrer,
         postBody
       };
-      const result = this._callWindowOpenHandler(event, details);
+
+      let result;
+      try {
+        result = this._callWindowOpenHandler(event, details);
+      } catch (err) {
+        event.preventDefault();
+        throw err;
+      }
+
       windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {

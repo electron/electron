@@ -558,6 +558,18 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('page-title-updated event', () => {
+    it('emits when title is set', async () => {
+      loadWebView(webview, {
+        src: `file://${fixtures}/pages/a.html`
+      });
+      const { title, explicitSet } = await waitForEvent(webview, 'page-title-updated');
+
+      expect(title).to.equal('test');
+      expect(explicitSet).to.be.true();
+    });
+  });
+
   describe('page-title-set event', () => {
     it('emits when title is set', async () => {
       loadWebView(webview, {
