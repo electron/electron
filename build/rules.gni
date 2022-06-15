@@ -51,7 +51,7 @@ template("compile_ib_files") {
 # Template to compile and package Mac XIB files as bundle data.
 # Arguments
 #     sources:
-#         list of string, sources to comiple
+#         list of string, sources to compile
 #     output_path:
 #         (optional) string, the path to use for the outputs list in the
 #         bundle_data step. If unspecified, defaults to bundle_resources_dir.
