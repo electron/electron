@@ -108,8 +108,6 @@ declare namespace NodeJS {
     isWebView: boolean;
     hiddenPage: boolean;
     nodeIntegration: boolean;
-    preload: string
-    preloadScripts: string[];
     webviewTag: boolean;
   }
 
