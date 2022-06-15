@@ -244,6 +244,8 @@ step-depot-tools-get: &step-depot-tools-get
       else
         sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
       fi
+      # Run update_depot_tools to make sure ninja gets downloaded
+      depot_tools/update_depot_tools
 
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
   run:
