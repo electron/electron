@@ -3263,7 +3263,15 @@ describe('BrowserWindow module', () => {
         });
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
-          overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nodeIntegrationInSubFrames: true } }
+          overrideBrowserWindowOptions: {
+            show: false,
+            webPreferences: {
+              contextIsolation: false,
+              webviewTag: true,
+              nodeIntegrationInSubFrames: true,
+              preload
+            }
+          }
         }));
 
         const webviewLoaded = emittedOnce(ipcMain, 'webview-loaded');
