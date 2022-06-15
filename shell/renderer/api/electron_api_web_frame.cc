@@ -509,22 +509,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     } else if (pref_name == options::kHiddenPage) {
       // NOTE: hiddenPage is internal-only.
       return gin::ConvertToV8(isolate, prefs.hidden_page);
-    } else if (pref_name == options::kOffscreen) {
-      return gin::ConvertToV8(isolate, prefs.offscreen);
     } else if (pref_name == options::kNodeIntegration) {
       return gin::ConvertToV8(isolate, prefs.node_integration);
-    } else if (pref_name == options::kNodeIntegrationInWorker) {
-      return gin::ConvertToV8(isolate, prefs.node_integration_in_worker);
-    } else if (pref_name == options::kNodeIntegrationInSubFrames) {
-      return gin::ConvertToV8(isolate, true);
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-    } else if (pref_name == options::kSpellcheck) {
-      return gin::ConvertToV8(isolate, prefs.enable_spellcheck);
-#endif
-    } else if (pref_name == options::kPlugins) {
-      return gin::ConvertToV8(isolate, prefs.enable_plugins);
-    } else if (pref_name == options::kEnableWebSQL) {
-      return gin::ConvertToV8(isolate, prefs.enable_websql);
     } else if (pref_name == options::kWebviewTag) {
       return gin::ConvertToV8(isolate, prefs.webview_tag);
     }
