@@ -1517,7 +1517,7 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
     NativeWindow::NotifyWindowBlur();
   }
 
-  // Hide menu bar when window is blured.
+  // Hide menu bar when window is blurred.
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
     SetMenuBarVisibility(false);
 

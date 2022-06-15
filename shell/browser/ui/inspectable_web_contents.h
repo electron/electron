@@ -85,7 +85,7 @@ class InspectableWebContents
   void UpdateDevToolsZoomLevel(double level);
 
  private:
-  // DevToolsEmbedderMessageDispacher::Delegate
+  // DevToolsEmbedderMessageDispatcher::Delegate
   void ActivateWindow() override;
   void CloseWindow() override;
   void LoadCompleted() override;

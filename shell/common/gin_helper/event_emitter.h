@@ -40,7 +40,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   using Base = gin_helper::Wrappable<T>;
   using ValueArray = std::vector<v8::Local<v8::Value>>;
 
-  // Make the convinient methods visible:
+  // Make the convenient methods visible:
   // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
   v8::Isolate* isolate() const { return Base::isolate(); }
   v8::Local<v8::Object> GetWrapper() const { return Base::GetWrapper(); }
