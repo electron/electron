@@ -4,7 +4,7 @@ import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/m
 import * as url from 'url';
 import * as path from 'path';
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
-import { parseFeatures } from '@electron/internal/browser/parse-features-string';
+import { parseFeatures, parseCommaSeparatedKeyValue } from '@electron/internal/browser/parse-features-string';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
@@ -641,6 +641,7 @@ WebContents.prototype._init = function () {
         url,
         frameName,
         features: rawFeatures,
+        parsedFeatures: parseCommaSeparatedKeyValue(rawFeatures),
         referrer,
         postBody,
         disposition
@@ -680,6 +681,7 @@ WebContents.prototype._init = function () {
         url,
         frameName,
         features: rawFeatures,
+        parsedFeatures: parseCommaSeparatedKeyValue(rawFeatures),
         disposition,
         referrer,
         postBody

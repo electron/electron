@@ -197,7 +197,7 @@ describe('webContents.setWindowOpenHandler', () => {
 
   it('fires handler with correct params', async () => {
     const testFrameName = 'test-frame-name';
-    const testFeatures = 'top=10&left=10&something-unknown&show=no';
+    const testFeatures = 'top=10,left=10,something-unknown,show=no';
     const testUrl = 'app://does-not-exist/';
     const details = await new Promise<Electron.HandlerDetails>(resolve => {
       browserWindow.webContents.setWindowOpenHandler((details) => {
@@ -207,10 +207,16 @@ describe('webContents.setWindowOpenHandler', () => {
 
       browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
     });
-    const { url, frameName, features, disposition, referrer } = details;
+    const { url, frameName, features, parsedFeatures, disposition, referrer } = details;
     expect(url).to.equal(testUrl);
     expect(frameName).to.equal(testFrameName);
     expect(features).to.equal(testFeatures);
+    expect(parsedFeatures).to.deep.equal({
+      left: 10,
+      top: 10,
+      'something-unknown': true,
+      show: false
+    });
     expect(disposition).to.equal('new-window');
     expect(referrer).to.deep.equal({
       policy: 'strict-origin-when-cross-origin',
