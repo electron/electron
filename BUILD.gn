@@ -132,7 +132,7 @@ config("electron_lib_config") {
   include_dirs = [ "." ]
 }
 
-# We geneate the definitions twice here, once in //electron/electron.d.ts
+# We generate the definitions twice here, once in //electron/electron.d.ts
 # and once in $target_gen_dir
 # The one in $target_gen_dir is used for the actual TSC build later one
 # and the one in //electron/electron.d.ts is used by your IDE (vscode)
