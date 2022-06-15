@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Thu, 28 Apr 2022 00:44:28 +0000
+Subject: Introduce isLowEnergyDevice() for safely downward static_cast from
+ BluetoothDeviceMac to BluetoothLowEnergyDeviceMac
+
+device/bluetooth/bluetooth_adapter_mac.mm has two non safely downward static_cast BluetoothDevice to BluetoothLowEnergyDeviceMac
+
+To avoid it, we introduce isLowEnergyDevice() to BluetoothDeviceMac so we could identify LE bluetooth device from classic bluetooth device then safely cast it downward.
+
+(cherry picked from commit 2582158fc555edee390a050a64c1b89994a6b349)
+
+Bug: 1318610
+Change-Id: Iaf082fc2c40270237bbc0b000b80faa7f94b1026
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3601727
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Alvin Ji <alvinji@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#995419}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3606585
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5005@{#217}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+
+diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
+index 902e77ce90a60c835a9a324decf3d0dd094f1c85..947dec239a51d3965de69d99e509931f27811c33 100644
+--- a/device/bluetooth/bluetooth_adapter_mac.mm
++++ b/device/bluetooth/bluetooth_adapter_mac.mm
+@@ -764,6 +764,11 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+     DVLOG(1)
+         << "Central no longer powered on. Notifying of device disconnection.";
+     for (BluetoothDevice* device : GetDevices()) {
++      // GetDevices() returns instances of BluetoothClassicDeviceMac and
++      // BluetoothLowEnergyDeviceMac. The DidDisconnectPeripheral() method is
++      // only available on BluetoothLowEnergyDeviceMac.
++      if (!static_cast<BluetoothDeviceMac*>(device)->IsLowEnergyDevice())
++        continue;
+       BluetoothLowEnergyDeviceMac* device_mac =
+           static_cast<BluetoothLowEnergyDeviceMac*>(device);
+       if (device_mac->IsGattConnected()) {
+@@ -901,9 +906,16 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+       BluetoothLowEnergyDeviceMac::GetPeripheralHashAddress(peripheral);
+   auto iter = devices_.find(device_address);
+   if (iter == devices_.end()) {
+-    return nil;
+-  }
+-  return static_cast<BluetoothLowEnergyDeviceMac*>(iter->second.get());
++    return nullptr;
++  }
++  // device_mac can be BluetoothClassicDeviceMac* or
++  // BluetoothLowEnergyDeviceMac* To return valid BluetoothLowEnergyDeviceMac*
++  // we need to first check with IsLowEnergyDevice()
++  BluetoothDeviceMac* device_mac =
++      static_cast<BluetoothDeviceMac*>(iter->second.get());
++  return device_mac->IsLowEnergyDevice()
++             ? static_cast<BluetoothLowEnergyDeviceMac*>(device_mac)
++             : nullptr;
+ }
+ 
+ bool BluetoothAdapterMac::DoesCollideWithKnownDevice(
+diff --git a/device/bluetooth/bluetooth_classic_device_mac.h b/device/bluetooth/bluetooth_classic_device_mac.h
+index b11dbbdec75ca276c6e9df50a00e4e3a97d5be8c..a7deb96690e2b64ed82ede5ade5591935ec0f308 100644
+--- a/device/bluetooth/bluetooth_classic_device_mac.h
++++ b/device/bluetooth/bluetooth_classic_device_mac.h
+@@ -82,6 +82,7 @@ class BluetoothClassicDeviceMac : public BluetoothDeviceMac {
+   // Returns the Bluetooth address for the |device|. The returned address has a
+   // normalized format (see below).
+   static std::string GetDeviceAddress(IOBluetoothDevice* device);
++  bool IsLowEnergyDevice() override;
+ 
+  protected:
+   // BluetoothDevice override
+diff --git a/device/bluetooth/bluetooth_classic_device_mac.mm b/device/bluetooth/bluetooth_classic_device_mac.mm
+index 3794ce8d808fe611f73d76177f0eb6890fc038c2..e98d27462abdfe080129026c58cf74fd1807914e 100644
+--- a/device/bluetooth/bluetooth_classic_device_mac.mm
++++ b/device/bluetooth/bluetooth_classic_device_mac.mm
+@@ -296,4 +296,8 @@ BluetoothUUID ExtractUuid(IOBluetoothSDPDataElement* service_class_data) {
+       base::SysNSStringToUTF8([device addressString]));
+ }
+ 
++bool BluetoothClassicDeviceMac::IsLowEnergyDevice() {
++  return false;
++}
++
+ }  // namespace device
+diff --git a/device/bluetooth/bluetooth_device_mac.h b/device/bluetooth/bluetooth_device_mac.h
+index 10245db6516b08a8e50e6637011a3a960440625c..0213e20aee170aae0a4b73e93f47c418110ef289 100644
+--- a/device/bluetooth/bluetooth_device_mac.h
++++ b/device/bluetooth/bluetooth_device_mac.h
+@@ -30,6 +30,7 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothDeviceMac : public BluetoothDevice {
+       BluetoothGattService::GattErrorCode error_code);
+   static BluetoothGattService::GattErrorCode GetGattErrorCodeFromNSError(
+       NSError* error);
++  virtual bool IsLowEnergyDevice() = 0;
+ 
+  protected:
+   BluetoothDeviceMac(BluetoothAdapterMac* adapter);
+diff --git a/device/bluetooth/bluetooth_low_energy_device_mac.h b/device/bluetooth/bluetooth_low_energy_device_mac.h
+index 75988caca296d7f6d766a35f60f2ee1d6cec2246..05d3d514039df5db84d311471d58c2005b3db08f 100644
+--- a/device/bluetooth/bluetooth_low_energy_device_mac.h
++++ b/device/bluetooth/bluetooth_low_energy_device_mac.h
+@@ -83,6 +83,7 @@ class DEVICE_BLUETOOTH_EXPORT BluetoothLowEnergyDeviceMac
+       const device::BluetoothUUID& uuid,
+       ConnectToServiceCallback callback,
+       ConnectToServiceErrorCallback error_callback) override;
++  bool IsLowEnergyDevice() override;
+ 
+  protected:
+   // BluetoothDevice override.
+diff --git a/device/bluetooth/bluetooth_low_energy_device_mac.mm b/device/bluetooth/bluetooth_low_energy_device_mac.mm
+index 9a89728b0fc47cd7ca6e20d2ffbe7483010cbe39..73b1bee8e64664bdc98e45869accdf0ade2250b0 100644
+--- a/device/bluetooth/bluetooth_low_energy_device_mac.mm
++++ b/device/bluetooth/bluetooth_low_energy_device_mac.mm
+@@ -207,6 +207,10 @@ @interface CBPeripheral (HighSierraSDK)
+   NOTIMPLEMENTED();
+ }
+ 
++bool BluetoothLowEnergyDeviceMac::IsLowEnergyDevice() {
++  return true;
++}
++
+ void BluetoothLowEnergyDeviceMac::CreateGattConnectionImpl(
+     absl::optional<BluetoothUUID> serivce_uuid) {
+   if (!IsGattConnected()) {
