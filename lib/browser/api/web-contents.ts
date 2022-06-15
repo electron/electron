@@ -474,7 +474,9 @@ WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electr
   this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean} {
+WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, url: string, frameName: string,
+  disposition: Electron.HandlerDetails['disposition'], features: string, referrer: Electron.Referrer, postData: LoadURLOptions['postData']
+): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean} {
   const defaultResponse = {
     browserWindowConstructorOptions: null,
     outlivesOpener: false
@@ -483,7 +485,12 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
     return defaultResponse;
   }
 
-  const response = this._windowOpenHandler(details);
+  const postBody = postData ? {
+    data: postData,
+    ...parseContentTypeFormat(postData)
+  } : undefined;
+
+  const response = this._windowOpenHandler({ url, frameName, features, disposition, referrer, postBody });
 
   if (typeof response !== 'object') {
     event.preventDefault();
@@ -633,28 +640,14 @@ WebContents.prototype._init = function () {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: ElectronInternal.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
       rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
-      const details: Electron.HandlerDetails = {
-        url,
-        frameName,
-        features: rawFeatures,
-        referrer,
-        postBody,
-        disposition
-      };
-
       let result;
       try {
-        result = this._callWindowOpenHandler(event, details);
+        result = this._callWindowOpenHandler(event, url, frameName, disposition, rawFeatures, referrer, postData);
       } catch (err) {
         event.preventDefault();
         throw err;
       }
 
-      const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
           event,
@@ -662,8 +655,12 @@ WebContents.prototype._init = function () {
           disposition,
           referrer,
           postData,
-          overrideBrowserWindowOptions: options || {},
-          windowOpenArgs: details,
+          overrideBrowserWindowOptions: result.browserWindowConstructorOptions || {},
+          windowOpenArgs: {
+            url,
+            frameName,
+            features: rawFeatures
+          },
           outlivesOpener: result.outlivesOpener
         });
       }
@@ -672,22 +669,9 @@ WebContents.prototype._init = function () {
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
     this.on('-will-add-new-contents' as any, (event: ElectronInternal.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
-      const details: Electron.HandlerDetails = {
-        url,
-        frameName,
-        features: rawFeatures,
-        disposition,
-        referrer,
-        postBody
-      };
-
       let result;
       try {
-        result = this._callWindowOpenHandler(event, details);
+        result = this._callWindowOpenHandler(event, url, frameName, disposition, rawFeatures, referrer, postData);
       } catch (err) {
         event.preventDefault();
         throw err;
