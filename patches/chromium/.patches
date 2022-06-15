@@ -121,5 +121,7 @@ cherry-pick-6b66a45021a0.patch
 fix_xkb_keysym_reverse_look_up_for_lacros.patch
 custom_protocols_plzserviceworker.patch
 pa_support_16kb_pagesize_on_linux_arm64.patch
+cherry-pick-f1504440487f.patch
 cherry-pick-21139756239b.patch
+cherry-pick-919b1ffe1fe7.patch
 cherry-pick-f1dd785e021e.patch
