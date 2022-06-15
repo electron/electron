@@ -11,11 +11,16 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/lazy_instance.h"
+#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/stl_util.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
 #include "base/threading/thread_local.h"
 #include "base/threading/thread_restrictions.h"
+#include "crypto/secure_hash.h"
+#include "crypto/sha2.h"
 #include "shell/common/asar/archive.h"
 
 namespace asar {
@@ -66,7 +71,7 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
   // if we can create it, return it
   auto archive = std::make_shared<Archive>(path);
   if (archive->Init()) {
-    base::TryEmplace(map, lower, path, archive);
+    map.try_emplace(lower, path, archive);
     return archive;
   }
 
@@ -130,9 +135,38 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return false;
 
   contents->resize(info.size);
-  return static_cast<int>(info.size) ==
-         src.Read(info.offset, const_cast<char*>(contents->data()),
-                  contents->size());
+  if (static_cast<int>(info.size) !=
+      src.Read(info.offset, const_cast<char*>(contents->data()),
+               contents->size())) {
+    return false;
+  }
+
+  if (info.integrity.has_value()) {
+    ValidateIntegrityOrDie(contents->data(), contents->size(),
+                           info.integrity.value());
+  }
+
+  return true;
+}
+
+void ValidateIntegrityOrDie(const char* data,
+                            size_t size,
+                            const IntegrityPayload& integrity) {
+  if (integrity.algorithm == HashAlgorithm::SHA256) {
+    uint8_t hash[crypto::kSHA256Length];
+    auto hasher = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
+    hasher->Update(data, size);
+    hasher->Finish(hash, sizeof(hash));
+    const std::string hex_hash =
+        base::ToLowerASCII(base::HexEncode(hash, sizeof(hash)));
+
+    if (integrity.hash != hex_hash) {
+      LOG(FATAL) << "Integrity check failed for asar archive ("
+                 << integrity.hash << " vs " << hex_hash << ")";
+    }
+  } else {
+    LOG(FATAL) << "Unsupported hashing algorithm in ValidateIntegrityOrDie";
+  }
 }
 
 }  // namespace asar

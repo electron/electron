@@ -6,7 +6,7 @@ import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain } from 'electron/mai
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
-import { waitUntil } from './spec-helpers';
+import { ifit, waitUntil } from './spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
@@ -137,7 +137,9 @@ describe('webFrameMain module', () => {
   });
 
   describe('WebFrame.visibilityState', () => {
-    it('should match window state', async () => {
+    // TODO(MarshallOfSound): Fix flaky test
+    // @flaky-test
+    it.skip('should match window state', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       const webFrame = w.webContents.mainFrame;
@@ -201,7 +203,8 @@ describe('webFrameMain module', () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
     });
 
-    it('throws upon accessing properties when disposed', async () => {
+    // TODO(jkleinsc) fix this flaky test on linux
+    ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       const { mainFrame } = w.webContents;
       w.destroy();
@@ -220,6 +223,37 @@ describe('webFrameMain module', () => {
       await w.loadURL(crossOriginUrl);
       expect(w.webContents.mainFrame).to.equal(mainFrame);
       expect(mainFrame.url).to.equal(crossOriginUrl);
+    });
+
+    it('recovers from renderer crash on same-origin', async () => {
+      const server = await createServer();
+      // Keep reference to mainFrame alive throughout crash and recovery.
+      const { mainFrame } = w.webContents;
+      await w.webContents.loadURL(server.url);
+      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+      w.webContents.forcefullyCrashRenderer();
+      await crashEvent;
+      await w.webContents.loadURL(server.url);
+      // Log just to keep mainFrame in scope.
+      console.log('mainFrame.url', mainFrame.url);
+    });
+
+    // Fixed by #34411
+    it('recovers from renderer crash on cross-origin', async () => {
+      const server = await createServer();
+      // 'localhost' is treated as a separate origin.
+      const crossOriginUrl = server.url.replace('127.0.0.1', 'localhost');
+      // Keep reference to mainFrame alive throughout crash and recovery.
+      const { mainFrame } = w.webContents;
+      await w.webContents.loadURL(server.url);
+      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+      w.webContents.forcefullyCrashRenderer();
+      await crashEvent;
+      // A short wait seems to be required to reproduce the crash.
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await w.webContents.loadURL(crossOriginUrl);
+      // Log just to keep mainFrame in scope.
+      console.log('mainFrame.url', mainFrame.url);
     });
   });
 
@@ -242,6 +276,70 @@ describe('webFrameMain module', () => {
         expect(frame?.routingId).to.be.equal(frameRoutingId);
         expect(frame?.top === frame).to.be.equal(isMainFrame);
       }
+    });
+  });
+
+  describe('"frame-created" event', () => {
+    it('emits when the main frame is created', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedOnce(w.webContents, 'frame-created');
+      w.webContents.loadFile(path.join(subframesPath, 'frame.html'));
+      const [, details] = await promise;
+      expect(details.frame).to.equal(w.webContents.mainFrame);
+    });
+
+    it('emits when nested frames are created', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedNTimes(w.webContents, 'frame-created', 2);
+      w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
+      const [[, mainDetails], [, nestedDetails]] = await promise;
+      expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
+      expect(nestedDetails.frame).to.equal(w.webContents.mainFrame.frames[0]);
+    });
+
+    it('is not emitted upon cross-origin navigation', async () => {
+      const server = await createServer();
+
+      // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
+      // a separate origin because differing ports aren't enough 🤔
+      const secondUrl = `http://localhost:${new URL(server.url).port}`;
+
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadURL(server.url);
+
+      let frameCreatedEmitted = false;
+
+      w.webContents.once('frame-created', () => {
+        frameCreatedEmitted = true;
+      });
+
+      await w.webContents.loadURL(secondUrl);
+
+      expect(frameCreatedEmitted).to.be.false();
+    });
+  });
+
+  describe('"dom-ready" event', () => {
+    it('emits for top-level frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedOnce(w.webContents.mainFrame, 'dom-ready');
+      w.webContents.loadURL('about:blank');
+      await promise;
+    });
+
+    it('emits for sub frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = new Promise<void>(resolve => {
+        w.webContents.on('frame-created', (e, { frame }) => {
+          frame.on('dom-ready', () => {
+            if (frame.name === 'frameA') {
+              resolve();
+            }
+          });
+        });
+      });
+      w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
+      await promise;
     });
   });
 });

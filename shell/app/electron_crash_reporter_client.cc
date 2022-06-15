@@ -25,15 +25,15 @@
 #include "electron/electron_version.h"
 #include "shell/common/electron_paths.h"
 
-#if defined(OS_POSIX) && !defined(OS_MAC)
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
 #include "components/version_info/version_info_values.h"
 #endif
 
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
 #include "base/debug/dump_without_crashing.h"
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "base/strings/string_util_win.h"
 #endif
 
@@ -96,7 +96,7 @@ ElectronCrashReporterClient::ElectronCrashReporterClient() = default;
 
 ElectronCrashReporterClient::~ElectronCrashReporterClient() = default;
 
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(
     const std::string& client_guid) {
   crash_keys::SetMetricsClientIdFromGUID(client_guid);
@@ -127,7 +127,7 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 }
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 void ElectronCrashReporterClient::GetProductNameAndVersion(
     const std::wstring& exe_path,
     std::wstring* product_name,
@@ -139,7 +139,7 @@ void ElectronCrashReporterClient::GetProductNameAndVersion(
 }
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
     std::wstring* crash_dir_str) {
   base::FilePath crash_dir;
@@ -173,7 +173,7 @@ bool ElectronCrashReporterClient::GetCollectStatsConsent() {
   return collect_stats_consent_;
 }
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
 bool ElectronCrashReporterClient::ReportingIsEnforcedByPolicy(
     bool* breakpad_enabled) {
   return false;
@@ -195,11 +195,11 @@ void ElectronCrashReporterClient::GetProcessSimpleAnnotations(
   (*annotations)["ver"] = ELECTRON_VERSION_STRING;
 }
 
-#if defined(OS_LINUX) || defined(OS_MAC)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
 bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
   return false;
 }
-#endif  // OS_LINUX
+#endif
 
 std::string ElectronCrashReporterClient::GetUploadUrl() {
   return upload_url_;

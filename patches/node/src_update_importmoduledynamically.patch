@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Camillo Bruni <cbruni@chromium.org>
+Date: Mon, 15 Nov 2021 15:34:38 +0100
+Subject: src: update ImportModuleDynamically
+
+PR-URL: https://github.com/nodejs/node/pull/41610
+Reviewed-By: Jiawen Geng <technicalcute@gmail.com>
+Reviewed-By: Antoine du Hamel <duhamelantoine1995@gmail.com>
+Reviewed-By: Darshan Sen <raisinten@gmail.com>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index aeb0d2cb37313bdbb00abe065c91362cac5dcb9a..1e049d7258d21c7d7049f393ecfa1b4f53325910 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -46,7 +46,6 @@ using v8::PrimitiveArray;
+ using v8::Promise;
+ using v8::ScriptCompiler;
+ using v8::ScriptOrigin;
+-using v8::ScriptOrModule;
+ using v8::String;
+ using v8::UnboundModuleScript;
+ using v8::Undefined;
+@@ -559,7 +558,8 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+ 
+ static MaybeLocal<Promise> ImportModuleDynamically(
+     Local<Context> context,
+-    Local<ScriptOrModule> referrer,
++    Local<v8::Data> host_defined_options,
++    Local<Value> resource_name,
+     Local<String> specifier,
+     Local<FixedArray> import_assertions) {
+   Isolate* isolate = context->GetIsolate();
+@@ -574,7 +574,7 @@ static MaybeLocal<Promise> ImportModuleDynamically(
+   Local<Function> import_callback =
+     env->host_import_module_dynamically_callback();
+ 
+-  Local<PrimitiveArray> options = referrer->GetHostDefinedOptions();
++  Local<FixedArray> options = host_defined_options.As<FixedArray>();
+   if (options->Length() != HostDefinedOptions::kLength) {
+     Local<Promise::Resolver> resolver;
+     if (!Promise::Resolver::New(context).ToLocal(&resolver)) return {};
+@@ -588,11 +588,11 @@ static MaybeLocal<Promise> ImportModuleDynamically(
+ 
+   Local<Value> object;
+ 
+-  int type = options->Get(isolate, HostDefinedOptions::kType)
++  int type = options->Get(context, HostDefinedOptions::kType)
+                  .As<Number>()
+                  ->Int32Value(context)
+                  .ToChecked();
+-  uint32_t id = options->Get(isolate, HostDefinedOptions::kID)
++  uint32_t id = options->Get(context, HostDefinedOptions::kID)
+                     .As<Number>()
+                     ->Uint32Value(context)
+                     .ToChecked();

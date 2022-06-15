@@ -51,7 +51,7 @@ MediaStreamDevicesController::MediaStreamDevicesController(
 MediaStreamDevicesController::~MediaStreamDevicesController() {
   if (!callback_.is_null()) {
     std::move(callback_).Run(
-        blink::MediaStreamDevices(),
+        blink::mojom::StreamDevices(),
         blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN,
         std::unique_ptr<content::MediaStreamUI>());
   }
@@ -92,7 +92,7 @@ void MediaStreamDevicesController::TakeAction() {
 
 void MediaStreamDevicesController::Accept() {
   // Get the default devices for the request.
-  blink::MediaStreamDevices devices;
+  blink::mojom::StreamDevices stream_devices;
   if (microphone_requested_ || webcam_requested_) {
     switch (request_.request_type) {
       case blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY: {
@@ -109,6 +109,8 @@ void MediaStreamDevicesController::Accept() {
             device = MediaCaptureDevicesDispatcher::GetInstance()
                          ->GetFirstAvailableAudioDevice();
           }
+          if (device)
+            stream_devices.audio_device = *device;
         } else if (request_.video_type ==
                    blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
           // Pepper API opens only one device at a time.
@@ -120,9 +122,9 @@ void MediaStreamDevicesController::Accept() {
             device = MediaCaptureDevicesDispatcher::GetInstance()
                          ->GetFirstAvailableVideoDevice();
           }
+          if (device)
+            stream_devices.video_device = *device;
         }
-        if (device)
-          devices.push_back(*device);
         break;
       }
       case blink::MEDIA_GENERATE_STREAM: {
@@ -135,7 +137,7 @@ void MediaStreamDevicesController::Accept() {
               MediaCaptureDevicesDispatcher::GetInstance()
                   ->GetRequestedAudioDevice(request_.requested_audio_device_id);
           if (audio_device) {
-            devices.push_back(*audio_device);
+            stream_devices.audio_device = *audio_device;
             needs_audio_device = false;
           }
         }
@@ -144,7 +146,7 @@ void MediaStreamDevicesController::Accept() {
               MediaCaptureDevicesDispatcher::GetInstance()
                   ->GetRequestedVideoDevice(request_.requested_video_device_id);
           if (video_device) {
-            devices.push_back(*video_device);
+            stream_devices.video_device = *video_device;
             needs_video_device = false;
           }
         }
@@ -153,49 +155,57 @@ void MediaStreamDevicesController::Accept() {
         // specified by id, get the default devices.
         if (needs_audio_device || needs_video_device) {
           MediaCaptureDevicesDispatcher::GetInstance()->GetDefaultDevices(
-              needs_audio_device, needs_video_device, &devices);
+              needs_audio_device, needs_video_device, stream_devices);
         }
         break;
       }
       case blink::MEDIA_DEVICE_ACCESS: {
         // Get the default devices for the request.
         MediaCaptureDevicesDispatcher::GetInstance()->GetDefaultDevices(
-            microphone_requested_, webcam_requested_, &devices);
+            microphone_requested_, webcam_requested_, stream_devices);
         break;
       }
       case blink::MEDIA_DEVICE_UPDATE: {
         NOTREACHED();
         break;
       }
+      case blink::MEDIA_GET_OPEN_DEVICE: {
+        // Transferred tracks, that use blink::MEDIA_GET_OPEN_DEVICE type, do
+        // not need to get permissions for blink::mojom::StreamDevices as those
+        // are controlled by the original context.
+        NOTREACHED();
+        break;
+      }
     }
   }
 
-  std::move(callback_).Run(devices, blink::mojom::MediaStreamRequestResult::OK,
+  std::move(callback_).Run(stream_devices,
+                           blink::mojom::MediaStreamRequestResult::OK,
                            std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::Deny(
     blink::mojom::MediaStreamRequestResult result) {
-  std::move(callback_).Run(blink::MediaStreamDevices(), result,
+  std::move(callback_).Run(blink::mojom::StreamDevices(), result,
                            std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::HandleUserMediaRequest() {
-  blink::MediaStreamDevices devices;
+  blink::mojom::StreamDevices devices;
 
   if (request_.audio_type ==
       blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
-    devices.emplace_back(blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE,
-                         "", "");
+    devices.audio_device = blink::MediaStreamDevice(
+        blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE, "", "");
   }
   if (request_.video_type ==
       blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE) {
-    devices.emplace_back(blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE,
-                         "", "");
+    devices.video_device = blink::MediaStreamDevice(
+        blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE, "", "");
   }
   if (request_.audio_type ==
       blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE) {
-    devices.emplace_back(
+    devices.audio_device = blink::MediaStreamDevice(
         blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE, "loopback",
         "System Audio");
   }
@@ -212,15 +222,17 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
           content::DesktopMediaID::Parse(request_.requested_video_device_id);
     }
 
-    devices.emplace_back(
+    devices.video_device = blink::MediaStreamDevice(
         blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
         screen_id.ToString(), "Screen");
   }
 
+  bool empty =
+      !devices.audio_device.has_value() && !devices.video_device.has_value();
   std::move(callback_).Run(
       devices,
-      devices.empty() ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
-                      : blink::mojom::MediaStreamRequestResult::OK,
+      empty ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
+            : blink::mojom::MediaStreamRequestResult::OK,
       std::unique_ptr<content::MediaStreamUI>());
 }
 

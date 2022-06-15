@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jameson Nash <vtjnash@gmail.com>
+Date: Sun, 6 Mar 2022 15:01:33 -0500
+Subject: unix: remove uv__cloexec_ioctl() (#3515)
+
+Now that uv__cloexec_fcntl() is simplified
+(https://github.com/libuv/libuv/pull/3492), there is no benefit to
+maintaining duplicate code paths for the same thing.
+
+diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
+index a87b96cfc1dfdc88fa712a4fa991320ff28f2dcd..7cd3a2a954ff7d70e6ba7a6f7538648841bc54b2 100644
+--- a/deps/uv/src/unix/core.c
++++ b/deps/uv/src/unix/core.c
+@@ -597,20 +597,6 @@ int uv__nonblock_ioctl(int fd, int set) {
+ 
+   return 0;
+ }
+-
+-
+-int uv__cloexec_ioctl(int fd, int set) {
+-  int r;
+-
+-  do
+-    r = ioctl(fd, set ? FIOCLEX : FIONCLEX);
+-  while (r == -1 && errno == EINTR);
+-
+-  if (r)
+-    return UV__ERR(errno);
+-
+-  return 0;
+-}
+ #endif
+ 
+ 
+@@ -645,7 +631,7 @@ int uv__nonblock_fcntl(int fd, int set) {
+ }
+ 
+ 
+-int uv__cloexec_fcntl(int fd, int set) {
++int uv__cloexec(int fd, int set) {
+   int flags;
+   int r;
+ 
+diff --git a/deps/uv/src/unix/internal.h b/deps/uv/src/unix/internal.h
+index 2dcc8b32f5165dd75061a1b55cc1abd2ab93ccc9..543993989b8765247e140e9d950a25192e5e1ca5 100644
+--- a/deps/uv/src/unix/internal.h
++++ b/deps/uv/src/unix/internal.h
+@@ -175,11 +175,9 @@ struct uv__stream_queued_fds_s {
+     defined(__linux__) || \
+     defined(__OpenBSD__) || \
+     defined(__NetBSD__)
+-#define uv__cloexec uv__cloexec_ioctl
+ #define uv__nonblock uv__nonblock_ioctl
+ #define UV__NONBLOCK_IS_IOCTL 1
+ #else
+-#define uv__cloexec uv__cloexec_fcntl
+ #define uv__nonblock uv__nonblock_fcntl
+ #define UV__NONBLOCK_IS_IOCTL 0
+ #endif
+@@ -197,8 +195,7 @@ struct uv__stream_queued_fds_s {
+ #endif
+ 
+ /* core */
+-int uv__cloexec_ioctl(int fd, int set);
+-int uv__cloexec_fcntl(int fd, int set);
++int uv__cloexec(int fd, int set);
+ int uv__nonblock_ioctl(int fd, int set);
+ int uv__nonblock_fcntl(int fd, int set);
+ int uv__close(int fd); /* preserves errno */
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index 7705068730cb0536998bad7d304cb87df99b72e8..b6f9756c6a6710f5f10762b9299cc35047b98097 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -283,7 +283,7 @@ static void uv__process_child_init(const uv_process_options_t* options,
+     if (pipes[fd][1] == -1)
+       uv__write_errno(error_fd);
+ #ifndef F_DUPFD_CLOEXEC /* POSIX 2008 */
+-    n = uv__cloexec_fcntl(pipes[fd][1], 1);
++    n = uv__cloexec(pipes[fd][1], 1);
+     if (n) {
+       uv__write_int(error_fd, n);
+       _exit(127);
+@@ -312,7 +312,7 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ 
+     if (fd == use_fd) {
+       if (close_fd == -1) {
+-        n = uv__cloexec_fcntl(use_fd, 0);
++        n = uv__cloexec(use_fd, 0);
+         if (n) {
+           uv__write_int(error_fd, n);
+           _exit(127);

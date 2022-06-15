@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_BROWSER_OBSERVER_H_
-#define SHELL_BROWSER_BROWSER_OBSERVER_H_
+#ifndef ELECTRON_SHELL_BROWSER_BROWSER_OBSERVER_H_
+#define ELECTRON_SHELL_BROWSER_BROWSER_OBSERVER_H_
 
 #include <string>
 
@@ -60,7 +60,7 @@ class BrowserObserver : public base::CheckedObserver {
   // Refer https://chromium-review.googlesource.com/c/chromium/src/+/2134864
   virtual void OnPreCreateThreads() {}
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   // The browser wants to report that an user activity will resume. (macOS only)
   virtual void OnWillContinueUserActivity(bool* prevent_default,
                                           const std::string& type) {}
@@ -94,4 +94,4 @@ class BrowserObserver : public base::CheckedObserver {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_BROWSER_OBSERVER_H_
+#endif  // ELECTRON_SHELL_BROWSER_BROWSER_OBSERVER_H_

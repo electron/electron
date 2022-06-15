@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_BROWSER_CONTEXT_H_
-#define SHELL_BROWSER_ELECTRON_BROWSER_CONTEXT_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CONTEXT_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CONTEXT_H_
 
 #include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
@@ -48,9 +47,6 @@ class ResolveProxyHelper;
 class WebViewManager;
 class ProtocolRegistry;
 
-// Preference keys for device apis
-extern const char kSerialGrantedDevicesPref[];
-
 using MediaResponseCallbackJs =
     base::OnceCallback<void(const blink::MediaStreamDevices& devices,
                             blink::mojom::MediaStreamRequestResult result)>;
@@ -60,6 +56,10 @@ using MediaRequestHandler =
 
 class ElectronBrowserContext : public content::BrowserContext {
  public:
+  // disable copy
+  ElectronBrowserContext(const ElectronBrowserContext&) = delete;
+  ElectronBrowserContext& operator=(const ElectronBrowserContext&) = delete;
+
   // partition_id => browser_context
   struct PartitionKey {
     std::string partition;
@@ -93,6 +93,7 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
+  absl::optional<std::string> GetUserAgentOverride() const;
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
   ResolveProxyHelper* GetResolveProxyHelper();
@@ -114,6 +115,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::string GetMediaDeviceIDSalt() override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
+  content::PlatformNotificationService* GetPlatformNotificationService()
+      override;
   content::PermissionControllerDelegate* GetPermissionControllerDelegate()
       override;
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
@@ -152,19 +155,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   network::mojom::SSLConfigPtr GetSSLConfig();
   void SetSSLConfigClient(mojo::Remote<network::mojom::SSLConfigClient> client);
 
-  // Grants |origin| access to |object| by writing it into the browser context.
-  // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
-  void GrantObjectPermission(const url::Origin& origin,
-                             base::Value object,
-                             const std::string& pref_key);
-
-  // Returns the list of objects that |origin| has been granted permission to
-  // access. To be used in place of
-  // ObjectPermissionContextBase::GetGrantedObjects.
-  std::vector<std::unique_ptr<base::Value>> GetGrantedObjects(
-      const url::Origin& origin,
-      const std::string& pref_key);
-
   bool ChooseMediaDevice(const content::MediaStreamRequest& request,
                          content::MediaResponseCallback callback);
   void SetMediaRequestHandler(MediaRequestHandler handler);
@@ -193,7 +183,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
   std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
-  std::string user_agent_;
+  absl::optional<std::string> user_agent_;
   base::FilePath path_;
   bool in_memory_ = false;
   bool use_cache_ = true;
@@ -213,10 +203,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   MediaRequestHandler media_request_handler_;
 
   base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserContext);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_BROWSER_CONTEXT_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CONTEXT_H_

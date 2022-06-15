@@ -67,6 +67,15 @@ LoggingDestination DetermineLoggingDestination(
   if (!enable_logging)
     return LOG_NONE;
 
+  bool also_log_to_stderr = false;
+#if !defined(NDEBUG)
+  std::string also_log_to_stderr_str;
+  if (base::Environment::Create()->GetVar("ELECTRON_ALSO_LOG_TO_STDERR",
+                                          &also_log_to_stderr_str) &&
+      !also_log_to_stderr_str.empty())
+    also_log_to_stderr = true;
+#endif
+
   // --enable-logging logs to stderr, --enable-logging=file logs to a file.
   // NB. this differs from Chromium, in which --enable-logging logs to a file
   // and --enable-logging=stderr logs to stderr, because that's how Electron
@@ -82,7 +91,7 @@ LoggingDestination DetermineLoggingDestination(
   // given.
   if (HasExplicitLogFile(command_line) ||
       (logging_destination == "file" && !is_preinit))
-    return LOG_TO_FILE;
+    return LOG_TO_FILE | (also_log_to_stderr ? LOG_TO_STDERR : 0);
   return LOG_TO_SYSTEM_DEBUG_LOG | LOG_TO_STDERR;
 }
 

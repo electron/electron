@@ -6,11 +6,28 @@
 
 #include <utility>
 
+#include "media/base/limits.h"
 #include "media/base/video_frame_metadata.h"
 #include "media/capture/mojom/video_capture_buffer.mojom.h"
 #include "media/capture/mojom/video_capture_types.mojom.h"
+#include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom-shared.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "ui/gfx/skbitmap_operations.h"
+
+namespace {
+
+bool IsValidMinAndMaxFrameSize(gfx::Size min_frame_size,
+                               gfx::Size max_frame_size) {
+  // Returns true if
+  // 0 < |min_frame_size| <= |max_frame_size| <= media::limits::kMaxDimension.
+  return 0 < min_frame_size.width() && 0 < min_frame_size.height() &&
+         min_frame_size.width() <= max_frame_size.width() &&
+         min_frame_size.height() <= max_frame_size.height() &&
+         max_frame_size.width() <= media::limits::kMaxDimension &&
+         max_frame_size.height() <= media::limits::kMaxDimension;
+}
+
+}  // namespace
 
 namespace electron {
 
@@ -20,12 +37,11 @@ OffScreenVideoConsumer::OffScreenVideoConsumer(
     : callback_(callback),
       view_(view),
       video_capturer_(view->CreateVideoCapturer()) {
-  video_capturer_->SetResolutionConstraints(view_->SizeInPixels(),
-                                            view_->SizeInPixels(), true);
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
-  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB,
-                             gfx::ColorSpace::CreateREC709());
+  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
+
+  SizeChanged(view_->SizeInPixels());
   SetFrameRate(view_->GetFrameRate());
 }
 
@@ -33,44 +49,44 @@ OffScreenVideoConsumer::~OffScreenVideoConsumer() = default;
 
 void OffScreenVideoConsumer::SetActive(bool active) {
   if (active) {
-    video_capturer_->Start(this);
+    video_capturer_->Start(this, viz::mojom::BufferFormatPreference::kDefault);
   } else {
     video_capturer_->Stop();
   }
 }
 
 void OffScreenVideoConsumer::SetFrameRate(int frame_rate) {
-  video_capturer_->SetMinCapturePeriod(base::TimeDelta::FromSeconds(1) /
-                                       frame_rate);
+  video_capturer_->SetMinCapturePeriod(base::Seconds(1) / frame_rate);
 }
 
-void OffScreenVideoConsumer::SizeChanged() {
-  video_capturer_->SetResolutionConstraints(view_->SizeInPixels(),
-                                            view_->SizeInPixels(), true);
+void OffScreenVideoConsumer::SizeChanged(const gfx::Size& size_in_pixels) {
+  DCHECK(IsValidMinAndMaxFrameSize(size_in_pixels, size_in_pixels));
+  video_capturer_->SetResolutionConstraints(size_in_pixels, size_in_pixels,
+                                            true);
   video_capturer_->RequestRefreshFrame();
 }
 
 void OffScreenVideoConsumer::OnFrameCaptured(
-    base::ReadOnlySharedMemoryRegion data,
+    ::media::mojom::VideoBufferHandlePtr data,
     ::media::mojom::VideoFrameInfoPtr info,
     const gfx::Rect& content_rect,
     mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
         callbacks) {
+  auto& data_region = data->get_read_only_shmem_region();
+
   if (!CheckContentRect(content_rect)) {
-    gfx::Size view_size = view_->SizeInPixels();
-    video_capturer_->SetResolutionConstraints(view_size, view_size, true);
-    video_capturer_->RequestRefreshFrame();
+    SizeChanged(view_->SizeInPixels());
     return;
   }
 
   mojo::Remote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
       callbacks_remote(std::move(callbacks));
 
-  if (!data.IsValid()) {
+  if (!data_region.IsValid()) {
     callbacks_remote->Done();
     return;
   }
-  base::ReadOnlySharedMemoryMapping mapping = data.Map();
+  base::ReadOnlySharedMemoryMapping mapping = data_region.Map();
   if (!mapping.IsValid()) {
     DLOG(ERROR) << "Shared memory mapping failed.";
     callbacks_remote->Done();
@@ -119,6 +135,8 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 
   callback_.Run(*update_rect, bitmap);
 }
+
+void OffScreenVideoConsumer::OnFrameWithEmptyRegionCapture() {}
 
 void OffScreenVideoConsumer::OnStopped() {}
 

@@ -52,7 +52,7 @@
     <script>
       const {ipcRenderer} = require('electron');
       navigator.windowControlsOverlay.ongeometrychange = function() {
-        const {x, y, width, height} = navigator.windowControlsOverlay.getBoundingClientRect();
+        const {x, y, width, height} = navigator.windowControlsOverlay.getTitlebarAreaRect();
         ipcRenderer.send('geometrychange', {x, y, width, height});
       };
     </script>      
@@ -76,7 +76,7 @@
       }
 
       function getJSOverlayProperties() {
-        const {x, y, width, height} = navigator.windowControlsOverlay.getBoundingClientRect(); 
+        const {x, y, width, height} = navigator.windowControlsOverlay.getTitlebarAreaRect(); 
         return {x, y, width, height};
       }
     </script>

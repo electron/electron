@@ -26,9 +26,9 @@ void PreventDefault(gin_helper::Arguments* args) {
 
 }  // namespace
 
-v8::Local<v8::Object> CreateEvent(v8::Isolate* isolate,
-                                  v8::Local<v8::Object> sender,
-                                  v8::Local<v8::Object> custom_event) {
+v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
+                                        v8::Local<v8::Object> sender,
+                                        v8::Local<v8::Object> custom_event) {
   if (event_template.IsEmpty()) {
     event_template.Reset(
         isolate,
@@ -54,7 +54,7 @@ v8::Local<v8::Object> CreateNativeEvent(
     v8::Isolate* isolate,
     v8::Local<v8::Object> sender,
     content::RenderFrameHost* frame,
-    electron::mojom::ElectronBrowser::MessageSyncCallback callback) {
+    electron::mojom::ElectronApiIPC::MessageSyncCallback callback) {
   v8::Local<v8::Object> event;
   if (frame && callback) {
     gin::Handle<Event> native_event = Event::Create(isolate);
@@ -62,7 +62,7 @@ v8::Local<v8::Object> CreateNativeEvent(
     event = native_event.ToV8().As<v8::Object>();
   } else {
     // No need to create native event if we do not need to send reply.
-    event = CreateEvent(isolate);
+    event = CreateCustomEvent(isolate);
   }
 
   Dictionary dict(isolate, event);

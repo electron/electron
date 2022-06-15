@@ -62,8 +62,8 @@ rely on the `click` event and always attach a context menu to the tray icon.
 
 ### `new Tray(image, [guid])`
 
-* `image` ([NativeImage](native-image.md) | String)
-* `guid` String (optional) _Windows_ - Assigns a GUID to the tray icon. If the executable is signed and the signature contains an organization in the subject line then the GUID is permanently associated with that signature. OS level settings like the position of the tray icon in the system tray will persist even if the path to the executable changes. If the executable is not code-signed then the GUID is permanently associated with the path to the executable. Changing the path to the executable will break the creation of the tray icon and a new GUID must be used. However, it is highly recommended to use the GUID parameter only in conjunction with code-signed executable. If an App defines multiple tray icons then each icon must use a separate GUID.
+* `image` ([NativeImage](native-image.md) | string)
+* `guid` string (optional) _Windows_ - Assigns a GUID to the tray icon. If the executable is signed and the signature contains an organization in the subject line then the GUID is permanently associated with that signature. OS level settings like the position of the tray icon in the system tray will persist even if the path to the executable changes. If the executable is not code-signed then the GUID is permanently associated with the path to the executable. Changing the path to the executable will break the creation of the tray icon and a new GUID must be used. However, it is highly recommended to use the GUID parameter only in conjunction with code-signed executable. If an App defines multiple tray icons then each icon must use a separate GUID.
 
 Creates a new tray icon associated with the `image`.
 
@@ -121,7 +121,7 @@ Emitted when any dragged items are dropped on the tray icon.
 Returns:
 
 * `event` Event
-* `files` String[] - The paths of the dropped files.
+* `files` string[] - The paths of the dropped files.
 
 Emitted when dragged files are dropped in the tray icon.
 
@@ -130,7 +130,7 @@ Emitted when dragged files are dropped in the tray icon.
 Returns:
 
 * `event` Event
-* `text` String - the dropped text string.
+* `text` string - the dropped text string.
 
 Emitted when dragged text is dropped in the tray icon.
 
@@ -203,37 +203,37 @@ Destroys the tray icon immediately.
 
 #### `tray.setImage(image)`
 
-* `image` ([NativeImage](native-image.md) | String)
+* `image` ([NativeImage](native-image.md) | string)
 
 Sets the `image` associated with this tray icon.
 
 #### `tray.setPressedImage(image)` _macOS_
 
-* `image` ([NativeImage](native-image.md) | String)
+* `image` ([NativeImage](native-image.md) | string)
 
 Sets the `image` associated with this tray icon when pressed on macOS.
 
 #### `tray.setToolTip(toolTip)`
 
-* `toolTip` String
+* `toolTip` string
 
 Sets the hover text for this tray icon.
 
 #### `tray.setTitle(title[, options])` _macOS_
 
-* `title` String
+* `title` string
 * `options` Object (optional)
-  * `fontType` String (optional) - The font family variant to display, can be `monospaced` or `monospacedDigit`. `monospaced` is available in macOS 10.15+ and `monospacedDigit` is available in macOS 10.11+.  When left blank, the title uses the default system font.
+  * `fontType` string (optional) - The font family variant to display, can be `monospaced` or `monospacedDigit`. `monospaced` is available in macOS 10.15+ and `monospacedDigit` is available in macOS 10.11+.  When left blank, the title uses the default system font.
 
 Sets the title displayed next to the tray icon in the status bar (Support ANSI colors).
 
 #### `tray.getTitle()` _macOS_
 
-Returns `String` - the title displayed next to the tray icon in the status bar
+Returns `string` - the title displayed next to the tray icon in the status bar
 
 #### `tray.setIgnoreDoubleClickEvents(ignore)` _macOS_
 
-* `ignore` Boolean
+* `ignore` boolean
 
 Sets the option to ignore double click events. Ignoring these events allows you
 to detect every individual click of the tray icon.
@@ -242,18 +242,18 @@ This value is set to false by default.
 
 #### `tray.getIgnoreDoubleClickEvents()` _macOS_
 
-Returns `Boolean` - Whether double click events will be ignored.
+Returns `boolean` - Whether double click events will be ignored.
 
 #### `tray.displayBalloon(options)` _Windows_
 
 * `options` Object
-  * `icon` ([NativeImage](native-image.md) | String) (optional) - Icon to use when `iconType` is `custom`.
-  * `iconType` String (optional) - Can be `none`, `info`, `warning`, `error` or `custom`. Default is `custom`.
-  * `title` String
-  * `content` String
-  * `largeIcon` Boolean (optional) - The large version of the icon should be used. Default is `true`. Maps to [`NIIF_LARGE_ICON`][NIIF_LARGE_ICON].
-  * `noSound` Boolean (optional) - Do not play the associated sound. Default is `false`. Maps to [`NIIF_NOSOUND`][NIIF_NOSOUND].
-  * `respectQuietTime` Boolean (optional) - Do not display the balloon notification if the current user is in "quiet time". Default is `false`. Maps to [`NIIF_RESPECT_QUIET_TIME`][NIIF_RESPECT_QUIET_TIME].
+  * `icon` ([NativeImage](native-image.md) | string) (optional) - Icon to use when `iconType` is `custom`.
+  * `iconType` string (optional) - Can be `none`, `info`, `warning`, `error` or `custom`. Default is `custom`.
+  * `title` string
+  * `content` string
+  * `largeIcon` boolean (optional) - The large version of the icon should be used. Default is `true`. Maps to [`NIIF_LARGE_ICON`][NIIF_LARGE_ICON].
+  * `noSound` boolean (optional) - Do not play the associated sound. Default is `false`. Maps to [`NIIF_NOSOUND`][NIIF_NOSOUND].
+  * `respectQuietTime` boolean (optional) - Do not display the balloon notification if the current user is in "quiet time". Default is `false`. Maps to [`NIIF_RESPECT_QUIET_TIME`][NIIF_RESPECT_QUIET_TIME].
 
 Displays a tray balloon.
 
@@ -300,6 +300,6 @@ The `bounds` of this tray icon as `Object`.
 
 #### `tray.isDestroyed()`
 
-Returns `Boolean` - Whether the tray icon is destroyed.
+Returns `boolean` - Whether the tray icon is destroyed.
 
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

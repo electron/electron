@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_ELECTRON_RENDER_FRAME_OBSERVER_H_
-#define SHELL_RENDERER_ELECTRON_RENDER_FRAME_OBSERVER_H_
+#ifndef ELECTRON_SHELL_RENDERER_ELECTRON_RENDER_FRAME_OBSERVER_H_
+#define ELECTRON_SHELL_RENDERER_ELECTRON_RENDER_FRAME_OBSERVER_H_
 
 #include <string>
 
@@ -20,6 +20,11 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
  public:
   ElectronRenderFrameObserver(content::RenderFrame* frame,
                               RendererClientBase* renderer_client);
+
+  // disable copy
+  ElectronRenderFrameObserver(const ElectronRenderFrameObserver&) = delete;
+  ElectronRenderFrameObserver& operator=(const ElectronRenderFrameObserver&) =
+      delete;
 
   // content::RenderFrameObserver:
   void DidClearWindowObject() override;
@@ -39,12 +44,11 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
   void OnTakeHeapSnapshot(IPC::PlatformFileForTransit file_handle,
                           const std::string& channel);
 
+  bool has_delayed_node_initialization_ = false;
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronRenderFrameObserver);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_ELECTRON_RENDER_FRAME_OBSERVER_H_
+#endif  // ELECTRON_SHELL_RENDERER_ELECTRON_RENDER_FRAME_OBSERVER_H_

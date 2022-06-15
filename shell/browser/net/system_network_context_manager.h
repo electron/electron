@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
-#define SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
+#define ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 
-#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "sandbox/policy/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/network_service.mojom.h"
@@ -35,6 +35,11 @@ class SystemNetworkContextManager {
  public:
   ~SystemNetworkContextManager();
 
+  // disable copy
+  SystemNetworkContextManager(const SystemNetworkContextManager&) = delete;
+  SystemNetworkContextManager& operator=(const SystemNetworkContextManager&) =
+      delete;
+
   // Creates the global instance of SystemNetworkContextManager. If an
   // instance already exists, this will cause a DCHECK failure.
   static SystemNetworkContextManager* CreateInstance(PrefService* pref_service);
@@ -44,6 +49,13 @@ class SystemNetworkContextManager {
 
   // Destroys the global SystemNetworkContextManager instance.
   static void DeleteInstance();
+
+  // c.f.
+  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/net/system_network_context_manager.cc;l=730-740;drc=15a616c8043551a7cb22c4f73a88e83afb94631c;bpv=1;bpt=1
+  // Returns whether the network sandbox is enabled. This depends on  policy but
+  // also feature status from sandbox. Called before there is an instance of
+  // SystemNetworkContextManager.
+  static bool IsNetworkSandboxEnabled();
 
   // Configures default set of parameters for configuring the network context.
   void ConfigureDefaultNetworkContextParams(
@@ -92,8 +104,6 @@ class SystemNetworkContextManager {
   // consumers don't all need to create their own factory.
   scoped_refptr<URLLoaderFactoryForSystem> shared_url_loader_factory_;
   mojo::Remote<network::mojom::URLLoaderFactory> url_loader_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN(SystemNetworkContextManager);
 };
 
-#endif  // SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_

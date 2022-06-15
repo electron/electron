@@ -69,8 +69,8 @@ void GPUInfoEnumerator::BeginVideoDecodeAcceleratorSupportedProfile() {
 
 void GPUInfoEnumerator::EndVideoDecodeAcceleratorSupportedProfile() {
   auto& top_value = value_stack.top();
-  top_value->SetDictionary(kVideoDecodeAcceleratorSupportedProfileKey,
-                           std::move(current));
+  top_value->SetKey(kVideoDecodeAcceleratorSupportedProfileKey,
+                    base::Value::FromUniquePtrValue(std::move(current)));
   current = std::move(top_value);
   value_stack.pop();
 }
@@ -82,8 +82,8 @@ void GPUInfoEnumerator::BeginVideoEncodeAcceleratorSupportedProfile() {
 
 void GPUInfoEnumerator::EndVideoEncodeAcceleratorSupportedProfile() {
   auto& top_value = value_stack.top();
-  top_value->SetDictionary(kVideoEncodeAcceleratorSupportedProfileKey,
-                           std::move(current));
+  top_value->SetKey(kVideoEncodeAcceleratorSupportedProfileKey,
+                    base::Value::FromUniquePtrValue(std::move(current)));
   current = std::move(top_value);
   value_stack.pop();
 }
@@ -95,8 +95,8 @@ void GPUInfoEnumerator::BeginImageDecodeAcceleratorSupportedProfile() {
 
 void GPUInfoEnumerator::EndImageDecodeAcceleratorSupportedProfile() {
   auto& top_value = value_stack.top();
-  top_value->SetDictionary(kImageDecodeAcceleratorSupportedProfileKey,
-                           std::move(current));
+  top_value->SetKey(kImageDecodeAcceleratorSupportedProfileKey,
+                    base::Value::FromUniquePtrValue(std::move(current)));
   current = std::move(top_value);
   value_stack.pop();
 }
@@ -108,7 +108,8 @@ void GPUInfoEnumerator::BeginAuxAttributes() {
 
 void GPUInfoEnumerator::EndAuxAttributes() {
   auto& top_value = value_stack.top();
-  top_value->SetDictionary(kAuxAttributesKey, std::move(current));
+  top_value->SetKey(kAuxAttributesKey,
+                    base::Value::FromUniquePtrValue(std::move(current)));
   current = std::move(top_value);
   value_stack.pop();
 }
@@ -120,7 +121,8 @@ void GPUInfoEnumerator::BeginOverlayInfo() {
 
 void GPUInfoEnumerator::EndOverlayInfo() {
   auto& top_value = value_stack.top();
-  top_value->SetDictionary(kOverlayInfo, std::move(current));
+  top_value->SetKey(kOverlayInfo,
+                    base::Value::FromUniquePtrValue(std::move(current)));
   current = std::move(top_value);
   value_stack.pop();
 }

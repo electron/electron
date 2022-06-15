@@ -17,7 +17,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -28,6 +27,7 @@
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "components/proxy_config/proxy_prefs.h"
+#include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
@@ -126,9 +126,7 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
     auto type = base::ToLowerASCII(it);
-    if (type == "appcache")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_APPCACHE;
-    else if (type == "cookies")
+    if (type == "cookies")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_COOKIES;
     else if (type == "filesystem")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_FILE_SYSTEMS;
@@ -265,9 +263,11 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         const base::Time& start_time,
                         uint32_t id) {
   download_manager->CreateDownloadItem(
-      base::GenerateGUID(), id, path, path, url_chain, GURL(), GURL(), GURL(),
-      GURL(), absl::nullopt, mime_type, mime_type, start_time, base::Time(),
-      etag, last_modified, offset, length, std::string(),
+      base::GenerateGUID(), id, path, path, url_chain, GURL(),
+      content::StoragePartitionConfig::CreateDefault(
+          download_manager->GetBrowserContext()),
+      GURL(), GURL(), absl::nullopt, mime_type, mime_type, start_time,
+      base::Time(), etag, last_modified, offset, length, std::string(),
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
       download::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
@@ -373,7 +373,6 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   if (item->IsSavePackageDownload())
     return;
 
-  v8::Locker locker(isolate_);
   v8::HandleScope handle_scope(isolate_);
   auto handle = DownloadItem::FromOrCreate(isolate_, item);
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
@@ -571,7 +570,7 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   options.Get("uploadThroughput", &conditions->upload_throughput);
   double latency = 0.0;
   if (options.Get("latency", &latency) && latency) {
-    conditions->latency = base::TimeDelta::FromMillisecondsD(latency);
+    conditions->latency = base::Milliseconds(latency);
   }
 
   auto* network_context =
@@ -624,7 +623,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
       [](ElectronPermissionManager::RequestHandler* handler,
          content::WebContents* web_contents,
-         content::PermissionType permission_type,
+         blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
         handler->Run(web_contents, permission_type,
@@ -654,6 +653,18 @@ void Session::SetMediaRequestHandler(v8::Isolate* isolate,
   if (!gin::ConvertFromV8(isolate, val, &handler))
     return;
   browser_context_->SetMediaRequestHandler(handler);
+}
+
+void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
+                                         gin::Arguments* args) {
+  ElectronPermissionManager::DeviceCheckHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetDevicePermissionHandler(handler);
 }
 
 v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
@@ -922,9 +933,10 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 const GURL& url,
                                 int num_sockets_to_preconnect) {
+  url::Origin origin = url::Origin::Create(url);
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkIsolationKey::CreateTransient()}};
+       net::NetworkIsolationKey(origin, origin)}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
@@ -950,8 +962,8 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
   }
 
   DCHECK_GT(num_sockets_to_preconnect, 0);
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&StartPreconnectOnUI, base::Unretained(browser_context_),
                      url, num_sockets_to_preconnect));
 }
@@ -975,6 +987,45 @@ v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
   return gin::ConvertToV8(isolate, browser_context_->GetPath());
 }
 
+void Session::SetCodeCachePath(gin::Arguments* args) {
+  base::FilePath code_cache_path;
+  auto* storage_partition = browser_context_->GetDefaultStoragePartition();
+  auto* code_cache_context = storage_partition->GetGeneratedCodeCacheContext();
+  if (code_cache_context) {
+    if (!args->GetNext(&code_cache_path) || !code_cache_path.IsAbsolute()) {
+      args->ThrowTypeError(
+          "Absolute path must be provided to store code cache.");
+      return;
+    }
+    code_cache_context->Initialize(
+        code_cache_path, 0 /* allows disk_cache to choose the size */);
+  }
+}
+
+v8::Local<v8::Promise> Session::ClearCodeCaches(
+    const gin_helper::Dictionary& options) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  std::set<GURL> url_list;
+  base::RepeatingCallback<bool(const GURL&)> url_matcher = base::NullCallback();
+  if (options.Get("urls", &url_list) && !url_list.empty()) {
+    url_matcher = base::BindRepeating(
+        [](const std::set<GURL>& url_list, const GURL& url) {
+          return base::Contains(url_list, url);
+        },
+        url_list);
+  }
+
+  browser_context_->GetDefaultStoragePartition()->ClearCodeCaches(
+      base::Time(), base::Time::Max(), url_matcher,
+      base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                     std::move(promise)));
+
+  return handle;
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
@@ -993,7 +1044,7 @@ void Session::SetSpellCheckerLanguages(
                          "\" is not a valid language code");
       return;
     }
-    language_codes.AppendString(code);
+    language_codes.Append(code);
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
                                  language_codes);
@@ -1160,6 +1211,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
       .SetMethod("setMediaRequestHandler", &Session::SetMediaRequestHandler)
+      .SetMethod("setDevicePermissionHandler",
+                 &Session::SetDevicePermissionHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",
@@ -1201,6 +1254,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("preconnect", &Session::Preconnect)
       .SetMethod("closeAllConnections", &Session::CloseAllConnections)
       .SetMethod("getStoragePath", &Session::GetPath)
+      .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
+      .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)

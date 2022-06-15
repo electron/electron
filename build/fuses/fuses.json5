@@ -5,5 +5,7 @@
   "run_as_node": "1",
   "cookie_encryption": "0",
   "node_options": "1",
-  "node_cli_inspect": "1"
+  "node_cli_inspect": "1",
+  "embedded_asar_integrity_validation": "0",
+  "only_load_app_from_asar": "0"
 }

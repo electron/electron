@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jameson Nash <vtjnash@gmail.com>
+Date: Fri, 11 Mar 2022 12:05:24 -0500
+Subject: process: reset the signal mask if the fork fails (#3537)
+
+Fix a regression that sneaked into posix spawn changes.
+
+Refs: https://github.com/libuv/libuv/pull/3257
+
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index b85aa3b94edd040952e0d350a47a38d9ba8a67d3..d208f99be40df9f36447552daf2772c1cab1ce79 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -790,11 +790,6 @@ static int uv__spawn_and_init_child_fork(const uv_process_options_t* options,
+ 
+   *pid = fork();
+ 
+-  if (*pid == -1) {
+-    /* Failed to fork */
+-    return UV__ERR(errno);
+-  }
+-
+   if (*pid == 0) {
+     /* Fork succeeded, in the child process */
+     uv__process_child_init(options, stdio_count, pipes, error_fd);
+@@ -804,6 +799,10 @@ static int uv__spawn_and_init_child_fork(const uv_process_options_t* options,
+   if (pthread_sigmask(SIG_SETMASK, &sigoldset, NULL) != 0)
+     abort();
+ 
++  if (*pid == -1)
++    /* Failed to fork */
++    return UV__ERR(errno);
++
+   /* Fork succeeded, in the parent process */
+   return 0;
+ }

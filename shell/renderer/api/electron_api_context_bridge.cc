@@ -188,7 +188,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       // creation context of the original method.  If it's not we proceed
       // with the proxy logic
       if (maybe_original_fn.ToLocal(&proxy_func) && proxy_func->IsFunction() &&
-          proxy_func.As<v8::Object>()->CreationContext() ==
+          proxy_func.As<v8::Object>()->GetCreationContextChecked() ==
               destination_context) {
         return v8::MaybeLocal<v8::Value>(proxy_func);
       }
@@ -279,12 +279,12 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
         std::move(global_catch_source_context),
         std::move(global_catch_destination_context));
 
-    ignore_result(source_promise->Then(
+    std::ignore = source_promise->Then(
         source_context,
-        gin::ConvertToV8(destination_context->GetIsolate(), then_cb)
+        gin::ConvertToV8(destination_context->GetIsolate(), std::move(then_cb))
             .As<v8::Function>(),
-        gin::ConvertToV8(destination_context->GetIsolate(), catch_cb)
-            .As<v8::Function>()));
+        gin::ConvertToV8(destination_context->GetIsolate(), std::move(catch_cb))
+            .As<v8::Function>());
 
     object_cache->CacheProxiedObject(value, proxied_promise_handle);
     return v8::MaybeLocal<v8::Value>(proxied_promise_handle);
@@ -408,7 +408,8 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     return;
 
   v8::Local<v8::Function> func = func_value.As<v8::Function>();
-  v8::Local<v8::Context> func_owning_context = func->CreationContext();
+  v8::Local<v8::Context> func_owning_context =
+      func->GetCreationContextChecked();
 
   {
     v8::Context::Scope func_owning_context_scope(func_owning_context);
@@ -537,8 +538,8 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             }
 
             v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
-            ignore_result(proxy.GetHandle()->DefineProperty(
-                destination_context, key.As<v8::Name>(), desc));
+            std::ignore = proxy.GetHandle()->DefineProperty(
+                destination_context, key.As<v8::Name>(), desc);
           }
           continue;
         }
@@ -636,9 +637,9 @@ void OverrideGlobalValueFromIsolatedWorld(
   {
     v8::Context::Scope main_context_scope(main_context);
     context_bridge::ObjectCache object_cache;
-    v8::MaybeLocal<v8::Value> maybe_proxy =
-        PassValueToOtherContext(value->CreationContext(), main_context, value,
-                                &object_cache, support_dynamic_properties, 1);
+    v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
+        value->GetCreationContextChecked(), main_context, value, &object_cache,
+        support_dynamic_properties, 1);
     DCHECK(!maybe_proxy.IsEmpty());
     auto proxy = maybe_proxy.ToLocalChecked();
 
@@ -672,16 +673,16 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Value> getter_proxy;
     v8::Local<v8::Value> setter_proxy;
     if (!getter->IsNullOrUndefined()) {
-      v8::MaybeLocal<v8::Value> maybe_getter_proxy =
-          PassValueToOtherContext(getter->CreationContext(), main_context,
-                                  getter, &object_cache, false, 1);
+      v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
+          getter->GetCreationContextChecked(), main_context, getter,
+          &object_cache, false, 1);
       DCHECK(!maybe_getter_proxy.IsEmpty());
       getter_proxy = maybe_getter_proxy.ToLocalChecked();
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
-      v8::MaybeLocal<v8::Value> maybe_setter_proxy =
-          PassValueToOtherContext(getter->CreationContext(), main_context,
-                                  setter, &object_cache, false, 1);
+      v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
+          getter->GetCreationContextChecked(), main_context, setter,
+          &object_cache, false, 1);
       DCHECK(!maybe_setter_proxy.IsEmpty());
       setter_proxy = maybe_setter_proxy.ToLocalChecked();
     }

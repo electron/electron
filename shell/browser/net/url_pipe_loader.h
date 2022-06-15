@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
-#define SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
+#define ELECTRON_SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
 
 #include <memory>
 #include <string>
@@ -41,6 +41,10 @@ class URLPipeLoader : public network::mojom::URLLoader,
                 const net::NetworkTrafficAnnotationTag& annotation,
                 base::DictionaryValue upload_data);
 
+  // disable copy
+  URLPipeLoader(const URLPipeLoader&) = delete;
+  URLPipeLoader& operator=(const URLPipeLoader&) = delete;
+
  private:
   ~URLPipeLoader() override;
 
@@ -77,10 +81,8 @@ class URLPipeLoader : public network::mojom::URLLoader,
   std::unique_ptr<network::SimpleURLLoader> loader_;
 
   base::WeakPtrFactory<URLPipeLoader> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(URLPipeLoader);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_URL_PIPE_LOADER_H_

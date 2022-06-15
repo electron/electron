@@ -24,11 +24,11 @@
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
 #include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 namespace gin {
 
@@ -74,7 +74,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
                                     const gfx::Size& thumbnail_size,
                                     bool fetch_window_icons) {
   fetch_window_icons_ = fetch_window_icons;
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   if (content::desktop_capture::CreateDesktopCaptureOptions()
           .allow_directx_capturer()) {
     // DxgiDuplicatorController should be alive in this scope according to
@@ -82,7 +82,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
     auto duplicator = webrtc::DxgiDuplicatorController::Instance();
     using_directx_capturer_ = webrtc::ScreenCapturerWinDirectx::IsSupported();
   }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
   // clear any existing captured sources.
   captured_sources_.clear();
@@ -99,10 +99,11 @@ void DesktopCapturer::StartHandling(bool capture_window,
           DesktopMediaList::Type::kWindow,
           content::desktop_capture::CreateWindowCapturer());
       window_capturer_->SetThumbnailSize(thumbnail_size);
-      window_capturer_->AddObserver(this);
-      window_capturer_->Update(base::BindOnce(
-          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-          window_capturer_.get()));
+      window_capturer_->Update(
+          base::BindOnce(&DesktopCapturer::UpdateSourcesList,
+                         weak_ptr_factory_.GetWeakPtr(),
+                         window_capturer_.get()),
+          /* refresh_thumbnails = */ true);
     }
 
     if (capture_screen) {
@@ -110,28 +111,24 @@ void DesktopCapturer::StartHandling(bool capture_window,
           DesktopMediaList::Type::kScreen,
           content::desktop_capture::CreateScreenCapturer());
       screen_capturer_->SetThumbnailSize(thumbnail_size);
-      screen_capturer_->AddObserver(this);
-      screen_capturer_->Update(base::BindOnce(
-          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-          screen_capturer_.get()));
+      screen_capturer_->Update(
+          base::BindOnce(&DesktopCapturer::UpdateSourcesList,
+                         weak_ptr_factory_.GetWeakPtr(),
+                         screen_capturer_.get()),
+          /* refresh_thumbnails = */ true);
     }
   }
-}
-
-void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
-  UpdateSourcesList(list);
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_window_ &&
       list->GetMediaListType() == DesktopMediaList::Type::kWindow) {
     capture_window_ = false;
-    const auto& media_list_sources = list->GetSources();
     std::vector<DesktopCapturer::Source> window_sources;
-    window_sources.reserve(media_list_sources.size());
-    for (const auto& media_list_source : media_list_sources) {
+    window_sources.reserve(list->GetSourceCount());
+    for (int i = 0; i < list->GetSourceCount(); i++) {
       window_sources.emplace_back(DesktopCapturer::Source{
-          media_list_source, std::string(), fetch_window_icons_});
+          list->GetSource(i), std::string(), fetch_window_icons_});
     }
     std::move(window_sources.begin(), window_sources.end(),
               std::back_inserter(captured_sources_));
@@ -140,14 +137,13 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_screen_ &&
       list->GetMediaListType() == DesktopMediaList::Type::kScreen) {
     capture_screen_ = false;
-    const auto& media_list_sources = list->GetSources();
     std::vector<DesktopCapturer::Source> screen_sources;
-    screen_sources.reserve(media_list_sources.size());
-    for (const auto& media_list_source : media_list_sources) {
+    screen_sources.reserve(list->GetSourceCount());
+    for (int i = 0; i < list->GetSourceCount(); i++) {
       screen_sources.emplace_back(
-          DesktopCapturer::Source{media_list_source, std::string()});
+          DesktopCapturer::Source{list->GetSource(i), std::string()});
     }
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     // Gather the same unique screen IDs used by the electron.screen API in
     // order to provide an association between it and
     // desktopCapturer/getUserMedia. This is only required when using the
@@ -159,7 +155,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
       if (!webrtc::DxgiDuplicatorController::Instance()->GetDeviceNames(
               &device_names)) {
         v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-        v8::Locker locker(isolate);
         v8::HandleScope scope(isolate);
         gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
 
@@ -180,12 +175,12 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
         source.display_id = base::NumberToString(device_id);
       }
     }
-#elif defined(OS_MAC)
+#elif BUILDFLAG(IS_MAC)
     // On Mac, the IDs across the APIs match.
     for (auto& source : screen_sources) {
       source.display_id = base::NumberToString(source.media_list_source.id.id);
     }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
     // TODO(ajmacd): Add Linux support. The IDs across APIs differ but Chrome
     // only supports capturing the entire desktop on Linux. Revisit this if
     // individual screen support is added.
@@ -195,7 +190,6 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
 
   if (!capture_window_ && !capture_screen_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::CallMethod(this, "_onfinished", captured_sources_);
 

@@ -2,11 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_MENU_H_
-#define SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_MENU_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_MENU_H_
+#define ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_MENU_H_
 
 #include "base/callback.h"
-#include "base/macros.h"
 #include "ui/base/glib/glib_signal.h"
 
 typedef struct _GtkMenu GtkMenu;
@@ -25,6 +24,10 @@ class AppIndicatorIconMenu {
  public:
   explicit AppIndicatorIconMenu(ui::MenuModel* model);
   virtual ~AppIndicatorIconMenu();
+
+  // disable copy
+  AppIndicatorIconMenu(const AppIndicatorIconMenu&) = delete;
+  AppIndicatorIconMenu& operator=(const AppIndicatorIconMenu&) = delete;
 
   // Sets a menu item at the top of |gtk_menu_| as a replacement for the app
   // indicator icon's click action. |callback| is called when the menu item
@@ -65,12 +68,10 @@ class AppIndicatorIconMenu {
   GtkWidget* gtk_menu_ = nullptr;
 
   bool block_activation_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(AppIndicatorIconMenu);
 };
 
 }  // namespace gtkui
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_MENU_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_MENU_H_

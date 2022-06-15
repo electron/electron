@@ -8,6 +8,7 @@ ffmpeg.dll
 icudtl.dat
 libEGL.dll
 libGLESv2.dll
+locales/af.pak
 locales/am.pak
 locales/ar.pak
 locales/bg.pak
@@ -58,14 +59,13 @@ locales/te.pak
 locales/th.pak
 locales/tr.pak
 locales/uk.pak
+locales/ur.pak
 locales/vi.pak
 locales/zh-CN.pak
 locales/zh-TW.pak
 resources.pak
 resources/default_app.asar
 snapshot_blob.bin
-swiftshader/libEGL.dll
-swiftshader/libGLESv2.dll
 vk_swiftshader_icd.json
 vk_swiftshader.dll
 vulkan-1.dll

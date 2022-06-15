@@ -3,7 +3,11 @@
 // found in the LICENSE file.
 
 #include "shell/app/command_line_args.h"
+
 #include <locale>
+
+#include "sandbox/policy/switches.h"
+#include "shell/common/options_switches.h"
 
 namespace {
 
@@ -49,6 +53,11 @@ bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
     }
   }
   return true;
+}
+
+bool IsSandboxEnabled(base::CommandLine* command_line) {
+  return command_line->HasSwitch(switches::kEnableSandbox) ||
+         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
 }
 
 }  // namespace electron

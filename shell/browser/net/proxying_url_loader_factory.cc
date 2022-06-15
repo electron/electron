@@ -38,7 +38,6 @@ ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
     uint64_t web_request_id,
-    int32_t view_routing_id,
     int32_t frame_routing_id,
     int32_t network_service_request_id,
     uint32_t options,
@@ -51,7 +50,6 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       original_initiator_(request.request_initiator),
       request_id_(web_request_id),
       network_service_request_id_(network_service_request_id),
-      view_routing_id_(view_routing_id),
       frame_routing_id_(frame_routing_id),
       options_(options),
       traffic_annotation_(traffic_annotation),
@@ -120,7 +118,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
       request_id_, factory_->render_process_id_, frame_routing_id_,
       factory_->navigation_ui_data_ ? factory_->navigation_ui_data_->DeepCopy()
                                     : nullptr,
-      view_routing_id_, request_for_info, false,
+      request_for_info, false,
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
       factory_->IsForServiceWorkerScript(), factory_->navigation_id_,
       ukm::kInvalidSourceIdObj));
@@ -242,7 +240,9 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveEarlyHints(
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
-    network::mojom::URLResponseHeadPtr head) {
+    network::mojom::URLResponseHeadPtr head,
+    mojo::ScopedDataPipeConsumerHandle body) {
+  current_body_ = std::move(body);
   if (current_request_uses_header_client_) {
     // Use the headers we got from OnHeadersReceived as that'll contain
     // Set-Cookie if it existed.
@@ -298,11 +298,6 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveCachedMetadata(
 void ProxyingURLLoaderFactory::InProgressRequest::OnTransferSizeUpdated(
     int32_t transfer_size_diff) {
   target_client_->OnTransferSizeUpdated(transfer_size_diff);
-}
-
-void ProxyingURLLoaderFactory::InProgressRequest::OnStartLoadingResponseBody(
-    mojo::ScopedDataPipeConsumerHandle body) {
-  target_client_->OnStartLoadingResponseBody(std::move(body));
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
@@ -521,8 +516,9 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
     if (has_any_extra_headers_listeners_)
       options |= network::mojom::kURLLoadOptionUseHeaderClient;
     factory_->target_factory_->CreateLoaderAndStart(
-        mojo::MakeRequest(&target_loader_), network_service_request_id_,
-        options, request_, proxied_client_receiver_.BindNewPipeAndPassRemote(),
+        target_loader_.BindNewPipeAndPassReceiver(),
+        network_service_request_id_, options, request_,
+        proxied_client_receiver_.BindNewPipeAndPassRemote(),
         traffic_annotation_);
   }
 
@@ -673,7 +669,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
   proxied_client_receiver_.Resume();
 
   factory_->web_request_api()->OnResponseStarted(&info_.value(), request_);
-  target_client_->OnReceiveResponse(current_response_.Clone());
+  target_client_->OnReceiveResponse(current_response_.Clone(),
+                                    std::move(current_body_));
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
@@ -753,11 +750,10 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     const HandlersMap& intercepted_handlers,
     int render_process_id,
     int frame_routing_id,
-    int view_routing_id,
     uint64_t* request_id_generator,
     std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
     absl::optional<int64_t> navigation_id,
-    network::mojom::URLLoaderFactoryRequest loader_request,
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> loader_request,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote,
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         header_client_receiver,
@@ -766,7 +762,6 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
       intercepted_handlers_(intercepted_handlers),
       render_process_id_(render_process_id),
       frame_routing_id_(frame_routing_id),
-      view_routing_id_(view_routing_id),
       request_id_generator_(request_id_generator),
       navigation_ui_data_(std::move(navigation_ui_data)),
       navigation_id_(std::move(navigation_id)),
@@ -862,9 +857,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   auto result = requests_.emplace(
       web_request_id,
       std::make_unique<InProgressRequest>(
-          this, web_request_id, view_routing_id_, frame_routing_id_, request_id,
-          options, request, traffic_annotation, std::move(loader),
-          std::move(client)));
+          this, web_request_id, frame_routing_id_, request_id, options, request,
+          traffic_annotation, std::move(loader), std::move(client)));
   result.first->second->Restart();
 }
 

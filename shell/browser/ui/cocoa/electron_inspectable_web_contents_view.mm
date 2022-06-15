@@ -176,8 +176,9 @@
   auto devToolsView = devToolsWebContents->GetNativeView().GetNativeNSView();
   if (!docked) {
     auto styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-                     NSMiniaturizableWindowMask | NSWindowStyleMaskResizable |
-                     NSTexturedBackgroundWindowMask |
+                     NSWindowStyleMaskMiniaturizable |
+                     NSWindowStyleMaskResizable |
+                     NSWindowStyleMaskTexturedBackground |
                      NSWindowStyleMaskUnifiedTitleAndToolbar;
     devtools_window_.reset([[EventDispatchingWindow alloc]
         initWithContentRect:NSMakeRect(0, 0, 800, 600)
@@ -266,6 +267,8 @@
       inspectableWebContentsView_->inspectable_web_contents();
   DCHECK(inspectable_web_contents);
   auto* webContents = inspectable_web_contents->GetWebContents();
+  if (!webContents)
+    return;
   auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
 
   NSView* view = [notification object];

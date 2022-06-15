@@ -32,7 +32,6 @@ AutoUpdater::~AutoUpdater() {
 
 void AutoUpdater::OnError(const std::string& message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Object> wrapper;
   if (GetWrapper(isolate).ToLocal(&wrapper)) {
@@ -49,7 +48,6 @@ void AutoUpdater::OnError(const std::string& message,
                           const int code,
                           const std::string& domain) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Object> wrapper;
   if (GetWrapper(isolate).ToLocal(&wrapper)) {

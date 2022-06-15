@@ -11,15 +11,8 @@
     <output filename="electron_resources.pak" type="data_package" />
   </outputs>
   <release seq="1" allow_pseudo="false">
-    <messages fallback_to_english="true">
-      <!-- TODO(deepak1556): Add translations,
-           check https://www.chromium.org/developers/design-documents/ui-localization -->
-      <part file="electron_strings.grdp" />
-    </messages>
     <includes>
       <include name="IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE" file="${target_gen_dir}/shell_devtools_discovery_page.html" use_base_dir="false" type="BINDATA" />
-      <include name="IDR_PDF_MANIFEST" file="../chrome/browser/resources/pdf/manifest.json" type="BINDATA" />
-      <include name="IDR_CRYPTOTOKEN_MANIFEST" file="../chrome/browser/resources/cryptotoken/manifest.json" type="BINDATA" />
     </includes>
   </release>
 </grit>

@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <utility>
+
 #include "shell/app/electron_library_main.h"
 
 #include "base/at_exit.h"
@@ -21,7 +23,7 @@ int ElectronMain(int argc, char* argv[]) {
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
   electron::ElectronCommandLine::Init(argc, argv);
-  return content::ContentMain(params);
+  return content::ContentMain(std::move(params));
 }
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)

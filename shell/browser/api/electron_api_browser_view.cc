@@ -6,10 +6,13 @@
 
 #include <vector>
 
+#include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
+#include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/web_contents_preferences.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -81,8 +84,7 @@ BrowserView::BrowserView(gin::Arguments* args,
 
   v8::Local<v8::Value> value;
 
-  // Copy the webContents option to webPreferences. This is only used internally
-  // to implement nativeWindowOpen option.
+  // Copy the webContents option to webPreferences.
   if (options.Get("webContents", &value)) {
     web_preferences.SetHidden("webContents", value);
   }
@@ -99,10 +101,18 @@ BrowserView::BrowserView(gin::Arguments* args,
       NativeBrowserView::Create(api_web_contents_->inspectable_web_contents()));
 }
 
+void BrowserView::SetOwnerWindow(NativeWindow* window) {
+  // Ensure WebContents and BrowserView owner windows are in sync.
+  if (web_contents())
+    web_contents()->SetOwnerWindow(window);
+
+  owner_window_ = window ? window->GetWeakPtr() : nullptr;
+}
+
 BrowserView::~BrowserView() {
-  if (api_web_contents_) {  // destroy() called without closing WebContents
-    api_web_contents_->RemoveObserver(this);
-    api_web_contents_->Destroy();
+  if (web_contents()) {  // destroy() called without closing WebContents
+    web_contents()->RemoveObserver(this);
+    web_contents()->Destroy();
   }
 }
 
@@ -147,7 +157,26 @@ gfx::Rect BrowserView::GetBounds() {
 }
 
 void BrowserView::SetBackgroundColor(const std::string& color_name) {
-  view_->SetBackgroundColor(ParseHexColor(color_name));
+  SkColor color = ParseCSSColor(color_name);
+  view_->SetBackgroundColor(color);
+
+  if (web_contents()) {
+    auto* wc = web_contents()->web_contents();
+    wc->SetPageBaseBackgroundColor(ParseCSSColor(color_name));
+
+    auto* const rwhv = wc->GetRenderWidgetHostView();
+    if (rwhv) {
+      rwhv->SetBackgroundColor(color);
+      static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+          ->SetContentBackgroundColor(color);
+    }
+
+    // Ensure new color is stored in webPreferences, otherwise
+    // the color will be reset on the next load via HandleNewRenderFrame.
+    auto* web_preferences = WebContentsPreferences::From(wc);
+    if (web_preferences)
+      web_preferences->SetBackgroundColor(color);
+  }
 }
 
 v8::Local<v8::Value> BrowserView::GetWebContents(v8::Isolate* isolate) {

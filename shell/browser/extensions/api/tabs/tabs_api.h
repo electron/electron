@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_API_TABS_TABS_API_H_
-#define SHELL_BROWSER_EXTENSIONS_API_TABS_TABS_API_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_API_TABS_TABS_API_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_API_TABS_TABS_API_H_
 
 #include <string>
 
@@ -46,9 +46,19 @@ class TabsExecuteScriptFunction : public ExecuteCodeInTabFunction {
   DECLARE_EXTENSION_FUNCTION("tabs.executeScript", TABS_EXECUTESCRIPT)
 };
 
+class TabsReloadFunction : public ExtensionFunction {
+  ~TabsReloadFunction() override {}
+
+  ResponseAction Run() override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.reload", TABS_RELOAD)
+};
+
 class TabsGetFunction : public ExtensionFunction {
   ~TabsGetFunction() override {}
+
   ResponseAction Run() override;
+
   DECLARE_EXTENSION_FUNCTION("tabs.get", TABS_GET)
 };
 
@@ -109,4 +119,4 @@ class TabsUpdateFunction : public ExtensionFunction {
 };
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_API_TABS_TABS_API_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_API_TABS_TABS_API_H_

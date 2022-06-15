@@ -1,11 +1,11 @@
+workspace:
+  clean: all
+
 steps:
-- task: CopyFiles@2
-  displayName: 'Copy Files to: src\electron'
-  inputs:
-    TargetFolder: src\electron
+- checkout: self
+  path: src\electron
 
 - script: |
-    cd src\electron
     node script/yarn.js install --frozen-lockfile
   displayName: 'Yarn install'
 
@@ -13,13 +13,13 @@ steps:
     $localArtifactPath = "$pwd\dist.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/dist.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\Default -y $localArtifactPath
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -o$(Pipeline.Workspace)\src\out\Default -y $localArtifactPath
   displayName: 'Download and extract dist.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
 - powershell: |
-    $localArtifactPath = "$pwd\src\out\Default\shell_browser_ui_unittests.exe"
+    $localArtifactPath = "$(Pipeline.Workspace)\src\out\Default\shell_browser_ui_unittests.exe"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/shell_browser_ui_unittests.exe"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
   displayName: 'Download and extract native test executables for test'
@@ -30,56 +30,57 @@ steps:
     $localArtifactPath = "$pwd\ffmpeg.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/ffmpeg.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -o$(Pipeline.Workspace)\src\out\ffmpeg $localArtifactPath
   displayName: 'Download and extract ffmpeg.zip for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
 - powershell: |
-    $localArtifactPath = "$pwd\src\node_headers.zip"
+    $localArtifactPath = "$(Pipeline.Workspace)\src\node_headers.zip"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/node_headers.zip"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    cd src
+    cd $(Pipeline.Workspace)\src
     & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y node_headers.zip
   displayName: 'Download node headers for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
 - powershell: |
-    $localArtifactPath = "$pwd\src\out\Default\electron.lib"
+    $localArtifactPath = "$(Pipeline.Workspace)\src\out\Default\electron.lib"
     $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/electron.lib"
     Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
   displayName: 'Download electron.lib for test'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
-- powershell: |
-    try {
-      $localArtifactPath = "$pwd\src\pdb.zip"
-      $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/pdb.zip"
-      Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-      cd src
-      & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y pdb.zip
-    } catch {
-      Write-Host "There was an exception encountered while downloading pdb files:" $_.Exception.Message
-    } finally {
-      $global:LASTEXITCODE = 0
-    }
-  displayName: 'Download pdb files for detailed stacktraces'
-  env:
-    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
+# Uncomment the following block if pdb files are needed to debug issues
+# - powershell: |
+#     try {
+#       $localArtifactPath = "$(Pipeline.Workspace)\src\pdb.zip"
+#       $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/pdb.zip"
+#       Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+#       cd $(Pipeline.Workspace)\src
+#       & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y pdb.zip
+#     } catch {
+#       Write-Host "There was an exception encountered while downloading pdb files:" $_.Exception.Message
+#     } finally {
+#       $global:LASTEXITCODE = 0
+#     }
+#   displayName: 'Download pdb files for detailed stacktraces'
+#   env:
+#     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
 - powershell: |
-    New-Item src\out\Default\gen\node_headers\Release -Type directory
-    Copy-Item -path src\out\Default\electron.lib -destination src\out\Default\gen\node_headers\Release\node.lib
+    New-Item $(Pipeline.Workspace)\src\out\Default\gen\node_headers\Release -Type directory
+    Copy-Item -path $(Pipeline.Workspace)\src\out\Default\electron.lib -destination $(Pipeline.Workspace)\src\out\Default\gen\node_headers\Release\node.lib
   displayName: 'Setup node headers'
 
 - script: |
-    cd src
+    cd $(Pipeline.Workspace)\src
     set npm_config_nodedir=%cd%\out\Default\gen\node_headers
     set npm_config_arch=arm64
     cd electron
-    node script/yarn test --runners=main --runTestFilesSeperately --enable-logging --disable-features=CalculateNativeWinOcclusion
+    node script/yarn test --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion
   displayName: 'Run Electron Main process tests'
   env:
     ELECTRON_ENABLE_STACK_DUMPING: true
@@ -90,7 +91,7 @@ steps:
     MOCHA_REPORTER: mocha-multi-reporters
 
 - script: |
-    cd src
+    cd $(Pipeline.Workspace)\src
     set npm_config_nodedir=%cd%\out\Default\gen\node_headers
     set npm_config_arch=arm64
     cd electron
@@ -102,17 +103,17 @@ steps:
     ELECTRON_TEST_RESULTS_DIR: junit
     MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
     MOCHA_REPORTER: mocha-multi-reporters
-  condition: always()    
+  condition: succeededOrFailed()
 
 - task: PublishTestResults@2
   displayName: 'Publish Test Results'
   inputs:
     testResultsFiles: '*.xml'
-    searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
+    searchFolder: '$(Pipeline.Workspace)/src/junit/'
   condition: always()
 
 - script: |
-    cd src
+    cd $(Pipeline.Workspace)\src
     echo "Verifying non proprietary ffmpeg"
     python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
   displayName: 'Verify ffmpeg'

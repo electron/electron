@@ -4,6 +4,7 @@
 
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
+#include <tuple>
 #include <vector>
 
 #include "base/base_paths.h"
@@ -34,16 +35,6 @@ namespace {
 
 const char kLifecycleKey[] = "lifecycle";
 const char kModuleCacheKey[] = "native-module-cache";
-
-bool IsDevTools(content::RenderFrame* render_frame) {
-  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
-      "devtools");
-}
-
-bool IsDevToolsExtension(content::RenderFrame* render_frame) {
-  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
-      "chrome-extension");
-}
 
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
@@ -123,7 +114,7 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
   auto callback_value = binding->Get(context, callback_key).ToLocalChecked();
   DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
   auto callback = callback_value.As<v8::Function>();
-  ignore_result(callback->Call(context, binding, 0, nullptr));
+  std::ignore = callback->Call(context, binding, 0, nullptr);
 }
 
 }  // namespace
@@ -206,17 +197,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
-  bool is_main_frame = render_frame->IsMainFrame();
-  bool is_devtools =
-      IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
-
-  bool allow_node_in_sub_frames =
-      render_frame->GetBlinkPreferences().node_integration_in_sub_frames;
-
-  bool should_load_preload =
-      (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
-      !IsWebViewFrame(context, render_frame);
-  if (!should_load_preload)
+  if (!ShouldLoadPreload(context, render_frame))
     return;
 
   injected_frames_.insert(render_frame);

@@ -32,6 +32,7 @@ bool Converter<electron::MessageBoxSettings>::FromV8(
   dict.Get("noLink", &out->no_link);
   dict.Get("checkboxChecked", &out->checkbox_checked);
   dict.Get("icon", &out->icon);
+  dict.Get("textWidth", &out->text_width);
   return true;
 }
 

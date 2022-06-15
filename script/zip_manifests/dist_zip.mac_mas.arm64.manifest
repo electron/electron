@@ -12,13 +12,13 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Librari
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libEGL.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libGLESv2.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib
-Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libswiftshader_libEGL.dylib
-Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libswiftshader_libGLESv2.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvk_swiftshader.dylib
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/vk_swiftshader_icd.json
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/Info.plist
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/MainMenu.nib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/af.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/af.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar.lproj/
@@ -123,6 +123,8 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resourc
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/tr.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/uk.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/uk.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ur.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ur.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/v8_context_snapshot.arm64.bin
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/vi.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/vi.lproj/locale.pak
@@ -168,6 +170,7 @@ Electron.app/Contents/MacOS/
 Electron.app/Contents/MacOS/Electron
 Electron.app/Contents/PkgInfo
 Electron.app/Contents/Resources/
+Electron.app/Contents/Resources/af.lproj/
 Electron.app/Contents/Resources/am.lproj/
 Electron.app/Contents/Resources/ar.lproj/
 Electron.app/Contents/Resources/bg.lproj/
@@ -220,6 +223,7 @@ Electron.app/Contents/Resources/te.lproj/
 Electron.app/Contents/Resources/th.lproj/
 Electron.app/Contents/Resources/tr.lproj/
 Electron.app/Contents/Resources/uk.lproj/
+Electron.app/Contents/Resources/ur.lproj/
 Electron.app/Contents/Resources/vi.lproj/
 Electron.app/Contents/Resources/zh_CN.lproj/
 Electron.app/Contents/Resources/zh_TW.lproj/

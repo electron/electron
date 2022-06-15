@@ -11,7 +11,7 @@
 #  - "TARGET_ARCH" Choose from {'ia32', 'x64', 'arm', 'arm64', 'mips64el'}.
 #      Is used in some publishing scripts, but does NOT affect the Electron binary.
 #      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "NPM_CONFIG_ARCH" value.
-#  - "UPLOAD_TO_S3" Set it to '1' upload a release to the S3 bucket.
+#  - "UPLOAD_TO_STORAGE" Set it to '1' upload a release to the Azure bucket.
 #      Otherwise the release will be uploaded to the Github Releases.
 #      (The value is only checked if "ELECTRON_RELEASE" is defined.)
 #
@@ -23,17 +23,14 @@
 # https://www.appveyor.com/docs/build-configuration/#secure-variables
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 
-# Uncomment these lines to enable RDP
-#on_finish:
-#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
 version: 1.0.{build}
 build_cloud: electron-16-core
-image: vs2019bt-16.6.2
+image: vs2019bt-16.16.11
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
+  ELECTRON_ALSO_LOG_TO_STDERR: 1
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
   GOMA_FALLBACK_ON_AUTH_FAILURE: true
@@ -66,6 +63,31 @@ build_script:
   - mkdir src
   - update_depot_tools.bat
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
+  - ps: >-
+      if (Test-Path 'env:RAW_GOMA_AUTH') {
+        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
+        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
+      }
+  - git clone https://github.com/electron/build-tools.git
+  - cd build-tools
+  - npm install
+  - mkdir third_party
+  - ps: >-
+      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
+  - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
+  - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
+  - cd ..
+  - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
+  - ps: >-
+      if (Test-Path 'env:RAW_GOMA_AUTH') {
+        $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
+        if ($goma_login -eq 'Login as Fermi Planck') {
+          Write-warning "Goma authentication is correct";
+        } else {
+          Write-warning "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token.";
+          $host.SetShouldExit(1)
+        }
+      }
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: >-
       if ($env:GN_CONFIG -ne 'release') {
@@ -128,22 +150,13 @@ build_script:
         if ($LASTEXITCODE -ne 0) {
           Write-warning "Failed to add third_party\angle\.git; continuing anyway"
         }
+        # build time generation of file dawn/common/Version_autogen.h depends on third_party/dawn/.git/HEAD
+        # https://dawn-review.googlesource.com/c/dawn/+/83901        
+        $(7z a $zipfile src\third_party\dawn\.git)
+        if ($LASTEXITCODE -ne 0) {
+          Write-warning "Failed to add third_party\dawn\.git; continuing anyway"
+        }
       }
-  - ps: >-
-      if (Test-Path 'env:RAW_GOMA_AUTH') {
-        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
-        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
-      }
-  - git clone https://github.com/electron/build-tools.git
-  - cd build-tools
-  - npm install
-  - mkdir third_party
-  - ps: >-
-      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
-  - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
-  - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
-  - cd ..
-  - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
@@ -165,32 +178,25 @@ build_script:
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
   - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
-  - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
-  - appveyor PushArtifact out/Default/windows_toolchain_profile.json
-  - appveyor PushArtifact out/Default/dist.zip
-  - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
-  - appveyor PushArtifact out/Default/chromedriver.zip
-  - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
+  - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - 7z a node_headers.zip out\Default\gen\node_headers
-  - appveyor PushArtifact node_headers.zip
-  - appveyor PushArtifact out/Default/mksnapshot.zip
-  - appveyor PushArtifact out/Default/hunspell_dictionaries.zip
-  - appveyor PushArtifact out/Default/electron.lib
+  # Temporarily disable symbol generation on 32-bit Windows due to failures  
   - ps: >-
-      if ($env:GN_CONFIG -eq 'release') {
+      if ($env:GN_CONFIG -eq 'release' -And $env:TARGET_ARCH -ne 'ia32') {
         # Needed for msdia140.dll on 64-bit windows
         $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
         ninja -C out/Default electron:electron_symbols
       }
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
-        python electron\script\zip-symbols.py
-        appveyor-retry appveyor PushArtifact out/Default/symbols.zip
+        if ($env:TARGET_ARCH -ne 'ia32') {
+          python electron\script\zip-symbols.py
+          appveyor-retry appveyor PushArtifact out/Default/symbols.zip
+        }
       } else {
         # It's useful to have pdb files when debugging testing builds that are
         # built on CI.
         7z a pdb.zip out\Default\*.pdb
-        appveyor-retry appveyor PushArtifact pdb.zip
       }
   - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
 test_script:
@@ -208,8 +214,9 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
-  # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
-  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --trace-uncaught --enable-logging --disable-features=CalculateNativeWinOcclusion )
+  - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log )
+  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeperately --enable-logging=file --log-file=%cd%\electron.log )
+  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log )  
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"
@@ -221,9 +228,9 @@ deploy_script:
   - cd electron
   - ps: >-
       if (Test-Path Env:\ELECTRON_RELEASE) {
-        if (Test-Path Env:\UPLOAD_TO_S3) {
-          Write-Output "Uploading Electron release distribution to s3"
-          & python script\release\uploaders\upload.py --verbose --upload_to_s3
+        if (Test-Path Env:\UPLOAD_TO_STORAGE) {
+          Write-Output "Uploading Electron release distribution to azure"
+          & python script\release\uploaders\upload.py --verbose --upload_to_storage
         } else {
           Write-Output "Uploading Electron release distribution to github releases"
           & python script\release\uploaders\upload.py --verbose
@@ -231,3 +238,22 @@ deploy_script:
       } elseif (Test-Path Env:\TEST_WOA) {
         node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
       }
+on_finish:
+  # Uncomment this lines to enable RDP
+  #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  - cd ..
+  - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
+  - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
+  - if exist out\Default\shell_browser_ui_unittests.exe (appveyor-retry appveyor PushArtifact out\Default\shell_browser_ui_unittests.exe)
+  - if exist out\Default\chromedriver.zip (appveyor-retry appveyor PushArtifact out\Default\chromedriver.zip)
+  - if exist out\ffmpeg\ffmpeg.zip (appveyor-retry appveyor PushArtifact out\ffmpeg\ffmpeg.zip)
+  - if exist node_headers.zip (appveyor-retry appveyor PushArtifact node_headers.zip)
+  - if exist out\Default\mksnapshot.zip (appveyor-retry appveyor PushArtifact out\Default\mksnapshot.zip)
+  - if exist out\Default\hunspell_dictionaries.zip (appveyor-retry appveyor PushArtifact out\Default\hunspell_dictionaries.zip)
+  - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)
+  - ps: >-
+      if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
+        appveyor-retry appveyor PushArtifact pdb.zip
+      }
+
+  - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )

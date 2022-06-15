@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
-#define SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
 #include <map>
 #include <string>
@@ -36,6 +36,12 @@ class WebContentsPreferences
                          const gin_helper::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
+  // disable copy
+  WebContentsPreferences(const WebContentsPreferences&) = delete;
+  WebContentsPreferences& operator=(const WebContentsPreferences&) = delete;
+
+  void Merge(const gin_helper::Dictionary& new_web_preferences);
+
   void SetFromDictionary(const gin_helper::Dictionary& new_web_preferences);
 
   // Append command paramters according to preferences.
@@ -48,8 +54,12 @@ class WebContentsPreferences
   base::Value* last_preference() { return &last_web_preferences_; }
 
   bool IsOffscreen() const { return offscreen_; }
-  SkColor GetBackgroundColor() const { return background_color_; }
-  void SetBackgroundColor(SkColor color) { background_color_ = color; }
+  absl::optional<SkColor> GetBackgroundColor() const {
+    return background_color_;
+  }
+  void SetBackgroundColor(absl::optional<SkColor> color) {
+    background_color_ = color;
+  }
   bool ShouldUsePreferredSizeMode() const {
     return enable_preferred_size_mode_;
   }
@@ -61,11 +71,13 @@ class WebContentsPreferences
   bool ShouldDisableHtmlFullscreenWindowResize() const {
     return disable_html_fullscreen_window_resize_;
   }
+  bool AllowsNodeIntegrationInSubFrames() const {
+    return node_integration_in_sub_frames_;
+  }
   bool ShouldDisableDialogs() const { return disable_dialogs_; }
   bool ShouldUseSafeDialogs() const { return safe_dialogs_; }
   bool GetSafeDialogsMessage(std::string* message) const;
   bool ShouldDisablePopups() const { return disable_popups_; }
-  bool ShouldUseNativeWindowOpen() const { return native_window_open_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
   bool GetPreloadPath(base::FilePath* path) const;
   bool IsSandboxed() const;
@@ -80,6 +92,8 @@ class WebContentsPreferences
   void Clear();
   void SaveLastPreferences();
 
+  // TODO(clavin): refactor to use the WebContents provided by the
+  // WebContentsUserData base class instead of storing a duplicate ref
   content::WebContents* web_contents_;
 
   bool plugins_;
@@ -90,7 +104,6 @@ class WebContentsPreferences
   bool disable_html_fullscreen_window_resize_;
   bool webview_tag_;
   absl::optional<bool> sandbox_;
-  bool native_window_open_;
   bool context_isolation_;
   bool javascript_;
   bool images_;
@@ -108,7 +121,6 @@ class WebContentsPreferences
   absl::optional<int> default_monospace_font_size_;
   absl::optional<int> minimum_font_size_;
   absl::optional<std::string> default_encoding_;
-  int opener_id_;
   bool is_webview_;
   std::vector<std::string> custom_args_;
   std::vector<std::string> custom_switches_;
@@ -119,12 +131,12 @@ class WebContentsPreferences
   bool safe_dialogs_;
   absl::optional<std::string> safe_dialogs_message_;
   bool ignore_menu_shortcuts_;
-  SkColor background_color_;
+  absl::optional<SkColor> background_color_;
   blink::mojom::ImageAnimationPolicy image_animation_policy_;
   absl::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
 
-#if defined(OS_MAC)
+#if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -136,10 +148,8 @@ class WebContentsPreferences
   base::Value last_web_preferences_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_

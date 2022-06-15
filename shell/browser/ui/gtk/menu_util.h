@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_GTK_MENU_UTIL_H_
-#define SHELL_BROWSER_UI_GTK_MENU_UTIL_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_GTK_MENU_UTIL_H_
+#define ELECTRON_SHELL_BROWSER_UI_GTK_MENU_UTIL_H_
 
 #include <gtk/gtk.h>
 
@@ -60,4 +60,4 @@ void SetMenuItemInfo(GtkWidget* widget, void* block_activation_ptr);
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_GTK_MENU_UTIL_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_GTK_MENU_UTIL_H_

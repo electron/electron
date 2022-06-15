@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_
-#define SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_
 
 #include <memory>
 
@@ -26,6 +26,10 @@ class RootView : public views::View {
  public:
   explicit RootView(NativeWindow* window);
   ~RootView() override;
+
+  // disable copy
+  RootView(const RootView&) = delete;
+  RootView& operator=(const RootView&) = delete;
 
   void SetMenu(ElectronMenuModel* menu_model);
   bool HasMenu() const;
@@ -61,10 +65,8 @@ class RootView : public views::View {
   accelerator_util::AcceleratorTable accelerator_table_;
 
   std::unique_ptr<views::ViewTracker> last_focused_view_tracker_;
-
-  DISALLOW_COPY_AND_ASSIGN(RootView);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_ROOT_VIEW_H_

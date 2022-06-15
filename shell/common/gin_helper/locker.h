@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_LOCKER_H_
-#define SHELL_COMMON_GIN_HELPER_LOCKER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_LOCKER_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_LOCKER_H_
 
 #include <memory>
 
-#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace gin_helper {
@@ -18,9 +17,15 @@ class Locker {
   explicit Locker(v8::Isolate* isolate);
   ~Locker();
 
+  // disable copy
+  Locker(const Locker&) = delete;
+  Locker& operator=(const Locker&) = delete;
+
   // Returns whether current process is browser process, currently we detect it
   // by checking whether current has used V8 Lock, but it might be a bad idea.
-  static inline bool IsBrowserProcess() { return v8::Locker::IsActive(); }
+  static inline bool IsBrowserProcess() { return g_is_browser_process; }
+
+  static void SetIsBrowserProcess(bool is_browser_process);
 
  private:
   void* operator new(size_t size);
@@ -28,9 +33,9 @@ class Locker {
 
   std::unique_ptr<v8::Locker> locker_;
 
-  DISALLOW_COPY_AND_ASSIGN(Locker);
+  static bool g_is_browser_process;
 };
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_LOCKER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_LOCKER_H_

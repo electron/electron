@@ -1,16 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import json
 import os
 import sys
-import urllib2
+from urllib.request import Request, urlopen
 
 sys.path.append(
   os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../.."))
 
-from lib.config import s3_config
-from lib.util import s3put, scoped_cwd, safe_mkdir, get_out_dir, ELECTRON_DIR
+from lib.util import store_artifact, scoped_cwd, safe_mkdir, get_out_dir, \
+  ELECTRON_DIR
 
 OUT_DIR     = get_out_dir()
 
@@ -28,12 +28,12 @@ def is_json(myjson):
 
 def get_content(retry_count = 5):
   try:
-    request = urllib2.Request(
+    request = Request(
       BASE_URL + version,
       headers={"Authorization" : authToken}
     )
 
-    proposed_content = urllib2.urlopen(
+    proposed_content = urlopen(
       request
     ).read()
 
@@ -56,12 +56,10 @@ def main():
 
     new_content = get_content()
 
-    with open(index_json, "w") as f:
+    with open(index_json, "wb") as f:
       f.write(new_content)
 
-    bucket, access_key, secret_key = s3_config()
-    s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
-          [index_json])
+    store_artifact(OUT_DIR, 'headers/dist', [index_json])
 
 
 if __name__ == '__main__':

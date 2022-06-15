@@ -15,7 +15,7 @@
 
 #include "base/debug/leak_annotations.h"
 #include "base/posix/eintr_wrapper.h"
-#include "base/task/post_task.h"
+#include "base/threading/platform_thread.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/browser.h"
@@ -84,6 +84,10 @@ class ShutdownDetector : public base::PlatformThread::Delegate {
       base::OnceCallback<void()> shutdown_callback,
       const scoped_refptr<base::SingleThreadTaskRunner>& task_runner);
 
+  // disable copy
+  ShutdownDetector(const ShutdownDetector&) = delete;
+  ShutdownDetector& operator=(const ShutdownDetector&) = delete;
+
   // base::PlatformThread::Delegate:
   void ThreadMain() override;
 
@@ -91,8 +95,6 @@ class ShutdownDetector : public base::PlatformThread::Delegate {
   const int shutdown_fd_;
   base::OnceCallback<void()> shutdown_callback_;
   const scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
-
-  DISALLOW_COPY_AND_ASSIGN(ShutdownDetector);
 };
 
 ShutdownDetector::ShutdownDetector(

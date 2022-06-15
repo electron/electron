@@ -1,4 +1,11 @@
-# Recent Documents (Windows & macOS)
+---
+title: Recent Documents
+description: Provide a list of recent documents via Windows JumpList or macOS Dock
+slug: recent-documents
+hide_title: true
+---
+
+# Recent Documents
 
 ## Overview
 

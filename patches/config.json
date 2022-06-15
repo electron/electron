@@ -3,11 +3,17 @@
 
   "src/electron/patches/boringssl": "src/third_party/boringssl/src",
 
+  "src/electron/patches/devtools_frontend": "src/third_party/devtools-frontend/src",
+
   "src/electron/patches/webrtc": "src/third_party/webrtc",
 
   "src/electron/patches/v8":  "src/v8",
 
   "src/electron/patches/node": "src/third_party/electron_node",
+
+  "src/electron/patches/nan": "src/third_party/nan",
+
+  "src/electron/patches/perfetto": "src/third_party/perfetto",
 
   "src/electron/patches/squirrel.mac": "src/third_party/squirrel.mac",
 

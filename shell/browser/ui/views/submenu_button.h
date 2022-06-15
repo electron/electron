@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
-#define SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
 
 #include <memory>
 
@@ -20,6 +20,10 @@ class SubmenuButton : public views::MenuButton {
                 const std::u16string& title,
                 const SkColor& background_color);
   ~SubmenuButton() override;
+
+  // disable copy
+  SubmenuButton(const SubmenuButton&) = delete;
+  SubmenuButton& operator=(const SubmenuButton&) = delete;
 
   void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);
@@ -50,10 +54,8 @@ class SubmenuButton : public views::MenuButton {
   int text_height_ = 0;
   SkColor underline_color_ = SK_ColorBLACK;
   SkColor background_color_;
-
-  DISALLOW_COPY_AND_ASSIGN(SubmenuButton);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_

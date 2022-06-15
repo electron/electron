@@ -84,7 +84,7 @@ bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
   // Check if we can write to the applications directory
   // and then make sure that if the app already exists we can overwrite it
   bool needAuthorization =
-      ![fileManager isWritableFileAtPath:applicationsDirectory] |
+      ![fileManager isWritableFileAtPath:applicationsDirectory] ||
       ([fileManager fileExistsAtPath:destinationPath] &&
        ![fileManager isWritableFileAtPath:destinationPath]);
 
@@ -291,9 +291,10 @@ bool ElectronBundleMover::AuthorizedInstall(NSString* srcPath,
 
   AuthorizationItem myItems = {kAuthorizationRightExecute, 0, NULL, 0};
   AuthorizationRights myRights = {1, &myItems};
-  AuthorizationFlags myFlags = (AuthorizationFlags)(
-      kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights |
-      kAuthorizationFlagPreAuthorize);
+  AuthorizationFlags myFlags =
+      (AuthorizationFlags)(kAuthorizationFlagInteractionAllowed |
+                           kAuthorizationFlagExtendRights |
+                           kAuthorizationFlagPreAuthorize);
 
   err = AuthorizationCopyRights(myAuthorizationRef, &myRights, NULL, myFlags,
                                 NULL);

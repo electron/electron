@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-from util import SRC_DIR
+from lib.util import SRC_DIR
 
 PYYAML_LIB_DIR = os.path.join(SRC_DIR, 'third_party', 'pyyaml', 'lib')
 sys.path.append(PYYAML_LIB_DIR)
@@ -69,7 +69,8 @@ class Platform:
     if platform in ('cygwin', 'win32'):
       return Platform.WINDOWS
 
-    assert False, "unexpected current platform '{}'".format(platform)
+    raise AssertionError(
+        "unexpected current platform '{}'".format(platform))
 
   @staticmethod
   def get_all():
@@ -155,7 +156,7 @@ class TestsList():
     if isinstance(value, basestring):
       return {value: None}
 
-    assert False, "unexpected shorthand type: {}".format(type(value))
+    raise AssertionError("unexpected shorthand type: {}".format(type(value)))
 
   @staticmethod
   def __make_a_list(value):
@@ -174,7 +175,8 @@ class TestsList():
       # It looks ugly as hell, but it does the job.
       return [list_item for key in value for list_item in value[key]]
 
-    assert False, "unexpected type for list merging: {}".format(type(value))
+    raise AssertionError(
+        "unexpected type for list merging: {}".format(type(value)))
 
   def __platform_supports(self, binary_name):
     return Platform.get_current() in self.tests[binary_name]['platforms']

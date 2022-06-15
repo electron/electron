@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_AUTOFILL_POPUP_H_
-#define SHELL_BROWSER_UI_AUTOFILL_POPUP_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_AUTOFILL_POPUP_H_
+#define ELECTRON_SHELL_BROWSER_UI_AUTOFILL_POPUP_H_
 
 #include <vector>
 
 #include "content/public/browser/render_frame_host.h"
 #include "shell/browser/ui/views/autofill_popup_view.h"
+#include "ui/color/color_id.h"
 #include "ui/gfx/font_list.h"
-#include "ui/native_theme/native_theme.h"
 #include "ui/views/view.h"
 #include "ui/views/widget/widget.h"
 
@@ -22,6 +22,10 @@ class AutofillPopup : public views::ViewObserver {
  public:
   AutofillPopup();
   ~AutofillPopup() override;
+
+  // disable copy
+  AutofillPopup(const AutofillPopup&) = delete;
+  AutofillPopup& operator=(const AutofillPopup&) = delete;
 
   void CreateView(content::RenderFrameHost* render_frame,
                   content::RenderFrameHost* embedder_frame,
@@ -50,7 +54,7 @@ class AutofillPopup : public views::ViewObserver {
   gfx::Rect GetRowBounds(int i);
   const gfx::FontList& GetValueFontListForRow(int index) const;
   const gfx::FontList& GetLabelFontListForRow(int index) const;
-  ui::NativeTheme::ColorId GetBackgroundColorIDForRow(int index) const;
+  ui::ColorId GetBackgroundColorIDForRow(int index) const;
 
   int GetLineCount();
   std::u16string GetValueAt(int i);
@@ -82,10 +86,8 @@ class AutofillPopup : public views::ViewObserver {
 
   // The parent view that the popup view shows on. Weak ref.
   views::View* parent_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(AutofillPopup);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_AUTOFILL_POPUP_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_AUTOFILL_POPUP_H_

@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Fri, 28 Jan 2022 15:07:54 -0800
+Subject: define ssize_t to be intptr_t to match libuv
+
+This definition conflicts with libuv's: https://github.com/libuv/libuv/blob/bb0b4bb783da45ca995d8fb3d5dec0ed84133446/include/uv/win.h#L26-L31
+
+Breaks the build on 32-bit windows.
+
+diff --git a/include/perfetto/ext/base/sys_types.h b/include/perfetto/ext/base/sys_types.h
+index 999a1522f4397def080ad0056ff3f626e2f0cdbe..a3e24ae047a2185b66136184e95427e6e849194f 100644
+--- a/include/perfetto/ext/base/sys_types.h
++++ b/include/perfetto/ext/base/sys_types.h
+@@ -32,11 +32,7 @@ using uid_t = unsigned int;
+ using pid_t = int;
+ #endif  // !GCC
+ 
+-#if defined(_WIN64)
+-using ssize_t = int64_t;
+-#else
+-using ssize_t = long;
+-#endif  // _WIN64
++using ssize_t = intptr_t;
+ 
+ #endif  // OS_WIN
+ 

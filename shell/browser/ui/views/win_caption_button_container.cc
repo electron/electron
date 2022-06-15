@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Modified from
+// chrome/browser/ui/views/frame/glass_browser_caption_button_container.cc
+
 #include "shell/browser/ui/views/win_caption_button_container.h"
 
 #include <memory>
@@ -94,6 +97,18 @@ int WinCaptionButtonContainer::NonClientHitTest(const gfx::Point& point) const {
     return HTCLOSE;
   }
   return HTCAPTION;
+}
+
+gfx::Size WinCaptionButtonContainer::GetButtonSize() const {
+  // Close button size is set the same as all the buttons
+  return close_button_->GetSize();
+}
+
+void WinCaptionButtonContainer::SetButtonSize(gfx::Size size) {
+  minimize_button_->SetSize(size);
+  maximize_button_->SetSize(size);
+  restore_button_->SetSize(size);
+  close_button_->SetSize(size);
 }
 
 void WinCaptionButtonContainer::ResetWindowControls() {

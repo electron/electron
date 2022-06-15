@@ -2,12 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
-#define SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
 
 #include <vector>
 
-#include "base/macros.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/common/api/api.mojom.h"
@@ -32,6 +31,10 @@ class InspectableWebContentsView;
 class NativeBrowserView : public content::WebContentsObserver {
  public:
   ~NativeBrowserView() override;
+
+  // disable copy
+  NativeBrowserView(const NativeBrowserView&) = delete;
+  NativeBrowserView& operator=(const NativeBrowserView&) = delete;
 
   static NativeBrowserView* Create(
       InspectableWebContents* inspectable_web_contents);
@@ -65,11 +68,8 @@ class NativeBrowserView : public content::WebContentsObserver {
 
   InspectableWebContents* inspectable_web_contents_;
   std::vector<mojom::DraggableRegionPtr> draggable_regions_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(NativeBrowserView);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_

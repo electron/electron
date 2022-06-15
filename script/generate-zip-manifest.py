@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import zipfile
 import sys
@@ -11,4 +11,4 @@ def main(zip_path, manifest_out):
   return 0
 
 if __name__ == '__main__':
-  sys.exit(main(*sys.argv[1:]))
+  sys.exit(main(sys.argv[1], sys.argv[2]))

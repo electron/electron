@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_UI_DEVTOOLS_UI_H_
-#define SHELL_BROWSER_UI_DEVTOOLS_UI_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_H_
+#define ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_H_
 
 #include "base/compiler_specific.h"
 #include "content/public/browser/browser_context.h"
@@ -16,10 +16,11 @@ class DevToolsUI : public content::WebUIController {
   explicit DevToolsUI(content::BrowserContext* browser_context,
                       content::WebUI* web_ui);
 
- private:
-  DISALLOW_COPY_AND_ASSIGN(DevToolsUI);
+  // disable copy
+  DevToolsUI(const DevToolsUI&) = delete;
+  DevToolsUI& operator=(const DevToolsUI&) = delete;
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_DEVTOOLS_UI_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_H_

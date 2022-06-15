@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
-#define SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
 
 #include <string>
 
@@ -43,6 +43,10 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   base::FilePath GetSavePath() const;
   file_dialog::DialogSettings GetSaveDialogOptions() const;
 
+  // disable copy
+  DownloadItem(const DownloadItem&) = delete;
+  DownloadItem& operator=(const DownloadItem&) = delete;
+
  private:
   DownloadItem(v8::Isolate* isolate, download::DownloadItem* item);
   ~DownloadItem() override;
@@ -81,12 +85,10 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   v8::Isolate* isolate_;
 
   base::WeakPtrFactory<DownloadItem> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(DownloadItem);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_

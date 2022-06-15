@@ -13,7 +13,7 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
   },
   {
     name: 'nativeImage',
-    loader: () => require('@electron/internal/renderer/api/native-image')
+    loader: () => require('@electron/internal/common/api/native-image')
   },
   {
     name: 'webFrame',
@@ -26,10 +26,3 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
     private: true
   }
 ];
-
-if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
-  moduleList.push({
-    name: 'desktopCapturer',
-    loader: () => require('@electron/internal/renderer/api/desktop-capturer')
-  });
-}

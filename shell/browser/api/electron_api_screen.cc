@@ -20,7 +20,7 @@
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "ui/display/win/screen_win.h"
 #endif
 
@@ -90,7 +90,7 @@ display::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) {
   return screen_->GetDisplayMatching(match_rect);
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 
 static gfx::Rect ScreenToDIPRect(electron::NativeWindow* window,
                                  const gfx::Rect& rect) {
@@ -153,7 +153,7 @@ gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
       .SetMethod("getPrimaryDisplay", &Screen::GetPrimaryDisplay)
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
       .SetMethod("getDisplayNearestPoint", &Screen::GetDisplayNearestPoint)
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       .SetMethod("screenToDipPoint", &display::win::ScreenWin::ScreenToDIPPoint)
       .SetMethod("dipToScreenPoint", &display::win::ScreenWin::DIPToScreenPoint)
       .SetMethod("screenToDipRect", &ScreenToDIPRect)

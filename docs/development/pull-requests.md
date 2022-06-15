@@ -45,10 +45,10 @@ Once you've built the project locally, you're ready to start making changes!
 ### Step 3: Branch
 
 To keep your development environment organized, create local branches to
-hold your work. These should be branched directly off of the `master` branch.
+hold your work. These should be branched directly off of the `main` branch.
 
 ```sh
-$ git checkout -b my-branch -t upstream/master
+$ git checkout -b my-branch -t upstream/main
 ```
 
 ## Making Changes
@@ -79,7 +79,7 @@ $ git add my/changed/files
 $ git commit
 ```
 
-Note that multiple commits often get squashed when they are landed.
+Note that multiple commits get squashed when they are landed.
 
 #### Commit message guidelines
 
@@ -134,11 +134,11 @@ Once you have committed your changes, it is a good idea to use `git rebase`
 
 ```sh
 $ git fetch upstream
-$ git rebase upstream/master
+$ git rebase upstream/main
 ```
 
 This ensures that your working branch has the latest changes from `electron/electron`
-master.
+main.
 
 ### Step 7: Test
 
@@ -180,18 +180,10 @@ $ git push origin my-branch
 ### Step 9: Opening the Pull Request
 
 From within GitHub, opening a new pull request will present you with a template
-that should be filled out:
+that should be filled out. It can be found [here](https://github.com/electron/electron/blob/main/.github/PULL_REQUEST_TEMPLATE.md).
 
-```markdown
-<!--
-Thank you for your pull request. Please provide a description above and review
-the requirements below.
-
-Bug fixes and new features should include tests and possibly benchmarks.
-
-Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTING.md
--->
-```
+If you do not adequately complete this template, your PR may be delayed in being merged as maintainers
+seek more information or clarify ambiguities.
 
 ### Step 10: Discuss and update
 
@@ -222,7 +214,7 @@ seem unfamiliar, refer to this
 #### Approval and Request Changes Workflow
 
 All pull requests require approval from a
-[Code Owner](https://github.com/electron/electron/blob/master/.github/CODEOWNERS)
+[Code Owner](https://github.com/electron/electron/blob/main/.github/CODEOWNERS)
 of the area you modified in order to land. Whenever a maintainer reviews a pull
 request they may request changes. These may be small, such as fixing a typo, or
 may involve substantive changes. Such requests are intended to be helpful, but

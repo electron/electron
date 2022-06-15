@@ -39,8 +39,6 @@ std::string MessageSourceToString(
     return "console-api";
   if (source == blink::mojom::ConsoleMessageSource::kStorage)
     return "storage";
-  if (source == blink::mojom::ConsoleMessageSource::kAppCache)
-    return "app-cache";
   if (source == blink::mojom::ConsoleMessageSource::kRendering)
     return "rendering";
   if (source == blink::mojom::ConsoleMessageSource::kSecurity)

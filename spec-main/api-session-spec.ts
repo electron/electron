@@ -216,7 +216,8 @@ describe('session module', () => {
       });
     });
 
-    it('should survive an app restart for persistent partition', async () => {
+    it('should survive an app restart for persistent partition', async function () {
+      this.timeout(60000);
       const appPath = path.join(fixtures, 'api', 'cookie-app');
 
       const runAppWithPhase = (phase: string) => {
@@ -559,8 +560,8 @@ describe('session module', () => {
       const ses = session.fromPartition(`${Math.random()}`);
       let validate: () => void;
       ses.setCertificateVerifyProc(({ hostname, verificationResult, errorCode }, callback) => {
+        if (hostname !== '127.0.0.1') return callback(-3);
         validate = () => {
-          expect(hostname).to.equal('127.0.0.1');
           expect(verificationResult).to.be.oneOf(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID']);
           expect(errorCode).to.be.oneOf([-202, -200]);
         };
@@ -578,8 +579,8 @@ describe('session module', () => {
       const ses = session.fromPartition(`${Math.random()}`);
       let validate: () => void;
       ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult, isIssuedByKnownRoot }, callback) => {
+        if (hostname !== '127.0.0.1') return callback(-3);
         validate = () => {
-          expect(hostname).to.equal('127.0.0.1');
           expect(certificate.issuerName).to.equal('Intermediate CA');
           expect(certificate.subjectName).to.equal('localhost');
           expect(certificate.issuer.commonName).to.equal('Intermediate CA');
@@ -607,6 +608,7 @@ describe('session module', () => {
       const ses = session.fromPartition(`${Math.random()}`);
       let numVerificationRequests = 0;
       ses.setCertificateVerifyProc((e, callback) => {
+        if (e.hostname !== '127.0.0.1') return callback(-3);
         numVerificationRequests++;
         callback(-2);
       });
@@ -1117,6 +1119,20 @@ describe('session module', () => {
 
     it('returns different paths for different partitions', () => {
       expect(session.fromPartition('persist:one').storagePath).to.not.equal(session.fromPartition('persist:two').storagePath);
+    });
+  });
+
+  describe('session.setCodeCachePath()', () => {
+    it('throws when relative or empty path is provided', () => {
+      expect(() => {
+        session.defaultSession.setCodeCachePath('../fixtures');
+      }).to.throw('Absolute path must be provided to store code cache.');
+      expect(() => {
+        session.defaultSession.setCodeCachePath('');
+      }).to.throw('Absolute path must be provided to store code cache.');
+      expect(() => {
+        session.defaultSession.setCodeCachePath(path.join(app.getPath('userData'), 'electron-test-code-cache'));
+      }).to.not.throw();
     });
   });
 

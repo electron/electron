@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_ELECTRON_RENDERER_CLIENT_H_
-#define SHELL_RENDERER_ELECTRON_RENDERER_CLIENT_H_
+#ifndef ELECTRON_SHELL_RENDERER_ELECTRON_RENDERER_CLIENT_H_
+#define ELECTRON_SHELL_RENDERER_ELECTRON_RENDERER_CLIENT_H_
 
 #include <memory>
 #include <set>
@@ -24,6 +24,10 @@ class ElectronRendererClient : public RendererClientBase {
  public:
   ElectronRendererClient();
   ~ElectronRendererClient() override;
+
+  // disable copy
+  ElectronRendererClient(const ElectronRendererClient&) = delete;
+  ElectronRendererClient& operator=(const ElectronRendererClient&) = delete;
 
   // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
@@ -58,10 +62,8 @@ class ElectronRendererClient : public RendererClientBase {
   // its script context. Doing so in a web page without scripts would trigger
   // assertion, so we have to keep a book of injected web frames.
   std::set<content::RenderFrame*> injected_frames_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronRendererClient);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_ELECTRON_RENDERER_CLIENT_H_
+#endif  // ELECTRON_SHELL_RENDERER_ELECTRON_RENDERER_CLIENT_H_

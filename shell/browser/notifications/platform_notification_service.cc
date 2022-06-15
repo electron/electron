@@ -46,6 +46,10 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
   explicit NotificationDelegateImpl(const std::string& notification_id)
       : notification_id_(notification_id) {}
 
+  // disable copy
+  NotificationDelegateImpl(const NotificationDelegateImpl&) = delete;
+  NotificationDelegateImpl& operator=(const NotificationDelegateImpl&) = delete;
+
   void NotificationDestroyed() override { delete this; }
 
   void NotificationClick() override {
@@ -65,8 +69,6 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
 
  private:
   std::string notification_id_;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationDelegateImpl);
 };
 
 }  // namespace

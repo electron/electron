@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
-#define SHELL_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
+#ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
+#define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
 
 #include "shell/browser/notifications/notification_presenter.h"
 
@@ -18,10 +18,8 @@ class NotificationPresenterLinux : public NotificationPresenter {
  private:
   Notification* CreateNotificationObject(
       NotificationDelegate* delegate) override;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationPresenterLinux);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_
+#endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_LINUX_NOTIFICATION_PRESENTER_LINUX_H_

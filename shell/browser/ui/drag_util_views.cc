@@ -24,9 +24,8 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   // Set up our OLE machinery
   auto data = std::make_unique<ui::OSExchangeData>();
 
-  button_drag_utils::SetDragImage(
-      GURL(), files[0].LossyDisplayName(), icon.AsImageSkia(), nullptr,
-      *views::Widget::GetTopLevelWidgetForNativeView(view), data.get());
+  button_drag_utils::SetDragImage(GURL(), files[0].LossyDisplayName(),
+                                  icon.AsImageSkia(), nullptr, data.get());
 
   std::vector<ui::FileInfo> file_infos;
   file_infos.reserve(files.size());
