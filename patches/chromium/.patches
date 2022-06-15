@@ -111,3 +111,4 @@ make_gtk_getlibgtk_public.patch
 build_disable_print_content_analysis.patch
 custom_protocols_plzserviceworker.patch
 feat_filter_out_non-shareable_windows_in_the_current_application_in.patch
+make_gtk_getlibgdkpixbuf_public.patch

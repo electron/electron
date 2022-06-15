@@ -371,6 +371,11 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
     electron::UninitializeElectron_gtk();
   }
 
+  electron::InitializeElectron_gdk_pixbuf(gtk::GetLibGdkPixbuf());
+  if (!electron::IsElectron_gdk_pixbufInitialized()) {
+    electron::UninitializeElectron_gdk_pixbuf();
+  }
+
   // Chromium does not respect GTK dark theme setting, but they may change
   // in future and this code might be no longer needed. Check the Chromium
   // issue to keep updated:
