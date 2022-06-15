@@ -13,7 +13,7 @@ const fail = '✗'.red;
 
 const args = require('minimist')(process.argv, {
   string: ['runners', 'target'],
-  boolean: ['buildNativeTests', 'runTestFilesSeperately'],
+  boolean: ['buildNativeTests', 'runTestFilesSeparately'],
   unknown: arg => unknownFlags.push(arg)
 });
 
@@ -155,7 +155,7 @@ const specFilter = (file) => {
 };
 
 async function runTests (specDir, testName) {
-  if (args.runTestFilesSeperately) {
+  if (args.runTestFilesSeparately) {
     const getFiles = require('../spec/static/get-files');
     const testFiles = await getFiles(path.resolve(__dirname, `../${specDir}`), { filter: specFilter });
     const baseElectronDir = path.resolve(__dirname, '..');
