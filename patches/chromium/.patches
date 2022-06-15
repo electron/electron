@@ -123,5 +123,6 @@ custom_protocols_plzserviceworker.patch
 pa_support_16kb_pagesize_on_linux_arm64.patch
 cherry-pick-f1504440487f.patch
 cherry-pick-21139756239b.patch
+cherry-pick-f3d01ff794dc.patch
 cherry-pick-919b1ffe1fe7.patch
 cherry-pick-f1dd785e021e.patch
