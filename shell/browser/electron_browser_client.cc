@@ -497,11 +497,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
 
-  auto preloads =
-      SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
-  if (!preloads.empty())
-    prefs->preloads = preloads;
-
   SetFontDefaults(prefs);
 
   // Custom preferences of guest page.

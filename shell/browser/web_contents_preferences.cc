@@ -486,10 +486,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 
   prefs->offscreen = offscreen_;
 
-  // The preload script.
-  if (preload_path_)
-    prefs->preload = *preload_path_;
-
   prefs->node_integration = node_integration_;
   prefs->node_integration_in_worker = node_integration_in_worker_;
   prefs->node_integration_in_sub_frames = node_integration_in_sub_frames_;
