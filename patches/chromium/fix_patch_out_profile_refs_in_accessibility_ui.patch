@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 82794034de0fccde58d04acbe6a799ba5cd57619..505376836fb93df7ebececab0e4f8fe8299fe9e8 100644
+index 35568a00ef94ca0db2cbb0325634ce8d2a881e12..a8ea8eaabb7cf3248b19af93bf5002f88e23fd8d 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -22,7 +22,10 @@
