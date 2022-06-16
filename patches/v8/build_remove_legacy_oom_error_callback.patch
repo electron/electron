@@ -15,10 +15,10 @@ This patch can be removed in v8 10.6, when legacy_oom_error_callback
 is removed.
 
 diff --git a/include/v8-callbacks.h b/include/v8-callbacks.h
-index fe0b1347fb20319c4492492b9d4bedbf1d24d276..2ecde365d5a5370d494142f63bc34f9e3c320410 100644
+index b39921dea0415362d1a30159f3fac0e345e2313e..810fc4edaf69565959148d3c1ec662f0db3e8490 100644
 --- a/include/v8-callbacks.h
 +++ b/include/v8-callbacks.h
-@@ -216,10 +216,6 @@ using AddHistogramSampleCallback = void (*)(void* histogram, int sample);
+@@ -217,10 +217,6 @@ using AddHistogramSampleCallback = void (*)(void* histogram, int sample);
  
  using FatalErrorCallback = void (*)(const char* location, const char* message);
  
@@ -44,7 +44,7 @@ index 5cadd1788926a7b305ba4d05792b9efa6183d73e..c01c337317afb088927cae0239542281
     * Get statistics about the shared memory usage.
     */
 diff --git a/include/v8-isolate.h b/include/v8-isolate.h
-index b339fe33845d2188ad18136393fe7592f061f03f..1e344b2cbcee082f4b2a65c6ab65b0ccce86cc34 100644
+index b54c7388603b4582356f6741c9a36f2835aa1928..b9533b78046228705e2038396eebf23b1d663df1 100644
 --- a/include/v8-isolate.h
 +++ b/include/v8-isolate.h
 @@ -288,9 +288,6 @@ class V8_EXPORT Isolate {
@@ -69,7 +69,7 @@ index b339fe33845d2188ad18136393fe7592f061f03f..1e344b2cbcee082f4b2a65c6ab65b0cc
    void SetOOMErrorHandler(OOMErrorCallback that);
  
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 66cdabeb808e8fe9b2ca998886000b0b1e9d1ade..65a096fa5e67255e71d07e3bee0778b2735da782 100644
+index 7d8d8b699d2b10e026617ea9716ac913a2d44aea..95f77280c471d250eec7da2c7cd64332f8778136 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -167,13 +167,6 @@
@@ -146,10 +146,10 @@ index 66cdabeb808e8fe9b2ca998886000b0b1e9d1ade..65a096fa5e67255e71d07e3bee0778b2
                  ModifyCodeGenerationFromStringsCallback2,
                  modify_code_gen_callback2)
 diff --git a/src/execution/isolate.h b/src/execution/isolate.h
-index a25b0197eb8cb5adcde715d37cabb62cc4707de1..80b8d1630963839a91033b4e672d7958864dccbc 100644
+index b918580c9ca02b55175490282ae8f31bae145d17..546ae83455d14b15ccffe208c3fb933cbc63bf07 100644
 --- a/src/execution/isolate.h
 +++ b/src/execution/isolate.h
-@@ -476,16 +476,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();
+@@ -481,16 +481,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();
  
  using DebugObjectCache = std::vector<Handle<HeapObject>>;
  
