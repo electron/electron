@@ -243,7 +243,7 @@ describe('<webview> tag', function () {
     it('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload-node-off-wrapper.js`,
-        sandbox: false,
+        webpreferences: 'sandbox=no',
         src: `file://${fixtures}/api/blank.html`
       });
 
@@ -289,7 +289,7 @@ describe('<webview> tag', function () {
     it('works without script tag in page', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload.js`,
-        sandbox: false,
+        webpreferences: 'sandbox=no',
         src: `file://${fixtures}pages/base-page.html`
       });
 
@@ -305,7 +305,7 @@ describe('<webview> tag', function () {
     it('resolves relative URLs', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: '../fixtures/module/preload.js',
-        sandbox: false,
+        webpreferences: 'sandbox=no',
         src: `file://${fixtures}/pages/e.html`
       });
 
@@ -393,7 +393,7 @@ describe('<webview> tag', function () {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         disablewebsecurity: '',
         preload: `${fixtures}/module/preload.js`,
-        sandbox: false,
+        webpreferences: 'sandbox=no',
         src: `file://${fixtures}/pages/e.html`
       });
 
