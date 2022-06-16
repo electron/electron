@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Wed, 27 Apr 2022 20:51:50 +0000
+Subject: Reland "Close a MessagePort if it is created in a destroyed context."
+
+This is a reland of commit 068f13cc5aa5f7a6e9faf28d8731275e64cb657b
+
+This reland changes the timeout in the test from 3 to 2 seconds, because
+two 3 second timeouts is too long for chrome's default overall test
+timeout of 6 seconds on non-dcheck release builds.
+
+Original change's description:
+> Close a MessagePort if it is created in a destroyed context.
+>
+> MessagePort assumes it is only destroyed either after ContextDestroyed,
+> or after the port has been closed explicitly. As it turns out ports that
+> were created in an already detached iframe would violate this invariant,
+> causing issues.
+>
+> Bug: 1228661
+> Change-Id: Ib1abce15f1d1d15f044de19fe0534767db488af0
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3561845
+> Reviewed-by: Jeremy Roman <jbroman@chromium.org>
+> Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#988859}
+
+Bug: 1228661
+Change-Id: Ifc5ec866678667b0d81438e2a2c8e5ada6e19d8c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3609249
+Commit-Queue: Jeremy Roman <jbroman@chromium.org>
+Reviewed-by: Jeremy Roman <jbroman@chromium.org>
+Auto-Submit: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#996880}
+
+diff --git a/third_party/blink/renderer/core/messaging/message_port.cc b/third_party/blink/renderer/core/messaging/message_port.cc
+index 6f67b21803fcdc2498ef207878d1541e04822fca..7f3df8ea567f91cd063122aab63a5c5424ab7919 100644
+--- a/third_party/blink/renderer/core/messaging/message_port.cc
++++ b/third_party/blink/renderer/core/messaging/message_port.cc
+@@ -55,7 +55,11 @@
+ namespace blink {
+ 
+ MessagePort::MessagePort(ExecutionContext& execution_context)
+-    : ExecutionContextLifecycleObserver(&execution_context),
++    : ExecutionContextLifecycleObserver(execution_context.IsContextDestroyed()
++                                            ? nullptr
++                                            : &execution_context),
++      // Ports in a destroyed context start out in a closed state.
++      closed_(execution_context.IsContextDestroyed()),
+       task_runner_(execution_context.GetTaskRunner(TaskType::kPostedMessage)) {}
+ 
+ MessagePort::~MessagePort() {
+@@ -168,10 +172,21 @@ void MessagePort::Entangle(MessagePortDescriptor port) {
+   DCHECK(port.IsValid());
+   DCHECK(!connector_);
+ 
++  // If the context was already destroyed, there is no reason to actually
++  // entangle the port and create a Connector. No messages will ever be able to
++  // be sent or received anyway, as StartReceiving will never be called.
++  if (!GetExecutionContext())
++    return;
++
+   port_ = std::move(port);
+   connector_ = std::make_unique<mojo::Connector>(
+       port_.TakeHandleToEntangle(GetExecutionContext()),
+       mojo::Connector::SINGLE_THREADED_SEND);
++  // The raw `this` is safe despite `this` being a garbage collected object
++  // because we make sure that:
++  // 1. This object will not be garbage collected while it is connected and
++  //    the execution context is not destroyed, and
++  // 2. when the execution context is destroyed, the connector_ is reset.
+   connector_->set_incoming_receiver(this);
+   connector_->set_connection_error_handler(
+       WTF::Bind(&MessagePort::close, WrapWeakPersistent(this)));
+diff --git a/third_party/blink/renderer/core/messaging/message_port.h b/third_party/blink/renderer/core/messaging/message_port.h
+index 83d7901d99ad01ba039ea1ffa3dbee2595fc31ff..f9baba3c6d13992508da48a13c97bb10c8ec56e0 100644
+--- a/third_party/blink/renderer/core/messaging/message_port.h
++++ b/third_party/blink/renderer/core/messaging/message_port.h
+@@ -148,7 +148,7 @@ class CORE_EXPORT MessagePort : public EventTargetWithInlineData,
+   std::unique_ptr<mojo::Connector> connector_;
+ 
+   bool started_ = false;
+-  bool closed_ = false;
++  bool closed_;
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/webmessaging/message-channels/detached-iframe.window.js b/third_party/blink/web_tests/external/wpt/webmessaging/message-channels/detached-iframe.window.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c1effaf141b7246320883e293b58dabbc3572123
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/webmessaging/message-channels/detached-iframe.window.js
+@@ -0,0 +1,47 @@
++// META: title=MessageChannel in a detached iframe test
++// META: script=/service-workers/service-worker/resources/test-helpers.sub.js
++// Pull in the with_iframe helper function from the service worker tests
++
++
++const IframeAction = {
++  REMOVE_BEFORE_CREATION: 'remove-before-creation',
++  REMOVE_AFTER_CREATION: 'remove-after-creation',
++};
++
++async function detached_frame_test(t, action) {
++  const iframe = await with_iframe('about:blank');
++  const iframe_MessageChannel = iframe.contentWindow.MessageChannel;
++
++  if (action === IframeAction.REMOVE_BEFORE_CREATION) {
++    iframe.remove();
++  }
++
++  (() => {
++    const mc = new iframe_MessageChannel();
++    mc.port1.postMessage("boo");
++    mc.port2.onmessage = t.unreached_func("message event received");
++    mc.port2.onmessageerror = t.unreached_func("message event received");
++  })();
++
++  if (action === IframeAction.REMOVE_AFTER_CREATION) {
++    iframe.remove();
++  }
++
++  // TODO(https://github.com/web-platform-tests/wpt/issues/7899): Change to
++  // some sort of cross-browser GC trigger.
++  if (self.gc) self.gc();
++
++  // We are testing that neither of the above two events fire. We assume that a 2 second timeout
++  // is good enough. We can't use any other API for an end condition because each MessagePort has
++  // its own independent port message queue, which has no ordering guarantees relative to other
++  // APIs.
++  await new Promise(resolve => t.step_timeout(resolve, 2000));
++}
++
++promise_test(async (t) => {
++  return detached_frame_test(t, IframeAction.REMOVE_AFTER_CREATION);
++}, 'MessageChannel created from a detached iframe should not send messages (remove after create)');
++
++promise_test(async (t) => {
++  return detached_frame_test(t, IframeAction.REMOVE_BEFORE_CREATION);
++}, 'MessageChannel created from a detached iframe should not send messages (remove before create)');
