@@ -13,6 +13,8 @@
 
   "src/electron/patches/nan": "src/third_party/nan",
 
+  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg",
+  
   "src/electron/patches/perfetto": "src/third_party/perfetto",
 
   "src/electron/patches/squirrel.mac": "src/third_party/squirrel.mac",
