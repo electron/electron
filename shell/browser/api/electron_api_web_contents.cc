@@ -451,7 +451,7 @@ std::pair<std::string, std::u16string> GetDefaultPrinterAsync() {
   // Check for existing printers and pick the first one should it exist.
   if (printer_name.empty()) {
     printing::PrinterList printers;
-    if (print_backend->EnumeratePrinters(&printers) !=
+    if (print_backend->EnumeratePrinters(printers) !=
         printing::mojom::ResultCode::kSuccess)
       return std::make_pair("Failed to enumerate printers", std::u16string());
     if (!printers.empty())
