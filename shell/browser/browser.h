@@ -227,11 +227,6 @@ class Browser : public WindowListObserver {
 
   // Set docks' icon.
   void DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
-
-  // Indicates that a new remote notification has been received while the app is
-  // running.
-  void DidReceiveAPNSNotification(const base::DictionaryValue& user_info);
-
 #endif  // BUILDFLAG(IS_MAC)
 
   void ShowAboutPanel();

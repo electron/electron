@@ -36,18 +36,22 @@ class PushNotifications
   PushNotifications(const PushNotifications&) = delete;
   PushNotifications& operator=(const PushNotifications&) = delete;
 
+#if BUILDFLAG(IS_MAC)
   void OnDidRegisterForAPNSNotificationsWithDeviceToken(
       const std::string& token);
   void OnDidFailToRegisterForAPNSNotificationsWithError(
       const std::string& error);
   void OnDidReceiveAPNSNotification(const base::DictionaryValue& user_info);
+#endif
 
  private:
   PushNotifications();
   ~PushNotifications() override;
 
+#if BUILDFLAG(IS_MAC)
   void RegisterForAPNSNotifications();
   void UnregisterForAPNSNotifications();
+#endif
 };
 
 }  // namespace api
