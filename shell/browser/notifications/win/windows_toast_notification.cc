@@ -321,6 +321,7 @@ HRESULT WindowsToastNotification::ShowInternal(
         };
     std::for_each(options.actions.begin(), options.actions.end(), add_inputs);
     std::for_each(options.actions.begin(), options.actions.end(), add_buttons);
+
     REPORT_AND_RETURN_IF_FAILED(
         SetToastXml(toast_xml.Get(), base::UTF16ToWide(options.title),
                     base::UTF16ToWide(options.msg), icon_path, image_path,
@@ -477,6 +478,7 @@ HRESULT WindowsToastNotification::SetToastXml(
         SetLaunchParams(toast_xml, data),
         "XML: Setting \"data\" option on notification failed");
   }
+
   for (const auto& action : actions_list) {
     std::wstring icon_path_ = base::UTF8ToWide(action.icon.spec());
     if (icon_path_.find(kFileUriPrefix) == 0) {
@@ -1123,8 +1125,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
           RETURN_IF_FAILED(GetReplyFromNotificationAction(
               replyMap, options_.actions[index], reply));
         }
-        base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                       base::BindOnce(&Notification::NotificationReplied,
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE, base::BindOnce(&Notification::NotificationReplied,
                                       notification_, reply));
         if (IsDebuggingNotifications())
           LOG(INFO) << "NotificationReplied";
@@ -1152,8 +1154,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
           index = std::distance(first, find);
         // Forwarding index == -1 will allow to distinguish click on toast
         // for this case event.action field will be empty
-        base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                       base::BindOnce(&Notification::NotificationAction,
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE, base::BindOnce(&Notification::NotificationAction,
                                       notification_, index));
         if (IsDebuggingNotifications())
           LOG(INFO) << "NotificationAction";
@@ -1161,8 +1163,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     }     // else options_.has_reply
   } else  // if options_.is_persistent
   {
-    base::PostTask(
-        FROM_HERE, {content::BrowserThread::UI},
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
         base::BindOnce(&Notification::NotificationClicked, notification_));
     if (IsDebuggingNotifications())
       LOG(INFO) << "Notification clicked";
@@ -1219,8 +1221,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     }
 
     if (!notification_is_exisit) {
-      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                     base::BindOnce(&Notification::NotificationDismissed,
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE, base::BindOnce(&Notification::NotificationDismissed,
                                     notification_, options_.is_persistent));
 
       if (IsDebuggingNotifications())
