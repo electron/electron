@@ -30,8 +30,6 @@ PushNotifications::~PushNotifications() {
   push_notifications = nullptr;
 }
 
-#if BUILDFLAG(IS_MAC)
-
 void PushNotifications::RegisterForAPNSNotifications() {
   [[AtomApplication sharedApplication]
       registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge |
@@ -57,7 +55,6 @@ void PushNotifications::OnDidReceiveAPNSNotification(
     const base::DictionaryValue& user_info) {
   Emit("received-apns-notification", user_info);
 }
-#endif
 
 // static
 PushNotifications* PushNotifications::Get() {
@@ -74,13 +71,11 @@ gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto builder = gin_helper::EventEmitterMixin<
       PushNotifications>::GetObjectTemplateBuilder(isolate);
-#if BUILDFLAG(IS_MAC)
   builder
       .SetMethod("registerForAPNSNotifications",
                  &PushNotifications::RegisterForAPNSNotifications)
       .SetMethod("unregisterForAPNSNotifications",
                  &PushNotifications::UnregisterForAPNSNotifications);
-#endif
   return builder;
 }
 
