@@ -115,7 +115,7 @@ async function getCircleCIWorkflowId (pipelineId) {
           workflowId = workflows.items.find(item => item.name.includes('publish')).id;
           break;
         }
-        console.log('Unxpected number of workflows, response was:', workflows);
+        console.log('Unexpected number of workflows, response was:', workflows);
         workflowId = -1;
         break;
       }
@@ -139,7 +139,7 @@ async function getCircleCIJobNumber (workflowId) {
       continue;
     }
     if (jobInfo.items.length !== 1) {
-      console.log('Unxpected number of jobs, response was:', jobInfo);
+      console.log('Unexpected number of jobs, response was:', jobInfo);
       jobNumber = -1;
       break;
     }

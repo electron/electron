@@ -3,7 +3,7 @@
 #  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
 #      e.g. 'target_cpu="x86"' to build for a 32bit platform.
 #      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
-#      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordningly
+#      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordingly
 #      if you pass a custom value for 'target_cpu'.
 #  - "ELECTRON_RELEASE" Set it to '1' upload binaries on success.
 #  - "NPM_CONFIG_ARCH" E.g. 'x86'. Is used to build native Node.js modules.
@@ -12,7 +12,7 @@
 #      Is used in some publishing scripts, but does NOT affect the Electron binary.
 #      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "NPM_CONFIG_ARCH" value.
 #  - "UPLOAD_TO_STORAGE" Set it to '1' upload a release to the Azure bucket.
-#      Otherwise the release will be uploaded to the Github Releases.
+#      Otherwise the release will be uploaded to the GitHub Releases.
 #      (The value is only checked if "ELECTRON_RELEASE" is defined.)
 #
 # The publishing scripts expect access tokens to be defined as env vars,
@@ -215,7 +215,7 @@ test_script:
       }
   - cd electron
   - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log )
-  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeperately --enable-logging=file --log-file=%cd%\electron.log )
+  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeparately --enable-logging=file --log-file=%cd%\electron.log )
   - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log )  
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )

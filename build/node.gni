@@ -1,6 +1,6 @@
 template("node_action") {
   assert(defined(invoker.script), "Need script path to run")
-  assert(defined(invoker.args), "Need script argumets")
+  assert(defined(invoker.args), "Need script arguments")
 
   action(target_name) {
     forward_variables_from(invoker,
