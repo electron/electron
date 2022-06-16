@@ -45,7 +45,7 @@ MediaStreamDevicesController::MediaStreamDevicesController(
 MediaStreamDevicesController::~MediaStreamDevicesController() {
   if (!callback_.is_null()) {
     std::move(callback_).Run(
-        blink::mojom::StreamDevicesSet(),
+        blink::mojom::StreamDevices(),
         blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN,
         std::unique_ptr<content::MediaStreamUI>());
   }
@@ -77,11 +77,7 @@ bool MediaStreamDevicesController::TakeAction() {
 
 void MediaStreamDevicesController::Accept() {
   // Get the default devices for the request.
-  blink::mojom::StreamDevicesSet stream_devices_set;
-  stream_devices_set.stream_devices.emplace_back(
-      blink::mojom::StreamDevices::New());
-  blink::mojom::StreamDevices& stream_devices =
-      *stream_devices_set.stream_devices[0];
+  blink::mojom::StreamDevices stream_devices;
   if (microphone_requested_ || webcam_requested_) {
     switch (request_.request_type) {
       case blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY: {
@@ -168,22 +164,19 @@ void MediaStreamDevicesController::Accept() {
     }
   }
 
-  std::move(callback_).Run(stream_devices_set,
+  std::move(callback_).Run(stream_devices,
                            blink::mojom::MediaStreamRequestResult::OK,
                            std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::Deny(
     blink::mojom::MediaStreamRequestResult result) {
-  std::move(callback_).Run(blink::mojom::StreamDevicesSet(), result,
+  std::move(callback_).Run(blink::mojom::StreamDevices(), result,
                            std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::HandleUserMediaRequest() {
-  blink::mojom::StreamDevicesSet stream_devices_set;
-  stream_devices_set.stream_devices.emplace_back(
-      blink::mojom::StreamDevices::New());
-  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+  blink::mojom::StreamDevices devices;
 
   if (request_.audio_type ==
       blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
@@ -222,7 +215,7 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
   bool empty =
       !devices.audio_device.has_value() && !devices.video_device.has_value();
   std::move(callback_).Run(
-      stream_devices_set,
+      devices,
       empty ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
             : blink::mojom::MediaStreamRequestResult::OK,
       std::unique_ptr<content::MediaStreamUI>());
