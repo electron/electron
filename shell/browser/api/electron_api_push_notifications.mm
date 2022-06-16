@@ -3,8 +3,11 @@
 // found in the LICENSE file.
 
 #include "shell/browser/api/electron_api_push_notifications.h"
+#include "shell/app/electron_main_delegate.h"
 
-#include "shell/browser/browser.h"
+#include <string>
+
+#import "shell/browser/mac/electron_application.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -13,21 +16,32 @@ namespace electron {
 
 namespace api {
 
+PushNotifications* push_notifications = nullptr;
+
 gin::WrapperInfo PushNotifications::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 PushNotifications::PushNotifications() {
-#if BUILDFLAG(IS_MAC)
-  Browser::Get()->AddObserver(this);
-#endif
+  DCHECK(!push_notifications);
+  push_notifications = this;
 }
 
 PushNotifications::~PushNotifications() {
-#if BUILDFLAG(IS_MAC)
-  Browser::Get()->RemoveObserver(this);
-#endif
+  DCHECK(push_notifications);
+  push_notifications = nullptr;
 }
 
 #if BUILDFLAG(IS_MAC)
+
+void PushNotifications::RegisterForAPNSNotifications() {
+  [[AtomApplication sharedApplication]
+      registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge |
+                                         NSRemoteNotificationTypeAlert |
+                                         NSRemoteNotificationTypeSound];
+}
+
+void PushNotifications::UnregisterForAPNSNotifications() {
+  [[AtomApplication sharedApplication] unregisterForRemoteNotifications];
+}
 
 void PushNotifications::OnDidRegisterForAPNSNotificationsWithDeviceToken(
     const std::string& token) {
@@ -46,6 +60,11 @@ void PushNotifications::OnDidReceiveAPNSNotification(
 #endif
 
 // static
+PushNotifications* PushNotifications::Get() {
+  return push_notifications;
+}
+
+// static
 gin::Handle<PushNotifications> PushNotifications::Create(v8::Isolate* isolate) {
   return gin::CreateHandle(isolate, new PushNotifications());
 }
@@ -56,14 +75,11 @@ gin::ObjectTemplateBuilder PushNotifications::GetObjectTemplateBuilder(
   auto builder = gin_helper::EventEmitterMixin<
       PushNotifications>::GetObjectTemplateBuilder(isolate);
 #if BUILDFLAG(IS_MAC)
-  auto browser = base::Unretained(Browser::Get());
   builder
-      .SetMethod(
-          "registerForAPNSNotifications",
-          base::BindRepeating(&Browser::RegisterForAPNSNotifications, browser))
+      .SetMethod("registerForAPNSNotifications",
+                 &PushNotifications::RegisterForAPNSNotifications)
       .SetMethod("unregisterForAPNSNotifications",
-                 base::BindRepeating(&Browser::UnregisterForAPNSNotifications,
-                                     browser));
+                 &PushNotifications::UnregisterForAPNSNotifications);
 #endif
   return builder;
 }

@@ -23,6 +23,7 @@ class PushNotifications
       public gin_helper::EventEmitterMixin<PushNotifications>,
       public BrowserObserver {
  public:
+  static PushNotifications* Get();
   static gin::Handle<PushNotifications> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
@@ -35,18 +36,21 @@ class PushNotifications
   PushNotifications(const PushNotifications&) = delete;
   PushNotifications& operator=(const PushNotifications&) = delete;
 
+#if BUILDFLAG(IS_MAC)
+  void OnDidRegisterForAPNSNotificationsWithDeviceToken(
+      const std::string& token);
+  void OnDidFailToRegisterForAPNSNotificationsWithError(
+      const std::string& error);
+  void OnDidReceiveAPNSNotification(const base::DictionaryValue& user_info);
+#endif
+
  private:
   PushNotifications();
   ~PushNotifications() override;
 
-  // BrowserObserver
 #if BUILDFLAG(IS_MAC)
-  void OnDidRegisterForAPNSNotificationsWithDeviceToken(
-      const std::string& token) override;
-  void OnDidFailToRegisterForAPNSNotificationsWithError(
-      const std::string& error) override;
-  void OnDidReceiveAPNSNotification(
-      const base::DictionaryValue& user_info) override;
+  void RegisterForAPNSNotifications();
+  void UnregisterForAPNSNotifications();
 #endif
 };
 

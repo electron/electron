@@ -542,33 +542,4 @@ void Browser::SetSecureKeyboardEntryEnabled(bool enabled) {
   }
 }
 
-void Browser::RegisterForAPNSNotifications() {
-  [[AtomApplication sharedApplication]
-      registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge |
-                                         NSRemoteNotificationTypeAlert |
-                                         NSRemoteNotificationTypeSound];
-}
-
-void Browser::UnregisterForAPNSNotifications() {
-  [[AtomApplication sharedApplication] unregisterForRemoteNotifications];
-}
-
-void Browser::DidRegisterForAPNSNotificationsWithDeviceToken(
-    const std::string& token) {
-  for (BrowserObserver& observer : observers_)
-    observer.OnDidRegisterForAPNSNotificationsWithDeviceToken(token);
-}
-
-void Browser::DidFailToRegisterForAPNSNotificationsWithError(
-    const std::string& error) {
-  for (BrowserObserver& observer : observers_)
-    observer.OnDidFailToRegisterForAPNSNotificationsWithError(error);
-}
-
-void Browser::DidReceiveAPNSNotification(
-    const base::DictionaryValue& user_info) {
-  for (BrowserObserver& observer : observers_)
-    observer.OnDidReceiveAPNSNotification(user_info);
-}
-
 }  // namespace electron
