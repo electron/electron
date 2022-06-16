@@ -52,6 +52,7 @@
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/browser_context_keyed_service_factories.h"
@@ -428,17 +429,36 @@ bool ElectronBrowserContext::ChooseMediaDevice(
     return false;
   MediaResponseCallbackJs callbackJs = base::BindOnce(
       [](content::MediaResponseCallback callback,
-         const blink::MediaStreamDevices& devices,
+         const std::vector<blink::mojom::StreamDevicesPtr>& stream_devices,
          blink::mojom::MediaStreamRequestResult result) {
-        for (const auto& device : devices) {
-          if (device.id.empty()) {
+        blink::mojom::StreamDevicesSetPtr stream_devices_set =
+            blink::mojom::StreamDevicesSet::New();
+        for (const auto& stream_device : stream_devices) {
+          if (!stream_device->audio_device && !stream_device->video_device) {
             v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
             gin_helper::ErrorThrower thrower(isolate);
-            thrower.ThrowTypeError("Device id cannot be empty");
+            thrower.ThrowTypeError(
+                "At least one of {audio, video} device must be set");
             return;
           }
+          if (stream_device->audio_device &&
+              stream_device->audio_device->id.empty()) {
+            v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+            gin_helper::ErrorThrower thrower(isolate);
+            thrower.ThrowTypeError("Audio device id cannot be empty");
+            return;
+          }
+          if (stream_device->video_device &&
+              stream_device->video_device->id.empty()) {
+            v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+            gin_helper::ErrorThrower thrower(isolate);
+            thrower.ThrowTypeError("Video device id cannot be empty");
+            return;
+          }
+          stream_devices_set->stream_devices.push_back(stream_device.Clone());
         }
-        std::move(callback).Run(devices, result, nullptr);
+
+        std::move(callback).Run(*stream_devices_set, result, nullptr);
       },
       std::move(callback));
   media_request_handler_.Run(request, std::move(callbackJs));

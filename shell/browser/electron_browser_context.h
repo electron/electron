@@ -47,9 +47,9 @@ class ResolveProxyHelper;
 class WebViewManager;
 class ProtocolRegistry;
 
-using MediaResponseCallbackJs =
-    base::OnceCallback<void(const blink::MediaStreamDevices& devices,
-                            blink::mojom::MediaStreamRequestResult result)>;
+using MediaResponseCallbackJs = base::OnceCallback<void(
+    const std::vector<blink::mojom::StreamDevicesPtr>& devices,
+    blink::mojom::MediaStreamRequestResult result)>;
 using MediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
                                  MediaResponseCallbackJs)>;

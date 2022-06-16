@@ -29,6 +29,13 @@ struct Converter<blink::MediaStreamDevice> {
 };
 
 template <>
+struct Converter<blink::mojom::StreamDevicesPtr> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::mojom::StreamDevicesPtr* out);
+};
+
+template <>
 struct Converter<blink::mojom::MediaStreamRequestResult> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,

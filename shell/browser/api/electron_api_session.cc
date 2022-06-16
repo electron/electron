@@ -74,6 +74,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

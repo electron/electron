@@ -51,7 +51,7 @@ MediaStreamDevicesController::MediaStreamDevicesController(
 MediaStreamDevicesController::~MediaStreamDevicesController() {
   if (!callback_.is_null()) {
     std::move(callback_).Run(
-        blink::mojom::StreamDevices(),
+        blink::mojom::StreamDevicesSet(),
         blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN,
         std::unique_ptr<content::MediaStreamUI>());
   }
@@ -92,8 +92,15 @@ void MediaStreamDevicesController::TakeAction() {
 
 void MediaStreamDevicesController::Accept() {
   // Get the default devices for the request.
-  blink::mojom::StreamDevices stream_devices;
-  if (microphone_requested_ || webcam_requested_) {
+  blink::mojom::StreamDevicesSetPtr stream_devices_set =
+      blink::mojom::StreamDevicesSet::New();
+
+  // TODO(crbug.com/1300883): Generalize to multiple streams.
+  stream_devices_set->stream_devices.emplace_back(
+      blink::mojom::StreamDevices::New());
+  blink::mojom::StreamDevices& stream_devices =
+      *stream_devices_set->stream_devices[0];
+  if (!(microphone_requested_ || webcam_requested_)) {
     switch (request_.request_type) {
       case blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY: {
         const blink::MediaStreamDevice* device = nullptr;
@@ -179,19 +186,26 @@ void MediaStreamDevicesController::Accept() {
     }
   }
 
-  std::move(callback_).Run(stream_devices,
+  std::move(callback_).Run(*stream_devices_set,
                            blink::mojom::MediaStreamRequestResult::OK,
                            std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::Deny(
     blink::mojom::MediaStreamRequestResult result) {
-  std::move(callback_).Run(blink::mojom::StreamDevices(), result,
+  std::move(callback_).Run(blink::mojom::StreamDevicesSet(), result,
                            std::unique_ptr<content::MediaStreamUI>());
 }
 
 void MediaStreamDevicesController::HandleUserMediaRequest() {
-  blink::mojom::StreamDevices devices;
+  // Get the default devices for the request.
+  blink::mojom::StreamDevicesSetPtr stream_devices_set =
+      blink::mojom::StreamDevicesSet::New();
+
+  // TODO(crbug.com/1300883): Generalize to multiple streams.
+  stream_devices_set->stream_devices.emplace_back(
+      blink::mojom::StreamDevices::New());
+  blink::mojom::StreamDevices& devices = *stream_devices_set->stream_devices[0];
 
   if (request_.audio_type ==
       blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
@@ -230,7 +244,7 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
   bool empty =
       !devices.audio_device.has_value() && !devices.video_device.has_value();
   std::move(callback_).Run(
-      devices,
+      *stream_devices_set,
       empty ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
             : blink::mojom::MediaStreamRequestResult::OK,
       std::unique_ptr<content::MediaStreamUI>());

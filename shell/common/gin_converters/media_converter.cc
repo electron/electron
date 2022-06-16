@@ -56,6 +56,29 @@ bool Converter<blink::MediaStreamDevice>::FromV8(
   return true;
 }
 
+bool Converter<blink::mojom::StreamDevicesPtr>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    blink::mojom::StreamDevicesPtr* out) {
+  gin_helper::Dictionary dict;
+  if (!gin::ConvertFromV8(isolate, val, &dict))
+    return false;
+  *out = blink::mojom::StreamDevices::New();
+  if (dict.Has("audio_device")) {
+    blink::MediaStreamDevice audio_device;
+    if (!dict.Get("audio_device", &audio_device))
+      return false;
+    (*out)->audio_device = std::move(audio_device);
+  }
+  if (dict.Has("video_device")) {
+    blink::MediaStreamDevice video_device;
+    if (!dict.Get("video_device", &video_device))
+      return false;
+    (*out)->video_device = std::move(video_device);
+  }
+  return true;
+}
+
 bool Converter<blink::mojom::MediaStreamRequestResult>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
@@ -138,6 +161,8 @@ v8::Local<v8::Value> Converter<blink::MediaStreamRequestType>::ToV8(
     v8::Isolate* isolate,
     const blink::MediaStreamRequestType& request_type) {
   switch (request_type) {
+    case blink::MEDIA_GET_OPEN_DEVICE:
+      return gin::StringToV8(isolate, "getOpenDevice");
     case blink::MEDIA_DEVICE_ACCESS:
       return gin::StringToV8(isolate, "deviceAccess");
     case blink::MEDIA_DEVICE_UPDATE:
