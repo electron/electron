@@ -13,10 +13,27 @@ binary, Electron allows you to maintain one JavaScript codebase and create
 cross-platform apps that work on Windows, macOS, and Linux — no native development
 experience required.
 
+## Getting started
+
 We recommend you to start with the [tutorial], which guides you through the
 process of developing an Electron app and distributing it to users.
 The [examples] and [API documentation] are also good places to browse around
 and discover new things.
+
+## Running examples with Electron Fiddle
+
+[Electron Fiddle][fiddle] is a sandbox app written with Electron and supported by
+Electron's maintainers. We highly recommend installing it as a learning tool to
+experiment with Electron's APIs or to prototype features during development.
+
+Fiddle also integrates nicely with our documentation. When browsing through examples
+in our tutorials, you'll frequently see an "Open in Electron Fiddle" button underneath
+a code block. If you have Fiddle installed, this button will open a
+`fiddle.electronjs.org` link that will automatically load the example into Fiddle,
+no copy-pasting required.
+
+```fiddle docs/fiddles/quick-start
+```
 
 ## What is in the docs?
 
@@ -36,18 +53,6 @@ are the different categories and what you can expect on each one:
   and is organized.
 - **Contributing to Electron**: Compiling Electron and making contributions can be daunting.
   We try to make it easier in this section.
-
-## Running examples with Electron Fiddle
-
-[Electron Fiddle][fiddle] is a sandbox app written with Electron and supported by
-Electron's maintainers. We highly recommend installing it as a learning tool to
-experiment with Electron's APIs or to prototype features during development.
-
-Fiddle also integrates nicely with our documentation. When browsing through examples
-in our tutorials, you'll frequently see an "Open in Electron Fiddle" button underneath
-a code block. If you have Fiddle installed, this button will open a
-`fiddle.electronjs.org` link that will automatically load the example into Fiddle,
-no copy-pasting required.
 
 ## Getting help
 
