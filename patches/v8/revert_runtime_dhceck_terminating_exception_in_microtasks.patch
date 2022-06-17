@@ -18,7 +18,7 @@ index ca4b1dc557f573bfcde200201cbd2f05e3c6b530..9edc8ce00c524a63cb23911a474f1904
    StoreRoot(RootIndex::kCurrentMicrotask, microtask);
    TNode<IntPtrT> saved_entered_context_count = GetEnteredContextCount();
 diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
-index d35929d7f2155af23320aa70fe5cdff178fe6fc7..007284be5a29ae6e30c9c13b1ed0e41ce8e7a4c4 100644
+index 8b7cc072de2745002ebb715b606cf5f6f735a5f7..89162633cabc2d3f22e2fb4dd76321994e8fe66b 100644
 --- a/src/codegen/code-stub-assembler.cc
 +++ b/src/codegen/code-stub-assembler.cc
 @@ -6142,12 +6142,6 @@ void CodeStubAssembler::SetPendingMessage(TNode<HeapObject> message) {
@@ -35,10 +35,10 @@ index d35929d7f2155af23320aa70fe5cdff178fe6fc7..007284be5a29ae6e30c9c13b1ed0e41c
                                                    int type) {
    return Word32Equal(instance_type, Int32Constant(type));
 diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
-index e0abc3144c6e47b7cbf5e16b24397e33ce5f1c94..f90898d4c01b9faff47aa720adb7da59dd90a46b 100644
+index a8dda45985e8e74b1b7c0200779fe8a3844617b0..c017dafaeff050045b4cf4d2a76a474b7b0a2c27 100644
 --- a/src/codegen/code-stub-assembler.h
 +++ b/src/codegen/code-stub-assembler.h
-@@ -2521,7 +2521,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
+@@ -2528,7 +2528,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
  
    TNode<HeapObject> GetPendingMessage();
    void SetPendingMessage(TNode<HeapObject> message);

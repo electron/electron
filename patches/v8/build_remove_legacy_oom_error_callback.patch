@@ -146,10 +146,10 @@ index 7d8d8b699d2b10e026617ea9716ac913a2d44aea..95f77280c471d250eec7da2c7cd64332
                  ModifyCodeGenerationFromStringsCallback2,
                  modify_code_gen_callback2)
 diff --git a/src/execution/isolate.h b/src/execution/isolate.h
-index b918580c9ca02b55175490282ae8f31bae145d17..546ae83455d14b15ccffe208c3fb933cbc63bf07 100644
+index aed822d0779f3e7dac3c37b84b3aea277a5d57ea..ca9fd39138efb3196072b509ca9f5f9bae85c626 100644
 --- a/src/execution/isolate.h
 +++ b/src/execution/isolate.h
-@@ -481,16 +481,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();
+@@ -489,16 +489,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();
  
  using DebugObjectCache = std::vector<Handle<HeapObject>>;
  

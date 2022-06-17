@@ -9,7 +9,7 @@ we're running with contextIsolation enabled, we should be falling back
 to Blink's logic. This will be upstreamed in some form.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index f417dca0103ddfd8ce6e3b3a4d033ea42133604e..d0ee37d147243858d997be230c12ea3e41e6c873 100644
+index 189d150633dd518612f2adf83ce9811a50958e3c..8bc7b27155a1f2b17caa930fc0ff025d3db5772e 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -448,8 +448,9 @@ CodeGenerationCheckCallbackInMainThread(v8::Local<v8::Context> context,
@@ -25,10 +25,10 @@ index f417dca0103ddfd8ce6e3b3a4d033ea42133604e..d0ee37d147243858d997be230c12ea3e
      if (ContentSecurityPolicy* policy =
              execution_context->GetContentSecurityPolicy()) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-index 932c6aad3df51dd6790e55bf708703767843dc5e..6865fd33e62f766c5a162ded8627c332bf2ed173 100644
+index 39d1351a4a8bbc95097640be54affec426abe73e..f1f124571db9f7c106c1ffe0bd11f39bf52bcd09 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-@@ -69,8 +69,8 @@ class CORE_EXPORT V8Initializer {
+@@ -70,8 +70,8 @@ class CORE_EXPORT V8Initializer {
    static void MessageHandlerInWorker(v8::Local<v8::Message>,
                                       v8::Local<v8::Value>);
    static bool WasmCodeGenerationCheckCallbackInMainThread(
@@ -36,6 +36,6 @@ index 932c6aad3df51dd6790e55bf708703767843dc5e..6865fd33e62f766c5a162ded8627c332
 -      v8::Local<v8::String> source);
 +    v8::Local<v8::Context> context,
 +    v8::Local<v8::String> source);
- };
  
- }  // namespace blink
+   static void WasmAsyncResolvePromiseCallback(
+       v8::Isolate* isolate,
