@@ -27,7 +27,6 @@ declare namespace NodeJS {
     isPictureInPictureEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
-    isWinDarkModeWindowUiEnabled(): boolean;
   }
 
   interface IpcRendererBinding {
@@ -108,8 +107,6 @@ declare namespace NodeJS {
     isWebView: boolean;
     hiddenPage: boolean;
     nodeIntegration: boolean;
-    preload: string
-    preloadScripts: string[];
     webviewTag: boolean;
   }
 

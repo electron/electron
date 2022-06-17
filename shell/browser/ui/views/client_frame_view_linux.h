@@ -47,10 +47,10 @@ class ClientFrameViewLinux : public FramelessView,
   // views::WindowButtonOrderObserver:
   void OnWindowButtonOrderingChange() override;
 
-  // Overriden from FramelessView:
+  // Overridden from FramelessView:
   int ResizingBorderHitTest(const gfx::Point& point) override;
 
-  // Overriden from views::NonClientFrameView:
+  // Overridden from views::NonClientFrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;

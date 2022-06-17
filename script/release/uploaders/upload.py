@@ -92,9 +92,9 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
     upload_electron(release, dsym_zip, args)
 
-    dsym_snaphot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
-    shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snaphot_zip)
-    upload_electron(release, dsym_snaphot_zip, args)    
+    dsym_snapshot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snapshot_zip)
+    upload_electron(release, dsym_snapshot_zip, args)    
   elif PLATFORM == 'win32':
     if get_target_arch() != 'ia32':
       pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
@@ -359,7 +359,7 @@ def upload_electron(release, file_path, args):
 
 
 def upload_io_to_github(release, filename, filepath, version):
-  print('Uploading %s to Github' % \
+  print('Uploading %s to GitHub' % \
       (filename))
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.ts')

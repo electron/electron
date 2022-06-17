@@ -985,7 +985,7 @@ void WebContents::DeleteThisIfAlive() {
 }
 
 void WebContents::Destroy() {
-  // The content::WebContents should be destroyed asyncronously when possible
+  // The content::WebContents should be destroyed asynchronously when possible
   // as user may choose to destroy WebContents during an event of it.
   if (Browser::Get()->is_shutting_down() || IsGuest()) {
     DeleteThisIfAlive();

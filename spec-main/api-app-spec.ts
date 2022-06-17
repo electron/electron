@@ -127,7 +127,7 @@ describe('app module', () => {
   });
 
   describe('app.isPackaged', () => {
-    it('should be false durings tests', () => {
+    it('should be false during tests', () => {
       expect(app.isPackaged).to.equal(false);
     });
   });
@@ -496,7 +496,7 @@ describe('app module', () => {
       expect(window.id).to.equal(w.id);
     });
 
-    it('should emit browser-window-blur event when window is blured', async () => {
+    it('should emit browser-window-blur event when window is blurred', async () => {
       const emitted = emittedOnce(app, 'browser-window-blur');
       w = new BrowserWindow({ show: false });
       w.emit('blur');
@@ -987,7 +987,7 @@ describe('app module', () => {
       it('gets the folder for recent files', () => {
         const recent = app.getPath('recent');
 
-        // We expect that one of our test machines have overriden this
+        // We expect that one of our test machines have overridden this
         // to be something crazy, it'll always include the word "Recent"
         // unless people have been registry-hacking like crazy
         expect(recent).to.include('Recent');

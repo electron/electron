@@ -172,7 +172,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const patchesDir = path.resolve(__dirname, '../patches');
     const patchesConfig = path.resolve(patchesDir, 'config.json');
-    // If the config does not exist, that's a proiblem
+    // If the config does not exist, that's a problem
     if (!fs.existsSync(patchesConfig)) {
       process.exit(1);
     }

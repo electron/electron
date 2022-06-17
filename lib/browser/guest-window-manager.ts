@@ -5,7 +5,7 @@
  * out-of-process (cross-origin) are created here. "Embedder" roughly means
  * "parent."
  */
-import { BrowserWindow } from 'electron/main';
+import { BrowserWindow, deprecate } from 'electron/main';
 import type { BrowserWindowConstructorOptions, Referrer, WebContents, LoadURLOptions } from 'electron/main';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 
@@ -154,6 +154,10 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
     data: postData,
     ...parseContentTypeFormat(postData)
   } : null;
+
+  if (embedder.listenerCount('new-window') > 0) {
+    deprecate.log('The new-window event is deprecated and will be removed. Please use contents.setWindowOpenHandler() instead.');
+  }
 
   embedder.emit(
     'new-window',

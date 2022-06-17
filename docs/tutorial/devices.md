@@ -43,7 +43,7 @@ the WebHID API:
 * [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
   can be used to provide default permissioning to devices without first calling
   for permission to devices via `navigator.hid.requestDevice`.  Additionally,
-  the default behavior of Electron is to store granted device permision through
+  the default behavior of Electron is to store granted device permission through
   the lifetime of the corresponding WebContents.  If longer term storage is
   needed, a developer can store granted device permissions (eg when handling
   the `select-hid-device` event) and then read from that storage with
@@ -92,7 +92,7 @@ There are several additional APIs for working with the Web Serial API:
 * [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
   can be used to provide default permissioning to devices without first calling
   for permission to devices via `navigator.serial.requestPort`.  Additionally,
-  the default behavior of Electron is to store granted device permision through
+  the default behavior of Electron is to store granted device permission through
   the lifetime of the corresponding WebContents.  If longer term storage is
   needed, a developer can store granted device permissions (eg when handling
   the `select-serial-port` event) and then read from that storage with

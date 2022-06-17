@@ -49,7 +49,7 @@ class BrowserObserver : public base::CheckedObserver {
   virtual void OnWillFinishLaunching() {}
   virtual void OnFinishLaunching(const base::DictionaryValue& launch_info) {}
 
-  // The browser's accessibility suppport has changed.
+  // The browser's accessibility support has changed.
   virtual void OnAccessibilitySupportChanged() {}
 
   // The app message loop is ready
