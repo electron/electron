@@ -2,15 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/app/electron_main_delegate.h"
 #include "shell/browser/api/electron_api_push_notifications.h"
 
 #include <string>
 
 #import "shell/browser/mac/electron_application.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
 
 namespace electron {
 

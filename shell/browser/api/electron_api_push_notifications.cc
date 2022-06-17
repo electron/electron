@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "shell/browser/api/electron_api_push_notifications.h"
-#include "shell/app/electron_main_delegate.h"
 
 #include <string>
 
