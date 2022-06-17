@@ -1,19 +1,18 @@
-From e481fc655a6287e657a88e8c2bcd6f411d254d70 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dan Sanders <sandersd@chromium.org>
-Date: Tue, 03 May 2022 14:39:37 -0700
-Subject: [PATCH] Do not parse late SEI messages during decoding.
+Date: Tue, 3 May 2022 14:39:37 -0700
+Subject: Do not parse late SEI messages during decoding.
 
 Bug: 1306751
 Change-Id: I2088b9ff89bd8eee8ab82675258af302d9bfccf9
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/3625832
 Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
----
 
 diff --git a/libavcodec/h264dec.c b/libavcodec/h264dec.c
-index 5ef2550..1e000ca 100644
+index d7bcba332d4c0b2fdc3c6679de84738b4cd49623..f639a9206bbd8fcd7797b177c0a36008b5274ab5 100644
 --- a/libavcodec/h264dec.c
 +++ b/libavcodec/h264dec.c
-@@ -672,6 +672,12 @@
+@@ -678,6 +678,12 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
              avpriv_request_sample(avctx, "data partitioning");
              break;
          case H264_NAL_SEI:
