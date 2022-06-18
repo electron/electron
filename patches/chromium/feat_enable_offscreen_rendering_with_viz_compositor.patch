@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 98a443e02271364e6fdcc33f56eb4ab6eb02dd6d..b9c8282d0c8cee157784af94e6879346c2a3c436 100644
+index d6cce8a676b93a67fa1a5e64d2b189c9dfa616a5..10f4ace6027c32b57f5d070026ecd9565c40b62f 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -134,6 +134,8 @@ viz_component("service") {
@@ -108,7 +108,7 @@ index 2e9453c18f2f6623d31b477aa856152ddacc3e23..93b6080135c08bc9d4cf7020f4fcb15c
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 8585790795707cbe06ebe9c6cc87fb6da0a4a88b..dade8473dc350ebbc0246b30615a83fc22f735fd 100644
+index 3aaccca596c0287f56841131fc6a5878281593fc..f0fc2e11ddbb7ded1964a815f79e5a1858ac25d2 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,12 +23,14 @@
@@ -145,7 +145,7 @@ index 8585790795707cbe06ebe9c6cc87fb6da0a4a88b..dade8473dc350ebbc0246b30615a83fc
    } else {
      DCHECK(gpu_dependency);
      {
-@@ -138,10 +141,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -139,10 +142,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,

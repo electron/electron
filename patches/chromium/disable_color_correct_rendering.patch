@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 63d9c6a505a3efe6c9d916159c685e49111ac179..ce7d1496acb0016decbfc86815f4342ab8dbf358 100644
+index 691496d0ca6fce79c26b9da7322856b3bf06332f..4aadafbba17578cfa26a111eecd0cfaad676326d 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1852,6 +1852,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1853,6 +1853,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -34,7 +34,7 @@ index 63d9c6a505a3efe6c9d916159c685e49111ac179..ce7d1496acb0016decbfc86815f4342a
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 8dfe968b6314f5f5f350b3df6819043668293fd6..2f3a8a335d130c3be58b87bccdb95bd66ae37091 100644
+index 5eaf2d9cab94def423be78b414179e6ccc596437..1ca8b5968350e88761d9ebc073fe8c573d0f3b5d 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -93,6 +93,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -144,7 +144,7 @@ index 75d7af9a79d4e7f2cd39e45496ab5fff66407638..b4ddafdd126edd16172f00448bbbd56e
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index bd070fbfc7f3abcef7c0d89a608fc52c31cf3be3..8f16aaa064c2455d02c7d8e1ff09364fdedcd0fa 100644
+index 4f3b9b181b1998e0ebbd95955feeec28a5d6bcb7..00f2a213cded1985b3131fabf3560937c56f6ffd 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@

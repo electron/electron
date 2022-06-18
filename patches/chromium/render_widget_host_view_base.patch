@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index edcca00291646d4c6c03f840f9cd49f4740624c6..f18e20852d70a82570dd45fe10a284a41c8e4be7 100644
+index 1bb9760fee301bebb5e940d6786999cfbf52656f..0b4b9fb7d64ca1615d5a03e86f421b8f282ed27a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -695,6 +695,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
+@@ -699,6 +699,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
    return false;
  }
  
@@ -24,7 +24,7 @@ index edcca00291646d4c6c03f840f9cd49f4740624c6..f18e20852d70a82570dd45fe10a284a4
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 912e238c2cc03df22135eaff1bdf7d12fc390629..6cb6557236296d9f86f4deeafbeea33a3f1d6327 100644
+index 2f7dabc3317f7b1a609e6b67795036696a6420d0..a300f9b497f206086d9bba01b0ea3948a1b6413a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -26,8 +26,10 @@
@@ -60,7 +60,7 @@ index 912e238c2cc03df22135eaff1bdf7d12fc390629..6cb6557236296d9f86f4deeafbeea33a
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -296,6 +303,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -299,6 +306,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

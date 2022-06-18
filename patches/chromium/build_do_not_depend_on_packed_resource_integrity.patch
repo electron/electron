@@ -33,7 +33,7 @@ index 672bc56194e1ad8b03acd639c17b7f7e67a5dba0..59ba25815e511af5ca6aca5467cc91d5
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 49e9fa12ca49576cf857a48c436e669c612987eb..8bebc012dd19eb28812cf35ed0a7a86b57e4117c 100644
+index 46197c5a6423f3278b75549d601421d2b5e139d6..b02779a76a238fd713796597bec8a82897e88f51 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4544,7 +4544,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index 49e9fa12ca49576cf857a48c436e669c612987eb..8bebc012dd19eb28812cf35ed0a7a86b
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 8fee4b8e46a362d82fdd18971fab48a8cd57a491..5db4b754f88f3433d9a61d7148381cc93dc5eb57 100644
+index 5d7cfeb42574b15ddac55c797000bca490274a6f..8b967ef76faa8190d0064f3fa78a661f451228e1 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5904,7 +5904,6 @@ test("unit_tests") {
+@@ -5915,7 +5915,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 8fee4b8e46a362d82fdd18971fab48a8cd57a491..5db4b754f88f3433d9a61d7148381cc9
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/browser:chrome_process_finder",
-@@ -5928,6 +5927,10 @@ test("unit_tests") {
+@@ -5939,6 +5938,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 8fee4b8e46a362d82fdd18971fab48a8cd57a491..5db4b754f88f3433d9a61d7148381cc9
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6816,7 +6819,6 @@ test("unit_tests") {
+@@ -6826,7 +6829,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 8fee4b8e46a362d82fdd18971fab48a8cd57a491..5db4b754f88f3433d9a61d7148381cc9
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/autofill_assistant/password_change/proto:proto",
-@@ -6928,6 +6930,10 @@ test("unit_tests") {
+@@ -6937,6 +6939,10 @@ test("unit_tests") {
      }
    }
  

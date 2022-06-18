@@ -68,10 +68,10 @@ index 3aafb44665ed475084355144663a3c7395a009d5..d32b572673e24f14c60b27e8a1fab683
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index c1beba6701e68255c212e56d78ae8259e2ffdab9..9f77c2a5df8f25876f875c4a7148d82c3dd79db8 100644
+index 9a593698d9e3aebe21cb7e74e0e5603adde30f87..c57b933d2950a69c92d47057b83d96a66416bc1b 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -595,6 +595,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -604,6 +604,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -81,10 +81,10 @@ index c1beba6701e68255c212e56d78ae8259e2ffdab9..9f77c2a5df8f25876f875c4a7148d82c
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a49794184baa977ddf03cd911f8d8d7d671df65f..7997c0de85315e30b350316f33e598a0221d583f 100644
+index 58755b9dca27ddd4d75cf08ecdc47c6d9d9da724..2f786efe35ebdff7061118a14247859ed30eeb2a 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -164,6 +164,7 @@ class NetworkService;
+@@ -165,6 +165,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -92,7 +92,7 @@ index a49794184baa977ddf03cd911f8d8d7d671df65f..7997c0de85315e30b350316f33e598a0
  }  // namespace network
  
  namespace sandbox {
-@@ -967,6 +968,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -977,6 +978,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -212,7 +212,7 @@ index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index bb00559a4d5bbc9d383ee3f3d560e85a1c0f5479..425a898c7d676b7c9a1cfee29c06de006817781d 100644
+index fd6118fd28df7ea3f86f7fff6ed7ae7b0517777b..a1cb624589a302340d152a1389adac26d5c6d6ee 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2101,6 +2101,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
