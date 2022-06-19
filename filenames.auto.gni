@@ -70,6 +70,7 @@ auto_filenames = {
     "docs/api/webview-tag.md",
     "docs/api/window-open.md",
     "docs/api/structures/bluetooth-device.md",
+    "docs/api/structures/browser-window-options.md",
     "docs/api/structures/certificate-principal.md",
     "docs/api/structures/certificate.md",
     "docs/api/structures/cookie.md",
@@ -134,6 +135,7 @@ auto_filenames = {
     "docs/api/structures/upload-raw-data.md",
     "docs/api/structures/usb-device.md",
     "docs/api/structures/user-default-types.md",
+    "docs/api/structures/web-preferences.md",
     "docs/api/structures/web-request-filter.md",
     "docs/api/structures/web-source.md",
   ]
