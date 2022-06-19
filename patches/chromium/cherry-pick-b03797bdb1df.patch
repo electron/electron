@@ -1,7 +1,7 @@
-From b03797bdb1dfc960c06fc61e5ae4075e2c53454b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xiaocheng Hu <xiaochengh@chromium.org>
-Date: Mon, 02 May 2022 23:43:40 +0000
-Subject: [PATCH] [M102] Markup sanitization should iterate until markup is stable
+Date: Mon, 2 May 2022 23:43:40 +0000
+Subject: Markup sanitization should iterate until markup is stable
 
 There are cases where parsing a markup and then serializing it does not
 round trip, which can be used to inject XSS. Current sanitization code
@@ -25,13 +25,12 @@ Reviewed-by: Joey Arhar <jarhar@chromium.org>
 Commit-Queue: Joey Arhar <jarhar@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5005@{#363}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/third_party/blink/renderer/core/editing/serializers/serialization.cc b/third_party/blink/renderer/core/editing/serializers/serialization.cc
-index 6460917..d1ac744 100644
+index 4ee332fa16a1bda54e6ba99c8063876fb046adaa..463fd9a37671b92c9af68ff5f3c0e8ddd5f1c62c 100644
 --- a/third_party/blink/renderer/core/editing/serializers/serialization.cc
 +++ b/third_party/blink/renderer/core/editing/serializers/serialization.cc
-@@ -836,6 +836,12 @@
+@@ -835,6 +835,12 @@ static bool StripSVGUseDataURLs(Node& node) {
    return stripped;
  }
  
@@ -44,13 +43,21 @@ index 6460917..d1ac744 100644
  DocumentFragment* CreateSanitizedFragmentFromMarkupWithContext(
      Document& document,
      const String& raw_markup,
-@@ -845,42 +851,56 @@
+@@ -844,42 +850,56 @@ DocumentFragment* CreateSanitizedFragmentFromMarkupWithContext(
    if (raw_markup.IsEmpty())
      return nullptr;
  
 -  Document* staging_document = CreateStagingDocumentForMarkupSanitization(
 -      *document.GetFrame()->GetFrameScheduler()->GetAgentGroupScheduler());
 -  Element* body = staging_document->body();
+-
+-  DocumentFragment* fragment = CreateFragmentFromMarkupWithContext(
+-      *staging_document, raw_markup, fragment_start, fragment_end, KURL(),
+-      kDisallowScriptingAndPluginContent);
+-  if (!fragment) {
+-    staging_document->GetPage()->WillBeDestroyed();
+-    return nullptr;
+-  }
 +  // Iterate on parsing, sanitization and serialization until the markup is
 +  // stable, or if we have exceeded the maximum allowed number of iterations.
 +  String last_markup;
@@ -59,42 +66,31 @@ index 6460917..d1ac744 100644
 +       iteration < kMaxSanitizationIterations && last_markup != markup;
 +       ++iteration) {
 +    last_markup = markup;
- 
--  DocumentFragment* fragment = CreateFragmentFromMarkupWithContext(
--      *staging_document, raw_markup, fragment_start, fragment_end, KURL(),
--      kDisallowScriptingAndPluginContent);
--  if (!fragment) {
--    staging_document->GetPage()->WillBeDestroyed();
--    return nullptr;
--  }
++
 +    Document* staging_document = CreateStagingDocumentForMarkupSanitization(
 +        *document.GetFrame()->GetFrameScheduler()->GetAgentGroupScheduler());
 +    Element* body = staging_document->body();
++
++    DocumentFragment* fragment = CreateFragmentFromMarkupWithContext(
++        *staging_document, last_markup, fragment_start, fragment_end, KURL(),
++        kDisallowScriptingAndPluginContent);
++    if (!fragment) {
++      staging_document->GetPage()->WillBeDestroyed();
++      return nullptr;
++    }
  
 -  bool needs_sanitization = false;
 -  if (ContainsStyleElements(*fragment))
 -    needs_sanitization = true;
 -  if (StripSVGUseDataURLs(*fragment))
 -    needs_sanitization = true;
--
--  if (!needs_sanitization) {
--    staging_document->GetPage()->WillBeDestroyed();
--    return CreateFragmentFromMarkupWithContext(
--        document, raw_markup, fragment_start, fragment_end, base_url,
-+    DocumentFragment* fragment = CreateFragmentFromMarkupWithContext(
-+        *staging_document, last_markup, fragment_start, fragment_end, KURL(),
-         kDisallowScriptingAndPluginContent);
-+    if (!fragment) {
-+      staging_document->GetPage()->WillBeDestroyed();
-+      return nullptr;
-+    }
-+
 +    bool needs_sanitization = false;
 +    if (ContainsStyleElements(*fragment))
 +      needs_sanitization = true;
 +    if (StripSVGUseDataURLs(*fragment))
 +      needs_sanitization = true;
-+
+ 
+-  if (!needs_sanitization) {
 +    if (!needs_sanitization) {
 +      markup = CreateMarkup(fragment);
 +    } else {
@@ -109,7 +105,10 @@ index 6460917..d1ac744 100644
 +                                .SetIsForMarkupSanitization(true)
 +                                .Build());
 +    }
-+    staging_document->GetPage()->WillBeDestroyed();
+     staging_document->GetPage()->WillBeDestroyed();
+-    return CreateFragmentFromMarkupWithContext(
+-        document, raw_markup, fragment_start, fragment_end, base_url,
+-        kDisallowScriptingAndPluginContent);
 +
 +    fragment_start = 0;
 +    fragment_end = markup.length();
@@ -133,10 +132,10 @@ index 6460917..d1ac744 100644
    return CreateFragmentFromMarkup(document, markup, base_url,
                                    kDisallowScriptingAndPluginContent);
 diff --git a/third_party/blink/web_tests/editing/pasteboard/paste-svg-use.html b/third_party/blink/web_tests/editing/pasteboard/paste-svg-use.html
-index c03ca90..1af77f8f 100644
+index c03ca90d492a5e2af883f68811baa7660ef1cdc2..1af77f8faa4501f577e28297f013e170775bc86a 100644
 --- a/third_party/blink/web_tests/editing/pasteboard/paste-svg-use.html
 +++ b/third_party/blink/web_tests/editing/pasteboard/paste-svg-use.html
-@@ -32,6 +32,6 @@
+@@ -32,6 +32,6 @@ selection_test(
        <use href=data:application/xml;base64,PHN2ZyBpZD0neCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz4KPGEgaHJlZj0namF2YXNjcmlwdDphbGVydCgxMjMpJz4KICAgIDxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9J2xpZ2h0Ymx1ZScgLz4KICAgICA8dGV4dCB4PScwJyB5PScwJyBmaWxsPSdibGFjayc+CiAgICAgICA8dHNwYW4geD0nMCcgZHk9JzEuMmVtJz5Pb3BzLCB0aGVyZSdzIHNvbWV0aGluZyB3cm9uZyB3aXRoIHRoZSBwYWdlITwvdHNwYW4+CiAgICAgPHRzcGFuIHg9JzAnIGR5PScxLjJlbSc+UGxlYXNlIGNsaWNrIGhlcmUgdG8gcmVsb2FkLjwvdHNwYW4+Cjwvc3ZnPg==#x>"></noscript>asdasd`);
      selection.document.execCommand('paste');
    },
@@ -146,7 +145,7 @@ index c03ca90..1af77f8f 100644
  </script>
 diff --git a/third_party/blink/web_tests/external/wpt/clipboard-apis/async-navigator-clipboard-read-sanitize.https.html b/third_party/blink/web_tests/external/wpt/clipboard-apis/async-navigator-clipboard-read-sanitize.https.html
 new file mode 100644
-index 0000000..9e0ab2e
+index 0000000000000000000000000000000000000000..9e0ab2ee740f85ea4e9de9d3f1d2ac43bee5a985
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/clipboard-apis/async-navigator-clipboard-read-sanitize.https.html
 @@ -0,0 +1,44 @@
