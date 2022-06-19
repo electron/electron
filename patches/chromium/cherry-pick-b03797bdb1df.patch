@@ -1,0 +1,196 @@
+From b03797bdb1dfc960c06fc61e5ae4075e2c53454b Mon Sep 17 00:00:00 2001
+From: Xiaocheng Hu <xiaochengh@chromium.org>
+Date: Mon, 02 May 2022 23:43:40 +0000
+Subject: [PATCH] [M102] Markup sanitization should iterate until markup is stable
+
+There are cases where parsing a markup and then serializing it does not
+round trip, which can be used to inject XSS. Current sanitization code
+only does one round of parsing and serializing, which does not remove
+XSS injections that hide deeper.
+
+Hence this patch makes sanitization algorithm iterate until the markup
+is stable, or declares failure if it doesn't stabilize after many tries.
+
+(cherry picked from commit 19280353fb92d0ff7d048d7cec28d6a23befbce0)
+
+Fixed: 1315563
+Change-Id: I4a3ebe1fda6df0e04a24d863b2b48df2110af209
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3611826
+Commit-Queue: Xiaocheng Hu <xiaochengh@chromium.org>
+Reviewed-by: Yoshifumi Inoue <yosin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#997032}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3621618
+Auto-Submit: Xiaocheng Hu <xiaochengh@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5005@{#363}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+---
+
+diff --git a/third_party/blink/renderer/core/editing/serializers/serialization.cc b/third_party/blink/renderer/core/editing/serializers/serialization.cc
+index 6460917..d1ac744 100644
+--- a/third_party/blink/renderer/core/editing/serializers/serialization.cc
++++ b/third_party/blink/renderer/core/editing/serializers/serialization.cc
+@@ -836,6 +836,12 @@
+   return stripped;
+ }
+ 
++namespace {
++
++constexpr unsigned kMaxSanitizationIterations = 16;
++
++}  // namespace
++
+ DocumentFragment* CreateSanitizedFragmentFromMarkupWithContext(
+     Document& document,
+     const String& raw_markup,
+@@ -845,42 +851,56 @@
+   if (raw_markup.IsEmpty())
+     return nullptr;
+ 
+-  Document* staging_document = CreateStagingDocumentForMarkupSanitization(
+-      *document.GetFrame()->GetFrameScheduler()->GetAgentGroupScheduler());
+-  Element* body = staging_document->body();
++  // Iterate on parsing, sanitization and serialization until the markup is
++  // stable, or if we have exceeded the maximum allowed number of iterations.
++  String last_markup;
++  String markup = raw_markup;
++  for (unsigned iteration = 0;
++       iteration < kMaxSanitizationIterations && last_markup != markup;
++       ++iteration) {
++    last_markup = markup;
+ 
+-  DocumentFragment* fragment = CreateFragmentFromMarkupWithContext(
+-      *staging_document, raw_markup, fragment_start, fragment_end, KURL(),
+-      kDisallowScriptingAndPluginContent);
+-  if (!fragment) {
+-    staging_document->GetPage()->WillBeDestroyed();
+-    return nullptr;
+-  }
++    Document* staging_document = CreateStagingDocumentForMarkupSanitization(
++        *document.GetFrame()->GetFrameScheduler()->GetAgentGroupScheduler());
++    Element* body = staging_document->body();
+ 
+-  bool needs_sanitization = false;
+-  if (ContainsStyleElements(*fragment))
+-    needs_sanitization = true;
+-  if (StripSVGUseDataURLs(*fragment))
+-    needs_sanitization = true;
+-
+-  if (!needs_sanitization) {
+-    staging_document->GetPage()->WillBeDestroyed();
+-    return CreateFragmentFromMarkupWithContext(
+-        document, raw_markup, fragment_start, fragment_end, base_url,
++    DocumentFragment* fragment = CreateFragmentFromMarkupWithContext(
++        *staging_document, last_markup, fragment_start, fragment_end, KURL(),
+         kDisallowScriptingAndPluginContent);
++    if (!fragment) {
++      staging_document->GetPage()->WillBeDestroyed();
++      return nullptr;
++    }
++
++    bool needs_sanitization = false;
++    if (ContainsStyleElements(*fragment))
++      needs_sanitization = true;
++    if (StripSVGUseDataURLs(*fragment))
++      needs_sanitization = true;
++
++    if (!needs_sanitization) {
++      markup = CreateMarkup(fragment);
++    } else {
++      body->appendChild(fragment);
++      staging_document->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
++
++      // This sanitizes stylesheets in the markup into element inline styles
++      markup = CreateMarkup(Position::FirstPositionInNode(*body),
++                            Position::LastPositionInNode(*body),
++                            CreateMarkupOptions::Builder()
++                                .SetShouldAnnotateForInterchange(true)
++                                .SetIsForMarkupSanitization(true)
++                                .Build());
++    }
++    staging_document->GetPage()->WillBeDestroyed();
++
++    fragment_start = 0;
++    fragment_end = markup.length();
+   }
+ 
+-  body->appendChild(fragment);
+-  staging_document->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+-
+-  // This sanitizes stylesheets in the markup into element inline styles
+-  String markup = CreateMarkup(Position::FirstPositionInNode(*body),
+-                               Position::LastPositionInNode(*body),
+-                               CreateMarkupOptions::Builder()
+-                                   .SetShouldAnnotateForInterchange(true)
+-                                   .SetIsForMarkupSanitization(true)
+-                                   .Build());
+-  staging_document->GetPage()->WillBeDestroyed();
++  // Sanitization failed because markup can't stabilize.
++  if (last_markup != markup)
++    return nullptr;
+ 
+   return CreateFragmentFromMarkup(document, markup, base_url,
+                                   kDisallowScriptingAndPluginContent);
+diff --git a/third_party/blink/web_tests/editing/pasteboard/paste-svg-use.html b/third_party/blink/web_tests/editing/pasteboard/paste-svg-use.html
+index c03ca90..1af77f8f 100644
+--- a/third_party/blink/web_tests/editing/pasteboard/paste-svg-use.html
++++ b/third_party/blink/web_tests/editing/pasteboard/paste-svg-use.html
+@@ -32,6 +32,6 @@
+       <use href=data:application/xml;base64,PHN2ZyBpZD0neCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz4KPGEgaHJlZj0namF2YXNjcmlwdDphbGVydCgxMjMpJz4KICAgIDxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9J2xpZ2h0Ymx1ZScgLz4KICAgICA8dGV4dCB4PScwJyB5PScwJyBmaWxsPSdibGFjayc+CiAgICAgICA8dHNwYW4geD0nMCcgZHk9JzEuMmVtJz5Pb3BzLCB0aGVyZSdzIHNvbWV0aGluZyB3cm9uZyB3aXRoIHRoZSBwYWdlITwvdHNwYW4+CiAgICAgPHRzcGFuIHg9JzAnIGR5PScxLjJlbSc+UGxlYXNlIGNsaWNrIGhlcmUgdG8gcmVsb2FkLjwvdHNwYW4+Cjwvc3ZnPg==#x>"></noscript>asdasd`);
+     selection.document.execCommand('paste');
+   },
+-  '<div contenteditable>|<noscript>&lt;u title="</noscript><div contenteditable="false"><svg></svg></div></div>',
++  '<div contenteditable><div><br></div><div>      <u title="</div><div>      </div><div>      ">asdasd|</div></div>',
+   'Paste blocks data URI in SVG use element injection via <noscript>');
+ </script>
+diff --git a/third_party/blink/web_tests/external/wpt/clipboard-apis/async-navigator-clipboard-read-sanitize.https.html b/third_party/blink/web_tests/external/wpt/clipboard-apis/async-navigator-clipboard-read-sanitize.https.html
+new file mode 100644
+index 0000000..9e0ab2e
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/clipboard-apis/async-navigator-clipboard-read-sanitize.https.html
+@@ -0,0 +1,44 @@
++<!doctype html>
++<meta charset="utf-8">
++<title>Async Clipboard.read() should sanitize text/html</title>
++<link rel="help" href="https://w3c.github.io/clipboard-apis/#dom-clipboard-read">
++<link rel="help" href="https://bugs.chromium.org/p/chromium/issues/detail?id=1315563">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script src="/resources/testdriver.js"></script>
++<script src="/resources/testdriver-vendor.js"></script>
++
++<p><button id="button">Put payload in the clipboard</button></p>
++<div id="output"></div>
++
++<script>
++let testFailed = false;
++function fail() {
++  testFailed = true;
++}
++
++button.onclick = () => document.execCommand('copy');
++document.oncopy = ev => {
++  ev.preventDefault();
++  ev.clipboardData.setData(
++      'text/html',
++      `<form><math><mtext></form><form><mglyph><xmp></math><img src=invalid onerror=fail()></xmp>`);
++};
++
++promise_test(async test => {
++  await test_driver.set_permission({name: 'clipboard-read'}, 'granted');
++  await test_driver.click(button);
++
++  const items = await navigator.clipboard.read();
++  const htmlBlob = await items[0].getType("text/html");
++  const html = await htmlBlob.text();
++
++  // This inserts an image with `onerror` handler if `html` is not properly sanitized
++  output.innerHTML = html;
++
++  // Allow the 'error' event to be dispatched asynchronously
++  await new Promise(resolve => test.step_timeout(resolve, 100));
++
++  assert_false(testFailed);
++});
++</script>
