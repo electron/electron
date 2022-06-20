@@ -2150,7 +2150,7 @@ describe('navigator.hid', () => {
 
     await requestDevices();
     if (haveDevices) {
-      // We have devices to exclude, so check if exculsionFilters work
+      // We have devices to exclude, so check if exclusionFilters work
       checkForExcludedDevice = true;
       await w.webContents.executeJavaScript(`
         navigator.hid.requestDevice({filters: [], exclusionFilters: ${JSON.stringify(exclusionFilters)}}).then(device => device.toString()).catch(err => err.toString());

@@ -2,6 +2,7 @@ import * as path from 'path';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
+import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
 const Module = require('module');
 
@@ -38,6 +39,7 @@ require('../common/reset-search-paths');
 require('@electron/internal/common/init');
 
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
+const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
 process.getProcessMemoryInfo = () => {
   return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
@@ -48,14 +50,7 @@ const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_co
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
-const preloadScript = mainFrame.getWebPreference('preload');
-const preloadScripts = mainFrame.getWebPreference('preloadScripts');
 const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
-
-// The webContents preload script is loaded after the session preload scripts.
-if (preloadScript) {
-  preloadScripts.push(preloadScript);
-}
 
 // Common renderer initialization
 require('@electron/internal/renderer/common-init');
@@ -127,8 +122,9 @@ if (nodeIntegration) {
   }
 }
 
+const { preloadPaths } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
 // Load the preload scripts.
-for (const preloadScript of preloadScripts) {
+for (const preloadScript of preloadPaths) {
   try {
     Module._load(preloadScript);
   } catch (error) {

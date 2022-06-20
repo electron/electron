@@ -247,7 +247,7 @@ describe('webContents module', () => {
         const result = await w.webContents.executeJavaScript(code);
         expect(result).to.equal(expected);
       });
-      it('resolves the returned promise with the result if the code returns an asyncronous promise', async () => {
+      it('resolves the returned promise with the result if the code returns an asynchronous promise', async () => {
         const result = await w.webContents.executeJavaScript(asyncCode);
         expect(result).to.equal(expected);
       });
@@ -883,7 +883,7 @@ describe('webContents module', () => {
 
   describe('getOSProcessId()', () => {
     afterEach(closeAllWindows);
-    it('returns a valid procress id', async () => {
+    it('returns a valid process id', async () => {
       const w = new BrowserWindow({ show: false });
       expect(w.webContents.getOSProcessId()).to.equal(0);
 

@@ -233,7 +233,7 @@ describe('<webview> tag', function () {
 
       const types = JSON.parse(message);
       expect(types).to.include({
-        require: 'function', // arguments passed to it should be availale
+        require: 'function', // arguments passed to it should be available
         electron: 'undefined', // objects from the scope it is called from should not be available
         window: 'object', // the window object should be available
         localVar: 'undefined' // but local variables should not be exposed to the window
@@ -634,7 +634,7 @@ describe('<webview> tag', function () {
   });
 
   describe('will-navigate event', () => {
-    it('emits when a url that leads to oustide of the page is clicked', async () => {
+    it('emits when a url that leads to outside of the page is clicked', async () => {
       loadWebView(webview, {
         src: `file://${fixtures}/pages/webview-will-navigate.html`
       });

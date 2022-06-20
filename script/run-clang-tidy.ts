@@ -272,7 +272,7 @@ function parseCommandLine () {
   if (opts.help) showUsage();
 
   if (!opts['out-dir']) {
-    console.log('--out-dir is a required argunment');
+    console.log('--out-dir is a required argument');
     process.exit(0);
   }
 

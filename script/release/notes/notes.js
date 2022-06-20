@@ -410,7 +410,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   // remove any old commits
   pool.commits = pool.commits.filter(commit => !pool.processedHashes.has(commit.hash));
 
-  // if a commmit _and_ revert occurred in the unprocessed set, skip them both
+  // if a commit _and_ revert occurred in the unprocessed set, skip them both
   for (const commit of pool.commits) {
     const revertHash = commit.revertHash;
     if (!revertHash) {

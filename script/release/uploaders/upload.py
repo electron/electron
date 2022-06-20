@@ -364,7 +364,7 @@ def upload_electron(release, file_path, args):
 
 
 def upload_io_to_github(release, filename, filepath, version):
-  print('Uploading %s to Github' % \
+  print('Uploading %s to GitHub' % \
       (filename))
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.ts')
