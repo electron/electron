@@ -145,8 +145,4 @@ cherry-pick-2782c7bc5bbe.patch
 cherry-pick-f1dd785e021e.patch
 cherry-pick-f3d01ff794dc.patch
 cherry-pick-b03797bdb1df.patch
-make_gtk_getlibgtk_public.patch
-build_disable_print_content_analysis.patch
-custom_protocols_plzserviceworker.patch
-feat_filter_out_non-shareable_windows_in_the_current_application_in.patch
 posix_replace_doubleforkandexec_with_forkandspawn.patch
