@@ -12,6 +12,7 @@
 
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
+#include "electron/electron_gtk_stubs.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "third_party/skia/include/core/SkUnPreMultiply.h"
