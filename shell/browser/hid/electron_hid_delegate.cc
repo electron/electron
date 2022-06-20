@@ -68,7 +68,7 @@ bool ElectronHidDelegate::CanRequestDevicePermission(
   return permission_manager->CheckPermissionWithDetails(
       static_cast<blink::PermissionType>(
           WebContentsPermissionHelper::PermissionType::HID),
-      nullptr, origin.GetURL(), base::Value(std::move(details)));
+      nullptr, origin.GetURL(), std::move(details));
 }
 
 bool ElectronHidDelegate::HasDevicePermission(

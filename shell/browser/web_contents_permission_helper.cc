@@ -64,7 +64,7 @@ void WebContentsPermissionHelper::RequestPermission(
     blink::PermissionType permission,
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
-    base::Value details) {
+    base::Value::Dict details) {
   auto* rfh = web_contents_->GetPrimaryMainFrame();
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
@@ -76,7 +76,7 @@ void WebContentsPermissionHelper::RequestPermission(
 
 bool WebContentsPermissionHelper::CheckPermission(
     blink::PermissionType permission,
-    base::Value details) const {
+    base::Value::Dict details) const {
   auto* rfh = web_contents_->GetPrimaryMainFrame();
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
@@ -114,7 +114,7 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
   RequestPermission(blink::PermissionType::AUDIO_CAPTURE, std::move(callback),
-                    false, base::Value(std::move(details)));
+                    false, std::move(details));
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
@@ -142,7 +142,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
   details.Set("externalURL", url.spec());
   RequestPermission(
       static_cast<blink::PermissionType>(PermissionType::OPEN_EXTERNAL),
-      std::move(callback), user_gesture, base::Value(std::move(details)));
+      std::move(callback), user_gesture, std::move(details));
 }
 
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
@@ -154,7 +154,7 @@ bool WebContentsPermissionHelper::CheckMediaAccessPermission(
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
   return CheckPermission(blink::PermissionType::AUDIO_CAPTURE,
-                         base::Value(std::move(details)));
+                         std::move(details));
 }
 
 bool WebContentsPermissionHelper::CheckSerialAccessPermission(
@@ -163,7 +163,7 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
   details.Set("securityOrigin", embedding_origin.GetURL().spec());
   return CheckPermission(
       static_cast<blink::PermissionType>(PermissionType::SERIAL),
-      base::Value(std::move(details)));
+      std::move(details));
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);
