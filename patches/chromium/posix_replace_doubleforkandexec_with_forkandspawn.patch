@@ -366,7 +366,7 @@ index 0000000000000000000000000000000000000000..c6a95bbfdcba45995b0034789c8bdb44
 +
 +namespace {
 +
-+#if BUILDFLAG(IS_APPLE)
++#if defined(OS_MAC)
 +
 +class PosixSpawnAttr {
 + public:
@@ -498,7 +498,7 @@ index 0000000000000000000000000000000000000000..c6a95bbfdcba45995b0034789c8bdb44
 +    char* const* envp_for_spawn =
 +        envp ? const_cast<char* const*>(envp_c.data()) : environ;
 +
-+#if BUILDFLAG(IS_APPLE)
++#if defined(OS_MAC)
 +    PosixSpawnAttr attr;
 +    attr.SetFlags(POSIX_SPAWN_CLOEXEC_DEFAULT);
 +
