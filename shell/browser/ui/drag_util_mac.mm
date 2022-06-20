@@ -48,7 +48,7 @@ void DragFileItems(const std::vector<base::FilePath>& files,
                               options:NSAlignAllEdgesOutward]
           .origin;
 
-  NSMutableArray* file_items = [NSMutableArray new];
+  NSMutableArray* file_items = [NSMutableArray array];
   for (auto const& file : files) {
     NSURL* file_url =
         [NSURL fileURLWithPath:base::SysUTF8ToNSString(file.value())];
