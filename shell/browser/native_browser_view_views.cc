@@ -130,6 +130,9 @@ void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
   view->SetBoundsRect(bounds);
   ResetAutoResizeProportions();
 
+  view->InvalidateLayout();
+  view->SchedulePaint();
+
   // Ensure draggable regions are properly updated to reflect new bounds.
   UpdateDraggableRegions(draggable_regions_);
 }
