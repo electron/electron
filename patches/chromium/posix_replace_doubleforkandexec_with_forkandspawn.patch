@@ -33,10 +33,10 @@ index 8dcac3238870920d374b86033d05d77ebde351e9..02103924332eddbd158c04f8a395bb4a
  MIPS Technologies, Inc.
 +Darshan Sen <raisinten@gmail.com>
 diff --git a/third_party/crashpad/crashpad/client/crashpad_client_linux.cc b/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
-index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38dfd4cd9d70 100644
+index eccf204ca119a5e0b803a18df07835916f7abb22..b35f0c1b9486032f49a9154c92d277a79434a7ad 100644
 --- a/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
 +++ b/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
-@@ -45,7 +45,7 @@
+@@ -40,7 +40,7 @@
  #include "util/linux/socket.h"
  #include "util/misc/address_sanitizer.h"
  #include "util/misc/from_pointer_cast.h"
@@ -45,7 +45,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
  #include "util/posix/scoped_mmap.h"
  #include "util/posix/signals.h"
  
-@@ -454,7 +454,7 @@ bool CrashpadClient::StartHandler(
+@@ -401,7 +401,7 @@ bool CrashpadClient::StartHandler(
  
    argv.push_back(FormatArgumentInt("initial-client-fd", handler_sock.get()));
    argv.push_back("--shared-client-connection");
@@ -54,7 +54,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
      return false;
    }
  
-@@ -609,7 +609,7 @@ bool CrashpadClient::StartJavaHandlerForClient(
+@@ -555,7 +555,7 @@ bool CrashpadClient::StartJavaHandlerForClient(
      int socket) {
    std::vector<std::string> argv = BuildAppProcessArgs(
        class_name, database, metrics_dir, url, annotations, arguments, socket);
@@ -63,7 +63,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
  }
  
  bool CrashpadClient::StartHandlerWithLinkerAtCrash(
-@@ -658,7 +658,7 @@ bool CrashpadClient::StartHandlerWithLinkerForClient(
+@@ -604,7 +604,7 @@ bool CrashpadClient::StartHandlerWithLinkerForClient(
                                    annotations,
                                    arguments,
                                    socket);
@@ -72,7 +72,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
  }
  
  #endif
-@@ -692,7 +692,7 @@ bool CrashpadClient::StartHandlerForClient(
+@@ -638,7 +638,7 @@ bool CrashpadClient::StartHandlerForClient(
  
    argv.push_back(FormatArgumentInt("initial-client-fd", socket));
  
@@ -82,7 +82,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
  
  // static
 diff --git a/third_party/crashpad/crashpad/client/crashpad_client_mac.cc b/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
-index 39e35678ecdd036f8c8ae27c973c27102b77da96..84385f2569f2bd00ca8aed0aa332fb450b2de1d3 100644
+index b4a365d0204612b4e4621b2e8c30d266a10e1bc1..59c7a800ad903b91a88d0ef0cb1a01a1d8036e52 100644
 --- a/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
 +++ b/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
 @@ -36,7 +36,7 @@
@@ -135,7 +135,7 @@ index 9e58d94aa499fdb7271a78ea21a1dcc1b12e3a52..3caa3b987b35be575558a312026cf6f1
          Metrics::CaptureResult::kFinishedWritingCrashReportFailed);
      return false;
 diff --git a/third_party/crashpad/crashpad/util/BUILD.gn b/third_party/crashpad/crashpad/util/BUILD.gn
-index 30f03b13f3a018e6a96b0689452a344992675c23..64fa2e9e89b700d8a265a9737cb6a30a210cdffe 100644
+index 9f178d10a9151340d34f17f2d04eef791a8d174b..20467df262354ac85e4d5ef71259e4539994c67a 100644
 --- a/third_party/crashpad/crashpad/util/BUILD.gn
 +++ b/third_party/crashpad/crashpad/util/BUILD.gn
 @@ -296,10 +296,10 @@ crashpad_static_library("util") {
