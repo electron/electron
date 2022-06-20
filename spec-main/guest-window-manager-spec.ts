@@ -123,6 +123,58 @@ describe('webContents.setWindowOpenHandler', () => {
 
       afterEach(closeAllWindows);
 
+      it('does not fire window creation events if the handler callback throws an error', (done) => {
+        const error = new Error('oh no');
+        const listeners = process.listeners('uncaughtException');
+        process.removeAllListeners('uncaughtException');
+        process.on('uncaughtException', (thrown) => {
+          try {
+            expect(thrown).to.equal(error);
+            done();
+          } catch (e) {
+            done(e);
+          } finally {
+            process.removeAllListeners('uncaughtException');
+            listeners.forEach((listener) => process.on('uncaughtException', listener));
+          }
+        });
+
+        browserWindow.webContents.on('new-window', () => {
+          assert.fail('new-window should not be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+
+        browserWindow.webContents.setWindowOpenHandler(() => {
+          throw error;
+        });
+      });
+
+      it('does not fire window creation events if the handler callback returns a bad result', async () => {
+        const bad = new Promise((resolve) => {
+          browserWindow.webContents.setWindowOpenHandler(() => {
+            setTimeout(resolve);
+            return [1, 2, 3] as any;
+          });
+        });
+
+        browserWindow.webContents.on('new-window', () => {
+          assert.fail('new-window should not be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+
+        await bad;
+      });
+
       it('does not fire window creation events if an override returns action: deny', async () => {
         const denied = new Promise((resolve) => {
           browserWindow.webContents.setWindowOpenHandler(() => {
@@ -131,11 +183,11 @@ describe('webContents.setWindowOpenHandler', () => {
           });
         });
         browserWindow.webContents.on('new-window', () => {
-          assert.fail('new-window should not to be called with an overridden window.open');
+          assert.fail('new-window should not be called with an overridden window.open');
         });
 
         browserWindow.webContents.on('did-create-window', () => {
-          assert.fail('did-create-window should not to be called with an overridden window.open');
+          assert.fail('did-create-window should not be called with an overridden window.open');
         });
 
         browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
@@ -151,11 +203,11 @@ describe('webContents.setWindowOpenHandler', () => {
           });
         });
         browserWindow.webContents.on('new-window', () => {
-          assert.fail('new-window should not to be called with an overridden window.open');
+          assert.fail('new-window should not to called with an overridden window.open');
         });
 
         browserWindow.webContents.on('did-create-window', () => {
-          assert.fail('did-create-window should not to be called with an overridden window.open');
+          assert.fail('did-create-window should not be called with an overridden window.open');
         });
 
         await browserWindow.webContents.loadURL('data:text/html,<a target="_blank" href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>');
@@ -173,11 +225,11 @@ describe('webContents.setWindowOpenHandler', () => {
           });
         });
         browserWindow.webContents.on('new-window', () => {
-          assert.fail('new-window should not to be called with an overridden window.open');
+          assert.fail('new-window should not to called with an overridden window.open');
         });
 
         browserWindow.webContents.on('did-create-window', () => {
-          assert.fail('did-create-window should not to be called with an overridden window.open');
+          assert.fail('did-create-window should not be called with an overridden window.open');
         });
 
         await browserWindow.webContents.loadURL('data:text/html,<a href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>');
