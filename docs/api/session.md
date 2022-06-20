@@ -735,7 +735,7 @@ session.defaultSession.setMediaRequestHandler((request, callback) => {
     desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
       // Grant access to the first screen found.
       const { id, name } = sources[0]
-      callback([{ id, name, type: request.type }], 'ok')
+      callback([{ video_device: { id, name, type: request.videoType } }], 'ok')
     })
   }
 })

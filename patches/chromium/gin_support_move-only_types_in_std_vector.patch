@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Thu, 16 Jun 2022 16:43:39 -0700
+Subject: gin: support move-only types in std::vector
+
+
+diff --git a/gin/converter.h b/gin/converter.h
+index 7a6392f9290f750947f91e9e08d9411415a3fa38..a7dd47cbd2ac10019f66afc93f0405383f95e983 100644
+--- a/gin/converter.h
++++ b/gin/converter.h
+@@ -238,7 +238,7 @@ struct Converter<std::vector<T> > {
+       T item;
+       if (!Converter<T>::FromV8(isolate, v8_item, &item))
+         return false;
+-      result.push_back(item);
++      result.push_back(std::move(item));
+     }
+ 
+     out->swap(result);

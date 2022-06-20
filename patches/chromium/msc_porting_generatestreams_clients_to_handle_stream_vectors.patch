@@ -1,0 +1,2824 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Simon Hangl <simonha@google.com>
+Date: Thu, 9 Jun 2022 09:36:54 +0000
+Subject: [MSC] Porting GenerateStreams clients to handle stream vectors.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The getDisplayMedia implementation currently only handles single
+streams. This CL ports several GenerateStreams clients to handle
+multiple streams.
+
+Bug: 1300883
+Change-Id: I764cb74b9a6fd66929ee7ebc741800968d0be503
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3560567
+Reviewed-by: Sergey Ulanov <sergeyu@chromium.org>
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Reviewed-by: Sean Topping <seantopping@chromium.org>
+Reviewed-by: Evan Stade <estade@chromium.org>
+Reviewed-by: Finnur Thorarinsson <finnur@chromium.org>
+Reviewed-by: Michael Bai <michaelbai@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: Vasilii Sukhanov <vasilii@chromium.org>
+Commit-Queue: Simon Hangl <simonha@google.com>
+Reviewed-by: Elad Alon <eladalon@chromium.org>
+Reviewed-by: Carlos Knippschild <carlosk@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1012407}
+
+diff --git a/android_webview/browser/aw_web_contents_delegate.cc b/android_webview/browser/aw_web_contents_delegate.cc
+index 5bb537629eb1211921b225185cdf1b805e8cd4c1..88b5d818c708076c0450edccc2363ebc09c86893 100644
+--- a/android_webview/browser/aw_web_contents_delegate.cc
++++ b/android_webview/browser/aw_web_contents_delegate.cc
+@@ -257,7 +257,7 @@ void AwWebContentsDelegate::RequestMediaAccessPermission(
+   AwContents* aw_contents = AwContents::FromWebContents(web_contents);
+   if (!aw_contents) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN,
+         nullptr);
+     return;
+diff --git a/android_webview/browser/permission/media_access_permission_request.cc b/android_webview/browser/permission/media_access_permission_request.cc
+index 429068e1e0dacc3140c6034452ecf28c19323583..c5fd6596f178f280efccd0cee35feb4df8106bef 100644
+--- a/android_webview/browser/permission/media_access_permission_request.cc
++++ b/android_webview/browser/permission/media_access_permission_request.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "android_webview/browser/permission/media_access_permission_request.h"
+ 
++#include <algorithm>
+ #include <utility>
+ 
+ #include "android_webview/browser/permission/aw_permission_request.h"
+@@ -48,14 +49,18 @@ MediaAccessPermissionRequest::~MediaAccessPermissionRequest() {}
+ 
+ void MediaAccessPermissionRequest::NotifyRequestResult(bool allowed) {
+   std::unique_ptr<content::MediaStreamUI> ui;
+-  blink::mojom::StreamDevices devices;
+   if (!allowed) {
+     std::move(callback_).Run(
+-        devices, blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
++        blink::mojom::StreamDevicesSet(),
++        blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+         std::move(ui));
+     return;
+   }
+ 
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+   if (request_.audio_type ==
+       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+     const MediaStreamDevices& audio_devices =
+@@ -79,11 +84,16 @@ void MediaAccessPermissionRequest::NotifyRequestResult(bool allowed) {
+     if (device)
+       devices.video_device = *device;
+   }
++
++  const bool has_no_hardware =
++      !devices.audio_device.has_value() && !devices.video_device.has_value();
++  if (has_no_hardware) {
++    stream_devices_set.stream_devices.clear();
++  }
+   std::move(callback_).Run(
+-      devices,
+-      (!devices.audio_device.has_value() && !devices.video_device.has_value())
+-          ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
+-          : blink::mojom::MediaStreamRequestResult::OK,
++      stream_devices_set,
++      has_no_hardware ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
++                      : blink::mojom::MediaStreamRequestResult::OK,
+       std::move(ui));
+ }
+ 
+diff --git a/android_webview/browser/permission/media_access_permission_request_unittest.cc b/android_webview/browser/permission/media_access_permission_request_unittest.cc
+index 7d46316a3ecf33cd9696e1bdca9ccbd5aa65ea17..02b2a861bcb6887f8ee38670a3c8c523ccac074c 100644
+--- a/android_webview/browser/permission/media_access_permission_request_unittest.cc
++++ b/android_webview/browser/permission/media_access_permission_request_unittest.cc
+@@ -80,10 +80,10 @@ class MediaAccessPermissionRequestTest : public testing::Test {
+   blink::mojom::MediaStreamRequestResult result_;
+ 
+  private:
+-  void Callback(const blink::mojom::StreamDevices& devices,
++  void Callback(const blink::mojom::StreamDevicesSet& stream_devices_set,
+                 blink::mojom::MediaStreamRequestResult result,
+                 std::unique_ptr<content::MediaStreamUI> ui) {
+-    devices_ = blink::StreamDevicesToMediaStreamDevicesList(devices);
++    devices_ = blink::ToMediaStreamDevicesList(stream_devices_set);
+     result_ = result;
+   }
+ };
+diff --git a/chrome/browser/ash/policy/dlp/dlp_content_manager_ash_browsertest.cc b/chrome/browser/ash/policy/dlp/dlp_content_manager_ash_browsertest.cc
+index 1bd70a59a24da68620c9a2be7a768c2d0770447a..1775b3be8db7bee410362eb772bd7f91696c897c 100644
+--- a/chrome/browser/ash/policy/dlp/dlp_content_manager_ash_browsertest.cc
++++ b/chrome/browser/ash/policy/dlp/dlp_content_manager_ash_browsertest.cc
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "base/test/bind.h"
+ #include "chrome/browser/ash/policy/dlp/dlp_content_manager_ash.h"
+ 
+ #include <functional>
+@@ -52,6 +53,7 @@
+ #include "content/public/test/browser_test.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
++#include "third_party/blink/public/mojom/mediastream/media_stream.mojom-forward.h"
+ #include "third_party/blink/public/mojom/mediastream/media_stream.mojom-shared.h"
+ #include "ui/aura/window.h"
+ #include "ui/gfx/geometry/rect.h"
+@@ -809,23 +811,27 @@ class DlpContentManagerAshScreenShareBrowserTest
+                              bool expect_warning) {
+     // First check for the permission to start screen sharing.
+     // It should call DlpContentManager::CheckScreenShareRestriction().
+-    base::test::TestFuture<const blink::mojom::StreamDevices&,
+-                           blink::mojom::MediaStreamRequestResult,
+-                           std::unique_ptr<content::MediaStreamUI>>
+-        test_future;
++    blink::mojom::MediaStreamRequestResult received_result =
++        blink::mojom::MediaStreamRequestResult::NUM_MEDIA_REQUEST_RESULTS;
++    base::RunLoop run_loop;
+     handler->HandleRequest(
+         web_contents, request,
+-        test_future.GetCallback<const blink::mojom::StreamDevices&,
+-                                blink::mojom::MediaStreamRequestResult,
+-                                std::unique_ptr<content::MediaStreamUI>>(),
++        base::BindLambdaForTesting(
++            [&received_result, &run_loop](
++                const blink::mojom::StreamDevicesSet&,
++                blink::mojom::MediaStreamRequestResult result,
++                std::unique_ptr<content::MediaStreamUI>) {
++              received_result = result;
++              run_loop.Quit();
++            }),
+         /*extension=*/nullptr);
+ 
+     if (expect_warning)
+       DismissDialog(expect_allowed);
+ 
+-    ASSERT_TRUE(test_future.Wait()) << "MediaResponseCallback timed out.";
++    run_loop.Run();
+     EXPECT_EQ(
+-        test_future.Get<1>(),
++        received_result,
+         (expect_allowed
+              ? blink::mojom::MediaStreamRequestResult::OK
+              : blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED));
+diff --git a/chrome/browser/media/media_access_handler.cc b/chrome/browser/media/media_access_handler.cc
+index 0078abc23718ee034a0cee83ef0da4889664fc60..47337cfdb5c81bf06989d3c0c30520456779de43 100644
+--- a/chrome/browser/media/media_access_handler.cc
++++ b/chrome/browser/media/media_access_handler.cc
+@@ -30,7 +30,12 @@ void MediaAccessHandler::CheckDevicesAndRunCallback(
+   bool get_default_audio_device = audio_allowed;
+   bool get_default_video_device = video_allowed;
+ 
+-  blink::mojom::StreamDevices stream_devices;
++  // TOOD(crbug.com/1300883): Generalize to multiple streams.
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& stream_devices =
++      *stream_devices_set.stream_devices[0];
+ 
+   // Set an initial error result. If neither audio or video is allowed, we'll
+   // never try to get any device below but will just create |ui| and return an
+@@ -85,5 +90,10 @@ void MediaAccessHandler::CheckDevicesAndRunCallback(
+              ->RegisterMediaStream(web_contents, stream_devices);
+   }
+ 
+-  std::move(callback).Run(stream_devices, result, std::move(ui));
++  if (!stream_devices.audio_device.has_value() &&
++      !stream_devices.video_device.has_value()) {
++    stream_devices_set.stream_devices.clear();
++  }
++
++  std::move(callback).Run(stream_devices_set, result, std::move(ui));
+ }
+diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
+index 72f7032a8fe2011a0bd80d557e661fc487c3b876..89920af3e44257b6091bb558537fe07d2bb2d899 100644
+--- a/chrome/browser/media/offscreen_tab.cc
++++ b/chrome/browser/media/offscreen_tab.cc
+@@ -333,7 +333,7 @@ void OffscreenTab::RequestMediaAccessPermission(
+     WebContents* contents,
+     const content::MediaStreamRequest& request,
+     content::MediaResponseCallback callback) {
+-  std::move(callback).Run(blink::mojom::StreamDevices(),
++  std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                           blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED,
+                           nullptr);
+ }
+diff --git a/chrome/browser/media/webrtc/desktop_capture_access_handler.cc b/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
+index 1aa2665c94b1402d551f33c0ecb69468e776da07..de36b532560772afe14b13b39f1e709801e5b1f5 100644
+--- a/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
++++ b/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
+@@ -253,7 +253,7 @@ void DesktopCaptureAccessHandler::ProcessScreenCaptureAccessRequest(
+ 
+   if (!screen_capture_enabled || !origin_is_secure) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+              /*ui=*/nullptr);
+     return;
+@@ -262,7 +262,7 @@ void DesktopCaptureAccessHandler::ProcessScreenCaptureAccessRequest(
+   if (!IsRequestApproved(web_contents, pending_request->request, extension,
+                          pending_request->is_allowlisted_extension)) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+              /*ui=*/nullptr);
+     return;
+@@ -273,7 +273,7 @@ void DesktopCaptureAccessHandler::ProcessScreenCaptureAccessRequest(
+               pending_request->request.render_process_id,
+               pending_request->request.render_frame_id))) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+              /*ui=*/nullptr);
+     return;
+@@ -351,7 +351,7 @@ void DesktopCaptureAccessHandler::HandleRequest(
+   if (request.video_type !=
+       blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+              /*ui=*/nullptr);
+     return;
+@@ -363,7 +363,7 @@ void DesktopCaptureAccessHandler::HandleRequest(
+ 
+   if (allowed_capture_level == AllowedScreenCaptureLevel::kDisallowed) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+              /*ui=*/nullptr);
+     return;
+@@ -379,7 +379,7 @@ void DesktopCaptureAccessHandler::HandleRequest(
+   if (request.requested_video_device_id.empty()) {
+     if (allowed_capture_level < AllowedScreenCaptureLevel::kDesktop) {
+       std::move(pending_request->callback)
+-          .Run(blink::mojom::StreamDevices(),
++          .Run(blink::mojom::StreamDevicesSet(),
+                blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+                /*ui=*/nullptr);
+       return;
+@@ -388,7 +388,7 @@ void DesktopCaptureAccessHandler::HandleRequest(
+     if (system_media_permissions::CheckSystemScreenCapturePermission() !=
+         system_media_permissions::SystemPermission::kAllowed) {
+       std::move(pending_request->callback)
+-          .Run(blink::mojom::StreamDevices(),
++          .Run(blink::mojom::StreamDevicesSet(),
+                blink::mojom::MediaStreamRequestResult::SYSTEM_PERMISSION_DENIED,
+                /*ui=*/nullptr);
+       return;
+@@ -423,7 +423,7 @@ void DesktopCaptureAccessHandler::HandleRequest(
+   // Received invalid device id.
+   if (media_id.type == content::DesktopMediaID::TYPE_NONE) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+              /*ui=*/nullptr);
+     return;
+@@ -431,7 +431,7 @@ void DesktopCaptureAccessHandler::HandleRequest(
+ 
+   if (!IsMediaTypeAllowed(allowed_capture_level, media_id.type)) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+              /*ui=*/nullptr);
+     return;
+@@ -441,7 +441,7 @@ void DesktopCaptureAccessHandler::HandleRequest(
+       system_media_permissions::CheckSystemScreenCapturePermission() !=
+           system_media_permissions::SystemPermission::kAllowed) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::SYSTEM_PERMISSION_DENIED,
+              /*ui=*/nullptr);
+     return;
+@@ -454,7 +454,7 @@ void DesktopCaptureAccessHandler::HandleRequest(
+               media_id.web_contents_id.render_process_id,
+               media_id.web_contents_id.main_render_frame_id))) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::TAB_CAPTURE_FAILURE,
+              /*ui=*/nullptr);
+     return;
+@@ -489,7 +489,7 @@ void DesktopCaptureAccessHandler::ProcessChangeSourceRequest(
+     pending_request->picker = picker_factory_->CreatePicker();
+     if (!pending_request->picker) {
+       std::move(pending_request->callback)
+-          .Run(blink::mojom::StreamDevices(),
++          .Run(blink::mojom::StreamDevicesSet(),
+                blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+                /*ui=*/nullptr);
+       return;
+@@ -614,7 +614,7 @@ void DesktopCaptureAccessHandler::OnPickerDialogResults(
+ 
+   if (media_id.is_null()) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+              /*ui=*/nullptr);
+   } else {
+@@ -670,19 +670,26 @@ void DesktopCaptureAccessHandler::AcceptRequest(
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   DCHECK(web_contents);
+ 
+-  blink::mojom::StreamDevices devices;
++  // TODO(crbug.com/1300883): Generalize to multiple streams.
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& stream_devices =
++      *stream_devices_set.stream_devices[0];
+   std::unique_ptr<content::MediaStreamUI> ui = GetDevicesForDesktopCapture(
+       pending_request->request, web_contents, media_id, capture_audio,
+       pending_request->request.disable_local_echo,
+       pending_request->should_display_notification,
+-      pending_request->application_title, devices);
+-  DCHECK(devices.audio_device.has_value() || devices.video_device.has_value());
++      pending_request->application_title, stream_devices);
++  DCHECK(stream_devices.audio_device.has_value() ||
++         stream_devices.video_device.has_value());
+ 
+   UpdateExtensionTrusted(pending_request->request,
+                          pending_request->is_allowlisted_extension);
+ 
+   std::move(pending_request->callback)
+-      .Run(devices, blink::mojom::MediaStreamRequestResult::OK, std::move(ui));
++      .Run(stream_devices_set, blink::mojom::MediaStreamRequestResult::OK,
++           std::move(ui));
+ }
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -702,7 +709,7 @@ void DesktopCaptureAccessHandler::OnDlpRestrictionChecked(
+ 
+   if (!is_dlp_allowed) {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+              /*ui=*/nullptr);
+     return;
+diff --git a/chrome/browser/media/webrtc/desktop_capture_access_handler_unittest.cc b/chrome/browser/media/webrtc/desktop_capture_access_handler_unittest.cc
+index fcb7a46c9ea569bcc4182a2b26888e51c4c21fd5..0620716b9552bc1f35621c792707ac20e4656603 100644
+--- a/chrome/browser/media/webrtc/desktop_capture_access_handler_unittest.cc
++++ b/chrome/browser/media/webrtc/desktop_capture_access_handler_unittest.cc
+@@ -85,11 +85,17 @@ class DesktopCaptureAccessHandlerTest : public ChromeRenderViewHostTestHarness {
+         [](base::RunLoop* wait_loop, bool expect_result,
+            blink::mojom::MediaStreamRequestResult* request_result,
+            blink::mojom::StreamDevices* devices_result,
+-           const blink::mojom::StreamDevices& devices,
++           const blink::mojom::StreamDevicesSet& stream_devices_set,
+            blink::mojom::MediaStreamRequestResult result,
+            std::unique_ptr<content::MediaStreamUI> ui) {
+           *request_result = result;
+-          *devices_result = devices;
++          if (result == blink::mojom::MediaStreamRequestResult::OK) {
++            ASSERT_EQ(stream_devices_set.stream_devices.size(), 1u);
++            *devices_result = *stream_devices_set.stream_devices[0];
++          } else {
++            ASSERT_TRUE(stream_devices_set.stream_devices.empty());
++            *devices_result = blink::mojom::StreamDevices();
++          }
+           EXPECT_TRUE(expect_result) << "MediaResponseCallback should not be "
+                                         "called when expect_result is false.";
+           wait_loop->Quit();
+@@ -130,12 +136,16 @@ class DesktopCaptureAccessHandlerTest : public ChromeRenderViewHostTestHarness {
+     content::MediaResponseCallback callback = base::BindOnce(
+         [](base::RunLoop* wait_loop,
+            blink::mojom::MediaStreamRequestResult* request_result,
+-           blink::mojom::StreamDevices* stream_devices_result,
+-           const blink::mojom::StreamDevices& devices,
++           blink::mojom::StreamDevices* devices_result,
++           const blink::mojom::StreamDevicesSet& stream_devices_set,
+            blink::mojom::MediaStreamRequestResult result,
+            std::unique_ptr<content::MediaStreamUI> ui) {
+           *request_result = result;
+-          *stream_devices_result = devices;
++          if (!stream_devices_set.stream_devices.empty()) {
++            *devices_result = *stream_devices_set.stream_devices[0];
++          } else {
++            *devices_result = blink::mojom::StreamDevices();
++          }
+           wait_loop->Quit();
+         },
+         &wait_loop, request_result, stream_devices_result);
+@@ -305,12 +315,12 @@ TEST_F(DesktopCaptureAccessHandlerTest, ChangeSourceMultipleRequests) {
+         [](base::RunLoop* wait_loop,
+            blink::mojom::MediaStreamRequestResult* request_result,
+            blink::MediaStreamDevices* devices_result,
+-           const blink::mojom::StreamDevices& devices,
++           const blink::mojom::StreamDevicesSet& stream_devices_set,
+            blink::mojom::MediaStreamRequestResult result,
+            std::unique_ptr<content::MediaStreamUI> ui) {
++          ASSERT_EQ(stream_devices_set.stream_devices.size(), 1u);
+           *request_result = result;
+-          *devices_result =
+-              blink::StreamDevicesToMediaStreamDevicesList(devices);
++          *devices_result = blink::ToMediaStreamDevicesList(stream_devices_set);
+           wait_loop->Quit();
+         },
+         &loop, &result, &devices);
+diff --git a/chrome/browser/media/webrtc/display_media_access_handler.cc b/chrome/browser/media/webrtc/display_media_access_handler.cc
+index e160d1de7b51ccb9d7d255b56f0cb5ebe35e8be1..dd23de0d1acee49845a6ca9754d40f1fd470fb2e 100644
+--- a/chrome/browser/media/webrtc/display_media_access_handler.cc
++++ b/chrome/browser/media/webrtc/display_media_access_handler.cc
+@@ -101,7 +101,7 @@ void DisplayMediaAccessHandler::HandleRequest(
+                                              web_contents) ==
+       AllowedScreenCaptureLevel::kDisallowed) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+         /*ui=*/nullptr);
+     return;
+@@ -116,7 +116,7 @@ void DisplayMediaAccessHandler::HandleRequest(
+           web_contents);
+   if (observer) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+         /*ui=*/nullptr);
+     observer->OnDesktopCaptureRequest();
+@@ -133,7 +133,7 @@ void DisplayMediaAccessHandler::HandleRequest(
+       request.request_type != blink::MEDIA_DEVICE_UPDATE) {
+     LOG(ERROR) << "Do not allow getDisplayMedia() on a backgrounded page.";
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_STATE, /*ui=*/nullptr);
+     return;
+   }
+@@ -159,7 +159,7 @@ void DisplayMediaAccessHandler::HandleRequest(
+         request.render_process_id, request.render_frame_id);
+     if (!rfh) {
+       std::move(callback).Run(
+-          blink::mojom::StreamDevices(),
++          blink::mojom::StreamDevicesSet(),
+           blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+           /*ui=*/nullptr);
+       return;
+@@ -179,7 +179,7 @@ void DisplayMediaAccessHandler::HandleRequest(
+             rfh->GetProcess(), bad_message::BadMessageReason::
+                                    RFH_DISPLAY_CAPTURE_PERMISSION_MISSING);
+         std::move(callback).Run(
+-            blink::mojom::StreamDevices(),
++            blink::mojom::StreamDevicesSet(),
+             blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+             /*ui=*/nullptr);
+         return;
+@@ -190,7 +190,7 @@ void DisplayMediaAccessHandler::HandleRequest(
+   std::unique_ptr<DesktopMediaPicker> picker = picker_factory_->CreatePicker();
+   if (!picker) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_STATE, /*ui=*/nullptr);
+     return;
+   }
+@@ -371,7 +371,7 @@ void DisplayMediaAccessHandler::RejectRequest(
+     return;
+   PendingAccessRequest& mutable_request = *mutable_queue.front();
+   std::move(mutable_request.callback)
+-      .Run(blink::mojom::StreamDevices(), result, /*ui=*/nullptr);
++      .Run(blink::mojom::StreamDevicesSet(), result, /*ui=*/nullptr);
+   mutable_queue.pop_front();
+   if (!mutable_queue.empty())
+     ProcessQueuedAccessRequest(mutable_queue, web_contents);
+@@ -398,15 +398,20 @@ void DisplayMediaAccessHandler::AcceptRequest(
+       (media_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS) &&
+       media_id.web_contents_id.disable_local_echo;
+ 
+-  blink::mojom::StreamDevices devices;
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& stream_devices =
++      *stream_devices_set.stream_devices[0];
+   std::unique_ptr<content::MediaStreamUI> ui = GetDevicesForDesktopCapture(
+       pending_request.request, web_contents, media_id, media_id.audio_share,
+       disable_local_echo, display_notification_,
+-      GetApplicationTitle(web_contents), devices);
++      GetApplicationTitle(web_contents), stream_devices);
+   UpdateTarget(pending_request.request, media_id);
+ 
+   std::move(pending_request.callback)
+-      .Run(devices, blink::mojom::MediaStreamRequestResult::OK, std::move(ui));
++      .Run(stream_devices_set, blink::mojom::MediaStreamRequestResult::OK,
++           std::move(ui));
+   queue.pop_front();
+ 
+   if (!queue.empty())
+diff --git a/chrome/browser/media/webrtc/display_media_access_handler_unittest.cc b/chrome/browser/media/webrtc/display_media_access_handler_unittest.cc
+index 48b93fdf8200bf9c0fb9a0e4bb5fc9f6fbfe40fa..0c817ea2118c6eed1475802b5d163f6144046e53 100644
+--- a/chrome/browser/media/webrtc/display_media_access_handler_unittest.cc
++++ b/chrome/browser/media/webrtc/display_media_access_handler_unittest.cc
+@@ -97,11 +97,17 @@ class DisplayMediaAccessHandlerTest : public ChromeRenderViewHostTestHarness {
+         [](base::RunLoop* wait_loop,
+            blink::mojom::MediaStreamRequestResult* request_result,
+            blink::mojom::StreamDevices* devices_result,
+-           const blink::mojom::StreamDevices& devices,
++           const blink::mojom::StreamDevicesSet& stream_devices_set,
+            blink::mojom::MediaStreamRequestResult result,
+            std::unique_ptr<content::MediaStreamUI> ui) {
+           *request_result = result;
+-          *devices_result = devices;
++          if (result == blink::mojom::MediaStreamRequestResult::OK) {
++            ASSERT_EQ(stream_devices_set.stream_devices.size(), 1u);
++            *devices_result = *stream_devices_set.stream_devices[0];
++          } else {
++            ASSERT_TRUE(stream_devices_set.stream_devices.empty());
++            *devices_result = blink::mojom::StreamDevices();
++          }
+           wait_loop->Quit();
+         },
+         wait_loop, request_result, &devices_result);
+@@ -505,12 +511,17 @@ TEST_F(DisplayMediaAccessHandlerTest, MultipleRequests) {
+         [](base::RunLoop* wait_loop,
+            blink::mojom::MediaStreamRequestResult* request_result,
+            blink::MediaStreamDevices* devices_result,
+-           const blink::mojom::StreamDevices& devices,
++           const blink::mojom::StreamDevicesSet& stream_devices_set,
+            blink::mojom::MediaStreamRequestResult result,
+            std::unique_ptr<content::MediaStreamUI> ui) {
+           *request_result = result;
+-          *devices_result =
+-              blink::StreamDevicesToMediaStreamDevicesList(devices);
++          if (result == blink::mojom::MediaStreamRequestResult::OK) {
++            ASSERT_EQ(stream_devices_set.stream_devices.size(), 1u);
++            *devices_result =
++                blink::ToMediaStreamDevicesList(stream_devices_set);
++          } else {
++            ASSERT_TRUE(stream_devices_set.stream_devices.empty());
++          }
+           wait_loop->Quit();
+         },
+         &wait_loop[i], &result, &devices);
+diff --git a/chrome/browser/media/webrtc/media_capture_devices_dispatcher.cc b/chrome/browser/media/webrtc/media_capture_devices_dispatcher.cc
+index 5f055a4e1578483d7391fef491a1971af09f7ca7..64c0e2546d084a4e9e8b419e9b4f5dc0588fad76 100644
+--- a/chrome/browser/media/webrtc/media_capture_devices_dispatcher.cc
++++ b/chrome/browser/media/webrtc/media_capture_devices_dispatcher.cc
+@@ -150,7 +150,7 @@ void MediaCaptureDevicesDispatcher::ProcessMediaAccessRequest(
+           blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE &&
+       !base::FeatureList::IsEnabled(features::kUserMediaScreenCapturing)) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+     return;
+   }
+@@ -166,7 +166,7 @@ void MediaCaptureDevicesDispatcher::ProcessMediaAccessRequest(
+       return;
+     }
+   }
+-  std::move(callback).Run(blink::mojom::StreamDevices(),
++  std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                           blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED,
+                           nullptr);
+ }
+diff --git a/chrome/browser/media/webrtc/media_stream_devices_controller_browsertest.cc b/chrome/browser/media/webrtc/media_stream_devices_controller_browsertest.cc
+index 38408a6536e87eccb1f3c8d35ad8bc409f372eb7..88385723f509408833e5b9a700d2bd49065e155a 100644
+--- a/chrome/browser/media/webrtc/media_stream_devices_controller_browsertest.cc
++++ b/chrome/browser/media/webrtc/media_stream_devices_controller_browsertest.cc
+@@ -40,6 +40,7 @@
+ #include "content/public/test/mock_render_process_host.h"
+ #include "extensions/common/constants.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/public/common/mediastream/media_stream_request.h"
+ #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
+ 
+ using content_settings::PageSpecificContentSettings;
+@@ -53,11 +54,12 @@ class MediaStreamDevicesControllerTest : public WebRtcTestBase {
+             blink::mojom::MediaStreamRequestResult::NUM_MEDIA_REQUEST_RESULTS) {
+   }
+ 
+-  void OnMediaStreamResponse(const blink::mojom::StreamDevices& devices,
+-                             blink::mojom::MediaStreamRequestResult result,
+-                             std::unique_ptr<content::MediaStreamUI> ui) {
++  void OnMediaStreamResponse(
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
++      blink::mojom::MediaStreamRequestResult result,
++      std::unique_ptr<content::MediaStreamUI> ui) {
+     blink::MediaStreamDevices devices_list =
+-        blink::StreamDevicesToMediaStreamDevicesList(devices);
++        blink::ToMediaStreamDevicesList(stream_devices_set);
+     EXPECT_EQ(devices_list.empty(), !ui);
+     media_stream_devices_ = devices_list;
+     media_stream_result_ = result;
+@@ -957,14 +959,16 @@ IN_PROC_BROWSER_TEST_F(MediaStreamDevicesControllerTest,
+   permission_bubble_media_access_handler_->HandleRequest(
+       prompt_contents,
+       CreateRequest(example_audio_id(), example_video_id(), false),
+-      base::BindOnce([](const blink::mojom::StreamDevices& devices,
+-                        blink::mojom::MediaStreamRequestResult result,
+-                        std::unique_ptr<content::MediaStreamUI> ui) {
+-        // The permission may be dismissed before we have a chance to delete the
+-        // request.
+-        EXPECT_EQ(blink::mojom::MediaStreamRequestResult::PERMISSION_DISMISSED,
+-                  result);
+-      }),
++      base::BindOnce(
++          [](const blink::mojom::StreamDevicesSet& stream_devices_set,
++             blink::mojom::MediaStreamRequestResult result,
++             std::unique_ptr<content::MediaStreamUI> ui) {
++            // The permission may be dismissed before we have a chance to delete
++            // the request.
++            EXPECT_EQ(
++                blink::mojom::MediaStreamRequestResult::PERMISSION_DISMISSED,
++                result);
++          }),
+       nullptr);
+   // Since the mock prompt factory holds a reference to the
+   // PermissionRequestManager for the WebContents and uses that reference in its
+diff --git a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
+index a66f6cbdd9a6cd6bfb0be1fbb3a77493100a93f9..ebc9b37b7036f2ca5eb7fa5ca4d43efaf4a92ca5 100644
+--- a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
++++ b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
+@@ -54,7 +54,7 @@
+ using content::BrowserThread;
+ 
+ using MediaResponseCallback =
+-    base::OnceCallback<void(const blink::mojom::StreamDevices& devices,
++    base::OnceCallback<void(const blink::mojom::StreamDevicesSet& devices,
+                             blink::mojom::MediaStreamRequestResult result,
+                             std::unique_ptr<content::MediaStreamUI> ui)>;
+ 
+@@ -213,7 +213,7 @@ void PermissionBubbleMediaAccessHandler::HandleRequest(
+     // If screen capturing isn't enabled on Android, we'll use "invalid state"
+     // as result, same as on desktop.
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_STATE, nullptr);
+     return;
+   }
+@@ -309,7 +309,7 @@ void PermissionBubbleMediaAccessHandler::OnMediaStreamRequestResponse(
+     content::WebContents* web_contents,
+     int64_t request_id,
+     content::MediaStreamRequest request,
+-    const blink::mojom::StreamDevices& devices,
++    const blink::mojom::StreamDevicesSet& stream_devices_set,
+     blink::mojom::MediaStreamRequestResult result,
+     bool blocked_by_permissions_policy,
+     ContentSetting audio_setting,
+@@ -327,20 +327,40 @@ void PermissionBubbleMediaAccessHandler::OnMediaStreamRequestResponse(
+                                       video_setting);
+   }
+ 
++  // At most one stream is expected as this function is not used with the
++  // getDisplayMediaSet API (only used with getUserMedia).
++  DCHECK_LE(stream_devices_set.stream_devices.size(), 1u);
++  blink::mojom::StreamDevices devices;
++  if (!stream_devices_set.stream_devices.empty()) {
++    devices = *stream_devices_set.stream_devices[0];
++  }
++
+   std::unique_ptr<content::MediaStreamUI> ui;
+   if (devices.audio_device.has_value() || devices.video_device.has_value()) {
+     ui = MediaCaptureDevicesDispatcher::GetInstance()
+              ->GetMediaStreamCaptureIndicator()
+              ->RegisterMediaStream(web_contents, devices);
+   }
+-  OnAccessRequestResponse(web_contents, request_id, devices, result,
++  OnAccessRequestResponse(web_contents, request_id, stream_devices_set, result,
++                          std::move(ui));
++}
++
++void PermissionBubbleMediaAccessHandler::OnAccessRequestResponseForBinding(
++    content::WebContents* web_contents,
++    int64_t request_id,
++    blink::mojom::StreamDevicesSetPtr stream_devices_set,
++    blink::mojom::MediaStreamRequestResult result,
++    std::unique_ptr<content::MediaStreamUI> ui) {
++  DCHECK(stream_devices_set);
++  DCHECK(ui);
++  OnAccessRequestResponse(web_contents, request_id, *stream_devices_set, result,
+                           std::move(ui));
+ }
+ 
+ void PermissionBubbleMediaAccessHandler::OnAccessRequestResponse(
+     content::WebContents* web_contents,
+     int64_t request_id,
+-    const blink::mojom::StreamDevices& devices,
++    const blink::mojom::StreamDevicesSet& stream_devices_set,
+     blink::mojom::MediaStreamRequestResult result,
+     std::unique_ptr<content::MediaStreamUI> ui) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+@@ -378,10 +398,10 @@ void PermissionBubbleMediaAccessHandler::OnAccessRequestResponse(
+         // Using WeakPtr since callback can come at any time and we might be
+         // destroyed.
+         system_media_permissions::RequestSystemAudioCapturePermisson(
+-            base::BindOnce(
+-                &PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
+-                weak_factory_.GetWeakPtr(), web_contents, request_id, devices,
+-                result, std::move(ui)));
++            base::BindOnce(&PermissionBubbleMediaAccessHandler::
++                               OnAccessRequestResponseForBinding,
++                           weak_factory_.GetWeakPtr(), web_contents, request_id,
++                           stream_devices_set.Clone(), result, std::move(ui)));
+         return;
+       } else if (system_audio_permission == SystemPermission::kRestricted ||
+                  system_audio_permission == SystemPermission::kDenied) {
+@@ -405,10 +425,10 @@ void PermissionBubbleMediaAccessHandler::OnAccessRequestResponse(
+         // Using WeakPtr since callback can come at any time and we might be
+         // destroyed.
+         system_media_permissions::RequestSystemVideoCapturePermisson(
+-            base::BindOnce(
+-                &PermissionBubbleMediaAccessHandler::OnAccessRequestResponse,
+-                weak_factory_.GetWeakPtr(), web_contents, request_id, devices,
+-                result, std::move(ui)));
++            base::BindOnce(&PermissionBubbleMediaAccessHandler::
++                               OnAccessRequestResponseForBinding,
++                           weak_factory_.GetWeakPtr(), web_contents, request_id,
++                           stream_devices_set.Clone(), result, std::move(ui)));
+         return;
+       } else if (system_video_permission == SystemPermission::kRestricted ||
+                  system_video_permission == SystemPermission::kDenied) {
+@@ -438,7 +458,7 @@ void PermissionBubbleMediaAccessHandler::OnAccessRequestResponse(
+             base::Unretained(this), web_contents));
+   }
+ 
+-  std::move(callback).Run(devices, final_result, std::move(ui));
++  std::move(callback).Run(stream_devices_set, final_result, std::move(ui));
+ }
+ 
+ void PermissionBubbleMediaAccessHandler::WebContentsDestroyed(
+diff --git a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
+index cf8903c5b97f67f52eb00ee7c4e3fb581776034f..60633c9cc11ce57b18e5a070a9a1584671030956 100644
+--- a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
++++ b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
+@@ -60,16 +60,27 @@ class PermissionBubbleMediaAccessHandler
+       content::WebContents* web_contents,
+       int64_t request_id,
+       content::MediaStreamRequest request,
+-      const blink::mojom::StreamDevices& devices,
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
+       blink::mojom::MediaStreamRequestResult result,
+       bool blocked_by_permissions_policy,
+       ContentSetting audio_setting,
+       ContentSetting video_setting);
+-  void OnAccessRequestResponse(content::WebContents* web_contents,
+-                               int64_t request_id,
+-                               const blink::mojom::StreamDevices& devices,
+-                               blink::mojom::MediaStreamRequestResult result,
+-                               std::unique_ptr<content::MediaStreamUI> ui);
++  void OnAccessRequestResponse(
++      content::WebContents* web_contents,
++      int64_t request_id,
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
++      blink::mojom::MediaStreamRequestResult result,
++      std::unique_ptr<content::MediaStreamUI> ui);
++  // OnAccessRequestResponse cannot be used together with base::BindOnce as
++  // StreamDevicesSet& cannot be captured (neither copyable nor movable).
++  // This method uses StreamDevicesSetPtr (movable) and forwards the data
++  // to OnAccessRequestResponse when calling the callback.
++  void OnAccessRequestResponseForBinding(
++      content::WebContents* web_contents,
++      int64_t request_id,
++      blink::mojom::StreamDevicesSetPtr stream_devices_set,
++      blink::mojom::MediaStreamRequestResult result,
++      std::unique_ptr<content::MediaStreamUI> ui);
+ 
+   // WebContentsCollection::Observer:
+   void WebContentsDestroyed(content::WebContents* web_contents) override;
+diff --git a/chrome/browser/media/webrtc/screen_capture_permission_handler_android.cc b/chrome/browser/media/webrtc/screen_capture_permission_handler_android.cc
+index 5e36a55ea1321b69d438153318c253d71df853ed..757e7975030f963b59f46fa755c64a7ae7e48e08 100644
+--- a/chrome/browser/media/webrtc/screen_capture_permission_handler_android.cc
++++ b/chrome/browser/media/webrtc/screen_capture_permission_handler_android.cc
+@@ -31,7 +31,12 @@ void GetScreenCapturePermissionAndroid(
+           ? blink::mojom::MediaStreamRequestResult::OK
+           : blink::mojom::MediaStreamRequestResult::INVALID_STATE;
+ 
+-  blink::mojom::StreamDevices devices;
++  // TODO(crbug.com/1300883): Generalize to multiple streams.
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& stream_devices =
++      *stream_devices_set.stream_devices[0];
+   std::unique_ptr<content::MediaStreamUI> ui;
+   if (result == blink::mojom::MediaStreamRequestResult::OK) {
+     if (request.video_type ==
+@@ -40,20 +45,20 @@ void GetScreenCapturePermissionAndroid(
+       screen_id.type = content::DesktopMediaID::TYPE_WEB_CONTENTS;
+       screen_id.web_contents_id = content::WebContentsMediaCaptureId(
+           request.render_process_id, request.render_frame_id);
+-      devices.video_device = blink::MediaStreamDevice(
++      stream_devices.video_device = blink::MediaStreamDevice(
+           request.video_type, screen_id.ToString(), "Current Tab");
+     } else {
+       content::DesktopMediaID screen_id = content::DesktopMediaID(
+           content::DesktopMediaID::TYPE_SCREEN, webrtc::kFullDesktopScreenId);
+-      devices.video_device = blink::MediaStreamDevice(
++      stream_devices.video_device = blink::MediaStreamDevice(
+           request.video_type, screen_id.ToString(), "Screen");
+     }
+ 
+     ui = MediaCaptureDevicesDispatcher::GetInstance()
+              ->GetMediaStreamCaptureIndicator()
+-             ->RegisterMediaStream(web_contents, devices);
++             ->RegisterMediaStream(web_contents, stream_devices);
+   }
+ 
+-  std::move(callback).Run(devices, result, std::move(ui));
++  std::move(callback).Run(stream_devices_set, result, std::move(ui));
+ }
+ }  // namespace screen_capture
+diff --git a/chrome/browser/media/webrtc/tab_capture_access_handler.cc b/chrome/browser/media/webrtc/tab_capture_access_handler.cc
+index 482887919c264d352a202bc027afe3d72c6e7c13..aa83c59f1f25733982128a50d29e1a3d455b3278 100644
+--- a/chrome/browser/media/webrtc/tab_capture_access_handler.cc
++++ b/chrome/browser/media/webrtc/tab_capture_access_handler.cc
+@@ -128,7 +128,7 @@ void TabCaptureAccessHandler::HandleRequest(
+   if (!tab_capture_registry) {
+     NOTREACHED();
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_STATE, /*ui=*/nullptr);
+     return;
+   }
+@@ -146,7 +146,7 @@ void TabCaptureAccessHandler::HandleRequest(
+                                            request.render_frame_id));
+   if (!can_show_web_contents.Run(target_web_contents)) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+         /*ui=*/nullptr);
+     return;
+@@ -159,7 +159,7 @@ void TabCaptureAccessHandler::HandleRequest(
+   if (!tab_capture_registry->VerifyRequest(
+           request.render_process_id, request.render_frame_id, extension_id)) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_STATE, /*ui=*/nullptr);
+     return;
+   }
+@@ -216,13 +216,20 @@ void TabCaptureAccessHandler::AcceptRequest(
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   DCHECK(web_contents);
+ 
+-  blink::mojom::StreamDevices devices;
+-  std::unique_ptr<content::MediaStreamUI> ui =
+-      GetMediaStreamUI(request, web_contents, std::move(media_ui), devices);
+-  DCHECK(devices.audio_device.has_value() || devices.video_device.has_value());
++  // TOOD(crbug.com/1300883): Generalize to multiple streams.
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& stream_devices =
++      *stream_devices_set.stream_devices[0];
++  std::unique_ptr<content::MediaStreamUI> ui = GetMediaStreamUI(
++      request, web_contents, std::move(media_ui), stream_devices);
++  DCHECK(stream_devices.audio_device.has_value() ||
++         stream_devices.video_device.has_value());
+ 
+   UpdateExtensionTrusted(request, is_allowlisted_extension);
+-  std::move(callback).Run(devices, blink::mojom::MediaStreamRequestResult::OK,
++  std::move(callback).Run(stream_devices_set,
++                          blink::mojom::MediaStreamRequestResult::OK,
+                           std::move(ui));
+ }
+ 
+@@ -245,7 +252,7 @@ void TabCaptureAccessHandler::OnDlpRestrictionChecked(
+                   std::move(media_ui));
+   } else {
+     std::move(pending_request->callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+              /*ui=*/nullptr);
+   }
+diff --git a/chrome/browser/media/webrtc/tab_capture_access_handler_unittest.cc b/chrome/browser/media/webrtc/tab_capture_access_handler_unittest.cc
+index cc77460582de7ec935fed9917f277c158e83df65..d890e786435338a7eeede03c1e51a630eee59847 100644
+--- a/chrome/browser/media/webrtc/tab_capture_access_handler_unittest.cc
++++ b/chrome/browser/media/webrtc/tab_capture_access_handler_unittest.cc
+@@ -65,11 +65,19 @@ class TabCaptureAccessHandlerTest : public ChromeRenderViewHostTestHarness {
+         [](base::RunLoop* wait_loop, bool expect_result,
+            blink::mojom::MediaStreamRequestResult* request_result,
+            blink::mojom::StreamDevices* devices_result,
+-           const blink::mojom::StreamDevices& devices,
++           const blink::mojom::StreamDevicesSet& stream_devices_set,
+            blink::mojom::MediaStreamRequestResult result,
+            std::unique_ptr<content::MediaStreamUI> ui) {
++          DCHECK(!devices_result->audio_device);
++          DCHECK(!devices_result->video_device);
+           *request_result = result;
+-          *devices_result = devices;
++          if (result == blink::mojom::MediaStreamRequestResult::OK) {
++            ASSERT_EQ(stream_devices_set.stream_devices.size(), 1u);
++            *devices_result = *stream_devices_set.stream_devices[0];
++          } else {
++            ASSERT_TRUE(stream_devices_set.stream_devices.empty());
++            *devices_result = blink::mojom::StreamDevices();
++          }
+           if (!expect_result) {
+             FAIL() << "MediaResponseCallback should not be called.";
+           }
+@@ -211,4 +219,5 @@ TEST_F(TabCaptureAccessHandlerTest, DlpWebContentsDestroyed) {
+   EXPECT_FALSE(devices.video_device.has_value());
+   EXPECT_FALSE(devices.audio_device.has_value());
+ }
++
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+diff --git a/chrome/browser/policy/test/media_stream_policy_browsertest.cc b/chrome/browser/policy/test/media_stream_policy_browsertest.cc
+index eb49c8bc60eeec26a05e196ab7801a58cccb7279..fcf3a8fb4bb3486820a9219725827bf2e2d1fe4a 100644
+--- a/chrome/browser/policy/test/media_stream_policy_browsertest.cc
++++ b/chrome/browser/policy/test/media_stream_policy_browsertest.cc
+@@ -107,22 +107,29 @@ class MediaStreamDevicesControllerBrowserTest
+     }
+   }
+ 
+-  void Accept(const blink::mojom::StreamDevices& devices,
++  void Accept(const blink::mojom::StreamDevicesSet& stream_devices_set,
+               blink::mojom::MediaStreamRequestResult result,
+               bool blocked_by_permissions_policy,
+               ContentSetting audio_setting,
+               ContentSetting video_setting) {
+-    if (policy_value_ || request_url_allowed_via_allowlist_) {
+-      ASSERT_EQ(1, devices.audio_device.has_value() +
+-                       devices.video_device.has_value());
+-      if (devices.audio_device.has_value()) {
+-        ASSERT_EQ("fake_dev", devices.audio_device.value().id);
+-      } else if (devices.video_device.has_value()) {
+-        ASSERT_EQ("fake_dev", devices.video_device.value().id);
++    if (result == blink::mojom::MediaStreamRequestResult::OK) {
++      ASSERT_EQ(stream_devices_set.stream_devices.size(), 1u);
++      const blink::mojom::StreamDevices& devices =
++          *stream_devices_set.stream_devices[0];
++      if (policy_value_ || request_url_allowed_via_allowlist_) {
++        ASSERT_EQ(1, devices.audio_device.has_value() +
++                         devices.video_device.has_value());
++        if (devices.audio_device.has_value()) {
++          ASSERT_EQ("fake_dev", devices.audio_device.value().id);
++        } else if (devices.video_device.has_value()) {
++          ASSERT_EQ("fake_dev", devices.video_device.value().id);
++        }
++      } else {
++        ASSERT_FALSE(devices.audio_device.has_value());
++        ASSERT_FALSE(devices.video_device.has_value());
+       }
+     } else {
+-      ASSERT_FALSE(devices.audio_device.has_value());
+-      ASSERT_FALSE(devices.video_device.has_value());
++      ASSERT_EQ(0u, stream_devices_set.stream_devices.size());
+     }
+   }
+ 
+diff --git a/chrome/browser/ui/ash/ash_web_view_impl.cc b/chrome/browser/ui/ash/ash_web_view_impl.cc
+index e1dfc70c951dd004dd8b37607dc8840b804a1e54..80f998cdb10d9955e438ba5ef4599b35c448fae2 100644
+--- a/chrome/browser/ui/ash/ash_web_view_impl.cc
++++ b/chrome/browser/ui/ash/ash_web_view_impl.cc
+@@ -135,7 +135,7 @@ void AshWebViewImpl::RequestMediaAccessPermission(
+     content::MediaResponseCallback callback) {
+   if (!params_.can_record_media) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED,
+         std::unique_ptr<content::MediaStreamUI>());
+     return;
+diff --git a/chromecast/browser/cast_web_view_default.cc b/chromecast/browser/cast_web_view_default.cc
+index e3e7bce2a5abe80996efe7b5cbdc005b5f5e0c66..14d325a0d9cb97c22fc9e07a0dc1f57b43004e92 100644
+--- a/chromecast/browser/cast_web_view_default.cc
++++ b/chromecast/browser/cast_web_view_default.cc
+@@ -245,7 +245,7 @@ void CastWebViewDefault::RequestMediaAccessPermission(
+       !params_->allow_media_access) {
+     LOG(WARNING) << __func__ << ": media access is disabled.";
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED,
+         std::unique_ptr<content::MediaStreamUI>());
+     return;
+@@ -258,7 +258,10 @@ void CastWebViewDefault::RequestMediaAccessPermission(
+   DVLOG(2) << __func__ << " audio_devices=" << audio_devices.size()
+            << " video_devices=" << video_devices.size();
+ 
+-  blink::mojom::StreamDevices devices;
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+   if (request.audio_type ==
+       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+     const blink::MediaStreamDevice* device = GetRequestedDeviceOrDefault(
+@@ -281,7 +284,8 @@ void CastWebViewDefault::RequestMediaAccessPermission(
+     }
+   }
+ 
+-  std::move(callback).Run(devices, blink::mojom::MediaStreamRequestResult::OK,
++  std::move(callback).Run(stream_devices_set,
++                          blink::mojom::MediaStreamRequestResult::OK,
+                           std::unique_ptr<content::MediaStreamUI>());
+ }
+ 
+diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
+index 874b7c8d779f471214507417e35449c66b70c97d..df1ecec4bf56de72a6164644d3094557a7a52896 100644
+--- a/components/offline_pages/content/background_loader/background_loader_contents.cc
++++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
+@@ -115,7 +115,7 @@ void BackgroundLoaderContents::RequestMediaAccessPermission(
+     content::MediaResponseCallback callback) {
+   // No permissions granted, act as if dismissed.
+   std::move(callback).Run(
+-      blink::mojom::StreamDevices(),
++      blink::mojom::StreamDevicesSet(),
+       blink::mojom::MediaStreamRequestResult::PERMISSION_DISMISSED,
+       std::unique_ptr<content::MediaStreamUI>());
+ }
+diff --git a/components/offline_pages/content/background_loader/background_loader_contents_unittest.cc b/components/offline_pages/content/background_loader/background_loader_contents_unittest.cc
+index bd7518bd38ce1e26abb3cd43fb48f514642859b9..018988506407caead0a57053f5686bb031b13beb 100644
+--- a/components/offline_pages/content/background_loader/background_loader_contents_unittest.cc
++++ b/components/offline_pages/content/background_loader/background_loader_contents_unittest.cc
+@@ -37,9 +37,10 @@ class BackgroundLoaderContentsTest : public testing::Test,
+   bool download() { return download_; }
+   bool can_download_delegate_called() { return delegate_called_; }
+ 
+-  void MediaAccessCallback(const blink::mojom::StreamDevices& devices,
+-                           blink::mojom::MediaStreamRequestResult result,
+-                           std::unique_ptr<content::MediaStreamUI> ui);
++  void MediaAccessCallback(
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
++      blink::mojom::MediaStreamRequestResult result,
++      std::unique_ptr<content::MediaStreamUI> ui);
+   blink::mojom::StreamDevices& devices() { return devices_; }
+   blink::mojom::MediaStreamRequestResult request_result() {
+     return request_result_;
+@@ -91,10 +92,15 @@ void BackgroundLoaderContentsTest::SetDelegate() {
+ }
+ 
+ void BackgroundLoaderContentsTest::MediaAccessCallback(
+-    const blink::mojom::StreamDevices& devices,
++    const blink::mojom::StreamDevicesSet& stream_devices_set,
+     blink::mojom::MediaStreamRequestResult result,
+     std::unique_ptr<content::MediaStreamUI> ui) {
+-  devices_ = devices;
++  if (result == blink::mojom::MediaStreamRequestResult::OK) {
++    ASSERT_FALSE(stream_devices_set.stream_devices.empty());
++    devices_ = *stream_devices_set.stream_devices[0];
++  } else {
++    ASSERT_TRUE(stream_devices_set.stream_devices.empty());
++  }
+   request_result_ = result;
+   media_stream_ui_.reset(ui.get());
+   waiter_.Signal();
+diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
+index 95d01406b5230402833351f7ab905f48674623b9..9b70f0c5ae60abe0bb5583707bd7985fe101c2ef 100644
+--- a/components/webrtc/media_stream_devices_controller.cc
++++ b/components/webrtc/media_stream_devices_controller.cc
+@@ -62,7 +62,7 @@ void MediaStreamDevicesController::RequestPermissions(
+   // The RFH may have been destroyed by the time the request is processed.
+   if (!rfh) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN, false,
+         {}, {});
+     return;
+@@ -70,7 +70,7 @@ void MediaStreamDevicesController::RequestPermissions(
+ 
+   if (rfh->GetLastCommittedOrigin().GetURL().is_empty()) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED, false, {},
+         {});
+     return;
+@@ -78,7 +78,7 @@ void MediaStreamDevicesController::RequestPermissions(
+ 
+   if (rfh->GetLastCommittedOrigin().GetURL() != request.security_origin) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_SECURITY_ORIGIN, false,
+         {}, {});
+     return;
+@@ -172,7 +172,7 @@ void MediaStreamDevicesController::RequestPermissions(
+ MediaStreamDevicesController::~MediaStreamDevicesController() {
+   if (!callback_.is_null()) {
+     std::move(callback_).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN, false,
+         {}, {});
+   }
+@@ -300,16 +300,21 @@ bool MediaStreamDevicesController::ShouldRequestVideo() const {
+   return video_setting_ == CONTENT_SETTING_ASK;
+ }
+ 
+-blink::mojom::StreamDevices MediaStreamDevicesController::GetDevices(
++blink::mojom::StreamDevicesSetPtr MediaStreamDevicesController::GetDevices(
+     ContentSetting audio_setting,
+     ContentSetting video_setting) {
+   bool audio_allowed = audio_setting == CONTENT_SETTING_ALLOW;
+   bool video_allowed = video_setting == CONTENT_SETTING_ALLOW;
+ 
++  blink::mojom::StreamDevicesSetPtr stream_devices_set =
++      blink::mojom::StreamDevicesSet::New();
+   if (!audio_allowed && !video_allowed)
+-    return blink::mojom::StreamDevices();
++    return nullptr;
+ 
+-  blink::mojom::StreamDevices devices;
++  // TODO(crbug.com/1300883): Generalize to multiple streams.
++  stream_devices_set->stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices = *stream_devices_set->stream_devices[0];
+   switch (request_.request_type) {
+     case blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY: {
+       // For open device request, when requested device_id is empty, pick
+@@ -401,14 +406,14 @@ blink::mojom::StreamDevices MediaStreamDevicesController::GetDevices(
+     }
+   }  // switch
+ 
+-  return devices;
++  return stream_devices_set;
+ }
+ 
+ void MediaStreamDevicesController::RunCallback(
+     bool blocked_by_permissions_policy) {
+   CHECK(callback_);
+ 
+-  blink::mojom::StreamDevices devices;
++  blink::mojom::StreamDevicesSetPtr stream_devices_set;
+   // If all requested permissions are allowed then the callback should report
+   // success, otherwise we report |denial_reason_|.
+   blink::mojom::MediaStreamRequestResult request_result =
+@@ -417,7 +422,14 @@ void MediaStreamDevicesController::RunCallback(
+        audio_setting_ == CONTENT_SETTING_DEFAULT) &&
+       (video_setting_ == CONTENT_SETTING_ALLOW ||
+        video_setting_ == CONTENT_SETTING_DEFAULT)) {
+-    devices = GetDevices(audio_setting_, video_setting_);
++    stream_devices_set = GetDevices(audio_setting_, video_setting_);
++    DCHECK(!stream_devices_set ||
++           stream_devices_set->stream_devices.size() <= 1u);
++    blink::mojom::StreamDevices devices;
++    if (stream_devices_set && !stream_devices_set->stream_devices.empty()) {
++      devices = *stream_devices_set->stream_devices[0];
++    }
++
+     if (!devices.audio_device.has_value() &&
+         !devices.video_device.has_value()) {
+       // Even if all requested permissions are allowed, if there are no devices
+@@ -427,9 +439,10 @@ void MediaStreamDevicesController::RunCallback(
+   } else {
+     DCHECK_NE(blink::mojom::MediaStreamRequestResult::OK, denial_reason_);
+     request_result = denial_reason_;
++    stream_devices_set = blink::mojom::StreamDevicesSet::New();
+   }
+ 
+-  std::move(callback_).Run(devices, request_result,
++  std::move(callback_).Run(*stream_devices_set, request_result,
+                            blocked_by_permissions_policy, audio_setting_,
+                            video_setting_);
+ }
+diff --git a/components/webrtc/media_stream_devices_controller.h b/components/webrtc/media_stream_devices_controller.h
+index 61b2043809c6f761db2fbe9f340803e9fb2ee03b..675f5b470e70738c93c12ad6a0c9402133c5c63a 100644
+--- a/components/webrtc/media_stream_devices_controller.h
++++ b/components/webrtc/media_stream_devices_controller.h
+@@ -34,11 +34,12 @@ class MediaStreamDeviceEnumerator;
+ // renderer.
+ class MediaStreamDevicesController {
+  public:
+-  typedef base::OnceCallback<void(const blink::mojom::StreamDevices& devices,
+-                                  blink::mojom::MediaStreamRequestResult result,
+-                                  bool blocked_by_permissions_policy,
+-                                  ContentSetting audio_setting,
+-                                  ContentSetting video_setting)>
++  typedef base::OnceCallback<void(
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
++      blink::mojom::MediaStreamRequestResult result,
++      bool blocked_by_permissions_policy,
++      ContentSetting audio_setting,
++      ContentSetting video_setting)>
+       ResultCallback;
+ 
+   // Requests the mic/camera permissions described in |request|, using
+@@ -82,8 +83,8 @@ class MediaStreamDevicesController {
+ 
+   // Returns a list of devices available for the request for the given
+   // audio/video permission settings.
+-  blink::mojom::StreamDevices GetDevices(ContentSetting audio_setting,
+-                                         ContentSetting video_setting);
++  blink::mojom::StreamDevicesSetPtr GetDevices(ContentSetting audio_setting,
++                                               ContentSetting video_setting);
+ 
+   // Runs |callback_| with the current audio/video permission settings.
+   void RunCallback(bool blocked_by_permissions_policy);
+diff --git a/content/browser/media/capture_handle_manager.cc b/content/browser/media/capture_handle_manager.cc
+index ec0c2d8349ef5c4641470c683c041a2835e2a9b7..a2174789df7db893f95741d34ae5c0fedfe5faab 100644
+--- a/content/browser/media/capture_handle_manager.cc
++++ b/content/browser/media/capture_handle_manager.cc
+@@ -253,10 +253,12 @@ void CaptureHandleManager::OnTabCaptureStopped(
+ 
+ void CaptureHandleManager::OnTabCaptureDevicesUpdated(
+     const std::string& label,
+-    const blink::mojom::StreamDevices& new_devices,
++    blink::mojom::StreamDevicesSetPtr new_stream_devices_set,
+     GlobalRenderFrameHostId capturer,
+     DeviceCaptureHandleChangeCallback handle_change_callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
++  DCHECK(new_stream_devices_set);
++  DCHECK_EQ(1u, new_stream_devices_set->stream_devices.size());
+ 
+   // Pause tracking of all old devices.
+   for (auto& capture : captures_) {
+@@ -266,6 +268,8 @@ void CaptureHandleManager::OnTabCaptureDevicesUpdated(
+   }
+ 
+   // Start tracking any new devices; resume tracking of changed devices.
++  const blink::mojom::StreamDevices& new_devices =
++      *new_stream_devices_set->stream_devices[0];
+   if (new_devices.audio_device.has_value()) {
+     OnTabCaptureStarted(label, new_devices.audio_device.value(), capturer,
+                         handle_change_callback);
+diff --git a/content/browser/media/capture_handle_manager.h b/content/browser/media/capture_handle_manager.h
+index 7476bca67afb20674dc7532e64f1e87ddfacb2a5..00d1c9ca4d8ecef39a4f4644df5ff6251828e717 100644
+--- a/content/browser/media/capture_handle_manager.h
++++ b/content/browser/media/capture_handle_manager.h
+@@ -50,7 +50,7 @@ class CONTENT_EXPORT CaptureHandleManager {
+   // then calling OnTabCaptureStarted() on all |new_devices|.
+   void OnTabCaptureDevicesUpdated(
+       const std::string& label,
+-      const blink::mojom::StreamDevices& new_devices,
++      blink::mojom::StreamDevicesSetPtr new_stream_devices,
+       GlobalRenderFrameHostId capturer,
+       DeviceCaptureHandleChangeCallback handle_change_callback);
+ 
+diff --git a/content/browser/renderer_host/media/media_stream_dispatcher_host_unittest.cc b/content/browser/renderer_host/media/media_stream_dispatcher_host_unittest.cc
+index 08629d4f972a8b155fc56a2437fc78d181b4ebff..32a9346360eeefaddab7e1b4daed99533132ba78 100644
+--- a/content/browser/renderer_host/media/media_stream_dispatcher_host_unittest.cc
++++ b/content/browser/renderer_host/media/media_stream_dispatcher_host_unittest.cc
+@@ -70,11 +70,42 @@ constexpr int kProcessId = 5;
+ constexpr int kRenderId = 6;
+ constexpr int kRequesterId = 7;
+ constexpr int kPageRequestId = 8;
+-constexpr const char* kRegularVideoDeviceId = "stub_device_0";
++constexpr const char* kRegularVideoDeviceId1 = "stub_device_1";
++constexpr const char* kRegularVideoDeviceId2 = "stub_device_2";
+ constexpr const char* kDepthVideoDeviceId = "stub_device_1 (depth)";
+ constexpr media::VideoCaptureApi kStubCaptureApi =
+     media::VideoCaptureApi::LINUX_V4L2_SINGLE_PLANE;
+ 
++bool DoStreamDevicesHaveSameTypes(const blink::mojom::StreamDevices& lhs,
++                                  const blink::mojom::StreamDevices& rhs) {
++  return lhs.audio_device.has_value() == rhs.audio_device.has_value() &&
++         lhs.video_device.has_value() == rhs.video_device.has_value();
++}
++
++MATCHER_P(SameTypesAs,
++          expected_stream_devices_set_ref,
++          "Compares if two StreamDevices objects contain the same number and "
++          "type of MediaStreamDevice objects.") {
++  const blink::mojom::StreamDevicesSet& stream_devices_set = arg;
++  const blink::mojom::StreamDevicesSet& expected_stream_devices_set =
++      expected_stream_devices_set_ref.get();
++
++  if (stream_devices_set.stream_devices.size() !=
++      expected_stream_devices_set.stream_devices.size()) {
++    return false;
++  }
++
++  for (size_t i = 0; i < stream_devices_set.stream_devices.size(); ++i) {
++    if (!DoStreamDevicesHaveSameTypes(
++            *stream_devices_set.stream_devices[i],
++            *expected_stream_devices_set.stream_devices[i])) {
++      return false;
++    }
++  }
++
++  return true;
++}
++
+ void AudioInputDevicesEnumerated(base::OnceClosure quit_closure,
+                                  media::AudioDeviceDescriptions* out,
+                                  const MediaDeviceEnumeration& enumeration) {
+@@ -99,10 +130,9 @@ class MockMediaStreamDispatcherHost
+   ~MockMediaStreamDispatcherHost() override {}
+ 
+   // A list of mock methods.
+-  MOCK_METHOD3(OnStreamGenerationSuccess,
++  MOCK_METHOD2(OnStreamGenerationSuccess,
+                void(int request_id,
+-                    int audio_array_size,
+-                    int video_array_size));
++                    const blink::mojom::StreamDevicesSet& stream_devices_set));
+   MOCK_METHOD2(OnStreamGenerationFailure,
+                void(int request_id,
+                     blink::mojom::MediaStreamRequestResult result));
+@@ -193,21 +223,7 @@ class MockMediaStreamDispatcherHost
+       return;
+     }
+ 
+-    DCHECK(stream_devices_set);
+-
+-    size_t audio_devices_count = base::ranges::count_if(
+-        stream_devices_set->stream_devices,
+-        [](const blink::mojom::StreamDevicesPtr& devices) {
+-          return devices->audio_device.has_value();
+-        });
+-    size_t video_devices_count = base::ranges::count_if(
+-        stream_devices_set->stream_devices,
+-        [](const blink::mojom::StreamDevicesPtr& devices) {
+-          return devices->video_device.has_value();
+-        });
+-
+-    OnStreamGenerationSuccess(request_id, audio_devices_count,
+-                              video_devices_count);
++    OnStreamGenerationSuccess(request_id, *stream_devices_set);
+     // Simulate the stream started event back to host for UI testing.
+     OnStreamStarted(label);
+ 
+@@ -327,7 +343,7 @@ class MediaStreamDispatcherHostTest : public testing::Test {
+   }
+ 
+   void SetUp() override {
+-    stub_video_device_ids_.emplace_back(kRegularVideoDeviceId);
++    stub_video_device_ids_.emplace_back(kRegularVideoDeviceId1);
+     stub_video_device_ids_.emplace_back(kDepthVideoDeviceId);
+     ON_CALL(*mock_video_capture_provider_, GetDeviceInfosAsync(_))
+         .WillByDefault(Invoke(
+@@ -380,31 +396,34 @@ class MediaStreamDispatcherHostTest : public testing::Test {
+     return fake_ui;
+   }
+ 
+-  virtual void SetupFakeUI(bool expect_started) {
++  virtual void SetupFakeUI(
++      bool expect_started,
++      const std::vector<std::pair<std::string, std::string>>&
++          devices_ids_to_select = {}) {
+     media_stream_manager_->UseFakeUIFactoryForTests(
+         base::BindRepeating(&MediaStreamDispatcherHostTest::CreateMockUI,
+                             base::Unretained(this), expect_started));
+   }
+ 
+-  void GenerateStreamAndWaitForResult(int page_request_id,
+-                                      const blink::StreamControls& controls) {
++  void GenerateStreamAndWaitForResult(
++      int page_request_id,
++      const blink::StreamControls& controls,
++      const blink::mojom::StreamDevicesSet& expectation) {
+     base::RunLoop run_loop;
+-    int expected_audio_array_size =
+-        (controls.audio.requested && !audio_device_descriptions_.empty()) ? 1
+-                                                                          : 0;
+-    int expected_video_array_size =
+-        (controls.video.requested && !stub_video_device_ids_.empty()) ? 1 : 0;
+-    EXPECT_CALL(*host_, OnStreamGenerationSuccess(page_request_id,
+-                                                  expected_audio_array_size,
+-                                                  expected_video_array_size));
++    EXPECT_CALL(*host_,
++                OnStreamGenerationSuccess(page_request_id,
++                                          SameTypesAs(std::ref(expectation))));
+     host_->OnGenerateStreams(page_request_id, controls, run_loop.QuitClosure());
+     run_loop.Run();
+-    EXPECT_FALSE(DoesContainRawIds(audio_device(/*stream_index=*/0u)));
+-    EXPECT_FALSE(DoesContainRawIds(video_device(/*stream_index=*/0u)));
+-    EXPECT_TRUE(
+-        DoesEveryDeviceMapToRawId(audio_device(/*stream_index=*/0u), origin_));
+-    EXPECT_TRUE(
+-        DoesEveryDeviceMapToRawId(video_device(/*stream_index=*/0u), origin_));
++    for (const blink::mojom::StreamDevicesPtr& stream_devices :
++         host_->stream_devices_set_->stream_devices) {
++      EXPECT_FALSE(DoesContainRawIds(stream_devices->audio_device));
++      EXPECT_FALSE(DoesContainRawIds(stream_devices->video_device));
++      EXPECT_TRUE(
++          DoesEveryDeviceMapToRawId(stream_devices->audio_device, origin_));
++      EXPECT_TRUE(
++          DoesEveryDeviceMapToRawId(stream_devices->video_device, origin_));
++    }
+   }
+ 
+   void GenerateStreamAndWaitForFailure(
+@@ -526,10 +545,14 @@ class MediaStreamDispatcherHostTest : public testing::Test {
+ };
+ 
+ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamWithVideoOnly) {
++  stub_video_device_ids_.emplace_back(kRegularVideoDeviceId2);
+   blink::StreamControls controls(false, true);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   EXPECT_FALSE(audio_device(/*stream_index=*/0u).has_value());
+   EXPECT_TRUE(video_device(/*stream_index=*/0u).has_value());
+@@ -539,7 +562,11 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamWithAudioOnly) {
+   blink::StreamControls controls(true, false);
+ 
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      blink::MediaStreamDevice(), absl::nullopt));
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   EXPECT_TRUE(audio_device(/*stream_index=*/0u).has_value());
+   EXPECT_FALSE(video_device(/*stream_index=*/0u).has_value());
+@@ -612,8 +639,11 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamWithNothing) {
+ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamWithAudioAndVideo) {
+   blink::StreamControls controls(true, true);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      blink::MediaStreamDevice(), blink::MediaStreamDevice()));
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   EXPECT_TRUE(audio_device(/*stream_index=*/0u).has_value());
+   EXPECT_TRUE(video_device(/*stream_index=*/0u).has_value());
+@@ -630,8 +660,11 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamWithDepthVideo) {
+   // See also MediaStreamManager::GenerateStream and other tests here.
+   controls.video.device_id = source_id;
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      blink::MediaStreamDevice(), blink::MediaStreamDevice()));
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   // We specified the generation and expect to get
+   // one audio and one depth video stream.
+@@ -646,8 +679,11 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsFromSameRenderId) {
+   blink::StreamControls controls(false, true);
+ 
+   // Generate first stream.
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   // Check the latest generated stream.
+   EXPECT_FALSE(audio_device(/*stream_index=*/0u).has_value());
+@@ -660,7 +696,7 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsFromSameRenderId) {
+           .session_id();
+ 
+   // Generate second stream.
+-  GenerateStreamAndWaitForResult(kPageRequestId + 1, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId + 1, controls, expectation);
+ 
+   // Check the latest generated stream.
+   EXPECT_FALSE(audio_device(/*stream_index=*/0u).has_value());
+@@ -682,7 +718,10 @@ TEST_F(MediaStreamDispatcherHostTest,
+   blink::StreamControls controls(false, true);
+ 
+   // Generate first stream.
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   EXPECT_FALSE(audio_device(/*stream_index=*/0u).has_value());
+   EXPECT_TRUE(video_device(/*stream_index=*/0u).has_value());
+@@ -711,8 +750,11 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsDifferentRenderId) {
+   blink::StreamControls controls(false, true);
+ 
+   // Generate first stream.
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   // Check the latest generated stream.
+   EXPECT_FALSE(audio_device(/*stream_index=*/0u).has_value());
+@@ -720,9 +762,7 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsDifferentRenderId) {
+   const std::string label1 = host_->label_;
+   const std::string device_id1 = video_device(/*stream_index=*/0u).value().id;
+   const base::UnguessableToken session_id1 =
+-      host_->stream_devices_set_->stream_devices[0]
+-          ->video_device.value()
+-          .session_id();
++      video_device(/*stream_index=*/0u).value().session_id();
+ 
+   // Generate second stream from another render frame.
+   host_ = std::make_unique<MockMediaStreamDispatcherHost>(
+@@ -733,7 +773,7 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsDifferentRenderId) {
+   host_->SetMediaStreamDeviceObserverForTesting(
+       host_->BindNewPipeAndPassRemote());
+ 
+-  GenerateStreamAndWaitForResult(kPageRequestId + 1, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId + 1, controls, expectation);
+ 
+   // Check the latest generated stream.
+   EXPECT_FALSE(audio_device(/*stream_index=*/0u).has_value());
+@@ -781,13 +821,21 @@ TEST_F(MediaStreamDispatcherHostTest, WebContentsNotFocusedInBackgroundPage) {
+   base::RunLoop run_loop;
+   host_->OnGenerateStreams(kPageRequestId, controls, run_loop.QuitClosure());
+ 
+-  int expected_audio_array_size =
+-      (controls.audio.requested && !audio_device_descriptions_.empty()) ? 1 : 0;
+-  int expected_video_array_size =
+-      (controls.video.requested && !stub_video_device_ids_.empty()) ? 1 : 0;
+-  EXPECT_CALL(*host_, OnStreamGenerationSuccess(kPageRequestId,
+-                                                expected_audio_array_size,
+-                                                expected_video_array_size))
++  absl::optional<blink::MediaStreamDevice> expected_audio_device;
++  if (controls.audio.requested && !audio_device_descriptions_.empty()) {
++    expected_audio_device = blink::MediaStreamDevice();
++  }
++
++  absl::optional<blink::MediaStreamDevice> expected_video_device;
++  if (controls.video.requested && !stub_video_device_ids_.empty()) {
++    expected_video_device = blink::MediaStreamDevice();
++  }
++
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      expected_audio_device, expected_video_device));
++  EXPECT_CALL(*host_, OnStreamGenerationSuccess(
++                          kPageRequestId, SameTypesAs(std::ref(expectation))))
+       .Times(1);
+ 
+   run_loop.Run();
+@@ -809,13 +857,21 @@ TEST_F(MediaStreamDispatcherHostTest, WebContentsFocused) {
+   host_->OnGenerateStreams(kPageRequestId, controls, run_loop.QuitClosure());
+   run_loop.RunUntilIdle();
+ 
+-  int expected_audio_array_size =
+-      (controls.audio.requested && !audio_device_descriptions_.empty()) ? 1 : 0;
+-  int expected_video_array_size =
+-      (controls.video.requested && !stub_video_device_ids_.empty()) ? 1 : 0;
+-  EXPECT_CALL(*host_, OnStreamGenerationSuccess(kPageRequestId,
+-                                                expected_audio_array_size,
+-                                                expected_video_array_size))
++  absl::optional<blink::MediaStreamDevice> expected_audio_device;
++  if (controls.audio.requested && !audio_device_descriptions_.empty()) {
++    expected_audio_device = blink::MediaStreamDevice();
++  }
++
++  absl::optional<blink::MediaStreamDevice> expected_video_device;
++  if (controls.video.requested && !stub_video_device_ids_.empty()) {
++    expected_video_device = blink::MediaStreamDevice();
++  }
++
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      expected_audio_device, expected_video_device));
++  EXPECT_CALL(*host_, OnStreamGenerationSuccess(
++                          kPageRequestId, SameTypesAs(std::ref(expectation))))
+       .Times(1);
+ 
+   focus_ = true;
+@@ -836,13 +892,20 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsWithoutWaiting) {
+   blink::StreamControls controls(false, true);
+ 
+   // Generate first stream.
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
+   SetupFakeUI(true);
+   {
+     InSequence s;
+-    EXPECT_CALL(*host_, OnStreamGenerationSuccess(kPageRequestId, 0, 1));
++    EXPECT_CALL(*host_,
++                OnStreamGenerationSuccess(kPageRequestId,
++                                          SameTypesAs(std::ref(expectation))));
+ 
+     // Generate second stream.
+-    EXPECT_CALL(*host_, OnStreamGenerationSuccess(kPageRequestId + 1, 0, 1));
++    EXPECT_CALL(*host_,
++                OnStreamGenerationSuccess(kPageRequestId + 1,
++                                          SameTypesAs(std::ref(expectation))));
+   }
+   base::RunLoop run_loop1;
+   base::RunLoop run_loop2;
+@@ -860,6 +923,10 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsWithSourceId) {
+   ASSERT_GE(audio_device_descriptions_.size(), 1u);
+   ASSERT_GE(stub_video_device_ids_.size(), 1u);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      blink::MediaStreamDevice(), blink::MediaStreamDevice()));
++
+   media::AudioDeviceDescriptions::const_iterator audio_it =
+       audio_device_descriptions_.begin();
+   for (; audio_it != audio_device_descriptions_.end(); ++audio_it) {
+@@ -870,7 +937,7 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsWithSourceId) {
+     controls.audio.device_id = source_id;
+ 
+     SetupFakeUI(true);
+-    GenerateStreamAndWaitForResult(kPageRequestId, controls);
++    GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+     EXPECT_EQ(audio_device(/*stream_index=*/0u).value().id, source_id);
+   }
+ 
+@@ -881,7 +948,7 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsWithSourceId) {
+     blink::StreamControls controls(true, true);
+     controls.video.device_id = source_id;
+ 
+-    GenerateStreamAndWaitForResult(kPageRequestId, controls);
++    GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+     EXPECT_EQ(video_device(/*stream_index=*/0u).value().id, source_id);
+   }
+ }
+@@ -922,8 +989,12 @@ TEST_F(MediaStreamDispatcherHostTest, GenerateStreamsNoAvailableVideoDevice) {
+ TEST_F(MediaStreamDispatcherHostTest, StopDeviceInStream) {
+   blink::StreamControls controls(false, true);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
++
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   std::string stream_request_label = host_->label_;
+   blink::MediaStreamDevice current_video_device =
+@@ -951,8 +1022,11 @@ TEST_F(MediaStreamDispatcherHostTest, StopDeviceInStream) {
+ TEST_F(MediaStreamDispatcherHostTest, StopDeviceInStreamAndRestart) {
+   blink::StreamControls controls(true, true);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      blink::MediaStreamDevice(), blink::MediaStreamDevice()));
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   std::string request_label1 = host_->label_;
+   blink::MediaStreamDevice current_video_device =
+@@ -968,7 +1042,7 @@ TEST_F(MediaStreamDispatcherHostTest, StopDeviceInStreamAndRestart) {
+       1u,
+       media_stream_manager_->GetDevicesOpenedByRequest(request_label1).size());
+ 
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+   std::string request_label2 = host_->label_;
+ 
+   blink::MediaStreamDevices request1_devices =
+@@ -988,12 +1062,18 @@ TEST_F(MediaStreamDispatcherHostTest,
+        GenerateTwoStreamsAndStopDeviceWhileWaitingForSecondStream) {
+   blink::StreamControls controls(false, true);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
++
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+   EXPECT_TRUE(video_device(/*stream_index=*/0u).has_value());
+ 
+   // Generate a second stream.
+-  EXPECT_CALL(*host_, OnStreamGenerationSuccess(kPageRequestId + 1, 0, 1));
++  EXPECT_CALL(*host_,
++              OnStreamGenerationSuccess(kPageRequestId + 1,
++                                        SameTypesAs(std::ref(expectation))));
+ 
+   base::RunLoop run_loop1;
+   host_->OnGenerateStreams(kPageRequestId + 1, controls,
+@@ -1029,12 +1109,16 @@ TEST_F(MediaStreamDispatcherHostTest, CancelPendingStreams) {
+ TEST_F(MediaStreamDispatcherHostTest, StopGeneratedStreams) {
+   blink::StreamControls controls(false, true);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
++
+   SetupFakeUI(true);
+ 
+   // Create first group of streams.
+   size_t generated_streams = 3;
+   for (size_t i = 0; i < generated_streams; ++i)
+-    GenerateStreamAndWaitForResult(kPageRequestId + i, controls);
++    GenerateStreamAndWaitForResult(kPageRequestId + i, controls, expectation);
+ 
+   media_stream_manager_->CancelAllRequests(kProcessId, kRenderId, kRequesterId);
+   base::RunLoop().RunUntilIdle();
+@@ -1043,6 +1127,10 @@ TEST_F(MediaStreamDispatcherHostTest, StopGeneratedStreams) {
+ TEST_F(MediaStreamDispatcherHostTest, CloseFromUI) {
+   blink::StreamControls controls(false, true);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
++
+   base::OnceClosure close_callback;
+   media_stream_manager_->UseFakeUIFactoryForTests(base::BindRepeating(
+       [](base::OnceClosure* close_callback) {
+@@ -1055,7 +1143,7 @@ TEST_F(MediaStreamDispatcherHostTest, CloseFromUI) {
+       },
+       &close_callback));
+ 
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+ 
+   EXPECT_FALSE(audio_device(/*stream_index=*/0u).has_value());
+   EXPECT_TRUE(video_device(/*stream_index=*/0u).has_value());
+@@ -1070,8 +1158,13 @@ TEST_F(MediaStreamDispatcherHostTest, CloseFromUI) {
+ // being unplugged.
+ TEST_F(MediaStreamDispatcherHostTest, VideoDeviceUnplugged) {
+   blink::StreamControls controls(true, true);
++
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      blink::MediaStreamDevice(), blink::MediaStreamDevice()));
++
+   SetupFakeUI(true);
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+   EXPECT_TRUE(audio_device(/*stream_index=*/0u).has_value());
+   EXPECT_TRUE(video_device(/*stream_index=*/0u).has_value());
+ 
+@@ -1092,8 +1185,12 @@ TEST_F(MediaStreamDispatcherHostTest, Salt) {
+   SetupFakeUI(true);
+   blink::StreamControls controls(false, true);
+ 
++  blink::mojom::StreamDevicesSet expectation;
++  expectation.stream_devices.emplace_back(blink::mojom::StreamDevices::New(
++      absl::nullopt, blink::MediaStreamDevice()));
++
+   // Generate first stream.
+-  GenerateStreamAndWaitForResult(kPageRequestId, controls);
++  GenerateStreamAndWaitForResult(kPageRequestId, controls, expectation);
+   EXPECT_FALSE(audio_device(/*stream_index=*/0u).has_value());
+   EXPECT_TRUE(video_device(/*stream_index=*/0u).has_value());
+   const std::string label1 = host_->label_;
+diff --git a/content/browser/renderer_host/media/media_stream_manager.cc b/content/browser/renderer_host/media/media_stream_manager.cc
+index 35fce1040801a8516487cd75637831aec32257f2..047bdf046601d945df4c6c9eb17590a69b46d210 100644
+--- a/content/browser/renderer_host/media/media_stream_manager.cc
++++ b/content/browser/renderer_host/media/media_stream_manager.cc
+@@ -2120,7 +2120,7 @@ MediaStreamDevices MediaStreamManager::GetDevicesOpenedByRequest(
+   DeviceRequest* request = FindRequest(label);
+   if (!request)
+     return MediaStreamDevices();
+-  return blink::StreamDevicesToMediaStreamDevicesList(request->devices);
++  return blink::ToMediaStreamDevicesList(request->devices);
+ }
+ 
+ bool MediaStreamManager::FindExistingRequestedDevice(
+@@ -2408,8 +2408,7 @@ void MediaStreamManager::FinalizeOpenDevice(const std::string& label,
+   if (request->open_device_cb) {
+     std::move(request->open_device_cb)
+         .Run(true /* success */, label,
+-             blink::StreamDevicesToMediaStreamDevicesList(request->devices)
+-                 .front());
++             blink::ToMediaStreamDevicesList(request->devices).front());
+   }
+ }
+ 
+@@ -2741,9 +2740,19 @@ void MediaStreamManager::AddLogMessageOnIOThread(const std::string& message) {
+ void MediaStreamManager::HandleAccessRequestResponse(
+     const std::string& label,
+     const media::AudioParameters& output_parameters,
+-    const blink::mojom::StreamDevices& devices,
++    const blink::mojom::StreamDevicesSet& devices_set,
+     MediaStreamRequestResult result) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
++  DCHECK((result == MediaStreamRequestResult::OK &&
++          devices_set.stream_devices.size() == 1u) ||
++         (result != MediaStreamRequestResult::OK &&
++          devices_set.stream_devices.empty()));
++
++  blink::mojom::StreamDevices devices;
++  if (result == MediaStreamRequestResult::OK) {
++    DCHECK_EQ(1u, devices_set.stream_devices.size());
++    devices = *devices_set.stream_devices[0];
++  }
+   DeviceRequest* request = FindRequest(label);
+   if (!request) {
+     // The request has been canceled before the UI returned.
+@@ -3253,8 +3262,7 @@ void MediaStreamManager::OnStreamStarted(const std::string& label) {
+       RequestTypeToString(request->request_type())));
+ 
+   MediaStreamUI::SourceCallback device_changed_cb;
+-  if (EnableChangeSource(
+-          blink::StreamDevicesToMediaStreamDevicesList(request->devices)) &&
++  if (EnableChangeSource(blink::ToMediaStreamDevicesList(request->devices)) &&
+       base::FeatureList::IsEnabled(features::kDesktopCaptureChangeSource)) {
+     device_changed_cb = base::BindRepeating(
+         &MediaStreamManager::ChangeMediaStreamSourceFromBrowser,
+@@ -3575,7 +3583,12 @@ void MediaStreamManager::MaybeUpdateTrackedCaptureHandleConfigs(
+     GlobalRenderFrameHostId capturer) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+ 
+-  blink::mojom::StreamDevices filtered_new_devices;
++  blink::mojom::StreamDevicesSetPtr filtered_new_devices_set =
++      blink::mojom::StreamDevicesSet::New();
++  filtered_new_devices_set->stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& filtered_new_devices =
++      *filtered_new_devices_set->stream_devices[0];
+   if (new_devices.video_device.has_value() &&
+       WebContentsMediaCaptureId::Parse(new_devices.video_device->id, nullptr)) {
+     filtered_new_devices.video_device = new_devices.video_device.value();
+@@ -3589,7 +3602,7 @@ void MediaStreamManager::MaybeUpdateTrackedCaptureHandleConfigs(
+       base::BindOnce(
+           &CaptureHandleManager::OnTabCaptureDevicesUpdated,
+           base::Unretained(&capture_handle_manager_), label,
+-          std::move(filtered_new_devices), capturer,
++          std::move(filtered_new_devices_set), capturer,
+           base::BindPostTask(
+               GetIOThreadTaskRunner({}),
+               base::BindRepeating(&MediaStreamManager::OnCaptureHandleChange,
+diff --git a/content/browser/renderer_host/media/media_stream_manager.h b/content/browser/renderer_host/media/media_stream_manager.h
+index 700c42dc425c914d105807260359f97fe5808734..cd1aa0b79318899b7a7285d2bb43cd437897e2ae 100644
+--- a/content/browser/renderer_host/media/media_stream_manager.h
++++ b/content/browser/renderer_host/media/media_stream_manager.h
+@@ -459,7 +459,7 @@ class CONTENT_EXPORT MediaStreamManager
+   void HandleAccessRequestResponse(
+       const std::string& label,
+       const media::AudioParameters& output_parameters,
+-      const blink::mojom::StreamDevices& devices,
++      const blink::mojom::StreamDevicesSet& devices_set,
+       blink::mojom::MediaStreamRequestResult result);
+   void HandleChangeSourceRequestResponse(
+       const std::string& label,
+diff --git a/content/browser/renderer_host/media/media_stream_ui_proxy.cc b/content/browser/renderer_host/media/media_stream_ui_proxy.cc
+index 6b0216da54e9c0b99b4bc05efaec7f08a84509fa..5f29cdceb23fbcf788d96e5ad2ffd8ef58dd76ce 100644
+--- a/content/browser/renderer_host/media/media_stream_ui_proxy.cc
++++ b/content/browser/renderer_host/media/media_stream_ui_proxy.cc
+@@ -72,10 +72,19 @@ class MediaStreamUIProxy::Core {
+                 bool is_from_timer);
+ #endif
+ 
++  // The type blink::mojom::StreamDevices is not movable, therefore stream
++  // devices cannot be captured for usage with PostTask.
++  void ProcessAccessRequestResponseForPostTask(
++      int render_process_id,
++      int render_frame_id,
++      blink::mojom::StreamDevicesSetPtr stream_devices_set_ptr,
++      blink::mojom::MediaStreamRequestResult result,
++      std::unique_ptr<MediaStreamUI> stream_ui);
++
+   void ProcessAccessRequestResponse(
+       int render_process_id,
+       int render_frame_id,
+-      const blink::mojom::StreamDevices& devices,
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
+       blink::mojom::MediaStreamRequestResult result,
+       std::unique_ptr<MediaStreamUI> stream_ui);
+ 
+@@ -137,7 +146,7 @@ void MediaStreamUIProxy::Core::RequestAccess(
+   if (!render_delegate) {
+     ProcessAccessRequestResponse(
+         request->render_process_id, request->render_frame_id,
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN,
+         std::unique_ptr<MediaStreamUI>());
+     return;
+@@ -213,15 +222,40 @@ void MediaStreamUIProxy::Core::SetFocus(const DesktopMediaID& media_id,
+ }
+ #endif
+ 
++void MediaStreamUIProxy::Core::ProcessAccessRequestResponseForPostTask(
++    int render_process_id,
++    int render_frame_id,
++    blink::mojom::StreamDevicesSetPtr stream_devices_set_ptr,
++    blink::mojom::MediaStreamRequestResult result,
++    std::unique_ptr<MediaStreamUI> stream_ui) {
++  DCHECK_CURRENTLY_ON(BrowserThread::UI);
++  DCHECK(stream_devices_set_ptr);
++  ProcessAccessRequestResponse(render_process_id, render_frame_id,
++                               *stream_devices_set_ptr, result,
++                               std::move(stream_ui));
++}
++
+ void MediaStreamUIProxy::Core::ProcessAccessRequestResponse(
+     int render_process_id,
+     int render_frame_id,
+-    const blink::mojom::StreamDevices& devices,
++    const blink::mojom::StreamDevicesSet& stream_devices_set,
+     blink::mojom::MediaStreamRequestResult result,
+     std::unique_ptr<MediaStreamUI> stream_ui) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
++  DCHECK((result != blink::mojom::MediaStreamRequestResult::OK &&
++          stream_devices_set.stream_devices.empty()) ||
++         (result == blink::mojom::MediaStreamRequestResult::OK &&
++          stream_devices_set.stream_devices.size() == 1u));
++
++  blink::mojom::StreamDevicesSetPtr filtered_devices_set =
++      blink::mojom::StreamDevicesSet::New();
++  blink::mojom::StreamDevices devices;
++  if (!stream_devices_set.stream_devices.empty()) {
++    devices = *stream_devices_set.stream_devices[0];
++    filtered_devices_set->stream_devices.emplace_back(
++        blink::mojom::StreamDevices::New());
++  }
+ 
+-  blink::mojom::StreamDevices filtered_devices;
+   auto* host = RenderFrameHostImpl::FromID(render_process_id, render_frame_id);
+   if (devices.audio_device.has_value()) {
+     const blink::MediaStreamDevice& audio_device = devices.audio_device.value();
+@@ -229,7 +263,7 @@ void MediaStreamUIProxy::Core::ProcessAccessRequestResponse(
+             blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE ||
+         IsFeatureEnabled(host, tests_use_fake_render_frame_hosts_,
+                          blink::mojom::PermissionsPolicyFeature::kMicrophone)) {
+-      filtered_devices.audio_device = audio_device;
++      filtered_devices_set->stream_devices[0]->audio_device = audio_device;
+     }
+   }
+ 
+@@ -239,14 +273,17 @@ void MediaStreamUIProxy::Core::ProcessAccessRequestResponse(
+             blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE ||
+         IsFeatureEnabled(host, tests_use_fake_render_frame_hosts_,
+                          blink::mojom::PermissionsPolicyFeature::kCamera)) {
+-      filtered_devices.video_device = video_device;
++      filtered_devices_set->stream_devices[0]->video_device = video_device;
+     }
+   }
+ 
+-  if (!filtered_devices.audio_device.has_value() &&
+-      !filtered_devices.video_device.has_value() &&
+-      result == blink::mojom::MediaStreamRequestResult::OK)
++  if ((filtered_devices_set->stream_devices.empty() ||
++       (!filtered_devices_set->stream_devices[0]->audio_device.has_value() &&
++        !filtered_devices_set->stream_devices[0]->video_device.has_value())) &&
++      result == blink::mojom::MediaStreamRequestResult::OK) {
+     result = blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED;
++    filtered_devices_set->stream_devices.clear();
++  }
+ 
+   if (stream_ui) {
+     // Callbacks that were supplied to the existing `ui_` are no longer
+@@ -264,7 +301,7 @@ void MediaStreamUIProxy::Core::ProcessAccessRequestResponse(
+   GetIOThreadTaskRunner({})->PostTask(
+       FROM_HERE,
+       base::BindOnce(&MediaStreamUIProxy::ProcessAccessRequestResponse, proxy_,
+-                     std::move(filtered_devices), result));
++                     std::move(filtered_devices_set), result));
+ }
+ 
+ void MediaStreamUIProxy::Core::ProcessStopRequestFromUI() {
+@@ -407,11 +444,11 @@ void MediaStreamUIProxy::SetFocus(const DesktopMediaID& media_id,
+ #endif
+ 
+ void MediaStreamUIProxy::ProcessAccessRequestResponse(
+-    const blink::mojom::StreamDevices& devices,
++    blink::mojom::StreamDevicesSetPtr stream_devices_set,
+     blink::mojom::MediaStreamRequestResult result) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+   DCHECK(!response_callback_.is_null());
+-  std::move(response_callback_).Run(devices, result);
++  std::move(response_callback_).Run(*stream_devices_set, result);
+ }
+ 
+ void MediaStreamUIProxy::ProcessStopRequestFromUI() {
+@@ -482,9 +519,9 @@ void FakeMediaStreamUIProxy::RequestAccess(
+     GetUIThreadTaskRunner({})->PostTask(
+         FROM_HERE,
+         base::BindOnce(
+-            &MediaStreamUIProxy::Core::ProcessAccessRequestResponse,
++            &MediaStreamUIProxy::Core::ProcessAccessRequestResponseForPostTask,
+             core_->GetWeakPtr(), request->render_process_id,
+-            request->render_frame_id, blink::mojom::StreamDevices(),
++            request->render_frame_id, blink::mojom::StreamDevicesSet::New(),
+             blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+             std::unique_ptr<MediaStreamUI>()));
+     return;
+@@ -492,7 +529,12 @@ void FakeMediaStreamUIProxy::RequestAccess(
+ 
+   // Use the first capture device of the same media type in the list for the
+   // fake UI.
+-  blink::mojom::StreamDevices devices_to_use;
++  blink::mojom::StreamDevicesSetPtr devices_set_to_use =
++      blink::mojom::StreamDevicesSet::New();
++  devices_set_to_use->stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices_to_use =
++      *devices_set_to_use->stream_devices[0];
+   for (const blink::MediaStreamDevice& device : devices_) {
+     if (!devices_to_use.audio_device.has_value() &&
+         blink::IsAudioInputMediaType(request->audio_type) &&
+@@ -519,15 +561,18 @@ void FakeMediaStreamUIProxy::RequestAccess(
+ 
+   const bool is_devices_empty = !devices_to_use.audio_device.has_value() &&
+                                 !devices_to_use.video_device.has_value();
++  if (is_devices_empty) {
++    devices_set_to_use->stream_devices.clear();
++  }
+   GetUIThreadTaskRunner({})->PostTask(
+       FROM_HERE,
+-      base::BindOnce(&MediaStreamUIProxy::Core::ProcessAccessRequestResponse,
+-                     core_->GetWeakPtr(), request->render_process_id,
+-                     request->render_frame_id, devices_to_use,
+-                     is_devices_empty
+-                         ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
+-                         : blink::mojom::MediaStreamRequestResult::OK,
+-                     std::unique_ptr<MediaStreamUI>()));
++      base::BindOnce(
++          &MediaStreamUIProxy::Core::ProcessAccessRequestResponseForPostTask,
++          core_->GetWeakPtr(), request->render_process_id,
++          request->render_frame_id, std::move(devices_set_to_use),
++          is_devices_empty ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
++                           : blink::mojom::MediaStreamRequestResult::OK,
++          std::unique_ptr<MediaStreamUI>()));
+ }
+ 
+ void FakeMediaStreamUIProxy::OnStarted(
+diff --git a/content/browser/renderer_host/media/media_stream_ui_proxy.h b/content/browser/renderer_host/media/media_stream_ui_proxy.h
+index 0a261c77d819183a8cebaa1a911a3fd343c5d1da..f1e3bb1745c355e78c4a0cc45c54999b88afeff2 100644
+--- a/content/browser/renderer_host/media/media_stream_ui_proxy.h
++++ b/content/browser/renderer_host/media/media_stream_ui_proxy.h
+@@ -29,9 +29,9 @@ class RenderFrameHostDelegate;
+ // be created, used and destroyed on the IO thread.
+ class CONTENT_EXPORT MediaStreamUIProxy {
+  public:
+-  using ResponseCallback =
+-      base::OnceCallback<void(const blink::mojom::StreamDevices& devices,
+-                              blink::mojom::MediaStreamRequestResult result)>;
++  using ResponseCallback = base::OnceCallback<void(
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
++      blink::mojom::MediaStreamRequestResult result)>;
+ 
+   using WindowIdCallback =
+       base::OnceCallback<void(gfx::NativeViewId window_id)>;
+@@ -117,7 +117,7 @@ class CONTENT_EXPORT MediaStreamUIProxy {
+   friend class FakeMediaStreamUIProxy;
+ 
+   void ProcessAccessRequestResponse(
+-      const blink::mojom::StreamDevices& devices,
++      blink::mojom::StreamDevicesSetPtr stream_devices_set,
+       blink::mojom::MediaStreamRequestResult result);
+   void ProcessStopRequestFromUI();
+   void ProcessChangeSourceRequestFromUI(const DesktopMediaID& media_id);
+diff --git a/content/browser/renderer_host/media/media_stream_ui_proxy_unittest.cc b/content/browser/renderer_host/media/media_stream_ui_proxy_unittest.cc
+index bd4ad22012ec061099a487aca26b528e21ca2172..ecee177ef937f402a78c6eac6296ab66cc1af7dc 100644
+--- a/content/browser/renderer_host/media/media_stream_ui_proxy_unittest.cc
++++ b/content/browser/renderer_host/media/media_stream_ui_proxy_unittest.cc
+@@ -39,7 +39,7 @@ namespace {
+ class MockRenderFrameHostDelegate : public RenderFrameHostDelegate {
+  public:
+   void RequestMediaAccessPermission(const MediaStreamRequest& request,
+-                                    MediaResponseCallback callback) {
++                                    MediaResponseCallback callback) override {
+     return RequestMediaAccessPermission(request, &callback);
+   }
+   const blink::web_pref::WebPreferences& GetOrCreateWebPreferences() override {
+@@ -60,7 +60,7 @@ class MockRenderFrameHostDelegate : public RenderFrameHostDelegate {
+ class MockResponseCallback {
+  public:
+   MOCK_METHOD2(OnAccessRequestResponse,
+-               void(const blink::mojom::StreamDevices& devices,
++               void(const blink::mojom::StreamDevicesSet& stream_devices_set,
+                     blink::mojom::MediaStreamRequestResult result));
+   MOCK_METHOD1(OnCheckResponse, void(bool have_access));
+ };
+@@ -153,19 +153,22 @@ TEST_F(MediaStreamUIProxyTest, Deny) {
+   base::RunLoop().RunUntilIdle();
+   ASSERT_FALSE(callback.is_null());
+ 
+-  std::move(callback).Run(blink::mojom::StreamDevices(),
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           std::unique_ptr<MediaStreamUI>());
+ 
+-  blink::mojom::StreamDevices response;
++  blink::mojom::StreamDevicesSetPtr response;
+   EXPECT_CALL(response_callback_, OnAccessRequestResponse(_, _))
+-      .WillOnce([&response](const blink::mojom::StreamDevices& arg0,
++      .WillOnce([&response](const blink::mojom::StreamDevicesSet& arg0,
+                             blink::mojom::MediaStreamRequestResult arg1) {
+-        response = arg0;
++        response = arg0.Clone();
+       });
+   base::RunLoop().RunUntilIdle();
+ 
+-  EXPECT_TRUE(blink::StreamDevicesToMediaStreamDevicesList(response).empty());
++  EXPECT_TRUE(blink::ToMediaStreamDevicesList(*response).empty());
+ }
+ 
+ TEST_F(MediaStreamUIProxyTest, AcceptAndStart) {
+@@ -189,28 +192,31 @@ TEST_F(MediaStreamUIProxyTest, AcceptAndStart) {
+   base::RunLoop().RunUntilIdle();
+   ASSERT_FALSE(callback.is_null());
+ 
+-  blink::mojom::StreamDevices devices;
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+   devices.audio_device = blink::MediaStreamDevice(
+       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE, "Mic", "Mic");
+   auto ui = std::make_unique<MockMediaStreamUI>();
+   EXPECT_CALL(*ui, MockOnStarted(_, _)).WillOnce(Return(0));
+-  std::move(callback).Run(std::move(devices),
++  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           std::move(ui));
+ 
+-  blink::mojom::StreamDevices response;
++  blink::mojom::StreamDevicesSetPtr response;
+   EXPECT_CALL(response_callback_, OnAccessRequestResponse(_, _))
+-      .WillOnce([&response](const blink::mojom::StreamDevices& arg0,
++      .WillOnce([&response](const blink::mojom::StreamDevicesSet& arg0,
+                             blink::mojom::MediaStreamRequestResult arg1) {
+-        response = arg0;
++        response = arg0.Clone();
+       });
+   base::RunLoop().RunUntilIdle();
+ 
+-  EXPECT_FALSE(blink::StreamDevicesToMediaStreamDevicesList(response).empty());
++  EXPECT_FALSE(blink::ToMediaStreamDevicesList(*response).empty());
+ 
+   proxy_->OnStarted(base::OnceClosure(), MediaStreamUI::SourceCallback(),
+                     MediaStreamUIProxy::WindowIdCallback(),
+-                    /*label=*/std::string(), /*screen_capture_ids=*/{},
++                    /*label=*/std::string(), /*screen_share_ids=*/{},
+                     MediaStreamUI::StateChangeCallback());
+   base::RunLoop().RunUntilIdle();
+ }
+@@ -240,7 +246,10 @@ TEST_F(MediaStreamUIProxyTest, DeleteBeforeAccepted) {
+   proxy_.reset();
+ 
+   std::unique_ptr<MediaStreamUI> ui;
+-  std::move(callback).Run(blink::mojom::StreamDevices(),
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           std::move(ui));
+ }
+@@ -268,7 +277,10 @@ TEST_F(MediaStreamUIProxyTest, StopFromUI) {
+ 
+   base::OnceClosure stop_callback;
+ 
+-  blink::mojom::StreamDevices devices;
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+   devices.audio_device = blink::MediaStreamDevice(
+       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE, "Mic", "Mic");
+   auto ui = std::make_unique<MockMediaStreamUI>();
+@@ -278,26 +290,26 @@ TEST_F(MediaStreamUIProxyTest, StopFromUI) {
+         return 0;
+       });
+ 
+-  std::move(callback).Run(std::move(devices),
++  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           std::move(ui));
+ 
+-  blink::mojom::StreamDevices response;
++  blink::mojom::StreamDevicesSetPtr response;
+   EXPECT_CALL(response_callback_, OnAccessRequestResponse(_, _))
+-      .WillOnce([&response](const blink::mojom::StreamDevices& arg0,
++      .WillOnce([&response](const blink::mojom::StreamDevicesSet& arg0,
+                             blink::mojom::MediaStreamRequestResult arg1) {
+-        response = arg0;
++        response = arg0.Clone();
+       });
+   base::RunLoop().RunUntilIdle();
+ 
+-  EXPECT_FALSE(blink::StreamDevicesToMediaStreamDevicesList(response).empty());
++  EXPECT_FALSE(blink::ToMediaStreamDevicesList(*response).empty());
+ 
+   MockStopStreamHandler stop_handler;
+   proxy_->OnStarted(base::BindOnce(&MockStopStreamHandler::OnStop,
+                                    base::Unretained(&stop_handler)),
+                     MediaStreamUI::SourceCallback(),
+                     MediaStreamUIProxy::WindowIdCallback(),
+-                    /*label=*/std::string(), /*screen_capture_ids=*/{},
++                    /*label=*/std::string(), /*screen_share_ids=*/{},
+                     MediaStreamUI::StateChangeCallback());
+   base::RunLoop().RunUntilIdle();
+ 
+@@ -331,7 +343,10 @@ TEST_F(MediaStreamUIProxyTest, WindowIdCallbackCalled) {
+   auto ui = std::make_unique<MockMediaStreamUI>();
+   EXPECT_CALL(*ui, MockOnStarted(_, _)).WillOnce(Return(kWindowId));
+ 
+-  std::move(callback).Run(blink::mojom::StreamDevices(),
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           std::move(ui));
+   EXPECT_CALL(response_callback_, OnAccessRequestResponse(_, _));
+@@ -344,7 +359,7 @@ TEST_F(MediaStreamUIProxyTest, WindowIdCallbackCalled) {
+                     MediaStreamUI::SourceCallback(),
+                     base::BindOnce(&MockStopStreamHandler::OnWindowId,
+                                    base::Unretained(&handler)),
+-                    /*label=*/std::string(), /*screen_capture_ids=*/{},
++                    /*label=*/std::string(), /*screen_share_ids=*/{},
+                     MediaStreamUI::StateChangeCallback());
+   base::RunLoop().RunUntilIdle();
+ }
+@@ -372,29 +387,31 @@ TEST_F(MediaStreamUIProxyTest, ChangeSourceFromUI) {
+ 
+   MediaStreamUI::SourceCallback source_callback;
+ 
+-  blink::mojom::StreamDevices devices;
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+   devices.video_device = blink::MediaStreamDevice(
+       blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
+       "fake_desktop_video_device", "Fake Desktop Video Device");
+   auto ui = std::make_unique<MockMediaStreamUI>();
+-  EXPECT_CALL(*ui, MockOnStarted(_, _))
+-      .WillOnce([&source_callback](auto, auto callback) {
+-        source_callback = std::move(callback);
+-        return 0;
+-      });
+-  std::move(callback).Run(std::move(devices),
++  EXPECT_CALL(*ui, MockOnStarted(_, _)).WillOnce([&](auto, auto callback) {
++    source_callback = std::move(callback);
++    return 0;
++  });
++  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           std::move(ui));
+ 
+-  blink::mojom::StreamDevices response;
++  blink::mojom::StreamDevicesSetPtr response;
+   EXPECT_CALL(response_callback_, OnAccessRequestResponse(_, _))
+-      .WillOnce([&response](const blink::mojom::StreamDevices& arg0,
++      .WillOnce([&response](const blink::mojom::StreamDevicesSet& arg0,
+                             blink::mojom::MediaStreamRequestResult arg1) {
+-        response = arg0;
++        response = arg0.Clone();
+       });
+   base::RunLoop().RunUntilIdle();
+ 
+-  EXPECT_FALSE(blink::StreamDevicesToMediaStreamDevicesList(response).empty());
++  EXPECT_FALSE(blink::ToMediaStreamDevicesList(*response).empty());
+ 
+   MockStopStreamHandler stop_handler;
+   MockChangeSourceStreamHandler source_handler;
+@@ -404,7 +421,7 @@ TEST_F(MediaStreamUIProxyTest, ChangeSourceFromUI) {
+       base::BindRepeating(&MockChangeSourceStreamHandler::OnChangeSource,
+                           base::Unretained(&source_handler)),
+       MediaStreamUIProxy::WindowIdCallback(), /*label=*/std::string(),
+-      /*screen_capture_ids=*/{}, MediaStreamUI::StateChangeCallback());
++      /*screen_share_ids=*/{}, MediaStreamUI::StateChangeCallback());
+   base::RunLoop().RunUntilIdle();
+ 
+   ASSERT_FALSE(source_callback.is_null());
+@@ -436,7 +453,10 @@ TEST_F(MediaStreamUIProxyTest, ChangeTabSourceFromUI) {
+ 
+   MediaStreamUI::SourceCallback source_callback;
+ 
+-  blink::mojom::StreamDevices devices;
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+   devices.video_device = blink::MediaStreamDevice(
+       blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE,
+       "fake_tab_video_device", "Fake Tab Video Device");
+@@ -448,20 +468,20 @@ TEST_F(MediaStreamUIProxyTest, ChangeTabSourceFromUI) {
+         stop_callback = std::move(stop);
+         return 0;
+       });
+-  std::move(callback).Run(std::move(devices),
++  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           std::move(ui));
+ 
+-  blink::mojom::StreamDevices response;
++  blink::mojom::StreamDevicesSetPtr response;
+   EXPECT_CALL(response_callback_, OnAccessRequestResponse(_, _))
+       .Times(2)
+-      .WillRepeatedly([&response](const blink::mojom::StreamDevices& arg0,
+-                                  blink::mojom::MediaStreamRequestResult arg1) {
+-        response = arg0;
++      .WillRepeatedly([&](const blink::mojom::StreamDevicesSet& arg0,
++                          blink::mojom::MediaStreamRequestResult arg1) {
++        response = arg0.Clone();
+       });
+   base::RunLoop().RunUntilIdle();
+ 
+-  EXPECT_FALSE(blink::StreamDevicesToMediaStreamDevicesList(response).empty());
++  EXPECT_FALSE(blink::ToMediaStreamDevicesList(*response).empty());
+ 
+   MockStopStreamHandler stop_handler;
+   // No stop event should be triggered.
+@@ -505,7 +525,7 @@ TEST_F(MediaStreamUIProxyTest, ChangeTabSourceFromUI) {
+       blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE,
+       "fake_tab_video_device", "Fake Tab Video Device");
+ 
+-  std::move(callback).Run(std::move(devices),
++  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           std::make_unique<MockMediaStreamUI>());
+ 
+@@ -571,7 +591,11 @@ class MediaStreamUIProxyPermissionsPolicyTest
+    public:
+     void RequestMediaAccessPermission(const MediaStreamRequest& request,
+                                       MediaResponseCallback callback) override {
+-      blink::mojom::StreamDevices devices;
++      blink::mojom::StreamDevicesSet stream_devices_set;
++      stream_devices_set.stream_devices.emplace_back(
++          blink::mojom::StreamDevices::New());
++      blink::mojom::StreamDevices& devices =
++          *stream_devices_set.stream_devices[0];
+       if (request.audio_type ==
+           blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+         devices.audio_device = blink::MediaStreamDevice(
+@@ -584,7 +608,7 @@ class MediaStreamUIProxyPermissionsPolicyTest
+             "Camera");
+       }
+       auto ui = std::make_unique<MockMediaStreamUI>();
+-      std::move(callback).Run(std::move(devices),
++      std::move(callback).Run(stream_devices_set,
+                               blink::mojom::MediaStreamRequestResult::OK,
+                               std::move(ui));
+     }
+@@ -610,7 +634,7 @@ class MediaStreamUIProxyPermissionsPolicyTest
+   }
+ 
+   void FinishedGetResultOnIOThread(
+-      const blink::mojom::StreamDevices& devices,
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
+       blink::mojom::MediaStreamRequestResult result) {
+     DCHECK_CURRENTLY_ON(BrowserThread::IO);
+     proxy_.reset();
+@@ -618,13 +642,13 @@ class MediaStreamUIProxyPermissionsPolicyTest
+         FROM_HERE,
+         base::BindOnce(
+             &MediaStreamUIProxyPermissionsPolicyTest::FinishedGetResult,
+-            base::Unretained(this), devices, result));
++            base::Unretained(this), stream_devices_set.Clone(), result));
+   }
+ 
+-  void FinishedGetResult(const blink::mojom::StreamDevices& devices,
++  void FinishedGetResult(blink::mojom::StreamDevicesSetPtr stream_devices_set,
+                          blink::mojom::MediaStreamRequestResult result) {
+     DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-    devices_ = blink::StreamDevicesToMediaStreamDevicesList(devices);
++    devices_ = blink::ToMediaStreamDevicesList(*stream_devices_set);
+     result_ = result;
+     std::move(quit_closure_).Run();
+   }
+diff --git a/content/browser/renderer_host/render_frame_host_delegate.cc b/content/browser/renderer_host/render_frame_host_delegate.cc
+index 699717093fa0e4e52f793b4cb9f79255a6fe01bb..36ccf06dda817c98459efddedcdd380978de2453 100644
+--- a/content/browser/renderer_host/render_frame_host_delegate.cc
++++ b/content/browser/renderer_host/render_frame_host_delegate.cc
+@@ -44,7 +44,7 @@ void RenderFrameHostDelegate::RequestMediaAccessPermission(
+     MediaResponseCallback callback) {
+   LOG(ERROR) << "RenderFrameHostDelegate::RequestMediaAccessPermission: "
+              << "Not supported.";
+-  std::move(callback).Run(blink::mojom::StreamDevices(),
++  std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                           blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED,
+                           std::unique_ptr<MediaStreamUI>());
+ }
+diff --git a/content/browser/speech/speech_recognition_manager_impl.cc b/content/browser/speech/speech_recognition_manager_impl.cc
+index 63f4c6552fa66d76d9454fad14c38244f74845dc..0728c7f926ab81b756551571ef0b3270cfb5aad1 100644
+--- a/content/browser/speech/speech_recognition_manager_impl.cc
++++ b/content/browser/speech/speech_recognition_manager_impl.cc
+@@ -307,9 +307,9 @@ void SpeechRecognitionManagerImpl::MediaRequestPermissionCallback(
+   // which is only supported in combination with the getDisplayMediaSet API.
+   DCHECK_EQ(stream_devices_set.stream_devices.size(), 1u);
+   DCHECK(stream_devices_set.stream_devices[0]);
++
+   blink::MediaStreamDevices devices_list =
+-      blink::StreamDevicesToMediaStreamDevicesList(
+-          *stream_devices_set.stream_devices[0]);
++      blink::ToMediaStreamDevicesList(stream_devices_set);
+   const bool is_allowed = !devices_list.empty();
+   if (is_allowed) {
+     // Copy the approved devices array to the context for UI indication.
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index ddfa7cf439244a6d58ab73dea014b341912f503f..506bc94bfc08447e251d5088e03c70c3b72c3282 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -4259,7 +4259,7 @@ void WebContentsImpl::RequestMediaAccessPermission(
+     delegate_->RequestMediaAccessPermission(this, request, std::move(callback));
+   } else {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN,
+         std::unique_ptr<MediaStreamUI>());
+   }
+diff --git a/content/browser/web_contents/web_contents_impl_unittest.cc b/content/browser/web_contents/web_contents_impl_unittest.cc
+index 0f43a8a8bcbab913a413871e68a848487948bca7..19c46cecfd7b7386018c032b16bb0f12892f16ce 100644
+--- a/content/browser/web_contents/web_contents_impl_unittest.cc
++++ b/content/browser/web_contents/web_contents_impl_unittest.cc
+@@ -3214,11 +3214,11 @@ TEST_F(WebContentsImplTest, RequestMediaAccessPermissionNoDelegate) {
+   contents()->RequestMediaAccessPermission(
+       dummy_request,
+       base::BindLambdaForTesting(
+-          [&callback_run](const blink::mojom::StreamDevices& stream_devices,
+-                          blink::mojom::MediaStreamRequestResult result,
+-                          std::unique_ptr<MediaStreamUI> ui) {
+-            EXPECT_FALSE(stream_devices.audio_device.has_value());
+-            EXPECT_FALSE(stream_devices.video_device.has_value());
++          [&callback_run](
++              const blink::mojom::StreamDevicesSet& stream_devices_set,
++              blink::mojom::MediaStreamRequestResult result,
++              std::unique_ptr<MediaStreamUI> ui) {
++            EXPECT_TRUE(stream_devices_set.stream_devices.empty());
+             EXPECT_EQ(
+                 result,
+                 blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN);
+diff --git a/content/public/browser/media_stream_request.h b/content/public/browser/media_stream_request.h
+index e246f363bb60e26baaf73fab1b38ae3242c210b5..a2aa2284356afe1bd51f64f203cb20e884c2c616 100644
+--- a/content/public/browser/media_stream_request.h
++++ b/content/public/browser/media_stream_request.h
+@@ -152,10 +152,10 @@ class MediaStreamUI {
+ };
+ 
+ // Callback used return results of media access requests.
+-using MediaResponseCallback =
+-    base::OnceCallback<void(const blink::mojom::StreamDevices& stream_devices,
+-                            blink::mojom::MediaStreamRequestResult result,
+-                            std::unique_ptr<MediaStreamUI> ui)>;
++using MediaResponseCallback = base::OnceCallback<void(
++    const blink::mojom::StreamDevicesSet& stream_devices_set,
++    blink::mojom::MediaStreamRequestResult result,
++    std::unique_ptr<MediaStreamUI> ui)>;
+ }  // namespace content
+ 
+ #endif  // CONTENT_PUBLIC_BROWSER_MEDIA_STREAM_REQUEST_H_
+diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
+index e78e2aad4f13d7810027b65f321691091611fd2d..4f395474d3e0e1bf7a594fe3fa3e4cb53327aa69 100644
+--- a/content/public/browser/web_contents_delegate.cc
++++ b/content/public/browser/web_contents_delegate.cc
+@@ -230,7 +230,7 @@ void WebContentsDelegate::RequestMediaAccessPermission(
+     content::MediaResponseCallback callback) {
+   LOG(ERROR) << "WebContentsDelegate::RequestMediaAccessPermission: "
+              << "Not supported.";
+-  std::move(callback).Run(blink::mojom::StreamDevices(),
++  std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                           blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED,
+                           std::unique_ptr<content::MediaStreamUI>());
+ }
+diff --git a/extensions/browser/guest_view/web_view/web_view_permission_helper.cc b/extensions/browser/guest_view/web_view/web_view_permission_helper.cc
+index a8902c04772b352eef0dde06948d616d56a62f4a..5f4f2e3bc1c7a98a4e64e0f6d5db177e32deae66 100644
+--- a/extensions/browser/guest_view/web_view/web_view_permission_helper.cc
++++ b/extensions/browser/guest_view/web_view/web_view_permission_helper.cc
+@@ -214,7 +214,7 @@ void WebViewPermissionHelper::OnMediaPermissionResponse(
+     const std::string& user_input) {
+   if (!allow) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED,
+         std::unique_ptr<content::MediaStreamUI>());
+     return;
+@@ -222,7 +222,7 @@ void WebViewPermissionHelper::OnMediaPermissionResponse(
+   if (!web_view_guest()->attached() ||
+       !web_view_guest()->embedder_web_contents()->GetDelegate()) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+         std::unique_ptr<content::MediaStreamUI>());
+     return;
+diff --git a/extensions/browser/media_capture_util.cc b/extensions/browser/media_capture_util.cc
+index df6b0665c972726c396d069c9df6ffc39d8b3060..f25b3a08ce0591407677d34a9ef431adb604a303 100644
+--- a/extensions/browser/media_capture_util.cc
++++ b/extensions/browser/media_capture_util.cc
+@@ -59,7 +59,11 @@ void GrantMediaStreamRequest(content::WebContents* web_contents,
+          request.video_type ==
+              blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE);
+ 
+-  blink::mojom::StreamDevices devices;
++  // TOOD(crbug.com/1300883): Generalize to multiple streams.
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  stream_devices_set.stream_devices.emplace_back(
++      blink::mojom::StreamDevices::New());
++  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+ 
+   if (request.audio_type ==
+       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+@@ -84,8 +88,8 @@ void GrantMediaStreamRequest(content::WebContents* web_contents,
+   // TODO(jamescook): Should we show a recording icon somewhere? If so, where?
+   std::unique_ptr<MediaStreamUI> ui;
+   std::move(callback).Run(
+-      devices,
+-      devices.audio_device.has_value() || devices.video_device.has_value()
++      stream_devices_set,
++      (devices.audio_device.has_value() || devices.video_device.has_value())
+           ? blink::mojom::MediaStreamRequestResult::OK
+           : blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+       std::move(ui));
+diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
+index ae28b864fcc2f10007ce33774d2d787c91d65f41..87b40bbe629cc07cddfcd4c2ffba8c680b9a298a 100644
+--- a/fuchsia/engine/browser/frame_impl.cc
++++ b/fuchsia/engine/browser/frame_impl.cc
+@@ -8,6 +8,7 @@
+ #include <lib/fpromise/result.h>
+ #include <lib/sys/cpp/component_context.h>
+ #include <lib/ui/scenic/cpp/view_ref_pair.h>
++#include <algorithm>
+ #include <limits>
+ 
+ #include "base/bind.h"
+@@ -206,14 +207,15 @@ void HandleMediaPermissionsRequestResult(
+     const content::MediaStreamRequest& request,
+     content::MediaResponseCallback callback,
+     const std::vector<blink::mojom::PermissionStatus>& result) {
+-  blink::mojom::StreamDevices devices;
++  // TODO(crbug.com/1300883): Generalize to multiple streams.
++  blink::mojom::StreamDevicesPtr devices = blink::mojom::StreamDevices::New();
+ 
+   int result_pos = 0;
+ 
+   if (request.audio_type ==
+       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+     if (result[result_pos] == blink::mojom::PermissionStatus::GRANTED) {
+-      devices.audio_device = blink::MediaStreamDevice(
++      devices->audio_device = blink::MediaStreamDevice(
+           request.audio_type, request.requested_audio_device_id,
+           /*name=*/"");
+     }
+@@ -223,15 +225,19 @@ void HandleMediaPermissionsRequestResult(
+   if (request.video_type ==
+       blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
+     if (result[result_pos] == blink::mojom::PermissionStatus::GRANTED) {
+-      devices.video_device = blink::MediaStreamDevice(
++      devices->video_device = blink::MediaStreamDevice(
+           request.video_type, request.requested_video_device_id,
+           /*name=*/"");
+     }
+   }
+ 
++  blink::mojom::StreamDevicesSet stream_devices_set;
++  if (devices->audio_device.has_value() || devices->video_device.has_value()) {
++    stream_devices_set.stream_devices.emplace_back(std::move(devices));
++  }
+   std::move(callback).Run(
+-      devices,
+-      (!devices.audio_device.has_value() && !devices.video_device.has_value())
++      stream_devices_set,
++      stream_devices_set.stream_devices.empty()
+           ? blink::mojom::MediaStreamRequestResult::NO_HARDWARE
+           : blink::mojom::MediaStreamRequestResult::OK,
+       nullptr);
+@@ -1243,7 +1249,7 @@ void FrameImpl::RequestMediaAccessPermission(
+     permissions.push_back(blink::PermissionType::AUDIO_CAPTURE);
+   } else if (request.audio_type != blink::mojom::MediaStreamType::NO_SERVICE) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+     return;
+   }
+@@ -1253,7 +1259,7 @@ void FrameImpl::RequestMediaAccessPermission(
+     permissions.push_back(blink::PermissionType::VIDEO_CAPTURE);
+   } else if (request.video_type != blink::mojom::MediaStreamType::NO_SERVICE) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+     return;
+   }
+@@ -1262,7 +1268,7 @@ void FrameImpl::RequestMediaAccessPermission(
+       request.render_process_id, request.render_frame_id);
+   if (!render_frame_host) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_STATE, nullptr);
+     return;
+   }
+@@ -1270,7 +1276,7 @@ void FrameImpl::RequestMediaAccessPermission(
+   if (url::Origin::Create(request.security_origin) !=
+       render_frame_host->GetLastCommittedOrigin()) {
+     std::move(callback).Run(
+-        blink::mojom::StreamDevices(),
++        blink::mojom::StreamDevicesSet(),
+         blink::mojom::MediaStreamRequestResult::INVALID_SECURITY_ORIGIN,
+         nullptr);
+     return;
+diff --git a/third_party/blink/common/mediastream/media_stream_request.cc b/third_party/blink/common/mediastream/media_stream_request.cc
+index 6f4537e4750a7efedf21e9f1e75fd1ecf87e3d03..786acc43c7ba76820feeb98ce5b821d1a8def635 100644
+--- a/third_party/blink/common/mediastream/media_stream_request.cc
++++ b/third_party/blink/common/mediastream/media_stream_request.cc
+@@ -144,16 +144,31 @@ bool MediaStreamDevice::IsSameDevice(
+          session_id_ == other_device.session_id_;
+ }
+ 
+-// TODO(crbug.com/1313021): Remove this function and use
+-// blink::mojom::StreaDevices directly everywhere.
+-blink::MediaStreamDevices StreamDevicesToMediaStreamDevicesList(
+-    const blink::mojom::StreamDevices& devices) {
+-  blink::MediaStreamDevices all_devices;
+-  if (devices.audio_device.has_value())
+-    all_devices.push_back(devices.audio_device.value());
+-  if (devices.video_device.has_value())
+-    all_devices.push_back(devices.video_device.value());
+-  return all_devices;
++BLINK_COMMON_EXPORT MediaStreamDevices
++ToMediaStreamDevicesList(const mojom::StreamDevices& stream_devices) {
++  blink::MediaStreamDevices devices;
++  if (stream_devices.audio_device.has_value()) {
++    devices.push_back(stream_devices.audio_device.value());
++  }
++  if (stream_devices.video_device.has_value()) {
++    devices.push_back(stream_devices.video_device.value());
++  }
++  return devices;
++}
++
++blink::MediaStreamDevices ToMediaStreamDevicesList(
++    const blink::mojom::StreamDevicesSet& stream_devices_set) {
++  blink::MediaStreamDevices devices;
++  for (const blink::mojom::StreamDevicesPtr& devices_to_insert :
++       stream_devices_set.stream_devices) {
++    if (devices_to_insert->audio_device.has_value()) {
++      devices.push_back(devices_to_insert->audio_device.value());
++    }
++    if (devices_to_insert->video_device.has_value()) {
++      devices.push_back(devices_to_insert->video_device.value());
++    }
++  }
++  return devices;
+ }
+ 
+ size_t CountDevices(const blink::mojom::StreamDevices& devices) {
+diff --git a/third_party/blink/public/common/mediastream/media_stream_request.h b/third_party/blink/public/common/mediastream/media_stream_request.h
+index 5debf976a59c9084adf4a0e2d2a6a8f21be3e61f..d37796698a7001d5013b9cc4a2eefe8ee8ce553c 100644
+--- a/third_party/blink/public/common/mediastream/media_stream_request.h
++++ b/third_party/blink/public/common/mediastream/media_stream_request.h
+@@ -125,8 +125,15 @@ struct BLINK_COMMON_EXPORT MediaStreamDevice {
+ 
+ using MediaStreamDevices = std::vector<MediaStreamDevice>;
+ 
++// Takes a mojom::StreamDevices and returns all contained MediaStreamDevices.
+ BLINK_COMMON_EXPORT MediaStreamDevices
+-StreamDevicesToMediaStreamDevicesList(const mojom::StreamDevices& devices);
++ToMediaStreamDevicesList(const mojom::StreamDevices& stream_devices);
++
++// TODO(crbug.com/1313021): Remove this function and use
++// blink::mojom::StreamDevicesSet directly everywhere.
++// Takes a mojom::StreamDevicesSet and returns all contained MediaStreamDevices.
++BLINK_COMMON_EXPORT MediaStreamDevices
++ToMediaStreamDevicesList(const mojom::StreamDevicesSet& stream_devices_set);
+ 
+ BLINK_COMMON_EXPORT size_t CountDevices(const mojom::StreamDevices& devices);
+ 
+diff --git a/third_party/blink/renderer/modules/mediastream/user_media_processor.h b/third_party/blink/renderer/modules/mediastream/user_media_processor.h
+index e8cbdb87515213b9704622ed5209d25e5fb2f777..2390f9a21148744959fd0f701373f8258a14664f 100644
+--- a/third_party/blink/renderer/modules/mediastream/user_media_processor.h
++++ b/third_party/blink/renderer/modules/mediastream/user_media_processor.h
+@@ -155,7 +155,7 @@ class MODULES_EXPORT UserMediaProcessor
+   void OnStreamGenerated(int32_t request_id,
+                          blink::mojom::blink::MediaStreamRequestResult result,
+                          const String& label,
+-                         mojom::blink::StreamDevicesSetPtr streams_devices_set,
++                         mojom::blink::StreamDevicesSetPtr stream_devices_set,
+                          bool pan_tilt_zoom_allowed);
+ 
+   void GotAllVideoInputFormatsForDevice(
+diff --git a/weblayer/browser/tab_impl.cc b/weblayer/browser/tab_impl.cc
+index e8a3e098349a64602ee8cb4f9589fc32cf375983..5a34f4891b103a51425acd04ace4e1323c8435e3 100644
+--- a/weblayer/browser/tab_impl.cc
++++ b/weblayer/browser/tab_impl.cc
+@@ -1130,7 +1130,7 @@ void TabImpl::RequestMediaAccessPermission(
+   MediaStreamManager::FromWebContents(web_contents)
+       ->RequestMediaAccessPermission(request, std::move(callback));
+ #else
+-  std::move(callback).Run(blink::mojom::StreamDevices(),
++  std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                           blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED,
+                           nullptr);
+ #endif
+diff --git a/weblayer/browser/webrtc/media_stream_manager.cc b/weblayer/browser/webrtc/media_stream_manager.cc
+index 415876de1eeec0ed9c17ab476ed95d069ae9054c..c15b22278295da7b63a7c78d94a6f34f20db75f8 100644
+--- a/weblayer/browser/webrtc/media_stream_manager.cc
++++ b/weblayer/browser/webrtc/media_stream_manager.cc
+@@ -34,11 +34,14 @@ struct UserData : public base::SupportsUserData::Data {
+ class MediaStreamManager::StreamUi : public content::MediaStreamUI {
+  public:
+   StreamUi(base::WeakPtr<MediaStreamManager> manager,
+-           const blink::mojom::StreamDevices& devices)
++           const blink::mojom::StreamDevicesSet& stream_devices)
+       : manager_(manager) {
+     DCHECK(manager_);
+-    streaming_audio_ = devices.audio_device.has_value();
+-    streaming_video_ = devices.video_device.has_value();
++    DCHECK_EQ(1u, stream_devices.stream_devices.size());
++    streaming_audio_ =
++        stream_devices.stream_devices[0]->audio_device.has_value();
++    streaming_video_ =
++        stream_devices.stream_devices[0]->video_device.has_value();
+   }
+   StreamUi(const StreamUi&) = delete;
+   StreamUi& operator=(const StreamUi&) = delete;
+@@ -122,12 +125,12 @@ void MediaStreamManager::OnClientReadyToStream(JNIEnv* env,
+   CHECK(request != requests_pending_client_approval_.end());
+   if (allowed) {
+     std::move(request->second.callback)
+-        .Run(request->second.devices, request->second.result,
++        .Run(*request->second.stream_devices_set_, request->second.result,
+              std::make_unique<StreamUi>(weak_factory_.GetWeakPtr(),
+-                                        request->second.devices));
++                                        *request->second.stream_devices_set_));
+   } else {
+     std::move(request->second.callback)
+-        .Run(blink::mojom::StreamDevices(),
++        .Run(blink::mojom::StreamDevicesSet(),
+              blink::mojom::MediaStreamRequestResult::NO_HARDWARE, {});
+   }
+   requests_pending_client_approval_.erase(request);
+@@ -141,22 +144,28 @@ void MediaStreamManager::StopStreaming(JNIEnv* env) {
+ 
+ void MediaStreamManager::OnMediaAccessPermissionResult(
+     content::MediaResponseCallback callback,
+-    const blink::mojom::StreamDevices& devices,
++    const blink::mojom::StreamDevicesSet& stream_devices_set,
+     blink::mojom::MediaStreamRequestResult result,
+     bool blocked_by_permissions_policy,
+     ContentSetting audio_setting,
+     ContentSetting video_setting) {
++  // TODO(crbug.com/1300883): Generalize to multiple streams.
++  DCHECK((result != blink::mojom::MediaStreamRequestResult::OK &&
++          stream_devices_set.stream_devices.empty()) ||
++         (result == blink::mojom::MediaStreamRequestResult::OK &&
++          stream_devices_set.stream_devices.size() == 1u));
+   if (result != blink::mojom::MediaStreamRequestResult::OK) {
+-    std::move(callback).Run(devices, result, {});
++    std::move(callback).Run(stream_devices_set, result, {});
+     return;
+   }
+ 
+   int request_id = next_request_id_++;
+-  requests_pending_client_approval_[request_id] =
+-      RequestPendingClientApproval(std::move(callback), devices, result);
++  requests_pending_client_approval_[request_id] = RequestPendingClientApproval(
++      std::move(callback), stream_devices_set, result);
+   Java_MediaStreamManager_prepareToStream(
+       base::android::AttachCurrentThread(), j_object_,
+-      devices.audio_device.has_value(), devices.video_device.has_value(),
++      stream_devices_set.stream_devices[0]->audio_device.has_value(),
++      stream_devices_set.stream_devices[0]->video_device.has_value(),
+       request_id);
+ }
+ 
+@@ -199,9 +208,11 @@ MediaStreamManager::RequestPendingClientApproval::
+ 
+ MediaStreamManager::RequestPendingClientApproval::RequestPendingClientApproval(
+     content::MediaResponseCallback callback,
+-    const blink::mojom::StreamDevices& devices,
++    const blink::mojom::StreamDevicesSet& stream_devices_set,
+     blink::mojom::MediaStreamRequestResult result)
+-    : callback(std::move(callback)), devices(devices), result(result) {}
++    : callback(std::move(callback)),
++      stream_devices_set_(stream_devices_set.Clone()),
++      result(result) {}
+ 
+ MediaStreamManager::RequestPendingClientApproval::
+     ~RequestPendingClientApproval() = default;
+diff --git a/weblayer/browser/webrtc/media_stream_manager.h b/weblayer/browser/webrtc/media_stream_manager.h
+index 6f92e924546a35aaa89e530bf9b9369df979453e..7013b3ff6eff0a425dcdc9e66b6a4dc745d6c138 100644
+--- a/weblayer/browser/webrtc/media_stream_manager.h
++++ b/weblayer/browser/webrtc/media_stream_manager.h
+@@ -57,7 +57,7 @@ class MediaStreamManager {
+ 
+   void OnMediaAccessPermissionResult(
+       content::MediaResponseCallback callback,
+-      const blink::mojom::StreamDevices& devices,
++      const blink::mojom::StreamDevicesSet& stream_devices_set,
+       blink::mojom::MediaStreamRequestResult result,
+       bool blocked_by_permissions_policy,
+       ContentSetting audio_setting,
+@@ -73,16 +73,17 @@ class MediaStreamManager {
+   // approval.
+   struct RequestPendingClientApproval {
+     RequestPendingClientApproval();
+-    RequestPendingClientApproval(content::MediaResponseCallback callback,
+-                                 const blink::mojom::StreamDevices& devices,
+-                                 blink::mojom::MediaStreamRequestResult result);
++    RequestPendingClientApproval(
++        content::MediaResponseCallback callback,
++        const blink::mojom::StreamDevicesSet& stream_devices_set,
++        blink::mojom::MediaStreamRequestResult result);
+     ~RequestPendingClientApproval();
+ 
+     RequestPendingClientApproval& operator=(
+         RequestPendingClientApproval&& other);
+ 
+     content::MediaResponseCallback callback;
+-    blink::mojom::StreamDevices devices;
++    blink::mojom::StreamDevicesSetPtr stream_devices_set_;
+     blink::mojom::MediaStreamRequestResult result;
+   };
+   std::map<int, RequestPendingClientApproval> requests_pending_client_approval_;
