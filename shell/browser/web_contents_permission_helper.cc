@@ -65,7 +65,7 @@ void WebContentsPermissionHelper::RequestPermission(
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
     const base::DictionaryValue* details) {
-  auto* rfh = web_contents_->GetMainFrame();
+  auto* rfh = web_contents_->GetPrimaryMainFrame();
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
@@ -77,7 +77,7 @@ void WebContentsPermissionHelper::RequestPermission(
 bool WebContentsPermissionHelper::CheckPermission(
     blink::PermissionType permission,
     const base::DictionaryValue* details) const {
-  auto* rfh = web_contents_->GetMainFrame();
+  auto* rfh = web_contents_->GetPrimaryMainFrame();
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();

@@ -400,7 +400,7 @@ content::WebContents* InspectableWebContents::GetDevToolsWebContents() const {
 
 void InspectableWebContents::InspectElement(int x, int y) {
   if (agent_host_)
-    agent_host_->InspectElement(web_contents_->GetMainFrame(), x, y);
+    agent_host_->InspectElement(web_contents_->GetPrimaryMainFrame(), x, y);
 }
 
 void InspectableWebContents::SetDelegate(
@@ -532,7 +532,7 @@ void InspectableWebContents::CallClientFunction(
     }
   }
   javascript.append(");");
-  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+  GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
       base::UTF8ToUTF16(javascript), base::NullCallback());
 }
 
@@ -580,7 +580,7 @@ void InspectableWebContents::LoadCompleted() {
     }
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+    GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
   }
 
@@ -612,7 +612,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     // process. Grant the devtools process the ability to request URLs from the
     // extension.
     content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
-        web_contents_->GetMainFrame()->GetProcess()->GetID(),
+        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID(),
         url::Origin::Create(extension->url()));
 
     auto extension_info = std::make_unique<base::DictionaryValue>();
@@ -948,7 +948,7 @@ void InspectableWebContents::DispatchProtocolMessage(
     base::EscapeJSONString(str_message, true, &param);
     std::u16string javascript =
         base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+    GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
     return;
   }
@@ -1032,12 +1032,12 @@ void InspectableWebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
   if (navigation_handle->IsInMainFrame()) {
     if (navigation_handle->GetRenderFrameHost() ==
-            GetDevToolsWebContents()->GetMainFrame() &&
+            GetDevToolsWebContents()->GetPrimaryMainFrame() &&
         frontend_host_) {
       return;
     }
     frontend_host_ = content::DevToolsFrontendHost::Create(
-        web_contents()->GetMainFrame(),
+        web_contents()->GetPrimaryMainFrame(),
         base::BindRepeating(
             &InspectableWebContents::HandleMessageFromDevToolsFrontend,
             base::Unretained(this)));

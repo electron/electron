@@ -84,7 +84,7 @@ std::unique_ptr<MessagePort> ElectronMessagingDelegate::CreateReceiverForTab(
   content::RenderFrameHost* receiver_rfh = nullptr;
   if (include_child_frames) {
     // The target is the active outermost main frame of the WebContents.
-    receiver_rfh = receiver_contents->GetMainFrame();
+    receiver_rfh = receiver_contents->GetPrimaryMainFrame();
   } else if (!receiver_document_id.empty()) {
     ExtensionApiFrameIdMap::DocumentId document_id =
         ExtensionApiFrameIdMap::DocumentIdFromString(receiver_document_id);

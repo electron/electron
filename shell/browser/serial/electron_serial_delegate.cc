@@ -49,7 +49,7 @@ bool ElectronSerialDelegate::CanRequestPortPermission(
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   return permission_helper->CheckSerialAccessPermission(
-      web_contents->GetMainFrame()->GetLastCommittedOrigin());
+      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin());
 }
 
 bool ElectronSerialDelegate::HasPortPermission(
@@ -60,7 +60,8 @@ bool ElectronSerialDelegate::HasPortPermission(
   auto* chooser_context =
       SerialChooserContextFactory::GetForBrowserContext(browser_context);
   return chooser_context->HasPortPermission(
-      web_contents->GetMainFrame()->GetLastCommittedOrigin(), port, frame);
+      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin(), port,
+      frame);
 }
 
 device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(

@@ -1760,7 +1760,7 @@ void WebContents::Invoke(
 
 void WebContents::OnFirstNonEmptyLayout(
     content::RenderFrameHost* render_frame_host) {
-  if (render_frame_host == web_contents()->GetMainFrame()) {
+  if (render_frame_host == web_contents()->GetPrimaryMainFrame()) {
     Emit("ready-to-show");
   }
 }
@@ -2077,7 +2077,7 @@ bool WebContents::GetBackgroundThrottling() const {
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
 
-  auto* rfh = web_contents()->GetMainFrame();
+  auto* rfh = web_contents()->GetPrimaryMainFrame();
   if (!rfh)
     return;
 
@@ -2099,12 +2099,15 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
 }
 
 int WebContents::GetProcessID() const {
-  return web_contents()->GetMainFrame()->GetProcess()->GetID();
+  return web_contents()->GetPrimaryMainFrame()->GetProcess()->GetID();
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
-  base::ProcessHandle process_handle =
-      web_contents()->GetMainFrame()->GetProcess()->GetProcess().Handle();
+  base::ProcessHandle process_handle = web_contents()
+                                           ->GetPrimaryMainFrame()
+                                           ->GetProcess()
+                                           ->GetProcess()
+                                           .Handle();
   return base::GetProcId(process_handle);
 }
 
@@ -2300,7 +2303,7 @@ void WebContents::SetWebRTCIPHandlingPolicy(
 
 std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host)
     return std::string();
 
@@ -2310,7 +2313,7 @@ std::string WebContents::GetMediaSourceID(
       content::WebContentsMediaCaptureId(frame_host->GetProcess()->GetID(),
                                          frame_host->GetRoutingID()));
 
-  auto* request_frame_host = request_web_contents->GetMainFrame();
+  auto* request_frame_host = request_web_contents->GetPrimaryMainFrame();
   if (!request_frame_host)
     return std::string();
 
@@ -2442,7 +2445,7 @@ void WebContents::EnableDeviceEmulation(
     return;
 
   DCHECK(web_contents());
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (frame_host) {
     auto* widget_host_impl = static_cast<content::RenderWidgetHostImpl*>(
         frame_host->GetView()->GetRenderWidgetHost());
@@ -2458,7 +2461,7 @@ void WebContents::DisableDeviceEmulation() {
     return;
 
   DCHECK(web_contents());
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (frame_host) {
     auto* widget_host_impl = static_cast<content::RenderWidgetHostImpl*>(
         frame_host->GetView()->GetRenderWidgetHost());
@@ -2621,7 +2624,7 @@ void WebContents::OnGetDefaultPrinter(
   auto* focused_frame = web_contents()->GetFocusedFrame();
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
-                  : web_contents()->GetMainFrame();
+                  : web_contents()->GetPrimaryMainFrame();
 
   print_view_manager->PrintNow(rfh, silent, std::move(print_settings),
                                std::move(print_callback));
@@ -2828,10 +2831,10 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
-          web_contents()->GetMainFrame()->GetLastCommittedURL(), landscape,
-          display_header_footer, print_background, scale, paper_width,
-          paper_height, margin_top, margin_bottom, margin_left, margin_right,
-          absl::make_optional(header_template),
+          web_contents()->GetPrimaryMainFrame()->GetLastCommittedURL(),
+          landscape, display_header_footer, print_background, scale,
+          paper_width, paper_height, margin_top, margin_bottom, margin_left,
+          margin_right, absl::make_optional(header_template),
           absl::make_optional(footer_template), prefer_css_page_size);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
@@ -2850,7 +2853,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
       absl::get<printing::mojom::PrintPagesParamsPtr>(print_pages_params));
   params->params->document_cookie = unique_id.value_or(0);
 
-  manager->PrintToPdf(web_contents()->GetMainFrame(), page_ranges,
+  manager->PrintToPdf(web_contents()->GetPrimaryMainFrame(), page_ranges,
                       std::move(params),
                       base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
                                      std::move(promise)));
@@ -2982,7 +2985,7 @@ void WebContents::ShowDefinitionForSelection() {
 }
 
 void WebContents::CopyImageAt(int x, int y) {
-  auto* const host = web_contents()->GetMainFrame();
+  auto* const host = web_contents()->GetPrimaryMainFrame();
   if (host)
     host->CopyImageAt(x, y);
 }
@@ -3148,7 +3151,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   // If the view's renderer is suspended this may fail on Windows/Linux -
   // bail if so. See CopyFromSurface in
   // content/public/browser/render_widget_host_view.h.
-  auto* rfh = web_contents()->GetMainFrame();
+  auto* rfh = web_contents()->GetPrimaryMainFrame();
   if (rfh &&
       rfh->GetVisibilityState() == blink::mojom::PageVisibilityState::kHidden) {
     promise.Resolve(gfx::Image());
@@ -3426,11 +3429,11 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
 }
 
 content::RenderFrameHost* WebContents::MainFrame() {
-  return web_contents()->GetMainFrame();
+  return web_contents()->GetPrimaryMainFrame();
 }
 
 void WebContents::NotifyUserActivation() {
-  content::RenderFrameHost* frame = web_contents()->GetMainFrame();
+  content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
   if (frame)
     frame->NotifyUserActivation(
         blink::mojom::UserActivationNotificationType::kInteraction);
@@ -3446,7 +3449,7 @@ v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host) {
     promise.RejectWithErrorMessage("Failed to create memory dump");
     return handle;
@@ -3476,7 +3479,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     return handle;
   }
 
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host) {
     promise.RejectWithErrorMessage("takeHeapSnapshot failed");
     return handle;

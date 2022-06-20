@@ -299,7 +299,7 @@ blink::mojom::PageVisibilityState WebFrameMain::VisibilityState() const {
 content::RenderFrameHost* WebFrameMain::Top() const {
   if (!CheckRenderFrame())
     return nullptr;
-  return render_frame_->GetMainFrame();
+  return render_frame_->GetPrimaryMainFrame();
 }
 
 content::RenderFrameHost* WebFrameMain::Parent() const {

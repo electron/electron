@@ -86,7 +86,7 @@ HidChooserController::HidChooserController(
       exclusion_filters_(std::move(exclusion_filters)),
       callback_(std::move(callback)),
       origin_(content::WebContents::FromRenderFrameHost(render_frame_host)
-                  ->GetMainFrame()
+                  ->GetPrimaryMainFrame()
                   ->GetLastCommittedOrigin()),
       frame_tree_node_id_(render_frame_host->GetFrameTreeNodeId()),
       hid_delegate_(hid_delegate),
