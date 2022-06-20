@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index b697c912c751e1c74e15e460d0545760d3deeae3..abe1542feda5cbca5163729e1559855822ccea4a 100644
+index b857d325233430a5b79b3022d33823486e558309..83cc6ded4b3354f37b8e1dc0d9e4f3289863fa09 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -6966,6 +6966,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index b697c912c751e1c74e15e460d0545760d3deeae3..abe1542feda5cbca5163729e15598558
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9655de663690dce043d1ac4fe3e8a63f9fbf2558..04f7845ad0333b94dce9ebd665e799fc0073d111 100644
+index 33f6efe4df4eecabcbcd08f908ed3ef12d056eb2..0e1e25d40ebf3ca92c57dfdfb52c5269198aa6f7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3947,6 +3947,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -53,10 +53,10 @@ index 9655de663690dce043d1ac4fe3e8a63f9fbf2558..04f7845ad0333b94dce9ebd665e799fc
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index bdcbb09cdd884dda769a5501e3dc94547f454be9..0b25def9601d8baadee6283f526687b3806db8f5 100644
+index 9c3a03faeee19f6f0a250680db36906ee64bf55a..0450700d02c74e047fa5124aa43b9f75b869917d 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -569,6 +569,10 @@ struct CreateNewWindowParams {
+@@ -566,6 +566,10 @@ struct CreateNewWindowParams {
  
    // Governs how downloads are handled if `target_url` results in a download.
    blink.mojom.NavigationDownloadPolicy download_policy;
@@ -102,7 +102,7 @@ index d0b7aed3162b8ea7673ab3ef31d2a3302f4e6456..6328fc21548f2b8277b461f9938dbcc5
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index daf9b4566396c6d681760329cf4ba6869bbb55e4..321d5cfc36e40f2a649e8ea5910f4082b71b62e1 100644
+index ef3889063b562a37fbd945fe30db0d776ecaee7a..99e8449e9c515dd70ed88546a71f83ae139178fe 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
