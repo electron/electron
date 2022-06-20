@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Simon Hangl <simonha@google.com>
 Date: Thu, 9 Jun 2022 09:36:54 +0000
-Subject: [MSC] Porting GenerateStreams clients to handle stream vectors.
+Subject: Porting GenerateStreams clients to handle stream vectors.
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

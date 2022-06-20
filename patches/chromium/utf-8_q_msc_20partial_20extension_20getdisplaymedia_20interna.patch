@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Simon Hangl <simonha@google.com>
 Date: Wed, 25 May 2022 10:25:19 +0000
-Subject: =?UTF-8?q?[MSC]=20Partial=20extension=20getDisplayMedia=20interna?=
- =?UTF-8?q?ls=20to=20return=0Astream=20vectors.?=
+Subject: Partial extension getDisplayMedia internals to return stream vectors.
 
 The getDisplayMedia implementation currently only handles single
 streams. This CL is a first step to port this implementation to
