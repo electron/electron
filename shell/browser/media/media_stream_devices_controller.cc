@@ -77,7 +77,8 @@ bool MediaStreamDevicesController::TakeAction() {
 
 void MediaStreamDevicesController::Accept() {
   // Get the default devices for the request.
-  blink::mojom::StreamDevicesSetPtr stream_devices_set;
+  blink::mojom::StreamDevicesSetPtr stream_devices_set =
+      blink::mojom::StreamDevicesSet::New();
   stream_devices_set->stream_devices.emplace_back(
       blink::mojom::StreamDevices::New());
   blink::mojom::StreamDevices& stream_devices =
