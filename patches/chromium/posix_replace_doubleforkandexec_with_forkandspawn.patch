@@ -1,0 +1,641 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darshan Sen <raisinten@gmail.com>
+Date: Fri, 17 Jun 2022 13:19:32 +0530
+Subject: posix: Replace DoubleForkAndExec() with ForkAndSpawn()
+
+The DoubleForkAndExec() function was taking over 622 milliseconds to run
+on macOS 11 (BigSur) on Intel i5-1038NG7. I did some debugging by adding
+some custom traces and found that the fork() syscall is the bottleneck
+here, i.e., the first fork() takes around 359 milliseconds and the
+nested fork() takes around 263 milliseconds. Replacing the nested fork()
+and exec() with posix_spawn() reduces the time consumption to 257
+milliseconds!
+
+See https://github.com/libuv/libuv/pull/3064 to know why fork() is so
+slow on macOS and why posix_spawn() is a better replacement.
+
+Another point to note is that even base::LaunchProcess() from Chromium
+calls posix_spawnp() on macOS -
+https://source.chromium.org/chromium/chromium/src/+/8f8d82dea0fa8f11f57c74dbb65126f8daba58f7:base/process/launch_mac.cc;l=295-296
+
+Change-Id: I25c6ee9629a1ae5d0c32b361b56a1ce0b4b0fd26
+Reviewed-on: https://chromium-review.googlesource.com/c/crashpad/crashpad/+/3641386
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+Commit-Queue: Mark Mentovai <mark@chromium.org>
+
+diff --git a/third_party/crashpad/crashpad/AUTHORS b/third_party/crashpad/crashpad/AUTHORS
+index 8dcac3238870920d374b86033d05d77ebde351e9..02103924332eddbd158c04f8a395bb4a247e8bd9 100644
+--- a/third_party/crashpad/crashpad/AUTHORS
++++ b/third_party/crashpad/crashpad/AUTHORS
+@@ -12,3 +12,4 @@ Opera Software ASA
+ Vewd Software AS
+ LG Electronics, Inc.
+ MIPS Technologies, Inc.
++Darshan Sen <raisinten@gmail.com>
+diff --git a/third_party/crashpad/crashpad/client/crashpad_client_linux.cc b/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
+index 35742be01f2c5c9f834bb7d2f03b261193bc69f2..2769936403ca6d4a1bb6c1f61ac6db776feba6d6 100644
+--- a/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
++++ b/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
+@@ -45,7 +45,7 @@
+ #include "util/linux/socket.h"
+ #include "util/misc/address_sanitizer.h"
+ #include "util/misc/from_pointer_cast.h"
+-#include "util/posix/double_fork_and_exec.h"
++#include "util/posix/fork_and_spawn.h"
+ #include "util/posix/scoped_mmap.h"
+ #include "util/posix/signals.h"
+ 
+@@ -445,7 +445,7 @@ bool CrashpadClient::StartHandler(
+ 
+   argv.push_back(FormatArgumentInt("initial-client-fd", handler_sock.get()));
+   argv.push_back("--shared-client-connection");
+-  if (!DoubleForkAndExec(argv, nullptr, handler_sock.get(), false, nullptr)) {
++  if (!ForkAndSpawn(argv, nullptr, handler_sock.get(), false, nullptr)) {
+     return false;
+   }
+ 
+@@ -600,7 +600,7 @@ bool CrashpadClient::StartJavaHandlerForClient(
+     int socket) {
+   std::vector<std::string> argv = BuildAppProcessArgs(
+       class_name, database, metrics_dir, url, annotations, arguments, socket);
+-  return DoubleForkAndExec(argv, env, socket, false, nullptr);
++  return ForkAndSpawn(argv, env, socket, false, nullptr);
+ }
+ 
+ bool CrashpadClient::StartHandlerWithLinkerAtCrash(
+@@ -649,7 +649,7 @@ bool CrashpadClient::StartHandlerWithLinkerForClient(
+                                   annotations,
+                                   arguments,
+                                   socket);
+-  return DoubleForkAndExec(argv, env, socket, false, nullptr);
++  return ForkAndSpawn(argv, env, socket, false, nullptr);
+ }
+ 
+ #endif
+@@ -683,7 +683,7 @@ bool CrashpadClient::StartHandlerForClient(
+ 
+   argv.push_back(FormatArgumentInt("initial-client-fd", socket));
+ 
+-  return DoubleForkAndExec(argv, nullptr, socket, true, nullptr);
++  return ForkAndSpawn(argv, nullptr, socket, true, nullptr);
+ }
+ 
+ // static
+diff --git a/third_party/crashpad/crashpad/client/crashpad_client_mac.cc b/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
+index d25bfb71638a4837d40950df770b461d8beac351..585bac910a4b6d3fef10ab23b86a04c2985173b8 100644
+--- a/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
++++ b/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
+@@ -36,7 +36,7 @@
+ #include "util/mach/notify_server.h"
+ #include "util/misc/clock.h"
+ #include "util/misc/implicit_cast.h"
+-#include "util/posix/double_fork_and_exec.h"
++#include "util/posix/fork_and_spawn.h"
+ 
+ namespace crashpad {
+ 
+@@ -343,7 +343,7 @@ class HandlerStarter final : public NotifyServer::DefaultInterface {
+     // this parent process, which was probably using the exception server now
+     // being restarted. The handler can’t monitor itself for its own crashes via
+     // this interface.
+-    if (!DoubleForkAndExec(
++    if (!ForkAndSpawn(
+             argv,
+             nullptr,
+             server_write_fd.get(),
+diff --git a/third_party/crashpad/crashpad/handler/linux/cros_crash_report_exception_handler.cc b/third_party/crashpad/crashpad/handler/linux/cros_crash_report_exception_handler.cc
+index 9e58d94aa499fdb7271a78ea21a1dcc1b12e3a52..3caa3b987b35be575558a312026cf6f19485c418 100644
+--- a/third_party/crashpad/crashpad/handler/linux/cros_crash_report_exception_handler.cc
++++ b/third_party/crashpad/crashpad/handler/linux/cros_crash_report_exception_handler.cc
+@@ -29,7 +29,7 @@
+ #include "util/linux/ptrace_client.h"
+ #include "util/misc/metrics.h"
+ #include "util/misc/uuid.h"
+-#include "util/posix/double_fork_and_exec.h"
++#include "util/posix/fork_and_spawn.h"
+ 
+ namespace crashpad {
+ 
+@@ -266,12 +266,11 @@ bool CrosCrashReportExceptionHandler::HandleExceptionWithConnection(
+     argv.push_back("--always_allow_feedback");
+   }
+ 
+-  if (!DoubleForkAndExec(argv,
+-                         nullptr /* envp */,
+-                         file_writer.fd() /* preserve_fd */,
+-                         false /* use_path */,
+-                         nullptr /* child_function */)) {
+-    LOG(ERROR) << "DoubleForkAndExec failed";
++  if (!ForkAndSpawn(argv,
++                    nullptr /* envp */,
++                    file_writer.fd() /* preserve_fd */,
++                    false /* use_path */,
++                    nullptr /* child_function */)) {
+     Metrics::ExceptionCaptureResult(
+         Metrics::CaptureResult::kFinishedWritingCrashReportFailed);
+     return false;
+diff --git a/third_party/crashpad/crashpad/util/BUILD.gn b/third_party/crashpad/crashpad/util/BUILD.gn
+index 8251312c78e1c1bfc4aff8fa8b7ade1f5c191e33..81c2484461843268bd8a6c21de3d7fd2ea504ac4 100644
+--- a/third_party/crashpad/crashpad/util/BUILD.gn
++++ b/third_party/crashpad/crashpad/util/BUILD.gn
+@@ -296,10 +296,10 @@ crashpad_static_library("util") {
+       sources += [
+         "posix/close_multiple.cc",
+         "posix/close_multiple.h",
+-        "posix/double_fork_and_exec.cc",
+-        "posix/double_fork_and_exec.h",
+         "posix/drop_privileges.cc",
+         "posix/drop_privileges.h",
++        "posix/fork_and_spawn.cc",
++        "posix/fork_and_spawn.h",
+         "posix/process_info.h",
+ 
+         # These map signals to and from strings. While Fuchsia defines some of
+diff --git a/third_party/crashpad/crashpad/util/posix/double_fork_and_exec.cc b/third_party/crashpad/crashpad/util/posix/double_fork_and_exec.cc
+deleted file mode 100644
+index 1960430954d3f6459dce688493db5c42047567b0..0000000000000000000000000000000000000000
+--- a/third_party/crashpad/crashpad/util/posix/double_fork_and_exec.cc
++++ /dev/null
+@@ -1,166 +0,0 @@
+-// Copyright 2017 The Crashpad Authors. All rights reserved.
+-//
+-// Licensed under the Apache License, Version 2.0 (the "License");
+-// you may not use this file except in compliance with the License.
+-// You may obtain a copy of the License at
+-//
+-//     http://www.apache.org/licenses/LICENSE-2.0
+-//
+-// Unless required by applicable law or agreed to in writing, software
+-// distributed under the License is distributed on an "AS IS" BASIS,
+-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-// See the License for the specific language governing permissions and
+-// limitations under the License.
+-
+-#include "util/posix/double_fork_and_exec.h"
+-
+-#include <stdlib.h>
+-#include <string.h>
+-#include <sys/wait.h>
+-#include <unistd.h>
+-
+-#include "base/check_op.h"
+-#include "base/logging.h"
+-#include "base/posix/eintr_wrapper.h"
+-#include "base/strings/stringprintf.h"
+-#include "util/posix/close_multiple.h"
+-
+-namespace crashpad {
+-
+-bool DoubleForkAndExec(const std::vector<std::string>& argv,
+-                       const std::vector<std::string>* envp,
+-                       int preserve_fd,
+-                       bool use_path,
+-                       void (*child_function)()) {
+-  DCHECK(!envp || !use_path);
+-
+-  // argv_c contains const char* pointers and is terminated by nullptr. This is
+-  // suitable for passing to execv(). Although argv_c is not used in the parent
+-  // process, it must be built in the parent process because it’s unsafe to do
+-  // so in the child or grandchild process.
+-  std::vector<const char*> argv_c;
+-  argv_c.reserve(argv.size() + 1);
+-  for (const std::string& argument : argv) {
+-    argv_c.push_back(argument.c_str());
+-  }
+-  argv_c.push_back(nullptr);
+-
+-  std::vector<const char*> envp_c;
+-  if (envp) {
+-    envp_c.reserve(envp->size() + 1);
+-    for (const std::string& variable : *envp) {
+-      envp_c.push_back(variable.c_str());
+-    }
+-    envp_c.push_back(nullptr);
+-  }
+-
+-  // Double-fork(). The three processes involved are parent, child, and
+-  // grandchild. The grandchild will call execv(). The child exits immediately
+-  // after spawning the grandchild, so the grandchild becomes an orphan and its
+-  // parent process ID becomes 1. This relieves the parent and child of the
+-  // responsibility to reap the grandchild with waitpid() or similar. The
+-  // grandchild is expected to outlive the parent process, so the parent
+-  // shouldn’t be concerned with reaping it. This approach means that accidental
+-  // early termination of the handler process will not result in a zombie
+-  // process.
+-  pid_t pid = fork();
+-  if (pid < 0) {
+-    PLOG(ERROR) << "fork";
+-    return false;
+-  }
+-
+-  if (pid == 0) {
+-    // Child process.
+-
+-    if (child_function) {
+-      child_function();
+-    }
+-
+-    // Call setsid(), creating a new process group and a new session, both led
+-    // by this process. The new process group has no controlling terminal. This
+-    // disconnects it from signals generated by the parent process’ terminal.
+-    //
+-    // setsid() is done in the child instead of the grandchild so that the
+-    // grandchild will not be a session leader. If it were a session leader, an
+-    // accidental open() of a terminal device without O_NOCTTY would make that
+-    // terminal the controlling terminal.
+-    //
+-    // It’s not desirable for the grandchild to have a controlling terminal. The
+-    // grandchild manages its own lifetime, such as by monitoring clients on its
+-    // own and exiting when it loses all clients and when it deems it
+-    // appropraite to do so. It may serve clients in different process groups or
+-    // sessions than its original client, and receiving signals intended for its
+-    // original client’s process group could be harmful in that case.
+-    PCHECK(setsid() != -1) << "setsid";
+-
+-    pid = fork();
+-    if (pid < 0) {
+-      PLOG(FATAL) << "fork";
+-    }
+-
+-    if (pid > 0) {
+-      // Child process.
+-
+-      // _exit() instead of exit(), because fork() was called.
+-      _exit(EXIT_SUCCESS);
+-    }
+-
+-    // Grandchild process.
+-
+-    CloseMultipleNowOrOnExec(STDERR_FILENO + 1, preserve_fd);
+-
+-    // &argv_c[0] is a pointer to a pointer to const char data, but because of
+-    // how C (not C++) works, execvp() wants a pointer to a const pointer to
+-    // char data. It modifies neither the data nor the pointers, so the
+-    // const_cast is safe.
+-    char* const* argv_for_execv = const_cast<char* const*>(&argv_c[0]);
+-
+-    if (envp) {
+-      // This cast is safe for the same reason that the argv_for_execv cast is.
+-      char* const* envp_for_execv = const_cast<char* const*>(&envp_c[0]);
+-      execve(argv_for_execv[0], argv_for_execv, envp_for_execv);
+-      PLOG(FATAL) << "execve " << argv_for_execv[0];
+-    }
+-
+-    if (use_path) {
+-      execvp(argv_for_execv[0], argv_for_execv);
+-      PLOG(FATAL) << "execvp " << argv_for_execv[0];
+-    }
+-
+-    execv(argv_for_execv[0], argv_for_execv);
+-    PLOG(FATAL) << "execv " << argv_for_execv[0];
+-  }
+-
+-  // waitpid() for the child, so that it does not become a zombie process. The
+-  // child normally exits quickly.
+-  //
+-  // Failures from this point on may result in the accumulation of a zombie, but
+-  // should not be considered fatal. Log only warnings, but don’t treat these
+-  // failures as a failure of the function overall.
+-  int status;
+-  pid_t wait_pid = HANDLE_EINTR(waitpid(pid, &status, 0));
+-  if (wait_pid == -1) {
+-    PLOG(WARNING) << "waitpid";
+-    return true;
+-  }
+-  DCHECK_EQ(wait_pid, pid);
+-
+-  if (WIFSIGNALED(status)) {
+-    int sig = WTERMSIG(status);
+-    LOG(WARNING) << base::StringPrintf(
+-        "intermediate process terminated by signal %d (%s)%s",
+-        sig,
+-        strsignal(sig),
+-        WCOREDUMP(status) ? " (core dumped)" : "");
+-  } else if (!WIFEXITED(status)) {
+-    LOG(WARNING) << base::StringPrintf(
+-        "intermediate process: unknown termination 0x%x", status);
+-  } else if (WEXITSTATUS(status) != EXIT_SUCCESS) {
+-    LOG(WARNING) << "intermediate process exited with code "
+-                 << WEXITSTATUS(status);
+-  }
+-
+-  return true;
+-}
+-
+-}  // namespace crashpad
+diff --git a/third_party/crashpad/crashpad/util/posix/fork_and_spawn.cc b/third_party/crashpad/crashpad/util/posix/fork_and_spawn.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..c6a95bbfdcba45995b0034789c8bdb4423a25642
+--- /dev/null
++++ b/third_party/crashpad/crashpad/util/posix/fork_and_spawn.cc
+@@ -0,0 +1,235 @@
++// Copyright 2017 The Crashpad Authors. All rights reserved.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++#include "util/posix/fork_and_spawn.h"
++
++#include <errno.h>
++#include <spawn.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/wait.h>
++#include <unistd.h>
++
++#include "base/check.h"
++#include "base/check_op.h"
++#include "base/logging.h"
++#include "base/posix/eintr_wrapper.h"
++#include "base/strings/stringprintf.h"
++#include "build/build_config.h"
++#include "util/posix/close_multiple.h"
++
++extern char** environ;
++
++namespace crashpad {
++
++namespace {
++
++#if BUILDFLAG(IS_APPLE)
++
++class PosixSpawnAttr {
++ public:
++  PosixSpawnAttr() {
++    PCHECK((errno = posix_spawnattr_init(&attr_)) == 0)
++        << "posix_spawnattr_init";
++  }
++
++  PosixSpawnAttr(const PosixSpawnAttr&) = delete;
++  PosixSpawnAttr& operator=(const PosixSpawnAttr&) = delete;
++
++  ~PosixSpawnAttr() {
++    PCHECK((errno = posix_spawnattr_destroy(&attr_)) == 0)
++        << "posix_spawnattr_destroy";
++  }
++
++  void SetFlags(short flags) {
++    PCHECK((errno = posix_spawnattr_setflags(&attr_, flags)) == 0)
++        << "posix_spawnattr_setflags";
++  }
++
++  const posix_spawnattr_t* Get() const { return &attr_; }
++
++ private:
++  posix_spawnattr_t attr_;
++};
++
++class PosixSpawnFileActions {
++ public:
++  PosixSpawnFileActions() {
++    PCHECK((errno = posix_spawn_file_actions_init(&file_actions_)) == 0)
++        << "posix_spawn_file_actions_init";
++  }
++
++  PosixSpawnFileActions(const PosixSpawnFileActions&) = delete;
++  PosixSpawnFileActions& operator=(const PosixSpawnFileActions&) = delete;
++
++  ~PosixSpawnFileActions() {
++    PCHECK((errno = posix_spawn_file_actions_destroy(&file_actions_)) == 0)
++        << "posix_spawn_file_actions_destroy";
++  }
++
++  void AddInheritedFileDescriptor(int fd) {
++    PCHECK((errno = posix_spawn_file_actions_addinherit_np(&file_actions_,
++                                                           fd)) == 0)
++        << "posix_spawn_file_actions_addinherit_np";
++  }
++
++  const posix_spawn_file_actions_t* Get() const { return &file_actions_; }
++
++ private:
++  posix_spawn_file_actions_t file_actions_;
++};
++
++#endif
++
++}  // namespace
++
++bool ForkAndSpawn(const std::vector<std::string>& argv,
++                  const std::vector<std::string>* envp,
++                  int preserve_fd,
++                  bool use_path,
++                  void (*child_function)()) {
++  // argv_c contains const char* pointers and is terminated by nullptr. This is
++  // suitable for passing to posix_spawn() or posix_spawnp(). Although argv_c is
++  // not used in the parent process, it must be built in the parent process
++  // because it’s unsafe to do so in the child.
++  std::vector<const char*> argv_c;
++  argv_c.reserve(argv.size() + 1);
++  for (const std::string& argument : argv) {
++    argv_c.push_back(argument.c_str());
++  }
++  argv_c.push_back(nullptr);
++
++  std::vector<const char*> envp_c;
++  if (envp) {
++    envp_c.reserve(envp->size() + 1);
++    for (const std::string& variable : *envp) {
++      envp_c.push_back(variable.c_str());
++    }
++    envp_c.push_back(nullptr);
++  }
++
++  // The three processes involved are parent, child, and grandchild. The child
++  // exits immediately after spawning the grandchild, so the grandchild becomes
++  // an orphan and its parent process ID becomes 1. This relieves the parent and
++  // child of the responsibility to reap the grandchild with waitpid() or
++  // similar. The grandchild is expected to outlive the parent process, so the
++  // parent shouldn’t be concerned with reaping it. This approach means that
++  // accidental early termination of the handler process will not result in a
++  // zombie process.
++  pid_t pid = fork();
++  if (pid < 0) {
++    PLOG(ERROR) << "fork";
++    return false;
++  }
++
++  if (pid == 0) {
++    // Child process.
++
++    if (child_function) {
++      child_function();
++    }
++
++    // Call setsid(), creating a new process group and a new session, both led
++    // by this process. The new process group has no controlling terminal. This
++    // disconnects it from signals generated by the parent process’ terminal.
++    //
++    // setsid() is done in the child instead of the grandchild so that the
++    // grandchild will not be a session leader. If it were a session leader, an
++    // accidental open() of a terminal device without O_NOCTTY would make that
++    // terminal the controlling terminal.
++    //
++    // It’s not desirable for the grandchild to have a controlling terminal. The
++    // grandchild manages its own lifetime, such as by monitoring clients on its
++    // own and exiting when it loses all clients and when it deems it
++    // appropraite to do so. It may serve clients in different process groups or
++    // sessions than its original client, and receiving signals intended for its
++    // original client’s process group could be harmful in that case.
++    PCHECK(setsid() != -1) << "setsid";
++
++    // &argv_c[0] is a pointer to a pointer to const char data, but because of
++    // how C (not C++) works, posix_spawn() and posix_spawnp() want a pointer to
++    // a const pointer to char data. They modifies neither the data nor the
++    // pointers, so the const_cast is safe.
++    char* const* argv_for_spawn = const_cast<char* const*>(argv_c.data());
++
++    // This cast is safe for the same reason that the argv_for_spawn cast is.
++    char* const* envp_for_spawn =
++        envp ? const_cast<char* const*>(envp_c.data()) : environ;
++
++#if BUILDFLAG(IS_APPLE)
++    PosixSpawnAttr attr;
++    attr.SetFlags(POSIX_SPAWN_CLOEXEC_DEFAULT);
++
++    PosixSpawnFileActions file_actions;
++    for (int fd = 0; fd <= STDERR_FILENO; ++fd) {
++      file_actions.AddInheritedFileDescriptor(fd);
++    }
++    file_actions.AddInheritedFileDescriptor(preserve_fd);
++
++    const posix_spawnattr_t* attr_p = attr.Get();
++    const posix_spawn_file_actions_t* file_actions_p = file_actions.Get();
++#else
++    CloseMultipleNowOrOnExec(STDERR_FILENO + 1, preserve_fd);
++
++    const posix_spawnattr_t* attr_p = nullptr;
++    const posix_spawn_file_actions_t* file_actions_p = nullptr;
++#endif
++
++    auto posix_spawn_fp = use_path ? posix_spawnp : posix_spawn;
++    if ((errno = posix_spawn_fp(&pid,
++                                argv_for_spawn[0],
++                                file_actions_p,
++                                attr_p,
++                                argv_for_spawn,
++                                envp_for_spawn)) != 0) {
++      PLOG(FATAL) << (use_path ? "posix_spawnp" : "posix_spawn");
++    }
++
++    // _exit() instead of exit(), because fork() was called.
++    _exit(EXIT_SUCCESS);
++  }
++
++  // waitpid() for the child, so that it does not become a zombie process. The
++  // child normally exits quickly.
++  //
++  // Failures from this point on may result in the accumulation of a zombie, but
++  // should not be considered fatal. Log only warnings, but don’t treat these
++  // failures as a failure of the function overall.
++  int status;
++  pid_t wait_pid = HANDLE_EINTR(waitpid(pid, &status, 0));
++  if (wait_pid == -1) {
++    PLOG(WARNING) << "waitpid";
++    return true;
++  }
++  DCHECK_EQ(wait_pid, pid);
++
++  if (WIFSIGNALED(status)) {
++    int sig = WTERMSIG(status);
++    LOG(WARNING) << base::StringPrintf(
++        "intermediate process terminated by signal %d (%s)%s",
++        sig,
++        strsignal(sig),
++        WCOREDUMP(status) ? " (core dumped)" : "");
++  } else if (!WIFEXITED(status)) {
++    LOG(WARNING) << base::StringPrintf(
++        "intermediate process: unknown termination 0x%x", status);
++  } else if (WEXITSTATUS(status) != EXIT_SUCCESS) {
++    LOG(WARNING) << "intermediate process exited with code "
++                 << WEXITSTATUS(status);
++  }
++
++  return true;
++}
++
++}  // namespace crashpad
+diff --git a/third_party/crashpad/crashpad/util/posix/double_fork_and_exec.h b/third_party/crashpad/crashpad/util/posix/fork_and_spawn.h
+similarity index 76%
+rename from third_party/crashpad/crashpad/util/posix/double_fork_and_exec.h
+rename to third_party/crashpad/crashpad/util/posix/fork_and_spawn.h
+index 02fc0f28f196b447132a2dcfaebdaaa5a916a38a..fc55aa3a37652e4ba18c66db90124abd9cad2e51 100644
+--- a/third_party/crashpad/crashpad/util/posix/double_fork_and_exec.h
++++ b/third_party/crashpad/crashpad/util/posix/fork_and_spawn.h
+@@ -12,8 +12,8 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
+-#ifndef CRASHPAD_UTIL_POSIX_DOUBLE_FORK_AND_EXEC_H_
+-#define CRASHPAD_UTIL_POSIX_DOUBLE_FORK_AND_EXEC_H_
++#ifndef CRASHPAD_UTIL_POSIX_FORK_AND_SPAWN_H_
++#define CRASHPAD_UTIL_POSIX_FORK_AND_SPAWN_H_
+ 
+ #include <string>
+ #include <vector>
+@@ -23,7 +23,7 @@ namespace crashpad {
+ //! \brief Executes a (grand-)child process.
+ //!
+ //! The grandchild process will be started through the
+-//! double-`fork()`-and-`execv()` pattern. This allows the grandchild to fully
++//! `fork()`-and-`posix_spawn()` pattern. This allows the grandchild to fully
+ //! disassociate from the parent. The grandchild will not be a member of the
+ //! parent’s process group or session and will not have a controlling terminal,
+ //! providing isolation from signals not intended for it. The grandchild’s
+@@ -37,7 +37,7 @@ namespace crashpad {
+ //! \param[in] argv The argument vector to start the grandchild process with.
+ //!     `argv[0]` is used as the path to the executable.
+ //! \param[in] envp A vector of environment variables of the form `var=value` to
+-//!     be passed to `execve()`. If this value is `nullptr`, the current
++//!     be passed to `posix_spawn()`. If this value is `nullptr`, the current
+ //!     environment is used.
+ //! \param[in] preserve_fd A file descriptor to be inherited by the grandchild
+ //!     process. This file descriptor is inherited in addition to the three file
+@@ -45,16 +45,13 @@ namespace crashpad {
+ //!     if no additional file descriptors are to be inherited.
+ //! \param[in] use_path Whether to consult the `PATH` environment variable when
+ //!     requested to start an executable at a non-absolute path. If `false`,
+-//!     `execv()`, which does not consult `PATH`, will be used. If `true`,
+-//!     `execvp()`, which does consult `PATH`, will be used.
++//!     `posix_spawn()`, which does not consult `PATH`, will be used. If `true`,
++//!     `posix_spawnp()`, which does consult `PATH`, will be used.
+ //! \param[in] child_function If not `nullptr`, this function will be called in
+-//!     the intermediate child process, prior to the second `fork()`. Take note
++//!     the intermediate child process, prior to the `posix_spawn()`. Take note
+ //!     that this function will run in the context of a forked process, and must
+ //!     be safe for that purpose.
+ //!
+-//! Setting both \a envp to a value other than `nullptr` and \a use_path to
+-//! `true` is not currently supported.
+-//!
+ //! \return `true` on success, and `false` on failure with a message logged.
+ //!     Only failures that occur in the parent process that indicate a definite
+ //!     failure to start the the grandchild are reported in the return value.
+@@ -63,12 +60,12 @@ namespace crashpad {
+ //!     terminating. The caller assumes the responsibility for detecting such
+ //!     failures, for example, by observing a failure to perform a successful
+ //!     handshake with the grandchild process.
+-bool DoubleForkAndExec(const std::vector<std::string>& argv,
+-                       const std::vector<std::string>* envp,
+-                       int preserve_fd,
+-                       bool use_path,
+-                       void (*child_function)());
++bool ForkAndSpawn(const std::vector<std::string>& argv,
++                  const std::vector<std::string>* envp,
++                  int preserve_fd,
++                  bool use_path,
++                  void (*child_function)());
+ 
+ }  // namespace crashpad
+ 
+-#endif  // CRASHPAD_UTIL_POSIX_DOUBLE_FORK_AND_EXEC_H_
++#endif  // CRASHPAD_UTIL_POSIX_FORK_AND_SPAWN_H_
