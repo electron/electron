@@ -358,7 +358,7 @@ describe('chromium feature', () => {
       });
     });
 
-    it('requesting persitent quota works', async () => {
+    it('requesting persistent quota works', async () => {
       const grantedBytes = await new Promise(resolve => {
         navigator.webkitPersistentStorage.requestQuota(1024 * 1024, resolve);
       });
@@ -459,7 +459,7 @@ describe('chromium feature', () => {
 
   describe('window.history', () => {
     describe('window.history.go(offset)', () => {
-      it('throws an exception when the argumnet cannot be converted to a string', () => {
+      it('throws an exception when the argument cannot be converted to a string', () => {
         expect(() => {
           window.history.go({ toString: null });
         }).to.throw('Cannot convert object to primitive value');
@@ -482,7 +482,7 @@ describe('chromium feature', () => {
       const sentence = `long sentence which will take at least a few seconds to
           utter so that it's possible to pause and resume before the end`;
       const utter = new SpeechSynthesisUtterance(sentence);
-      // Create a dummy utterence so that speech synthesis state
+      // Create a dummy utterance so that speech synthesis state
       // is initialized for later calls.
       speechSynthesis.speak(new SpeechSynthesisUtterance());
       speechSynthesis.cancel();

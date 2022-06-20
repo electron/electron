@@ -1013,7 +1013,7 @@ describe('session module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: 'very-temp-permision-handler',
+          partition: 'very-temp-permission-handler',
           nodeIntegration: true,
           contextIsolation: false
         }

@@ -87,7 +87,10 @@ if (is_linux) {
   # implementation. In future, this file can be extended to contain
   # gtk4 stubs to switch gtk version in runtime.
   generate_stubs("electron_gtk_stubs") {
-    sigs = [ "shell/browser/ui/electron_gtk.sigs" ]
+    sigs = [
+      "shell/browser/ui/electron_gdk_pixbuf.sigs",
+      "shell/browser/ui/electron_gtk.sigs",
+    ]
     extra_header = "shell/browser/ui/electron_gtk.fragment"
     output_name = "electron_gtk_stubs"
     public_deps = [ "//ui/gtk:gtk_config" ]
@@ -132,7 +135,7 @@ config("electron_lib_config") {
   include_dirs = [ "." ]
 }
 
-# We geneate the definitions twice here, once in //electron/electron.d.ts
+# We generate the definitions twice here, once in //electron/electron.d.ts
 # and once in $target_gen_dir
 # The one in $target_gen_dir is used for the actual TSC build later one
 # and the one in //electron/electron.d.ts is used by your IDE (vscode)

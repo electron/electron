@@ -639,7 +639,7 @@ step-electron-publish: &step-electron-publish
         echo 'Uploading Electron release distribution to Azure'
         script/release/uploaders/upload.py --verbose --UPLOAD_TO_STORAGE
       else
-        echo 'Uploading Electron release distribution to Github releases'
+        echo 'Uploading Electron release distribution to GitHub releases'
         script/release/uploaders/upload.py --verbose
       fi
 

@@ -10,7 +10,7 @@ import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-util
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-// session is not used here, the purpose is to make sure session is initalized
+// session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.
 // eslint-disable-next-line
 session

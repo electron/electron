@@ -160,7 +160,7 @@ class SystemPreferences
 
   std::string current_color_;
 
-  bool invertered_color_scheme_ = false;
+  bool inverted_color_scheme_ = false;
 
   bool high_contrast_color_scheme_ = false;
 

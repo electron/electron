@@ -133,7 +133,7 @@ const getPreviousPoint = async (point) => {
     console.log('error', error);
   }
 
-  // Otherwise, use the newest stable release that preceeds this branch.
+  // Otherwise, use the newest stable release that precedes this branch.
   // To reach that you may have to walk past >1 branch, e.g. to get past
   // 2-1-x which never had a stable release.
   let branch = currentBranch;

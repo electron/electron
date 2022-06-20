@@ -50,7 +50,7 @@ class KeyWeakMap {
       return v8::Local<v8::Object>::New(isolate, iter->second.second);
   }
 
-  // Whethere there is an object with |key| in this WeakMap.
+  // Whether there is an object with |key| in this WeakMap.
   bool Has(const K& key) const { return map_.find(key) != map_.end(); }
 
   // Returns all objects.

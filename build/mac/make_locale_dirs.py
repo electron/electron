@@ -4,7 +4,7 @@
 # Cocoa .app bundle. The presence of these empty directories is sufficient to
 # convince Cocoa that the application supports the named localization, even if
 # an InfoPlist.strings file is not provided. Chrome uses these empty locale
-# directoires for its helper executable bundles, which do not otherwise
+# directories for its helper executable bundles, which do not otherwise
 # require any direct Cocoa locale support.
 
 import os

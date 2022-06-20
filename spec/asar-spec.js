@@ -1677,7 +1677,7 @@ describe('asar package', function () {
   describe('graceful-fs module', function () {
     const gfs = require('graceful-fs');
 
-    it('recognize asar archvies', function () {
+    it('recognize asar archives', function () {
       const p = path.join(asarDir, 'a.asar', 'link1');
       expect(gfs.readFileSync(p).toString().trim()).to.equal('file1');
     });

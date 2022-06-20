@@ -136,7 +136,7 @@ app.whenReady().then(async function () {
     const chosen = dialog.showMessageBox(window, {
       type: 'warning',
       buttons: ['Close', 'Keep Waiting'],
-      message: 'Window is not responsing',
+      message: 'Window is not responding',
       detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
     });
     if (chosen === 0) window.destroy();

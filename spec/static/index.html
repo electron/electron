@@ -24,7 +24,7 @@
   // DO NOT MOVE, REMOVE OR EDIT THIS LINE
   require('chai').use(require('chai-as-promised'))
 
-  // Rediret all output to browser.
+  // Redirect all output to browser.
   const fakeConsole = {}
   for (const k in console) {
     if (console.hasOwnProperty(k) && k !== 'assert') {
