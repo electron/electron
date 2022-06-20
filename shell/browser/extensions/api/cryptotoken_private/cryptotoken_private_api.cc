@@ -255,18 +255,20 @@ CryptotokenPrivateCanAppIdGetAttestationFunction::Run() {
   return RespondNow(Error("no PermissionRequestManager"));
   // }
 
-  // // The created AttestationPermissionRequest deletes itself once complete.
-  // permission_request_manager->AddRequest(
-  //     web_contents->GetPrimaryMainFrame(),  // Extension API targets a particular
-  //     tab,
-  //                                    // so select the current main frame to
-  //                                    // handle the request.
-  //     NewAttestationPermissionRequest(
-  //         origin,
-  //         base::BindOnce(
-  //             &CryptotokenPrivateCanAppIdGetAttestationFunction::Complete,
-  //             this)));
-  // return RespondLater();
+#if 0  // TODO(MarshallOfSound): why is this commented out?
+  // The created AttestationPermissionRequest deletes itself once complete.
+  permission_request_manager->AddRequest(
+      web_contents->GetPrimaryMainFrame(),  // Extension API targets a particular
+      tab,
+                                     // so select the current main frame to
+                                     // handle the request.
+      NewAttestationPermissionRequest(
+          origin,
+          base::BindOnce(
+              &CryptotokenPrivateCanAppIdGetAttestationFunction::Complete,
+              this)));
+  return RespondLater();
+#endif
 #endif
 }
 
