@@ -92,9 +92,9 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
     upload_electron(release, dsym_zip, args)
 
-    dsym_snaphot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
-    shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snaphot_zip)
-    upload_electron(release, dsym_snaphot_zip, args)
+    dsym_snapshot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snapshot_zip)
+    upload_electron(release, dsym_snapshot_zip, args)
 
     libcxx_objects = get_zip_name('libcxx-objects', ELECTRON_VERSION)
     libcxx_objects_zip = os.path.join(OUT_DIR, libcxx_objects)
