@@ -325,7 +325,7 @@ index 1960430954d3f6459dce688493db5c42047567b0..00000000000000000000000000000000
 -}  // namespace crashpad
 diff --git a/third_party/crashpad/crashpad/util/posix/fork_and_spawn.cc b/third_party/crashpad/crashpad/util/posix/fork_and_spawn.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..c6a95bbfdcba45995b0034789c8bdb4423a25642
+index 0000000000000000000000000000000000000000..0f11eea3c61db156bc2d2322ab1c38ff44ac35bc
 --- /dev/null
 +++ b/third_party/crashpad/crashpad/util/posix/fork_and_spawn.cc
 @@ -0,0 +1,235 @@
