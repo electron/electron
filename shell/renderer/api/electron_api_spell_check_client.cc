@@ -4,6 +4,7 @@
 
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 
+#include <iterator>
 #include <memory>
 #include <set>
 #include <unordered_set>
@@ -229,7 +230,8 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
   v8::Local<v8::Value> args[] = {gin::ConvertToV8(isolate_, words),
                                  templ->GetFunction(context).ToLocalChecked()};
   // Call javascript with the words and the callback function
-  scope.spell_check_->Call(context, scope.provider_, 2, args).IsEmpty();
+  scope.spell_check_->Call(context, scope.provider_, std::size(args), args)
+      .IsEmpty();
 }
 
 // Returns whether or not the given string is a contraction.
