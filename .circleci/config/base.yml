@@ -481,6 +481,8 @@ step-fix-sync: &step-fix-sync
       cd src/third_party/angle
       git remote set-url origin https://chromium.googlesource.com/angle/angle.git
       git fetch
+      # Run update_depot_tools to make sure ninja gets downloaded
+      update_depot_tools
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
   run:
