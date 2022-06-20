@@ -706,7 +706,7 @@ void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
 
-void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
+void App::OnFinishLaunching(const base::Value& launch_info) {
 #if BUILDFLAG(IS_LINUX)
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
@@ -756,21 +756,21 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
-                                 const base::DictionaryValue& user_info,
-                                 const base::DictionaryValue& details) {
+                                 const base::Value& user_info,
+                                 const base::Value& details) {
   if (Emit("continue-activity", type, user_info, details)) {
     *prevent_default = true;
   }
 }
 
 void App::OnUserActivityWasContinued(const std::string& type,
-                                     const base::DictionaryValue& user_info) {
+                                     const base::Value& user_info) {
   Emit("activity-was-continued", type, user_info);
 }
 
 void App::OnUpdateUserActivityState(bool* prevent_default,
                                     const std::string& type,
-                                    const base::DictionaryValue& user_info) {
+                                    const base::Value& user_info) {
   if (Emit("update-activity-state", type, user_info)) {
     *prevent_default = true;
   }

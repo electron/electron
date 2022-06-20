@@ -12,9 +12,9 @@
 
 namespace electron {
 
-NSArray* ListValueToNSArray(const base::ListValue& value) {
+NSArray* ListValueToNSArray(const base::Value::List& value) {
   std::string json;
-  if (!base::JSONWriter::Write(value, &json))
+  if (!base::JSONWriter::Write(base::Value(value.Clone()), &json))
     return nil;
   NSData* jsonData = [NSData dataWithBytes:json.c_str() length:json.length()];
   id obj = [NSJSONSerialization JSONObjectWithData:jsonData
@@ -25,10 +25,10 @@ NSArray* ListValueToNSArray(const base::ListValue& value) {
   return obj;
 }
 
-base::ListValue NSArrayToListValue(NSArray* arr) {
-  base::ListValue result;
+base::Value NSArrayToValue(NSArray* arr) {
+  base::Value::List result;
   if (!arr)
-    return result;
+    return base::Value(std::move(result));
 
   for (id value in arr) {
     if ([value isKindOfClass:[NSString class]]) {
@@ -44,21 +44,20 @@ base::ListValue NSArrayToListValue(NSArray* arr) {
       else
         result.Append([value intValue]);
     } else if ([value isKindOfClass:[NSArray class]]) {
-      result.Append(NSArrayToListValue(value));
+      result.Append(NSArrayToValue(value));
     } else if ([value isKindOfClass:[NSDictionary class]]) {
-      result.Append(NSDictionaryToDictionaryValue(value));
+      result.Append(NSDictionaryToValue(value));
     } else {
       result.Append(base::SysNSStringToUTF8([value description]));
     }
   }
 
-  return result;
+  return base::Value(std::move(result));
 }
 
-NSDictionary* DictionaryValueToNSDictionary(
-    const base::DictionaryValue& value) {
+NSDictionary* DictionaryValueToNSDictionary(const base::Value::Dict& value) {
   std::string json;
-  if (!base::JSONWriter::Write(value, &json))
+  if (!base::JSONWriter::Write(base::Value(value.Clone()), &json))
     return nil;
   NSData* jsonData = [NSData dataWithBytes:json.c_str() length:json.length()];
   id obj = [NSJSONSerialization JSONObjectWithData:jsonData
@@ -69,10 +68,10 @@ NSDictionary* DictionaryValueToNSDictionary(
   return obj;
 }
 
-base::DictionaryValue NSDictionaryToDictionaryValue(NSDictionary* dict) {
-  base::DictionaryValue result;
+base::Value NSDictionaryToValue(NSDictionary* dict) {
+  base::Value::Dict result;
   if (!dict)
-    return result;
+    return base::Value(std::move(result));
 
   for (id key in dict) {
     std::string str_key = base::SysNSStringToUTF8(
@@ -80,28 +79,28 @@ base::DictionaryValue NSDictionaryToDictionaryValue(NSDictionary* dict) {
 
     id value = [dict objectForKey:key];
     if ([value isKindOfClass:[NSString class]]) {
-      result.SetKey(str_key, base::Value(base::SysNSStringToUTF8(value)));
+      result.Set(str_key, base::Value(base::SysNSStringToUTF8(value)));
     } else if ([value isKindOfClass:[NSNumber class]]) {
       const char* objc_type = [value objCType];
       if (strcmp(objc_type, @encode(BOOL)) == 0 ||
           strcmp(objc_type, @encode(char)) == 0)
-        result.SetKey(str_key, base::Value([value boolValue]));
+        result.Set(str_key, base::Value([value boolValue]));
       else if (strcmp(objc_type, @encode(double)) == 0 ||
                strcmp(objc_type, @encode(float)) == 0)
-        result.SetKey(str_key, base::Value([value doubleValue]));
+        result.Set(str_key, base::Value([value doubleValue]));
       else
-        result.SetKey(str_key, base::Value([value intValue]));
+        result.Set(str_key, base::Value([value intValue]));
     } else if ([value isKindOfClass:[NSArray class]]) {
-      result.SetKey(str_key, NSArrayToListValue(value));
+      result.Set(str_key, NSArrayToValue(value));
     } else if ([value isKindOfClass:[NSDictionary class]]) {
-      result.SetKey(str_key, NSDictionaryToDictionaryValue(value));
+      result.Set(str_key, NSDictionaryToValue(value));
     } else {
-      result.SetKey(str_key,
-                    base::Value(base::SysNSStringToUTF8([value description])));
+      result.Set(str_key,
+                 base::Value(base::SysNSStringToUTF8([value description])));
     }
   }
 
-  return result;
+  return base::Value(std::move(result));
 }
 
 }  // namespace electron

@@ -147,10 +147,11 @@ void SystemPreferences::PostNotification(const std::string& name,
 
   NSDistributedNotificationCenter* center =
       [NSDistributedNotificationCenter defaultCenter];
-  [center postNotificationName:base::SysUTF8ToNSString(name)
-                        object:nil
-                      userInfo:DictionaryValueToNSDictionary(user_info)
-            deliverImmediately:immediate];
+  [center
+      postNotificationName:base::SysUTF8ToNSString(name)
+                    object:nil
+                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())
+        deliverImmediately:immediate];
 }
 
 int SystemPreferences::SubscribeNotification(
@@ -169,9 +170,10 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
 void SystemPreferences::PostLocalNotification(const std::string& name,
                                               base::DictionaryValue user_info) {
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
-  [center postNotificationName:base::SysUTF8ToNSString(name)
-                        object:nil
-                      userInfo:DictionaryValueToNSDictionary(user_info)];
+  [center
+      postNotificationName:base::SysUTF8ToNSString(name)
+                    object:nil
+                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())];
 }
 
 int SystemPreferences::SubscribeLocalNotification(
@@ -191,9 +193,10 @@ void SystemPreferences::PostWorkspaceNotification(
     base::DictionaryValue user_info) {
   NSNotificationCenter* center =
       [[NSWorkspace sharedWorkspace] notificationCenter];
-  [center postNotificationName:base::SysUTF8ToNSString(name)
-                        object:nil
-                      userInfo:DictionaryValueToNSDictionary(user_info)];
+  [center
+      postNotificationName:base::SysUTF8ToNSString(name)
+                    object:nil
+                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())];
 }
 
 int SystemPreferences::SubscribeWorkspaceNotification(
@@ -240,8 +243,7 @@ int SystemPreferences::DoSubscribeNotification(
                 if (notification.userInfo) {
                   copied_callback.Run(
                       base::SysNSStringToUTF8(notification.name),
-                      NSDictionaryToDictionaryValue(notification.userInfo),
-                      object);
+                      NSDictionaryToValue(notification.userInfo), object);
                 } else {
                   copied_callback.Run(
                       base::SysNSStringToUTF8(notification.name),
@@ -283,10 +285,10 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
                             net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
     return gin::ConvertToV8(isolate,
-                            NSArrayToListValue([defaults arrayForKey:key]));
+                            NSArrayToValue([defaults arrayForKey:key]));
   } else if (type == "dictionary") {
-    return gin::ConvertToV8(isolate, NSDictionaryToDictionaryValue(
-                                         [defaults dictionaryForKey:key]));
+    return gin::ConvertToV8(
+        isolate, NSDictionaryToValue([defaults dictionaryForKey:key]));
   } else {
     return v8::Undefined(isolate);
   }
@@ -299,7 +301,7 @@ void SystemPreferences::RegisterDefaults(gin::Arguments* args) {
     args->ThrowError();
   } else {
     @try {
-      NSDictionary* dict = DictionaryValueToNSDictionary(value);
+      NSDictionary* dict = DictionaryValueToNSDictionary(value.GetDict());
       for (id key in dict) {
         id value = [dict objectForKey:key];
         if ([value isKindOfClass:[NSNull class]] || value == nil) {
@@ -359,17 +361,17 @@ void SystemPreferences::SetUserDefault(const std::string& name,
       }
     }
   } else if (type == "array") {
-    base::ListValue value;
-    if (args->GetNext(&value)) {
-      if (NSArray* array = ListValueToNSArray(value)) {
+    base::Value value;
+    if (args->GetNext(&value) && value.is_list()) {
+      if (NSArray* array = ListValueToNSArray(value.GetList())) {
         [defaults setObject:array forKey:key];
         return;
       }
     }
   } else if (type == "dictionary") {
-    base::DictionaryValue value;
-    if (args->GetNext(&value)) {
-      if (NSDictionary* dict = DictionaryValueToNSDictionary(value)) {
+    base::Value value;
+    if (args->GetNext(&value) && value.is_dict()) {
+      if (NSDictionary* dict = DictionaryValueToNSDictionary(value.GetDict())) {
         [defaults setObject:dict forKey:key];
         return;
       }

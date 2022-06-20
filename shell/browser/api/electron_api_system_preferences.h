@@ -67,11 +67,11 @@ class SystemPreferences
   void OnSysColorChange() override;
 
   // BrowserObserver:
-  void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
+  void OnFinishLaunching(const base::Value& launch_info) override;
 
 #elif BUILDFLAG(IS_MAC)
   using NotificationCallback = base::RepeatingCallback<
-      void(const std::string&, base::DictionaryValue, const std::string&)>;
+      void(const std::string&, base::Value, const std::string&)>;
 
   void PostNotification(const std::string& name,
                         base::DictionaryValue user_info,

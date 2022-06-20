@@ -242,7 +242,7 @@ void Browser::SetUserActivity(const std::string& type,
 
   [[AtomApplication sharedApplication]
       setCurrentActivity:base::SysUTF8ToNSString(type)
-            withUserInfo:DictionaryValueToNSDictionary(user_info)
+            withUserInfo:DictionaryValueToNSDictionary(user_info.GetDict())
           withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
 }
 
@@ -264,7 +264,7 @@ void Browser::UpdateCurrentActivity(const std::string& type,
                                     base::DictionaryValue user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
-               withUserInfo:DictionaryValueToNSDictionary(user_info)];
+               withUserInfo:DictionaryValueToNSDictionary(user_info.GetDict())];
 }
 
 bool Browser::WillContinueUserActivity(const std::string& type) {
@@ -281,8 +281,8 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::DictionaryValue user_info,
-                                   base::DictionaryValue details) {
+                                   base::Value user_info,
+                                   base::Value details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnContinueUserActivity(&prevent_default, type, user_info, details);
@@ -290,13 +290,13 @@ bool Browser::ContinueUserActivity(const std::string& type,
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       base::DictionaryValue user_info) {
+                                       base::Value user_info) {
   for (BrowserObserver& observer : observers_)
     observer.OnUserActivityWasContinued(type, user_info);
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      base::DictionaryValue user_info) {
+                                      base::Value user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
@@ -486,7 +486,8 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
 }
 
 void Browser::ShowAboutPanel() {
-  NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
+  NSDictionary* options =
+      DictionaryValueToNSDictionary(about_panel_options_.GetDict());
 
   // Credits must be a NSAttributedString instead of NSString
   NSString* credits = (NSString*)options[@"Credits"];
