@@ -80,7 +80,10 @@ if (is_linux) {
   }
 
   generate_stubs("electron_gtk_stubs") {
-    sigs = [ "shell/browser/ui/electron_gtk.sigs" ]
+    sigs = [
+      "shell/browser/ui/electron_gdk_pixbuf.sigs",
+      "shell/browser/ui/electron_gtk.sigs",
+    ]
     extra_header = "shell/browser/ui/electron_gtk.fragment"
     output_name = "electron_gtk_stubs"
     public_deps = [ "//ui/gtk:gtk_config" ]
