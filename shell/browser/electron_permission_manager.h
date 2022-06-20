@@ -15,7 +15,6 @@
 #include "shell/browser/electron_browser_context.h"
 
 namespace base {
-class DictionaryValue;
 class Value;
 }  // namespace base
 
@@ -67,7 +66,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                     content::RenderFrameHost* render_frame_host,
                                     const GURL& requesting_origin,
                                     bool user_gesture,
-                                    const base::DictionaryValue* details,
+                                    base::Value details,
                                     StatusCallback callback);
   void RequestPermissions(const std::vector<blink::PermissionType>& permissions,
                           content::RenderFrameHost* render_frame_host,
@@ -78,7 +77,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       const std::vector<blink::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
       bool user_gesture,
-      const base::DictionaryValue* details,
+      base::Value details,
       StatusesCallback callback);
 
   blink::mojom::PermissionStatus GetPermissionStatusForCurrentDocument(
@@ -88,7 +87,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   bool CheckPermissionWithDetails(blink::PermissionType permission,
                                   content::RenderFrameHost* render_frame_host,
                                   const GURL& requesting_origin,
-                                  const base::DictionaryValue* details) const;
+                                  base::Value details) const;
 
   bool CheckDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
