@@ -706,13 +706,13 @@ void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
 
-void App::OnFinishLaunching(const base::Value& launch_info) {
+void App::OnFinishLaunching(base::Value::Dict launch_info) {
 #if BUILDFLAG(IS_LINUX)
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
-  Emit("ready", launch_info);
+  Emit("ready", base::Value(std::move(launch_info)));
 }
 
 void App::OnPreMainMessageLoopRun() {
@@ -756,22 +756,23 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
-                                 const base::Value& user_info,
-                                 const base::Value& details) {
-  if (Emit("continue-activity", type, user_info, details)) {
+                                 base::Value::Dict user_info,
+                                 base::Value::Dict details) {
+  if (Emit("continue-activity", type, base::Value(std::move(user_info)),
+           base::Value(std::move(details)))) {
     *prevent_default = true;
   }
 }
 
 void App::OnUserActivityWasContinued(const std::string& type,
-                                     const base::Value& user_info) {
-  Emit("activity-was-continued", type, user_info);
+                                     base::Value::Dict user_info) {
+  Emit("activity-was-continued", type, base::Value(std::move(user_info)));
 }
 
 void App::OnUpdateUserActivityState(bool* prevent_default,
                                     const std::string& type,
-                                    const base::Value& user_info) {
-  if (Emit("update-activity-state", type, user_info)) {
+                                    base::Value::Dict user_info) {
+  if (Emit("update-activity-state", type, base::Value(std::move(user_info)))) {
     *prevent_default = true;
   }
 }

@@ -191,14 +191,16 @@ class Browser : public WindowListObserver {
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-                            base::Value user_info,
-                            base::Value details);
+                            base::Value::Dict user_info,
+                            base::Value::Dict details);
 
   // Indicates that an activity was continued on another device.
-  void UserActivityWasContinued(const std::string& type, base::Value user_info);
+  void UserActivityWasContinued(const std::string& type,
+                                base::Value::Dict user_info);
 
   // Gives an opportunity to update the Handoff payload.
-  bool UpdateUserActivityState(const std::string& type, base::Value user_info);
+  bool UpdateUserActivityState(const std::string& type,
+                               base::Value::Dict user_info);
 
   // Bounce the dock icon.
   enum class BounceType{
@@ -286,7 +288,7 @@ class Browser : public WindowListObserver {
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
-  void DidFinishLaunching(base::Value launch_info);
+  void DidFinishLaunching(base::Value::Dict launch_info);
 
   void OnAccessibilitySupportChanged();
 

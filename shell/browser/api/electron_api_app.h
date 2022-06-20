@@ -96,7 +96,7 @@ class App : public ElectronBrowserClient::Delegate,
   void OnOpenURL(const std::string& url) override;
   void OnActivate(bool has_visible_windows) override;
   void OnWillFinishLaunching() override;
-  void OnFinishLaunching(const base::Value& launch_info) override;
+  void OnFinishLaunching(base::Value::Dict launch_info) override;
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
   void OnPreCreateThreads() override;
@@ -107,13 +107,13 @@ class App : public ElectronBrowserClient::Delegate,
                                        const std::string& error) override;
   void OnContinueUserActivity(bool* prevent_default,
                               const std::string& type,
-                              const base::Value& user_info,
-                              const base::Value& details) override;
+                              base::Value::Dict user_info,
+                              base::Value::Dict details) override;
   void OnUserActivityWasContinued(const std::string& type,
-                                  const base::Value& user_info) override;
+                                  base::Value::Dict user_info) override;
   void OnUpdateUserActivityState(bool* prevent_default,
                                  const std::string& type,
-                                 const base::Value& user_info) override;
+                                 base::Value::Dict user_info) override;
   void OnNewWindowForTab() override;
   void OnDidBecomeActive() override;
 #endif

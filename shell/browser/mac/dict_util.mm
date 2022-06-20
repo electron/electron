@@ -25,10 +25,10 @@ NSArray* ListValueToNSArray(const base::Value::List& value) {
   return obj;
 }
 
-base::Value NSArrayToValue(NSArray* arr) {
+base::Value::List NSArrayToValue(NSArray* arr) {
   base::Value::List result;
   if (!arr)
-    return base::Value(std::move(result));
+    return result;
 
   for (id value in arr) {
     if ([value isKindOfClass:[NSString class]]) {
@@ -52,7 +52,7 @@ base::Value NSArrayToValue(NSArray* arr) {
     }
   }
 
-  return base::Value(std::move(result));
+  return result;
 }
 
 NSDictionary* DictionaryValueToNSDictionary(const base::Value::Dict& value) {
@@ -68,10 +68,10 @@ NSDictionary* DictionaryValueToNSDictionary(const base::Value::Dict& value) {
   return obj;
 }
 
-base::Value NSDictionaryToValue(NSDictionary* dict) {
+base::Value::Dict NSDictionaryToValue(NSDictionary* dict) {
   base::Value::Dict result;
   if (!dict)
-    return base::Value(std::move(result));
+    return result;
 
   for (id key in dict) {
     std::string str_key = base::SysNSStringToUTF8(
@@ -100,7 +100,7 @@ base::Value NSDictionaryToValue(NSDictionary* dict) {
     }
   }
 
-  return base::Value(std::move(result));
+  return result;
 }
 
 }  // namespace electron

@@ -281,25 +281,27 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::Value user_info,
-                                   base::Value details) {
+                                   base::Value::Dict user_info,
+                                   base::Value::Dict details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnContinueUserActivity(&prevent_default, type, user_info, details);
+    observer.OnContinueUserActivity(&prevent_default, type, user_info.Clone(),
+                                    details.Clone());
   return prevent_default;
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       base::Value user_info) {
+                                       base::Value::Dict user_info) {
   for (BrowserObserver& observer : observers_)
-    observer.OnUserActivityWasContinued(type, user_info);
+    observer.OnUserActivityWasContinued(type, user_info.Clone());
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      base::Value user_info) {
+                                      base::Value::Dict user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
+    observer.OnUpdateUserActivityState(&prevent_default, type,
+                                       user_info.Clone());
   return prevent_default;
 }
 

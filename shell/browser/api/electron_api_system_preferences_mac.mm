@@ -243,7 +243,8 @@ int SystemPreferences::DoSubscribeNotification(
                 if (notification.userInfo) {
                   copied_callback.Run(
                       base::SysNSStringToUTF8(notification.name),
-                      NSDictionaryToValue(notification.userInfo), object);
+                      base::Value(NSDictionaryToValue(notification.userInfo)),
+                      object);
                 } else {
                   copied_callback.Run(
                       base::SysNSStringToUTF8(notification.name),
@@ -284,11 +285,12 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
     return gin::ConvertToV8(isolate,
                             net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
-    return gin::ConvertToV8(isolate,
-                            NSArrayToValue([defaults arrayForKey:key]));
+    return gin::ConvertToV8(
+        isolate, base::Value(NSArrayToValue([defaults arrayForKey:key])));
   } else if (type == "dictionary") {
     return gin::ConvertToV8(
-        isolate, NSDictionaryToValue([defaults dictionaryForKey:key]));
+        isolate,
+        base::Value(NSDictionaryToValue([defaults dictionaryForKey:key])));
   } else {
     return v8::Undefined(isolate);
   }

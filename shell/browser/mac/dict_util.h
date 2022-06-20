@@ -12,9 +12,9 @@
 namespace electron {
 
 NSArray* ListValueToNSArray(const base::Value::List& value);
-base::Value NSArrayToValue(NSArray* arr);
+base::Value::List NSArrayToValue(NSArray* arr);
 NSDictionary* DictionaryValueToNSDictionary(const base::Value::Dict& value);
-base::Value NSDictionaryToValue(NSDictionary* dict);
+base::Value::Dict NSDictionaryToValue(NSDictionary* dict);
 
 }  // namespace electron
 
