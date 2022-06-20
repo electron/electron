@@ -31,7 +31,4 @@ declare_args() {
 
   # Enable Spellchecker support
   enable_builtin_spellchecker = true
-
-  # Undocumented Windows dark mode API
-  enable_win_dark_mode_window_ui = false
 }
