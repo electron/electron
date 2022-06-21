@@ -59,10 +59,10 @@ index ad366d0fd4c3a637d75a102ab56984f0d01bfc04..d63eb133fd4bab1ea309bb8c742acf88
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index b954f8dde00d4f5257223c464e9145a6bef48900..b58999f295586a61bcc2648488a8b28f15d80a7e 100644
+index b954f8dde00d4f5257223c464e9145a6bef48900..ee9da826014d3aae9675daac6cdbc0f447a14efd 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -56,7 +56,12 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
+@@ -56,7 +56,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
                                 CanActiveMediaSessionControllerReceiveEvents();
  
    // Tell the underlying MediaKeysListener to listen for the key.
@@ -71,12 +71,11 @@ index b954f8dde00d4f5257223c464e9145a6bef48900..b58999f295586a61bcc2648488a8b28f
 +#if BUILDFLAG(IS_MAC)
 +      !media_key_handling_enabled_ &&
 +#endif  // BUILDFLAG(IS_MAC)
-+      should_start_watching &&
-+      media_keys_listener_ &&
++      should_start_watching && media_keys_listener_ &&
        !media_keys_listener_->StartWatchingMediaKey(key_code)) {
      return false;
    }
-@@ -239,18 +244,18 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+@@ -239,6 +243,7 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
  #endif
  
    if (system_media_controls_) {
@@ -84,19 +83,22 @@ index b954f8dde00d4f5257223c464e9145a6bef48900..b58999f295586a61bcc2648488a8b28f
      system_media_controls_->AddObserver(this);
      system_media_controls_notifier_ =
          std::make_unique<SystemMediaControlsNotifier>(
-             system_media_controls_.get());
--  } else {
--    // If we can't access system media controls, then directly listen for media
--    // key keypresses instead.
--    media_keys_listener_ = ui::MediaKeysListener::Create(
--        this, ui::MediaKeysListener::Scope::kGlobal);
--    DCHECK(media_keys_listener_);
+@@ -251,6 +256,19 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+     DCHECK(media_keys_listener_);
    }
  
-+  // Directly listen for media key keypresses when using GlobalShortcuts.
-+  media_keys_listener_ = ui::MediaKeysListener::Create(
-+    this, ui::MediaKeysListener::Scope::kGlobal);
-+  DCHECK(media_keys_listener_);
++#if BUILDFLAG(IS_MAC)
++  // Chromium's implementation of SystemMediaControls falls
++  // down into MPRemoteCommandCenter, which makes it such that an app will not
++  // will not receive remote control events until it begins playing audio.
++  // If there's not already a MediaKeysListener instance, create one so
++  // that globalShortcuts work correctly.
++  if (!media_keys_listener_) {
++    media_keys_listener_ = ui::MediaKeysListener::Create(
++        this, ui::MediaKeysListener::Scope::kGlobal);
++    DCHECK(media_keys_listener_);
++  }
++#endif
 +
    EnsureAuxiliaryServices();
  }
