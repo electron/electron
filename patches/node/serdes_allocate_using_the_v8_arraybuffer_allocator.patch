@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Rose <japthorp@slack-corp.com>
 Date: Tue, 21 Jun 2022 10:04:21 -0700
-Subject: [serdes] allocate using the v8 arraybuffer allocator
+Subject: allocate using the v8 arraybuffer allocator
 
 This is required when the v8 sandbox is enabled, otherwise v8 will crash when
 calling the `v8.serialize()` method from Node.js.
