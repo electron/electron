@@ -12,9 +12,10 @@
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
-"abstract-socket@github:saghul/node-abstractsocket#35b1b1491fabc04899bde5be3428abf5cf9cd528":
-  version "2.1.0"
-  resolved "https://codeload.github.com/saghul/node-abstractsocket/tar.gz/35b1b1491fabc04899bde5be3428abf5cf9cd528"
+abstract-socket@^2.0.0:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/abstract-socket/-/abstract-socket-2.1.1.tgz#243a7e6e6ff65bb9eab16a22fa90699b91e528f7"
+  integrity sha512-YZJizsvS1aBua5Gd01woe4zuyYBGgSMeqDOB6/ChwdTI904KP6QGtJswXl4hcqWxbz86hQBe++HWV0hF1aGUtA==
   dependencies:
     bindings "^1.2.1"
     nan "^2.12.1"
@@ -212,9 +213,9 @@ dashdash@^1.12.0:
   dependencies:
     assert-plus "^1.0.0"
 
-"dbus-native@github:jkleinsc/dbus-native#master":
+"dbus-native@github:nornagon/dbus-native#master":
   version "0.4.0"
-  resolved "https://codeload.github.com/jkleinsc/dbus-native/tar.gz/bb7cba24533fac70f81b92f8357211a84f6e0c1f"
+  resolved "https://codeload.github.com/nornagon/dbus-native/tar.gz/b90ed62d0b5cb93909173c3e0551d9bff0602a90"
   dependencies:
     "@nornagon/put" "0.0.8"
     event-stream "^4.0.0"
@@ -224,7 +225,7 @@ dashdash@^1.12.0:
     safe-buffer "^5.1.1"
     xml2js "^0.4.17"
   optionalDependencies:
-    abstract-socket "github:saghul/node-abstractsocket#35b1b1491fabc04899bde5be3428abf5cf9cd528"
+    abstract-socket "^2.0.0"
 
 debug@2.6.9, debug@^2.2.0:
   version "2.6.9"
@@ -685,9 +686,9 @@ ms@^2.1.1:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.1.tgz#30a5864eb3ebb0a66f2ebe6d727af06a09d86e0a"
   integrity sha512-tgp+dl5cGk28utYktBsrFqA7HKgrhgPsg6Z/EfhWI4gl1Hwq8B/GmY/0oXZ6nF8hDVesS/FpnYaD/kOWhYQvyg==
 
-nan@2.x, nan@^2.12.1, nan@nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac:
-  version "2.15.0"
-  resolved "https://codeload.github.com/nodejs/nan/tar.gz/16fa32231e2ccd89d2804b3f765319128b20c4ac"
+nan@2.x, nan@^2.12.1, "nan@github:jkleinsc/nan#remove_accessor_signature":
+  version "2.16.0"
+  resolved "https://codeload.github.com/jkleinsc/nan/tar.gz/6a2f95a6a2209d8aa7542fb18099fd808a802059"
 
 oauth-sign@~0.9.0:
   version "0.9.0"
