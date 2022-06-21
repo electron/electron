@@ -146,8 +146,6 @@ function assetsForVersion (version, validatingRelease) {
     `libcxx-objects-${version}-linux-arm64.zip`,
     `libcxx-objects-${version}-linux-armv7l.zip`,
     `libcxx-objects-${version}-linux-x64.zip`,
-    `libcxx-objects-${version}-darwin-x64.zip`,
-    `libcxx-objects-${version}-darwin-arm64.zip`,
     `ffmpeg-${version}-darwin-x64.zip`,
     `ffmpeg-${version}-darwin-arm64.zip`,
     `ffmpeg-${version}-linux-arm64.zip`,

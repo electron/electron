@@ -794,8 +794,8 @@ step-maybe-generate-libcxx: &step-maybe-generate-libcxx
       if [ "`uname`" == "Linux" ]; then
         ninja -C out/Default electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
         ninja -C out/Default electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
-      ninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
 
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
