@@ -94,13 +94,7 @@ def main():
 
     dsym_snapshot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snapshot_zip)
-    upload_electron(release, dsym_snapshot_zip, args)
-
-    libcxx_objects = get_zip_name('libcxx-objects', ELECTRON_VERSION)
-    libcxx_objects_zip = os.path.join(OUT_DIR, libcxx_objects)
-    shutil.copy2(os.path.join(OUT_DIR, 'libcxx_objects.zip'),
-        libcxx_objects_zip)
-    upload_electron(release, libcxx_objects_zip, args)
+    upload_electron(release, dsym_snapshot_zip, args)    
   elif PLATFORM == 'win32':
     if get_target_arch() != 'ia32':
       pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
@@ -111,6 +105,7 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'debug.zip'), debug_zip)
     upload_electron(release, debug_zip, args)
 
+    # Upload libcxx_objects.zip for linux only
     libcxx_objects = get_zip_name('libcxx-objects', ELECTRON_VERSION)
     libcxx_objects_zip = os.path.join(OUT_DIR, libcxx_objects)
     shutil.copy2(os.path.join(OUT_DIR, 'libcxx_objects.zip'),
