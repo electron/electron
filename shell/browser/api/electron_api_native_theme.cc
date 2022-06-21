@@ -174,4 +174,4 @@ bool Converter<ui::NativeTheme::ThemeSource>::FromV8(
 
 }  // namespace gin
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_native_theme, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_native_theme, Initialize)
