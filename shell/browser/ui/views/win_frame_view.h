@@ -13,6 +13,7 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/win_caption_button.h"
+#include "shell/browser/ui/views/win_caption_button_container.h"
 
 namespace electron {
 
@@ -43,6 +44,9 @@ class WinFrameView : public FramelessView {
 
   NativeWindowViews* window() const { return window_; }
   views::Widget* frame() const { return frame_; }
+  WinCaptionButtonContainer* caption_button_container() {
+    return caption_button_container_;
+  }
 
   bool IsMaximized() const;
 
