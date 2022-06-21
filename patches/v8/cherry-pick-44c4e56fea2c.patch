@@ -1,0 +1,182 @@
+From 44c4e56fea2cd45b5478e5671c84d91a70f0b6f0 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Tue, 03 May 2022 13:26:32 -0700
+Subject: [PATCH] Merged: [weakrefs] Set unregister_token to undefined when unregistering
+
+(cherry picked from commit dd3289d7945dac855d1287cf4ea248883e908d54)
+
+Bug: chromium:1321078
+Change-Id: Ic7537cc5101b35018911c27a81e9b0e0a7da154b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3695262
+Reviewed-by: Dominik Inführ <dinfuehr@chromium.org>
+Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.2@{#16}
+Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
+Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
+---
+
+diff --git a/src/heap/mark-compact.cc b/src/heap/mark-compact.cc
+index 49a05b6..ef0b67c 100644
+--- a/src/heap/mark-compact.cc
++++ b/src/heap/mark-compact.cc
+@@ -3054,14 +3054,11 @@
+       // unregister_token field set to undefined when processing the first
+       // WeakCell. Like above, we're modifying pointers during GC, so record the
+       // slots.
+-      HeapObject undefined = ReadOnlyRoots(isolate()).undefined_value();
+       JSFinalizationRegistry finalization_registry =
+           JSFinalizationRegistry::cast(weak_cell.finalization_registry());
+       finalization_registry.RemoveUnregisterToken(
+           JSReceiver::cast(unregister_token), isolate(),
+-          [undefined](WeakCell matched_cell) {
+-            matched_cell.set_unregister_token(undefined);
+-          },
++          JSFinalizationRegistry::kKeepMatchedCellsInRegistry,
+           gc_notify_updated_slot);
+     } else {
+       // The unregister_token is alive.
+diff --git a/src/objects/js-weak-refs-inl.h b/src/objects/js-weak-refs-inl.h
+index acce7b7..76e6e07 100644
+--- a/src/objects/js-weak-refs-inl.h
++++ b/src/objects/js-weak-refs-inl.h
+@@ -60,16 +60,14 @@
+   // key. Each WeakCell will be in the "active_cells" or "cleared_cells" list of
+   // its FinalizationRegistry; remove it from there.
+   return finalization_registry->RemoveUnregisterToken(
+-      *unregister_token, isolate,
+-      [isolate](WeakCell matched_cell) {
+-        matched_cell.RemoveFromFinalizationRegistryCells(isolate);
+-      },
++      *unregister_token, isolate, kRemoveMatchedCellsFromRegistry,
+       [](HeapObject, ObjectSlot, Object) {});
+ }
+ 
+-template <typename MatchCallback, typename GCNotifyUpdatedSlotCallback>
++template <typename GCNotifyUpdatedSlotCallback>
+ bool JSFinalizationRegistry::RemoveUnregisterToken(
+-    JSReceiver unregister_token, Isolate* isolate, MatchCallback match_callback,
++    JSReceiver unregister_token, Isolate* isolate,
++    RemoveUnregisterTokenMode removal_mode,
+     GCNotifyUpdatedSlotCallback gc_notify_updated_slot) {
+   // This method is called from both FinalizationRegistry#unregister and for
+   // removing weakly-held dead unregister tokens. The latter is during GC so
+@@ -107,7 +105,16 @@
+     value = weak_cell.key_list_next();
+     if (weak_cell.unregister_token() == unregister_token) {
+       // weak_cell has the same unregister token; remove it from the key list.
+-      match_callback(weak_cell);
++      switch (removal_mode) {
++        case kRemoveMatchedCellsFromRegistry:
++          weak_cell.RemoveFromFinalizationRegistryCells(isolate);
++          break;
++        case kKeepMatchedCellsInRegistry:
++          // Do nothing.
++          break;
++      }
++      // Clear unregister token-related fields.
++      weak_cell.set_unregister_token(undefined);
+       weak_cell.set_key_list_prev(undefined);
+       weak_cell.set_key_list_next(undefined);
+       was_present = true;
+diff --git a/src/objects/js-weak-refs.h b/src/objects/js-weak-refs.h
+index 57f765b..f678234 100644
+--- a/src/objects/js-weak-refs.h
++++ b/src/objects/js-weak-refs.h
+@@ -43,10 +43,14 @@
+   // it modifies slots in key_map and WeakCells and the normal write barrier is
+   // disabled during GC, we need to tell the GC about the modified slots via the
+   // gc_notify_updated_slot function.
+-  template <typename MatchCallback, typename GCNotifyUpdatedSlotCallback>
++  enum RemoveUnregisterTokenMode {
++    kRemoveMatchedCellsFromRegistry,
++    kKeepMatchedCellsInRegistry
++  };
++  template <typename GCNotifyUpdatedSlotCallback>
+   inline bool RemoveUnregisterToken(
+       JSReceiver unregister_token, Isolate* isolate,
+-      MatchCallback match_callback,
++      RemoveUnregisterTokenMode removal_mode,
+       GCNotifyUpdatedSlotCallback gc_notify_updated_slot);
+ 
+   // Returns true if the cleared_cells list is non-empty.
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 4616ef7..d161461 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -6981,7 +6981,7 @@
+   }
+ 
+   // weak_cell is now removed from the unregister token map, so clear its
+-  // unregister token-related fields for heap verification.
++  // unregister token-related fields.
+   weak_cell.set_unregister_token(undefined);
+   weak_cell.set_key_list_prev(undefined);
+   weak_cell.set_key_list_next(undefined);
+diff --git a/test/cctest/test-js-weak-refs.cc b/test/cctest/test-js-weak-refs.cc
+index a2c3a3e..39c3aee 100644
+--- a/test/cctest/test-js-weak-refs.cc
++++ b/test/cctest/test-js-weak-refs.cc
+@@ -853,9 +853,7 @@
+ 
+   finalization_registry->RemoveUnregisterToken(
+       JSReceiver::cast(*token2), isolate,
+-      [undefined](WeakCell matched_cell) {
+-        matched_cell.set_unregister_token(*undefined);
+-      },
++      JSFinalizationRegistry::kKeepMatchedCellsInRegistry,
+       [](HeapObject, ObjectSlot, Object) {});
+ 
+   // Both weak_cell2a and weak_cell2b remain on the weak cell chains.
+@@ -1025,5 +1023,52 @@
+   EmptyMessageQueues(isolate);
+ }
+ 
++TEST(UnregisteredAndUnclearedCellHeapVerifier) {
++  if (!FLAG_incremental_marking) return;
++  ManualGCScope manual_gc_scope;
++#ifdef VERIFY_HEAP
++  FLAG_verify_heap = true;
++#endif
++
++  CcTest::InitializeVM();
++  v8::Isolate* isolate = CcTest::isolate();
++  Heap* heap = CcTest::heap();
++  v8::HandleScope outer_scope(isolate);
++
++  {
++    // Make a new FinalizationRegistry and register an object with a token.
++    v8::HandleScope scope(isolate);
++    CompileRun(
++        "var token = {}; "
++        "var registry = new FinalizationRegistry(function () {}); "
++        "registry.register({}, undefined, token);");
++  }
++
++  // Start incremental marking to activate the marking barrier.
++  heap::SimulateIncrementalMarking(heap, false);
++
++  {
++    // Make a WeakCell list with length >1, then unregister with the token to
++    // the WeakCell from the registry. The linked list manipulation keeps the
++    // unregistered WeakCell alive (i.e. not put into cleared_cells) due to the
++    // marking barrier from incremental marking. Then make the original token
++    // collectible.
++    v8::HandleScope scope(isolate);
++    CompileRun(
++        "registry.register({}); "
++        "registry.unregister(token); "
++        "token = 0;");
++  }
++
++  // Trigger GC.
++  CcTest::CollectAllGarbage();
++  CcTest::CollectAllGarbage();
++
++  // Pump message loop to run the finalizer task, then the incremental marking
++  // task. The verifier will verify that live WeakCells don't point to dead
++  // unregister tokens.
++  EmptyMessageQueues(isolate);
++}
++
+ }  // namespace internal
+ }  // namespace v8
