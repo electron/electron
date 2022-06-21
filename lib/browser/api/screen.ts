@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-const { createScreen } = process._linkedBinding('electron_common_screen');
+const { createScreen } = process._linkedBinding('electron_browser_screen');
 
 let _screen: Electron.Screen;
 
