@@ -1,7 +1,11 @@
-From 44c4e56fea2cd45b5478e5671c84d91a70f0b6f0 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shu-yu Guo <syg@chromium.org>
-Date: Tue, 03 May 2022 13:26:32 -0700
-Subject: [PATCH] Merged: [weakrefs] Set unregister_token to undefined when unregistering
+Date: Tue, 3 May 2022 13:26:32 -0700
+Subject: Merged: [weakrefs] Set unregister_token to undefined when
+ unregistering
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 (cherry picked from commit dd3289d7945dac855d1287cf4ea248883e908d54)
 
@@ -13,13 +17,12 @@ Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.2@{#16}
 Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
 Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
----
 
 diff --git a/src/heap/mark-compact.cc b/src/heap/mark-compact.cc
-index 49a05b6..ef0b67c 100644
+index f1d6755161be21a76d084f2ccb8f73d6976d70f7..6999d52f2d38b1eb937e5fb46d26a90d4bfe6c0f 100644
 --- a/src/heap/mark-compact.cc
 +++ b/src/heap/mark-compact.cc
-@@ -3054,14 +3054,11 @@
+@@ -3003,14 +3003,11 @@ void MarkCompactCollector::ClearJSWeakRefs() {
        // unregister_token field set to undefined when processing the first
        // WeakCell. Like above, we're modifying pointers during GC, so record the
        // slots.
@@ -36,10 +39,10 @@ index 49a05b6..ef0b67c 100644
      } else {
        // The unregister_token is alive.
 diff --git a/src/objects/js-weak-refs-inl.h b/src/objects/js-weak-refs-inl.h
-index acce7b7..76e6e07 100644
+index acce7b72b9430d810b538d6d082e9b57b2a04b75..76e6e075e5ded6bbbf84605c8672b741757eb816 100644
 --- a/src/objects/js-weak-refs-inl.h
 +++ b/src/objects/js-weak-refs-inl.h
-@@ -60,16 +60,14 @@
+@@ -60,16 +60,14 @@ bool JSFinalizationRegistry::Unregister(
    // key. Each WeakCell will be in the "active_cells" or "cleared_cells" list of
    // its FinalizationRegistry; remove it from there.
    return finalization_registry->RemoveUnregisterToken(
@@ -60,7 +63,7 @@ index acce7b7..76e6e07 100644
      GCNotifyUpdatedSlotCallback gc_notify_updated_slot) {
    // This method is called from both FinalizationRegistry#unregister and for
    // removing weakly-held dead unregister tokens. The latter is during GC so
-@@ -107,7 +105,16 @@
+@@ -107,7 +105,16 @@ bool JSFinalizationRegistry::RemoveUnregisterToken(
      value = weak_cell.key_list_next();
      if (weak_cell.unregister_token() == unregister_token) {
        // weak_cell has the same unregister token; remove it from the key list.
@@ -79,10 +82,10 @@ index acce7b7..76e6e07 100644
        weak_cell.set_key_list_next(undefined);
        was_present = true;
 diff --git a/src/objects/js-weak-refs.h b/src/objects/js-weak-refs.h
-index 57f765b..f678234 100644
+index 57f765b282e653122fd83e827bdd52cb9fe818cf..f678234ff81afc7a32c93bb275edd39fbe0b3891 100644
 --- a/src/objects/js-weak-refs.h
 +++ b/src/objects/js-weak-refs.h
-@@ -43,10 +43,14 @@
+@@ -43,10 +43,14 @@ class JSFinalizationRegistry
    // it modifies slots in key_map and WeakCells and the normal write barrier is
    // disabled during GC, we need to tell the GC about the modified slots via the
    // gc_notify_updated_slot function.
@@ -100,10 +103,10 @@ index 57f765b..f678234 100644
  
    // Returns true if the cleared_cells list is non-empty.
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index 4616ef7..d161461 100644
+index c2c9fe36c57603425dddbf36823489c59bcc4868..0908eb76b3610e6bdb5e7e816773a53d180f3ecf 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
-@@ -6981,7 +6981,7 @@
+@@ -6936,7 +6936,7 @@ void JSFinalizationRegistry::RemoveCellFromUnregisterTokenMap(
    }
  
    // weak_cell is now removed from the unregister token map, so clear its
@@ -113,10 +116,10 @@ index 4616ef7..d161461 100644
    weak_cell.set_key_list_prev(undefined);
    weak_cell.set_key_list_next(undefined);
 diff --git a/test/cctest/test-js-weak-refs.cc b/test/cctest/test-js-weak-refs.cc
-index a2c3a3e..39c3aee 100644
+index 8974bdf6dba65be319afbfdfc66641d27ed14a07..eb6ca2d73685b437978fac642190c8d653f4c73a 100644
 --- a/test/cctest/test-js-weak-refs.cc
 +++ b/test/cctest/test-js-weak-refs.cc
-@@ -853,9 +853,7 @@
+@@ -853,9 +853,7 @@ TEST(TestRemoveUnregisterToken) {
  
    finalization_registry->RemoveUnregisterToken(
        JSReceiver::cast(*token2), isolate,
@@ -127,7 +130,7 @@ index a2c3a3e..39c3aee 100644
        [](HeapObject, ObjectSlot, Object) {});
  
    // Both weak_cell2a and weak_cell2b remain on the weak cell chains.
-@@ -1025,5 +1023,52 @@
+@@ -1024,5 +1022,52 @@ TEST(UnregisterTokenHeapVerifier) {
    EmptyMessageQueues(isolate);
  }
  
