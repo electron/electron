@@ -4,6 +4,8 @@
 
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 
+#include <utility>
+
 #include "content/public/renderer/render_frame.h"
 #include "extensions/buildflags/buildflags.h"
 #include "third_party/blink/public/web/web_element.h"
