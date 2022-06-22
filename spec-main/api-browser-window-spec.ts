@@ -2063,7 +2063,8 @@ describe('BrowserWindow module', () => {
       }).to.not.throw();
     });
 
-    it('Allows setting a transparent window via CSS', async () => {
+    // TODO(nornagon): disabled due to flakiness.
+    it.skip('Allows setting a transparent window via CSS', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'apps', 'background-color-transparent');
 
       appProcess = childProcess.spawn(process.execPath, [appPath], {
