@@ -7,7 +7,7 @@ This is required when the v8 sandbox is enabled, otherwise v8 will crash when
 calling the `v8.serialize()` method from Node.js.
 
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..b2abf36f705fba6b39dfc3e4385bc86b932b181e 100644
+index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..31a3d1c1ea19d649dcb7019a521f8033fae76962 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,11 @@ using v8::ValueSerializer;
@@ -53,7 +53,7 @@ index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..b2abf36f705fba6b39dfc3e4385bc86b
 +void* SerializerContext::ReallocateBufferMemory(void* old_buffer,
 +                                                size_t old_length,
 +                                                size_t* new_length) {
-+  *new_length = std::max(4096ul, *new_length);
++  *new_length = std::max(static_cast<size_t>(4096), *new_length);
 +  last_length_ = *new_length;
 +  if (old_buffer) {
 +    return GetAllocator()->Reallocate(old_buffer, old_length, *new_length);
