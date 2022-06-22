@@ -92,9 +92,11 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
 void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
                                       content::RenderFrameHost* new_rfh) {
   if (agent_host_) {
-    agent_host_->DisconnectWebContents();
     auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
-    agent_host_->ConnectWebContents(web_contents);
+    if (web_contents != agent_host_->GetWebContents()) {
+      agent_host_->DisconnectWebContents();
+      agent_host_->ConnectWebContents(web_contents);
+    }
   }
 }
 
