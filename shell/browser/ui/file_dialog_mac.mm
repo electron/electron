@@ -16,7 +16,6 @@
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/threading/thread_restrictions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -233,7 +232,7 @@ void SetupSaveDialogForProperties(NSSavePanel* dialog, int properties) {
 
 // Run modal dialog with parent window and return user's choice.
 int RunModalDialog(NSSavePanel* dialog, const DialogSettings& settings) {
-  __block int chosen = NSFileHandlingPanelCancelButton;
+  __block int chosen = NSModalResponseCancel;
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
     chosen = [dialog runModal];
@@ -301,8 +300,8 @@ void ResolvePromiseInNextTick(gin_helper::Promise<v8::Local<v8::Value>> promise,
   // users will run in the microtask, we have to delay the resolution until
   // next tick, otherwise crash like this may happen:
   // https://github.com/electron/electron/issues/26884
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(
           [](gin_helper::Promise<v8::Local<v8::Value>> promise,
              v8::Global<v8::Value> global) {
@@ -325,7 +324,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   SetupOpenDialogForProperties(dialog, settings.properties);
 
   int chosen = RunModalDialog(dialog, settings);
-  if (chosen == NSFileHandlingPanelCancelButton)
+  if (chosen == NSModalResponseCancel)
     return false;
 
   ReadDialogPaths(dialog, paths);
@@ -338,7 +337,7 @@ void OpenDialogCompletion(int chosen,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
-  if (chosen == NSFileHandlingPanelCancelButton) {
+  if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
 #if defined(MAS_BUILD)
@@ -403,7 +402,7 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   SetupSaveDialogForProperties(dialog, settings.properties);
 
   int chosen = RunModalDialog(dialog, settings);
-  if (chosen == NSFileHandlingPanelCancelButton || ![[dialog URL] isFileURL])
+  if (chosen == NSModalResponseCancel || ![[dialog URL] isFileURL])
     return false;
 
   *path = base::FilePath(base::SysNSStringToUTF8([[dialog URL] path]));
@@ -416,7 +415,7 @@ void SaveDialogCompletion(int chosen,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
-  if (chosen == NSFileHandlingPanelCancelButton) {
+  if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
 #if defined(MAS_BUILD)

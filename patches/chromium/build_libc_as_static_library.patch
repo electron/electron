@@ -7,7 +7,7 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index a53cc9066a3485ff6829e3c410eb523de7d074d6..9697e2dc2d0892fc7f1007d62488c2f2f24ec92f 100644
+index 74b6ad644d49c003996db0eab225ea30ac17420a..0a1ba3510be3047bfc34e603c5aaafbf15908269 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
 @@ -44,7 +44,11 @@ config("winver") {

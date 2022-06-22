@@ -2,10 +2,8 @@ import { expect } from 'chai';
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
-import * as semver from 'semver';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
 
@@ -1230,6 +1228,7 @@ describe('BrowserWindow module', () => {
           await resize;
           expectBoundsEqual(w.getNormalBounds(), w.getBounds());
         });
+
         it('checks normal bounds after move', async () => {
           const pos = [10, 10];
           const move = emittedOnce(w, 'move');
@@ -1248,6 +1247,51 @@ describe('BrowserWindow module', () => {
           await maximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
+        it('updates normal bounds after resize and maximize', async () => {
+          const size = [300, 400];
+          const resize = emittedOnce(w, 'resize');
+          w.setSize(size[0], size[1]);
+          await resize;
+          const original = w.getBounds();
+
+          const maximize = emittedOnce(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          const normal = w.getNormalBounds();
+          const bounds = w.getBounds();
+
+          expect(normal).to.deep.equal(original);
+          expect(normal).to.not.deep.equal(bounds);
+
+          const close = emittedOnce(w, 'close');
+          w.close();
+          await close;
+        });
+
+        it('updates normal bounds after move and maximize', async () => {
+          const pos = [10, 10];
+          const move = emittedOnce(w, 'move');
+          w.setPosition(pos[0], pos[1]);
+          await move;
+          const original = w.getBounds();
+
+          const maximize = emittedOnce(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          const normal = w.getNormalBounds();
+          const bounds = w.getBounds();
+
+          expect(normal).to.deep.equal(original);
+          expect(normal).to.not.deep.equal(bounds);
+
+          const close = emittedOnce(w, 'close');
+          w.close();
+          await close;
+        });
+
         it('checks normal bounds when unmaximized', async () => {
           const bounds = w.getBounds();
           w.once('maximize', () => {
@@ -1259,6 +1303,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
         it('does not change size for a frameless window with min size', async () => {
           w.destroy();
           w = new BrowserWindow({
@@ -1279,6 +1324,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
         it('correctly checks transparent window maximization state', async () => {
           w.destroy();
           w = new BrowserWindow({
@@ -1298,6 +1344,7 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expect(w.isMaximized()).to.equal(false);
         });
+
         it('returns the correct value for windows with an aspect ratio', async () => {
           w.destroy();
           w = new BrowserWindow({
@@ -1327,6 +1374,41 @@ describe('BrowserWindow module', () => {
           await minimize;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
+        it('updates normal bounds after move and minimize', async () => {
+          const pos = [10, 10];
+          const move = emittedOnce(w, 'move');
+          w.setPosition(pos[0], pos[1]);
+          await move;
+          const original = w.getBounds();
+
+          const minimize = emittedOnce(w, 'minimize');
+          w.minimize();
+          await minimize;
+
+          const normal = w.getNormalBounds();
+
+          expect(original).to.deep.equal(normal);
+          expectBoundsEqual(normal, w.getBounds());
+        });
+
+        it('updates normal bounds after resize and minimize', async () => {
+          const size = [300, 400];
+          const resize = emittedOnce(w, 'resize');
+          w.setSize(size[0], size[1]);
+          await resize;
+          const original = w.getBounds();
+
+          const minimize = emittedOnce(w, 'minimize');
+          w.minimize();
+          await minimize;
+
+          const normal = w.getNormalBounds();
+
+          expect(original).to.deep.equal(normal);
+          expectBoundsEqual(normal, w.getBounds());
+        });
+
         it('checks normal bounds when restored', async () => {
           const bounds = w.getBounds();
           w.once('minimize', () => {
@@ -1338,6 +1420,7 @@ describe('BrowserWindow module', () => {
           await restore;
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
+
         it('does not change size for a frameless window with min size', async () => {
           w.destroy();
           w = new BrowserWindow({
@@ -1383,6 +1466,50 @@ describe('BrowserWindow module', () => {
             expectBoundsEqual(w.getNormalBounds(), bounds);
           });
 
+          it('updates normal bounds after resize and fullscreen', async () => {
+            const size = [300, 400];
+            const resize = emittedOnce(w, 'resize');
+            w.setSize(size[0], size[1]);
+            await resize;
+            const original = w.getBounds();
+
+            const fsc = emittedOnce(w, 'enter-full-screen');
+            w.fullScreen = true;
+            await fsc;
+
+            const normal = w.getNormalBounds();
+            const bounds = w.getBounds();
+
+            expect(normal).to.deep.equal(original);
+            expect(normal).to.not.deep.equal(bounds);
+
+            const close = emittedOnce(w, 'close');
+            w.close();
+            await close;
+          });
+
+          it('updates normal bounds after move and fullscreen', async () => {
+            const pos = [10, 10];
+            const move = emittedOnce(w, 'move');
+            w.setPosition(pos[0], pos[1]);
+            await move;
+            const original = w.getBounds();
+
+            const fsc = emittedOnce(w, 'enter-full-screen');
+            w.fullScreen = true;
+            await fsc;
+
+            const normal = w.getNormalBounds();
+            const bounds = w.getBounds();
+
+            expect(normal).to.deep.equal(original);
+            expect(normal).to.not.deep.equal(bounds);
+
+            const close = emittedOnce(w, 'close');
+            w.close();
+            await close;
+          });
+
           it('checks normal bounds when unfullscreen\'ed', async () => {
             const bounds = w.getBounds();
             w.once('enter-full-screen', () => {
@@ -1418,6 +1545,50 @@ describe('BrowserWindow module', () => {
             await enterFullScreen;
 
             expectBoundsEqual(w.getNormalBounds(), bounds);
+          });
+
+          it('updates normal bounds after resize and fullscreen', async () => {
+            const size = [300, 400];
+            const resize = emittedOnce(w, 'resize');
+            w.setSize(size[0], size[1]);
+            await resize;
+            const original = w.getBounds();
+
+            const fsc = emittedOnce(w, 'enter-full-screen');
+            w.setFullScreen(true);
+            await fsc;
+
+            const normal = w.getNormalBounds();
+            const bounds = w.getBounds();
+
+            expect(normal).to.deep.equal(original);
+            expect(normal).to.not.deep.equal(bounds);
+
+            const close = emittedOnce(w, 'close');
+            w.close();
+            await close;
+          });
+
+          it('updates normal bounds after move and fullscreen', async () => {
+            const pos = [10, 10];
+            const move = emittedOnce(w, 'move');
+            w.setPosition(pos[0], pos[1]);
+            await move;
+            const original = w.getBounds();
+
+            const fsc = emittedOnce(w, 'enter-full-screen');
+            w.setFullScreen(true);
+            await fsc;
+
+            const normal = w.getNormalBounds();
+            const bounds = w.getBounds();
+
+            expect(normal).to.deep.equal(original);
+            expect(normal).to.not.deep.equal(bounds);
+
+            const close = emittedOnce(w, 'close');
+            w.close();
+            await close;
           });
 
           it('checks normal bounds when unfullscreen\'ed', async () => {
@@ -1825,6 +1996,42 @@ describe('BrowserWindow module', () => {
       w.setWindowButtonVisibility(false);
       expect(w._getWindowButtonVisibility()).to.equal(false);
     });
+
+    it('correctly updates when entering/exiting fullscreen for hidden style', async () => {
+      const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'hidden' });
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+      w.setWindowButtonVisibility(false);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
+
+      const enterFS = emittedOnce(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+
+      const leaveFS = emittedOnce(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
+
+      w.setWindowButtonVisibility(true);
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+    });
+
+    it('correctly updates when entering/exiting fullscreen for hiddenInset style', async () => {
+      const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'hiddenInset' });
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+      w.setWindowButtonVisibility(false);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
+
+      const enterFS = emittedOnce(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+
+      const leaveFS = emittedOnce(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
+
+      w.setWindowButtonVisibility(true);
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+    });
   });
 
   ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
@@ -2150,7 +2357,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarStyle" option', () => {
+  ifdescribe(['win32', 'darwin'].includes(process.platform))('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
         show: false,
@@ -2189,8 +2396,10 @@ describe('BrowserWindow module', () => {
       const [, newOverlayRect] = await geometryChange;
       expect(newOverlayRect.width).to.equal(overlayRect.width + 400);
     };
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
     it('creates browser window with hidden title bar', () => {
       const w = new BrowserWindow({
         show: false,
@@ -2219,7 +2428,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarOverlay" option', () => {
+  ifdescribe(['win32', 'darwin'].includes(process.platform))('"titleBarOverlay" option', () => {
     const testWindowsOverlayHeight = async (size: any) => {
       const w = new BrowserWindow({
         show: false,
@@ -2245,9 +2454,15 @@ describe('BrowserWindow module', () => {
       const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
       expect(overlayEnabled).to.be.true('overlayEnabled');
       const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
-      await w.maximize();
-      const max = await w.isMaximized();
-      expect(max).to.equal(true);
+
+      if (!w.isMaximized()) {
+        const maximize = emittedOnce(w, 'maximize');
+        w.show();
+        w.maximize();
+        await maximize;
+      }
+
+      expect(w.isMaximized()).to.be.true('not maximized');
       const overlayRectPostMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
       expect(overlayRectPreMax.y).to.equal(0);
@@ -2262,10 +2477,93 @@ describe('BrowserWindow module', () => {
       // Confirm that maximization only affected the height of the buttons and not the title bar
       expect(overlayRectPostMax.height).to.equal(size);
     };
-    afterEach(closeAllWindows);
-    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
+    });
+  });
+
+  ifdescribe(process.platform === 'win32')('BrowserWindow.setTitlebarOverlay', () => {
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
+
+    it('does not crash when an invalid titleBarStyle was initially set', () => {
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          color: '#0000f0',
+          symbolColor: '#ffffff'
+        },
+        titleBarStyle: 'hiddenInset'
+      });
+
+      expect(() => {
+        win.setTitleBarOverlay({
+          color: '#000000'
+        });
+      }).to.not.throw();
+    });
+
+    it('correctly updates the height of the overlay', async () => {
+      const testOverlay = async (w: BrowserWindow, size: Number, firstRun: boolean) => {
+        const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+        const overlayReady = emittedOnce(ipcMain, 'geometrychange');
+        await w.loadFile(overlayHTML);
+        if (firstRun) {
+          await overlayReady;
+        }
+
+        const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
+        expect(overlayEnabled).to.be.true('overlayEnabled');
+        const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+
+        if (!w.isMaximized()) {
+          const maximize = emittedOnce(w, 'maximize');
+          w.show();
+          w.maximize();
+          await maximize;
+        }
+
+        expect(w.isMaximized()).to.be.true('not maximized');
+        const { x, y, width, height } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+        expect(x).to.equal(0);
+        expect(y).to.equal(0);
+        expect(width).to.be.greaterThan(0);
+        expect(height).to.equal(size);
+        expect(preMaxHeight).to.equal(size);
+      };
+
+      const INITIAL_SIZE = 40;
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: {
+          height: INITIAL_SIZE
+        }
+      });
+
+      await testOverlay(w, INITIAL_SIZE, true);
+
+      w.setTitleBarOverlay({
+        height: INITIAL_SIZE + 10
+      });
+
+      await testOverlay(w, INITIAL_SIZE + 10, false);
     });
   });
 
@@ -2417,7 +2715,7 @@ describe('BrowserWindow module', () => {
         for (const isolatedGlobal of isolated.globals) {
           notIsolatedGlobals.delete(isolatedGlobal);
         }
-        expect([...notIsolatedGlobals]).to.deep.equal([], 'non-isoalted renderer should have no additional globals');
+        expect([...notIsolatedGlobals]).to.deep.equal([], 'non-isolated renderer should have no additional globals');
       });
 
       it('loads the script before other scripts in window', async () => {
@@ -3001,11 +3299,16 @@ describe('BrowserWindow module', () => {
         });
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
-          overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nodeIntegrationInSubFrames: true } }
+          overrideBrowserWindowOptions: {
+            show: false,
+            webPreferences: {
+              contextIsolation: false,
+              webviewTag: true,
+              nodeIntegrationInSubFrames: true,
+              preload
+            }
+          }
         }));
-        w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
-          options.show = false;
-        });
 
         const webviewLoaded = emittedOnce(ipcMain, 'webview-loaded');
         w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'));
@@ -4561,18 +4864,34 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('fullscreen state with resizable set', () => {
-      it('resizable flag should be set to true and restored', async () => {
+      it('resizable flag should be set to false and restored', async () => {
         const w = new BrowserWindow({ resizable: false });
+
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
         w.setFullScreen(true);
         await enterFullScreen;
-        expect(w.resizable).to.be.true('resizable');
+        expect(w.resizable).to.be.false('resizable');
 
         await delay();
         const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
         w.setFullScreen(false);
         await leaveFullScreen;
         expect(w.resizable).to.be.false('resizable');
+      });
+
+      it('default resizable flag should be restored after entering/exiting fullscreen', async () => {
+        const w = new BrowserWindow();
+
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+        expect(w.resizable).to.be.false('resizable');
+
+        await delay();
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+        expect(w.resizable).to.be.true('resizable');
       });
     });
 
@@ -4626,19 +4945,80 @@ describe('BrowserWindow module', () => {
         expect(w.isFullScreen()).to.be.false('is fullscreen');
       });
 
+      it('handles several HTML fullscreen transitions', async () => {
+        const w = new BrowserWindow();
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await enterFullScreen;
+        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+        await leaveFullScreen;
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        await delay();
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await enterFullScreen;
+        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+        await leaveFullScreen;
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+      });
+
       it('handles several transitions in close proximity', async () => {
         const w = new BrowserWindow();
 
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
+        const enterFS = emittedNTimes(w, 'enter-full-screen', 2);
+        const leaveFS = emittedNTimes(w, 'leave-full-screen', 2);
+
         w.setFullScreen(true);
         w.setFullScreen(false);
         w.setFullScreen(true);
+        w.setFullScreen(false);
 
-        const enterFullScreen = emittedNTimes(w, 'enter-full-screen', 2);
-        await enterFullScreen;
+        await Promise.all([enterFS, leaveFS]);
 
-        expect(w.isFullScreen()).to.be.true('not fullscreen');
+        expect(w.isFullScreen()).to.be.false('not fullscreen');
+      });
+
+      it('handles several chromium-initiated transitions in close proximity', async () => {
+        const w = new BrowserWindow();
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        let enterCount = 0;
+        let exitCount = 0;
+
+        const done = new Promise<void>(resolve => {
+          const checkDone = () => {
+            if (enterCount === 2 && exitCount === 2) resolve();
+          };
+
+          w.webContents.on('enter-html-full-screen', () => {
+            enterCount++;
+            checkDone();
+          });
+
+          w.webContents.on('leave-html-full-screen', () => {
+            exitCount++;
+            checkDone();
+          });
+        });
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await w.webContents.executeJavaScript('document.exitFullscreen()');
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await w.webContents.executeJavaScript('document.exitFullscreen()');
+        await done;
       });
 
       it('does not crash when exiting simpleFullScreen (properties)', async () => {

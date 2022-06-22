@@ -84,7 +84,7 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   // When a child window is created with window.open, its WebPreferences will
   // be copied from its parent, and Chromium will initialize JS context in it
   // immediately.
-  // Normally the WebPreferences is overriden in browser before navigation,
+  // Normally the WebPreferences is overridden in browser before navigation,
   // but this behavior bypasses the browser side navigation and the child
   // window will get wrong WebPreferences in the initialization.
   // This will end up initializing Node.js in the child window with wrong

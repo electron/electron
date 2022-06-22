@@ -14,6 +14,61 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (20.0)
 
+### API Changed: `webContents.printToPDF()`
+
+`webContents.printToPDF()` has been modified to conform to [`Page.printToPDF`](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF) in the Chrome DevTools Protocol. This has been changes in order to
+address changes upstream that made our previous implementation untenable and rife with bugs.
+
+**Arguments Changed**
+
+* `pageRanges`
+
+**Arguments Removed**
+
+* `printSelectionOnly`
+* `marginsType`
+* `headerFooter`
+* `scaleFactor`
+
+**Arguments Added**
+
+* `headerTemplate`
+* `footerTemplate`
+* `displayHeaderFooter`
+* `margins`
+* `scale`
+* `preferCSSPageSize`
+
+```js
+// Main process
+const { webContents } = require('electron')
+
+webContents.printToPDF({
+  landscape: true,
+  displayHeaderFooter: true,
+  printBackground: true,
+  scale: 2,
+  pageSize: 'Ledger',
+  margins: {
+    top: 2,
+    bottom: 2,
+    left: 2,
+    right: 2
+  },
+  pageRanges: '1-5, 8, 11-13',
+  headerTemplate: '<h1>Title</h1>',
+  footerTemplate: '<div><span class="pageNumber"></span></div>',
+  preferCSSPageSize: true
+}).then(data => {
+  fs.writeFile(pdfPath, data, (error) => {
+    if (error) throw error
+    console.log(`Wrote PDF successfully to ${pdfPath}`)
+  })
+}).catch(error => {
+  console.log(`Failed to write PDF to ${pdfPath}: `, error)
+})
+```
+
 ### Default Changed: renderers without `nodeIntegration: true` are sandboxed by default
 
 Previously, renderers that specified a preload script defaulted to being

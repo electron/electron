@@ -13,7 +13,6 @@
 #include "base/files/file_util.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/path_service.h"
-#include "base/task/post_task.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/browser_resources.h"
 #include "components/value_store/value_store_factory_impl.h"
@@ -204,11 +203,12 @@ AppSorting* ElectronExtensionSystem::app_sorting() {
 void ElectronExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
     base::OnceClosure callback) {
-  base::PostTaskAndReply(FROM_HERE, {BrowserThread::IO},
-                         base::BindOnce(&InfoMap::AddExtension, info_map(),
-                                        base::RetainedRef(extension),
-                                        base::Time::Now(), false, false),
-                         std::move(callback));
+  content::GetIOThreadTaskRunner({})->PostTaskAndReply(
+      FROM_HERE,
+      base::BindOnce(&InfoMap::AddExtension, info_map(),
+                     base::RetainedRef(extension), base::Time::Now(), false,
+                     false),
+      std::move(callback));
 }
 
 void ElectronExtensionSystem::UnregisterExtensionWithRequestContexts(

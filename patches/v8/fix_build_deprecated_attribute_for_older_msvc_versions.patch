@@ -6,7 +6,7 @@ Subject: fix: usage of c++ [[deprecated]] attribute for older msvc versions
 This attribute can only be used in all contexts in Visual Studio 2019
 
 diff --git a/include/v8config.h b/include/v8config.h
-index 77fd65c6c5b7d8c0a7fe7a37c40e17ce66f49ce6..d203053d41c702733f5f3b950aa31cef74c2ab57 100644
+index 0e5bb1558d096d152fd9388f081c5c9d150a3c7a..6aa16106c088c0a7e590c62eb3d06e0418cb5ebc 100644
 --- a/include/v8config.h
 +++ b/include/v8config.h
 @@ -454,10 +454,13 @@ path. Add it with -I<path> to the command line
@@ -25,7 +25,7 @@ index 77fd65c6c5b7d8c0a7fe7a37c40e17ce66f49ce6..d203053d41c702733f5f3b950aa31cef
  #else
  # define V8_DEPRECATED(message)
  #endif
-@@ -465,7 +468,11 @@ path. Add it with -I<path> to the command line
+@@ -465,13 +468,17 @@ path. Add it with -I<path> to the command line
  
  // A macro (V8_DEPRECATE_SOON) to make it easier to see what will be deprecated.
  #if defined(V8_IMMINENT_DEPRECATION_WARNINGS)
@@ -38,3 +38,10 @@ index 77fd65c6c5b7d8c0a7fe7a37c40e17ce66f49ce6..d203053d41c702733f5f3b950aa31cef
  #else
  # define V8_DEPRECATE_SOON(message)
  #endif
+ 
+ 
+-#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 6)
++#if !defined(__clang__) && (defined(__GNUC__) && __GNUC__ < 6) || (defined(_MSC_VER) && _MSC_VER < 1920)
+ # define V8_ENUM_DEPRECATED(message)
+ # define V8_ENUM_DEPRECATE_SOON(message)
+ #else

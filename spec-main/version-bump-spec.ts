@@ -60,7 +60,7 @@ class GitFake {
 
 describe('version-bumper', () => {
   describe('makeVersion', () => {
-    it('makes a version with a period delimeter', () => {
+    it('makes a version with a period delimiter', () => {
       const components = {
         major: 2,
         minor: 0,
@@ -71,7 +71,7 @@ describe('version-bumper', () => {
       expect(version).to.equal('2.0.0');
     });
 
-    it('makes a version with a period delimeter and a partial pre', () => {
+    it('makes a version with a period delimiter and a partial pre', () => {
       const components = {
         major: 2,
         minor: 0,
@@ -83,7 +83,7 @@ describe('version-bumper', () => {
       expect(version).to.equal('2.0.0.12345678');
     });
 
-    it('makes a version with a period delimeter and a full pre', () => {
+    it('makes a version with a period delimiter and a full pre', () => {
       const components = {
         major: 2,
         minor: 0,

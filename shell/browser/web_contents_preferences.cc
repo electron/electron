@@ -388,7 +388,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
-  // we can fetch the options used to initally configure the WebContents
+  // we can fetch the options used to initially configure the WebContents
   // last_preference_ = preference_.Clone();
   SaveLastPreferences();
 }
@@ -485,10 +485,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   }
 
   prefs->offscreen = offscreen_;
-
-  // The preload script.
-  if (preload_path_)
-    prefs->preload = *preload_path_;
 
   prefs->node_integration = node_integration_;
   prefs->node_integration_in_worker = node_integration_in_worker_;

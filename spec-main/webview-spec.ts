@@ -32,9 +32,12 @@ describe('<webview> tag', function () {
   afterEach(closeAllWindows);
 
   function hideChildWindows (e: any, wc: WebContents) {
-    wc.on('new-window', (event, url, frameName, disposition, options) => {
-      options.show = false;
-    });
+    wc.setWindowOpenHandler(() => ({
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        show: false
+      }
+    }));
   }
 
   before(() => {
@@ -426,35 +429,63 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
+
       const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
+      const loadPromise = emittedOnce(w.webContents, 'did-finish-load');
       const readyPromise = emittedOnce(ipcMain, 'webview-ready');
+
       w.loadFile(path.join(__dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'));
+
       const [, webview] = await attachPromise;
-      await readyPromise;
+      await Promise.all([readyPromise, loadPromise]);
+
       return [w, webview];
     };
 
-    afterEach(closeAllWindows);
     afterEach(async () => {
       // The leaving animation is un-observable but can interfere with future tests
       // Specifically this is async on macOS but can be on other platforms too
       await delay(1000);
+
+      closeAllWindows();
     });
 
-    // TODO(jkleinsc) fix this test on arm64 macOS.  It causes the tests following it to fail/be flaky
-    ifit(process.platform !== 'darwin' || process.arch !== 'arm64')('should make parent frame element fullscreen too', async () => {
+    ifit(process.platform !== 'darwin')('should make parent frame element fullscreen too (non-macOS)', async () => {
       const [w, webview] = await loadWebViewWindow();
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
 
       const parentFullscreen = emittedOnce(ipcMain, 'fullscreenchange');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await parentFullscreen;
+
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
+
+      const close = emittedOnce(w, 'closed');
+      w.close();
+      await close;
+    });
+
+    ifit(process.platform === 'darwin')('should make parent frame element fullscreen too (macOS)', async () => {
+      const [w, webview] = await loadWebViewWindow();
+      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
+
+      const parentFullscreen = emittedOnce(ipcMain, 'fullscreenchange');
+      const enterHTMLFS = emittedOnce(w.webContents, 'enter-html-full-screen');
+      const leaveHTMLFS = emittedOnce(w.webContents, 'leave-html-full-screen');
+
+      await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
+
+      await webview.executeJavaScript('document.exitFullscreen()');
+      await Promise.all([enterHTMLFS, leaveHTMLFS, parentFullscreen]);
+
+      const close = emittedOnce(w, 'closed');
+      w.close();
+      await close;
     });
 
     // FIXME(zcbenz): Fullscreen events do not work on Linux.
-    // This test is flaky on arm64 macOS.
-    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('exiting fullscreen should unfullscreen window', async () => {
+    ifit(process.platform !== 'linux')('exiting fullscreen should unfullscreen window', async () => {
       const [w, webview] = await loadWebViewWindow();
       const enterFullScreen = emittedOnce(w, 'enter-full-screen');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
@@ -465,6 +496,10 @@ describe('<webview> tag', function () {
       await leaveFullScreen;
       await delay(0);
       expect(w.isFullScreen()).to.be.false();
+
+      const close = emittedOnce(w, 'closed');
+      w.close();
+      await close;
     });
 
     // Sending ESC via sendInputEvent only works on Windows.
@@ -479,6 +514,10 @@ describe('<webview> tag', function () {
       await leaveFullScreen;
       await delay(0);
       expect(w.isFullScreen()).to.be.false();
+
+      const close = emittedOnce(w, 'closed');
+      w.close();
+      await close;
     });
 
     it('pressing ESC should emit the leave-html-full-screen event', async () => {
@@ -505,8 +544,27 @@ describe('<webview> tag', function () {
       const leaveFSWindow = emittedOnce(w, 'leave-html-full-screen');
       const leaveFSWebview = emittedOnce(webContents, 'leave-html-full-screen');
       webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
-      await leaveFSWindow;
       await leaveFSWebview;
+      await leaveFSWindow;
+
+      const close = emittedOnce(w, 'closed');
+      w.close();
+      await close;
+    });
+
+    it('should support user gesture', async () => {
+      const [w, webview] = await loadWebViewWindow();
+
+      const waitForEnterHtmlFullScreen = emittedOnce(webview, 'enter-html-full-screen');
+
+      const jsScript = "document.querySelector('video').webkitRequestFullscreen()";
+      webview.executeJavaScript(jsScript, true);
+
+      await waitForEnterHtmlFullScreen;
+
+      const close = emittedOnce(w, 'closed');
+      w.close();
+      await close;
     });
   });
 

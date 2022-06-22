@@ -216,7 +216,8 @@ describe('session module', () => {
       });
     });
 
-    it('should survive an app restart for persistent partition', async () => {
+    it('should survive an app restart for persistent partition', async function () {
+      this.timeout(60000);
       const appPath = path.join(fixtures, 'api', 'cookie-app');
 
       const runAppWithPhase = (phase: string) => {
@@ -1012,7 +1013,7 @@ describe('session module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: 'very-temp-permision-handler',
+          partition: 'very-temp-permission-handler',
           nodeIntegration: true,
           contextIsolation: false
         }

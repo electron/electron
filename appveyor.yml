@@ -3,7 +3,7 @@
 #  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
 #      e.g. 'target_cpu="x86"' to build for a 32bit platform.
 #      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
-#      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordningly
+#      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordingly
 #      if you pass a custom value for 'target_cpu'.
 #  - "ELECTRON_RELEASE" Set it to '1' upload binaries on success.
 #  - "NPM_CONFIG_ARCH" E.g. 'x86'. Is used to build native Node.js modules.
@@ -12,7 +12,7 @@
 #      Is used in some publishing scripts, but does NOT affect the Electron binary.
 #      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "NPM_CONFIG_ARCH" value.
 #  - "UPLOAD_TO_STORAGE" Set it to '1' upload a release to the Azure bucket.
-#      Otherwise the release will be uploaded to the Github Releases.
+#      Otherwise the release will be uploaded to the GitHub Releases.
 #      (The value is only checked if "ELECTRON_RELEASE" is defined.)
 #
 # The publishing scripts expect access tokens to be defined as env vars,
@@ -180,16 +180,19 @@ build_script:
   - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
   - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - 7z a node_headers.zip out\Default\gen\node_headers
+  # Temporarily disable symbol generation on 32-bit Windows due to failures  
   - ps: >-
-      if ($env:GN_CONFIG -eq 'release') {
+      if ($env:GN_CONFIG -eq 'release' -And $env:TARGET_ARCH -ne 'ia32') {
         # Needed for msdia140.dll on 64-bit windows
         $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
         ninja -C out/Default electron:electron_symbols
       }
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
-        python electron\script\zip-symbols.py
-        appveyor-retry appveyor PushArtifact out/Default/symbols.zip
+        if ($env:TARGET_ARCH -ne 'ia32') {
+          python electron\script\zip-symbols.py
+          appveyor-retry appveyor PushArtifact out/Default/symbols.zip
+        }
       } else {
         # It's useful to have pdb files when debugging testing builds that are
         # built on CI.
@@ -211,10 +214,9 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - cd electron
-  # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
-  - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
-  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeperately --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )
-  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log --disable-features=CalculateNativeWinOcclusion )  
+  - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log )
+  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeparately --enable-logging=file --log-file=%cd%\electron.log )
+  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log )  
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"

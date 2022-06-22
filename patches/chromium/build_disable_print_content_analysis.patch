@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Sun, 1 May 2022 18:01:42 -0700
+Subject: build: disable print_content_analysis
+
+Print Content Analysis enables enterprise users to scan to-be-printed
+pages and documents for sensitive data if the OnPrintEnterpriseConnector
+policy is enabled. A conversation with the Chromium team confirmed
+this feature was intended for enterprise Chrome users and not embedders,
+so we're disabling it to prevent build issues/additional unneeded files.
+
+This patch can be removed when enable_print_content_analysis can be more
+easily enabled or disabled by default with buildflags.
+
+diff --git a/printing/buildflags/buildflags.gni b/printing/buildflags/buildflags.gni
+index 559ac76d4e4b9d9c1824c4da186a6b0f7619fcca..72855e0c5fadb286b67144b34ff71f45e1434c73 100644
+--- a/printing/buildflags/buildflags.gni
++++ b/printing/buildflags/buildflags.gni
+@@ -36,8 +36,7 @@ declare_args() {
+ 
+   # Enable snapshotting a page when printing for its content to be analyzed for
+   # sensitive content by enterprise users.
+-  enable_print_content_analysis =
+-      is_chromeos_ash || is_chromeos_lacros || is_win || is_linux || is_mac
++  enable_print_content_analysis = is_chromeos_ash || is_chromeos_lacros
+ }
+ 
+ declare_args() {

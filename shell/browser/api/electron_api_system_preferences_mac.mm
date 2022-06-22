@@ -423,17 +423,14 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
 }
 
 bool SystemPreferences::CanPromptTouchID() {
-  if (@available(macOS 10.12.2, *)) {
-    base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
-    if (![context
-            canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                        error:nil])
-      return false;
-    if (@available(macOS 10.13.2, *))
-      return [context biometryType] == LABiometryTypeTouchID;
-    return true;
-  }
-  return false;
+  base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+  if (![context
+          canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                      error:nil])
+    return false;
+  if (@available(macOS 10.13.2, *))
+    return [context biometryType] == LABiometryTypeTouchID;
+  return true;
 }
 
 v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
@@ -442,46 +439,40 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (@available(macOS 10.12.2, *)) {
-    base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
-    base::ScopedCFTypeRef<SecAccessControlRef> access_control =
-        base::ScopedCFTypeRef<SecAccessControlRef>(
-            SecAccessControlCreateWithFlags(
-                kCFAllocatorDefault,
-                kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                kSecAccessControlPrivateKeyUsage |
-                    kSecAccessControlUserPresence,
-                nullptr));
+  base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+  base::ScopedCFTypeRef<SecAccessControlRef> access_control =
+      base::ScopedCFTypeRef<SecAccessControlRef>(
+          SecAccessControlCreateWithFlags(
+              kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+              kSecAccessControlPrivateKeyUsage | kSecAccessControlUserPresence,
+              nullptr));
 
-    scoped_refptr<base::SequencedTaskRunner> runner =
-        base::SequencedTaskRunnerHandle::Get();
+  scoped_refptr<base::SequencedTaskRunner> runner =
+      base::SequencedTaskRunnerHandle::Get();
 
-    __block gin_helper::Promise<void> p = std::move(promise);
-    [context
-        evaluateAccessControl:access_control
-                    operation:LAAccessControlOperationUseKeySign
-              localizedReason:[NSString stringWithUTF8String:reason.c_str()]
-                        reply:^(BOOL success, NSError* error) {
-                          if (!success) {
-                            std::string err_msg = std::string(
-                                [error.localizedDescription UTF8String]);
-                            runner->PostTask(
-                                FROM_HERE,
-                                base::BindOnce(
-                                    gin_helper::Promise<void>::RejectPromise,
-                                    std::move(p), std::move(err_msg)));
-                          } else {
-                            runner->PostTask(
-                                FROM_HERE,
-                                base::BindOnce(
-                                    gin_helper::Promise<void>::ResolvePromise,
-                                    std::move(p)));
-                          }
-                        }];
-  } else {
-    promise.RejectWithErrorMessage(
-        "This API is not available on macOS versions older than 10.12.2");
-  }
+  __block gin_helper::Promise<void> p = std::move(promise);
+  [context
+      evaluateAccessControl:access_control
+                  operation:LAAccessControlOperationUseKeySign
+            localizedReason:[NSString stringWithUTF8String:reason.c_str()]
+                      reply:^(BOOL success, NSError* error) {
+                        if (!success) {
+                          std::string err_msg = std::string(
+                              [error.localizedDescription UTF8String]);
+                          runner->PostTask(
+                              FROM_HERE,
+                              base::BindOnce(
+                                  gin_helper::Promise<void>::RejectPromise,
+                                  std::move(p), std::move(err_msg)));
+                        } else {
+                          runner->PostTask(
+                              FROM_HERE,
+                              base::BindOnce(
+                                  gin_helper::Promise<void>::ResolvePromise,
+                                  std::move(p)));
+                        }
+                      }];
+
   return handle;
 }
 
@@ -529,8 +520,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   } else if (color == "quaternary-label") {
     sysColor = [NSColor quaternaryLabelColor];
   } else if (color == "scrubber-textured-background") {
-    if (@available(macOS 10.12.2, *))
-      sysColor = [NSColor scrubberTexturedBackgroundColor];
+    sysColor = [NSColor scrubberTexturedBackgroundColor];
   } else if (color == "secondary-label") {
     sysColor = [NSColor secondaryLabelColor];
   } else if (color == "selected-content-background") {

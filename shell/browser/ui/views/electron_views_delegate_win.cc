@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "base/bind.h"
-#include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 
 namespace {
@@ -52,7 +51,7 @@ bool MonitorHasAutohideTaskbarForEdge(UINT edge, HMONITOR monitor) {
   // There is a potential race condition here:
   // 1. A maximized chrome window is fullscreened.
   // 2. It is switched back to maximized.
-  // 3. In the process the window gets a WM_NCCACLSIZE message which calls us to
+  // 3. In the process the window gets a WM_NCCALCSIZE message which calls us to
   //    get the autohide state.
   // 4. The worker thread is invoked. It calls the API to get the autohide
   //    state. On Windows versions  earlier than Windows 7, taskbars could

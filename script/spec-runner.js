@@ -13,7 +13,7 @@ const fail = '✗'.red;
 
 const args = require('minimist')(process.argv, {
   string: ['runners', 'target'],
-  boolean: ['buildNativeTests', 'runTestFilesSeperately'],
+  boolean: ['buildNativeTests', 'runTestFilesSeparately'],
   unknown: arg => unknownFlags.push(arg)
 });
 
@@ -155,7 +155,7 @@ const specFilter = (file) => {
 };
 
 async function runTests (specDir, testName) {
-  if (args.runTestFilesSeperately) {
+  if (args.runTestFilesSeparately) {
     const getFiles = require('../spec/static/get-files');
     const testFiles = await getFiles(path.resolve(__dirname, `../${specDir}`), { filter: specFilter });
     const baseElectronDir = path.resolve(__dirname, '..');
@@ -230,8 +230,13 @@ async function runMainProcessElectronTests () {
 }
 
 async function installSpecModules (dir) {
+  // v8 headers use c++17 so override the gyp default of -std=c++14,
+  // but don't clobber any other CXXFLAGS that were passed into spec-runner.js
+  const CXXFLAGS = ['-std=c++17', process.env.CXXFLAGS].filter(x => !!x).join(' ');
+
   const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
   const env = Object.assign({}, process.env, {
+    CXXFLAGS,
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019',
     npm_config_yes: 'true'

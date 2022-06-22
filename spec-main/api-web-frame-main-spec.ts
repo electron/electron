@@ -224,6 +224,37 @@ describe('webFrameMain module', () => {
       expect(w.webContents.mainFrame).to.equal(mainFrame);
       expect(mainFrame.url).to.equal(crossOriginUrl);
     });
+
+    it('recovers from renderer crash on same-origin', async () => {
+      const server = await createServer();
+      // Keep reference to mainFrame alive throughout crash and recovery.
+      const { mainFrame } = w.webContents;
+      await w.webContents.loadURL(server.url);
+      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+      w.webContents.forcefullyCrashRenderer();
+      await crashEvent;
+      await w.webContents.loadURL(server.url);
+      // Log just to keep mainFrame in scope.
+      console.log('mainFrame.url', mainFrame.url);
+    });
+
+    // Fixed by #34411
+    it('recovers from renderer crash on cross-origin', async () => {
+      const server = await createServer();
+      // 'localhost' is treated as a separate origin.
+      const crossOriginUrl = server.url.replace('127.0.0.1', 'localhost');
+      // Keep reference to mainFrame alive throughout crash and recovery.
+      const { mainFrame } = w.webContents;
+      await w.webContents.loadURL(server.url);
+      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+      w.webContents.forcefullyCrashRenderer();
+      await crashEvent;
+      // A short wait seems to be required to reproduce the crash.
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await w.webContents.loadURL(crossOriginUrl);
+      // Log just to keep mainFrame in scope.
+      console.log('mainFrame.url', mainFrame.url);
+    });
   });
 
   describe('webFrameMain.fromId', () => {

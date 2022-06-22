@@ -12,7 +12,6 @@
 #include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
-#include "base/task/post_task.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
 #include "components/viz/common/features.h"
@@ -83,19 +82,19 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   int button_flags = 0;
   switch (event.button) {
     case blink::WebMouseEvent::Button::kBack:
-      button_flags |= ui::EventFlags::EF_BACK_MOUSE_BUTTON;
+      button_flags |= ui::EF_BACK_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kForward:
-      button_flags |= ui::EventFlags::EF_FORWARD_MOUSE_BUTTON;
+      button_flags |= ui::EF_FORWARD_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kLeft:
-      button_flags |= ui::EventFlags::EF_LEFT_MOUSE_BUTTON;
+      button_flags |= ui::EF_LEFT_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kMiddle:
-      button_flags |= ui::EventFlags::EF_MIDDLE_MOUSE_BUTTON;
+      button_flags |= ui::EF_MIDDLE_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kRight:
-      button_flags |= ui::EventFlags::EF_RIGHT_MOUSE_BUTTON;
+      button_flags |= ui::EF_RIGHT_MOUSE_BUTTON;
       break;
     default:
       button_flags = 0;
@@ -757,8 +756,8 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
   hold_resize_ = false;
   if (pending_resize_) {
     pending_resize_ = false;
-    base::PostTask(
-        FROM_HERE, {content::BrowserThread::UI},
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
         base::BindOnce(
             &OffScreenRenderWidgetHostView::SynchronizeVisualProperties,
             weak_ptr_factory_.GetWeakPtr()));
@@ -862,8 +861,8 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
         // Scrolling outside of the popup widget so destroy it.
         // Execute asynchronously to avoid deleting the widget from inside some
         // other callback.
-        base::PostTask(
-            FROM_HERE, {content::BrowserThread::UI},
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }

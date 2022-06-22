@@ -15,10 +15,10 @@ Refs changes in:
 This patch reverts the changes to fix associated crashes in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/frame.cc b/third_party/blink/renderer/core/frame/frame.cc
-index 0396836ad4ae67e26b6920afbcd702ccb24d391e..f207eda80b6cd1d3a739cc27499691ad1ac8e13e 100644
+index f370d230361c3ab524c0fc74facf8954840aa29f..0e62d29e44a971d49d70e485509d0b59f5cb31c7 100644
 --- a/third_party/blink/renderer/core/frame/frame.cc
 +++ b/third_party/blink/renderer/core/frame/frame.cc
-@@ -122,14 +122,6 @@ bool Frame::Detach(FrameDetachType type) {
+@@ -123,14 +123,6 @@ bool Frame::Detach(FrameDetachType type) {
  
    DCHECK(!IsDetached());
  
@@ -33,7 +33,7 @@ index 0396836ad4ae67e26b6920afbcd702ccb24d391e..f207eda80b6cd1d3a739cc27499691ad
    if (type == FrameDetachType::kRemove) {
      if (provisional_frame_) {
        provisional_frame_->Detach(FrameDetachType::kRemove);
-@@ -153,6 +145,14 @@ bool Frame::Detach(FrameDetachType type) {
+@@ -154,6 +146,14 @@ bool Frame::Detach(FrameDetachType type) {
      GetWindowProxyManager()->ClearForSwap();
    }
  
@@ -49,10 +49,10 @@ index 0396836ad4ae67e26b6920afbcd702ccb24d391e..f207eda80b6cd1d3a739cc27499691ad
    // its owning reference back to our owning LocalFrame.
    client_->Detached(type);
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index b95ed440737ccdf32607c90831d13a482315d515..73f7aeee21f0116e46dad91cb9a088ab5adda6e3 100644
+index d5ef00cb9870c2dc767d80595a39af4302c3e3c3..f3a2a9527f97902f357782eb445cf63777c77398 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -543,10 +543,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -544,10 +544,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -63,7 +63,7 @@ index b95ed440737ccdf32607c90831d13a482315d515..73f7aeee21f0116e46dad91cb9a088ab
    if (!Client())
      return false;
  
-@@ -592,6 +588,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -593,6 +589,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    DCHECK(!view_->IsAttached());
    Client()->WillBeDetached();
  

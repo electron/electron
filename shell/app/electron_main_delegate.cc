@@ -253,6 +253,8 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
 
   auto env = base::Environment::Create();
 
+  gin_helper::Locker::SetIsBrowserProcess(IsBrowserProcess(command_line));
+
   // Enable convenient stack printing. This is enabled by default in
   // non-official builds.
   if (env->HasVar(kElectronEnableStackDumping))

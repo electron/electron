@@ -17,7 +17,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -622,7 +621,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
       [](ElectronPermissionManager::RequestHandler* handler,
          content::WebContents* web_contents,
-         content::PermissionType permission_type,
+         blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
         handler->Run(web_contents, permission_type,
@@ -951,8 +950,8 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
   }
 
   DCHECK_GT(num_sockets_to_preconnect, 0);
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&StartPreconnectOnUI, base::Unretained(browser_context_),
                      url, num_sockets_to_preconnect));
 }
@@ -1025,7 +1024,7 @@ base::Value Session::GetSpellCheckerLanguages() {
 void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
-  base::ListValue language_codes;
+  base::Value::List language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
     if (code.empty()) {
@@ -1036,7 +1035,7 @@ void Session::SetSpellCheckerLanguages(
     language_codes.Append(code);
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
-                                 language_codes);
+                                 base::Value(std::move(language_codes)));
   // Enable spellcheck if > 0 languages, disable if no languages set
   browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
                                         !languages.empty());

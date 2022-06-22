@@ -11,7 +11,6 @@
 #include "base/memory/read_only_shared_memory_region.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/printing/print_job_manager.h"
 #include "chrome/browser/printing/printer_query.h"
@@ -42,8 +41,8 @@ void StopWorker(int document_cookie) {
   std::unique_ptr<printing::PrinterQuery> printer_query =
       queue->PopPrinterQuery(document_cookie);
   if (printer_query.get()) {
-    base::PostTask(FROM_HERE, {BrowserThread::IO},
-                   base::BindOnce(&printing::PrinterQuery::StopWorker,
+    content::GetIOThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(&printing::PrinterQuery::StopWorker,
                                   std::move(printer_query)));
   }
 }
@@ -227,7 +226,7 @@ void PrintPreviewMessageHandler::PrintToPDF(
     print_render_frame_->SetPrintPreviewUI(
         receiver_.BindNewEndpointAndPassRemote());
   }
-  print_render_frame_->PrintPreview(options.Clone());
+  print_render_frame_->PrintPreview(options.GetDict().Clone());
 }
 
 gin_helper::Promise<v8::Local<v8::Value>>

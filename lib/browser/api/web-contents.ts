@@ -10,7 +10,7 @@ import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-util
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-// session is not used here, the purpose is to make sure session is initalized
+// session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.
 // eslint-disable-next-line
 session
@@ -63,6 +63,20 @@ const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
   }
 } as const;
 
+const paperFormats: Record<string, ElectronInternal.PageSize> = {
+  letter: { width: 8.5, height: 11 },
+  legal: { width: 8.5, height: 14 },
+  tabloid: { width: 11, height: 17 },
+  ledger: { width: 17, height: 11 },
+  a0: { width: 33.1, height: 46.8 },
+  a1: { width: 23.4, height: 33.1 },
+  a2: { width: 16.54, height: 23.4 },
+  a3: { width: 11.7, height: 16.54 },
+  a4: { width: 8.27, height: 11.7 },
+  a5: { width: 5.83, height: 8.27 },
+  a6: { width: 4.13, height: 5.83 }
+} as const;
+
 // The minimum micron size Chromium accepts is that where:
 // Per printing/units.h:
 //  * kMicronsPerInch - Length of an inch in 0.001mm unit.
@@ -75,42 +89,6 @@ const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
 const isValidCustomPageSize = (width: number, height: number) => {
   return [width, height].every(x => x > 352);
 };
-
-// Default printing setting
-const defaultPrintingSetting = {
-  // Customizable.
-  pageRange: [] as {from: number, to: number}[],
-  mediaSize: {} as ElectronInternal.MediaSize,
-  landscape: false,
-  headerFooterEnabled: false,
-  marginsType: 0,
-  scaleFactor: 100,
-  shouldPrintBackgrounds: false,
-  shouldPrintSelectionOnly: false,
-  // Non-customizable.
-  printWithCloudPrint: false,
-  printWithPrivet: false,
-  printWithExtension: false,
-  pagesPerSheet: 1,
-  isFirstRequest: false,
-  previewUIID: 0,
-  // True, if the document source is modifiable. e.g. HTML and not PDF.
-  previewModifiable: true,
-  printToPDF: true,
-  deviceName: 'Save as PDF',
-  generateDraftData: true,
-  dpiHorizontal: 72,
-  dpiVertical: 72,
-  rasterizePDF: false,
-  duplex: 0,
-  copies: 1,
-  // 2 = color - see ColorModel in //printing/print_job_constants.h
-  color: 2,
-  collate: true,
-  printerType: 2,
-  title: undefined as string | undefined,
-  url: undefined as string | undefined
-} as const;
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
@@ -193,136 +171,136 @@ WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId
 let pendingPromise: Promise<any> | undefined;
 WebContents.prototype.printToPDF = async function (options) {
   const printSettings: Record<string, any> = {
-    ...defaultPrintingSetting,
-    requestID: getNextId()
+    requestID: getNextId(),
+    landscape: false,
+    displayHeaderFooter: false,
+    headerTemplate: '',
+    footerTemplate: '',
+    printBackground: false,
+    scale: 1,
+    paperWidth: 8.5,
+    paperHeight: 11,
+    marginTop: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    pageRanges: '',
+    preferCSSPageSize: false
   };
 
   if (options.landscape !== undefined) {
     if (typeof options.landscape !== 'boolean') {
-      const error = new Error('landscape must be a Boolean');
-      return Promise.reject(error);
+      return Promise.reject(new Error('landscape must be a Boolean'));
     }
     printSettings.landscape = options.landscape;
   }
 
-  if (options.scaleFactor !== undefined) {
-    if (typeof options.scaleFactor !== 'number') {
-      const error = new Error('scaleFactor must be a Number');
-      return Promise.reject(error);
+  if (options.displayHeaderFooter !== undefined) {
+    if (typeof options.displayHeaderFooter !== 'boolean') {
+      return Promise.reject(new Error('displayHeaderFooter must be a Boolean'));
     }
-    printSettings.scaleFactor = options.scaleFactor;
-  }
-
-  if (options.marginsType !== undefined) {
-    if (typeof options.marginsType !== 'number') {
-      const error = new Error('marginsType must be a Number');
-      return Promise.reject(error);
-    }
-    printSettings.marginsType = options.marginsType;
-  }
-
-  if (options.printSelectionOnly !== undefined) {
-    if (typeof options.printSelectionOnly !== 'boolean') {
-      const error = new Error('printSelectionOnly must be a Boolean');
-      return Promise.reject(error);
-    }
-    printSettings.shouldPrintSelectionOnly = options.printSelectionOnly;
+    printSettings.displayHeaderFooter = options.displayHeaderFooter;
   }
 
   if (options.printBackground !== undefined) {
     if (typeof options.printBackground !== 'boolean') {
-      const error = new Error('printBackground must be a Boolean');
-      return Promise.reject(error);
+      return Promise.reject(new Error('printBackground must be a Boolean'));
     }
     printSettings.shouldPrintBackgrounds = options.printBackground;
   }
 
-  if (options.pageRanges !== undefined) {
-    const pageRanges = options.pageRanges;
-    if (!Object.prototype.hasOwnProperty.call(pageRanges, 'from') || !Object.prototype.hasOwnProperty.call(pageRanges, 'to')) {
-      const error = new Error('pageRanges must be an Object with \'from\' and \'to\' properties');
-      return Promise.reject(error);
+  if (options.scale !== undefined) {
+    if (typeof options.scale !== 'number') {
+      return Promise.reject(new Error('scale must be a Number'));
     }
-
-    if (typeof pageRanges.from !== 'number') {
-      const error = new Error('pageRanges.from must be a Number');
-      return Promise.reject(error);
-    }
-
-    if (typeof pageRanges.to !== 'number') {
-      const error = new Error('pageRanges.to must be a Number');
-      return Promise.reject(error);
-    }
-
-    // Chromium uses 1-based page ranges, so increment each by 1.
-    printSettings.pageRange = [{
-      from: pageRanges.from + 1,
-      to: pageRanges.to + 1
-    }];
+    printSettings.scaleFactor = options.scale;
   }
 
-  if (options.headerFooter !== undefined) {
-    const headerFooter = options.headerFooter;
-    printSettings.headerFooterEnabled = true;
-    if (typeof headerFooter === 'object') {
-      if (!headerFooter.url || !headerFooter.title) {
-        const error = new Error('url and title properties are required for headerFooter');
-        return Promise.reject(error);
+  const { pageSize } = options;
+  if (pageSize !== undefined) {
+    if (typeof pageSize === 'string') {
+      const format = paperFormats[pageSize.toLowerCase()];
+      if (!format) {
+        return Promise.reject(new Error(`Invalid pageSize ${pageSize}`));
       }
-      if (typeof headerFooter.title !== 'string') {
-        const error = new Error('headerFooter.title must be a String');
-        return Promise.reject(error);
-      }
-      printSettings.title = headerFooter.title;
 
-      if (typeof headerFooter.url !== 'string') {
-        const error = new Error('headerFooter.url must be a String');
-        return Promise.reject(error);
-      }
-      printSettings.url = headerFooter.url;
-    } else {
-      const error = new Error('headerFooter must be an Object');
-      return Promise.reject(error);
-    }
-  }
-
-  // Optionally set size for PDF.
-  if (options.pageSize !== undefined) {
-    const pageSize = options.pageSize;
-    if (typeof pageSize === 'object') {
+      printSettings.paperWidth = format.width;
+      printSettings.paperHeight = format.height;
+    } else if (typeof options.pageSize === 'object') {
       if (!pageSize.height || !pageSize.width) {
-        const error = new Error('height and width properties are required for pageSize');
-        return Promise.reject(error);
+        return Promise.reject(new Error('height and width properties are required for pageSize'));
       }
 
-      // Dimensions in Microns - 1 meter = 10^6 microns
-      const height = Math.ceil(pageSize.height);
-      const width = Math.ceil(pageSize.width);
-      if (!isValidCustomPageSize(width, height)) {
-        const error = new Error('height and width properties must be minimum 352 microns.');
-        return Promise.reject(error);
-      }
-
-      printSettings.mediaSize = {
-        name: 'CUSTOM',
-        custom_display_name: 'Custom',
-        height_microns: height,
-        width_microns: width
-      };
-    } else if (Object.prototype.hasOwnProperty.call(PDFPageSizes, pageSize)) {
-      printSettings.mediaSize = PDFPageSizes[pageSize];
+      printSettings.paperWidth = pageSize.width;
+      printSettings.paperHeight = pageSize.height;
     } else {
-      const error = new Error(`Unsupported pageSize: ${pageSize}`);
-      return Promise.reject(error);
+      return Promise.reject(new Error('pageSize must be a String or Object'));
     }
-  } else {
-    printSettings.mediaSize = PDFPageSizes.A4;
   }
 
-  // Chromium expects this in a 0-100 range number, not as float
-  printSettings.scaleFactor = Math.ceil(printSettings.scaleFactor) % 100;
-  // PrinterType enum from //printing/print_job_constants.h
-  printSettings.printerType = 2;
+  const { margins } = options;
+  if (margins !== undefined) {
+    if (typeof margins !== 'object') {
+      return Promise.reject(new Error('margins must be an Object'));
+    }
+
+    if (margins.top !== undefined) {
+      if (typeof margins.top !== 'number') {
+        return Promise.reject(new Error('margins.top must be a Number'));
+      }
+      printSettings.marginTop = margins.top;
+    }
+
+    if (margins.bottom !== undefined) {
+      if (typeof margins.bottom !== 'number') {
+        return Promise.reject(new Error('margins.bottom must be a Number'));
+      }
+      printSettings.marginBottom = margins.bottom;
+    }
+
+    if (margins.left !== undefined) {
+      if (typeof margins.left !== 'number') {
+        return Promise.reject(new Error('margins.left must be a Number'));
+      }
+      printSettings.marginLeft = margins.left;
+    }
+
+    if (margins.right !== undefined) {
+      if (typeof margins.right !== 'number') {
+        return Promise.reject(new Error('margins.right must be a Number'));
+      }
+      printSettings.marginRight = margins.right;
+    }
+  }
+
+  if (options.pageRanges !== undefined) {
+    if (typeof options.pageRanges !== 'string') {
+      return Promise.reject(new Error('printBackground must be a String'));
+    }
+    printSettings.pageRanges = options.pageRanges;
+  }
+
+  if (options.headerTemplate !== undefined) {
+    if (typeof options.headerTemplate !== 'string') {
+      return Promise.reject(new Error('headerTemplate must be a String'));
+    }
+    printSettings.headerTemplate = options.headerTemplate;
+  }
+
+  if (options.footerTemplate !== undefined) {
+    if (typeof options.footerTemplate !== 'string') {
+      return Promise.reject(new Error('footerTemplate must be a String'));
+    }
+    printSettings.footerTemplate = options.footerTemplate;
+  }
+
+  if (options.preferCSSPageSize !== undefined) {
+    if (typeof options.preferCSSPageSize !== 'boolean') {
+      return Promise.reject(new Error('footerTemplate must be a String'));
+    }
+    printSettings.preferCSSPageSize = options.preferCSSPageSize;
+  }
+
   if (this._printToPDF) {
     if (pendingPromise) {
       pendingPromise = pendingPromise.then(() => this._printToPDF(printSettings));
@@ -504,6 +482,7 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   if (!this._windowOpenHandler) {
     return defaultResponse;
   }
+
   const response = this._windowOpenHandler(details);
 
   if (typeof response !== 'object') {
@@ -666,7 +645,15 @@ WebContents.prototype._init = function () {
         postBody,
         disposition
       };
-      const result = this._callWindowOpenHandler(event, details);
+
+      let result: ReturnType<typeof this._callWindowOpenHandler>;
+      try {
+        result = this._callWindowOpenHandler(event, details);
+      } catch (err) {
+        event.preventDefault();
+        throw err;
+      }
+
       const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
@@ -697,7 +684,15 @@ WebContents.prototype._init = function () {
         referrer,
         postBody
       };
-      const result = this._callWindowOpenHandler(event, details);
+
+      let result: ReturnType<typeof this._callWindowOpenHandler>;
+      try {
+        result = this._callWindowOpenHandler(event, details);
+      } catch (err) {
+        event.preventDefault();
+        throw err;
+      }
+
       windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {

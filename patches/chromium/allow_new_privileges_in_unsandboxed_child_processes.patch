@@ -6,10 +6,10 @@ Subject: allow new privileges in unsandboxed child processes
 This allows unsandboxed renderers to launch setuid processes on Linux.
 
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index f60ad777ab7698a4518d3b1b61ade29e7c618a3a..c7781bdb49f8a92aa9ee1d8dd1af03fa9cf2dfe3 100644
+index b2b29e715d6e5ea427faf6829e935e91dd87d471..138b5da2e5ae85760faaeeff92168d1070b6f562 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -53,6 +53,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -54,6 +54,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
    if (GetProcessType() == switches::kRendererProcess) {
      const int sandbox_fd = SandboxHostLinux::GetInstance()->GetChildSocket();
      options->fds_to_remap.push_back(std::make_pair(sandbox_fd, GetSandboxFD()));
@@ -27,4 +27,4 @@ index f60ad777ab7698a4518d3b1b61ade29e7c618a3a..c7781bdb49f8a92aa9ee1d8dd1af03fa
 +    }
    }
  
-   options->environment = delegate_->GetEnvironment();
+   for (const auto& remapped_fd : file_data_->additional_remapped_fds) {

@@ -66,9 +66,9 @@ async function createWindow (backgroundColor?: string) {
   mainWindow = new BrowserWindow(options);
   mainWindow.on('ready-to-show', () => mainWindow!.show());
 
-  mainWindow.webContents.on('new-window', (event, url) => {
-    event.preventDefault();
-    shell.openExternal(decorateURL(url));
+  mainWindow.webContents.setWindowOpenHandler(details => {
+    shell.openExternal(decorateURL(details.url));
+    return { action: 'deny' };
   });
 
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, done) => {

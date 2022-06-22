@@ -89,7 +89,10 @@ static_library("chrome") {
       "//chrome/browser/icon_loader_mac.mm",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
+      "//chrome/browser/platform_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
@@ -214,6 +217,8 @@ static_library("chrome") {
       "//chrome/browser/printing/printer_query.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
+      "//components/printing/browser/print_to_pdf/pdf_print_utils.cc",
+      "//components/printing/browser/print_to_pdf/pdf_print_utils.h",
     ]
 
     if (enable_oop_printing) {

@@ -274,6 +274,19 @@ from `select-hid-device` is called.  This event is intended for use when using
 a UI to ask users to pick a device so that the UI can be updated to remove the
 specified device.
 
+#### Event: 'hid-device-revoked'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `device` [HIDDevice[]](structures/hid-device.md)
+  * `frame` [WebFrameMain](web-frame-main.md)
+
+Emitted after `HIDDevice.forget()` has been called.  This event can be used
+to help maintain persistent storage of permissions when
+`setDevicePermissionHandler` is used.
+
 #### Event: 'select-serial-port'
 
 Returns:
@@ -700,7 +713,7 @@ To clear the handler, call `setDevicePermissionHandler(null)`.
 This handler can be used to provide default permissioning to devices without first calling for permission
 to devices (eg via `navigator.hid.requestDevice`).  If this handler is not defined, the default device
 permissions as granted through device selection (eg via `navigator.hid.requestDevice`) will be used.
-Additionally, the default behavior of Electron is to store granted device permision through the lifetime
+Additionally, the default behavior of Electron is to store granted device permission through the lifetime
 of the corresponding WebContents.  If longer term storage is needed, a developer can store granted device
 permissions (eg when handling the `select-hid-device` event) and then read from that storage with `setDevicePermissionHandler`.
 

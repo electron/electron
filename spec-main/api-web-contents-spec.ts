@@ -247,7 +247,7 @@ describe('webContents module', () => {
         const result = await w.webContents.executeJavaScript(code);
         expect(result).to.equal(expected);
       });
-      it('resolves the returned promise with the result if the code returns an asyncronous promise', async () => {
+      it('resolves the returned promise with the result if the code returns an asynchronous promise', async () => {
         const result = await w.webContents.executeJavaScript(asyncCode);
         expect(result).to.equal(expected);
       });
@@ -883,7 +883,7 @@ describe('webContents module', () => {
 
   describe('getOSProcessId()', () => {
     afterEach(closeAllWindows);
-    it('returns a valid procress id', async () => {
+    it('returns a valid process id', async () => {
       const w = new BrowserWindow({ show: false });
       expect(w.webContents.getOSProcessId()).to.equal(0);
 
@@ -1563,9 +1563,10 @@ describe('webContents module', () => {
       server.listen(0, '127.0.0.1', () => {
         const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/';
         w.webContents.once('did-finish-load', () => {
-          w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
-            expect(referrer.url).to.equal(url);
-            expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
+          w.webContents.setWindowOpenHandler(details => {
+            expect(details.referrer.url).to.equal(url);
+            expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
+            return { action: 'allow' };
           });
           w.webContents.executeJavaScript('a.click()');
         });
@@ -1591,9 +1592,10 @@ describe('webContents module', () => {
       server.listen(0, '127.0.0.1', () => {
         const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/';
         w.webContents.once('did-finish-load', () => {
-          w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
-            expect(referrer.url).to.equal(url);
-            expect(referrer.policy).to.equal('no-referrer-when-downgrade');
+          w.webContents.setWindowOpenHandler(details => {
+            expect(details.referrer.url).to.equal(url);
+            expect(details.referrer.policy).to.equal('no-referrer-when-downgrade');
+            return { action: 'allow' };
           });
           w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');
         });
@@ -1811,14 +1813,16 @@ describe('webContents module', () => {
 
     it('rejects on incorrectly typed parameters', async () => {
       const badTypes = {
-        marginsType: 'terrible',
-        scaleFactor: 'not-a-number',
         landscape: [],
-        pageRanges: { oops: 'im-not-the-right-key' },
-        headerFooter: '123',
-        printSelectionOnly: 1,
+        displayHeaderFooter: '123',
         printBackground: 2,
-        pageSize: 'IAmAPageSize'
+        scale: 'not-a-number',
+        pageSize: 'IAmAPageSize',
+        margins: 'terrible',
+        pageRanges: { oops: 'im-not-the-right-key' },
+        headerTemplate: [1, 2, 3],
+        footerTemplate: [4, 5, 6],
+        preferCSSPageSize: 'no'
       };
 
       // These will hard crash in Chromium unless we type-check
@@ -1867,10 +1871,7 @@ describe('webContents module', () => {
 
       it('respects custom settings', async () => {
         const data = await w.webContents.printToPDF({
-          pageRanges: {
-            from: 0,
-            to: 2
-          },
+          pageRanges: '1-3',
           landscape: true
         });
 
