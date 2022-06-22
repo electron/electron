@@ -317,7 +317,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.native_widget = new ElectronNativeWidgetMac(this, styleMask, widget());
+  params.native_widget =
+      new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
@@ -353,6 +354,10 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     [window_ setCollectionBehavior:(NSWindowCollectionBehaviorCanJoinAllSpaces |
                                     NSWindowCollectionBehaviorStationary |
                                     NSWindowCollectionBehaviorIgnoresCycle)];
+  }
+
+  if (windowType == "panel") {
+    [window_ setLevel:NSFloatingWindowLevel];
   }
 
   bool focusable;
@@ -811,6 +816,7 @@ void NativeWindowMac::MoveTop() {
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
+  ScopedDisableResize disable_resize;
   SetStyleMask(resizable, NSWindowStyleMaskResizable);
   SetCanResize(resizable);
 }
