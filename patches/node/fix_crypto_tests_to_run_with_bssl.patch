@@ -251,6 +251,34 @@ index 3bbca5b0da395b94c04da7bb7c55b107e41367d8..af62558c4f23aa82804e0077da7b7f3a
  
  
  //
+diff --git a/test/parallel/test-crypto-certificate.js b/test/parallel/test-crypto-certificate.js
+index 4a5f1f149fe6c739f7f1d2ee17df6e61a942d621..ffd10deddbffceba1f28a37f54608798e87d5a36 100644
+--- a/test/parallel/test-crypto-certificate.js
++++ b/test/parallel/test-crypto-certificate.js
+@@ -41,7 +41,10 @@ function copyArrayBuffer(buf) {
+ 
+ function checkMethods(certificate) {
+ 
++  /* spkacValid has a md5 based signature which is not allowed in boringssl
++  https://boringssl.googlesource.com/boringssl/+/33d7e32ce40c04e8f1b99c05964956fda187819f
+   assert.strictEqual(certificate.verifySpkac(spkacValid), true);
++  */
+   assert.strictEqual(certificate.verifySpkac(spkacFail), false);
+ 
+   assert.strictEqual(
+@@ -56,10 +59,12 @@ function checkMethods(certificate) {
+   );
+   assert.strictEqual(certificate.exportChallenge(spkacFail), '');
+ 
++  /* spkacValid has a md5 based signature which is not allowed in boringssl
+   const ab = copyArrayBuffer(spkacValid);
+   assert.strictEqual(certificate.verifySpkac(ab), true);
+   assert.strictEqual(certificate.verifySpkac(new Uint8Array(ab)), true);
+   assert.strictEqual(certificate.verifySpkac(new DataView(ab)), true);
++  */
+ }
+ 
+ {
 diff --git a/test/parallel/test-crypto-cipher-decipher.js b/test/parallel/test-crypto-cipher-decipher.js
 index 35514afbea92562a81c163b1e4d918b4ab609f71..13098e1acf12c309f2ed6f6143a2c2eeb8a2763d 100644
 --- a/test/parallel/test-crypto-cipher-decipher.js
