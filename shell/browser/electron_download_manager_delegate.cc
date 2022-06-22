@@ -10,8 +10,10 @@
 
 #include "base/bind.h"
 #include "base/files/file_util.h"
+#include "base/i18n/case_conversion.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/win/registry.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
 #include "components/prefs/pref_service.h"
@@ -29,12 +31,10 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/options_switches.h"
-
-#include "base/win/registry.h"
-#define IDS_APP_SAVEAS_ALL_FILES 35936
 #include "ui/base/l10n/l10n_util.h"
+
+#define IDS_APP_SAVEAS_ALL_FILES 35936
 #define IDS_APP_SAVEAS_EXTENSION_FORMAT 35937
-#include "base/i18n/case_conversion.h"
 
 namespace electron {
 
