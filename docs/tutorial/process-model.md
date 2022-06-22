@@ -1,10 +1,17 @@
+---
+title: 'Process Model'
+description: 'Electron inherits its multi-process architecture from Chromium, which makes the framework architecturally very similar to a modern web browser. This guide will expand on the concepts applied in the tutorial.'
+slug: process-model
+hide_title: false
+---
+
 # Process Model
 
 Electron inherits its multi-process architecture from Chromium, which makes the framework
-architecturally very similar to a modern web browser. In this guide, we'll expound on
-the conceptual knowledge of Electron that we applied in the minimal [quick start app][].
+architecturally very similar to a modern web browser. This guide will expand on the
+concepts applied in the [Tutorial][tutorial].
 
-[quick start app]: ./quick-start.md
+[tutorial]: ./tutorial-1-prerequisites.md
 
 ## Why not a single process?
 
@@ -27,10 +34,10 @@ visualizes this model:
 ![Chrome's multi-process architecture](../images/chrome-processes.png)
 
 Electron applications are structured very similarly. As an app developer, you control
-two types of processes: main and renderer. These are analogous to Chrome's own browser
-and renderer processes outlined above.
+two types of processes: [main](#the-main-process) and [renderer](#the-renderer-process).
+These are analogous to Chrome's own browser and renderer processes outlined above.
 
-[Chrome Comic]: https://www.google.com/googlebooks/chrome/
+[chrome comic]: https://www.google.com/googlebooks/chrome/
 
 ## The main process
 
@@ -40,7 +47,7 @@ to `require` modules and use all of Node.js APIs.
 
 ### Window management
 
-The primary purpose of the main process is to create and manage application windows with the
+The main process' primary purpose is to create and manage application windows with the
 [`BrowserWindow`][browser-window] module.
 
 Each instance of the `BrowserWindow` class creates an application window that loads
@@ -68,7 +75,7 @@ When a `BrowserWindow` instance is destroyed, its corresponding renderer process
 terminated as well.
 
 [browser-window]: ../api/browser-window.md
-[web-embed]: ./web-embeds.md
+[web-embed]: ../tutorial/web-embeds.md
 [web-contents]: ../api/web-contents.md
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 
@@ -90,7 +97,7 @@ app.on('window-all-closed', () => {
 ```
 
 [app]: ../api/app.md
-[quick-start-lifecycle]: ./quick-start.md#manage-your-windows-lifecycle
+[quick-start-lifecycle]: ../tutorial/quick-start.md#manage-your-windows-lifecycle
 
 ### Native APIs
 
@@ -105,7 +112,7 @@ For a full list of Electron's main process modules, check out our API documentat
 
 Each Electron app spawns a separate renderer process for each open `BrowserWindow`
 (and each web embed). As its name implies, a renderer is responsible for
-*rendering* web content. For all intents and purposes, code ran in renderer processes
+_rendering_ web content. For all intents and purposes, code ran in renderer processes
 should behave according to web standards (insofar as Chromium does, at least).
 
 Therefore, all user interfaces and app functionality within a single browser
@@ -115,18 +122,22 @@ web.
 Although explaining every web spec is out of scope for this guide, the bare minimum
 to understand is:
 
-* An HTML file is your entry point for the renderer process.
-* UI styling is added through Cascading Style Sheets (CSS).
-* Executable JavaScript code can be added through `<script>` elements.
+- An HTML file is your entry point for the renderer process.
+- UI styling is added through Cascading Style Sheets (CSS).
+- Executable JavaScript code can be added through `<script>` elements.
 
 Moreover, this also means that the renderer has no direct access to `require`
 or other Node.js APIs. In order to directly include NPM modules in the renderer,
 you must use the same bundler toolchains (for example, `webpack` or `parcel`) that you
 use on the web.
 
-> Note: Renderer processes can be spawned with a full Node.js environment for ease of
-> development. Historically, this used to be the default, but this feature was disabled
-> for security reasons.
+:::warning
+
+Renderer processes can be spawned with a full Node.js environment for ease of
+development. Historically, this used to be the default, but this feature was disabled
+for security reasons.
+
+:::
 
 At this point, you might be wondering how your renderer process user interfaces
 can interact with Node.js and Electron's native desktop functionality if these
@@ -135,8 +146,9 @@ way to import Electron's content scripts.
 
 ## Preload scripts
 
-<!-- Note: This guide doesn't take sandboxing into account, which might fundamentally 
+<!-- Note: This guide doesn't take sandboxing into account, which might fundamentally
 change the statements here. -->
+
 Preload scripts contain code that executes in a renderer process before its web content
 begins loading. These scripts run within the renderer context, but are granted more
 privileges by having access to Node.js APIs.
@@ -149,8 +161,8 @@ const { BrowserWindow } = require('electron')
 //...
 const win = new BrowserWindow({
   webPreferences: {
-    preload: 'path/to/preload.js'
-  }
+    preload: 'path/to/preload.js',
+  },
 })
 //...
 ```
@@ -165,7 +177,7 @@ the [`contextIsolation`][context-isolation] default.
 
 ```js title='preload.js'
 window.myAPI = {
-  desktop: true
+  desktop: true,
 }
 ```
 
@@ -184,7 +196,7 @@ securely:
 const { contextBridge } = require('electron')
 
 contextBridge.exposeInMainWorld('myAPI', {
-  desktop: true
+  desktop: true,
 })
 ```
 
@@ -195,14 +207,15 @@ console.log(window.myAPI)
 
 This feature is incredibly useful for two main purposes:
 
-* By exposing [`ipcRenderer`][ipcRenderer] helpers to the renderer, you can use
+- By exposing [`ipcRenderer`][ipcrenderer] helpers to the renderer, you can use
   inter-process communication (IPC) to trigger main process tasks from the
   renderer (and vice-versa).
-* If you're developing an Electron wrapper for an existing web app hosted on a remote
+- If you're developing an Electron wrapper for an existing web app hosted on a remote
   URL, you can add custom properties onto the renderer's `window` global that can
   be used for desktop-only logic on the web client's side.
 
 [window-mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Window
 [context-isolation]: ./context-isolation.md
 [context-bridge]: ../api/context-bridge.md
-[ipcRenderer]: ../api/ipc-renderer.md
+[ipcrenderer]: ../api/ipc-renderer.md
+[tutorial]: ./tutorial-1-prerequisites.md
