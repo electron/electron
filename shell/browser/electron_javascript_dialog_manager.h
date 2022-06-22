@@ -43,6 +43,7 @@ class ElectronJavaScriptDialogManager
                             int code,
                             bool checkbox_checked);
   bool EmitEvent(content::WebContents* web_contents,
+                 content::RenderFrameHost* rfh,
                  content::JavaScriptDialogType dialog_type,
                  const std::u16string& message_text,
                  const std::u16string& default_prompt_text,

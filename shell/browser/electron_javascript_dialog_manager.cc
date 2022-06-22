@@ -10,6 +10,7 @@
 
 #include "base/functional/bind.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/browser/render_process_host.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window.h"
@@ -64,8 +65,9 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
   // We want to allow a second call (which is no-op) if the user calls the
   // event callback AND doesn't use preventDefault()
   auto adapted_callback = base::AdaptCallbackForRepeating(std::move(callback));
-  bool default_prevented = EmitEvent(web_contents, dialog_type, message_text,
-                                     default_prompt_text, adapted_callback);
+  bool default_prevented =
+      EmitEvent(web_contents, rfh, dialog_type, message_text,
+                default_prompt_text, adapted_callback);
   if (default_prevented)
     return;
 
@@ -146,6 +148,7 @@ void ElectronJavaScriptDialogManager::OnMessageBoxCallback(
 
 bool ElectronJavaScriptDialogManager::EmitEvent(
     content::WebContents* web_contents,
+    content::RenderFrameHost* rfh,
     content::JavaScriptDialogType dialog_type,
     const std::u16string& message_text,
     const std::u16string& default_prompt_text,
@@ -155,6 +158,8 @@ bool ElectronJavaScriptDialogManager::EmitEvent(
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("messageText", message_text);
   details.Set("defaultPromptText", default_prompt_text);
+  details.Set("frameProcessId", rfh->GetProcess()->GetID());
+  details.Set("frameRoutingId", rfh->GetRoutingID());
 
   if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT)
     details.Set("dialogType", "alert");
