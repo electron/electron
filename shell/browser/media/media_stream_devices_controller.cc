@@ -182,7 +182,8 @@ void MediaStreamDevicesController::Deny(
 }
 
 void MediaStreamDevicesController::HandleUserMediaRequest() {
-  blink::mojom::StreamDevicesSetPtr stream_devices_set;
+  blink::mojom::StreamDevicesSetPtr stream_devices_set =
+      blink::mojom::StreamDevicesSet::New();
   stream_devices_set->stream_devices.emplace_back(
       blink::mojom::StreamDevices::New());
   blink::mojom::StreamDevices& devices = *stream_devices_set->stream_devices[0];
