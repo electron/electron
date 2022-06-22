@@ -566,18 +566,6 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('page-title-set event', () => {
-    it('emits when title is set', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/a.html`
-      });
-      const { title, explicitSet } = await waitForEvent(webview, 'page-title-set');
-
-      expect(title).to.equal('test');
-      expect(explicitSet).to.be.true();
-    });
-  });
-
   describe('page-favicon-updated event', () => {
     it('emits when favicon urls are received', async () => {
       loadWebView(webview, {
