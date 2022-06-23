@@ -20,7 +20,10 @@ enable_cdm_host_verification = false
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
-enable_basic_printing = true
+enable_basic_printing = false
+enable_pdf = false
+enable_pdf_viewer = false
+# use_cups = false
 
 # Removes DLLs from the build, which are only meant to be used for Chromium development.
 # See https://github.com/electron/electron/pull/17985
