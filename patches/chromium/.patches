@@ -130,3 +130,4 @@ cherry-pick-f1dd785e021e.patch
 cherry-pick-b03797bdb1df.patch
 posix_replace_doubleforkandexec_with_forkandspawn.patch
 cherry-pick-ecad352cd614.patch
+cherry-pick-22c61cfae5d1.patch
