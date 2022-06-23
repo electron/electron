@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_ELECTRON_DOWNLOAD_MANAGER_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_ELECTRON_DOWNLOAD_MANAGER_DELEGATE_H_
 
+#include <vector>
+
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "shell/browser/ui/file_dialog.h"
