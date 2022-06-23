@@ -1,0 +1,98 @@
+From 22c61cfae5d1b37c773e638d342488ae11118b51 Mon Sep 17 00:00:00 2001
+From: Austin Sullivan <asully@chromium.org>
+Date: Thu, 12 May 2022 04:52:20 +0000
+Subject: [PATCH] FSA: Sanitize .url files
+
+Bug: 1307930
+Change-Id: I7ed3cca5942a5334ba761d269bdd8961fa9d13fe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3638698
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Auto-Submit: Austin Sullivan <asully@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1002495}
+---
+
+diff --git a/content/browser/file_system_access/file_system_chooser.cc b/content/browser/file_system_access/file_system_chooser.cc
+index 4adbbe5..1608613 100644
+--- a/content/browser/file_system_access/file_system_chooser.cc
++++ b/content/browser/file_system_access/file_system_chooser.cc
+@@ -275,13 +275,15 @@
+   base::FilePath::StringType extension_lower =
+       base::ToLowerASCII(GetLastExtension(extension));
+ 
+-  // .lnk and .scf files may be used to execute arbitrary code (see
++  // '.lnk' and '.scf' files may be used to execute arbitrary code (see
+   // https://nvd.nist.gov/vuln/detail/CVE-2010-2568 and
+-  // https://crbug.com/1227995, respectively). .local files are used by Windows
+-  // to determine which DLLs to load for an application.
++  // https://crbug.com/1227995, respectively). '.local' files are used by
++  // Windows to determine which DLLs to load for an application. '.url' files
++  // can be used to read arbirtary files (see https://crbug.com/1307930).
+   if ((extension_lower == FILE_PATH_LITERAL("lnk")) ||
+       (extension_lower == FILE_PATH_LITERAL("local")) ||
+-      (extension_lower == FILE_PATH_LITERAL("scf"))) {
++      (extension_lower == FILE_PATH_LITERAL("scf")) ||
++      (extension_lower == FILE_PATH_LITERAL("url"))) {
+     return true;
+   }
+ 
+diff --git a/content/browser/file_system_access/file_system_chooser_browsertest.cc b/content/browser/file_system_access/file_system_chooser_browsertest.cc
+index 9ea4db7..79dda31 100644
+--- a/content/browser/file_system_access/file_system_chooser_browsertest.cc
++++ b/content/browser/file_system_access/file_system_chooser_browsertest.cc
+@@ -1556,13 +1556,21 @@
+   name_infos.push_back({"not_matching.jpg", ListValueOf(".txt"), false,
+                         "not_matching.jpg", false});
+ 
+-  // ".lnk", ".local", and ".scf" extensions should be sanitized.
+-  name_infos.push_back({"dangerous_extension.local", ListValueOf(".local"),
+-                        true, "dangerous_extension.download", false});
++  // ".lnk", ".local", ".scf", and ".url" extensions should be sanitized.
+   name_infos.push_back({"dangerous_extension.lnk", ListValueOf(".lnk"), true,
+                         "dangerous_extension.download", false});
++  name_infos.push_back({"dangerous_extension.lnk", ListValueOf(".LNK"), true,
++                        "dangerous_extension.download", false});
++  name_infos.push_back({"dangerous_extension.LNK", ListValueOf(".lnk"), true,
++                        "dangerous_extension.download", false});
++  name_infos.push_back({"dangerous_extension.LNK", ListValueOf(".LNK"), true,
++                        "dangerous_extension.download", false});
++  name_infos.push_back({"dangerous_extension.local", ListValueOf(".local"),
++                        true, "dangerous_extension.download", false});
+   name_infos.push_back({"dangerous_extension.scf", ListValueOf(".scf"), true,
+                         "dangerous_extension.download", false});
++  name_infos.push_back({"dangerous_extension.url", ListValueOf(".url"), true,
++                        "dangerous_extension.download", false});
+   // Compound extensions ending in a dangerous extension should be sanitized.
+   name_infos.push_back({"dangerous_extension.png.local", ListValueOf(".local"),
+                         true, "dangerous_extension.png.download", false});
+@@ -1570,6 +1578,8 @@
+                         true, "dangerous_extension.png.download", false});
+   name_infos.push_back({"dangerous_extension.png.scf", ListValueOf(".scf"),
+                         true, "dangerous_extension.png.download", false});
++  name_infos.push_back({"dangerous_extension.png.url", ListValueOf(".url"),
++                        true, "dangerous_extension.png.download", false});
+   // Compound extensions not ending in a dangerous extension should not be
+   // sanitized.
+   name_infos.push_back({"dangerous_extension.local.png", ListValueOf(".png"),
+@@ -1578,6 +1588,8 @@
+                         true, "dangerous_extension.lnk.png", true});
+   name_infos.push_back({"dangerous_extension.scf.png", ListValueOf(".png"),
+                         true, "dangerous_extension.scf.png", true});
++  name_infos.push_back({"dangerous_extension.url.png", ListValueOf(".png"),
++                        true, "dangerous_extension.url.png", true});
+   // Invalid characters should be sanitized.
+   name_infos.push_back({R"(inv*l:d\\ch%rבאמת!a<ters🤓.txt)",
+                         ListValueOf(".txt"), true,
+diff --git a/content/browser/file_system_access/file_system_chooser_unittest.cc b/content/browser/file_system_access/file_system_chooser_unittest.cc
+index 9b27d63..3082c08 100644
+--- a/content/browser/file_system_access/file_system_chooser_unittest.cc
++++ b/content/browser/file_system_access/file_system_chooser_unittest.cc
+@@ -189,7 +189,7 @@
+   accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
+       u"", std::vector<std::string>({}),
+       std::vector<std::string>(
+-          {"lnk", "foo.lnk", "foo.bar.local", "text", "local", "scf"})));
++          {"lnk", "foo.lnk", "foo.bar.local", "text", "local", "scf", "url"})));
+   SyncShowDialog(std::move(accepts), /*include_accepts_all=*/false);
+ 
+   ASSERT_TRUE(dialog_params.file_types);
