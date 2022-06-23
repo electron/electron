@@ -11,58 +11,55 @@
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 
 namespace electron {
-ElectronApiIPCHandlerImpl::ElectronApiIPCHandlerImpl(
-    content::RenderFrameHost* frame_host,
-    mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver)
-    : render_process_id_(frame_host->GetProcess()->GetID()),
-      render_frame_id_(frame_host->GetRoutingID()) {
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(frame_host);
+// static
+void ElectronApiIPCHandlerImpl::BindElectronApiIPC(
+    mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver,
+    content::RenderFrameHost* rfh) {
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   DCHECK(web_contents);
-  content::WebContentsObserver::Observe(web_contents);
-
-  receiver_.Bind(std::move(receiver));
-  receiver_.set_disconnect_handler(base::BindOnce(
-      &ElectronApiIPCHandlerImpl::OnConnectionError, GetWeakPtr()));
+  CreateForWebContents(web_contents);
+  auto* handler = FromWebContents(web_contents);
+  handler->receivers_.Bind(rfh, std::move(receiver));
 }
+
+ElectronApiIPCHandlerImpl::ElectronApiIPCHandlerImpl(
+    content::WebContents* web_contents)
+    : content::WebContentsUserData<ElectronApiIPCHandlerImpl>(*web_contents),
+      receivers_(web_contents, this) {}
 
 ElectronApiIPCHandlerImpl::~ElectronApiIPCHandlerImpl() = default;
-
-void ElectronApiIPCHandlerImpl::WebContentsDestroyed() {
-  delete this;
-}
-
-void ElectronApiIPCHandlerImpl::OnConnectionError() {
-  delete this;
-}
 
 void ElectronApiIPCHandlerImpl::Message(bool internal,
                                         const std::string& channel,
                                         blink::CloneableMessage arguments) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->Message(internal, channel, std::move(arguments),
-                              GetRenderFrameHost());
+                              receivers_.GetCurrentTargetFrame());
   }
 }
 void ElectronApiIPCHandlerImpl::Invoke(bool internal,
                                        const std::string& channel,
                                        blink::CloneableMessage arguments,
                                        InvokeCallback callback) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->Invoke(internal, channel, std::move(arguments),
-                             std::move(callback), GetRenderFrameHost());
+                             std::move(callback),
+                             receivers_.GetCurrentTargetFrame());
   }
 }
 
 void ElectronApiIPCHandlerImpl::ReceivePostMessage(
     const std::string& channel,
     blink::TransferableMessage message) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->ReceivePostMessage(channel, std::move(message),
-                                         GetRenderFrameHost());
+                                         receivers_.GetCurrentTargetFrame());
   }
 }
 
@@ -70,17 +67,20 @@ void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
                                             const std::string& channel,
                                             blink::CloneableMessage arguments,
                                             MessageSyncCallback callback) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->MessageSync(internal, channel, std::move(arguments),
-                                  std::move(callback), GetRenderFrameHost());
+                                  std::move(callback),
+                                  receivers_.GetCurrentTargetFrame());
   }
 }
 
 void ElectronApiIPCHandlerImpl::MessageTo(int32_t web_contents_id,
                                           const std::string& channel,
                                           blink::CloneableMessage arguments) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->MessageTo(web_contents_id, channel, std::move(arguments));
   }
@@ -88,21 +88,13 @@ void ElectronApiIPCHandlerImpl::MessageTo(int32_t web_contents_id,
 
 void ElectronApiIPCHandlerImpl::MessageHost(const std::string& channel,
                                             blink::CloneableMessage arguments) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->MessageHost(channel, std::move(arguments),
-                                  GetRenderFrameHost());
+                                  receivers_.GetCurrentTargetFrame());
   }
 }
 
-content::RenderFrameHost* ElectronApiIPCHandlerImpl::GetRenderFrameHost() {
-  return content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-}
-
-// static
-void ElectronApiIPCHandlerImpl::Create(
-    content::RenderFrameHost* frame_host,
-    mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver) {
-  new ElectronApiIPCHandlerImpl(frame_host, std::move(receiver));
-}
+WEB_CONTENTS_USER_DATA_KEY_IMPL(ElectronApiIPCHandlerImpl);
 }  // namespace electron

@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/weak_ptr.h"
-#include "content/public/browser/web_contents_observer.h"
+#include "content/public/browser/render_frame_host_receiver_set.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -19,21 +19,20 @@ class RenderFrameHost;
 }
 
 namespace electron {
-class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
-                                  public content::WebContentsObserver {
+class ElectronApiIPCHandlerImpl
+    : public mojom::ElectronApiIPC,
+      public content::WebContentsUserData<ElectronApiIPCHandlerImpl> {
  public:
-  explicit ElectronApiIPCHandlerImpl(
-      content::RenderFrameHost* render_frame_host,
-      mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver);
-
-  static void Create(
-      content::RenderFrameHost* frame_host,
-      mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver);
+  static void BindElectronApiIPC(
+      mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver,
+      content::RenderFrameHost* rfh);
 
   // disable copy
   ElectronApiIPCHandlerImpl(const ElectronApiIPCHandlerImpl&) = delete;
   ElectronApiIPCHandlerImpl& operator=(const ElectronApiIPCHandlerImpl&) =
       delete;
+
+  ~ElectronApiIPCHandlerImpl() override;
 
   // mojom::ElectronApiIPC:
   void Message(bool internal,
@@ -55,26 +54,14 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
   void MessageHost(const std::string& channel,
                    blink::CloneableMessage arguments) override;
 
-  base::WeakPtr<ElectronApiIPCHandlerImpl> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
-
  private:
-  ~ElectronApiIPCHandlerImpl() override;
+  friend class content::WebContentsUserData<ElectronApiIPCHandlerImpl>;
 
-  // content::WebContentsObserver:
-  void WebContentsDestroyed() override;
+  explicit ElectronApiIPCHandlerImpl(content::WebContents* web_contents);
 
-  void OnConnectionError();
+  content::RenderFrameHostReceiverSet<mojom::ElectronApiIPC> receivers_;
 
-  content::RenderFrameHost* GetRenderFrameHost();
-
-  const int render_process_id_;
-  const int render_frame_id_;
-
-  mojo::AssociatedReceiver<mojom::ElectronApiIPC> receiver_{this};
-
-  base::WeakPtrFactory<ElectronApiIPCHandlerImpl> weak_factory_{this};
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
 };
 }  // namespace electron
 #endif  // ELECTRON_SHELL_BROWSER_ELECTRON_API_IPC_HANDLER_IMPL_H_

@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/weak_ptr.h"
-#include "content/public/browser/web_contents_observer.h"
+#include "content/public/browser/render_frame_host_receiver_set.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -21,23 +21,21 @@ class RenderFrameHost;
 namespace electron {
 class ElectronWebContentsUtilityHandlerImpl
     : public mojom::ElectronWebContentsUtility,
-      public content::WebContentsObserver {
+      public content::WebContentsUserData<
+          ElectronWebContentsUtilityHandlerImpl> {
  public:
-  explicit ElectronWebContentsUtilityHandlerImpl(
-      content::RenderFrameHost* render_frame_host,
+  static void BindElectronWebContentsUtility(
       mojo::PendingAssociatedReceiver<mojom::ElectronWebContentsUtility>
-          receiver);
-
-  static void Create(
-      content::RenderFrameHost* frame_host,
-      mojo::PendingAssociatedReceiver<mojom::ElectronWebContentsUtility>
-          receiver);
+          receiver,
+      content::RenderFrameHost* rfh);
 
   // disable copy
   ElectronWebContentsUtilityHandlerImpl(
       const ElectronWebContentsUtilityHandlerImpl&) = delete;
   ElectronWebContentsUtilityHandlerImpl& operator=(
       const ElectronWebContentsUtilityHandlerImpl&) = delete;
+
+  ~ElectronWebContentsUtilityHandlerImpl() override;
 
   // mojom::ElectronWebContentsUtility:
   void OnFirstNonEmptyLayout() override;
@@ -46,27 +44,17 @@ class ElectronWebContentsUtilityHandlerImpl
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
 
-  base::WeakPtr<ElectronWebContentsUtilityHandlerImpl> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
-
  private:
-  ~ElectronWebContentsUtilityHandlerImpl() override;
+  friend class content::WebContentsUserData<
+      ElectronWebContentsUtilityHandlerImpl>;
 
-  // content::WebContentsObserver:
-  void WebContentsDestroyed() override;
+  explicit ElectronWebContentsUtilityHandlerImpl(
+      content::WebContents* web_contents);
 
-  void OnConnectionError();
+  content::RenderFrameHostReceiverSet<mojom::ElectronWebContentsUtility>
+      receivers_;
 
-  content::RenderFrameHost* GetRenderFrameHost();
-
-  const int render_process_id_;
-  const int render_frame_id_;
-
-  mojo::AssociatedReceiver<mojom::ElectronWebContentsUtility> receiver_{this};
-
-  base::WeakPtrFactory<ElectronWebContentsUtilityHandlerImpl> weak_factory_{
-      this};
+  WEB_CONTENTS_USER_DATA_KEY_DECL();
 };
 }  // namespace electron
 #endif  // ELECTRON_SHELL_BROWSER_ELECTRON_WEB_CONTENTS_UTILITY_HANDLER_IMPL_H_

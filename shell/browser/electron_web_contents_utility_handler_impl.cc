@@ -11,42 +11,38 @@
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 
 namespace electron {
-ElectronWebContentsUtilityHandlerImpl::ElectronWebContentsUtilityHandlerImpl(
-    content::RenderFrameHost* frame_host,
-    mojo::PendingAssociatedReceiver<mojom::ElectronWebContentsUtility> receiver)
-    : render_process_id_(frame_host->GetProcess()->GetID()),
-      render_frame_id_(frame_host->GetRoutingID()) {
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(frame_host);
+// static
+void ElectronWebContentsUtilityHandlerImpl::BindElectronWebContentsUtility(
+    mojo::PendingAssociatedReceiver<mojom::ElectronWebContentsUtility> receiver,
+    content::RenderFrameHost* rfh) {
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   DCHECK(web_contents);
-  content::WebContentsObserver::Observe(web_contents);
-
-  receiver_.Bind(std::move(receiver));
-  receiver_.set_disconnect_handler(base::BindOnce(
-      &ElectronWebContentsUtilityHandlerImpl::OnConnectionError, GetWeakPtr()));
+  CreateForWebContents(web_contents);
+  auto* handler = FromWebContents(web_contents);
+  handler->receivers_.Bind(rfh, std::move(receiver));
 }
+
+ElectronWebContentsUtilityHandlerImpl::ElectronWebContentsUtilityHandlerImpl(
+    content::WebContents* web_contents)
+    : content::WebContentsUserData<ElectronWebContentsUtilityHandlerImpl>(
+          *web_contents),
+      receivers_(web_contents, this) {}
 
 ElectronWebContentsUtilityHandlerImpl::
     ~ElectronWebContentsUtilityHandlerImpl() = default;
 
-void ElectronWebContentsUtilityHandlerImpl::WebContentsDestroyed() {
-  delete this;
-}
-
-void ElectronWebContentsUtilityHandlerImpl::OnConnectionError() {
-  delete this;
-}
-
 void ElectronWebContentsUtilityHandlerImpl::OnFirstNonEmptyLayout() {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
-    api_web_contents->OnFirstNonEmptyLayout(GetRenderFrameHost());
+    api_web_contents->OnFirstNonEmptyLayout(receivers_.GetCurrentTargetFrame());
   }
 }
 
 void ElectronWebContentsUtilityHandlerImpl::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->UpdateDraggableRegions(std::move(regions));
   }
@@ -54,7 +50,8 @@ void ElectronWebContentsUtilityHandlerImpl::UpdateDraggableRegions(
 
 void ElectronWebContentsUtilityHandlerImpl::SetTemporaryZoomLevel(
     double level) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->SetTemporaryZoomLevel(level);
   }
@@ -62,22 +59,12 @@ void ElectronWebContentsUtilityHandlerImpl::SetTemporaryZoomLevel(
 
 void ElectronWebContentsUtilityHandlerImpl::DoGetZoomLevel(
     DoGetZoomLevelCallback callback) {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  api::WebContents* api_web_contents =
+      api::WebContents::From(&GetWebContents());
   if (api_web_contents) {
     api_web_contents->DoGetZoomLevel(std::move(callback));
   }
 }
 
-content::RenderFrameHost*
-ElectronWebContentsUtilityHandlerImpl::GetRenderFrameHost() {
-  return content::RenderFrameHost::FromID(render_process_id_, render_frame_id_);
-}
-
-// static
-void ElectronWebContentsUtilityHandlerImpl::Create(
-    content::RenderFrameHost* frame_host,
-    mojo::PendingAssociatedReceiver<mojom::ElectronWebContentsUtility>
-        receiver) {
-  new ElectronWebContentsUtilityHandlerImpl(frame_host, std::move(receiver));
-}
+WEB_CONTENTS_USER_DATA_KEY_IMPL(ElectronWebContentsUtilityHandlerImpl);
 }  // namespace electron
