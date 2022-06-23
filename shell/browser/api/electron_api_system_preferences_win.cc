@@ -258,8 +258,7 @@ void SystemPreferences::OnSysColorChange() {
   Emit("color-changed");
 }
 
-void SystemPreferences::OnFinishLaunching(
-    const base::Value::Dict& launch_info) {
+void SystemPreferences::OnFinishLaunching(base::Value::Dict launch_info) {
   color_change_listener_ =
       std::make_unique<gfx::ScopedSysColorChangeListener>(this);
 }
