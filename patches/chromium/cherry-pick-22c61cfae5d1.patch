@@ -1,7 +1,7 @@
-From 22c61cfae5d1b37c773e638d342488ae11118b51 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Sullivan <asully@chromium.org>
 Date: Thu, 12 May 2022 04:52:20 +0000
-Subject: [PATCH] FSA: Sanitize .url files
+Subject: FSA: Sanitize .url files
 
 Bug: 1307930
 Change-Id: I7ed3cca5942a5334ba761d269bdd8961fa9d13fe
@@ -10,13 +10,12 @@ Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
 Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
 Auto-Submit: Austin Sullivan <asully@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1002495}
----
 
 diff --git a/content/browser/file_system_access/file_system_chooser.cc b/content/browser/file_system_access/file_system_chooser.cc
-index 4adbbe5..1608613 100644
+index f8cd9d51222c70166a82cdd6dd4b7d0c24970606..8c38f004109aa967e1e5439a17dc35d3013e8ecf 100644
 --- a/content/browser/file_system_access/file_system_chooser.cc
 +++ b/content/browser/file_system_access/file_system_chooser.cc
-@@ -275,13 +275,15 @@
+@@ -275,13 +275,15 @@ bool FileSystemChooser::IsShellIntegratedExtension(
    base::FilePath::StringType extension_lower =
        base::ToLowerASCII(GetLastExtension(extension));
  
@@ -37,10 +36,10 @@ index 4adbbe5..1608613 100644
    }
  
 diff --git a/content/browser/file_system_access/file_system_chooser_browsertest.cc b/content/browser/file_system_access/file_system_chooser_browsertest.cc
-index 9ea4db7..79dda31 100644
+index 9ea4db7807f6bbac799452fd138848b2a650d6fd..79dda31bd228e785d54e5486bb4417a75ee62b3a 100644
 --- a/content/browser/file_system_access/file_system_chooser_browsertest.cc
 +++ b/content/browser/file_system_access/file_system_chooser_browsertest.cc
-@@ -1556,13 +1556,21 @@
+@@ -1556,13 +1556,21 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest, SuggestedName) {
    name_infos.push_back({"not_matching.jpg", ListValueOf(".txt"), false,
                          "not_matching.jpg", false});
  
@@ -65,7 +64,7 @@ index 9ea4db7..79dda31 100644
    // Compound extensions ending in a dangerous extension should be sanitized.
    name_infos.push_back({"dangerous_extension.png.local", ListValueOf(".local"),
                          true, "dangerous_extension.png.download", false});
-@@ -1570,6 +1578,8 @@
+@@ -1570,6 +1578,8 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest, SuggestedName) {
                          true, "dangerous_extension.png.download", false});
    name_infos.push_back({"dangerous_extension.png.scf", ListValueOf(".scf"),
                          true, "dangerous_extension.png.download", false});
@@ -74,7 +73,7 @@ index 9ea4db7..79dda31 100644
    // Compound extensions not ending in a dangerous extension should not be
    // sanitized.
    name_infos.push_back({"dangerous_extension.local.png", ListValueOf(".png"),
-@@ -1578,6 +1588,8 @@
+@@ -1578,6 +1588,8 @@ IN_PROC_BROWSER_TEST_F(FileSystemChooserBrowserTest, SuggestedName) {
                          true, "dangerous_extension.lnk.png", true});
    name_infos.push_back({"dangerous_extension.scf.png", ListValueOf(".png"),
                          true, "dangerous_extension.scf.png", true});
@@ -84,10 +83,10 @@ index 9ea4db7..79dda31 100644
    name_infos.push_back({R"(inv*l:d\\ch%rבאמת!a<ters🤓.txt)",
                          ListValueOf(".txt"), true,
 diff --git a/content/browser/file_system_access/file_system_chooser_unittest.cc b/content/browser/file_system_access/file_system_chooser_unittest.cc
-index 9b27d63..3082c08 100644
+index 9b27d6305bd00a19d94b5ec49f21a7ecff7ddc48..3082c088f9733de9335437278c0d023954a953d9 100644
 --- a/content/browser/file_system_access/file_system_chooser_unittest.cc
 +++ b/content/browser/file_system_access/file_system_chooser_unittest.cc
-@@ -189,7 +189,7 @@
+@@ -189,7 +189,7 @@ TEST_F(FileSystemChooserTest, IgnoreShellIntegratedExtensions) {
    accepts.emplace_back(blink::mojom::ChooseFileSystemEntryAcceptsOption::New(
        u"", std::vector<std::string>({}),
        std::vector<std::string>(
