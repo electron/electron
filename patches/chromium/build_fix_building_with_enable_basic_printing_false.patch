@@ -65,3 +65,26 @@ index 75f0fade966646dc7e738c87a3300be1603ec7b7..27f71aef278781c214dc430af7cd16f3
  }  // namespace
  
  bool UtilitySandboxedProcessLauncherDelegate::GetAppContainerId(
+diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
+index 35d1091e0c555d00ac1fc5ac878fa2a6e09e718b..07411f07e69a645ba388348f01237f7d38755818 100644
+--- a/sandbox/policy/mac/sandbox_mac.mm
++++ b/sandbox/policy/mac/sandbox_mac.mm
+@@ -21,7 +21,6 @@
+ #include "sandbox/policy/mac/nacl_loader.sb.h"
+ #include "sandbox/policy/mac/network.sb.h"
+ #include "sandbox/policy/mac/ppapi.sb.h"
+-#include "sandbox/policy/mac/print_backend.sb.h"
+ #include "sandbox/policy/mac/print_compositor.sb.h"
+ #include "sandbox/policy/mac/renderer.sb.h"
+ #include "sandbox/policy/mac/screen_ai.sb.h"
+@@ -29,6 +28,10 @@
+ #include "sandbox/policy/mac/utility.sb.h"
+ #include "sandbox/policy/mojom/sandbox.mojom.h"
+ 
++#if BUILDFLAG(ENABLE_PRINTING)
++#include "sandbox/policy/mac/print_backend.sb.h"
++#endif
++
+ namespace sandbox {
+ namespace policy {
+ 
