@@ -86,7 +86,7 @@ index 41fb02d532190e82d50286e2733a6c3627bf25c8..05f274c2b64646120bb6ef6a26efd2b0
          notification_context_.get(), &browser_context_,
          embedded_worker_helper_->context_wrapper(), &render_process_host_,
 -        url::Origin::Create(GURL(kTestOrigin)),
-+        nullptr, nurl::Origin::Create(GURL(kTestOrigin)),
++        nullptr, url::Origin::Create(GURL(kTestOrigin)),
          /*document_url=*/GURL(),
          /*weak_document_ptr=*/WeakDocumentPtr(),
          notification_service_remote_.BindNewPipeAndPassReceiver());
