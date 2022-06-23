@@ -84,7 +84,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   }
 
   electron::Browser::Get()->DidFinishLaunching(
-      electron::NSDictionaryToDictionaryValue(notification_info));
+      electron::NSDictionaryToValue(notification_info));
 }
 
 - (void)applicationDidBecomeActive:(NSNotification*)notification {
@@ -128,8 +128,8 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   electron::Browser* browser = electron::Browser::Get();
   return browser->ContinueUserActivity(
              activity_type,
-             electron::NSDictionaryToDictionaryValue(userActivity.userInfo),
-             electron::NSDictionaryToDictionaryValue(details))
+             electron::NSDictionaryToValue(userActivity.userInfo),
+             electron::NSDictionaryToValue(details))
              ? YES
              : NO;
 }
