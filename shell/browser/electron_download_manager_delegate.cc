@@ -10,10 +10,8 @@
 
 #include "base/bind.h"
 #include "base/files/file_util.h"
-#include "base/i18n/case_conversion.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
-#include "base/win/registry.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
 #include "components/prefs/pref_service.h"
@@ -31,10 +29,15 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/options_switches.h"
+
+#if BUILDFLAG(IS_WIN)
+#include "base/i18n/case_conversion.h"
+#include "base/win/registry.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #define IDS_APP_SAVEAS_ALL_FILES 35936
 #define IDS_APP_SAVEAS_EXTENSION_FORMAT 35937
+#endif  // BUILDFLAG(IS_WIN)
 
 namespace electron {
 
@@ -99,6 +102,7 @@ void ElectronDownloadManagerDelegate::GetItemSaveDialogOptions(
     *options = download->GetSaveDialogOptions();
 }
 
+#if BUILDFLAG(IS_WIN)
 // Get the file type description from the registry. This will be "Text Document"
 // for .txt files, "JPEG Image" for .jpg files, etc. If the registry doesn't
 // have an entry for the file type, we return false, true if the description was
@@ -204,6 +208,7 @@ ElectronDownloadManagerDelegate::FormatFilterForExtensions(
 
   return result;
 }
+#endif  // BUILDFLAG(IS_WIN)
 
 void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     uint32_t download_id,
@@ -242,6 +247,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     const bool offscreen = !web_preferences || web_preferences->IsOffscreen();
     settings.force_detached = offscreen;
 
+#if BUILDFLAG(IS_WIN)
     auto extension = settings.default_path.FinalExtension();
     if (!extension.empty() && settings.filters.empty()) {
       extension.erase(extension.begin());
@@ -262,6 +268,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
       std::vector<std::string> all_files{"*.*"};
       settings.filters.emplace_back(std::make_pair("All Files", all_files));
     }
+#endif  // BUILDFLAG(IS_WIN)
 
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
