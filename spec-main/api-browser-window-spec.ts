@@ -1998,6 +1998,42 @@ describe('BrowserWindow module', () => {
       w.setWindowButtonVisibility(false);
       expect(w._getWindowButtonVisibility()).to.equal(false);
     });
+
+    it('correctly updates when entering/exiting fullscreen for hidden style', async () => {
+      const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'hidden' });
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+      w.setWindowButtonVisibility(false);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
+
+      const enterFS = emittedOnce(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+
+      const leaveFS = emittedOnce(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
+
+      w.setWindowButtonVisibility(true);
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+    });
+
+    it('correctly updates when entering/exiting fullscreen for hiddenInset style', async () => {
+      const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'hiddenInset' });
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+      w.setWindowButtonVisibility(false);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
+
+      const enterFS = emittedOnce(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+
+      const leaveFS = emittedOnce(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
+
+      w.setWindowButtonVisibility(true);
+      expect(w._getWindowButtonVisibility()).to.equal(true);
+    });
   });
 
   ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
