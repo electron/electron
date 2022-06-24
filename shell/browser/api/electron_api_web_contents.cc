@@ -2182,7 +2182,7 @@ void WebContents::LoadURL(const GURL& url,
   params.transition_type = ui::PageTransitionFromInt(
       ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_ADDRESS_BAR);
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
-  // Discord non-committed entries to ensure that we don't re-use a pending
+  // Discard non-committed entries to ensure that we don't re-use a pending
   // entry
   web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
