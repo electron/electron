@@ -34,9 +34,7 @@
 #include "base/i18n/case_conversion.h"
 #include "base/win/registry.h"
 #include "ui/base/l10n/l10n_util.h"
-
-#define IDS_APP_SAVEAS_ALL_FILES 35936
-#define IDS_APP_SAVEAS_EXTENSION_FORMAT 35937
+#include "ui/strings/grit/ui_strings.h"
 #endif  // BUILDFLAG(IS_WIN)
 
 namespace electron {
