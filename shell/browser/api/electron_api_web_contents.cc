@@ -623,6 +623,23 @@ void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
       ->SetContentBackgroundColor(color);
 }
 
+content::RenderFrameHost* GetRenderFrameHost(
+    content::NavigationHandle* navigation_handle) {
+  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
+  content::FrameTreeNode* frame_tree_node =
+      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
+  content::RenderFrameHostManager* render_manager =
+      frame_tree_node->render_manager();
+  content::RenderFrameHost* frame_host = nullptr;
+  if (render_manager) {
+    frame_host = render_manager->speculative_frame_host();
+    if (!frame_host)
+      frame_host = render_manager->current_frame_host();
+  }
+
+  return frame_host;
+}
+
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1718,38 +1735,18 @@ void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
-content::RenderFrameHost* WebContents::GetRenderFrameHost(
-    content::NavigationHandle* navigation_handle) {
-  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
-  content::FrameTreeNode* frame_tree_node =
-      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
-  content::RenderFrameHostManager* render_manager =
-      frame_tree_node->render_manager();
-  content::RenderFrameHost* frame_host = nullptr;
-  if (render_manager) {
-    frame_host = render_manager->speculative_frame_host();
-    if (!frame_host)
-      frame_host = render_manager->current_frame_host();
-  }
-
-  return frame_host;
-}
-
 bool WebContents::EmitNavigationEventDetails(
     const std::string& event,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
   auto url = navigation_handle->GetURL();
-
   content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
-  gin::Handle<WebFrameMain> web_frame_main =
-      WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame_host);
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("isMainFrame", is_main_frame);
-  details.Set("frame", web_frame_main);
+  details.SetGetter("frame", frame_host);
 
   return Emit(event, url, details);
 }

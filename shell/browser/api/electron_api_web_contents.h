@@ -344,9 +344,6 @@ class WebContents : public ExclusiveAccessContext,
       observers_.RemoveObserver(obs);
   }
 
-  content::RenderFrameHost* GetRenderFrameHost(
-      content::NavigationHandle* navigation_handle);
-
   bool EmitNavigationEventDetails(const std::string& event,
                                   content::NavigationHandle* navigation_handle);
 
