@@ -41,10 +41,9 @@ as quoted from [MSDN][msdn-jumplist]:
 > confuse the user who does not expect that portion of the destination list to
 > change.
 
-![IE](https://i-msdn.sec.s-msft.com/dynimg/IC420539.png)
+![Taskbar JumpList](../images/windows-taskbar-jumplist.png)
 
-> NOTE: The screenshot above is an example of general tasks of
-Internet Explorer
+> NOTE: The screenshot above is an example of general tasks for Microsoft Edge
 
 Unlike the dock menu in macOS which is a real menu, user tasks in Windows work
 like application shortcuts. For example, when a user clicks a task, the program
@@ -109,7 +108,7 @@ As quoted from [MSDN][msdn-thumbnail]:
 > For example, Windows Media Player might offer standard media transport controls
 > such as play, pause, mute, and stop.
 
-![player](https://i-msdn.sec.s-msft.com/dynimg/IC420540.png)
+![Thumbnail toolbar](../images/windows-taskbar-thumbnail-toolbar.png)
 
 > NOTE: The screenshot above is an example of thumbnail toolbar of Windows
 Media Player
@@ -176,7 +175,7 @@ As quoted from [MSDN][msdn-icon-overlay]:
 > network status, messenger status, or new mail. The user should not be
 > presented with constantly changing overlays or animations.
 
-![Overlay on taskbar button](https://i-msdn.sec.s-msft.com/dynimg/IC420441.png)
+![Overlay on taskbar button](../images/windows-taskbar-icon-overlay.png)
 
 > NOTE: The screenshot above is an example of overlay on a taskbar button
 
