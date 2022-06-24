@@ -213,7 +213,9 @@ Returns:
 
 * `event` Event
 * `url` String
-* `details` WillFrameNavigateDetails
+* `details` Object
+  * `isMainFrame` boolean
+  * `frame` WebFrameMain
 
 Emitted when a user or the page wants to start navigation in any frame. It can happen when
 the `window.location` object is changed or a user clicks a link in the page.
