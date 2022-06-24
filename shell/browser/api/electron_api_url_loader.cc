@@ -66,7 +66,7 @@ struct Converter<network::mojom::CredentialsMode> {
       return false;
     return true;
   }
-};  // namespace gin
+};
 
 }  // namespace gin
 
