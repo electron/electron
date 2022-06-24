@@ -14,28 +14,30 @@ namespace electron {
 
 namespace api {
 
-PushNotifications* push_notifications = nullptr;
+PushNotifications* g_push_notifications = nullptr;
 
 gin::WrapperInfo PushNotifications::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 PushNotifications::PushNotifications() {
-  DCHECK(!push_notifications);
-  push_notifications = this;
+  DCHECK(!g_push_notifications);
+  g_push_notifications = this;
 }
 
 PushNotifications::~PushNotifications() {
-  DCHECK(push_notifications);
-  push_notifications = nullptr;
+  DCHECK(g_push_notifications);
+  g_push_notifications = nullptr;
 }
 
 // static
 PushNotifications* PushNotifications::Get() {
-  return push_notifications;
+  if (!g_push_notifications)
+    g_push_notifications = new PushNotifications();
+  return g_push_notifications;
 }
 
 // static
 gin::Handle<PushNotifications> PushNotifications::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new PushNotifications());
+  return gin::CreateHandle(isolate, PushNotifications::Get());
 }
 
 // static
