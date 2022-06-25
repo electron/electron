@@ -27,7 +27,7 @@ const IGNORELIST = new Set([
 const IS_WINDOWS = process.platform === 'win32';
 
 function spawnAndCheckExitCode (cmd, args, opts) {
-  opts = Object.assign({ stdio: 'inherit' }, opts);
+  opts = { stdio: 'inherit', ...opts };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
   if (error) {
     // the subsprocess failed or timed out
@@ -103,7 +103,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
     const args = ['--rcfile=' + rcfile, ...filenames];
-    const env = Object.assign({ PYTHONPATH: path.join(ELECTRON_ROOT, 'script') }, process.env);
+    const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
     spawnAndCheckExitCode('pylint-2.7', args, { env });
   }
 }, {
@@ -143,10 +143,11 @@ const LINTERS = [{
   test: filename => filename.endsWith('.gn') || filename.endsWith('.gni'),
   run: (opts, filenames) => {
     const allOk = filenames.map(filename => {
-      const env = Object.assign({
+      const env = {
         CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
-        DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
-      }, process.env);
+        DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+        ...process.env
+      };
       // Users may not have depot_tools in PATH.
       env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
       const args = ['format', filename];
