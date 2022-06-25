@@ -1354,7 +1354,7 @@ describe('BrowserWindow module', () => {
 
           w.setAspectRatio(16 / 11);
 
-          const maximize = emittedOnce(w, 'resize');
+          const maximize = emittedOnce(w, 'maximize');
           w.show();
           w.maximize();
           await maximize;
