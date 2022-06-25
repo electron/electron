@@ -6,9 +6,7 @@
 #include "shell/common/api/electron_api_clipboard.h"
 #include "ui/base/cocoa/find_pasteboard.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 void Clipboard::WriteFindText(const std::u16string& text) {
   NSString* text_ns = base::SysUTF16ToNSString(text);
@@ -19,6 +17,4 @@ std::u16string Clipboard::ReadFindText() {
   return GetFindPboardText();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

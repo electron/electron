@@ -11,9 +11,7 @@
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/electron_browser_context.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 SavePageHandler::SavePageHandler(content::WebContents* web_contents,
                                  gin_helper::Promise<void> promise)
@@ -65,6 +63,4 @@ void SavePageHandler::Destroy(download::DownloadItem* item) {
   delete this;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

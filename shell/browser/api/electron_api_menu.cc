@@ -44,9 +44,7 @@ struct Converter<SharingItem> {
 
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -301,9 +299,7 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .Build();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

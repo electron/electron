@@ -51,9 +51,7 @@ bool MapHasMediaKeys(
 
 }  // namespace
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo GlobalShortcut::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -182,9 +180,7 @@ const char* GlobalShortcut::GetTypeName() {
   return "GlobalShortcut";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

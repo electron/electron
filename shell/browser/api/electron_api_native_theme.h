@@ -11,9 +11,7 @@
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class NativeTheme : public gin::Wrappable<NativeTheme>,
                     public gin_helper::EventEmitterMixin<NativeTheme>,
@@ -57,9 +55,7 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
   ui::NativeTheme* web_theme_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace gin {
 

@@ -81,9 +81,7 @@ struct Converter<extensions::WebRequestResourceType> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -551,6 +549,4 @@ gin::Handle<WebRequest> WebRequest::From(
   return gin::CreateHandle(isolate, user_data->data);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

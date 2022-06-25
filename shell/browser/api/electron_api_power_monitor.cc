@@ -35,9 +35,7 @@ struct Converter<ui::IdleState> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -116,9 +114,7 @@ const char* PowerMonitor::GetTypeName() {
   return "PowerMonitor";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

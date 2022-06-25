@@ -48,9 +48,7 @@
 #include "ui/gfx/icon_util.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -627,9 +625,7 @@ const char* NativeImage::GetTypeName() {
 // static
 gin::WrapperInfo NativeImage::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

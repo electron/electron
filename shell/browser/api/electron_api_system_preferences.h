@@ -21,9 +21,7 @@
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 #if BUILDFLAG(IS_MAC)
 enum class NotificationCenterKind {
@@ -168,8 +166,6 @@ class SystemPreferences
 #endif
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_

@@ -39,9 +39,7 @@
 #include "device/fido/win/webauthn_api.h"
 #endif  // BUILDFLAG(IS_WIN)
 
-namespace extensions {
-
-namespace api {
+namespace extensions::api {
 
 namespace {
 
@@ -307,5 +305,4 @@ CryptotokenPrivateRecordSignRequestFunction::Run() {
   return RespondNow(NoArguments());
 }
 
-}  // namespace api
-}  // namespace extensions
+}  // namespace extensions::api

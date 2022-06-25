@@ -22,9 +22,7 @@ class Image;
 class Rect;
 }  // namespace gfx
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class WebContents;
 
@@ -77,8 +75,6 @@ class FrameSubscriber : public content::WebContentsObserver,
   base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_

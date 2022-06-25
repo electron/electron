@@ -16,9 +16,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo AutoUpdater::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -134,9 +132,7 @@ const char* AutoUpdater::GetTypeName() {
   return "AutoUpdater";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

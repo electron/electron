@@ -372,9 +372,7 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -4297,9 +4295,7 @@ WebContents* WebContents::FromID(int32_t id) {
 // static
 gin::WrapperInfo WebContents::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

@@ -70,9 +70,7 @@ struct Converter<network::mojom::CredentialsMode> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -614,6 +612,4 @@ const char* SimpleURLLoaderWrapper::GetTypeName() {
   return "SimpleURLLoaderWrapper";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

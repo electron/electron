@@ -8,9 +8,7 @@
 #include "shell/browser/native_window_views.h"
 #include "ui/aura/window.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 void BrowserWindow::UpdateDraggableRegions(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
@@ -36,6 +34,4 @@ void BrowserWindow::UpdateDraggableRegions(
       ->UpdateDraggableRegions(draggable_regions_);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

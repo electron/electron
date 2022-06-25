@@ -38,9 +38,7 @@ struct Converter<printing::PrinterBasicInfo> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 #if BUILDFLAG(ENABLE_PRINTING)
 printing::PrinterList GetPrinterList(v8::Isolate* isolate) {
@@ -89,9 +87,7 @@ v8::Local<v8::Promise> GetPrinterListAsync(v8::Isolate* isolate) {
 }
 #endif
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

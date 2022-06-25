@@ -28,9 +28,7 @@
 #include "ui/gfx/icon_util.h"
 #endif
 
-namespace electron {
-
-namespace util {
+namespace electron::util {
 
 struct ScaleFactorPair {
   const char* name;
@@ -164,6 +162,4 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
 }
 #endif
 
-}  // namespace util
-
-}  // namespace electron
+}  // namespace electron::util

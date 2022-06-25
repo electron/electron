@@ -22,9 +22,7 @@ class DevToolsAgentHost;
 class WebContents;
 }  // namespace content
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Debugger : public gin::Wrappable<Debugger>,
                  public gin_helper::EventEmitterMixin<Debugger>,
@@ -74,8 +72,6 @@ class Debugger : public gin::Wrappable<Debugger>,
   int previous_request_id_ = 0;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DEBUGGER_H_

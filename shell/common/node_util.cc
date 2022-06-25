@@ -7,9 +7,7 @@
 #include "base/logging.h"
 #include "shell/common/node_includes.h"
 
-namespace electron {
-
-namespace util {
+namespace electron::util {
 
 v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Local<v8::Context> context,
@@ -36,6 +34,4 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   return ret;
 }
 
-}  // namespace util
-
-}  // namespace electron
+}  // namespace electron::util

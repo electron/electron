@@ -28,9 +28,7 @@ namespace ui {
 class MenuModel;
 }
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 class AppIndicatorIconMenu;
 
@@ -111,8 +109,6 @@ class AppIndicatorIcon : public views::StatusIconLinux {
   base::WeakPtrFactory<AppIndicatorIcon> weak_factory_{this};
 };
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_H_

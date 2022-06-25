@@ -20,9 +20,7 @@
 
 using content::DevToolsAgentHost;
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Debugger::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -206,6 +204,4 @@ const char* Debugger::GetTypeName() {
   return "Debugger";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

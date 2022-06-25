@@ -14,9 +14,7 @@
 #include "shell/browser/ui/drag_util.h"
 #include "shell/common/gin_helper/error_thrower.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class BrowserWindow : public BaseWindow,
                       public content::RenderWidgetHost::InputEventObserver,
@@ -133,8 +131,6 @@ class BrowserWindow : public BaseWindow,
   base::WeakPtrFactory<BrowserWindow> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_

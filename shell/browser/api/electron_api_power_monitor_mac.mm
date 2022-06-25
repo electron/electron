@@ -108,9 +108,7 @@
 
 @end
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 static MacLockMonitor* g_lock_monitor = nil;
 
@@ -120,6 +118,4 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   [g_lock_monitor addEmitter:this];
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

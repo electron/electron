@@ -19,9 +19,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class View;
 
@@ -282,8 +280,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_

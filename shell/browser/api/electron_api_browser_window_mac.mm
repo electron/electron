@@ -15,9 +15,7 @@
 #include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 void BrowserWindow::OverrideNSWindowContentView(
     InspectableWebContentsView* view) {
@@ -102,6 +100,4 @@ void BrowserWindow::UpdateDraggableRegions(
   [[webView window] setMovableByWindowBackground:YES];
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

@@ -15,9 +15,7 @@
 - (void)redispatchKeyEvent:(NSEvent*)event;
 @end
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
@@ -81,6 +79,4 @@ bool WebContents::PlatformHandleKeyboardEvent(
   return false;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

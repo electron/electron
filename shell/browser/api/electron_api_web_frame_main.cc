@@ -52,9 +52,7 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
 
@@ -391,9 +389,7 @@ const char* WebFrameMain::GetTypeName() {
   return "WebFrameMain";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

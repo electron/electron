@@ -86,9 +86,7 @@ struct Converter<NSAppearance*> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -657,6 +655,4 @@ void SystemPreferences::SetAppLevelAppearance(gin::Arguments* args) {
   }
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

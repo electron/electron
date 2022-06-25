@@ -29,9 +29,7 @@ namespace gin_helper {
 class Dictionary;
 }
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Menu;
 
@@ -113,8 +111,6 @@ class Tray : public gin::Wrappable<Tray>,
   std::unique_ptr<TrayIcon> tray_icon_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_

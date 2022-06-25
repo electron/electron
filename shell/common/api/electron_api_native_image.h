@@ -40,9 +40,7 @@ namespace gin {
 class Arguments;
 }
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class NativeImage : public gin::Wrappable<NativeImage> {
  public:
@@ -140,8 +138,6 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   int32_t memory_usage_ = 0;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_

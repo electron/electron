@@ -453,9 +453,7 @@ struct Converter<net::SecureDnsMode> {
 };
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -1822,9 +1820,7 @@ const char* App::GetTypeName() {
   return "App";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
