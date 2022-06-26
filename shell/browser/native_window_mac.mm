@@ -608,7 +608,7 @@ void NativeWindowMac::Maximize() {
 
   if (IsMaximized()) {
     if (!is_visible)
-      ShowInactive();
+      Show();
     return;
   }
 
@@ -618,7 +618,7 @@ void NativeWindowMac::Maximize() {
   [window_ zoom:nil];
 
   if (!is_visible) {
-    ShowInactive();
+    Show();
     NotifyWindowMaximize();
   }
 }
