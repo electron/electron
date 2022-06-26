@@ -4034,11 +4034,16 @@ describe('BrowserWindow module', () => {
   // TODO(dsanders11): Enable once maximize event works on Linux again on CI
   ifdescribe(process.platform !== 'linux')('BrowserWindow.maximize()', () => {
     afterEach(closeAllWindows);
-    it('should show the window if it is not currently shown', async () => {
-      const w = new BrowserWindow({ show: false });
-      const hidden = emittedOnce(w, 'hide');
-      const focused = emittedOnce(w, 'focus');
+
+    const testMaximizeHiddenWindow = async (showInitially: boolean) => {
+      const w = new BrowserWindow({ show: showInitially });
       let shown = emittedOnce(w, 'show');
+      if (showInitially) {
+        await shown;
+        shown = emittedOnce(w, 'show');
+        await emittedOnce(w, 'hide', () => w.hide());
+      }
+      let focused = emittedOnce(w, 'focus');
       const maximize = emittedOnce(w, 'maximize');
       expect(w.isVisible()).to.be.false('visible');
       expect(w.isFocused()).to.be.false('focused');
@@ -4050,13 +4055,21 @@ describe('BrowserWindow module', () => {
       expect(w.isVisible()).to.be.true('visible');
       expect(w.isFocused()).to.be.true('focused');
       // Even if the window is already maximized
-      w.hide();
-      await hidden;
+      await emittedOnce(w, 'hide', () => w.hide());
       expect(w.isVisible()).to.be.false('visible');
+      expect(w.isFocused()).to.be.false('focused');
       shown = emittedOnce(w, 'show');
+      focused = emittedOnce(w, 'focus');
       w.maximize();
       await shown;
+      await focused;
       expect(w.isVisible()).to.be.true('visible');
+      expect(w.isFocused()).to.be.true('focused');
+    };
+
+    it('should show the window if it is not currently shown', async () => {
+      await testMaximizeHiddenWindow(true);
+      await testMaximizeHiddenWindow(false);
     });
   });
 

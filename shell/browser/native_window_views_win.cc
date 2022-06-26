@@ -183,6 +183,10 @@ void NativeWindowViews::Maximize() {
     } else {
       widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
                                               gfx::Rect());
+
+      // explicitly focus the window
+      widget()->Activate();
+
       NotifyWindowShow();
     }
   } else {
