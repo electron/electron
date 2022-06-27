@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/views/electron_constrained_window_views_client.h"
 
+#include "base/macros.h"
 #include "components/web_modal/web_contents_modal_dialog_host.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
