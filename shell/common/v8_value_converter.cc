@@ -395,7 +395,7 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
     scope =
         std::make_unique<v8::Context::Scope>(val->GetCreationContextChecked());
 
-  auto result = std::make_unique<base::ListValue>();
+  std::unique_ptr<base::ListValue> result(new base::ListValue());
 
   // Only fields with integer keys are carried over to the ListValue.
   for (uint32_t i = 0; i < val->Length(); ++i) {
@@ -410,18 +410,19 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
 
     if (!val->HasRealIndexedProperty(isolate->GetCurrentContext(), i)
              .FromMaybe(false)) {
-      result->Append(std::make_unique<base::Value>());
+      result->Append(base::Value());
       continue;
     }
 
     std::unique_ptr<base::Value> child =
         FromV8ValueImpl(state, child_v8, isolate);
-    if (child)
-      result->Append(std::move(child));
-    else
+    if (child) {
+      result->Append(base::Value::FromUniquePtrValue(std::move(child)));
+    } else {
       // JSON.stringify puts null in places where values don't serialize, for
       // example undefined and functions. Emulate that behavior.
-      result->Append(std::make_unique<base::Value>());
+      result->Append(base::Value());
+    }
   }
   return std::move(result);
 }

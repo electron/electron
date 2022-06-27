@@ -69,7 +69,7 @@ SerialChooserController::SerialChooserController(
       callback_(std::move(callback)),
       serial_delegate_(serial_delegate),
       render_frame_host_id_(render_frame_host->GetGlobalId()) {
-  origin_ = web_contents->GetMainFrame()->GetLastCommittedOrigin();
+  origin_ = web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin();
 
   chooser_context_ = SerialChooserContextFactory::GetForBrowserContext(
                          web_contents->GetBrowserContext())

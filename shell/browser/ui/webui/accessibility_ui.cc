@@ -196,7 +196,7 @@ std::string RecursiveDumpAXPlatformNodeAsString(
     }
   }
   str += "\n";
-  for (int i = 0; i < node->GetDelegate()->GetChildCount(); i++) {
+  for (size_t i = 0; i < node->GetDelegate()->GetChildCount(); i++) {
     gfx::NativeViewAccessible child = node->GetDelegate()->ChildAtIndex(i);
     const ui::AXPlatformNode* child_node =
         ui::AXPlatformNode::FromNativeViewAccessible(child);
@@ -286,14 +286,15 @@ void HandleAccessibilityRequestCallback(
     descriptor->SetBoolean(kWeb, is_web_enabled);
     descriptor->SetBoolean(kLabelImages,
                            are_accessibility_image_labels_enabled);
-    rvh_list->Append(std::move(descriptor));
+    rvh_list->Append(base::Value::FromUniquePtrValue(std::move(descriptor)));
   }
 
   data.Set(kPagesField, std::move(rvh_list));
 
   auto window_list = std::make_unique<base::ListValue>();
   for (auto* window : electron::WindowList::GetWindows()) {
-    window_list->Append(BuildTargetDescriptor(window));
+    window_list->Append(
+        base::Value::FromUniquePtrValue(BuildTargetDescriptor(window)));
   }
 
   data.Set(kBrowsersField, std::move(window_list));

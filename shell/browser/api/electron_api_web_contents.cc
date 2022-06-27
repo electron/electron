@@ -451,7 +451,7 @@ std::pair<std::string, std::u16string> GetDefaultPrinterAsync() {
   // Check for existing printers and pick the first one should it exist.
   if (printer_name.empty()) {
     printing::PrinterList printers;
-    if (print_backend->EnumeratePrinters(&printers) !=
+    if (print_backend->EnumeratePrinters(printers) !=
         printing::mojom::ResultCode::kSuccess)
       return std::make_pair("Failed to enumerate printers", std::u16string());
     if (!printers.empty())
@@ -944,12 +944,6 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
-  // clear out objects that have been granted permissions so that when
-  // WebContents::RenderFrameDeleted is called as a result of WebContents
-  // destruction it doesn't try to clear out a granted_devices_
-  // on a destructed object.
-  granted_devices_.clear();
-
   if (!inspectable_web_contents_) {
     WebContentsDestroyed();
     return;
@@ -1557,11 +1551,6 @@ void WebContents::RenderFrameDeleted(
   //   is swapped by content::RenderFrameHostManager.
   //
 
-  // clear out objects that have been granted permissions
-  if (!granted_devices_.empty()) {
-    granted_devices_.erase(render_frame_host->GetFrameTreeNodeId());
-  }
-
   // WebFrameMain::FromRenderFrameHost(rfh) will use the RFH's FrameTreeNode ID
   // to find an existing instance of WebFrameMain. During a cross-origin
   // navigation, the deleted RFH will be the old host which was swapped out. In
@@ -1771,7 +1760,7 @@ void WebContents::Invoke(
 
 void WebContents::OnFirstNonEmptyLayout(
     content::RenderFrameHost* render_frame_host) {
-  if (render_frame_host == web_contents()->GetMainFrame()) {
+  if (render_frame_host == web_contents()->GetPrimaryMainFrame()) {
     Emit("ready-to-show");
   }
 }
@@ -2088,7 +2077,7 @@ bool WebContents::GetBackgroundThrottling() const {
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
 
-  auto* rfh = web_contents()->GetMainFrame();
+  auto* rfh = web_contents()->GetPrimaryMainFrame();
   if (!rfh)
     return;
 
@@ -2110,12 +2099,15 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
 }
 
 int WebContents::GetProcessID() const {
-  return web_contents()->GetMainFrame()->GetProcess()->GetID();
+  return web_contents()->GetPrimaryMainFrame()->GetProcess()->GetID();
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
-  base::ProcessHandle process_handle =
-      web_contents()->GetMainFrame()->GetProcess()->GetProcess().Handle();
+  base::ProcessHandle process_handle = web_contents()
+                                           ->GetPrimaryMainFrame()
+                                           ->GetProcess()
+                                           ->GetProcess()
+                                           .Handle();
   return base::GetProcId(process_handle);
 }
 
@@ -2311,7 +2303,7 @@ void WebContents::SetWebRTCIPHandlingPolicy(
 
 std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host)
     return std::string();
 
@@ -2321,7 +2313,7 @@ std::string WebContents::GetMediaSourceID(
       content::WebContentsMediaCaptureId(frame_host->GetProcess()->GetID(),
                                          frame_host->GetRoutingID()));
 
-  auto* request_frame_host = request_web_contents->GetMainFrame();
+  auto* request_frame_host = request_web_contents->GetPrimaryMainFrame();
   if (!request_frame_host)
     return std::string();
 
@@ -2453,7 +2445,7 @@ void WebContents::EnableDeviceEmulation(
     return;
 
   DCHECK(web_contents());
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (frame_host) {
     auto* widget_host_impl = static_cast<content::RenderWidgetHostImpl*>(
         frame_host->GetView()->GetRenderWidgetHost());
@@ -2469,7 +2461,7 @@ void WebContents::DisableDeviceEmulation() {
     return;
 
   DCHECK(web_contents());
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (frame_host) {
     auto* widget_host_impl = static_cast<content::RenderWidgetHostImpl*>(
         frame_host->GetView()->GetRenderWidgetHost());
@@ -2632,7 +2624,7 @@ void WebContents::OnGetDefaultPrinter(
   auto* focused_frame = web_contents()->GetFocusedFrame();
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
-                  : web_contents()->GetMainFrame();
+                  : web_contents()->GetPrimaryMainFrame();
 
   print_view_manager->PrintNow(rfh, silent, std::move(print_settings),
                                std::move(print_callback));
@@ -2839,10 +2831,10 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
-          web_contents()->GetMainFrame()->GetLastCommittedURL(), landscape,
-          display_header_footer, print_background, scale, paper_width,
-          paper_height, margin_top, margin_bottom, margin_left, margin_right,
-          absl::make_optional(header_template),
+          web_contents()->GetPrimaryMainFrame()->GetLastCommittedURL(),
+          landscape, display_header_footer, print_background, scale,
+          paper_width, paper_height, margin_top, margin_bottom, margin_left,
+          margin_right, absl::make_optional(header_template),
           absl::make_optional(footer_template), prefer_css_page_size);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
@@ -2861,7 +2853,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
       absl::get<printing::mojom::PrintPagesParamsPtr>(print_pages_params));
   params->params->document_cookie = unique_id.value_or(0);
 
-  manager->PrintToPdf(web_contents()->GetMainFrame(), page_ranges,
+  manager->PrintToPdf(web_contents()->GetPrimaryMainFrame(), page_ranges,
                       std::move(params),
                       base::BindOnce(&WebContents::OnPDFCreated, GetWeakPtr(),
                                      std::move(promise)));
@@ -2993,7 +2985,7 @@ void WebContents::ShowDefinitionForSelection() {
 }
 
 void WebContents::CopyImageAt(int x, int y) {
-  auto* const host = web_contents()->GetMainFrame();
+  auto* const host = web_contents()->GetPrimaryMainFrame();
   if (host)
     host->CopyImageAt(x, y);
 }
@@ -3159,7 +3151,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   // If the view's renderer is suspended this may fail on Windows/Linux -
   // bail if so. See CopyFromSurface in
   // content/public/browser/render_widget_host_view.h.
-  auto* rfh = web_contents()->GetMainFrame();
+  auto* rfh = web_contents()->GetPrimaryMainFrame();
   if (rfh &&
       rfh->GetVisibilityState() == blink::mojom::PageVisibilityState::kHidden) {
     promise.Resolve(gfx::Image());
@@ -3437,11 +3429,11 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
 }
 
 content::RenderFrameHost* WebContents::MainFrame() {
-  return web_contents()->GetMainFrame();
+  return web_contents()->GetPrimaryMainFrame();
 }
 
 void WebContents::NotifyUserActivation() {
-  content::RenderFrameHost* frame = web_contents()->GetMainFrame();
+  content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
   if (frame)
     frame->NotifyUserActivation(
         blink::mojom::UserActivationNotificationType::kInteraction);
@@ -3457,7 +3449,7 @@ v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host) {
     promise.RejectWithErrorMessage("Failed to create memory dump");
     return handle;
@@ -3487,13 +3479,13 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     return handle;
   }
 
-  auto* frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host) {
     promise.RejectWithErrorMessage("takeHeapSnapshot failed");
     return handle;
   }
 
-  if (!frame_host->IsRenderFrameCreated()) {
+  if (!frame_host->IsRenderFrameLive()) {
     promise.RejectWithErrorMessage("takeHeapSnapshot failed");
     return handle;
   }
@@ -3519,132 +3511,6 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
           },
           base::Owned(std::move(electron_renderer)), std::move(promise)));
   return handle;
-}
-
-void WebContents::GrantDevicePermission(
-    const url::Origin& origin,
-    const base::Value* device,
-    blink::PermissionType permission_type,
-    content::RenderFrameHost* render_frame_host) {
-  granted_devices_[render_frame_host->GetFrameTreeNodeId()][permission_type]
-                  [origin]
-                      .push_back(
-                          std::make_unique<base::Value>(device->Clone()));
-}
-
-void WebContents::RevokeDevicePermission(
-    const url::Origin& origin,
-    const base::Value* device,
-    blink::PermissionType permission_type,
-    content::RenderFrameHost* render_frame_host) {
-  const auto& devices_for_frame_host_it =
-      granted_devices_.find(render_frame_host->GetFrameTreeNodeId());
-  if (devices_for_frame_host_it == granted_devices_.end())
-    return;
-
-  const auto& current_devices_it =
-      devices_for_frame_host_it->second.find(permission_type);
-  if (current_devices_it == devices_for_frame_host_it->second.end())
-    return;
-
-  const auto& origin_devices_it = current_devices_it->second.find(origin);
-  if (origin_devices_it == current_devices_it->second.end())
-    return;
-
-  for (auto it = origin_devices_it->second.begin();
-       it != origin_devices_it->second.end();) {
-    if (DoesDeviceMatch(device, it->get(), permission_type)) {
-      it = origin_devices_it->second.erase(it);
-    } else {
-      ++it;
-    }
-  }
-}
-
-bool WebContents::DoesDeviceMatch(const base::Value* device,
-                                  const base::Value* device_to_compare,
-                                  blink::PermissionType permission_type) {
-  if (permission_type ==
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::HID)) {
-    if (device->GetDict().FindInt(kHidVendorIdKey) !=
-            device_to_compare->GetDict().FindInt(kHidVendorIdKey) ||
-        device->GetDict().FindInt(kHidProductIdKey) !=
-            device_to_compare->GetDict().FindInt(kHidProductIdKey)) {
-      return false;
-    }
-
-    const auto* serial_number =
-        device_to_compare->GetDict().FindString(kHidSerialNumberKey);
-    const auto* device_serial_number =
-        device->GetDict().FindString(kHidSerialNumberKey);
-
-    if (serial_number && device_serial_number &&
-        *device_serial_number == *serial_number)
-      return true;
-  } else if (permission_type ==
-             static_cast<blink::PermissionType>(
-                 WebContentsPermissionHelper::PermissionType::SERIAL)) {
-#if BUILDFLAG(IS_WIN)
-    const auto* instance_id =
-        device->GetDict().FindString(kDeviceInstanceIdKey);
-    const auto* port_instance_id =
-        device_to_compare->GetDict().FindString(kDeviceInstanceIdKey);
-    if (instance_id && port_instance_id && *instance_id == *port_instance_id)
-      return true;
-#else
-    const auto* serial_number = device->GetDict().FindString(kSerialNumberKey);
-    const auto* port_serial_number =
-        device_to_compare->GetDict().FindString(kSerialNumberKey);
-    if (device->GetDict().FindInt(kVendorIdKey) !=
-            device_to_compare->GetDict().FindInt(kVendorIdKey) ||
-        device->GetDict().FindInt(kProductIdKey) !=
-            device_to_compare->GetDict().FindInt(kProductIdKey) ||
-        (serial_number && port_serial_number &&
-         *port_serial_number != *serial_number)) {
-      return false;
-    }
-
-#if BUILDFLAG(IS_MAC)
-    const auto* usb_driver_key = device->GetDict().FindString(kUsbDriverKey);
-    const auto* port_usb_driver_key =
-        device_to_compare->GetDict().FindString(kUsbDriverKey);
-    if (usb_driver_key && port_usb_driver_key &&
-        *usb_driver_key != *port_usb_driver_key) {
-      return false;
-    }
-#endif  // BUILDFLAG(IS_MAC)
-    return true;
-#endif  // BUILDFLAG(IS_WIN)
-  }
-  return false;
-}
-
-bool WebContents::CheckDevicePermission(
-    const url::Origin& origin,
-    const base::Value* device,
-    blink::PermissionType permission_type,
-    content::RenderFrameHost* render_frame_host) {
-  const auto& devices_for_frame_host_it =
-      granted_devices_.find(render_frame_host->GetFrameTreeNodeId());
-  if (devices_for_frame_host_it == granted_devices_.end())
-    return false;
-
-  const auto& current_devices_it =
-      devices_for_frame_host_it->second.find(permission_type);
-  if (current_devices_it == devices_for_frame_host_it->second.end())
-    return false;
-
-  const auto& origin_devices_it = current_devices_it->second.find(origin);
-  if (origin_devices_it == current_devices_it->second.end())
-    return false;
-
-  for (const auto& device_to_compare : origin_devices_it->second) {
-    if (DoesDeviceMatch(device, device_to_compare.get(), permission_type))
-      return true;
-  }
-
-  return false;
 }
 
 void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
@@ -3784,7 +3650,8 @@ void WebContents::DevToolsRequestFileSystems() {
 
   base::ListValue file_system_value;
   for (const auto& file_system : file_systems)
-    file_system_value.Append(CreateFileSystemValue(file_system));
+    file_system_value.Append(
+        base::Value::FromUniquePtrValue(CreateFileSystemValue(file_system)));
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI.fileSystemsLoaded", &file_system_value, nullptr, nullptr);
 }

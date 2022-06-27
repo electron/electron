@@ -59,7 +59,7 @@ async function main () {
   const cxxflags = [
     '-std=c++17',
     '-nostdinc++',
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
+    `-I"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
     '-fPIC',
@@ -108,7 +108,8 @@ async function main () {
   const onlyTests = args.only && args.only.split(',');
 
   const DISABLED_TESTS = [
-    'nannew-test.js'
+    'nannew-test.js',
+    'buffer-test.js'
   ];
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.includes(test))

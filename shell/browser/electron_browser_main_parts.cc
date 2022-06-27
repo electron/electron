@@ -219,6 +219,9 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::PreEarlyInitialization();
 #endif
+#if BUILDFLAG(IS_MAC)
+  screen_ = std::make_unique<display::ScopedNativeScreen>();
+#endif
 
   return GetExitCode();
 }
@@ -275,8 +278,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
 int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
-  screen_ = views::CreateDesktopScreen();
-  display::Screen::SetScreenInstance(screen_.get());
+  if (!display::Screen::GetScreen()) {
+    screen_ = views::CreateDesktopScreen();
+  }
 #endif
 
   if (!views::LayoutProvider::Get())

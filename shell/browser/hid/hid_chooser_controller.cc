@@ -86,7 +86,7 @@ HidChooserController::HidChooserController(
       exclusion_filters_(std::move(exclusion_filters)),
       callback_(std::move(callback)),
       origin_(content::WebContents::FromRenderFrameHost(render_frame_host)
-                  ->GetMainFrame()
+                  ->GetPrimaryMainFrame()
                   ->GetLastCommittedOrigin()),
       frame_tree_node_id_(render_frame_host->GetFrameTreeNodeId()),
       hid_delegate_(hid_delegate),
@@ -196,8 +196,7 @@ void HidChooserController::OnDeviceChosen(gin::Arguments* args) {
       std::vector<device::mojom::HidDeviceInfoPtr> devices;
       devices.reserve(device_infos.size());
       for (auto& device : device_infos) {
-        chooser_context_->GrantDevicePermission(origin_, *device,
-                                                web_contents()->GetMainFrame());
+        chooser_context_->GrantDevicePermission(origin_, *device);
         devices.push_back(device->Clone());
       }
       RunCallback(std::move(devices));
@@ -262,7 +261,7 @@ bool HidChooserController::DisplayDevice(
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kDisableHidBlocklist)) {
     // Do not pass the device to the chooser if it is excluded by the blocklist.
-    if (device::HidBlocklist::IsDeviceExcluded(device))
+    if (device.is_excluded_by_blocklist)
       return false;
 
     // Do not pass the device to the chooser if it has a top-level collection
