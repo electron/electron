@@ -64,16 +64,26 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
 
   // We want to allow a second call (which is no-op) if the user calls the
   // event callback AND doesn't use preventDefault()
-  auto adapted_callback = base::AdaptCallbackForRepeating(std::move(callback));
+  bool callback_called = false;
+  auto split_callback = base::SplitOnceCallback(std::move(callback));
+  split_callback.first =
+      std::move(split_callback.first)
+          .Then(base::BindOnce(
+              [](bool& callback_called) { callback_called = true; },
+              std::ref(callback_called)));
+  
   bool default_prevented =
       EmitEvent(web_contents, rfh, dialog_type, message_text,
-                default_prompt_text, adapted_callback);
+                default_prompt_text, std::move(split_callback.first));
   if (default_prevented)
     return;
 
+  if (callback_called)
+    split_callback.second = base::DoNothing();
+
   if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
       dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
-    adapted_callback.Run(false, std::u16string());
+    std::move(split_callback.second).Run(false, std::u16string());
     return;
   }
 
@@ -117,7 +127,8 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
   electron::ShowMessageBox(
       settings,
       base::BindOnce(&ElectronJavaScriptDialogManager::OnMessageBoxCallback,
-                     base::Unretained(this), adapted_callback, origin));
+                     base::Unretained(this), std::move(split_callback.second),
+                     origin));
 }
 
 void ElectronJavaScriptDialogManager::RunBeforeUnloadDialog(
