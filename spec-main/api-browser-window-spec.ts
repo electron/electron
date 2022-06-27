@@ -1040,7 +1040,7 @@ describe('BrowserWindow module', () => {
         const boundsUpdate = { width: 200 };
         w.setBounds(boundsUpdate as any);
 
-        const expectedBounds = Object.assign(fullBounds, boundsUpdate);
+        const expectedBounds = { ...fullBounds, ...boundsUpdate };
         expectBoundsEqual(w.getBounds(), expectedBounds);
       });
 

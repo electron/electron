@@ -63,7 +63,7 @@ describe('shell module', () => {
       expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
       const change = { target: 'D:\\' };
       expect(shell.writeShortcutLink(tmpShortcut, 'update', change)).to.be.true();
-      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(Object.assign(shortcutOptions, change));
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal({ ...shortcutOptions, ...change });
     });
 
     it('replaces the shortcut', () => {
