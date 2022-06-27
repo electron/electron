@@ -9,6 +9,8 @@ import * as streamJson from 'stream-json';
 import { ignore as streamJsonIgnore } from 'stream-json/filters/Ignore';
 import { streamArray as streamJsonStreamArray } from 'stream-json/streamers/StreamArray';
 
+import { chunkFilenames } from './lib/utils';
+
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 const LLVM_BIN = path.resolve(
   SOURCE_ROOT,
@@ -106,33 +108,6 @@ function getDepotToolsEnv (): NodeJS.ProcessEnv {
   }
 
   return depotToolsEnv;
-}
-
-function chunkFilenames (filenames: string[], offset: number = 0): string[][] {
-  // Windows has a max command line length of 2047 characters, so we can't
-  // provide too many filenames without going over that. To work around that,
-  // chunk up a list of filenames such that it won't go over that limit when
-  // used as args. Use a much higher limit on other platforms which will
-  // effectively be a no-op.
-  const MAX_FILENAME_ARGS_LENGTH =
-    PLATFORM === 'win32' ? 2047 - offset : 100 * 1024;
-
-  return filenames.reduce(
-    (chunkedFilenames: string[][], filename) => {
-      const currChunk = chunkedFilenames[chunkedFilenames.length - 1];
-      const currChunkLength = currChunk.reduce(
-        (totalLength, _filename) => totalLength + _filename.length + 1,
-        0
-      );
-      if (currChunkLength + filename.length + 1 > MAX_FILENAME_ARGS_LENGTH) {
-        chunkedFilenames.push([filename]);
-      } else {
-        currChunk.push(filename);
-      }
-      return chunkedFilenames;
-    },
-    [[]]
-  );
 }
 
 async function runClangTidy (

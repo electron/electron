@@ -55,13 +55,16 @@
   V(electron_browser_in_app_purchase)    \
   V(electron_browser_menu)               \
   V(electron_browser_message_port)       \
+  V(electron_browser_native_theme)       \
   V(electron_browser_net)                \
+  V(electron_browser_notification)       \
   V(electron_browser_power_monitor)      \
   V(electron_browser_power_save_blocker) \
   V(electron_browser_protocol)           \
   V(electron_browser_printing)           \
   V(electron_browser_safe_storage)       \
   V(electron_browser_session)            \
+  V(electron_browser_screen)             \
   V(electron_browser_system_preferences) \
   V(electron_browser_base_window)        \
   V(electron_browser_tray)               \
@@ -77,9 +80,6 @@
   V(electron_common_environment)         \
   V(electron_common_features)            \
   V(electron_common_native_image)        \
-  V(electron_common_native_theme)        \
-  V(electron_common_notification)        \
-  V(electron_common_screen)              \
   V(electron_common_shell)               \
   V(electron_common_v8_util)             \
   V(electron_renderer_context_bridge)    \

@@ -78,7 +78,7 @@ describe('node feature', () => {
         child.kill();
       });
 
-      const env = Object.assign({}, process.env, { NODE_OPTIONS: '--v8-options' });
+      const env = { ...process.env, NODE_OPTIONS: '--v8-options' };
       child = childProcess.spawn(process.execPath, { env });
       exitPromise = emittedOnce(child, 'exit');
 
@@ -113,7 +113,7 @@ describe('node feature', () => {
         child.kill();
       });
 
-      const env = Object.assign({}, process.env, { NODE_OPTIONS: '--use-openssl-ca' });
+      const env = { ...process.env, NODE_OPTIONS: '--use-openssl-ca' };
       child = childProcess.spawn(process.execPath, ['--enable-logging'], { env });
 
       let output = '';
@@ -136,9 +136,10 @@ describe('node feature', () => {
 
     it('does allow --require in non-packaged apps', async () => {
       const appPath = path.join(fixtures, 'module', 'noop.js');
-      const env = Object.assign({}, process.env, {
+      const env = {
+        ...process.env,
         NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
-      });
+      };
       // App should exit with code 1.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
       const [code] = await emittedOnce(child, 'exit');
@@ -147,10 +148,11 @@ describe('node feature', () => {
 
     it('does not allow --require in packaged apps', async () => {
       const appPath = path.join(fixtures, 'module', 'noop.js');
-      const env = Object.assign({}, process.env, {
+      const env = {
+        ...process.env,
         ELECTRON_FORCE_IS_PACKAGED: 'true',
         NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
-      });
+      };
       // App should exit with code 0.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
       const [code] = await emittedOnce(child, 'exit');

@@ -9,6 +9,8 @@ const klaw = require('klaw');
 const minimist = require('minimist');
 const path = require('path');
 
+const { chunkFilenames } = require('./lib/utils');
+
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
@@ -25,7 +27,7 @@ const IGNORELIST = new Set([
 const IS_WINDOWS = process.platform === 'win32';
 
 function spawnAndCheckExitCode (cmd, args, opts) {
-  opts = Object.assign({ stdio: 'inherit' }, opts);
+  opts = { stdio: 'inherit', ...opts };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
   if (error) {
     // the subsprocess failed or timed out
@@ -69,12 +71,11 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
-    if (opts.fix) {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', '--fix', ...filenames]);
-    } else {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...filenames]);
+    const clangFormatFlags = opts.fix ? ['--fix'] : [];
+    for (const chunk of chunkFilenames(filenames)) {
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk]);
+      cpplint(chunk);
     }
-    cpplint(filenames);
   }
 }, {
   key: 'objc',
@@ -102,7 +103,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
     const args = ['--rcfile=' + rcfile, ...filenames];
-    const env = Object.assign({ PYTHONPATH: path.join(ELECTRON_ROOT, 'script') }, process.env);
+    const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
     spawnAndCheckExitCode('pylint-2.7', args, { env });
   }
 }, {
@@ -142,10 +143,11 @@ const LINTERS = [{
   test: filename => filename.endsWith('.gn') || filename.endsWith('.gni'),
   run: (opts, filenames) => {
     const allOk = filenames.map(filename => {
-      const env = Object.assign({
+      const env = {
         CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
-        DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
-      }, process.env);
+        DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+        ...process.env
+      };
       // Users may not have depot_tools in PATH.
       env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
       const args = ['format', filename];

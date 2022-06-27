@@ -457,7 +457,7 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 #if !BUILDFLAG(IS_MAC)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
-  Browser::Get()->DidFinishLaunching(base::DictionaryValue());
+  Browser::Get()->DidFinishLaunching(base::Value::Dict());
 #endif
 
   // Notify observers that main thread message loop was initialized.

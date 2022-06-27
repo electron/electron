@@ -4,6 +4,8 @@
 
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 
+#include <utility>
+
 #include "content/public/renderer/render_frame.h"
 #include "extensions/buildflags/buildflags.h"
 #include "third_party/blink/public/web/web_element.h"
@@ -49,9 +51,9 @@ bool PrintRenderFrameHelperDelegate::OverridePrint(
     // instructs the PDF plugin to print. This is to make window.print() on a
     // PDF plugin document correctly print the PDF. See
     // https://crbug.com/448720.
-    base::DictionaryValue message;
-    message.SetString("type", "print");
-    post_message_support->PostMessageFromValue(message);
+    base::Value::Dict message;
+    message.Set("type", "print");
+    post_message_support->PostMessageFromValue(base::Value(std::move(message)));
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)

@@ -4,6 +4,7 @@
 
 #include "shell/common/v8_value_converter.h"
 
+#include <iterator>
 #include <map>
 #include <memory>
 #include <string>
@@ -285,7 +286,7 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
 
   v8::Local<v8::Value> args[] = {array_buffer};
   auto func = from_value.As<v8::Function>();
-  auto result = func->Call(context, v8::Null(isolate), 1, args);
+  auto result = func->Call(context, v8::Null(isolate), std::size(args), args);
   if (!result.IsEmpty()) {
     return result.ToLocalChecked();
   }
