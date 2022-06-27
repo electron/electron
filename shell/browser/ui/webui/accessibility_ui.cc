@@ -83,7 +83,7 @@ static const char kDisabled[] = "disabled";
 static const char kOff[] = "off";
 static const char kOn[] = "on";
 
-std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
+base::Value::Dict BuildTargetDescriptor(
     const GURL& url,
     const std::string& name,
     const GURL& favicon_url,
@@ -91,20 +91,20 @@ std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
     int routing_id,
     ui::AXMode accessibility_mode,
     base::ProcessHandle handle = base::kNullProcessHandle) {
-  auto target_data = std::make_unique<base::DictionaryValue>();
-  target_data->SetInteger(kProcessIdField, process_id);
-  target_data->SetInteger(kRoutingIdField, routing_id);
-  target_data->SetString(kUrlField, url.spec());
-  target_data->SetString(kNameField, base::EscapeForHTML(name));
-  target_data->SetInteger(kPidField, base::GetProcId(handle));
-  target_data->SetString(kFaviconUrlField, favicon_url.spec());
-  target_data->SetInteger(kAccessibilityModeField, accessibility_mode.mode());
-  target_data->SetString(kTypeField, kPage);
+  base::Value::Dict target_data;
+  target_data.Set(kProcessIdField, process_id);
+  target_data.Set(kRoutingIdField, routing_id);
+  target_data.Set(kUrlField, url.spec());
+  target_data.Set(kNameField, base::EscapeForHTML(name));
+  target_data.Set(kPidField, base::GetProcId(handle));
+  target_data.Set(kFaviconUrlField, favicon_url.spec());
+  target_data.Set(kAccessibilityModeField,
+                  static_cast<int>(accessibility_mode.mode()));
+  target_data.Set(kTypeField, kPage);
   return target_data;
 }
 
-std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
-    content::RenderViewHost* rvh) {
+base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderViewHost(rvh);
   ui::AXMode accessibility_mode;
@@ -132,12 +132,11 @@ std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
                                accessibility_mode);
 }
 
-std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
-    electron::NativeWindow* window) {
-  auto target_data = std::make_unique<base::DictionaryValue>();
-  target_data->SetInteger(kSessionIdField, window->window_id());
-  target_data->SetString(kNameField, window->GetTitle());
-  target_data->SetString(kTypeField, kBrowser);
+base::Value::Dict BuildTargetDescriptor(electron::NativeWindow* window) {
+  base::Value::Dict target_data;
+  target_data.Set(kSessionIdField, window->window_id());
+  target_data.Set(kNameField, window->GetTitle());
+  target_data.Set(kTypeField, kBrowser);
   return target_data;
 }
 
@@ -216,7 +215,7 @@ void HandleAccessibilityRequestCallback(
     content::WebUIDataSource::GotDataCallback callback) {
   DCHECK(ShouldHandleAccessibilityRequestCallback(path));
 
-  base::DictionaryValue data;
+  base::Value::Dict data;
   ui::AXMode mode =
       content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
   bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
@@ -230,17 +229,16 @@ void HandleAccessibilityRequestCallback(
 
   // The "native" and "web" flags are disabled if
   // --disable-renderer-accessibility is set.
-  data.SetString(kNative,
-                 is_native_enabled ? (native ? kOn : kOff) : kDisabled);
-  data.SetString(kWeb, is_native_enabled ? (web ? kOn : kOff) : kDisabled);
+  data.Set(kNative, is_native_enabled ? (native ? kOn : kOff) : kDisabled);
+  data.Set(kWeb, is_native_enabled ? (web ? kOn : kOff) : kDisabled);
 
   // The "text", "screenreader" and "html" flags are only
   // meaningful if "web" is enabled.
   bool is_web_enabled = is_native_enabled && web;
-  data.SetString(kText, is_web_enabled ? (text ? kOn : kOff) : kDisabled);
-  data.SetString(kScreenReader,
-                 is_web_enabled ? (screenreader ? kOn : kOff) : kDisabled);
-  data.SetString(kHTML, is_web_enabled ? (html ? kOn : kOff) : kDisabled);
+  data.Set(kText, is_web_enabled ? (text ? kOn : kOff) : kDisabled);
+  data.Set(kScreenReader,
+           is_web_enabled ? (screenreader ? kOn : kOff) : kDisabled);
+  data.Set(kHTML, is_web_enabled ? (html ? kOn : kOff) : kDisabled);
 
   // TODO(codebytere): enable use of this flag.
   //
@@ -249,15 +247,15 @@ void HandleAccessibilityRequestCallback(
   // command line switch has been used. Since this is so closely tied into user
   // prefs and causes bugs, we're disabling it for now.
   bool are_accessibility_image_labels_enabled = is_web_enabled;
-  data.SetString(kLabelImages, kDisabled);
+  data.Set(kLabelImages, kDisabled);
 
   // The "pdf" flag is independent of the others.
-  data.SetString(kPDF, pdf ? kOn : kOff);
+  data.Set(kPDF, pdf ? kOn : kOff);
 
   // Always dump the Accessibility tree.
-  data.SetString(kInternal, kOn);
+  data.Set(kInternal, kOn);
 
-  auto rvh_list = std::make_unique<base::ListValue>();
+  base::Value::List rvh_list;
   std::unique_ptr<content::RenderWidgetHostIterator> widgets(
       content::RenderWidgetHost::GetRenderWidgetHosts());
 
@@ -280,27 +278,24 @@ void HandleAccessibilityRequestCallback(
     if (context != current_context)
       continue;
 
-    std::unique_ptr<base::DictionaryValue> descriptor =
-        BuildTargetDescriptor(rvh);
-    descriptor->SetBoolean(kNative, is_native_enabled);
-    descriptor->SetBoolean(kWeb, is_web_enabled);
-    descriptor->SetBoolean(kLabelImages,
-                           are_accessibility_image_labels_enabled);
-    rvh_list->Append(base::Value::FromUniquePtrValue(std::move(descriptor)));
+    base::Value::Dict descriptor = BuildTargetDescriptor(rvh);
+    descriptor.Set(kNative, is_native_enabled);
+    descriptor.Set(kWeb, is_web_enabled);
+    descriptor.Set(kLabelImages, are_accessibility_image_labels_enabled);
+    rvh_list.Append(base::Value(std::move(descriptor)));
   }
 
   data.Set(kPagesField, std::move(rvh_list));
 
-  auto window_list = std::make_unique<base::ListValue>();
+  base::Value::List window_list;
   for (auto* window : electron::WindowList::GetWindows()) {
-    window_list->Append(
-        base::Value::FromUniquePtrValue(BuildTargetDescriptor(window)));
+    window_list.Append(BuildTargetDescriptor(window));
   }
 
   data.Set(kBrowsersField, std::move(window_list));
 
   std::string json_string;
-  base::JSONWriter::Write(data, &json_string);
+  base::JSONWriter::Write(base::Value(std::move(data)), &json_string);
 
   std::move(callback).Run(base::RefCountedString::TakeString(&json_string));
 }
@@ -368,25 +363,23 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
 
   for (auto* window : electron::WindowList::GetWindows()) {
     if (window->window_id() == window_id) {
-      std::unique_ptr<base::DictionaryValue> result(
-          BuildTargetDescriptor(window));
+      base::Value::Dict result = BuildTargetDescriptor(window);
       gfx::NativeWindow native_window = window->GetNativeWindow();
       ui::AXPlatformNode* node =
           ui::AXPlatformNode::FromNativeWindow(native_window);
-      result->SetKey(kTreeField,
-                     base::Value(RecursiveDumpAXPlatformNodeAsString(
-                         node, 0, property_filters)));
-      CallJavascriptFunction(request_type, *(result.get()));
+      result.Set(kTreeField, base::Value(RecursiveDumpAXPlatformNodeAsString(
+                                 node, 0, property_filters)));
+      CallJavascriptFunction(request_type, base::Value(std::move(result)));
       return;
     }
   }
 
   // No browser with the specified |id| was found.
-  auto result = std::make_unique<base::DictionaryValue>();
-  result->SetInteger(kSessionIdField, window_id);
-  result->SetString(kTypeField, kBrowser);
-  result->SetString(kErrorField, "Window no longer exists.");
-  CallJavascriptFunction(request_type, *(result.get()));
+  base::Value::Dict result;
+  result.Set(kSessionIdField, window_id);
+  result.Set(kTypeField, kBrowser);
+  result.Set(kErrorField, "Window no longer exists.");
+  CallJavascriptFunction(request_type, base::Value(std::move(result)));
 }
 
 void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
