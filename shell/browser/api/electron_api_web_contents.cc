@@ -34,6 +34,7 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
 #include "components/security_state/core/security_state.h"
+#include "components/web_modal/web_contents_modal_dialog_manager.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
@@ -870,6 +871,11 @@ void WebContents::InitWithSessionAndOptions(
 #endif
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
+  web_modal::WebContentsModalDialogManager::CreateForWebContents(
+      web_contents());
+
+  web_modal::WebContentsModalDialogManager::FromWebContents(web_contents())
+      ->SetDelegate(this);
 
   absl::optional<std::string> user_agent_override =
       GetBrowserContext()->GetUserAgentOverride();
@@ -3915,6 +3921,11 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
           return false;
         }));
   }
+}
+
+web_modal::WebContentsModalDialogHost*
+WebContents::GetWebContentsModalDialogHost() {
+  return owner_window()->GetWebContentsModalDialogHost();
 }
 
 // static

@@ -35,6 +35,7 @@
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
+#include "shell/browser/ui/electron_web_modal_dialog_manager_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -76,6 +77,10 @@ class Arguments;
 
 class ExclusiveAccessManager;
 
+namespace web_modal {
+class WebContentsModalDialogHost;
+}
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -104,7 +109,8 @@ class WebContents : public ExclusiveAccessContext,
                     public content::WebContentsObserver,
                     public content::WebContentsDelegate,
                     public InspectableWebContentsDelegate,
-                    public InspectableWebContentsViewDelegate {
+                    public InspectableWebContentsViewDelegate,
+                    public ElectronWebModalDialogManagerDelegate {
  public:
   enum class Type {
     kBackgroundPage,  // An extension background page.
@@ -726,6 +732,14 @@ class WebContents : public ExclusiveAccessContext,
   void SetHtmlApiFullscreen(bool enter_fullscreen);
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
+
+  bool DoesDeviceMatch(const base::Value* device,
+                       const base::Value* device_to_compare,
+                       blink::PermissionType permission_type);
+
+  // ElectronWebModalDialogManagerDelegate overrides:
+  web_modal::WebContentsModalDialogHost* GetWebContentsModalDialogHost()
+      override;
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
