@@ -1164,6 +1164,13 @@ gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
   return new BaseWindow(args, options);
 }
 
+void BaseWindow::SetModalDialogOptions(gin_helper::Dictionary options) {
+  int top = 0;
+  if (options.Get("marginTop", &top)) {
+    window()->SetModalDialogMarginTop(top);
+  }
+}
+
 // static
 void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
@@ -1260,6 +1267,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getNativeWindowHandle", &BaseWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &BaseWindow::SetProgressBar)
       .SetMethod("setOverlayIcon", &BaseWindow::SetOverlayIcon)
+      .SetMethod("setModalDialogOptions", &BaseWindow::SetModalDialogOptions)
       .SetMethod("setVisibleOnAllWorkspaces",
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
