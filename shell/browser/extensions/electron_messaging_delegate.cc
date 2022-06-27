@@ -15,6 +15,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "electron/shell/common/extensions/api/tabs.h"
 #include "extensions/browser/api/messaging/extension_message_port.h"
 #include "extensions/browser/api/messaging/native_message_host.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
@@ -44,17 +45,13 @@ ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
   if (web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);
     if (api_contents) {
-      auto tab = std::make_unique<base::DictionaryValue>();
-      tab->SetWithoutPathExpansion(
-          "id", std::make_unique<base::Value>(api_contents->ID()));
-      tab->SetWithoutPathExpansion(
-          "url", std::make_unique<base::Value>(api_contents->GetURL().spec()));
-      tab->SetWithoutPathExpansion(
-          "title", std::make_unique<base::Value>(api_contents->GetTitle()));
-      tab->SetWithoutPathExpansion(
-          "audible",
-          std::make_unique<base::Value>(api_contents->IsCurrentlyAudible()));
-      return tab;
+      api::tabs::Tab tab;
+      tab.id = std::make_unique<int>(api_contents->ID());
+      tab.url = std::make_unique<std::string>(api_contents->GetURL().spec());
+      tab.title = std::make_unique<std::string>(
+          base::UTF16ToUTF8(api_contents->GetTitle()));
+      tab.audible = std::make_unique<bool>(api_contents->IsCurrentlyAudible());
+      return tab.ToValue();
     }
   }
   return nullptr;
