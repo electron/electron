@@ -495,6 +495,37 @@ describe('chromium features', () => {
     });
   });
 
+  describe('first party sets', () => {
+    const fps = [
+      'https://fps-member1.glitch.me',
+      'https://fps-member2.glitch.me',
+      'https://fps-member3.glitch.me'
+    ];
+
+    it('loads first party sets', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'base');
+      const fpsProcess = ChildProcess.spawn(process.execPath, [appPath]);
+
+      let output = '';
+      fpsProcess.stdout.on('data', data => { output += data; });
+      await emittedOnce(fpsProcess, 'exit');
+
+      expect(output).to.include(fps.join(','));
+    });
+
+    it('loads sets from the command line', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'command-line');
+      const args = [appPath, `--use-first-party-set=${fps}`];
+      const fpsProcess = ChildProcess.spawn(process.execPath, args);
+
+      let output = '';
+      fpsProcess.stdout.on('data', data => { output += data; });
+      await emittedOnce(fpsProcess, 'exit');
+
+      expect(output).to.include(fps.join(','));
+    });
+  });
+
   describe('loading jquery', () => {
     it('does not crash', (done) => {
       const w = new BrowserWindow({ show: false });
