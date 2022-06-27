@@ -1,0 +1,375 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Tue, 21 Jun 2022 10:04:21 -0700
+Subject: support V8 sandboxed pointers
+
+This refactors several allocators to allocate within the V8 memory cage,
+allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
+
+diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
+index 4c459b58b5a048d9d8a4f15f4011e7cce68089f4..6fb4c8d4567aee5b313ad621ea42699a196f18c7 100644
+--- a/lib/internal/bootstrap/pre_execution.js
++++ b/lib/internal/bootstrap/pre_execution.js
+@@ -14,7 +14,6 @@ const {
+   getOptionValue,
+   getEmbedderOptions,
+ } = require('internal/options');
+-const { reconnectZeroFillToggle } = require('internal/buffer');
+ const {
+   defineOperation,
+   emitExperimentalWarning,
+@@ -26,10 +25,6 @@ const { ERR_MANIFEST_ASSERT_INTEGRITY } = require('internal/errors').codes;
+ const assert = require('internal/assert');
+ 
+ function prepareMainThreadExecution(expandArgv1 = false) {
+-  // TODO(joyeecheung): this is also necessary for workers when they deserialize
+-  // this toggle from the snapshot.
+-  reconnectZeroFillToggle();
+-
+   // Patch the process object with legacy properties and normalizations
+   patchProcessObject(expandArgv1);
+   setupTraceCategoryState();
+diff --git a/lib/internal/buffer.js b/lib/internal/buffer.js
+index bd38cf48a7fc6e8d61d8f11fa15c34aee182cbe3..1aa071cdc071dcdaf5c3b4bed0d3d76e5871731d 100644
+--- a/lib/internal/buffer.js
++++ b/lib/internal/buffer.js
+@@ -30,7 +30,7 @@ const {
+   hexWrite,
+   ucs2Write,
+   utf8Write,
+-  getZeroFillToggle
++  setZeroFillToggle
+ } = internalBinding('buffer');
+ const {
+   untransferable_object_private_symbol,
+@@ -1055,24 +1055,15 @@ function markAsUntransferable(obj) {
+ // in C++.
+ // |zeroFill| can be undefined when running inside an isolate where we
+ // do not own the ArrayBuffer allocator.  Zero fill is always on in that case.
+-let zeroFill = getZeroFillToggle();
+ function createUnsafeBuffer(size) {
+-  zeroFill[0] = 0;
++  setZeroFillToggle(false);
+   try {
+     return new FastBuffer(size);
+   } finally {
+-    zeroFill[0] = 1;
++    setZeroFillToggle(true)
+   }
+ }
+ 
+-// The connection between the JS land zero fill toggle and the
+-// C++ one in the NodeArrayBufferAllocator gets lost if the toggle
+-// is deserialized from the snapshot, because V8 owns the underlying
+-// memory of this toggle. This resets the connection.
+-function reconnectZeroFillToggle() {
+-  zeroFill = getZeroFillToggle();
+-}
+-
+ module.exports = {
+   FastBuffer,
+   addBufferPrototypeMethods,
+@@ -1080,5 +1071,4 @@ module.exports = {
+   createUnsafeBuffer,
+   readUInt16BE,
+   readUInt32BE,
+-  reconnectZeroFillToggle
+ };
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 2abf5994405e8da2a04d1b23b75ccd3658398474..024d612a04d83583b397549589d994e32cf0107f 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -83,16 +83,16 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+ void* NodeArrayBufferAllocator::Allocate(size_t size) {
+   void* ret;
+   if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
+-    ret = UncheckedCalloc(size);
++    ret = allocator_->Allocate(size);
+   else
+-    ret = UncheckedMalloc(size);
++    ret = allocator_->AllocateUninitialized(size);
+   if (LIKELY(ret != nullptr))
+     total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
+   return ret;
+ }
+ 
+ void* NodeArrayBufferAllocator::AllocateUninitialized(size_t size) {
+-  void* ret = node::UncheckedMalloc(size);
++  void* ret = allocator_->AllocateUninitialized(size);
+   if (LIKELY(ret != nullptr))
+     total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
+   return ret;
+@@ -100,7 +100,7 @@ void* NodeArrayBufferAllocator::AllocateUninitialized(size_t size) {
+ 
+ void* NodeArrayBufferAllocator::Reallocate(
+     void* data, size_t old_size, size_t size) {
+-  void* ret = UncheckedRealloc<char>(static_cast<char*>(data), size);
++  void* ret = allocator_->Reallocate(data, old_size, size);
+   if (LIKELY(ret != nullptr) || UNLIKELY(size == 0))
+     total_mem_usage_.fetch_add(size - old_size, std::memory_order_relaxed);
+   return ret;
+@@ -108,7 +108,7 @@ void* NodeArrayBufferAllocator::Reallocate(
+ 
+ void NodeArrayBufferAllocator::Free(void* data, size_t size) {
+   total_mem_usage_.fetch_sub(size, std::memory_order_relaxed);
+-  free(data);
++  allocator_->Free(data, size);
+ }
+ 
+ DebuggingArrayBufferAllocator::~DebuggingArrayBufferAllocator() {
+diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
+index 8dffad89c80e0906780d1b26ba9a65ba1e76ce0a..45bc99ce75248794e95b2dcb0101c28152e2bfd0 100644
+--- a/src/crypto/crypto_util.cc
++++ b/src/crypto/crypto_util.cc
+@@ -318,10 +318,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+   return *this;
+ }
+ 
+-std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
++std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(Environment* env) {
+   // It's ok for allocated_data_ to be nullptr but
+   // only if size_ is zero.
+   CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
++#if defined(V8_SANDBOXED_POINTERS)
++  // When V8 sandboxed pointers are enabled, we have to copy into the memory
++  // cage. We still want to ensure we erase the data on free though, so
++  // provide a custom deleter that calls OPENSSL_cleanse.
++  if (!size())
++    return ArrayBuffer::NewBackingStore(env->isolate(), 0);
++  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++  void* v8_data = allocator->Allocate(size());
++  CHECK(v8_data);
++  memcpy(v8_data, allocated_data_, size());
++  OPENSSL_clear_free(allocated_data_, size());
++  std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
++      v8_data,
++      size(),
++      [](void* data, size_t length, void*) {
++        OPENSSL_cleanse(data, length);
++        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++        allocator->Free(data, length);
++      }, nullptr);
++  CHECK(ptr);
++  allocated_data_ = nullptr;
++  data_ = nullptr;
++  size_ = 0;
++  return ptr;
++#else
+   std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
+       allocated_data_,
+       size(),
+@@ -333,10 +358,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+   data_ = nullptr;
+   size_ = 0;
+   return ptr;
++#endif  // defined(V8_SANDBOXED_POINTERS)
+ }
+ 
+ Local<ArrayBuffer> ByteSource::ToArrayBuffer(Environment* env) {
+-  std::unique_ptr<BackingStore> store = ReleaseToBackingStore();
++  std::unique_ptr<BackingStore> store = ReleaseToBackingStore(env);
+   return ArrayBuffer::New(env->isolate(), std::move(store));
+ }
+ 
+@@ -665,6 +691,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
+ }
+ 
+ namespace {
++#if defined(V8_SANDBOXED_POINTERS)
++// When V8 sandboxed pointers are enabled, the secure heap cannot be used as
++// all ArrayBuffers must be allocated inside the V8 memory cage.
++void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
++  CHECK(args[0]->IsUint32());
++  uint32_t len = args[0].As<Uint32>()->Value();
++  Local<ArrayBuffer> buffer = ArrayBuffer::New(args.GetIsolate(), len);
++  args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
++}
++#else
+ // SecureBuffer uses openssl to allocate a Uint8Array using
+ // OPENSSL_secure_malloc. Because we do not yet actually
+ // make use of secure heap, this has the same semantics as
+@@ -692,6 +728,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+   Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
+   args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
+ }
++#endif  // defined(V8_SANDBOXED_POINTERS)
+ 
+ void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
+ #ifndef OPENSSL_IS_BORINGSSL
+diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
+index 0ce3a8f219a2952f660ff72a6ce36ee109add649..06e9eb72e4ea60db4c63d08b24b80a1e6c4f3eaf 100644
+--- a/src/crypto/crypto_util.h
++++ b/src/crypto/crypto_util.h
+@@ -257,7 +257,7 @@ class ByteSource {
+   // Creates a v8::BackingStore that takes over responsibility for
+   // any allocated data. The ByteSource will be reset with size = 0
+   // after being called.
+-  std::unique_ptr<v8::BackingStore> ReleaseToBackingStore();
++  std::unique_ptr<v8::BackingStore> ReleaseToBackingStore(Environment* env);
+ 
+   v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
+ 
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index 215bd8003aabe17e43ac780c723cfe971b437eae..eb00eb6f592e20f3c17a529f30b09673774eb1c1 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -1175,33 +1175,14 @@ void SetBufferPrototype(const FunctionCallbackInfo<Value>& args) {
+   env->set_buffer_prototype_object(proto);
+ }
+ 
+-void GetZeroFillToggle(const FunctionCallbackInfo<Value>& args) {
++void SetZeroFillToggle(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+   NodeArrayBufferAllocator* allocator = env->isolate_data()->node_allocator();
+   Local<ArrayBuffer> ab;
+-  // It can be a nullptr when running inside an isolate where we
+-  // do not own the ArrayBuffer allocator.
+-  if (allocator == nullptr) {
+-    // Create a dummy Uint32Array - the JS land can only toggle the C++ land
+-    // setting when the allocator uses our toggle. With this the toggle in JS
+-    // land results in no-ops.
+-    ab = ArrayBuffer::New(env->isolate(), sizeof(uint32_t));
+-  } else {
++  if (allocator != nullptr) {
+     uint32_t* zero_fill_field = allocator->zero_fill_field();
+-    std::unique_ptr<BackingStore> backing =
+-        ArrayBuffer::NewBackingStore(zero_fill_field,
+-                                     sizeof(*zero_fill_field),
+-                                     [](void*, size_t, void*) {},
+-                                     nullptr);
+-    ab = ArrayBuffer::New(env->isolate(), std::move(backing));
++    *zero_fill_field = args[0]->BooleanValue(env->isolate());
+   }
+-
+-  ab->SetPrivate(
+-      env->context(),
+-      env->untransferable_object_private_symbol(),
+-      True(env->isolate())).Check();
+-
+-  args.GetReturnValue().Set(Uint32Array::New(ab, 0, 1));
+ }
+ 
+ void DetachArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1310,7 +1291,7 @@ void Initialize(Local<Object> target,
+   env->SetMethod(target, "ucs2Write", StringWrite<UCS2>);
+   env->SetMethod(target, "utf8Write", StringWrite<UTF8>);
+ 
+-  env->SetMethod(target, "getZeroFillToggle", GetZeroFillToggle);
++  env->SetMethod(target, "setZeroFillToggle", SetZeroFillToggle);
+ }
+ 
+ }  // anonymous namespace
+@@ -1350,7 +1331,7 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
+   registry->Register(StringWrite<HEX>);
+   registry->Register(StringWrite<UCS2>);
+   registry->Register(StringWrite<UTF8>);
+-  registry->Register(GetZeroFillToggle);
++  registry->Register(SetZeroFillToggle);
+ 
+   registry->Register(DetachArrayBuffer);
+   registry->Register(CopyArrayBuffer);
+diff --git a/src/node_i18n.cc b/src/node_i18n.cc
+index c537a247f55ff070da1988fc8b7309b5692b5c18..59bfb597849cd5a94800d6c83b238ef77245243e 100644
+--- a/src/node_i18n.cc
++++ b/src/node_i18n.cc
+@@ -104,7 +104,7 @@ namespace {
+ 
+ template <typename T>
+ MaybeLocal<Object> ToBufferEndian(Environment* env, MaybeStackBuffer<T>* buf) {
+-  MaybeLocal<Object> ret = Buffer::New(env, buf);
++  MaybeLocal<Object> ret = Buffer::Copy(env, reinterpret_cast<char*>(buf->out()), buf->length() * sizeof(T));
+   if (ret.IsEmpty())
+     return ret;
+ 
+diff --git a/src/node_internals.h b/src/node_internals.h
+index d37be23cd63e82d4040777bd0e17ed449ec0b15b..0b66996f11c66800a7e21ee84fa101450b856227 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -118,6 +118,8 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+  private:
+   uint32_t zero_fill_field_ = 1;  // Boolean but exposed as uint32 to JS land.
+   std::atomic<size_t> total_mem_usage_ {0};
++
++  std::unique_ptr<v8::ArrayBuffer::Allocator> allocator_{v8::ArrayBuffer::Allocator::NewDefaultAllocator()};
+ };
+ 
+ class DebuggingArrayBufferAllocator final : public NodeArrayBufferAllocator {
+diff --git a/src/node_serdes.cc b/src/node_serdes.cc
+index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..92d5020f293c98c81d3891a82f7320629bf9f926 100644
+--- a/src/node_serdes.cc
++++ b/src/node_serdes.cc
+@@ -29,6 +29,11 @@ using v8::ValueSerializer;
+ 
+ namespace serdes {
+ 
++v8::ArrayBuffer::Allocator* GetAllocator() {
++  static v8::ArrayBuffer::Allocator* allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
++  return allocator;
++};
++
+ class SerializerContext : public BaseObject,
+                           public ValueSerializer::Delegate {
+  public:
+@@ -37,10 +42,15 @@ class SerializerContext : public BaseObject,
+ 
+   ~SerializerContext() override = default;
+ 
++  // v8::ValueSerializer::Delegate
+   void ThrowDataCloneError(Local<String> message) override;
+   Maybe<bool> WriteHostObject(Isolate* isolate, Local<Object> object) override;
+   Maybe<uint32_t> GetSharedArrayBufferId(
+       Isolate* isolate, Local<SharedArrayBuffer> shared_array_buffer) override;
++  void* ReallocateBufferMemory(void* old_buffer,
++                               size_t old_length,
++                               size_t* new_length) override;
++  void FreeBufferMemory(void* buffer) override;
+ 
+   static void SetTreatArrayBufferViewsAsHostObjects(
+       const FunctionCallbackInfo<Value>& args);
+@@ -61,6 +71,7 @@ class SerializerContext : public BaseObject,
+ 
+  private:
+   ValueSerializer serializer_;
++  size_t last_length_ = 0;
+ };
+ 
+ class DeserializerContext : public BaseObject,
+@@ -144,6 +155,24 @@ Maybe<uint32_t> SerializerContext::GetSharedArrayBufferId(
+   return id.ToLocalChecked()->Uint32Value(env()->context());
+ }
+ 
++void* SerializerContext::ReallocateBufferMemory(void* old_buffer,
++                                                size_t requested_size,
++                                                size_t* new_length) {
++  *new_length = std::max(static_cast<size_t>(4096), requested_size);
++  if (old_buffer) {
++    void* ret = GetAllocator()->Reallocate(old_buffer, last_length_, *new_length);
++    last_length_ = *new_length;
++    return ret;
++  } else {
++    last_length_ = *new_length;
++    return GetAllocator()->Allocate(*new_length);
++  }
++}
++
++void SerializerContext::FreeBufferMemory(void* buffer) {
++  GetAllocator()->Free(buffer, last_length_);
++}
++
+ Maybe<bool> SerializerContext::WriteHostObject(Isolate* isolate,
+                                                Local<Object> input) {
+   MaybeLocal<Value> ret;
+@@ -211,7 +240,12 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+   std::pair<uint8_t*, size_t> ret = ctx->serializer_.Release();
+   auto buf = Buffer::New(ctx->env(),
+                          reinterpret_cast<char*>(ret.first),
+-                         ret.second);
++                         ret.second,
++                         [](char* data, void* hint){
++                           if (data)
++                             GetAllocator()->Free(data, reinterpret_cast<size_t>(hint));
++                         },
++                         reinterpret_cast<void*>(ctx->last_length_));
+ 
+   if (!buf.IsEmpty()) {
+     args.GetReturnValue().Set(buf.ToLocalChecked());
