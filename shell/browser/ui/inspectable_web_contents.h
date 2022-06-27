@@ -70,10 +70,13 @@ class InspectableWebContents
   bool IsDevToolsViewShowing();
   void AttachTo(scoped_refptr<content::DevToolsAgentHost>);
   void Detach();
-  void CallClientFunction(const std::string& function_name,
-                          const base::Value* arg1,
-                          const base::Value* arg2,
-                          const base::Value* arg3);
+  void CallClientFunction(
+      const std::string& object_name,
+      const std::string& method_name,
+      const base::Value arg1 = {},
+      const base::Value arg2 = {},
+      const base::Value arg3 = {},
+      base::OnceCallback<void(base::Value)> cb = base::NullCallback());
   void InspectElement(int x, int y);
 
   // Return the last position and size of devtools window.
