@@ -1,7 +1,7 @@
-From f427936d32dbe1e9c27c0bcf54eff6818bddb906 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniel Cheng <dcheng@chromium.org>
 Date: Tue, 14 Jun 2022 19:11:17 +0000
-Subject: [PATCH] [M102] Ensure raw_ptr<T> and T* are treated identically in //base callback.
+Subject: Ensure raw_ptr<T> and T* are treated identically in //base callback.
 
 There are safety checks associated with raw pointers (e.g. ensuring
 receiver pointers are not raw pointers). Make sure these checks are
@@ -29,53 +29,49 @@ Cr-Original-Commit-Position: refs/heads/main@{#1013266}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3703779
 Cr-Commit-Position: refs/branch-heads/5005@{#1173}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/base/bind_internal.h b/base/bind_internal.h
-index 60607efa..1b06e54 100644
+index b8670d6c0897f3c9aff9080c186bd1c7bb79694c..30c220b40164acb0b8472fb76f2316ce4d9455ad 100644
 --- a/base/bind_internal.h
 +++ b/base/bind_internal.h
-@@ -859,8 +859,8 @@
+@@ -852,8 +852,8 @@ bool QueryCancellationTraits(const BindStateBase* base,
  template <typename Functor, typename Receiver, typename... Unused>
  std::enable_if_t<
      !(MakeFunctorTraits<Functor>::is_method &&
--      std::is_pointer_v<std::decay_t<Receiver>> &&
+-      std::is_pointer<std::decay_t<Receiver>>::value &&
 -      IsRefCountedType<std::remove_pointer_t<std::decay_t<Receiver>>>::value)>
 +      IsPointerV<std::decay_t<Receiver>> &&
 +      IsRefCountedType<RemovePointerT<std::decay_t<Receiver>>>::value)>
  BanUnconstructedRefCountedReceiver(const Receiver& receiver, Unused&&...) {}
  
  template <typename Functor>
-@@ -870,8 +870,8 @@
+@@ -863,8 +863,8 @@ void BanUnconstructedRefCountedReceiver() {}
  template <typename Functor, typename Receiver, typename... Unused>
  std::enable_if_t<
      MakeFunctorTraits<Functor>::is_method &&
--    std::is_pointer_v<std::decay_t<Receiver>> &&
+-    std::is_pointer<std::decay_t<Receiver>>::value &&
 -    IsRefCountedType<std::remove_pointer_t<std::decay_t<Receiver>>>::value>
 +    IsPointerV<std::decay_t<Receiver>> &&
 +    IsRefCountedType<RemovePointerT<std::decay_t<Receiver>>>::value>
  BanUnconstructedRefCountedReceiver(const Receiver& receiver, Unused&&...) {
    DCHECK(receiver);
  
-@@ -1006,19 +1006,20 @@
-   static_assert(!std::is_array_v<std::remove_reference_t<Receiver>>,
+@@ -999,8 +999,8 @@ struct MakeBindStateTypeImpl<true, Functor, Receiver, BoundArgs...> {
+   static_assert(!std::is_array<std::remove_reference_t<Receiver>>::value,
                  "First bound argument to a method cannot be an array.");
    static_assert(
--      !std::is_pointer_v<DecayedReceiver> ||
+-      !std::is_pointer<DecayedReceiver>::value ||
 -          IsRefCountedType<std::remove_pointer_t<DecayedReceiver>>::value,
 +      !IsPointerV<DecayedReceiver> ||
 +          IsRefCountedType<RemovePointerT<DecayedReceiver>>::value,
        "Receivers may not be raw pointers. If using a raw pointer here is safe"
        " and has no lifetime concerns, use base::Unretained() and document why"
        " it's safe.");
-+
-   static_assert(!HasRefCountedTypeAsRawPtr<std::decay_t<BoundArgs>...>::value,
-                 "A parameter is a refcounted type and needs scoped_refptr.");
- 
+@@ -1010,8 +1010,8 @@ struct MakeBindStateTypeImpl<true, Functor, Receiver, BoundArgs...> {
   public:
    using Type = BindState<
        std::decay_t<Functor>,
--      std::conditional_t<std::is_pointer_v<DecayedReceiver>,
+-      std::conditional_t<std::is_pointer<DecayedReceiver>::value,
 -                         scoped_refptr<std::remove_pointer_t<DecayedReceiver>>,
 +      std::conditional_t<IsPointerV<DecayedReceiver>,
 +                         scoped_refptr<RemovePointerT<DecayedReceiver>>,
@@ -83,10 +79,10 @@ index 60607efa..1b06e54 100644
        MakeStorageType<BoundArgs>...>;
  };
 diff --git a/base/bind_unittest.cc b/base/bind_unittest.cc
-index a5f681f..6844b67 100644
+index dbf6f79a8b917a6d876e9092ecace49a5e359e95..c02a704d618903a10be6b52d43375607eb6cb999 100644
 --- a/base/bind_unittest.cc
 +++ b/base/bind_unittest.cc
-@@ -1169,6 +1169,28 @@
+@@ -1169,6 +1169,28 @@ TYPED_TEST(BindVariantsTest, UniquePtrReceiver) {
    TypeParam::Bind(&NoRef::VoidMethod0, std::move(no_ref)).Run();
  }
  
@@ -115,7 +111,7 @@ index a5f681f..6844b67 100644
  // Tests for Passed() wrapper support:
  //   - Passed() can be constructed from a pointer to scoper.
  //   - Passed() can be constructed from a scoper rvalue.
-@@ -1751,6 +1773,12 @@
+@@ -1751,6 +1773,12 @@ TEST(BindDeathTest, BanFirstOwnerOfRefCountedType) {
      EXPECT_CALL(has_ref, HasAtLeastOneRef()).WillOnce(Return(false));
      base::BindOnce(&HasRef::VoidMethod0, &has_ref);
    });
@@ -129,28 +125,28 @@ index a5f681f..6844b67 100644
  
  }  // namespace
 diff --git a/base/bind_unittest.nc b/base/bind_unittest.nc
-index 20b0e0b..2980729 100644
+index 134841c32a17eb4e739f75b609bcb7f0a9009e28..8fb73ac052dae5df01fc1fab17e654559a1d71d0 100644
 --- a/base/bind_unittest.nc
 +++ b/base/bind_unittest.nc
-@@ -93,7 +93,7 @@
+@@ -94,7 +94,7 @@ void WontCompile() {
    method_to_const_cb.Run();
  }
  
--#elif defined(NCTEST_METHOD_BIND_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!std::is_pointer_v<base::NoRef *> || IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained() and document why it's safe.\""]
+-#elif defined(NCTEST_METHOD_BIND_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!std::is_pointer<base::NoRef *>::value || IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained() and document why it's safe.\""]
 +#elif defined(NCTEST_METHOD_BIND_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!IsPointerV<base::NoRef \*> \|\| IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained\(\) and document why it's safe.\""]
  
  
  // Method bound to non-refcounted object.
-@@ -106,7 +106,7 @@
+@@ -107,7 +107,7 @@ void WontCompile() {
    no_ref_cb.Run();
  }
  
--#elif defined(NCTEST_CONST_METHOD_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!std::is_pointer_v<base::NoRef *> || IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained() and document why it's safe.\""]
+-#elif defined(NCTEST_CONST_METHOD_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!std::is_pointer<base::NoRef *>::value || IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained() and document why it's safe.\""]
 +#elif defined(NCTEST_CONST_METHOD_BIND_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!IsPointerV<base::NoRef \*> \|\| IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained\(\) and document why it's safe.\""]
  
  // Const Method bound to non-refcounted object.
  //
-@@ -118,6 +118,33 @@
+@@ -119,6 +119,33 @@ void WontCompile() {
    no_ref_const_cb.Run();
  }
  
@@ -185,11 +181,11 @@ index 20b0e0b..2980729 100644
  // Const argument used with non-const pointer parameter of same type.
  //
 diff --git a/base/memory/raw_ptr.h b/base/memory/raw_ptr.h
-index 4d978e9..639713c 100644
+index e896b6f504dfdb260eaacad5454d47ae2069955f..adc7f8aeefdd0fe479dd8c8cf979f4125eecbbc0 100644
 --- a/base/memory/raw_ptr.h
 +++ b/base/memory/raw_ptr.h
-@@ -1051,6 +1051,37 @@
-   return lhs.GetForComparison() >= rhs.GetForComparison();
+@@ -701,6 +701,37 @@ RAW_PTR_FUNC_ATTRIBUTES bool operator==(const raw_ptr<U, I>& lhs,
+   return lhs.GetForComparison() == rhs.GetForComparison();
  }
  
 +// Template helpers for working with T* or raw_ptr<T>.
@@ -227,7 +223,7 @@ index 4d978e9..639713c 100644
  
  using base::raw_ptr;
 diff --git a/base/memory/raw_scoped_refptr_mismatch_checker.h b/base/memory/raw_scoped_refptr_mismatch_checker.h
-index 9e50458..7afae06 100644
+index 9e50458ec98bb7e9041355fa06d14c6ba703b85c..7afae066fa3e318b346fac6b60ee55873b65f909 100644
 --- a/base/memory/raw_scoped_refptr_mismatch_checker.h
 +++ b/base/memory/raw_scoped_refptr_mismatch_checker.h
 @@ -7,6 +7,7 @@
@@ -238,7 +234,7 @@ index 9e50458..7afae06 100644
  #include "base/template_util.h"
  
  // It is dangerous to post a task with a T* argument where T is a subtype of
-@@ -35,8 +36,8 @@
+@@ -35,8 +36,8 @@ struct IsRefCountedType<T,
  // pointer type and are convertible to a RefCounted(Base|ThreadSafeBase) type.
  template <typename T>
  struct NeedsScopedRefptrButGetsRawPtr
@@ -249,97 +245,3 @@ index 9e50458..7afae06 100644
    static_assert(!std::is_reference<T>::value,
                  "NeedsScopedRefptrButGetsRawPtr requires non-reference type.");
  };
-diff --git a/chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_dialog_handler_unittest.cc b/chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_dialog_handler_unittest.cc
-index d812d82..ee22b02b 100644
---- a/chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_dialog_handler_unittest.cc
-+++ b/chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_dialog_handler_unittest.cc
-@@ -93,9 +93,7 @@
-   content::TestWebUI* web_ui() { return web_ui_.get(); }
-   PrivacySandboxDialogHandler* handler() { return handler_.get(); }
-   TestingProfile* profile() { return &profile_; }
--  raw_ptr<MockPrivacySandboxDialogView> dialog_mock() {
--    return dialog_mock_.get();
--  }
-+  MockPrivacySandboxDialogView* dialog_mock() { return dialog_mock_.get(); }
-   MockPrivacySandboxService* mock_privacy_sandbox_service() {
-     return mock_privacy_sandbox_service_;
-   }
-@@ -120,15 +118,18 @@
-     : public PrivacySandboxDialogHandlerTest {
-  protected:
-   std::unique_ptr<PrivacySandboxDialogHandler> CreateHandler() override {
-+    // base::Unretained is safe because the created handler does not outlive the
-+    // mock.
-     return std::make_unique<PrivacySandboxDialogHandler>(
--        base::BindOnce(&MockPrivacySandboxDialogView::Close, dialog_mock()),
-+        base::BindOnce(&MockPrivacySandboxDialogView::Close,
-+                       base::Unretained(dialog_mock())),
-         base::BindOnce(&MockPrivacySandboxDialogView::ResizeNativeView,
--                       dialog_mock()),
-+                       base::Unretained(dialog_mock())),
-         base::BindOnce(&MockPrivacySandboxDialogView::ShowNativeView,
--                       dialog_mock()),
-+                       base::Unretained(dialog_mock())),
-         base::BindOnce(
-             &MockPrivacySandboxDialogView::OpenPrivacySandboxSettings,
--            dialog_mock()),
-+            base::Unretained(dialog_mock())),
-         PrivacySandboxService::DialogType::kConsent);
-   }
- };
-@@ -247,15 +248,18 @@
-     : public PrivacySandboxDialogHandlerTest {
-  protected:
-   std::unique_ptr<PrivacySandboxDialogHandler> CreateHandler() override {
-+    // base::Unretained is safe because the created handler does not outlive the
-+    // mock.
-     return std::make_unique<PrivacySandboxDialogHandler>(
--        base::BindOnce(&MockPrivacySandboxDialogView::Close, dialog_mock()),
-+        base::BindOnce(&MockPrivacySandboxDialogView::Close,
-+                       base::Unretained(dialog_mock())),
-         base::BindOnce(&MockPrivacySandboxDialogView::ResizeNativeView,
--                       dialog_mock()),
-+                       base::Unretained(dialog_mock())),
-         base::BindOnce(&MockPrivacySandboxDialogView::ShowNativeView,
--                       dialog_mock()),
-+                       base::Unretained(dialog_mock())),
-         base::BindOnce(
-             &MockPrivacySandboxDialogView::OpenPrivacySandboxSettings,
--            dialog_mock()),
-+            base::Unretained(dialog_mock())),
-         PrivacySandboxService::DialogType::kNotice);
-   }
- };
-diff --git a/chrome/browser/web_applications/web_app_install_finalizer.cc b/chrome/browser/web_applications/web_app_install_finalizer.cc
-index 2b85d76..cf57d375 100644
---- a/chrome/browser/web_applications/web_app_install_finalizer.cc
-+++ b/chrome/browser/web_applications/web_app_install_finalizer.cc
-@@ -505,10 +505,6 @@
-       web_app_info.shortcuts_menu_icon_bitmaps;
-   IconsMap other_icon_bitmaps = web_app_info.other_icon_bitmaps;
- 
--  auto write_icons_callback = base::BindOnce(
--      &WebAppIconManager::WriteData, icon_manager_, app_id,
--      std::move(icon_bitmaps), std::move(shortcuts_menu_icon_bitmaps),
--      std::move(other_icon_bitmaps));
-   auto write_translations_callback = base::BindOnce(
-       &WebAppInstallFinalizer::WriteTranslations,
-       weak_ptr_factory_.GetWeakPtr(), app_id, std::move(web_app_info));
-@@ -516,11 +512,12 @@
-       base::BindOnce(&WebAppInstallFinalizer::CommitToSyncBridge,
-                      weak_ptr_factory_.GetWeakPtr(), std::move(web_app));
- 
--  std::move(write_icons_callback)
--      .Run(base::BindOnce(
--          std::move(write_translations_callback),
--          base::BindOnce(std::move(commit_to_sync_bridge_callback),
--                         std::move(commit_callback))));
-+  icon_manager_->WriteData(
-+      app_id, std::move(icon_bitmaps), std::move(shortcuts_menu_icon_bitmaps),
-+      std::move(other_icon_bitmaps),
-+      base::BindOnce(std::move(write_translations_callback),
-+                     base::BindOnce(std::move(commit_to_sync_bridge_callback),
-+                                    std::move(commit_callback))));
- }
- 
- void WebAppInstallFinalizer::WriteTranslations(
