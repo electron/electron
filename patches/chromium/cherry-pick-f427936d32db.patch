@@ -1,7 +1,8 @@
-From f427936d32dbe1e9c27c0bcf54eff6818bddb906 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniel Cheng <dcheng@chromium.org>
 Date: Tue, 14 Jun 2022 19:11:17 +0000
-Subject: [PATCH] [M102] Ensure raw_ptr<T> and T* are treated identically in //base callback.
+Subject: [M102] Ensure raw_ptr<T> and T* are treated identically in //base
+ callback.
 
 There are safety checks associated with raw pointers (e.g. ensuring
 receiver pointers are not raw pointers). Make sure these checks are
@@ -29,13 +30,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1013266}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3703779
 Cr-Commit-Position: refs/branch-heads/5005@{#1173}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/base/bind_internal.h b/base/bind_internal.h
-index 60607efa..1b06e54 100644
+index ea2ab97fae8adb9d171f9bf4dd367a12498112ec..a14ba7865c3581ee467fec39bd94bd58b6d07f3f 100644
 --- a/base/bind_internal.h
 +++ b/base/bind_internal.h
-@@ -859,8 +859,8 @@
+@@ -859,8 +859,8 @@ bool QueryCancellationTraits(const BindStateBase* base,
  template <typename Functor, typename Receiver, typename... Unused>
  std::enable_if_t<
      !(MakeFunctorTraits<Functor>::is_method &&
@@ -46,7 +46,7 @@ index 60607efa..1b06e54 100644
  BanUnconstructedRefCountedReceiver(const Receiver& receiver, Unused&&...) {}
  
  template <typename Functor>
-@@ -870,8 +870,8 @@
+@@ -870,8 +870,8 @@ void BanUnconstructedRefCountedReceiver() {}
  template <typename Functor, typename Receiver, typename... Unused>
  std::enable_if_t<
      MakeFunctorTraits<Functor>::is_method &&
@@ -57,7 +57,7 @@ index 60607efa..1b06e54 100644
  BanUnconstructedRefCountedReceiver(const Receiver& receiver, Unused&&...) {
    DCHECK(receiver);
  
-@@ -1006,19 +1006,20 @@
+@@ -1006,19 +1006,20 @@ struct MakeBindStateTypeImpl<true, Functor, Receiver, BoundArgs...> {
    static_assert(!std::is_array_v<std::remove_reference_t<Receiver>>,
                  "First bound argument to a method cannot be an array.");
    static_assert(
@@ -83,10 +83,10 @@ index 60607efa..1b06e54 100644
        MakeStorageType<BoundArgs>...>;
  };
 diff --git a/base/bind_unittest.cc b/base/bind_unittest.cc
-index a5f681f..6844b67 100644
+index a5f681fe53b97a5a98f5918ac5cbc9e6cbbf790b..6844b6796d9f19e98baf13adae772d01eedf6846 100644
 --- a/base/bind_unittest.cc
 +++ b/base/bind_unittest.cc
-@@ -1169,6 +1169,28 @@
+@@ -1169,6 +1169,28 @@ TYPED_TEST(BindVariantsTest, UniquePtrReceiver) {
    TypeParam::Bind(&NoRef::VoidMethod0, std::move(no_ref)).Run();
  }
  
@@ -115,7 +115,7 @@ index a5f681f..6844b67 100644
  // Tests for Passed() wrapper support:
  //   - Passed() can be constructed from a pointer to scoper.
  //   - Passed() can be constructed from a scoper rvalue.
-@@ -1751,6 +1773,12 @@
+@@ -1751,6 +1773,12 @@ TEST(BindDeathTest, BanFirstOwnerOfRefCountedType) {
      EXPECT_CALL(has_ref, HasAtLeastOneRef()).WillOnce(Return(false));
      base::BindOnce(&HasRef::VoidMethod0, &has_ref);
    });
@@ -129,10 +129,10 @@ index a5f681f..6844b67 100644
  
  }  // namespace
 diff --git a/base/bind_unittest.nc b/base/bind_unittest.nc
-index 20b0e0b..2980729 100644
+index 20b0e0ba2ceea9576cae13bf08cdb0e979f70018..29807298ca3c13fd54c45c14d496bebdb3123816 100644
 --- a/base/bind_unittest.nc
 +++ b/base/bind_unittest.nc
-@@ -93,7 +93,7 @@
+@@ -93,7 +93,7 @@ void WontCompile() {
    method_to_const_cb.Run();
  }
  
@@ -141,7 +141,7 @@ index 20b0e0b..2980729 100644
  
  
  // Method bound to non-refcounted object.
-@@ -106,7 +106,7 @@
+@@ -106,7 +106,7 @@ void WontCompile() {
    no_ref_cb.Run();
  }
  
@@ -150,7 +150,7 @@ index 20b0e0b..2980729 100644
  
  // Const Method bound to non-refcounted object.
  //
-@@ -118,6 +118,33 @@
+@@ -118,6 +118,33 @@ void WontCompile() {
    no_ref_const_cb.Run();
  }
  
@@ -185,10 +185,10 @@ index 20b0e0b..2980729 100644
  // Const argument used with non-const pointer parameter of same type.
  //
 diff --git a/base/memory/raw_ptr.h b/base/memory/raw_ptr.h
-index 4d978e9..639713c 100644
+index 9172af8ffe03bd038825b885ca46b7ffe8a3f90f..045c397fafb676eacd9b1030e114bd3875f918cd 100644
 --- a/base/memory/raw_ptr.h
 +++ b/base/memory/raw_ptr.h
-@@ -1051,6 +1051,37 @@
+@@ -882,6 +882,37 @@ RAW_PTR_FUNC_ATTRIBUTES bool operator>=(const raw_ptr<U, I>& lhs,
    return lhs.GetForComparison() >= rhs.GetForComparison();
  }
  
@@ -227,7 +227,7 @@ index 4d978e9..639713c 100644
  
  using base::raw_ptr;
 diff --git a/base/memory/raw_scoped_refptr_mismatch_checker.h b/base/memory/raw_scoped_refptr_mismatch_checker.h
-index 9e50458..7afae06 100644
+index 9e50458ec98bb7e9041355fa06d14c6ba703b85c..7afae066fa3e318b346fac6b60ee55873b65f909 100644
 --- a/base/memory/raw_scoped_refptr_mismatch_checker.h
 +++ b/base/memory/raw_scoped_refptr_mismatch_checker.h
 @@ -7,6 +7,7 @@
@@ -238,7 +238,7 @@ index 9e50458..7afae06 100644
  #include "base/template_util.h"
  
  // It is dangerous to post a task with a T* argument where T is a subtype of
-@@ -35,8 +36,8 @@
+@@ -35,8 +36,8 @@ struct IsRefCountedType<T,
  // pointer type and are convertible to a RefCounted(Base|ThreadSafeBase) type.
  template <typename T>
  struct NeedsScopedRefptrButGetsRawPtr
@@ -250,10 +250,10 @@ index 9e50458..7afae06 100644
                  "NeedsScopedRefptrButGetsRawPtr requires non-reference type.");
  };
 diff --git a/chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_dialog_handler_unittest.cc b/chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_dialog_handler_unittest.cc
-index d812d82..ee22b02b 100644
+index 47d3cc7579b8375e7e356385c0537eec59dd591a..a2808c7d198d7b2e469e2c639e028cbf9cf9b583 100644
 --- a/chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_dialog_handler_unittest.cc
 +++ b/chrome/browser/ui/webui/privacy_sandbox/privacy_sandbox_dialog_handler_unittest.cc
-@@ -93,9 +93,7 @@
+@@ -67,9 +67,7 @@ class PrivacySandboxDialogHandlerTest : public testing::Test {
    content::TestWebUI* web_ui() { return web_ui_.get(); }
    PrivacySandboxDialogHandler* handler() { return handler_.get(); }
    TestingProfile* profile() { return &profile_; }
@@ -264,7 +264,7 @@ index d812d82..ee22b02b 100644
    MockPrivacySandboxService* mock_privacy_sandbox_service() {
      return mock_privacy_sandbox_service_;
    }
-@@ -120,15 +118,18 @@
+@@ -93,13 +91,16 @@ class PrivacySandboxConsentDialogHandlerTest
      : public PrivacySandboxDialogHandlerTest {
   protected:
    std::unique_ptr<PrivacySandboxDialogHandler> CreateHandler() override {
@@ -275,9 +275,6 @@ index d812d82..ee22b02b 100644
 +        base::BindOnce(&MockPrivacySandboxDialogView::Close,
 +                       base::Unretained(dialog_mock())),
          base::BindOnce(&MockPrivacySandboxDialogView::ResizeNativeView,
--                       dialog_mock()),
-+                       base::Unretained(dialog_mock())),
-         base::BindOnce(&MockPrivacySandboxDialogView::ShowNativeView,
 -                       dialog_mock()),
 +                       base::Unretained(dialog_mock())),
          base::BindOnce(
@@ -287,7 +284,7 @@ index d812d82..ee22b02b 100644
          PrivacySandboxService::DialogType::kConsent);
    }
  };
-@@ -247,15 +248,18 @@
+@@ -193,13 +194,16 @@ class PrivacySandboxNoticeDialogHandlerTest
      : public PrivacySandboxDialogHandlerTest {
   protected:
    std::unique_ptr<PrivacySandboxDialogHandler> CreateHandler() override {
@@ -298,9 +295,6 @@ index d812d82..ee22b02b 100644
 +        base::BindOnce(&MockPrivacySandboxDialogView::Close,
 +                       base::Unretained(dialog_mock())),
          base::BindOnce(&MockPrivacySandboxDialogView::ResizeNativeView,
--                       dialog_mock()),
-+                       base::Unretained(dialog_mock())),
-         base::BindOnce(&MockPrivacySandboxDialogView::ShowNativeView,
 -                       dialog_mock()),
 +                       base::Unretained(dialog_mock())),
          base::BindOnce(
@@ -311,10 +305,10 @@ index d812d82..ee22b02b 100644
    }
  };
 diff --git a/chrome/browser/web_applications/web_app_install_finalizer.cc b/chrome/browser/web_applications/web_app_install_finalizer.cc
-index 2b85d76..cf57d375 100644
+index 7f36ec57e697b871b677c09c255cbce9bcb09b3a..b4e6af317aa25d7f8eb11bfda1d81c999a93e1fb 100644
 --- a/chrome/browser/web_applications/web_app_install_finalizer.cc
 +++ b/chrome/browser/web_applications/web_app_install_finalizer.cc
-@@ -505,10 +505,6 @@
+@@ -568,10 +568,6 @@ void WebAppInstallFinalizer::SetWebAppManifestFieldsAndWriteData(
        web_app_info.shortcuts_menu_icon_bitmaps;
    IconsMap other_icon_bitmaps = web_app_info.other_icon_bitmaps;
  
@@ -325,7 +319,7 @@ index 2b85d76..cf57d375 100644
    auto write_translations_callback = base::BindOnce(
        &WebAppInstallFinalizer::WriteTranslations,
        weak_ptr_factory_.GetWeakPtr(), app_id, std::move(web_app_info));
-@@ -516,11 +512,12 @@
+@@ -579,11 +575,12 @@ void WebAppInstallFinalizer::SetWebAppManifestFieldsAndWriteData(
        base::BindOnce(&WebAppInstallFinalizer::CommitToSyncBridge,
                       weak_ptr_factory_.GetWeakPtr(), std::move(web_app));
  
