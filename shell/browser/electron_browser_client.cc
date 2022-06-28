@@ -29,6 +29,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version.h"
+#include "components/embedder_support/user_agent_utils.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
@@ -1140,6 +1141,10 @@ std::string ElectronBrowserClient::GetUserAgent() {
 
 void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
   user_agent_override_ = user_agent;
+}
+
+blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
+  return embedder_support::GetUserAgentMetadata();
 }
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
