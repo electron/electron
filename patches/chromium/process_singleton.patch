@@ -75,7 +75,7 @@ index 16bb3aa15a5378e8319f75f4b6b72b39177828f4..5a64220aaf1309832dc0ad543e353de6
  
  #if BUILDFLAG(IS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d72d847433 100644
+index fa7ae4812ae5c13355d06dde1e99a17b17da6184..2de07460462632680f9b16a019744527dcee5125 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@
@@ -86,7 +86,7 @@ index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d7
  #include <type_traits>
  
  #include "base/base_paths.h"
-@@ -96,9 +97,11 @@
+@@ -97,9 +98,11 @@
  #include "net/base/network_interfaces.h"
  #include "ui/base/l10n/l10n_util.h"
  
@@ -98,7 +98,7 @@ index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d7
  
  using content::BrowserThread;
  
-@@ -342,6 +345,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -343,6 +346,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -108,7 +108,7 @@ index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d7
    std::u16string error = l10n_util::GetStringFUTF16(
        IDS_PROFILE_IN_USE_POSIX, base::NumberToString16(pid),
        base::ASCIIToUTF16(hostname));
-@@ -361,6 +367,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -362,6 +368,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
    NOTREACHED();
    return false;
@@ -116,7 +116,7 @@ index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d7
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -401,6 +408,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
+@@ -402,6 +409,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
    return (cookie == ReadLink(path));
  }
  
@@ -138,7 +138,7 @@ index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d7
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -768,6 +790,10 @@ ProcessSingleton::ProcessSingleton(
+@@ -769,6 +791,10 @@ ProcessSingleton::ProcessSingleton(
  
  ProcessSingleton::~ProcessSingleton() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -149,7 +149,7 @@ index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d7
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -932,6 +958,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -933,6 +959,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
        base::Seconds(kTimeoutInSeconds));
  }
  
@@ -170,7 +170,7 @@ index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d7
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -1031,14 +1071,32 @@ bool ProcessSingleton::Create() {
+@@ -1032,14 +1072,32 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -208,7 +208,7 @@ index 3bf385781635bf6e7ccf97abdca43befd29e8e95..9d6ef0e143bdaf4a5043ebbb57d282d7
    // Check that the directory was created with the correct permissions.
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
-@@ -1081,10 +1139,13 @@ bool ProcessSingleton::Create() {
+@@ -1082,10 +1140,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  

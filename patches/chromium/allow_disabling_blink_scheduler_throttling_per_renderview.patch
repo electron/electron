@@ -48,10 +48,10 @@ index 4d2a4c6746e1dbfc619faf2e16eaa4948d74e372..6c9f190ff595234eca18ff20ca0655da
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 99978b33c294ebe37192baccb29f0a34a25aed17..ef6e9ae24979538b8746aca898d1f302827491d8 100644
+index d021052cf42a3b2f56eb628016ea846ce0f6b5b5..9246fa42cecbc1a7fa9402b608507a917c585dbc 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -151,6 +151,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -156,6 +156,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    static WindowOpenDisposition NavigationPolicyToDisposition(
        blink::WebNavigationPolicy policy);
  
@@ -85,7 +85,7 @@ index 5e4032ccf916f969cd669af7d983becddb57c72b..a858c9f2fa609ae756a2e70d0362f2de
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index deeeab3e6ead93cb3be26f4b40caeeef8bfaafa5..98c257b43cf198481bcaa8f080add28e60e7d9a2 100644
+index ed1ee90a759a6962173d16d40e6aad007654f5b7..b15d3101a65f1450424024b70e5fb61eb92b2023 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3732,6 +3732,13 @@ PageScheduler* WebViewImpl::Scheduler() const {

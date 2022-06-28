@@ -166,7 +166,7 @@ index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index bf0142f0089d14e8fef22afe3d1d3916b7dccefd..cee63f36c1a802eacf878a119ab1904cf5b56d51 100644
+index 130492426f294fea34a01cd54c0c345184c0cb23..fbc6ce4d7f5efd9c8b586c5ea165354bbbc23cba 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -176,6 +176,12 @@ source_set("audio") {
@@ -196,10 +196,10 @@ index eb0aff29b2f4fd2b035ef96186fd58d976876b05..8a68a8885ec42715c9b9dab0f04d1b90
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 3cce5f20af78f4456466df64fe0d040b5dba5fa8..1814ebbca91007b242a4e4ef359896594c23616a 100644
+index e9b2b0ea26d40d4de570a4a47e5d20d60a890a70..1ae0df873019da7a1ac8f5729f93c537de3df395 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -129,8 +129,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -130,8 +130,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
  
    bool Watch() override {
      CheckOnCorrectSequence();
@@ -209,7 +209,7 @@ index 3cce5f20af78f4456466df64fe0d040b5dba5fa8..1814ebbca91007b242a4e4ef35989659
      if (!config_watcher_.Watch(base::BindRepeating(&Watcher::OnConfigChanged,
                                                     base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -147,6 +147,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -148,6 +148,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
        success = false;
      }
  #endif  // !BUILDFLAG(IS_IOS)

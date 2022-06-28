@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d6cce8a676b93a67fa1a5e64d2b189c9dfa616a5..10f4ace6027c32b57f5d070026ecd9565c40b62f 100644
+index a8e08ed8d5699d57bbd770a1970df4dde1103aab..b336b1d5209be74a90619ceae96a8a136df66f32 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -134,6 +134,8 @@ viz_component("service") {
@@ -212,10 +212,10 @@ index 33e12349a951ef533b964d1158f8fa124623e946..fc04bcaffefc277dd1d0cdd766168de0
          IOSurfaceCreateMachPort(current_paint_buffer_->io_surface));
      client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
-index a480befb5d8db36e7e281d5033aeef0bea83d220..4e54acc897d08c87bccc3b44f68634e2873cb132 100644
+index 16a4e74e11775b694dfeeb82b475c628b86174b1..f8099e165da6c8253016abc92ea3021056e37c85 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
 +++ b/components/viz/service/display_embedder/software_output_device_mac.h
-@@ -59,6 +59,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
+@@ -60,6 +60,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
    void UpdateAndCopyBufferDamage(Buffer* previous_paint_buffer,
                                   const SkRegion& new_damage_rect);
  

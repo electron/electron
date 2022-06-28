@@ -246,10 +246,10 @@ index c6bd5c19f8a7ceec17c9e32af5296a9617f3a619..02199b439fba7fdc617b7f7980d958b7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 686fc99becf068106cc9fb372d2dce1e8d8c5114..eb94d05bf03d04b508123675c31957b8d22ee13a 100644
+index 79ad6a6f0a9e342b1a8db4d7469613e3ed6be553..820e62b301ac1c6b8ce55dbd56b6979af393ae6f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3882,8 +3882,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3887,8 +3887,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -316,7 +316,7 @@ index 7350382146178f58960a9bf68cd959076d2d9790..a70a94d14bdfa993feab60b8e4f32e10
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index aef9d1a79fcea0e73541cf8257b498e167c9dfeb..1f0c4209d1c6be31e1abd6bcfcaf181fd2d4858c 100644
+index d7dcd900147841eec2bce223d672e0a60995dccd..29b925e03e77ae19df6aac1f0076bad5fcab044f 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -402,8 +402,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -344,7 +344,7 @@ index ef6faf317dd4168adf6fd530a7da0b80f9166dec..f401659a81d4aeaf71039d71eb8fec48
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 5b804b3ad089154424eda6eb58edbb24baf67794..7f055a37080f40dede16dfa7b7ad6b3c31c5282d 100644
+index 6aeae536e4014ba394a4e59e55bf1b4e71957baf..5449991dd5c09082af6c8aea51dc7e8a1441d26e 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -412,8 +412,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(

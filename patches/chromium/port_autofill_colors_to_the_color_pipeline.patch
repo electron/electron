@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index d515ca441f4ae..57184c7f69d6b 100644
+index d515ca441f4aec88f56260e3aef002a53560f738..57184c7f69d6b5243753aee099c9522caae1eb12 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -129,6 +129,16 @@
@@ -37,7 +37,7 @@ index d515ca441f4ae..57184c7f69d6b 100644
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index c61b50fbceda3..c354821af8698 100644
+index c61b50fbceda3bd5776430f0df6a4b9618eaf8be..c354821af86984441288f3e868f68798db8a7a47 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -150,6 +150,17 @@ void AddUiColorMixer(ColorProvider* provider,
@@ -67,7 +67,7 @@ index c61b50fbceda3..c354821af8698 100644
  }
  
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index 0620a38975064..575dcd9258072 100644
+index 0620a389750649218865de06ed5d66f9ffe71871..575dcd925807263a9a5657d5156a3772421a0ed5 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -136,6 +136,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,

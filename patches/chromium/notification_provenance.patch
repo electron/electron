@@ -31,7 +31,7 @@ index b0e64049d411305d58802fd290bb0480e9b36fee..4afcf3b7a5b841409b0e1c4c2f32fd48
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 0c59d3cec404bc28acd112329ebd8332cfae96a4..62f06f55ec122597af442561fb688c0f6654be6e 100644
+index c969a5d35eac7b071b46d6a8106072e571f177a5..033618eda6e1e5b90a6e9b655e38f27bf051380a 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -83,11 +83,13 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
