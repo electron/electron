@@ -733,6 +733,10 @@ class WebContents : public ExclusiveAccessContext,
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
 
+  // ElectronWebModalDialogManagerDelegate overrides:
+  web_modal::WebContentsModalDialogHost* GetWebContentsModalDialogHost()
+        override;
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
