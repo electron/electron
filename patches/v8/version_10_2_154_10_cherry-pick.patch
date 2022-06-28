@@ -30,7 +30,7 @@ index 7999dcb13f34b68d12660cdc0f6767e5e8bf6d18..ebd8289678fcf2d746e3a67a49c08605
  // Use 1 for candidates and 0 otherwise.
  // (Boolean macro values are not supported by all preprocessors.)
 diff --git a/src/compiler/pipeline.cc b/src/compiler/pipeline.cc
-index 6ea2df76c863ed0466ee96fcf1ad5736192c6b44..cfa0af8a81a3277252228a0645f2813e0c01fdb8 100644
+index 6ea2df76c863ed0466ee96fcf1ad5736192c6b44..555942c2be2287d41d443d109e305c4858579447 100644
 --- a/src/compiler/pipeline.cc
 +++ b/src/compiler/pipeline.cc
 @@ -3456,11 +3456,15 @@ bool PipelineImpl::SelectInstructions(Linkage* linkage) {
@@ -42,7 +42,7 @@ index 6ea2df76c863ed0466ee96fcf1ad5736192c6b44..cfa0af8a81a3277252228a0645f2813e
 +  // JS functions.
    bool use_mid_tier_register_allocator =
 -      FLAG_turbo_force_mid_tier_regalloc ||
-+      data->info()->code_kind() == CodeKind::WASM_FUNCTION &&      
++      data->info()->code_kind() == CodeKind::WASM_FUNCTION &&
 +      (FLAG_turbo_force_mid_tier_regalloc ||
        (FLAG_turbo_use_mid_tier_regalloc_for_huge_functions &&
         data->sequence()->VirtualRegisterCount() >
