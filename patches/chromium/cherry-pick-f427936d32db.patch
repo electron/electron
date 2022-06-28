@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniel Cheng <dcheng@chromium.org>
 Date: Tue, 14 Jun 2022 19:11:17 +0000
-Subject: [M102] Ensure raw_ptr<T> and T* are treated identically in //base
- callback.
+Subject: Ensure raw_ptr<T> and T* are treated identically in //base callback.
 
 There are safety checks associated with raw pointers (e.g. ensuring
 receiver pointers are not raw pointers). Make sure these checks are
