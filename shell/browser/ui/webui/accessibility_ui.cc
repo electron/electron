@@ -96,7 +96,7 @@ base::Value::Dict BuildTargetDescriptor(
   target_data.Set(kRoutingIdField, routing_id);
   target_data.Set(kUrlField, url.spec());
   target_data.Set(kNameField, base::EscapeForHTML(name));
-  target_data.Set(kPidField, base::GetProcId(handle));
+  target_data.Set(kPidField, static_cast<int>(base::GetProcId(handle)));
   target_data.Set(kFaviconUrlField, favicon_url.spec());
   target_data.Set(kAccessibilityModeField,
                   static_cast<int>(accessibility_mode.mode()));
