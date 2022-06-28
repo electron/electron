@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index c46cbf1bec22c36b97fde5601ca9b2966ee80933..edf371d10bcac60db878c56c55e7244afa9106a9 100644
+index a7a198ddd0f33bc0786b59e5027c72662d2c24ed..dfc5ba7e101ef8521bcb4d1ecdf68f1957b347e9 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -960,7 +960,6 @@ if (is_win) {
+@@ -970,7 +970,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index c46cbf1bec22c36b97fde5601ca9b2966ee80933..edf371d10bcac60db878c56c55e7244a
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -969,6 +968,10 @@ if (is_win) {
+@@ -979,6 +978,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -744,10 +744,10 @@ index f118cae62de1cebb78c8193365bafcaba3b863a8..6c8bb35f6ea00b8366134a3f00d1a43f
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6fe723b5b4b645cb3d007787db2217bcaec7c257..e89d8b20aa27ac940e78d374ded9bca25940d3db 100644
+index 87c464f6a565b0ef4930c87b5e32329c55d0c223..26af5b09600e4e064b098bac884c4d941e88e3fc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2733,8 +2733,9 @@ source_set("browser") {
+@@ -2758,8 +2758,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -757,10 +757,10 @@ index 6fe723b5b4b645cb3d007787db2217bcaec7c257..e89d8b20aa27ac940e78d374ded9bca2
 +      deps += [ "//printing" ]
 +    }
  
-     if (is_chromeos_ash) {
+     if (is_chromeos) {
        sources += [
 diff --git a/content/browser/utility_sandbox_delegate_win.cc b/content/browser/utility_sandbox_delegate_win.cc
-index 75f0fade966646dc7e738c87a3300be1603ec7b7..27f71aef278781c214dc430af7cd16f32483e559 100644
+index 5f6847dcc9aa6970d7c8c4831f2be160c0aa15ad..4bd1f7e3b4c50a319043c8041a9ecf4fa8a99ac1 100644
 --- a/content/browser/utility_sandbox_delegate_win.cc
 +++ b/content/browser/utility_sandbox_delegate_win.cc
 @@ -95,6 +95,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetPolicy* policy) {
