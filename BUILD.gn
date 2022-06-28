@@ -355,6 +355,7 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//components/autofill/core/common:features",
     "//components/certificate_transparency",
+    "//components/embedder_support:browser_util",
     "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",
