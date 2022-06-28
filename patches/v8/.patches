@@ -8,5 +8,5 @@ fix_build_deprecated_attribute_for_older_msvc_versions.patch
 fix_disable_implies_dcheck_for_node_stream_array_buffers.patch
 revert_fix_cppgc_removed_deleted_cstors_in_cppheapcreateparams.patch
 cherry-pick-723ed8a9cfff.patch
-cherry-pick-d0882b3dff76.patch
 cherry-pick-44c4e56fea2c.patch
+version_10_2_154_10_cherry-pick.patch
