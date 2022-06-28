@@ -622,6 +622,7 @@ WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
     case extensions::mojom::ViewType::kBackgroundContents:
     case extensions::mojom::ViewType::kExtensionGuest:
     case extensions::mojom::ViewType::kTabContents:
+    case extensions::mojom::ViewType::kOffscreenDocument:
     case extensions::mojom::ViewType::kInvalid:
       return WebContents::Type::kRemote;
   }
