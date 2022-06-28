@@ -20,12 +20,13 @@ const args = require('minimist')(process.argv.slice(2), {
 async function main () {
   const outDir = utils.getOutDir({ shouldLog: true });
   const nodeDir = path.resolve(BASE, 'out', outDir, 'gen', 'node_headers');
-  const env = Object.assign({}, process.env, {
+  const env = {
+    ...process.env,
     npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019',
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
     npm_config_yes: 'true'
-  });
+  };
 
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
   const cc = path.resolve(clangDir, 'clang');
@@ -58,7 +59,7 @@ async function main () {
   const cxxflags = [
     '-std=c++17',
     '-nostdinc++',
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
+    `-I"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
     '-fPIC',
@@ -107,7 +108,8 @@ async function main () {
   const onlyTests = args.only && args.only.split(',');
 
   const DISABLED_TESTS = [
-    'nannew-test.js'
+    'nannew-test.js',
+    'buffer-test.js'
   ];
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.includes(test))

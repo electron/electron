@@ -55,7 +55,7 @@ printing::PrinterList GetPrinterList(v8::Isolate* isolate) {
   {
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     printing::mojom::ResultCode code =
-        print_backend->EnumeratePrinters(&printers);
+        print_backend->EnumeratePrinters(printers);
     if (code != printing::mojom::ResultCode::kSuccess)
       LOG(INFO) << "Failed to enumerate printers";
   }
@@ -73,7 +73,7 @@ v8::Local<v8::Promise> GetPrinterListAsync(v8::Isolate* isolate) {
         auto print_backend = printing::PrintBackend::CreateInstance(
             g_browser_process->GetApplicationLocale());
         printing::mojom::ResultCode code =
-            print_backend->EnumeratePrinters(&printers);
+            print_backend->EnumeratePrinters(printers);
         if (code != printing::mojom::ResultCode::kSuccess)
           LOG(INFO) << "Failed to enumerate printers";
         return printers;

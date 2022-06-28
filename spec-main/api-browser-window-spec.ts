@@ -1040,7 +1040,7 @@ describe('BrowserWindow module', () => {
         const boundsUpdate = { width: 200 };
         w.setBounds(boundsUpdate as any);
 
-        const expectedBounds = Object.assign(fullBounds, boundsUpdate);
+        const expectedBounds = { ...fullBounds, ...boundsUpdate };
         expectBoundsEqual(w.getBounds(), expectedBounds);
       });
 
@@ -1354,7 +1354,7 @@ describe('BrowserWindow module', () => {
 
           w.setAspectRatio(16 / 11);
 
-          const maximize = emittedOnce(w, 'resize');
+          const maximize = emittedOnce(w, 'maximize');
           w.show();
           w.maximize();
           await maximize;

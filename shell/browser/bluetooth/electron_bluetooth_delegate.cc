@@ -138,4 +138,11 @@ ElectronBluetoothDelegate::GetPermittedDevices(
   return permitted_devices;
 }
 
+void ElectronBluetoothDelegate::ShowDevicePairConfirmPrompt(
+    RenderFrameHost* frame,
+    const std::u16string& device_identifier,
+    PairConfirmCallback callback) {
+  NOTIMPLEMENTED();
+}
+
 }  // namespace electron

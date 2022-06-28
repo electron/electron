@@ -13,7 +13,7 @@ other protocols to register their streaming behavior. MultibufferDataSource::Ass
 then refers to the list so that it can correctly determine the data source's settings.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index 58256037e0a2485a9f8de9f4086550f39e865b2d..3456f1d55b16239698ba83d1d27beec1c3806192 100644
+index 58256037e0a2485a9f8de9f4086550f39e865b2d..30cf2ee44f6e0629e664fcf2072ad14ca186f947 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -10,8 +10,10 @@
@@ -56,7 +56,7 @@ index 58256037e0a2485a9f8de9f4086550f39e865b2d..3456f1d55b16239698ba83d1d27beec1
 +
 +  const std::string scheme = url_data_->url().scheme();
 +  for (const std::string& streaming_scheme : *GetStreamingSchemes()) {
-+    if (base::LowerCaseEqualsASCII(scheme, streaming_scheme)) {
++    if (base::EqualsCaseInsensitiveASCII(scheme, streaming_scheme)) {
 +      return false;
 +    }
 +  }

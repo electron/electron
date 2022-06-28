@@ -57,7 +57,7 @@ class NetLog : public gin::Wrappable<NetLog> {
 
   void StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
                                   uint64_t max_file_size,
-                                  base::Value custom_constants,
+                                  base::Value::Dict custom_constants,
                                   base::File output_file);
   void NetLogStarted(int32_t error);
 

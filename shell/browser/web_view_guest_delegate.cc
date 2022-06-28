@@ -32,7 +32,7 @@ void WebViewGuestDelegate::AttachToIframe(
   embedder_web_contents_ = embedder_web_contents;
 
   int embedder_process_id =
-      embedder_web_contents_->GetMainFrame()->GetProcess()->GetID();
+      embedder_web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID();
   auto* embedder_frame =
       content::RenderFrameHost::FromID(embedder_process_id, embedder_frame_id);
   DCHECK_EQ(embedder_web_contents_,

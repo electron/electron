@@ -290,7 +290,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   } else {
     web_contents()->Close();
   }
-}  // namespace api
+}
 
 void BrowserWindow::OnWindowBlur() {
   if (api_web_contents_)

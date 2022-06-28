@@ -16,6 +16,7 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
+#include "ui/display/screen.h"
 #include "ui/views/layout/layout_provider.h"
 
 class BrowserProcessImpl;
@@ -169,6 +170,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if BUILDFLAG(IS_MAC)
   std::unique_ptr<device::GeolocationManager> geolocation_manager_;
+  std::unique_ptr<display::ScopedNativeScreen> screen_;
 #endif
 
   static ElectronBrowserMainParts* self_;

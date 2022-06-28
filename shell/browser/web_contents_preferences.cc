@@ -327,7 +327,8 @@ content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     int process_id) {
   for (WebContentsPreferences* preferences : Instances()) {
     content::WebContents* web_contents = preferences->web_contents_;
-    if (web_contents->GetMainFrame()->GetProcess()->GetID() == process_id)
+    if (web_contents->GetPrimaryMainFrame()->GetProcess()->GetID() ==
+        process_id)
       return web_contents;
   }
   return nullptr;
