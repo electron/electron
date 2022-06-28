@@ -18,7 +18,7 @@ namespace electron {
 AutofillDriver::AutofillDriver(content::RenderFrameHost* render_frame_host)
     : render_frame_host_(render_frame_host) {
   autofill_popup_ = std::make_unique<AutofillPopup>();
-}  // namespace electron
+}
 
 AutofillDriver::~AutofillDriver() = default;
 
