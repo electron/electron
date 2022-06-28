@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_UI_ELECTRON_WEB_MODAL_DIALOG_MANAGER_DELEGATE_H_
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "components/web_modal/web_contents_modal_dialog_manager_delegate.h"
 
 class ElectronWebModalDialogManagerDelegate
