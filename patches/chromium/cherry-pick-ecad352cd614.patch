@@ -1,7 +1,10 @@
-From ecad352cd61420d6bf8c9c39041b5369372ecf94 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ted Meyer <tmathmeyer@chromium.org>
-Date: Wed, 08 Jun 2022 04:33:20 +0000
-Subject: [PATCH] Add Stop method to BatchingMediaLog
+Date: Wed, 8 Jun 2022 04:33:20 +0000
+Subject: Add Stop method to BatchingMediaLog
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Now that ~MediaLog is posted for a later destruction due to garbage
 collector ownership of CodecLogger, it's possible for the
@@ -28,13 +31,12 @@ Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
 Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5060@{#672}
 Cr-Branched-From: b83393d0f4038aeaf67f970a024d8101df7348d1-refs/heads/main@{#1002911}
----
 
 diff --git a/content/renderer/media/batching_media_log.cc b/content/renderer/media/batching_media_log.cc
-index 42b6fb6..efd56d9 100644
+index c7263471a3b352fe329c26dc258ccf7af2049820..fbd8f5c7720d3636870d63bfcefbdb55d862fef7 100644
 --- a/content/renderer/media/batching_media_log.cc
 +++ b/content/renderer/media/batching_media_log.cc
-@@ -76,6 +76,11 @@
+@@ -75,6 +75,11 @@ BatchingMediaLog::~BatchingMediaLog() {
      SendQueuedMediaEvents();
  }
  
@@ -47,10 +49,10 @@ index 42b6fb6..efd56d9 100644
    base::AutoLock lock(lock_);
    for (const auto& handler : event_handlers_)
 diff --git a/content/renderer/media/batching_media_log.h b/content/renderer/media/batching_media_log.h
-index eb757a4..6c2df68 100644
+index eb757a4ca922bd5456d0e436d10cc540ee9134ae..6c2df688caee4d2fc17e973cdad12f20342e56fe 100644
 --- a/content/renderer/media/batching_media_log.h
 +++ b/content/renderer/media/batching_media_log.h
-@@ -45,6 +45,8 @@
+@@ -45,6 +45,8 @@ class CONTENT_EXPORT BatchingMediaLog : public media::MediaLog {
  
    ~BatchingMediaLog() override;
  
@@ -60,10 +62,10 @@ index eb757a4..6c2df68 100644
    void SetTickClockForTesting(const base::TickClock* tick_clock);
  
 diff --git a/media/base/media_log.cc b/media/base/media_log.cc
-index 3728433..46887da3 100644
+index 3728433c5eb473cc9c82b6cf33b22bbf89471eea..46887da3dc21c504b26d6ff174eb14d68298c6b1 100644
 --- a/media/base/media_log.cc
 +++ b/media/base/media_log.cc
-@@ -49,6 +49,9 @@
+@@ -49,6 +49,9 @@ std::string MediaLog::GetErrorMessageLocked() {
    return "";
  }
  
@@ -74,10 +76,10 @@ index 3728433..46887da3 100644
    std::unique_ptr<MediaLogRecord> record(
        CreateRecord(MediaLogRecord::Type::kMessage));
 diff --git a/media/base/media_log.h b/media/base/media_log.h
-index e70a95b..cce6a266 100644
+index e70a95b72f75f9bbfb114a94396c048bce2a3647..cce6a266327b43837d7a6ccaca7f2969c06fef4b 100644
 --- a/media/base/media_log.h
 +++ b/media/base/media_log.h
-@@ -131,6 +131,10 @@
+@@ -131,6 +131,10 @@ class MEDIA_EXPORT MediaLog {
    // even if this occurs, in the "won't crash" sense.
    virtual std::unique_ptr<MediaLog> Clone();
  
@@ -89,18 +91,24 @@ index e70a95b..cce6a266 100644
    // Ensures only subclasses and factories (e.g. Clone()) can create MediaLog.
    MediaLog();
 diff --git a/third_party/blink/renderer/modules/webcodecs/codec_logger.h b/third_party/blink/renderer/modules/webcodecs/codec_logger.h
-index 034c448..4dc058c 100644
+index 2d389c1835365e423d6289fb883cb6cccd4d8e84..50abcbbdcfe434c53476b14d8eb929a6f38c892d 100644
 --- a/third_party/blink/renderer/modules/webcodecs/codec_logger.h
 +++ b/third_party/blink/renderer/modules/webcodecs/codec_logger.h
-@@ -81,7 +81,10 @@
-     // media logs must be posted for destruction, since they can cause the
-     // garbage collector to trigger an immediate cleanup and delete the owning
-     // instance of |CodecLogger|.
--    task_runner_->DeleteSoon(FROM_HERE, std::move(parent_media_log_));
+@@ -71,7 +71,16 @@ class MODULES_EXPORT CodecLogger final {
+     media_log_ = parent_media_log_->Clone();
+   }
+ 
+-  ~CodecLogger() { DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_); }
++  ~CodecLogger() {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    // media logs must be posted for destruction, since they can cause the
++    // garbage collector to trigger an immediate cleanup and delete the owning
++    // instance of |CodecLogger|.
 +    if (parent_media_log_) {
 +      parent_media_log_->Stop();
 +      task_runner_->DeleteSoon(FROM_HERE, std::move(parent_media_log_));
 +    }
-   }
++  }
  
    void SendPlayerNameInformation(const ExecutionContext& context,
+                                  std::string loadedAs) {
