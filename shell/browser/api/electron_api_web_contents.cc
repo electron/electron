@@ -3643,8 +3643,7 @@ void WebContents::DevToolsRequestFileSystems() {
 
   base::Value::List file_system_value;
   for (const auto& file_system : file_systems)
-    file_system_value.Append(
-        base::Value::FromUniquePtrValue(CreateFileSystemValue(file_system)));
+    file_system_value.Append(CreateFileSystemValue(file_system));
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI", "fileSystemsLoaded",
       base::Value(std::move(file_system_value)));
