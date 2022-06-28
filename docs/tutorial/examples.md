@@ -52,5 +52,5 @@ You can find the full list of "How to?" in the sidebar. If there is
 something that you would like to do that is not documented, please join
 our [Discord server][] and let us know!
 
-[discord server]: https://discord.com/invite/electron
+[discord server]: [https://discord.com/invite/electron](https://discord.com/invite/electronjs)
 [fiddle]: https://www.electronjs.org/fiddle
