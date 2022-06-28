@@ -93,7 +93,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowLeaveHtmlFullScreen() {}
   virtual void OnWindowAlwaysOnTopChanged() {}
   virtual void OnTouchBarItemResult(const std::string& item_id,
-                                    const base::DictionaryValue& details) {}
+                                    const base::Value::Dict& details) {}
   virtual void OnNewWindowForTab() {}
   virtual void OnSystemContextMenu(int x, int y, bool* prevent_default) {}
 

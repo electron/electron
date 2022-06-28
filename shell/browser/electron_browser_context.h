@@ -44,7 +44,6 @@ using DevicePermissionMap =
     std::map<blink::PermissionType,
              std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>;
 
-class ElectronBrowserContext;
 class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
 class CookieChangeNotifier;
@@ -82,10 +81,9 @@ class ElectronBrowserContext : public content::BrowserContext {
   // Get or create the BrowserContext according to its |partition| and
   // |in_memory|. The |options| will be passed to constructor when there is no
   // existing BrowserContext.
-  static ElectronBrowserContext* From(
-      const std::string& partition,
-      bool in_memory,
-      base::DictionaryValue options = base::DictionaryValue());
+  static ElectronBrowserContext* From(const std::string& partition,
+                                      bool in_memory,
+                                      base::Value::Dict options = {});
 
   static BrowserContextMap& browser_context_map();
 
@@ -177,7 +175,7 @@ class ElectronBrowserContext : public content::BrowserContext {
  private:
   ElectronBrowserContext(const std::string& partition,
                          bool in_memory,
-                         base::DictionaryValue options);
+                         base::Value::Dict options);
 
   // Initialize pref registry.
   void InitPrefs();

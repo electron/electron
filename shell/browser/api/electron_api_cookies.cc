@@ -119,27 +119,27 @@ bool MatchesDomain(std::string filter, const std::string& domain) {
 }
 
 // Returns whether |cookie| matches |filter|.
-bool MatchesCookie(const base::Value& filter,
+bool MatchesCookie(const base::Value::Dict& filter,
                    const net::CanonicalCookie& cookie) {
   const std::string* str;
-  if ((str = filter.FindStringKey("name")) && *str != cookie.Name())
+  if ((str = filter.FindString("name")) && *str != cookie.Name())
     return false;
-  if ((str = filter.FindStringKey("path")) && *str != cookie.Path())
+  if ((str = filter.FindString("path")) && *str != cookie.Path())
     return false;
-  if ((str = filter.FindStringKey("domain")) &&
+  if ((str = filter.FindString("domain")) &&
       !MatchesDomain(*str, cookie.Domain()))
     return false;
-  absl::optional<bool> secure_filter = filter.FindBoolKey("secure");
+  absl::optional<bool> secure_filter = filter.FindBool("secure");
   if (secure_filter && *secure_filter == cookie.IsSecure())
     return false;
-  absl::optional<bool> session_filter = filter.FindBoolKey("session");
+  absl::optional<bool> session_filter = filter.FindBool("session");
   if (session_filter && *session_filter != !cookie.IsPersistent())
     return false;
   return true;
 }
 
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
-void FilterCookies(const base::Value& filter,
+void FilterCookies(base::Value::Dict filter,
                    gin_helper::Promise<net::CookieList> promise,
                    const net::CookieList& cookies) {
   net::CookieList result;
@@ -151,11 +151,11 @@ void FilterCookies(const base::Value& filter,
 }
 
 void FilterCookieWithStatuses(
-    const base::Value& filter,
+    base::Value::Dict filter,
     gin_helper::Promise<net::CookieList> promise,
     const net::CookieAccessResultList& list,
     const net::CookieAccessResultList& excluded_list) {
-  FilterCookies(filter, std::move(promise),
+  FilterCookies(std::move(filter), std::move(promise),
                 net::cookie_util::StripAccessResults(list));
 }
 
@@ -233,7 +233,7 @@ v8::Local<v8::Promise> Cookies::Get(v8::Isolate* isolate,
   auto* storage_partition = browser_context_->GetDefaultStoragePartition();
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
-  base::DictionaryValue dict;
+  base::Value::Dict dict;
   gin::ConvertFromV8(isolate, filter.GetHandle(), &dict);
 
   std::string url;
@@ -282,31 +282,31 @@ v8::Local<v8::Promise> Cookies::Remove(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
-                                    const base::DictionaryValue& details) {
+                                    base::Value::Dict details) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  const std::string* url_string = details.FindStringKey("url");
+  const std::string* url_string = details.FindString("url");
   if (!url_string) {
     promise.RejectWithErrorMessage("Missing required option 'url'");
     return handle;
   }
-  const std::string* name = details.FindStringKey("name");
-  const std::string* value = details.FindStringKey("value");
-  const std::string* domain = details.FindStringKey("domain");
-  const std::string* path = details.FindStringKey("path");
-  bool http_only = details.FindBoolKey("httpOnly").value_or(false);
-  const std::string* same_site_string = details.FindStringKey("sameSite");
+  const std::string* name = details.FindString("name");
+  const std::string* value = details.FindString("value");
+  const std::string* domain = details.FindString("domain");
+  const std::string* path = details.FindString("path");
+  bool http_only = details.FindBool("httpOnly").value_or(false);
+  const std::string* same_site_string = details.FindString("sameSite");
   net::CookieSameSite same_site;
   std::string error = StringToCookieSameSite(same_site_string, &same_site);
   if (!error.empty()) {
     promise.RejectWithErrorMessage(error);
     return handle;
   }
-  bool secure = details.FindBoolKey("secure").value_or(
+  bool secure = details.FindBool("secure").value_or(
       same_site == net::CookieSameSite::NO_RESTRICTION);
   bool same_party =
-      details.FindBoolKey("sameParty")
+      details.FindBool("sameParty")
           .value_or(secure && same_site != net::CookieSameSite::STRICT_MODE);
 
   GURL url(url_string ? *url_string : "");
@@ -319,10 +319,9 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
 
   auto canonical_cookie = net::CanonicalCookie::CreateSanitizedCookie(
       url, name ? *name : "", value ? *value : "", domain ? *domain : "",
-      path ? *path : "",
-      ParseTimeProperty(details.FindDoubleKey("creationDate")),
-      ParseTimeProperty(details.FindDoubleKey("expirationDate")),
-      ParseTimeProperty(details.FindDoubleKey("lastAccessDate")), secure,
+      path ? *path : "", ParseTimeProperty(details.FindDouble("creationDate")),
+      ParseTimeProperty(details.FindDouble("expirationDate")),
+      ParseTimeProperty(details.FindDouble("lastAccessDate")), secure,
       http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party,
       absl::nullopt);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {

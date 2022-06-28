@@ -103,7 +103,7 @@ ElectronBrowserContext::browser_context_map() {
 
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
-                                               base::DictionaryValue options)
+                                               base::Value::Dict options)
     : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
       protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
@@ -111,7 +111,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   // Read options.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   use_cache_ = !command_line->HasSwitch(switches::kDisableHttpCache);
-  if (auto use_cache_opt = options.FindBoolKey("cache")) {
+  if (auto use_cache_opt = options.FindBool("cache")) {
     use_cache_ = use_cache_opt.value();
   }
 
@@ -530,7 +530,7 @@ bool ElectronBrowserContext::CheckDevicePermission(
 ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
-    base::DictionaryValue options) {
+    base::Value::Dict options) {
   PartitionKey key(partition, in_memory);
   ElectronBrowserContext* browser_context = browser_context_map()[key].get();
   if (browser_context) {

@@ -140,7 +140,7 @@ NSNotificationCenter* GetNotificationCenter(NotificationCenterKind kind) {
 }  // namespace
 
 void SystemPreferences::PostNotification(const std::string& name,
-                                         base::DictionaryValue user_info,
+                                         base::Value::Dict user_info,
                                          gin::Arguments* args) {
   bool immediate = false;
   args->GetNext(&immediate);
@@ -150,7 +150,7 @@ void SystemPreferences::PostNotification(const std::string& name,
   [center
       postNotificationName:base::SysUTF8ToNSString(name)
                     object:nil
-                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())
+                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))
         deliverImmediately:immediate];
 }
 
@@ -168,12 +168,12 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
 }
 
 void SystemPreferences::PostLocalNotification(const std::string& name,
-                                              base::DictionaryValue user_info) {
+                                              base::Value::Dict user_info) {
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center
       postNotificationName:base::SysUTF8ToNSString(name)
                     object:nil
-                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())];
+                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))];
 }
 
 int SystemPreferences::SubscribeLocalNotification(
@@ -188,15 +188,14 @@ void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
                             NotificationCenterKind::kNSNotificationCenter);
 }
 
-void SystemPreferences::PostWorkspaceNotification(
-    const std::string& name,
-    base::DictionaryValue user_info) {
+void SystemPreferences::PostWorkspaceNotification(const std::string& name,
+                                                  base::Value::Dict user_info) {
   NSNotificationCenter* center =
       [[NSWorkspace sharedWorkspace] notificationCenter];
   [center
       postNotificationName:base::SysUTF8ToNSString(name)
                     object:nil
-                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())];
+                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))];
 }
 
 int SystemPreferences::SubscribeWorkspaceNotification(
@@ -248,7 +247,7 @@ int SystemPreferences::DoSubscribeNotification(
                 } else {
                   copied_callback.Run(
                       base::SysNSStringToUTF8(notification.name),
-                      base::DictionaryValue(), object);
+                      base::Value(base::Value::Dict()), object);
                 }
               }];
   return request_id;
@@ -297,24 +296,24 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
 }
 
 void SystemPreferences::RegisterDefaults(gin::Arguments* args) {
-  base::DictionaryValue value;
+  base::Value::Dict value;
 
   if (!args->GetNext(&value)) {
     args->ThrowError();
-  } else {
-    @try {
-      NSDictionary* dict = DictionaryValueToNSDictionary(value.GetDict());
-      for (id key in dict) {
-        id value = [dict objectForKey:key];
-        if ([value isKindOfClass:[NSNull class]] || value == nil) {
-          args->ThrowError();
-          return;
-        }
+    return;
+  }
+  @try {
+    NSDictionary* dict = DictionaryValueToNSDictionary(std::move(value));
+    for (id key in dict) {
+      id value = [dict objectForKey:key];
+      if ([value isKindOfClass:[NSNull class]] || value == nil) {
+        args->ThrowError();
+        return;
       }
-      [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
-    } @catch (NSException* exception) {
-      args->ThrowError();
     }
+    [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
+  } @catch (NSException* exception) {
+    args->ThrowError();
   }
 }
 

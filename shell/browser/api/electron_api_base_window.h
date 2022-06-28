@@ -82,7 +82,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowAlwaysOnTopChanged() override;
   void OnExecuteAppCommand(const std::string& command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
-                            const base::DictionaryValue& details) override;
+                            const base::Value::Dict& details) override;
   void OnNewWindowForTab() override;
   void OnSystemContextMenu(int x, int y, bool* prevent_default) override;
 #if BUILDFLAG(IS_WIN)

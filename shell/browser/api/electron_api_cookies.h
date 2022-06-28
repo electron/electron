@@ -8,16 +8,13 @@
 #include <string>
 
 #include "base/callback_list.h"
+#include "base/values.h"
 #include "gin/handle.h"
 #include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_change_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/trackable_object.h"
-
-namespace base {
-class DictionaryValue;
-}
 
 namespace gin_helper {
 class Dictionary;
@@ -51,8 +48,7 @@ class Cookies : public gin::Wrappable<Cookies>,
 
   v8::Local<v8::Promise> Get(v8::Isolate*,
                              const gin_helper::Dictionary& filter);
-  v8::Local<v8::Promise> Set(v8::Isolate*,
-                             const base::DictionaryValue& details);
+  v8::Local<v8::Promise> Set(v8::Isolate*, base::Value::Dict details);
   v8::Local<v8::Promise> Remove(v8::Isolate*,
                                 const GURL& url,
                                 const std::string& name);

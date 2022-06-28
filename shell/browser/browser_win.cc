@@ -851,8 +851,8 @@ void Browser::ShowAboutPanel() {
   electron::ShowMessageBoxSync(settings);
 }
 
-void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
-  about_panel_options_ = std::move(options);
+void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+  about_panel_options_ = base::Value(std::move(options));
 }
 
 }  // namespace electron

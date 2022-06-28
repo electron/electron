@@ -114,7 +114,7 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   v8::Local<v8::Value> GetBitmap(gin::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(gin_helper::ErrorThrower thrower);
   gin::Handle<NativeImage> Resize(gin::Arguments* args,
-                                  base::DictionaryValue options);
+                                  base::Value::Dict options);
   gin::Handle<NativeImage> Crop(v8::Isolate* isolate, const gfx::Rect& rect);
   std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
