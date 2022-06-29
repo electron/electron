@@ -242,9 +242,7 @@ struct Converter<network::mojom::SSLConfigPtr> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -1255,9 +1253,7 @@ const char* Session::GetTypeName() {
   return "Session";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

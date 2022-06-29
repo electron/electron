@@ -58,9 +58,7 @@ struct Converter<electron::TaskbarHost::ThumbarButton> {
 }  // namespace gin
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -1323,9 +1321,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("id", &BaseWindow::GetID);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

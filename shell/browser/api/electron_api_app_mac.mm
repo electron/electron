@@ -13,9 +13,7 @@
 #import <Cocoa/Cocoa.h>
 #import <sys/sysctl.h>
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          absl::optional<base::FilePath> custom_path) {
@@ -82,6 +80,4 @@ bool App::IsRunningUnderARM64Translation() const {
   return proc_translated == 1;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

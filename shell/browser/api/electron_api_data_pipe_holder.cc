@@ -18,9 +18,7 @@
 
 #include "shell/common/node_includes.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -181,6 +179,4 @@ gin::Handle<DataPipeHolder> DataPipeHolder::From(v8::Isolate* isolate,
   return gin::Handle<DataPipeHolder>();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

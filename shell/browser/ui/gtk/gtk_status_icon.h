@@ -21,9 +21,8 @@ namespace ui {
 class MenuModel;
 }
 
-namespace electron {
+namespace electron::gtkui {
 
-namespace gtkui {
 class AppIndicatorIconMenu;
 
 // Status icon implementation which uses the system tray X11 spec (via
@@ -58,8 +57,6 @@ class GtkStatusIcon : public views::StatusIconLinux {
   std::unique_ptr<AppIndicatorIconMenu> menu_;
 };
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_GTK_GTK_STATUS_ICON_H_

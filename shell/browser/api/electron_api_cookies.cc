@@ -91,9 +91,7 @@ struct Converter<net::CookieChangeCause> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -397,6 +395,4 @@ const char* Cookies::GetTypeName() {
   return "Cookies";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

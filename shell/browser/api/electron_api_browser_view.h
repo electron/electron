@@ -28,9 +28,7 @@ namespace gin_helper {
 class Dictionary;
 }
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class WebContents;
 
@@ -90,8 +88,6 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   int32_t id_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_VIEW_H_

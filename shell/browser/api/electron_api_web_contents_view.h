@@ -12,9 +12,7 @@ namespace gin_helper {
 class Dictionary;
 }
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class WebContents;
 
@@ -53,8 +51,6 @@ class WebContentsView : public View, public content::WebContentsObserver {
   api::WebContents* api_web_contents_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_VIEW_H_

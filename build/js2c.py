@@ -8,9 +8,7 @@ TEMPLATE = """
 #include "node_native_module.h"
 #include "node_internals.h"
 
-namespace node {{
-
-namespace native_module {{
+namespace node::native_module {{
 
 {definitions}
 
@@ -18,9 +16,7 @@ void NativeModuleLoader::LoadEmbedderJavaScriptSource() {{
   {initializers}
 }}
 
-}}  // namespace native_module
-
-}}  // namespace node
+}}  // namespace node::native_module
 """
 
 def main():

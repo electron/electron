@@ -56,9 +56,7 @@ struct Converter<electron::TrayIcon::IconType> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -422,9 +420,7 @@ v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
       .Build();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

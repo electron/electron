@@ -17,9 +17,7 @@
 // have to isolate the usage of WebContentsImpl into a clean file to fix it:
 // error C2371: 'ssize_t': redefinition; different basic types
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 void WebContents::DetachFromOuterFrame() {
   // See detach_webview_frame.patch on how to detach.
@@ -55,6 +53,4 @@ OffScreenRenderWidgetHostView* WebContents::GetOffScreenRenderWidgetHostView()
 }
 #endif
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
