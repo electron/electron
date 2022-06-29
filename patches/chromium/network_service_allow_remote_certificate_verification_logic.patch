@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 872f6c27997242ce8d5fe8db155dd60516f03b5b..7dc2ce4577594d16930fd97ad3370e28765a0327 100644
+index 848ac7f87f9488242e0cb686895dc3d7c3ad6080..a5068c796d1f31abc0c2f03458a0b58d2007a446 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -128,6 +128,11 @@
@@ -130,7 +130,7 @@ index 872f6c27997242ce8d5fe8db155dd60516f03b5b..7dc2ce4577594d16930fd97ad3370e28
      mojom::URLLoaderFactoryParamsPtr params) {
 @@ -2295,6 +2392,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
-     cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
+     cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
 +    auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(cert_verifier));
 +    remote_cert_verifier_ = remote_cert_verifier.get();
@@ -139,7 +139,7 @@ index 872f6c27997242ce8d5fe8db155dd60516f03b5b..7dc2ce4577594d16930fd97ad3370e28
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 4da0446b68ff11f65df809f04209a0e0daf12015..9d86b641760c82f145d17a4e70813cd13fad9d9c 100644
+index 67e90375a6f0d551091647d4a447bc6036e1c897..dfec698b7ea7b18c1dc1b4b56db082e24c392f91 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -106,6 +106,7 @@ class URLMatcher;
@@ -159,7 +159,7 @@ index 4da0446b68ff11f65df809f04209a0e0daf12015..9d86b641760c82f145d17a4e70813cd1
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -824,6 +827,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -825,6 +828,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  

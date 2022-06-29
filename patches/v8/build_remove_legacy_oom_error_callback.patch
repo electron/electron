@@ -69,7 +69,7 @@ index b54c7388603b4582356f6741c9a36f2835aa1928..b9533b78046228705e2038396eebf23b
    void SetOOMErrorHandler(OOMErrorCallback that);
  
 diff --git a/src/api/api.cc b/src/api/api.cc
-index d0d9c5dc97300fbd6b48aa557a9c7fe2885667bd..58161fecd815beb94b72512ec95b4fc46d027ee2 100644
+index 7d70c2fb7382a93c01dadec678e2bec2ce948b8f..e547c8e86284daba6665528d811a63729df7ad8b 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -167,13 +167,6 @@
@@ -146,7 +146,7 @@ index d0d9c5dc97300fbd6b48aa557a9c7fe2885667bd..58161fecd815beb94b72512ec95b4fc4
                  ModifyCodeGenerationFromStringsCallback2,
                  modify_code_gen_callback2)
 diff --git a/src/execution/isolate.h b/src/execution/isolate.h
-index ddf81b352b80c5c64efdcd0ea54b340f41a89111..28bd9797d2459cddf6128e1c76e286f28c05d477 100644
+index f3d3145c2478bbe8da53aff98e87fedb6a2c9b0e..871376b72f093baafd39697afdcc6ccd442a1a8d 100644
 --- a/src/execution/isolate.h
 +++ b/src/execution/isolate.h
 @@ -489,16 +489,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();
