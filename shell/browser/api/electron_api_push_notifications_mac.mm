@@ -7,7 +7,6 @@
 #include <string>
 
 #include <utility>
-#include <vector>
 #import "shell/browser/mac/electron_application.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
@@ -15,10 +14,6 @@
 namespace electron {
 
 namespace api {
-
-// This set maintains all the promises that should be fulfilled
-// once macOS registers, or fails to register, for APNS
-std::vector<gin_helper::Promise<std::string>> apns_promise_set_;
 
 v8::Local<v8::Promise> PushNotifications::RegisterForAPNSNotifications(
     v8::Isolate* isolate) {
@@ -30,14 +25,14 @@ v8::Local<v8::Promise> PushNotifications::RegisterForAPNSNotifications(
                                          NSRemoteNotificationTypeAlert |
                                          NSRemoteNotificationTypeSound];
 
-  apns_promise_set_.emplace_back(std::move(promise));
+  PushNotifications::apns_promise_set_.emplace_back(std::move(promise));
   return handle;
 }
 
 void PushNotifications::ResolveAPNSPromiseSetWithToken(
     const std::string& token_string) {
   std::vector<gin_helper::Promise<std::string>> promises =
-      std::move(apns_promise_set_);
+      std::move(PushNotifications::apns_promise_set_);
   for (auto& promise : promises) {
     promise.Resolve(token_string);
   }
@@ -46,7 +41,7 @@ void PushNotifications::ResolveAPNSPromiseSetWithToken(
 void PushNotifications::RejectAPNSPromiseSetWithError(
     const std::string& error_message) {
   std::vector<gin_helper::Promise<std::string>> promises =
-      std::move(apns_promise_set_);
+      std::move(PushNotifications::apns_promise_set_);
   for (auto& promise : promises) {
     promise.RejectWithErrorMessage(error_message);
   }

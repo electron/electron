@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include <vector>
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/browser_observer.h"
@@ -46,6 +47,9 @@ class PushNotifications
  private:
   PushNotifications();
   ~PushNotifications() override;
+  // This set maintains all the promises that should be fulfilled
+  // once macOS registers, or fails to register, for APNS
+  std::vector<gin_helper::Promise<std::string>> apns_promise_set_;
 
 #if BUILDFLAG(IS_MAC)
   v8::Local<v8::Promise> RegisterForAPNSNotifications(v8::Isolate* isolate);
