@@ -1208,7 +1208,7 @@ guide](/docs/tutorial/using-native-node-modules.md) for more.
 
 ### Removed: IA32 Linux support
 
-See - [Discontinuing support for 32-bit Linux](https://www.electronjs.org/blog/linux-32bit-support).
+Electron 18 will no longer run on 32-bit Linux systems. See [discontinuing support for 32-bit Linux](https://www.electronjs.org/blog/linux-32bit-support) for more information.
 
 ## Breaking API Changes (3.0)
 
