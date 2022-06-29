@@ -118,7 +118,7 @@ index 2abf5994405e8da2a04d1b23b75ccd3658398474..024d612a04d83583b397549589d994e3
  
  DebuggingArrayBufferAllocator::~DebuggingArrayBufferAllocator() {
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 8dffad89c80e0906780d1b26ba9a65ba1e76ce0a..45bc99ce75248794e95b2dcb0101c28152e2bfd0 100644
+index f55e292fbbc75448b15dc9be0327ad2dedef49e0..7719574859637aecc98f8a4b00ba6ebca8280631 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -318,10 +318,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
@@ -171,7 +171,7 @@ index 8dffad89c80e0906780d1b26ba9a65ba1e76ce0a..45bc99ce75248794e95b2dcb0101c281
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -665,6 +691,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
+@@ -666,6 +692,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
  }
  
  namespace {
@@ -188,7 +188,7 @@ index 8dffad89c80e0906780d1b26ba9a65ba1e76ce0a..45bc99ce75248794e95b2dcb0101c281
  // SecureBuffer uses openssl to allocate a Uint8Array using
  // OPENSSL_secure_malloc. Because we do not yet actually
  // make use of secure heap, this has the same semantics as
-@@ -692,6 +728,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -693,6 +729,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -197,10 +197,10 @@ index 8dffad89c80e0906780d1b26ba9a65ba1e76ce0a..45bc99ce75248794e95b2dcb0101c281
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 0ce3a8f219a2952f660ff72a6ce36ee109add649..06e9eb72e4ea60db4c63d08b24b80a1e6c4f3eaf 100644
+index c431159e6f77f8c86844bcadb86012b056d03372..9f57ac58d826cb0aae422ddca54e2136618c4bfe 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -257,7 +257,7 @@ class ByteSource {
+@@ -255,7 +255,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.

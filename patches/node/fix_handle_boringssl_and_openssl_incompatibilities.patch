@@ -188,28 +188,6 @@ index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42
    if (EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0)
      return EVPKeyCtxPointer();
  
-diff --git a/src/crypto/crypto_hkdf.cc b/src/crypto/crypto_hkdf.cc
-index 0aa96ada47abe4b66fb616c665101278bbe0afb6..1e9a4863c5faea5f6b275483ca16f3a6e8dac25b 100644
---- a/src/crypto/crypto_hkdf.cc
-+++ b/src/crypto/crypto_hkdf.cc
-@@ -101,6 +101,7 @@ bool HKDFTraits::DeriveBits(
-     Environment* env,
-     const HKDFConfig& params,
-     ByteSource* out) {
-+#ifndef OPENSSL_IS_BORINGSSL
-   EVPKeyCtxPointer ctx =
-       EVPKeyCtxPointer(EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr));
-   if (!ctx ||
-@@ -132,6 +133,9 @@ bool HKDFTraits::DeriveBits(
- 
-   *out = std::move(buf);
-   return true;
-+#else
-+  return false;
-+#endif
- }
- 
- void HKDFConfig::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
 index fc88deb460314c2620d842ec30141bcd13109d60..c097ccfcffb1158317ba09e7c4beb725ccbab74f 100644
 --- a/src/crypto/crypto_random.cc
@@ -244,10 +222,10 @@ index ae4550e9fde8120c35409e495d5b763a95546509..188a7efe76df2a1aa2eb2746f4d74836
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba1e76ce0a 100644
+index e1ef170a9f17634d218492a2ce888c3a4365e097..f55e292fbbc75448b15dc9be0327ad2dedef49e0 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -508,24 +508,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -508,24 +508,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -269,10 +247,11 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
 -    V(ASYNC)                                                                  \
 -    V(KDF)                                                                    \
 -    V(SM2)                                                                    \
++    V(HKDF)                                                                    \
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -684,7 +674,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -684,7 +675,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -281,7 +260,7 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -696,7 +686,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -696,7 +687,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -290,7 +269,7 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -704,10 +694,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -704,10 +695,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -303,20 +282,6 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
  }
  }  // namespace
  
-diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index c431159e6f77f8c86844bcadb86012b056d03372..0ce3a8f219a2952f660ff72a6ce36ee109add649 100644
---- a/src/crypto/crypto_util.h
-+++ b/src/crypto/crypto_util.h
-@@ -16,7 +16,9 @@
- #include <openssl/err.h>
- #include <openssl/evp.h>
- #include <openssl/ec.h>
-+#ifndef OPENSSL_IS_BORINGSSL
- #include <openssl/kdf.h>
-+#endif
- #include <openssl/rsa.h>
- #include <openssl/dsa.h>
- #include <openssl/ssl.h>
 diff --git a/src/node_metadata.h b/src/node_metadata.h
 index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e324183b42be2 100644
 --- a/src/node_metadata.h
