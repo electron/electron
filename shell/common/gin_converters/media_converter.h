@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_MEDIA_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_MEDIA_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_MEDIA_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_MEDIA_CONVERTER_H_
 
 #include "gin/converter.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
@@ -62,4 +62,4 @@ struct Converter<blink::mojom::MediaStreamType> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_MEDIA_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_MEDIA_CONVERTER_H_
