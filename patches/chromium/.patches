@@ -148,3 +148,5 @@ cherry-pick-b03797bdb1df.patch
 posix_replace_doubleforkandexec_with_forkandspawn.patch
 cherry-pick-22c61cfae5d1.patch
 m102_ensure_raw_ptr_t_and_t_are_treated_identically_in_base.patch
+post_media_log_destruction_to_avoid_destruction.patch
+add_stop_method_to_batchingmedialog.patch

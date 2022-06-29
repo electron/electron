@@ -500,6 +500,7 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   if (!this._windowOpenHandler) {
     return null;
   }
+
   const response = this._windowOpenHandler(details);
 
   if (typeof response !== 'object') {
@@ -652,7 +653,15 @@ WebContents.prototype._init = function () {
         postBody,
         disposition
       };
-      const options = this._callWindowOpenHandler(event, details);
+
+      let options;
+      try {
+        options = this._callWindowOpenHandler(event, details);
+      } catch (err) {
+        event.preventDefault();
+        throw err;
+      }
+
       if (!event.defaultPrevented) {
         openGuestWindow({
           event,
@@ -680,7 +689,16 @@ WebContents.prototype._init = function () {
         referrer,
         postBody
       };
-      windowOpenOverriddenOptions = this._callWindowOpenHandler(event, details);
+
+      let result;
+      try {
+        result = this._callWindowOpenHandler(event, details);
+      } catch (err) {
+        event.preventDefault();
+        throw err;
+      }
+
+      windowOpenOverriddenOptions = result;
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
           // Allow setting of backgroundColor as a webPreference even though
