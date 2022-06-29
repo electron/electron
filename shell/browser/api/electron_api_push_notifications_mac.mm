@@ -36,18 +36,20 @@ v8::Local<v8::Promise> PushNotifications::RegisterForAPNSNotifications(
 
 void PushNotifications::ResolveAPNSPromiseSetWithToken(
     const std::string& token_string) {
-  for (auto& promise : apns_promise_set_) {
+  std::vector<gin_helper::Promise<std::string>> promises =
+      std::move(apns_promise_set_);
+  for (auto& promise : promises) {
     promise.Resolve(token_string);
   }
-  apns_promise_set_.clear();
 }
 
-void PushNotifications::ResolveAPNSPromiseSetWithError(
+void PushNotifications::RejectAPNSPromiseSetWithError(
     const std::string& error_message) {
-  for (auto& promise : apns_promise_set_) {
+  std::vector<gin_helper::Promise<std::string>> promises =
+      std::move(apns_promise_set_);
+  for (auto& promise : promises) {
     promise.RejectWithErrorMessage(error_message);
   }
-  apns_promise_set_.clear();
 }
 
 void PushNotifications::UnregisterForAPNSNotifications() {

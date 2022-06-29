@@ -183,7 +183,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   electron::api::PushNotifications* push_notifications =
       electron::api::PushNotifications::Get();
   if (push_notifications) {
-    push_notifications->ResolveAPNSPromiseSetWithError(error_message);
+    push_notifications->RejectAPNSPromiseSetWithError(error_message);
   }
 }
 

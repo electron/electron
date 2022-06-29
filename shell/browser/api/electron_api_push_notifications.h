@@ -40,7 +40,7 @@ class PushNotifications
 #if BUILDFLAG(IS_MAC)
   void OnDidReceiveAPNSNotification(const base::DictionaryValue& user_info);
   void ResolveAPNSPromiseSetWithToken(const std::string& token_string);
-  void ResolveAPNSPromiseSetWithError(const std::string& error_message);
+  void RejectAPNSPromiseSetWithError(const std::string& error_message);
 #endif
 
  private:
