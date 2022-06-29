@@ -1,8 +1,22 @@
 # pushNotifications
 
+Process: [Main](../glossary.md#main-process)
+
 > Register for and receive notifications from remote push notification services
 
-Process: [Main](../glossary.md#main-process)
+For example, when registering for push notifications via Apple push notification services (APNS):
+
+```javascript
+const { pushNotifications, Notification } = require('electron')
+
+pushNotifications.registerForAPNSNotifications().then((token) => {
+  // forward token to your remote notification server
+})
+
+pushNotifications.on('received-apns-notification', (event, userInfo) => {
+  // generate a new Notification object with the relevant userInfo fields
+})
+```
 
 ## Events
 
