@@ -61,14 +61,14 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 bool ElectronHidDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
     const url::Origin& origin) {
-  base::DictionaryValue details;
-  details.SetString("securityOrigin", origin.GetURL().spec());
+  base::Value::Dict details;
+  details.Set("securityOrigin", origin.GetURL().spec());
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
   return permission_manager->CheckPermissionWithDetails(
       static_cast<blink::PermissionType>(
           WebContentsPermissionHelper::PermissionType::HID),
-      nullptr, origin.GetURL(), &details);
+      nullptr, origin.GetURL(), std::move(details));
 }
 
 bool ElectronHidDelegate::HasDevicePermission(
