@@ -46,7 +46,6 @@ describe('systemPreferences module', () => {
       const badDefaults = [
         1,
         null,
-        new Date(),
         { one: null }
       ];
 
