@@ -38,16 +38,6 @@ environment:
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
   GOMA_FALLBACK_ON_AUTH_FAILURE: true
-notifications:
-  - provider: Webhook
-    url: https://electron-mission-control.herokuapp.com/rest/appveyor-hook
-    method: POST
-    headers:
-      x-mission-control-secret:
-        secure: 90BLVPcqhJPG7d24v0q/RRray6W3wDQ8uVQlQjOHaBWkw1i8FoA1lsjr2C/v1dVok+tS2Pi6KxDctPUkwIb4T27u4RhvmcPzQhVpfwVJAG9oNtq+yKN7vzHfg7k/pojEzVdJpQLzeJGcSrZu7VY39Q==
-    on_build_success: false
-    on_build_failure: true
-    on_build_status_changed: false
 build_script:
   - ps: >-
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
