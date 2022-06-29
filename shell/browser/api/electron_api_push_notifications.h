@@ -12,6 +12,7 @@
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/promise.h"
 
 namespace electron {
 
@@ -37,11 +38,9 @@ class PushNotifications
   PushNotifications& operator=(const PushNotifications&) = delete;
 
 #if BUILDFLAG(IS_MAC)
-  void OnDidRegisterForAPNSNotificationsWithDeviceToken(
-      const std::string& token);
-  void OnDidFailToRegisterForAPNSNotificationsWithError(
-      const std::string& error);
   void OnDidReceiveAPNSNotification(const base::DictionaryValue& user_info);
+  void ResolveAPNSPromiseSetWithToken(const std::string& token_string);
+  void ResolveAPNSPromiseSetWithError(const std::string& error_message);
 #endif
 
  private:
@@ -49,7 +48,7 @@ class PushNotifications
   ~PushNotifications() override;
 
 #if BUILDFLAG(IS_MAC)
-  void RegisterForAPNSNotifications();
+  v8::Local<v8::Promise> RegisterForAPNSNotifications(v8::Isolate* isolate);
   void UnregisterForAPNSNotifications();
 #endif
 };

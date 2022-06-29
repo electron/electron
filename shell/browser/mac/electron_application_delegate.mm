@@ -166,10 +166,11 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   for (NSUInteger i = 0; i < [deviceToken length]; i++) {
     [token_string appendFormat:@"%02.2hhX", token_data[i]];
   }
+  // Resolve outstanding APNS promises created during registration attempts
   electron::api::PushNotifications* push_notifications =
       electron::api::PushNotifications::Get();
   if (push_notifications) {
-    push_notifications->OnDidRegisterForAPNSNotificationsWithDeviceToken(
+    push_notifications->ResolveAPNSPromiseSetWithToken(
         base::SysNSStringToUTF8(token_string));
   }
 }
@@ -179,12 +180,10 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   std::string error_message(base::SysNSStringToUTF8(
       [NSString stringWithFormat:@"%ld %@ %@", [error code], [error domain],
                                  [error userInfo]]));
-
   electron::api::PushNotifications* push_notifications =
       electron::api::PushNotifications::Get();
   if (push_notifications) {
-    electron::api::PushNotifications::Get()
-        ->OnDidFailToRegisterForAPNSNotificationsWithError(error_message);
+    push_notifications->ResolveAPNSPromiseSetWithError(error_message);
   }
 }
 
