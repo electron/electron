@@ -7,6 +7,7 @@
 #include <string>
 
 #include <utility>
+#include <vector>
 #import "shell/browser/mac/electron_application.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
