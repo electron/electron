@@ -921,14 +921,12 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
     LOG(ERROR) << "Invalid message was sent to embedder: " << message;
     return;
   }
-  base::Value empty_params(base::Value::Type::LIST);
-  if (!params) {
-    params = &empty_params;
-  }
-  int id = message.FindIntKey(kFrontendHostId).value_or(0);
-  std::vector<base::Value> params_list;
-  if (params)
-    params_list = std::move(*params).TakeListDeprecated();
+
+  const base::Value::List no_params;
+  const base::Value::List& params_list =
+      params != nullptr && params->is_list() ? params->GetList() : no_params;
+
+  const int id = message.FindIntKey(kFrontendHostId).value_or(0);
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
