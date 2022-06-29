@@ -14,9 +14,7 @@
 #include "gin/wrappable.h"
 #include "ui/base/accelerators/accelerator.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
                        public gin::Wrappable<GlobalShortcut> {
@@ -56,8 +54,6 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
   AcceleratorCallbackMap accelerator_callback_map_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_

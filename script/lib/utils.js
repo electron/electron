@@ -1,5 +1,6 @@
 const { GitProcess } = require('dugite');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
@@ -95,7 +96,35 @@ async function getCurrentBranch (gitDir) {
   return branch.trim();
 }
 
+function chunkFilenames (filenames, offset = 0) {
+  // Windows has a max command line length of 2047 characters, so we can't
+  // provide too many filenames without going over that. To work around that,
+  // chunk up a list of filenames such that it won't go over that limit when
+  // used as args. Other platforms may have higher limits, but 4095 might be
+  // the limit on Linux systems according to `termios(3)`, so cap it there.
+  const MAX_FILENAME_ARGS_LENGTH =
+    (os.platform() === 'win32' ? 2047 : 4095) - offset;
+
+  return filenames.reduce(
+    (chunkedFilenames, filename) => {
+      const currChunk = chunkedFilenames[chunkedFilenames.length - 1];
+      const currChunkLength = currChunk.reduce(
+        (totalLength, _filename) => totalLength + _filename.length + 1,
+        0
+      );
+      if (currChunkLength + filename.length + 1 > MAX_FILENAME_ARGS_LENGTH) {
+        chunkedFilenames.push([filename]);
+      } else {
+        currChunk.push(filename);
+      }
+      return chunkedFilenames;
+    },
+    [[]]
+  );
+}
+
 module.exports = {
+  chunkFilenames,
   getCurrentBranch,
   getElectronExec,
   getOutDir,

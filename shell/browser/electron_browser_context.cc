@@ -46,6 +46,7 @@
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/special_storage_policy.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
@@ -222,9 +223,10 @@ void ElectronBrowserContext::InitPrefs() {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
-      base::ListValue language_codes;
+      base::Value::List language_codes;
       language_codes.Append(default_code);
-      prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries, language_codes);
+      prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
+                   base::Value(std::move(language_codes)));
     }
   }
 #endif
@@ -463,6 +465,115 @@ bool ElectronBrowserContext::ChooseMediaDevice(
       std::move(callback));
   media_request_handler_.Run(request, std::move(callbackJs));
   return true;
+}
+
+void ElectronBrowserContext::GrantDevicePermission(
+    const url::Origin& origin,
+    const base::Value& device,
+    blink::PermissionType permission_type) {
+  granted_devices_[permission_type][origin].push_back(
+      std::make_unique<base::Value>(device.Clone()));
+}
+
+void ElectronBrowserContext::RevokeDevicePermission(
+    const url::Origin& origin,
+    const base::Value& device,
+    blink::PermissionType permission_type) {
+  const auto& current_devices_it = granted_devices_.find(permission_type);
+  if (current_devices_it == granted_devices_.end())
+    return;
+
+  const auto& origin_devices_it = current_devices_it->second.find(origin);
+  if (origin_devices_it == current_devices_it->second.end())
+    return;
+
+  for (auto it = origin_devices_it->second.begin();
+       it != origin_devices_it->second.end();) {
+    if (DoesDeviceMatch(device, it->get(), permission_type)) {
+      it = origin_devices_it->second.erase(it);
+    } else {
+      ++it;
+    }
+  }
+}
+
+bool ElectronBrowserContext::DoesDeviceMatch(
+    const base::Value& device,
+    const base::Value* device_to_compare,
+    blink::PermissionType permission_type) {
+  if (permission_type ==
+      static_cast<blink::PermissionType>(
+          WebContentsPermissionHelper::PermissionType::HID)) {
+    if (device.GetDict().FindInt(kHidVendorIdKey) !=
+            device_to_compare->GetDict().FindInt(kHidVendorIdKey) ||
+        device.GetDict().FindInt(kHidProductIdKey) !=
+            device_to_compare->GetDict().FindInt(kHidProductIdKey)) {
+      return false;
+    }
+
+    const auto* serial_number =
+        device_to_compare->GetDict().FindString(kHidSerialNumberKey);
+    const auto* device_serial_number =
+        device.GetDict().FindString(kHidSerialNumberKey);
+
+    if (serial_number && device_serial_number &&
+        *device_serial_number == *serial_number)
+      return true;
+  } else if (permission_type ==
+             static_cast<blink::PermissionType>(
+                 WebContentsPermissionHelper::PermissionType::SERIAL)) {
+#if BUILDFLAG(IS_WIN)
+    const auto* instance_id = device.GetDict().FindString(kDeviceInstanceIdKey);
+    const auto* port_instance_id =
+        device_to_compare->GetDict().FindString(kDeviceInstanceIdKey);
+    if (instance_id && port_instance_id && *instance_id == *port_instance_id)
+      return true;
+#else
+    const auto* serial_number = device.GetDict().FindString(kSerialNumberKey);
+    const auto* port_serial_number =
+        device_to_compare->GetDict().FindString(kSerialNumberKey);
+    if (device.GetDict().FindInt(kVendorIdKey) !=
+            device_to_compare->GetDict().FindInt(kVendorIdKey) ||
+        device.GetDict().FindInt(kProductIdKey) !=
+            device_to_compare->GetDict().FindInt(kProductIdKey) ||
+        (serial_number && port_serial_number &&
+         *port_serial_number != *serial_number)) {
+      return false;
+    }
+
+#if BUILDFLAG(IS_MAC)
+    const auto* usb_driver_key = device.GetDict().FindString(kUsbDriverKey);
+    const auto* port_usb_driver_key =
+        device_to_compare->GetDict().FindString(kUsbDriverKey);
+    if (usb_driver_key && port_usb_driver_key &&
+        *usb_driver_key != *port_usb_driver_key) {
+      return false;
+    }
+#endif  // BUILDFLAG(IS_MAC)
+    return true;
+#endif  // BUILDFLAG(IS_WIN)
+  }
+  return false;
+}
+
+bool ElectronBrowserContext::CheckDevicePermission(
+    const url::Origin& origin,
+    const base::Value& device,
+    blink::PermissionType permission_type) {
+  const auto& current_devices_it = granted_devices_.find(permission_type);
+  if (current_devices_it == granted_devices_.end())
+    return false;
+
+  const auto& origin_devices_it = current_devices_it->second.find(origin);
+  if (origin_devices_it == current_devices_it->second.end())
+    return false;
+
+  for (const auto& device_to_compare : origin_devices_it->second) {
+    if (DoesDeviceMatch(device, device_to_compare.get(), permission_type))
+      return true;
+  }
+
+  return false;
 }
 
 // static

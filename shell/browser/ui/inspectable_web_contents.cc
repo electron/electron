@@ -271,8 +271,9 @@ class InspectableWebContents::NetworkResourceLoader
     base::Value id(stream_id_);
     base::Value encodedValue(encoded);
 
-    bindings_->CallClientFunction("DevToolsAPI.streamWrite", &id, &chunkValue,
-                                  &encodedValue);
+    bindings_->CallClientFunction("DevToolsAPI", "streamWrite", std::move(id),
+                                  std::move(chunkValue),
+                                  std::move(encodedValue));
     std::move(resume).Run();
   }
 
@@ -400,7 +401,7 @@ content::WebContents* InspectableWebContents::GetDevToolsWebContents() const {
 
 void InspectableWebContents::InspectElement(int x, int y) {
   if (agent_host_)
-    agent_host_->InspectElement(web_contents_->GetMainFrame(), x, y);
+    agent_host_->InspectElement(web_contents_->GetPrimaryMainFrame(), x, y);
 }
 
 void InspectableWebContents::SetDelegate(
@@ -510,30 +511,29 @@ void InspectableWebContents::Reattach(DispatchCallback callback) {
 }
 
 void InspectableWebContents::CallClientFunction(
-    const std::string& function_name,
-    const base::Value* arg1,
-    const base::Value* arg2,
-    const base::Value* arg3) {
+    const std::string& object_name,
+    const std::string& method_name,
+    base::Value arg1,
+    base::Value arg2,
+    base::Value arg3,
+    base::OnceCallback<void(base::Value)> cb) {
   if (!GetDevToolsWebContents())
     return;
 
-  std::string javascript = function_name + "(";
-  if (arg1) {
-    std::string json;
-    base::JSONWriter::Write(*arg1, &json);
-    javascript.append(json);
-    if (arg2) {
-      base::JSONWriter::Write(*arg2, &json);
-      javascript.append(", ").append(json);
-      if (arg3) {
-        base::JSONWriter::Write(*arg3, &json);
-        javascript.append(", ").append(json);
+  base::Value::List arguments;
+  if (!arg1.is_none()) {
+    arguments.Append(std::move(arg1));
+    if (!arg2.is_none()) {
+      arguments.Append(std::move(arg2));
+      if (!arg3.is_none()) {
+        arguments.Append(std::move(arg3));
       }
     }
   }
-  javascript.append(");");
-  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
-      base::UTF8ToUTF16(javascript), base::NullCallback());
+
+  GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScriptMethod(
+      base::ASCIIToUTF16(object_name), base::ASCIIToUTF16(method_name),
+      std::move(arguments), std::move(cb));
 }
 
 gfx::Rect InspectableWebContents::GetDevToolsBounds() const {
@@ -580,7 +580,7 @@ void InspectableWebContents::LoadCompleted() {
     }
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+    GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
   }
 
@@ -601,7 +601,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
   if (!registry)
     return;
 
-  base::ListValue results;
+  base::Value::List results;
   for (auto& extension : registry->enabled_extensions()) {
     auto devtools_page_url =
         extensions::chrome_manifest_urls::GetDevToolsPage(extension.get());
@@ -612,20 +612,20 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     // process. Grant the devtools process the ability to request URLs from the
     // extension.
     content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
-        web_contents_->GetMainFrame()->GetProcess()->GetID(),
+        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID(),
         url::Origin::Create(extension->url()));
 
-    auto extension_info = std::make_unique<base::DictionaryValue>();
-    extension_info->SetString("startPage", devtools_page_url.spec());
-    extension_info->SetString("name", extension->name());
-    extension_info->SetBoolean(
-        "exposeExperimentalAPIs",
-        extension->permissions_data()->HasAPIPermission(
-            extensions::mojom::APIPermissionID::kExperimental));
-    results.Append(std::move(extension_info));
+    base::Value::Dict extension_info;
+    extension_info.Set("startPage", devtools_page_url.spec());
+    extension_info.Set("name", extension->name());
+    extension_info.Set("exposeExperimentalAPIs",
+                       extension->permissions_data()->HasAPIPermission(
+                           extensions::mojom::APIPermissionID::kExperimental));
+    results.Append(base::Value(std::move(extension_info)));
   }
 
-  CallClientFunction("DevToolsAPI.addExtensions", &results, NULL, NULL);
+  CallClientFunction("DevToolsAPI", "addExtensions",
+                     base::Value(std::move(results)));
 }
 #endif
 
@@ -943,22 +943,21 @@ void InspectableWebContents::DispatchProtocolMessage(
 
   base::StringPiece str_message(reinterpret_cast<const char*>(message.data()),
                                 message.size());
-  if (str_message.size() < kMaxMessageChunkSize) {
-    std::string param;
-    base::EscapeJSONString(str_message, true, &param);
-    std::u16string javascript =
-        base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
-        javascript, base::NullCallback());
-    return;
-  }
+  if (str_message.length() < kMaxMessageChunkSize) {
+    CallClientFunction("DevToolsAPI", "dispatchMessage",
+                       base::Value(std::string(str_message)));
+  } else {
+    size_t total_size = str_message.length();
+    for (size_t pos = 0; pos < str_message.length();
+         pos += kMaxMessageChunkSize) {
+      base::StringPiece str_message_chunk =
+          str_message.substr(pos, kMaxMessageChunkSize);
 
-  base::Value total_size(static_cast<int>(str_message.length()));
-  for (size_t pos = 0; pos < str_message.length();
-       pos += kMaxMessageChunkSize) {
-    base::Value message_value(str_message.substr(pos, kMaxMessageChunkSize));
-    CallClientFunction("DevToolsAPI.dispatchMessageChunk", &message_value,
-                       pos ? nullptr : &total_size, nullptr);
+      CallClientFunction(
+          "DevToolsAPI", "dispatchMessageChunk",
+          base::Value(std::string(str_message_chunk)),
+          base::Value(base::NumberToString(pos ? 0 : total_size)));
+    }
   }
 }
 
@@ -1032,12 +1031,12 @@ void InspectableWebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
   if (navigation_handle->IsInMainFrame()) {
     if (navigation_handle->GetRenderFrameHost() ==
-            GetDevToolsWebContents()->GetMainFrame() &&
+            GetDevToolsWebContents()->GetPrimaryMainFrame() &&
         frontend_host_) {
       return;
     }
     frontend_host_ = content::DevToolsFrontendHost::Create(
-        web_contents()->GetMainFrame(),
+        web_contents()->GetPrimaryMainFrame(),
         base::BindRepeating(
             &InspectableWebContents::HandleMessageFromDevToolsFrontend,
             base::Unretained(this)));
@@ -1070,8 +1069,13 @@ void InspectableWebContents::DidFinishNavigation(
 
 void InspectableWebContents::SendMessageAck(int request_id,
                                             const base::Value* arg) {
-  base::Value id_value(request_id);
-  CallClientFunction("DevToolsAPI.embedderMessageAck", &id_value, arg, nullptr);
+  if (arg) {
+    CallClientFunction("DevToolsAPI", "embedderMessageAck",
+                       base::Value(request_id), arg->Clone());
+  } else {
+    CallClientFunction("DevToolsAPI", "embedderMessageAck",
+                       base::Value(request_id));
+  }
 }
 
 }  // namespace electron

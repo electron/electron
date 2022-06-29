@@ -219,6 +219,9 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::PreEarlyInitialization();
 #endif
+#if BUILDFLAG(IS_MAC)
+  screen_ = std::make_unique<display::ScopedNativeScreen>();
+#endif
 
   return GetExitCode();
 }
@@ -275,8 +278,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
 int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
-  screen_ = views::CreateDesktopScreen();
-  display::Screen::SetScreenInstance(screen_.get());
+  if (!display::Screen::GetScreen()) {
+    screen_ = views::CreateDesktopScreen();
+  }
 #endif
 
   if (!views::LayoutProvider::Get())
@@ -453,7 +457,7 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 #if !BUILDFLAG(IS_MAC)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
-  Browser::Get()->DidFinishLaunching(base::DictionaryValue());
+  Browser::Get()->DidFinishLaunching(base::Value::Dict());
 #endif
 
   // Notify observers that main thread message loop was initialized.

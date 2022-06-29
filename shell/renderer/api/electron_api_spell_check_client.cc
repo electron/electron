@@ -4,6 +4,7 @@
 
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 
+#include <iterator>
 #include <memory>
 #include <set>
 #include <unordered_set>
@@ -21,9 +22,7 @@
 #include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -229,7 +228,8 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
   v8::Local<v8::Value> args[] = {gin::ConvertToV8(isolate_, words),
                                  templ->GetFunction(context).ToLocalChecked()};
   // Call javascript with the words and the callback function
-  scope.spell_check_->Call(context, scope.provider_, 2, args).IsEmpty();
+  scope.spell_check_->Call(context, scope.provider_, std::size(args), args)
+      .IsEmpty();
 }
 
 // Returns whether or not the given string is a contraction.
@@ -273,6 +273,4 @@ SpellCheckClient::SpellCheckScope::SpellCheckScope(
 
 SpellCheckClient::SpellCheckScope::~SpellCheckScope() = default;
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

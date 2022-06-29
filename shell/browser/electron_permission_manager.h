@@ -12,9 +12,9 @@
 #include "base/containers/id_map.h"
 #include "content/public/browser/permission_controller_delegate.h"
 #include "gin/dictionary.h"
+#include "shell/browser/electron_browser_context.h"
 
 namespace base {
-class DictionaryValue;
 class Value;
 }  // namespace base
 
@@ -66,7 +66,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                     content::RenderFrameHost* render_frame_host,
                                     const GURL& requesting_origin,
                                     bool user_gesture,
-                                    const base::DictionaryValue* details,
+                                    base::Value::Dict details,
                                     StatusCallback callback);
   void RequestPermissions(const std::vector<blink::PermissionType>& permissions,
                           content::RenderFrameHost* render_frame_host,
@@ -77,7 +77,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       const std::vector<blink::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
       bool user_gesture,
-      const base::DictionaryValue* details,
+      base::Value::Dict details,
       StatusesCallback callback);
 
   blink::mojom::PermissionStatus GetPermissionStatusForCurrentDocument(
@@ -87,23 +87,22 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   bool CheckPermissionWithDetails(blink::PermissionType permission,
                                   content::RenderFrameHost* render_frame_host,
                                   const GURL& requesting_origin,
-                                  const base::DictionaryValue* details) const;
+                                  base::Value::Dict details) const;
 
   bool CheckDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
-                             const base::Value* object,
-                             content::RenderFrameHost* render_frame_host) const;
+                             const base::Value& object,
+                             ElectronBrowserContext* browser_context) const;
 
   void GrantDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
-                             const base::Value* object,
-                             content::RenderFrameHost* render_frame_host) const;
+                             const base::Value& object,
+                             ElectronBrowserContext* browser_context) const;
 
-  void RevokeDevicePermission(
-      blink::PermissionType permission,
-      const url::Origin& origin,
-      const base::Value* object,
-      content::RenderFrameHost* render_frame_host) const;
+  void RevokeDevicePermission(blink::PermissionType permission,
+                              const url::Origin& origin,
+                              const base::Value& object,
+                              ElectronBrowserContext* browser_context) const;
 
  protected:
   void OnPermissionResponse(int request_id,

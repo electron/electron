@@ -15,7 +15,6 @@
   "parallel/test-crypto-ecb",
   "parallel/test-crypto-engine",
   "parallel/test-crypto-fips",
-  "parallel/test-crypto-hkdf.js",
   "parallel/test-crypto-keygen",
   "parallel/test-crypto-keygen-deprecation",
   "parallel/test-crypto-key-objects",
@@ -104,7 +103,6 @@
   "parallel/test-trace-events-vm",
   "parallel/test-trace-events-worker-metadata",
   "parallel/test-v8-untrusted-code-mitigations",
-  "parallel/test-webcrypto-derivebits-hkdf",
   "parallel/test-webcrypto-derivebits-node-dh",
   "parallel/test-webcrypto-ed25519-ed448",
   "parallel/test-webcrypto-encrypt-decrypt",
@@ -127,6 +125,7 @@
   "report/test-report-writereport",
   "sequential/test-cpu-prof-kill",
   "sequential/test-diagnostic-dir-cpu-prof",
+  "sequential/test-cpu-prof-drained.js",
   "sequential/test-tls-connect",
   "wpt/test-webcrypto"
 ]

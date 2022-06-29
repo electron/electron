@@ -67,9 +67,7 @@ int32_t GetNextId() {
 
 }  // namespace
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo BrowserView::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -200,9 +198,7 @@ v8::Local<v8::ObjectTemplate> BrowserView::FillObjectTemplate(
       .Build();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

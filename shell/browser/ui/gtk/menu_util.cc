@@ -30,9 +30,7 @@
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 namespace {
 
@@ -330,6 +328,4 @@ void SetMenuItemInfo(GtkWidget* widget, void* block_activation_ptr) {
   }
 }
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui

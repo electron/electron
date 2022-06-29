@@ -453,9 +453,7 @@ struct Converter<net::SecureDnsMode> {
 };
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -706,13 +704,13 @@ void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
 
-void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
+void App::OnFinishLaunching(base::Value::Dict launch_info) {
 #if BUILDFLAG(IS_LINUX)
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
-  Emit("ready", launch_info);
+  Emit("ready", base::Value(std::move(launch_info)));
 }
 
 void App::OnPreMainMessageLoopRun() {
@@ -756,22 +754,23 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
-                                 const base::DictionaryValue& user_info,
-                                 const base::DictionaryValue& details) {
-  if (Emit("continue-activity", type, user_info, details)) {
+                                 base::Value::Dict user_info,
+                                 base::Value::Dict details) {
+  if (Emit("continue-activity", type, base::Value(std::move(user_info)),
+           base::Value(std::move(details)))) {
     *prevent_default = true;
   }
 }
 
 void App::OnUserActivityWasContinued(const std::string& type,
-                                     const base::DictionaryValue& user_info) {
-  Emit("activity-was-continued", type, user_info);
+                                     base::Value::Dict user_info) {
+  Emit("activity-was-continued", type, base::Value(std::move(user_info)));
 }
 
 void App::OnUpdateUserActivityState(bool* prevent_default,
                                     const std::string& type,
-                                    const base::DictionaryValue& user_info) {
-  if (Emit("update-activity-state", type, user_info)) {
+                                    base::Value::Dict user_info) {
+  if (Emit("update-activity-state", type, base::Value(std::move(user_info)))) {
     *prevent_default = true;
   }
 }
@@ -1442,7 +1441,7 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  gin_helper::Promise<base::DictionaryValue> promise(isolate);
+  gin_helper::Promise<base::Value> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
     promise.RejectWithErrorMessage(
@@ -1821,9 +1820,7 @@ const char* App::GetTypeName() {
   return "App";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

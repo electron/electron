@@ -52,9 +52,7 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
 
@@ -206,7 +204,7 @@ void WebFrameMain::MaybeSetupMojoConnection() {
 
   // Wait for RenderFrame to be created in renderer before accessing remote.
   if (pending_receiver_ && render_frame_ &&
-      render_frame_->IsRenderFrameCreated()) {
+      render_frame_->IsRenderFrameLive()) {
     render_frame_->GetRemoteInterfaces()->GetInterface(
         std::move(pending_receiver_));
   }
@@ -391,9 +389,7 @@ const char* WebFrameMain::GetTypeName() {
   return "WebFrameMain";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

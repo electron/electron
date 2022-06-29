@@ -13,9 +13,7 @@
 
 using views::MenuRunner;
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 MenuViews::MenuViews(gin::Arguments* args) : Menu(args) {}
 
@@ -91,6 +89,4 @@ gin::Handle<Menu> Menu::New(gin::Arguments* args) {
   return handle;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

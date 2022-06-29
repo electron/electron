@@ -51,27 +51,6 @@ class WebContentsPermissionHelper
   bool CheckMediaAccessPermission(const GURL& security_origin,
                                   blink::mojom::MediaStreamType type) const;
   bool CheckSerialAccessPermission(const url::Origin& embedding_origin) const;
-  bool CheckSerialPortPermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
-  void GrantSerialPortPermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
-  bool CheckHIDAccessPermission(const url::Origin& embedding_origin) const;
-  bool CheckHIDDevicePermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
-  void GrantHIDDevicePermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
-  void RevokeHIDDevicePermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
@@ -80,26 +59,10 @@ class WebContentsPermissionHelper
   void RequestPermission(blink::PermissionType permission,
                          base::OnceCallback<void(bool)> callback,
                          bool user_gesture = false,
-                         const base::DictionaryValue* details = nullptr);
+                         base::Value::Dict details = {});
 
   bool CheckPermission(blink::PermissionType permission,
-                       const base::DictionaryValue* details) const;
-
-  bool CheckDevicePermission(blink::PermissionType permission,
-                             const url::Origin& origin,
-                             const base::Value* device,
-                             content::RenderFrameHost* render_frame_host) const;
-
-  void GrantDevicePermission(blink::PermissionType permission,
-                             const url::Origin& origin,
-                             const base::Value* device,
-                             content::RenderFrameHost* render_frame_host) const;
-
-  void RevokeDevicePermission(
-      blink::PermissionType permission,
-      const url::Origin& origin,
-      const base::Value* device,
-      content::RenderFrameHost* render_frame_host) const;
+                       base::Value::Dict details) const;
 
   // TODO(clavin): refactor to use the WebContents provided by the
   // WebContentsUserData base class instead of storing a duplicate ref

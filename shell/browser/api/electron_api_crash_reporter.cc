@@ -64,11 +64,7 @@ bool g_crash_reporter_initialized = false;
 
 }  // namespace
 
-namespace electron {
-
-namespace api {
-
-namespace crash_reporter {
+namespace electron::api::crash_reporter {
 
 #if defined(MAS_BUILD)
 namespace {
@@ -196,11 +192,7 @@ void Start(const std::string& submit_url,
 #endif
 }
 
-}  // namespace crash_reporter
-
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api::crash_reporter
 
 namespace {
 

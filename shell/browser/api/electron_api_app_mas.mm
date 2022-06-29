@@ -10,9 +10,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 // Callback passed to js which will stop accessing the given bookmark.
 void OnStopAccessingSecurityScopedResource(NSURL* bookmarkUrl) {
@@ -64,6 +62,4 @@ base::RepeatingCallback<void()> App::StartAccessingSecurityScopedResource(
                              bookmarkUrl);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

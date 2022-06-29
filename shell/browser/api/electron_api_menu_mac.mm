@@ -42,9 +42,7 @@ ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
 
 }  // namespace
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 MenuMac::MenuMac(gin::Arguments* args) : Menu(args) {}
 
@@ -262,6 +260,4 @@ gin::Handle<Menu> Menu::New(gin::Arguments* args) {
   return handle;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

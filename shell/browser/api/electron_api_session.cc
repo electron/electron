@@ -245,9 +245,7 @@ struct Converter<network::mojom::SSLConfigPtr> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -1037,7 +1035,7 @@ base::Value Session::GetSpellCheckerLanguages() {
 void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
-  base::ListValue language_codes;
+  base::Value::List language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
     if (code.empty()) {
@@ -1048,7 +1046,7 @@ void Session::SetSpellCheckerLanguages(
     language_codes.Append(code);
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
-                                 language_codes);
+                                 base::Value(std::move(language_codes)));
   // Enable spellcheck if > 0 languages, disable if no languages set
   browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
                                         !languages.empty());
@@ -1269,9 +1267,7 @@ const char* Session::GetTypeName() {
   return "Session";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

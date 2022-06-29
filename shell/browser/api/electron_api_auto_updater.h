@@ -13,9 +13,7 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/window_list_observer.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class AutoUpdater : public gin::Wrappable<AutoUpdater>,
                     public gin_helper::EventEmitterMixin<AutoUpdater>,
@@ -60,8 +58,6 @@ class AutoUpdater : public gin::Wrappable<AutoUpdater>,
   void QuitAndInstall();
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_AUTO_UPDATER_H_

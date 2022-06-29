@@ -94,13 +94,12 @@ void MediaStreamDevicesController::Accept() {
   // Get the default devices for the request.
   blink::mojom::StreamDevicesSetPtr stream_devices_set =
       blink::mojom::StreamDevicesSet::New();
-
   // TODO(crbug.com/1300883): Generalize to multiple streams.
   stream_devices_set->stream_devices.emplace_back(
       blink::mojom::StreamDevices::New());
   blink::mojom::StreamDevices& stream_devices =
       *stream_devices_set->stream_devices[0];
-  if (!(microphone_requested_ || webcam_requested_)) {
+  if (microphone_requested_ || webcam_requested_) {
     switch (request_.request_type) {
       case blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY: {
         const blink::MediaStreamDevice* device = nullptr;

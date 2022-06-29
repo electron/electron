@@ -15,9 +15,7 @@
 
 G_GNUC_BEGIN_IGNORE_DEPRECATIONS
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 GtkStatusIcon::GtkStatusIcon(const gfx::ImageSkia& image,
                              const std::u16string& tool_tip) {
@@ -81,6 +79,4 @@ void GtkStatusIcon::OnContextMenuRequested(GtkStatusIcon* status_icon,
   }
 }
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui

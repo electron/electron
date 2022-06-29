@@ -18,7 +18,7 @@ namespace electron {
 AutofillDriver::AutofillDriver(content::RenderFrameHost* render_frame_host)
     : render_frame_host_(render_frame_host) {
   autofill_popup_ = std::make_unique<AutofillPopup>();
-}  // namespace electron
+}
 
 AutofillDriver::~AutofillDriver() = default;
 
@@ -46,12 +46,13 @@ void AutofillDriver::ShowAutofillPopup(
   gfx::RectF popup_bounds(bounds);
   content::RenderFrameHost* embedder_frame_host = nullptr;
   if (embedder) {
-    auto* embedder_view = embedder->web_contents()->GetMainFrame()->GetView();
-    auto* view = web_contents->web_contents()->GetMainFrame()->GetView();
+    auto* embedder_view =
+        embedder->web_contents()->GetPrimaryMainFrame()->GetView();
+    auto* view = web_contents->web_contents()->GetPrimaryMainFrame()->GetView();
     auto offset = view->GetViewBounds().origin() -
                   embedder_view->GetViewBounds().origin();
     popup_bounds.Offset(offset);
-    embedder_frame_host = embedder->web_contents()->GetMainFrame();
+    embedder_frame_host = embedder->web_contents()->GetPrimaryMainFrame();
   }
 
   autofill_popup_->CreateView(render_frame_host_, embedder_frame_host, osr,

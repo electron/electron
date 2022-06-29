@@ -21,9 +21,7 @@
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 #if BUILDFLAG(IS_MAC)
 enum class NotificationCenterKind {
@@ -67,11 +65,11 @@ class SystemPreferences
   void OnSysColorChange() override;
 
   // BrowserObserver:
-  void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
+  void OnFinishLaunching(base::Value::Dict launch_info) override;
 
 #elif BUILDFLAG(IS_MAC)
   using NotificationCallback = base::RepeatingCallback<
-      void(const std::string&, base::DictionaryValue, const std::string&)>;
+      void(const std::string&, base::Value, const std::string&)>;
 
   void PostNotification(const std::string& name,
                         base::DictionaryValue user_info,
@@ -168,8 +166,6 @@ class SystemPreferences
 #endif
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_

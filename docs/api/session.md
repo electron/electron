@@ -281,7 +281,7 @@ Returns:
 * `event` Event
 * `details` Object
   * `device` [HIDDevice[]](structures/hid-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `origin` string (optional) - The origin that the device has been revoked from.
 
 Emitted after `HIDDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
@@ -750,7 +750,6 @@ Passing `null` instead of a function resets the handler to its default state.
     * `deviceType` string - The type of device that permission is being requested on, can be `hid` or `serial`.
     * `origin` string - The origin URL of the device permission check.
     * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md)- the device that permission is being requested for.
-    * `frame` [WebFrameMain](web-frame-main.md) - WebFrameMain checking the device permission.
 
 Sets the handler which can be used to respond to device permission checks for the `session`.
 Returning `true` will allow the device to be permitted and `false` will reject it.
@@ -758,8 +757,8 @@ To clear the handler, call `setDevicePermissionHandler(null)`.
 This handler can be used to provide default permissioning to devices without first calling for permission
 to devices (eg via `navigator.hid.requestDevice`).  If this handler is not defined, the default device
 permissions as granted through device selection (eg via `navigator.hid.requestDevice`) will be used.
-Additionally, the default behavior of Electron is to store granted device permission through the lifetime
-of the corresponding WebContents.  If longer term storage is needed, a developer can store granted device
+Additionally, the default behavior of Electron is to store granted device permision in memory.
+If longer term storage is needed, a developer can store granted device
 permissions (eg when handling the `select-hid-device` event) and then read from that storage with `setDevicePermissionHandler`.
 
 ```javascript

@@ -13,14 +13,12 @@ namespace base {
 class FilePath;
 }
 
-namespace platform_util {
-namespace internal {
+namespace platform_util::internal {
 
 // Called by platform_util.cc on to invoke platform specific logic to move
 // |path| to trash using a suitable handler.
 bool PlatformTrashItem(const base::FilePath& path, std::string* error);
 
-}  // namespace internal
-}  // namespace platform_util
+}  // namespace platform_util::internal
 
 #endif  // ELECTRON_SHELL_COMMON_PLATFORM_UTIL_INTERNAL_H_

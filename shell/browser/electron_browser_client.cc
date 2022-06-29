@@ -1560,7 +1560,7 @@ void ElectronBrowserClient::
   if (contents) {
     auto* prefs = WebContentsPreferences::From(contents);
     if (render_frame_host.GetFrameTreeNodeId() ==
-            contents->GetMainFrame()->GetFrameTreeNodeId() ||
+            contents->GetPrimaryMainFrame()->GetFrameTreeNodeId() ||
         (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
       associated_registry.AddInterface(base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,

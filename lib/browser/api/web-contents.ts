@@ -646,7 +646,7 @@ WebContents.prototype._init = function () {
         disposition
       };
 
-      let result;
+      let result: ReturnType<typeof this._callWindowOpenHandler>;
       try {
         result = this._callWindowOpenHandler(event, details);
       } catch (err) {
@@ -685,7 +685,7 @@ WebContents.prototype._init = function () {
         postBody
       };
 
-      let result;
+      let result: ReturnType<typeof this._callWindowOpenHandler>;
       try {
         result = this._callWindowOpenHandler(event, details);
       } catch (err) {

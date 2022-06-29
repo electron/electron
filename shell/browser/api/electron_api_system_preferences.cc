@@ -13,9 +13,7 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo SystemPreferences::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -117,9 +115,7 @@ const char* SystemPreferences::GetTypeName() {
   return "SystemPreferences";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
