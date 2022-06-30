@@ -36,7 +36,10 @@ requires unsafe mode), so Electron is unable to support this feature on Linux.
 
 ## Planned Breaking API Changes (19.0)
 
-None
+### Removed: IA32 Linux binaries
+
+This is a result of Chromium 102.0.4999.0 dropping support for IA32 Linux.
+This concludes the [removal of support for IA32 Linux](#removed-ia32-linux-support).
 
 ## Planned Breaking API Changes (18.0)
 
@@ -1202,6 +1205,10 @@ the module's `binding.gyp` must be true (which is the default). If this hook is
 not present, then the native module will fail to load on Windows, with an error
 message like `Cannot find module`. See the [native module
 guide](/docs/tutorial/using-native-node-modules.md) for more.
+
+### Removed: IA32 Linux support
+
+Electron 18 will no longer run on 32-bit Linux systems. See [discontinuing support for 32-bit Linux](https://www.electronjs.org/blog/linux-32bit-support) for more information.
 
 ## Breaking API Changes (3.0)
 
