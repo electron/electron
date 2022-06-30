@@ -7,6 +7,7 @@
 #include <memory>
 #include <utility>
 
+#include "base/callback_helpers.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
 #include "content/public/browser/desktop_capture.h"
@@ -79,9 +80,11 @@ void MediaStreamDevicesController::TakeAction() {
   content::BrowserContext* browser_context = rfh->GetBrowserContext();
   ElectronBrowserContext* electron_browser_context =
       static_cast<ElectronBrowserContext*>(browser_context);
-  if (electron_browser_context->ChooseMediaDevice(request_,
-                                                  std::move(callback_)))
+  auto split_callback = base::SplitOnceCallback(std::move(callback_));
+  if (electron_browser_context->ChooseMediaDevice(
+          request_, std::move(split_callback.second)))
     return;
+  callback_ = std::move(split_callback.first);
 
   // Deny the request if there is no device attached to the OS.
   if (HasAnyAvailableDevice())
