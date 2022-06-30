@@ -142,7 +142,7 @@ index e12c36384ddc05554ed362bba2c0a8b418634f0a..1c740410de70ee5a888ee7cf406dfa3b
    std::vector<char*> argv_cstr;
    argv_cstr.reserve(argv.size() + 1);
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 0e842caf7b6487d94978c7b68fb5b222e330581f..5eafcd163ee1a05203a5eb76592a449f5a84e71f 100644
+index de981fa288c19ca46a8172e99bc25df36ff29d50..45e5648826c60f6ba6332776e7579a62165b0e8d 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -34,19 +34,23 @@
