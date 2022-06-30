@@ -703,7 +703,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 * `handler` Function | null
   * `request` Object
     * `frame` [WebFrameMain](web-frame-main.md) - frame that is requesting access to media
-    * `type` String - Type of request. Can be 'deviceAccess', 'deviceUpdate', 'generateStream' or 'openDevicePepperOnly'.
+    * `type` String - Type of request. Can be 'deviceAccess', 'deviceUpdate' or 'generateStream'.
     * `audioType` String - can be 'deviceAudioCapture', 'displayAudioCapture' or 'noService'.
     * `videoType` String - can be 'deviceVideoCapture', 'displayVideoCapture', 'displayVideoCaptureThisTab' or 'noService'.
     * `requestedAudioDeviceId` String -

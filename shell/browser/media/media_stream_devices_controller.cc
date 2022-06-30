@@ -42,12 +42,9 @@ MediaStreamDevicesController::MediaStreamDevicesController(
       // and microphone to avoid popping two infobars.
       microphone_requested_(
           request.audio_type ==
-              blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE ||
-          request.request_type == blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY),
-      webcam_requested_(
-          request.video_type ==
-              blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE ||
-          request.request_type == blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY) {}
+          blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE),
+      webcam_requested_(request.video_type ==
+                        blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {}
 
 MediaStreamDevicesController::~MediaStreamDevicesController() {
   if (!callback_.is_null()) {
@@ -105,35 +102,7 @@ void MediaStreamDevicesController::Accept() {
   if (microphone_requested_ || webcam_requested_) {
     switch (request_.request_type) {
       case blink::MEDIA_OPEN_DEVICE_PEPPER_ONLY: {
-        const blink::MediaStreamDevice* device = nullptr;
-        // For open device request pick the desired device or fall back to the
-        // first available of the given type.
-        if (request_.audio_type ==
-            blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
-          device =
-              MediaCaptureDevicesDispatcher::GetInstance()
-                  ->GetRequestedAudioDevice(request_.requested_audio_device_id);
-          // TODO(wjia): Confirm this is the intended behavior.
-          if (!device) {
-            device = MediaCaptureDevicesDispatcher::GetInstance()
-                         ->GetFirstAvailableAudioDevice();
-          }
-          if (device)
-            stream_devices.audio_device = *device;
-        } else if (request_.video_type ==
-                   blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
-          // Pepper API opens only one device at a time.
-          device =
-              MediaCaptureDevicesDispatcher::GetInstance()
-                  ->GetRequestedVideoDevice(request_.requested_video_device_id);
-          // TODO(wjia): Confirm this is the intended behavior.
-          if (!device) {
-            device = MediaCaptureDevicesDispatcher::GetInstance()
-                         ->GetFirstAvailableVideoDevice();
-          }
-          if (device)
-            stream_devices.video_device = *device;
-        }
+        NOTIMPLEMENTED();
         break;
       }
       case blink::MEDIA_GENERATE_STREAM: {
