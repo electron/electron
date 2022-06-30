@@ -69,7 +69,7 @@ index b54c7388603b4582356f6741c9a36f2835aa1928..b9533b78046228705e2038396eebf23b
    void SetOOMErrorHandler(OOMErrorCallback that);
  
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 7d70c2fb7382a93c01dadec678e2bec2ce948b8f..e547c8e86284daba6665528d811a63729df7ad8b 100644
+index 55440aad20208f5c7999d9ed39d639ff31b5783b..115fda1d2365477dfa1b3902087d063007a5e9aa 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -167,13 +167,6 @@
@@ -115,7 +115,7 @@ index 7d70c2fb7382a93c01dadec678e2bec2ce948b8f..e547c8e86284daba6665528d811a6372
    } else {
      // TODO(wfh): Remove this fallback once Blink is setting OOM handler. See
      // crbug.com/614440.
-@@ -6115,11 +6100,6 @@ void v8::V8::SetFatalMemoryErrorCallback(
+@@ -6141,11 +6126,6 @@ void v8::V8::SetFatalMemoryErrorCallback(
    g_oom_error_callback = oom_error_callback;
  }
  
@@ -127,7 +127,7 @@ index 7d70c2fb7382a93c01dadec678e2bec2ce948b8f..e547c8e86284daba6665528d811a6372
  void v8::V8::SetEntropySource(EntropySource entropy_source) {
    base::RandomNumberGenerator::SetEntropySource(entropy_source);
  }
-@@ -8636,8 +8616,6 @@ void Isolate::Initialize(Isolate* v8_isolate,
+@@ -8648,8 +8628,6 @@ void Isolate::Initialize(Isolate* v8_isolate,
  #endif
    if (params.oom_error_callback) {
      v8_isolate->SetOOMErrorHandler(params.oom_error_callback);
@@ -136,7 +136,7 @@ index 7d70c2fb7382a93c01dadec678e2bec2ce948b8f..e547c8e86284daba6665528d811a6372
    }
  #if __clang__
  #pragma clang diagnostic pop
-@@ -9379,8 +9357,6 @@ size_t Isolate::CopyCodePages(size_t capacity, MemoryRange* code_pages_out) {
+@@ -9391,8 +9369,6 @@ size_t Isolate::CopyCodePages(size_t capacity, MemoryRange* code_pages_out) {
  
  CALLBACK_SETTER(FatalErrorHandler, FatalErrorCallback, exception_behavior)
  CALLBACK_SETTER(OOMErrorHandler, OOMErrorCallback, oom_behavior)

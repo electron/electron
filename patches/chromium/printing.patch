@@ -136,7 +136,7 @@ index 1e158ecd686e775f656d5a05a9d916ce8f075fa8..20613012d1e6f435c3211d78ec311cf0
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index e665eb42fad5f47b1643315d2cdcdf2eb66b069d..21451d9ae0cbb647cafe0e9ae47f067068aef1b7 100644
+index 4bd871e5cadc693aea6e8c71b3fe3296b743d9ec..e6201cbf8d1ed64b1b53ed43d89882163c93ce89 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,8 +30,6 @@
@@ -406,7 +406,7 @@ index e665eb42fad5f47b1643315d2cdcdf2eb66b069d..21451d9ae0cbb647cafe0e9ae47f0670
      return true;
  
    if (!cookie) {
-@@ -1067,7 +1110,7 @@ void PrintViewManagerBase::SendPrintingEnabled(bool enabled,
+@@ -1069,7 +1112,7 @@ void PrintViewManagerBase::SendPrintingEnabled(bool enabled,
  }
  
  void PrintViewManagerBase::CompletePrintNow(content::RenderFrameHost* rfh) {
@@ -523,7 +523,7 @@ index f2c17a8fecc36ea18de71598b582e206661763c5..599b34690da042b57fcd78d0c0557d18
    // Tells the browser that there are invalid printer settings.
    ShowInvalidPrinterSettingsError();
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804fe5039b8 100644
+index bb0a934fb658256370fe29c6dbc9f72e992a9a5c..da7161c51e94f285d2ad6c9f0e2edba7da7d5c9e 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -42,6 +42,7 @@
@@ -581,7 +581,7 @@ index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2051,7 +2056,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2052,7 +2057,8 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
        return;
  
      Print(duplicate_node.GetDocument().GetFrame(), duplicate_node,
@@ -591,7 +591,7 @@ index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804
      // Check if |this| is still valid.
      if (!weak_this)
        return;
-@@ -2066,7 +2072,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2067,7 +2073,9 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -602,7 +602,7 @@ index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804
    // If still not finished with earlier print request simply ignore.
    if (prep_frame_view_)
      return;
-@@ -2074,7 +2082,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2075,7 +2083,7 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
    FrameReference frame_ref(frame);
  
    uint32_t expected_page_count = 0;
@@ -611,7 +611,7 @@ index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804
      DidFinishPrinting(FAIL_PRINT_INIT);
      return;  // Failed to init print page settings.
    }
-@@ -2093,8 +2101,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2094,8 +2102,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -628,7 +628,7 @@ index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2327,36 +2342,52 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2328,36 +2343,52 @@ void PrintRenderFrameHelper::IPCProcessed() {
    }
  }
  
@@ -693,7 +693,7 @@ index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804
      notify_browser_of_print_failure_ = false;
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
-@@ -2481,7 +2512,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
+@@ -2482,7 +2513,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
        std::move(params),
        base::BindOnce(
            [](base::OnceClosure quit_closure, mojom::PrintPagesParamsPtr* output,
@@ -703,7 +703,7 @@ index 66ac411e4a70610cbf457e0bbbb0439a6e0f7c59..125fc9057ef5f2e01faa2e4db6ca6804
              std::move(quit_closure).Run();
            },
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index f118cae62de1cebb78c8193365bafcaba3b863a8..6c8bb35f6ea00b8366134a3f00d1a43fa22d81b5 100644
+index c2bf286ef1741b53022adf420809a87c3bb53cfd..f8b38d09abd3253bfd38b874ebdad753c3f8c4db 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -255,7 +255,7 @@ class PrintRenderFrameHelper

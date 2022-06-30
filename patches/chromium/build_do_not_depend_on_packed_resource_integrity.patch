@@ -11,13 +11,13 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 672bc56194e1a..59ba25815e511 100644
+index 672bc56194e1ad8b03acd639c17b7f7e67a5dba0..59ba25815e511af5ca6aca5467cc91d5cc3c6bf1 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -175,11 +175,16 @@ if (!is_android && !is_mac) {
          "common/crash_keys.h",
        ]
-
+ 
 +      if (!is_electron_build) {
 +        deps = [
 +          ":packed_resources_integrity",
@@ -33,11 +33,11 @@ index 672bc56194e1a..59ba25815e511 100644
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 910dd7550fea0..59b9bbd1bc44a 100644
+index 910dd7550fea09c35b746eea15a8966263e8d1f3..59b9bbd1bc44ae639aadfc725e5f94134f3f8094 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4570,7 +4570,7 @@ static_library("browser") {
-
+ 
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
 -    if (!is_win) {
@@ -46,11 +46,11 @@ index 910dd7550fea0..59b9bbd1bc44a 100644
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 673d2ab7ca986..4289d3854fb2f 100644
+index 673d2ab7ca986a2694cf9022de773a0aea2240ae..4289d3854fb2fd519725ef74a004f654aee0b872 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5906,7 +5906,6 @@ test("unit_tests") {
-
+ 
      deps += [
        "//chrome:other_version",
 -      "//chrome:packed_resources_integrity",
@@ -60,7 +60,7 @@ index 673d2ab7ca986..4289d3854fb2f 100644
 @@ -5930,6 +5929,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
-
+ 
 +    if (!is_electron_build) {
 +      deps += [ "//chrome:packed_resources_integrity" ]
 +    }
@@ -70,7 +70,7 @@ index 673d2ab7ca986..4289d3854fb2f 100644
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
 @@ -6816,7 +6819,6 @@ test("unit_tests") {
      }
-
+ 
      deps += [
 -      "//chrome:packed_resources_integrity_hash",
        "//chrome/browser:coupon_db_content_proto",
@@ -79,7 +79,7 @@ index 673d2ab7ca986..4289d3854fb2f 100644
 @@ -6930,6 +6932,10 @@ test("unit_tests") {
      }
    }
-
+ 
 +  if (!is_electron_build) {
 +    deps += [ "//chrome:packed_resources_integrity_hash" ]
 +  }
@@ -87,4 +87,3 @@ index 673d2ab7ca986..4289d3854fb2f 100644
    if (is_chromeos_ash) {
      sources -= [
        "../browser/policy/cloud/user_policy_signin_service_unittest.cc",
-
