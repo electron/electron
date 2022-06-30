@@ -65,6 +65,8 @@ void MediaStreamDevicesController::TakeAction() {
           blink::mojom::MediaStreamType::GUM_DESKTOP_AUDIO_CAPTURE ||
       request_.video_type ==
           blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
+    // Legacy getUserMedia request, route to special handler and bypass
+    // ChooseMediaDevice.
     HandleUserMediaRequest();
     return;
   }
@@ -169,6 +171,11 @@ void MediaStreamDevicesController::Deny(
 }
 
 void MediaStreamDevicesController::HandleUserMediaRequest() {
+  // This method handles the legacy getUserMedia constraints, such as:
+  //   navigator.getUserMedia({
+  //     video: { mandatory: { chromeMediaSource: 'desktop' } }
+  //   })
+
   // Get the default devices for the request.
   blink::mojom::StreamDevicesSetPtr stream_devices_set =
       blink::mojom::StreamDevicesSet::New();

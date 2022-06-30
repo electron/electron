@@ -75,6 +75,74 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
     expect(ok).to.be.true(message);
   });
 
+  it('works when calling getUserMedia with preferCurrentTab', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setMediaRequestHandler((request, callback) => {
+      console.log(request);
+      requestHandlerCalled = true;
+      const devices = (process._linkedBinding('electron_browser_desktop_capturer') as any).getVideoCaptureDevices();
+      callback([
+        { videoDevice: devices[0] }
+      ], 'ok');
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        preferCurrentTab: true,
+        video: true,
+        audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true(message);
+  });
+
+  it('works when calling legacy getUserMedia', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      const devices = (process._linkedBinding('electron_browser_desktop_capturer') as any).getVideoCaptureDevices();
+      callback([
+        { videoDevice: devices[0] }
+      ], 'ok');
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => navigator.getUserMedia({
+        video: true,
+        audio: true,
+      }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true(message);
+  });
+
+  it('works when calling legacy getUserMedia with desktop capture constraint', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      callback([], 'noHardware');
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => navigator.getUserMedia({
+        video: {
+          mandatory: {
+            chromeMediaSource: 'desktop'
+          }
+        },
+      }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
+    `);
+    expect(requestHandlerCalled).to.be.false();
+    expect(ok).to.be.true(message);
+  });
+
   it('works when calling getUserMedia without a media request handler', async () => {
     const w = new BrowserWindow({ show: false });
     await w.loadURL(serverUrl);
@@ -83,6 +151,18 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(ok).to.be.true(message);
+  });
+
+  it('works when calling legacy getUserMedia without a media request handler', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => navigator.getUserMedia({
+        video: true,
+        audio: true,
+      }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
     expect(ok).to.be.true(message);
   });
