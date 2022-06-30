@@ -10,7 +10,7 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index d921125d153742dd09e34418c19195a3d61bef1f..5348c3289a94c86bbbc9bb07be26cc56b4986788 100644
+index accbd08ec3f126e5fd5d5f3c7f636d8ccea56457..59e6c571ceb6699ddcb5cb178383ed382b277dea 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
 @@ -136,6 +136,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
@@ -23,10 +23,10 @@ index d921125d153742dd09e34418c19195a3d61bef1f..5348c3289a94c86bbbc9bb07be26cc56
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d44c03786506bee30ab494e055c17bd568a6a8da..6f365e0593827389ac72f865d9d4ef5022cba2ae 100644
+index 2c84b31ec771c11818e677e5d120fb965db6da86..f703ab8f616e9765ed3384654a271f251c16ac71 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4471,6 +4471,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4469,6 +4469,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  

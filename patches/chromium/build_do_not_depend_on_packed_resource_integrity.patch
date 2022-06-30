@@ -33,10 +33,10 @@ index b6234183651923505bd2a4a8640ea21508033ef1..e486f92e909f43bb65633245b7dcb314
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index f4f1725e5a0ed779cf1e8c7c31957d6af7f03d3e..71e1ce0363fb36e5c460ccc3a3f175fc70325b5f 100644
+index 910034be7d7a95620a223eccf6a263309b067533..99ab593f942ff200fb9ced0af134a55b37331008 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4552,7 +4552,7 @@ static_library("browser") {
+@@ -4551,7 +4551,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index f4f1725e5a0ed779cf1e8c7c31957d6af7f03d3e..71e1ce0363fb36e5c460ccc3a3f175fc
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 341ba2fa0f89ce545536950874e9394de39f143f..1dd6cdbf980587afabf98e60199c82238e32b3ba 100644
+index cd30ea6c938860837d7427fee851974b0ec5831b..d88eb38a8ce9a0f607b85e7efe40fe23f6ab5f08 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5899,7 +5899,6 @@ test("unit_tests") {
+@@ -5912,7 +5912,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 341ba2fa0f89ce545536950874e9394de39f143f..1dd6cdbf980587afabf98e60199c8223
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/browser:chrome_process_finder",
-@@ -5923,6 +5922,10 @@ test("unit_tests") {
+@@ -5936,6 +5935,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 341ba2fa0f89ce545536950874e9394de39f143f..1dd6cdbf980587afabf98e60199c8223
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6814,7 +6817,6 @@ test("unit_tests") {
+@@ -6826,7 +6829,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 341ba2fa0f89ce545536950874e9394de39f143f..1dd6cdbf980587afabf98e60199c8223
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6921,6 +6923,10 @@ test("unit_tests") {
+@@ -6932,6 +6934,10 @@ test("unit_tests") {
      }
    }
  
