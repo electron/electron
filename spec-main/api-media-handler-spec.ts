@@ -53,6 +53,28 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
     expect(ok).to.be.true(message);
   });
 
+  it('works when calling getUserMedia', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      const devices = (process._linkedBinding('electron_browser_desktop_capturer') as any).getVideoCaptureDevices();
+      callback([
+        { video_device: devices[0] }
+      ], 'ok');
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true(message);
+  });
+
   it('works when calling getUserMedia without a media request handler', async () => {
     const w = new BrowserWindow({ show: false });
     await w.loadURL(serverUrl);

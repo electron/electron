@@ -57,6 +57,16 @@ bool Converter<blink::MediaStreamDevice>::FromV8(
   return true;
 }
 
+v8::Local<v8::Value> Converter<blink::MediaStreamDevice>::ToV8(
+    v8::Isolate* isolate,
+    const blink::MediaStreamDevice& device) {
+  return gin::DataObjectBuilder(isolate)
+      .Set("type", device.type)
+      .Set("id", device.id)
+      .Set("name", device.name)
+      .Build();
+}
+
 bool Converter<blink::mojom::StreamDevicesPtr>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,

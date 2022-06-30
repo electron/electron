@@ -26,6 +26,8 @@ struct Converter<blink::MediaStreamDevice> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::MediaStreamDevice* out);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::MediaStreamDevice& device);
 };
 
 template <>
