@@ -75,15 +75,15 @@ bool Converter<blink::mojom::StreamDevicesPtr>::FromV8(
   if (!gin::ConvertFromV8(isolate, val, &dict))
     return false;
   *out = blink::mojom::StreamDevices::New();
-  if (dict.Has("audio_device")) {
+  if (dict.Has("audioDevice")) {
     blink::MediaStreamDevice audio_device;
-    if (!dict.Get("audio_device", &audio_device))
+    if (!dict.Get("audioDevice", &audio_device))
       return false;
     (*out)->audio_device = std::move(audio_device);
   }
-  if (dict.Has("video_device")) {
+  if (dict.Has("videoDevice")) {
     blink::MediaStreamDevice video_device;
-    if (!dict.Get("video_device", &video_device))
+    if (!dict.Get("videoDevice", &video_device))
       return false;
     (*out)->video_device = std::move(video_device);
   }

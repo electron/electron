@@ -711,11 +711,11 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `userGesture` Boolean - whether a user gesture was active when this request was triggered.
   * `callback` Function
     * `devices` Object[]
-      * `video_device` Object (optional)
+      * `videoDevice` Object (optional)
         * `id` String - the id of the device being granted
         * `name` String - the name of the device being granted
         * `type` String - the type of the device being granted. Can be 'deviceAudioCapture', 'displayAudioCapture', 'deviceVideoCapture', 'displayVideoCapture', 'displayVideoCaptureThisTab' or 'noService'.
-      * `audio_device` Object (optional)
+      * `audioDevice` Object (optional)
         * `id` String - the id of the device being granted
         * `name` String - the name of the device being granted
         * `type` String - the type of the device being granted. Can be 'deviceAudioCapture', 'displayAudioCapture', 'deviceVideoCapture', 'displayVideoCapture', 'displayVideoCaptureThisTab' or 'noService'.

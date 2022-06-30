@@ -34,9 +34,9 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
           // Grant access to the first screen found.
           const { id, name } = sources[0];
           callback([{
-            video_device: { id, name, type: request.videoType }
+            videoDevice: { id, name, type: request.videoType }
             // TODO: 'loopback' and 'loopbackWithMute' are currently only supported on Windows.
-            // audio_device: { id: 'loopback', name: 'System Audio', type: request.audioType }
+            // audioDevice: { id: 'loopback', name: 'System Audio', type: request.audioType }
           }], 'ok');
         });
       }
@@ -60,7 +60,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
       requestHandlerCalled = true;
       const devices = (process._linkedBinding('electron_browser_desktop_capturer') as any).getVideoCaptureDevices();
       callback([
-        { video_device: devices[0] }
+        { videoDevice: devices[0] }
       ], 'ok');
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
