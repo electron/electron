@@ -69,11 +69,13 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
+#include "electron/electron_gtk_stubs.h"
 #include "ui/base/cursor/cursor_factory.h"
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gfx/color_utils.h"
-#include "ui/gtk/gtk_ui_factory.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_compat.h"      // nogncheck
+#include "ui/gtk/gtk_ui_factory.h"  // nogncheck
+#include "ui/gtk/gtk_util.h"        // nogncheck
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
@@ -366,6 +368,12 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
   DCHECK(ui::LinuxInputMethodContextFactory::instance());
+
+  // Try loading gtk symbols used by Electron.
+  electron::InitializeElectron_gtk(gtk::GetLibGtk());
+  if (!electron::IsElectron_gtkInitialized()) {
+    electron::UninitializeElectron_gtk();
+  }
 
   // Chromium does not respect GTK dark theme setting, but they may change
   // in future and this code might be no longer needed. Check the Chromium

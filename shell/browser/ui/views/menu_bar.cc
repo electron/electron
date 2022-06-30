@@ -13,7 +13,7 @@
 #include "ui/views/layout/box_layout.h"
 
 #if defined(OS_LINUX)
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 #if defined(OS_WIN)

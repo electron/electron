@@ -117,7 +117,6 @@ build_disable_partition_alloc_on_mac.patch
 fix_non-client_mouse_tracking_and_message_bubbling_on_windows.patch
 remove_incorrect_width_height_adjustments.patch
 set_dpi_correctly_during_main_window_creation.patch
-ui_gtk_public_header.patch
 introduce_ozoneplatform_electron_can_call_x11_property.patch
 revert_motionmark_avoid_unnecessary_ipc_on_mac.patch
 cherry-pick-a1dc371d6680.patch
@@ -149,3 +148,4 @@ posix_replace_doubleforkandexec_with_forkandspawn.patch
 cherry-pick-22c61cfae5d1.patch
 post_media_log_destruction_to_avoid_destruction.patch
 add_stop_method_to_batchingmedialog.patch
+make_gtk_getlibgtk_public.patch

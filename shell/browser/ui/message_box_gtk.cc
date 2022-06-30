@@ -18,8 +18,8 @@
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/image/image_skia.h"
-#include "ui/gtk/gtk_ui.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_ui.h"    // nogncheck
+#include "ui/gtk/gtk_util.h"  // nogncheck
 
 #if defined(USE_OZONE)
 #include "ui/base/ui_base_features.h"
