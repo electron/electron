@@ -23,7 +23,5 @@
     "br_spaces": 0
   },
   "single-h1": false,
-  "no-inline-html": {
-    "allowed_elements": ["br"]
-  }
+  "no-inline-html": false
 }
