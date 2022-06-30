@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index a1c0a809fee4ddbda55540139e866cfe494c5590..25888d4405b60925ef60726a0f486f6f21e88f30 100644
+index 4f66e6434db3310f71747a375c53bb3e7d60933f..9a498631fa2a4883cebc86abdb0172c65de0ad23 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -22,7 +22,10 @@
@@ -76,7 +76,7 @@ index a1c0a809fee4ddbda55540139e866cfe494c5590..25888d4405b60925ef60726a0f486f6f
    data.Set(kBrowsersField, std::move(browser_list));
  
    std::unique_ptr<base::ListValue> widgets_list(new base::ListValue());
-@@ -497,8 +504,10 @@ void AccessibilityUIMessageHandler::SetGlobalFlag(
+@@ -496,8 +503,10 @@ void AccessibilityUIMessageHandler::SetGlobalFlag(const base::ListValue* args) {
  
    AllowJavascript();
    if (flag_name_str == kInternal) {
@@ -87,7 +87,7 @@ index a1c0a809fee4ddbda55540139e866cfe494c5590..25888d4405b60925ef60726a0f486f6f
      return;
    }
  
-@@ -605,10 +614,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
+@@ -604,10 +613,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -101,7 +101,7 @@ index a1c0a809fee4ddbda55540139e866cfe494c5590..25888d4405b60925ef60726a0f486f6f
    result->SetStringKey(kTreeField, accessibility_contents);
    FireWebUIListener(request_type, *(result.get()));
  }
-@@ -633,6 +644,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -632,6 +643,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -109,7 +109,7 @@ index a1c0a809fee4ddbda55540139e866cfe494c5590..25888d4405b60925ef60726a0f486f6f
    for (Browser* browser : *BrowserList::GetInstance()) {
      if (browser->session_id().id() == session_id) {
        std::unique_ptr<base::DictionaryValue> result(
-@@ -647,6 +659,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -646,6 +658,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
        return;
      }
    }
@@ -117,7 +117,7 @@ index a1c0a809fee4ddbda55540139e866cfe494c5590..25888d4405b60925ef60726a0f486f6f
  #endif  // !BUILDFLAG(IS_ANDROID)
    // No browser with the specified |session_id| was found.
    std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
-@@ -763,5 +776,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -762,5 +775,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {
@@ -126,10 +126,10 @@ index a1c0a809fee4ddbda55540139e866cfe494c5590..25888d4405b60925ef60726a0f486f6f
 +#endif
  }
 diff --git a/chrome/browser/accessibility/accessibility_ui.h b/chrome/browser/accessibility/accessibility_ui.h
-index 6bc5891205fc94377040d9195b0ee15a47a90382..16a25b6a5670a74cf260210b06bc9892431cd760 100644
+index 0f73d3883093f6e49427ac6fe6428e97282a1e03..9041c90d13b07b03cc96e8a03a3821ef54a69a7d 100644
 --- a/chrome/browser/accessibility/accessibility_ui.h
 +++ b/chrome/browser/accessibility/accessibility_ui.h
-@@ -25,6 +25,8 @@ struct AXEventNotificationDetails;
+@@ -26,6 +26,8 @@ struct AXEventNotificationDetails;
  class WebContents;
  }  // namespace content
  
@@ -138,7 +138,7 @@ index 6bc5891205fc94377040d9195b0ee15a47a90382..16a25b6a5670a74cf260210b06bc9892
  namespace user_prefs {
  class PrefRegistrySyncable;
  }  // namespace user_prefs
-@@ -66,6 +68,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
+@@ -67,6 +69,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
    static void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
  
   private:
