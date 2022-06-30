@@ -75,15 +75,16 @@ void WinIconPainter::PaintRestoreIcon(gfx::Canvas* canvas,
                                       const gfx::Rect& symbol_rect,
                                       const cc::PaintFlags& flags) {
   const int separation = std::floor(2 * canvas->image_scale());
-  symbol_rect.Inset(gfx::Insets::TLBR(separation, 0, 0, separation));
+  gfx::Rect icon_rect = symbol_rect;
+  icon_rect.Inset(gfx::Insets::TLBR(separation, 0, 0, separation));
 
   // Bottom left ("in front") square.
-  DrawRect(canvas, symbol_rect, flags);
+  DrawRect(canvas, icon_rect, flags);
 
   // Top right ("behind") square.
-  canvas->ClipRect(symbol_rect, SkClipOp::kDifference);
-  symbol_rect.Offset(separation, -separation);
-  DrawRect(canvas, symbol_rect, flags);
+  canvas->ClipRect(icon_rect, SkClipOp::kDifference);
+  icon_rect.Offset(separation, -separation);
+  DrawRect(canvas, icon_rect, flags);
 }
 
 void WinIconPainter::PaintCloseIcon(gfx::Canvas* canvas,
@@ -91,7 +92,9 @@ void WinIconPainter::PaintCloseIcon(gfx::Canvas* canvas,
                                     const cc::PaintFlags& flags) {
   // TODO(bsep): This sometimes draws misaligned at fractional device scales
   // because the button's origin isn't necessarily aligned to pixels.
-  flags.setAntiAlias(true);
+  cc::PaintFlags paint_flags = flags;
+  paint_flags.setAntiAlias(true);
+
   canvas->ClipRect(symbol_rect);
   SkPath path;
   path.moveTo(symbol_rect.x(), symbol_rect.y());
@@ -107,7 +110,9 @@ Win11IconPainter::~Win11IconPainter() = default;
 void Win11IconPainter::PaintMaximizeIcon(gfx::Canvas* canvas,
                                          const gfx::Rect& symbol_rect,
                                          const cc::PaintFlags& flags) {
-  flags.setAntiAlias(true);
+  cc::PaintFlags paint_flags = flags;
+  paint_flags.setAntiAlias(true);
+
   const float corner_radius = 2 * canvas->image_scale();
   DrawRoundRect(canvas, symbol_rect, corner_radius, flags);
 }
@@ -116,20 +121,23 @@ void Win11IconPainter::PaintRestoreIcon(gfx::Canvas* canvas,
                                         const gfx::Rect& symbol_rect,
                                         const cc::PaintFlags& flags) {
   const int separation = std::floor(2 * canvas->image_scale());
-  symbol_rect.Inset(gfx::Insets::TLBR(separation, 0, 0, separation));
+  gfx::Rect icon_rect = symbol_rect;
+  icon_rect.Inset(gfx::Insets::TLBR(separation, 0, 0, separation));
 
-  flags.setAntiAlias(true);
+  cc::PaintFlags paint_flags = flags;
+  paint_flags.setAntiAlias(true);
+
   // Bottom left ("in front") rounded square.
   const float bottom_rect_radius = 1 * canvas->image_scale();
-  DrawRoundRect(canvas, symbol_rect, bottom_rect_radius, flags);
+  DrawRoundRect(canvas, icon_rect, bottom_rect_radius, flags);
 
   // Top right ("behind") top+right edges of rounded square (2.5x).
-  symbol_rect.Offset(separation, -separation);
+  icon_rect.Offset(separation, -separation);
   // Apply inset to left+bottom edges since we don't draw arcs for those edges
   constexpr int top_rect_inset = 1;
-  symbol_rect.Inset(gfx::Insets::TLBR(0, top_rect_inset, top_rect_inset, 0));
+  icon_rect.Inset(gfx::Insets::TLBR(0, top_rect_inset, top_rect_inset, 0));
 
   const float top_rect_radius = 2.5f * canvas->image_scale();
-  DrawRoundRectEdges(canvas, symbol_rect, top_rect_radius, flags);
+  DrawRoundRectEdges(canvas, icon_rect, top_rect_radius, flags);
 }
 }  // namespace electron
