@@ -739,6 +739,28 @@ describe('protocol module', () => {
       expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
+    it('keeps port information for standard scheme', async () => {
+      const portScheme = (global as any).portScheme;
+      const u = portScheme + '://fake-host:8080/';
+      registerStringProtocol(portScheme, (request, callback) => {
+        console.log(request);
+        if (request.url === u) {
+          callback('<script>function ajax(url) { return fetch(url).then(res => res.text()) }</script>');
+        } else {
+          callback(request.url);
+        }
+      });
+      const contents = (webContents as any).create({ sandbox: true });
+      after(() => {
+        unregisterProtocol(portScheme);
+        contents.destroy();
+      });
+
+      await contents.loadURL(u);
+      const requestUrl = u + 'page';
+      const data = await contents.executeJavaScript(`ajax('${requestUrl}')`);
+      expect(data).to.equal(requestUrl);
+    });
   });
 
   describe('protocol.registerSchemesAsPrivileged allowServiceWorkers', () => {

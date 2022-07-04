@@ -111,7 +111,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     if (custom_scheme.options.standard) {
       auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
       url::AddStandardScheme(custom_scheme.scheme.c_str(),
-                             url::SCHEME_WITH_HOST);
+                             url::SCHEME_WITH_HOST_PORT_AND_USER_INFORMATION);
       g_standard_schemes.push_back(custom_scheme.scheme);
       policy->RegisterWebSafeScheme(custom_scheme.scheme);
     }

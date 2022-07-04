@@ -157,7 +157,7 @@ RendererClientBase::RendererClientBase() {
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST);
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST_PORT_AND_USER_INFORMATION);
   // Parse --cors-schemes=scheme1,scheme2
   std::vector<std::string> cors_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kCORSSchemes);

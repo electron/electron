@@ -36,10 +36,12 @@ app.commandLine.appendSwitch('host-rules', 'MAP localhost2 127.0.0.1');
 
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';
+global.portScheme = 'port';
 global.serviceWorkerScheme = 'sw';
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, privileges: { standard: true, secure: true, stream: false } },
   { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
+  { scheme: global.portScheme, privileges: { standard: true, secure: true, supportFetchAPI: true } },
   { scheme: global.serviceWorkerScheme, privileges: { allowServiceWorkers: true, standard: true, secure: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
