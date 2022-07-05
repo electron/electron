@@ -304,7 +304,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowAlwaysOnTopChanged();
   void NotifyWindowExecuteAppCommand(const std::string& command);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
-                                     const base::DictionaryValue& details);
+                                     base::Value::Dict details);
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();

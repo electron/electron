@@ -643,8 +643,6 @@ filenames = {
     "shell/common/process_util.h",
     "shell/common/skia_util.cc",
     "shell/common/skia_util.h",
-    "shell/common/v8_value_converter.cc",
-    "shell/common/v8_value_converter.h",
     "shell/common/v8_value_serializer.cc",
     "shell/common/v8_value_serializer.h",
     "shell/common/world_ids.h",

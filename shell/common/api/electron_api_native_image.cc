@@ -329,24 +329,24 @@ float NativeImage::GetAspectRatio(const absl::optional<float> scale_factor) {
 }
 
 gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
-                                             base::DictionaryValue options) {
+                                             base::Value::Dict options) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   gfx::Size size = GetSize(scale_factor);
-  int width = size.width();
-  int height = size.height();
-  bool width_set = options.GetInteger("width", &width);
-  bool height_set = options.GetInteger("height", &height);
+  absl::optional<int> new_width = options.FindInt("width");
+  absl::optional<int> new_height = options.FindInt("height");
+  int width = new_width.value_or(size.width());
+  int height = new_height.value_or(size.height());
   size.SetSize(width, height);
 
   if (width <= 0 && height <= 0) {
     return CreateEmpty(args->isolate());
-  } else if (width_set && !height_set) {
+  } else if (new_width && !new_height) {
     // Scale height to preserve original aspect ratio
     size.set_height(width);
     size =
         gfx::ScaleToRoundedSize(size, 1.f, 1.f / GetAspectRatio(scale_factor));
-  } else if (height_set && !width_set) {
+  } else if (new_height && !new_width) {
     // Scale width to preserve original aspect ratio
     size.set_width(height);
     size = gfx::ScaleToRoundedSize(size, GetAspectRatio(scale_factor), 1.f);
@@ -354,11 +354,10 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
 
   skia::ImageOperations::ResizeMethod method =
       skia::ImageOperations::ResizeMethod::RESIZE_BEST;
-  std::string quality;
-  options.GetString("quality", &quality);
-  if (quality == "good")
+  std::string* quality = options.FindString("quality");
+  if (quality && *quality == "good")
     method = skia::ImageOperations::ResizeMethod::RESIZE_GOOD;
-  else if (quality == "better")
+  else if (quality && *quality == "better")
     method = skia::ImageOperations::ResizeMethod::RESIZE_BETTER;
 
   gfx::ImageSkia resized = gfx::ImageSkiaOperations::CreateResizedImage(

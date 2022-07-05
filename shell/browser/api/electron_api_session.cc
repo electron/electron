@@ -1160,7 +1160,7 @@ gin::Handle<Session> Session::CreateFrom(
 // static
 gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
                                             const std::string& partition,
-                                            base::DictionaryValue options) {
+                                            base::Value::Dict options) {
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
@@ -1265,7 +1265,7 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
     args->ThrowTypeError("Session can only be received when app is ready");
     return v8::Null(args->isolate());
   }
-  base::DictionaryValue options;
+  base::Value::Dict options;
   args->GetNext(&options);
   return Session::FromPartition(args->isolate(), partition, std::move(options))
       .ToV8();

@@ -235,14 +235,14 @@ bool Browser::SetBadgeCount(absl::optional<int> count) {
 }
 
 void Browser::SetUserActivity(const std::string& type,
-                              base::DictionaryValue user_info,
+                              base::Value::Dict user_info,
                               gin::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
 
   [[AtomApplication sharedApplication]
       setCurrentActivity:base::SysUTF8ToNSString(type)
-            withUserInfo:DictionaryValueToNSDictionary(user_info.GetDict())
+            withUserInfo:DictionaryValueToNSDictionary(std::move(user_info))
           withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
 }
 
@@ -261,10 +261,11 @@ void Browser::ResignCurrentActivity() {
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
-                                    base::DictionaryValue user_info) {
+                                    base::Value::Dict user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
-               withUserInfo:DictionaryValueToNSDictionary(user_info.GetDict())];
+               withUserInfo:DictionaryValueToNSDictionary(
+                                std::move(user_info))];
 }
 
 bool Browser::WillContinueUserActivity(const std::string& type) {
@@ -511,11 +512,11 @@ void Browser::ShowAboutPanel() {
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
-void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
+void Browser::SetAboutPanelOptions(base::Value::Dict options) {
   about_panel_options_.DictClear();
 
-  for (const auto pair : options.DictItems()) {
-    std::string key = std::string(pair.first);
+  for (const auto pair : options) {
+    std::string key = pair.first;
     if (!key.empty() && pair.second.is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
       auto val = std::make_unique<base::Value>(pair.second.Clone());

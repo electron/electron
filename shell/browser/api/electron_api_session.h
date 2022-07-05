@@ -75,10 +75,9 @@ class Session : public gin::Wrappable<Session>,
   static Session* FromBrowserContext(content::BrowserContext* context);
 
   // Gets the Session of |partition|.
-  static gin::Handle<Session> FromPartition(
-      v8::Isolate* isolate,
-      const std::string& partition,
-      base::DictionaryValue options = base::DictionaryValue());
+  static gin::Handle<Session> FromPartition(v8::Isolate* isolate,
+                                            const std::string& partition,
+                                            base::Value::Dict options = {});
 
   ElectronBrowserContext* browser_context() const { return browser_context_; }
 
