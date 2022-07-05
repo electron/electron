@@ -1,0 +1,263 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Tue, 14 Jun 2022 19:11:17 +0000
+Subject: Ensure raw_ptr<T> and T* are treated identically in //base callback.
+
+There are safety checks associated with raw pointers (e.g. ensuring
+receiver pointers are not raw pointers). Make sure these checks are
+applied whether the input type is T* or raw_ptr<T>.
+
+- Implement base::IsPointer<T> and base::RemovePointer<T>, which are
+  similar to std::is_pointer<T> and std::remove_pointer<T>, except they
+  also consider raw_ptr<T> a raw pointer type.
+- Fix failures from the strengthened asserts: WebAppInstallFinalizer
+  does not need a callback at all, while the privacy sandbox dialog
+  tests can safely use base::Unretained().
+- Add test cases to cover this in the //base callback nocompile test
+  suite.
+- Fix the existing nocompile tests, which did not escape `||` and
+  inadvertently matched any error text.
+
+(cherry picked from commit 00c072a2c7f24921af3bbf8441abb34ecb0551a6)
+
+Bug: 1335458
+Change-Id: I470e3d5bc35ed52bf125136db738a868ef90b7e7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3700700
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1013266}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3703779
+Cr-Commit-Position: refs/branch-heads/5005@{#1173}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+
+diff --git a/base/bind_internal.h b/base/bind_internal.h
+index b8670d6c0897f3c9aff9080c186bd1c7bb79694c..46a3f1525dcea4592b0a84aa951de87db7f3ab9c 100644
+--- a/base/bind_internal.h
++++ b/base/bind_internal.h
+@@ -852,8 +852,8 @@ bool QueryCancellationTraits(const BindStateBase* base,
+ template <typename Functor, typename Receiver, typename... Unused>
+ std::enable_if_t<
+     !(MakeFunctorTraits<Functor>::is_method &&
+-      std::is_pointer<std::decay_t<Receiver>>::value &&
+-      IsRefCountedType<std::remove_pointer_t<std::decay_t<Receiver>>>::value)>
++      IsPointer<std::decay_t<Receiver>>::value &&
++      IsRefCountedType<RemovePointerT<std::decay_t<Receiver>>>::value)>
+ BanUnconstructedRefCountedReceiver(const Receiver& receiver, Unused&&...) {}
+ 
+ template <typename Functor>
+@@ -863,8 +863,8 @@ void BanUnconstructedRefCountedReceiver() {}
+ template <typename Functor, typename Receiver, typename... Unused>
+ std::enable_if_t<
+     MakeFunctorTraits<Functor>::is_method &&
+-    std::is_pointer<std::decay_t<Receiver>>::value &&
+-    IsRefCountedType<std::remove_pointer_t<std::decay_t<Receiver>>>::value>
++    IsPointer<std::decay_t<Receiver>>::value &&
++    IsRefCountedType<RemovePointerT<std::decay_t<Receiver>>>::value>
+ BanUnconstructedRefCountedReceiver(const Receiver& receiver, Unused&&...) {
+   DCHECK(receiver);
+ 
+@@ -999,19 +999,20 @@ struct MakeBindStateTypeImpl<true, Functor, Receiver, BoundArgs...> {
+   static_assert(!std::is_array<std::remove_reference_t<Receiver>>::value,
+                 "First bound argument to a method cannot be an array.");
+   static_assert(
+-      !std::is_pointer<DecayedReceiver>::value ||
+-          IsRefCountedType<std::remove_pointer_t<DecayedReceiver>>::value,
++      !IsPointer<DecayedReceiver>::value ||
++          IsRefCountedType<RemovePointerT<DecayedReceiver>>::value,
+       "Receivers may not be raw pointers. If using a raw pointer here is safe"
+       " and has no lifetime concerns, use base::Unretained() and document why"
+       " it's safe.");
++
+   static_assert(!HasRefCountedTypeAsRawPtr<std::decay_t<BoundArgs>...>::value,
+                 "A parameter is a refcounted type and needs scoped_refptr.");
+ 
+  public:
+   using Type = BindState<
+       std::decay_t<Functor>,
+-      std::conditional_t<std::is_pointer<DecayedReceiver>::value,
+-                         scoped_refptr<std::remove_pointer_t<DecayedReceiver>>,
++      std::conditional_t<IsPointer<DecayedReceiver>::value,
++                         scoped_refptr<RemovePointerT<DecayedReceiver>>,
+                          DecayedReceiver>,
+       MakeStorageType<BoundArgs>...>;
+ };
+diff --git a/base/bind_unittest.cc b/base/bind_unittest.cc
+index dbf6f79a8b917a6d876e9092ecace49a5e359e95..c02a704d618903a10be6b52d43375607eb6cb999 100644
+--- a/base/bind_unittest.cc
++++ b/base/bind_unittest.cc
+@@ -1169,6 +1169,28 @@ TYPED_TEST(BindVariantsTest, UniquePtrReceiver) {
+   TypeParam::Bind(&NoRef::VoidMethod0, std::move(no_ref)).Run();
+ }
+ 
++TYPED_TEST(BindVariantsTest, ImplicitRefPtrReceiver) {
++  StrictMock<HasRef> has_ref;
++  EXPECT_CALL(has_ref, AddRef()).Times(1);
++  EXPECT_CALL(has_ref, Release()).Times(1);
++  EXPECT_CALL(has_ref, HasAtLeastOneRef()).WillRepeatedly(Return(true));
++
++  HasRef* ptr = &has_ref;
++  auto ptr_cb = TypeParam::Bind(&HasRef::HasAtLeastOneRef, ptr);
++  EXPECT_EQ(1, std::move(ptr_cb).Run());
++}
++
++TYPED_TEST(BindVariantsTest, RawPtrReceiver) {
++  StrictMock<HasRef> has_ref;
++  EXPECT_CALL(has_ref, AddRef()).Times(1);
++  EXPECT_CALL(has_ref, Release()).Times(1);
++  EXPECT_CALL(has_ref, HasAtLeastOneRef()).WillRepeatedly(Return(true));
++
++  raw_ptr<HasRef> rawptr(&has_ref);
++  auto rawptr_cb = TypeParam::Bind(&HasRef::HasAtLeastOneRef, rawptr);
++  EXPECT_EQ(1, std::move(rawptr_cb).Run());
++}
++
+ // Tests for Passed() wrapper support:
+ //   - Passed() can be constructed from a pointer to scoper.
+ //   - Passed() can be constructed from a scoper rvalue.
+@@ -1751,6 +1773,12 @@ TEST(BindDeathTest, BanFirstOwnerOfRefCountedType) {
+     EXPECT_CALL(has_ref, HasAtLeastOneRef()).WillOnce(Return(false));
+     base::BindOnce(&HasRef::VoidMethod0, &has_ref);
+   });
++
++  EXPECT_DCHECK_DEATH({
++    raw_ptr<HasRef> rawptr(&has_ref);
++    EXPECT_CALL(has_ref, HasAtLeastOneRef()).WillOnce(Return(false));
++    base::BindOnce(&HasRef::VoidMethod0, rawptr);
++  });
+ }
+ 
+ }  // namespace
+diff --git a/base/bind_unittest.nc b/base/bind_unittest.nc
+index 134841c32a17eb4e739f75b609bcb7f0a9009e28..35ba2ab7fa0cb7286efa38831834be5f82280aa8 100644
+--- a/base/bind_unittest.nc
++++ b/base/bind_unittest.nc
+@@ -94,7 +94,7 @@ void WontCompile() {
+   method_to_const_cb.Run();
+ }
+ 
+-#elif defined(NCTEST_METHOD_BIND_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!std::is_pointer<base::NoRef *>::value || IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained() and document why it's safe.\""]
++#elif defined(NCTEST_METHOD_BIND_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!IsPointer<base::NoRef \*>::value \|\| IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained\(\) and document why it's safe.\""]
+ 
+ 
+ // Method bound to non-refcounted object.
+@@ -107,7 +107,7 @@ void WontCompile() {
+   no_ref_cb.Run();
+ }
+ 
+-#elif defined(NCTEST_CONST_METHOD_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!std::is_pointer<base::NoRef *>::value || IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained() and document why it's safe.\""]
++#elif defined(NCTEST_CONST_METHOD_BIND_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!IsPointer<base::NoRef \*>::value \|\| IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained\(\) and document why it's safe.\""]
+ 
+ // Const Method bound to non-refcounted object.
+ //
+@@ -119,6 +119,33 @@ void WontCompile() {
+   no_ref_const_cb.Run();
+ }
+ 
++#elif defined(NCTEST_METHOD_BIND_RAW_PTR_RECEIVER_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!IsPointer<base::raw_ptr<base::NoRef, [^>]+>>::value \|\| IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained\(\) and document why it's safe.\""]
++
++
++// Method bound to non-refcounted object.
++//
++// We require refcounts unless you have Unretained().
++void WontCompile() {
++  NoRef no_ref;
++  raw_ptr<NoRef> rawptr(&no_ref);
++  RepeatingCallback<void()> no_ref_cb =
++      BindRepeating(&NoRef::VoidMethod0, rawptr);
++  no_ref_cb.Run();
++}
++
++#elif defined(NCTEST_CONST_METHOD_BIND_RAW_PTR_RECEIVER_NEEDS_REFCOUNTED_OBJECT)  // [r"fatal error: static_assert failed due to requirement '!IsPointer<base::raw_ptr<base::NoRef, [^>]+>>::value \|\| IsRefCountedType<base::NoRef, void>::value' \"Receivers may not be raw pointers. If using a raw pointer here is safe and has no lifetime concerns, use base::Unretained\(\) and document why it's safe.\""]
++
++// Const Method bound to non-refcounted object.
++//
++// We require refcounts unless you have Unretained().
++void WontCompile() {
++  NoRef no_ref;
++  raw_ptr<NoRef> rawptr(&no_ref);
++  RepeatingCallback<void()> no_ref_const_cb =
++      BindRepeating(&NoRef::VoidConstMethod0, rawptr);
++  no_ref_const_cb.Run();
++}
++
+ #elif defined(NCTEST_CONST_POINTER)  // [r"static_assert failed.+?BindArgument<0>::ForwardedAs<.+?>::ToParamWithType<.+?>::kCanBeForwardedToBoundFunctor.+?Type mismatch between bound argument and bound functor's parameter\."]
+ // Const argument used with non-const pointer parameter of same type.
+ //
+diff --git a/base/memory/raw_ptr.h b/base/memory/raw_ptr.h
+index e896b6f504dfdb260eaacad5454d47ae2069955f..86d61c591dce0ae508f11880da593c3fe669ad5b 100644
+--- a/base/memory/raw_ptr.h
++++ b/base/memory/raw_ptr.h
+@@ -701,6 +701,34 @@ RAW_PTR_FUNC_ATTRIBUTES bool operator==(const raw_ptr<U, I>& lhs,
+   return lhs.GetForComparison() == rhs.GetForComparison();
+ }
+ 
++// Template helpers for working with T* or raw_ptr<T>.
++template <typename T>
++struct IsPointer : std::false_type {};
++
++template <typename T>
++struct IsPointer<T*> : std::true_type {};
++
++template <typename T, typename I>
++struct IsPointer<raw_ptr<T, I>> : std::true_type {};
++
++template <typename T>
++struct RemovePointer {
++  using type = T;
++};
++
++template <typename T>
++struct RemovePointer<T*> {
++  using type = T;
++};
++
++template <typename T, typename I>
++struct RemovePointer<raw_ptr<T, I>> {
++  using type = T;
++};
++
++template <typename T>
++using RemovePointerT = typename RemovePointer<T>::type;
++
+ }  // namespace base
+ 
+ using base::raw_ptr;
+diff --git a/base/memory/raw_scoped_refptr_mismatch_checker.h b/base/memory/raw_scoped_refptr_mismatch_checker.h
+index 9e50458ec98bb7e9041355fa06d14c6ba703b85c..7afae066fa3e318b346fac6b60ee55873b65f909 100644
+--- a/base/memory/raw_scoped_refptr_mismatch_checker.h
++++ b/base/memory/raw_scoped_refptr_mismatch_checker.h
+@@ -7,6 +7,7 @@
+ 
+ #include <type_traits>
+ 
++#include "base/memory/raw_ptr.h"
+ #include "base/template_util.h"
+ 
+ // It is dangerous to post a task with a T* argument where T is a subtype of
+@@ -35,8 +36,8 @@ struct IsRefCountedType<T,
+ // pointer type and are convertible to a RefCounted(Base|ThreadSafeBase) type.
+ template <typename T>
+ struct NeedsScopedRefptrButGetsRawPtr
+-    : conjunction<std::is_pointer<T>,
+-                  IsRefCountedType<std::remove_pointer_t<T>>> {
++    : conjunction<base::IsPointer<T>,
++                  IsRefCountedType<base::RemovePointerT<T>>> {
+   static_assert(!std::is_reference<T>::value,
+                 "NeedsScopedRefptrButGetsRawPtr requires non-reference type.");
+ };
+diff --git a/chrome/browser/web_applications/web_app_install_finalizer.cc b/chrome/browser/web_applications/web_app_install_finalizer.cc
+index 0b19ad3b7e72c28d215ff8f7c314d680d2917d41..50b2af9e921a89c7527789257b63ed1a6b6e83a4 100644
+--- a/chrome/browser/web_applications/web_app_install_finalizer.cc
++++ b/chrome/browser/web_applications/web_app_install_finalizer.cc
+@@ -555,8 +555,9 @@ void WebAppInstallFinalizer::SetWebAppManifestFieldsAndWriteData(
+   AppId app_id = web_app->app_id();
+ 
+   icon_manager_->WriteData(
+-      std::move(app_id), web_app_info.icon_bitmaps,
+-      web_app_info.shortcuts_menu_icon_bitmaps, web_app_info.other_icon_bitmaps,
++      app_id, std::move(web_app_info.icon_bitmaps),
++      std::move(web_app_info.shortcuts_menu_icon_bitmaps),
++      std::move(web_app_info.other_icon_bitmaps),
+       base::BindOnce(&WebAppInstallFinalizer::OnIconsDataWritten,
+                      weak_ptr_factory_.GetWeakPtr(), std::move(commit_callback),
+                      std::move(web_app)));
