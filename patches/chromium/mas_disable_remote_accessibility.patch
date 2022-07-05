@@ -86,6 +86,36 @@ index 60e99da4a9493dbaca871b08d75341a48488a65e..3328e9e90bd4904dd404b413fd4245f4
  };
  }
  
+diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+index f61b04b02673e9a73f9c23823017a56b65b47dee..297b5c5584e9221adf11515c015fd7f413d29aab 100644
+--- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
++++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
+@@ -21,7 +21,9 @@
+ #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
+ #include "ui/accessibility/ax_role_properties.h"
+ #include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
++#ifndef MAS_BUILD
+ #include "ui/base/cocoa/remote_accessibility_api.h"
++#endif
+ 
+ namespace {
+ 
+@@ -609,6 +611,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+   if ([NSApp isActive])
+     return window == [NSApp accessibilityFocusedWindow];
+ 
++#ifndef MAS_BUILD
+   // TODO(accessibility): We need a solution to the problem described below.
+   // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
+   // 1. NSApp is the browser which spawned the PWA, and what it considers the
+@@ -636,6 +639,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+   // from within the app shim content.
+   if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]])
+     return true;
++#endif
+ 
+   return false;
+ }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
 index d5f6ef594252c691ffb988bfabe57bc014eb3b3c..be2e6d845d163fcd64693d8b52c6f26b57a43eab 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
