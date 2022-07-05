@@ -170,7 +170,7 @@ class InspectableWebContents
                      const std::string& trigger) override {}
 
   // content::DevToolsFrontendHostDelegate:
-  void HandleMessageFromDevToolsFrontend(base::Value message);
+  void HandleMessageFromDevToolsFrontend(base::Value::Dict message);
 
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,

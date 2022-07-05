@@ -903,19 +903,15 @@ void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
 }
 
 void InspectableWebContents::HandleMessageFromDevToolsFrontend(
-    base::Value message) {
+    base::Value::Dict message) {
   // TODO(alexeykuzmin): Should we expect it to exist?
   if (!embedder_message_dispatcher_) {
     return;
   }
 
-  const std::string* method = nullptr;
-  base::Value* params = nullptr;
-
-  if (message.is_dict()) {
-    method = message.FindStringKey(kFrontendHostMethod);
-    params = message.FindKey(kFrontendHostParams);
-  }
+  const std::string* method = message.FindString(kFrontendHostMethod);
+  ;
+  base::Value* params = message.Find(kFrontendHostParams);
 
   if (!method || (params && !params->is_list())) {
     LOG(ERROR) << "Invalid message was sent to embedder: " << message;
@@ -926,7 +922,7 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
   const base::Value::List& params_list =
       params != nullptr && params->is_list() ? params->GetList() : no_params;
 
-  const int id = message.FindIntKey(kFrontendHostId).value_or(0);
+  const int id = message.FindInt(kFrontendHostId).value_or(0);
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
