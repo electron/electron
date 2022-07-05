@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Fri, 10 Jun 2022 12:53:10 +0000
+Subject: Version 10.2.154.10 (cherry-pick)
+
+Merged 85b4b5d719c50ecc8f376ca853c9001d5ac0ed9a
+
+[compiler] only enable MidTierRegisterAllocator for Wasm
+
+Bug: chromium:1335054
+Change-Id: I61ab97d4fbfcbb81319e611a64a6454e050a1d65
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3705397
+Owners-Override: Tobias Tebbi <tebbi@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/10.2@{#18}
+Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
+Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
+
+diff --git a/include/v8-version.h b/include/v8-version.h
+index b6e920c05e5928c707f8e7c0ed56822a6bb33164..3b18fdda0dfb74163bfdc3aad34e0611250efb6c 100644
+--- a/include/v8-version.h
++++ b/include/v8-version.h
+@@ -11,7 +11,7 @@
+ #define V8_MAJOR_VERSION 9
+ #define V8_MINOR_VERSION 8
+ #define V8_BUILD_NUMBER 177
+-#define V8_PATCH_LEVEL 13
++#define V8_PATCH_LEVEL 14
+ 
+ // Use 1 for candidates and 0 otherwise.
+ // (Boolean macro values are not supported by all preprocessors.)
+diff --git a/src/compiler/pipeline.cc b/src/compiler/pipeline.cc
+index ef16b8f304b3d7e40ae5e5e8b1acc989be9b42a0..c84b0789fa1fa3a9f6df3d955a631a7c1ba6d54c 100644
+--- a/src/compiler/pipeline.cc
++++ b/src/compiler/pipeline.cc
+@@ -3567,12 +3567,16 @@ bool PipelineImpl::SelectInstructions(Linkage* linkage) {
+ 
+   const RegisterConfiguration* config = RegisterConfiguration::Default();
+   std::unique_ptr<const RegisterConfiguration> restricted_config;
++  // The mid-tier register allocator keeps values in stack slots for too long.
++  // This is incompatible with left-trimming, therefore we cannot enable it for
++  // JS functions.
+   bool use_mid_tier_register_allocator =
+-      FLAG_turbo_force_mid_tier_regalloc ||
++      data->info()->code_kind() == CodeKind::WASM_FUNCTION &&
++      (FLAG_turbo_force_mid_tier_regalloc ||
+       (FLAG_turboprop_mid_tier_reg_alloc && data->info()->IsTurboprop()) ||
+       (FLAG_turbo_use_mid_tier_regalloc_for_huge_functions &&
+        data->sequence()->VirtualRegisterCount() >
+-           kTopTierVirtualRegistersLimit);
++           kTopTierVirtualRegistersLimit));
+ 
+   if (call_descriptor->HasRestrictedAllocatableRegisters()) {
+     RegList registers = call_descriptor->AllocatableRegisters();
