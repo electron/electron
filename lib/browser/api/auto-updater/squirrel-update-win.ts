@@ -20,7 +20,7 @@ const spawnUpdate = function (args: string[], detached: boolean, callback: Funct
 
   try {
     // Ensure we don't spawn multiple squirrel processes
-    // Process spawned, same args:        Attach events to alread running process
+    // Process spawned, same args:        Attach events to already running process
     // Process spawned, different args:   Return with error
     // No process spawned:                Spawn new process
     if (spawnedProcess && !isSameArgs(args)) {

@@ -30,7 +30,7 @@ function spawnAndCheckExitCode (cmd, args, opts) {
   opts = { stdio: 'inherit', ...opts };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
   if (error) {
-    // the subsprocess failed or timed out
+    // the subprocess failed or timed out
     console.error(error);
     process.exit(1);
   }
