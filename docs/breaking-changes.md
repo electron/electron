@@ -14,6 +14,13 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (20.0)
 
+### Behavior Changed: V8 Memory Cage enabled
+
+The V8 memory cage has been enabled, which has implications for native modules
+which wrap non-V8 memory with `ArrayBuffer` or `Buffer`. See the [blog post
+about the V8 memory cage](https://www.electronjs.org/blog/v8-memory-cage) for
+more details.
+
 ### API Changed: `webContents.printToPDF()`
 
 `webContents.printToPDF()` has been modified to conform to [`Page.printToPDF`](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF) in the Chrome DevTools Protocol. This has been changes in order to
