@@ -910,7 +910,6 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
   }
 
   const std::string* method = message.FindString(kFrontendHostMethod);
-  ;
   base::Value* params = message.Find(kFrontendHostParams);
 
   if (!method || (params && !params->is_list())) {
