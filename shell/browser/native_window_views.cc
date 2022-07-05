@@ -875,6 +875,11 @@ bool NativeWindowViews::IsMovable() {
 void NativeWindowViews::SetMinimizable(bool minimizable) {
 #if BUILDFLAG(IS_WIN)
   FlipWindowStyle(GetAcceleratedWidget(), minimizable, WS_MINIMIZEBOX);
+  if (titlebar_overlay_enabled()) {
+    auto* frame_view =
+        static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
+    frame_view->caption_button_container()->UpdateButtons();
+  }
 #endif
   minimizable_ = minimizable;
 }
@@ -890,6 +895,11 @@ bool NativeWindowViews::IsMinimizable() {
 void NativeWindowViews::SetMaximizable(bool maximizable) {
 #if BUILDFLAG(IS_WIN)
   FlipWindowStyle(GetAcceleratedWidget(), maximizable, WS_MAXIMIZEBOX);
+  if (titlebar_overlay_enabled()) {
+    auto* frame_view =
+        static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
+    frame_view->caption_button_container()->UpdateButtons();
+  }
 #endif
   maximizable_ = maximizable;
 }
@@ -924,6 +934,11 @@ void NativeWindowViews::SetClosable(bool closable) {
     EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
   } else {
     EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+  }
+  if (titlebar_overlay_enabled()) {
+    auto* frame_view =
+        static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
+    frame_view->caption_button_container()->UpdateButtons();
   }
 #endif
 }
