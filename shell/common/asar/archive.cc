@@ -35,83 +35,75 @@ const char kSeparators[] = "\\/";
 const char kSeparators[] = "/";
 #endif
 
-bool GetNodeFromPath(std::string path,
-                     const base::DictionaryValue* root,
-                     const base::DictionaryValue** out);
+const base::Value::Dict* GetNodeFromPath(std::string path,
+                                         const base::Value::Dict& root);
 
 // Gets the "files" from "dir".
-bool GetFilesNode(const base::DictionaryValue* root,
-                  const base::DictionaryValue* dir,
-                  const base::DictionaryValue** out) {
+const base::Value::Dict* GetFilesNode(const base::Value::Dict& root,
+                                      const base::Value::Dict& dir) {
   // Test for symbol linked directory.
-  const std::string* link = dir->FindStringKey("link");
+  const std::string* link = dir.FindString("link");
   if (link != nullptr) {
-    const base::DictionaryValue* linked_node = nullptr;
-    if (!GetNodeFromPath(*link, root, &linked_node))
-      return false;
-    dir = linked_node;
+    const base::Value::Dict* linked_node = GetNodeFromPath(*link, root);
+    if (!linked_node)
+      return nullptr;
+    return linked_node->FindDict("files");
   }
 
-  return dir->GetDictionaryWithoutPathExpansion("files", out);
+  return dir.FindDict("files");
 }
 
 // Gets sub-file "name" from "dir".
-bool GetChildNode(const base::DictionaryValue* root,
-                  const std::string& name,
-                  const base::DictionaryValue* dir,
-                  const base::DictionaryValue** out) {
-  if (name.empty()) {
-    *out = root;
-    return true;
-  }
+const base::Value::Dict* GetChildNode(const base::Value::Dict& root,
+                                      const std::string& name,
+                                      const base::Value::Dict& dir) {
+  if (name.empty())
+    return &root;
 
-  const base::DictionaryValue* files = nullptr;
-  return GetFilesNode(root, dir, &files) &&
-         files->GetDictionaryWithoutPathExpansion(name, out);
+  const base::Value::Dict* files = GetFilesNode(root, dir);
+  return files ? files->FindDict(name) : nullptr;
 }
 
 // Gets the node of "path" from "root".
-bool GetNodeFromPath(std::string path,
-                     const base::DictionaryValue* root,
-                     const base::DictionaryValue** out) {
-  if (path.empty()) {
-    *out = root;
-    return true;
-  }
+const base::Value::Dict* GetNodeFromPath(std::string path,
+                                         const base::Value::Dict& root) {
+  if (path.empty())
+    return &root;
 
-  const base::DictionaryValue* dir = root;
+  const base::Value::Dict* dir = &root;
   for (size_t delimiter_position = path.find_first_of(kSeparators);
        delimiter_position != std::string::npos;
        delimiter_position = path.find_first_of(kSeparators)) {
-    const base::DictionaryValue* child = nullptr;
-    if (!GetChildNode(root, path.substr(0, delimiter_position), dir, &child))
-      return false;
+    const base::Value::Dict* child =
+        GetChildNode(root, path.substr(0, delimiter_position), *dir);
+    if (!child)
+      return nullptr;
 
     dir = child;
     path.erase(0, delimiter_position + 1);
   }
 
-  return GetChildNode(root, path, dir, out);
+  return GetChildNode(root, path, *dir);
 }
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
                           bool load_integrity,
-                          const base::DictionaryValue* node) {
-  if (auto size = node->FindIntKey("size")) {
-    info->size = static_cast<uint32_t>(size.value());
+                          const base::Value::Dict* node) {
+  if (absl::optional<int> size = node->FindInt("size")) {
+    info->size = static_cast<uint32_t>(*size);
   } else {
     return false;
   }
 
-  if (auto unpacked = node->FindBoolKey("unpacked")) {
-    info->unpacked = unpacked.value();
+  if (absl::optional<bool> unpacked = node->FindBool("unpacked")) {
+    info->unpacked = *unpacked;
     if (info->unpacked) {
       return true;
     }
   }
 
-  auto* offset = node->FindStringKey("offset");
+  const std::string* offset = node->FindString("offset");
   if (offset &&
       base::StringToUint64(base::StringPiece(*offset), &info->offset)) {
     info->offset += header_size;
@@ -119,26 +111,26 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
     return false;
   }
 
-  if (auto executable = node->FindBoolKey("executable")) {
-    info->executable = executable.value();
+  if (absl::optional<bool> executable = node->FindBool("executable")) {
+    info->executable = *executable;
   }
 
 #if BUILDFLAG(IS_MAC)
   if (load_integrity &&
       electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
-    if (auto* integrity = node->FindDictKey("integrity")) {
-      auto* algorithm = integrity->FindStringKey("algorithm");
-      auto* hash = integrity->FindStringKey("hash");
-      auto block_size = integrity->FindIntKey("blockSize");
-      auto* blocks = integrity->FindListKey("blocks");
+    if (const base::Value::Dict* integrity = node->FindDict("integrity")) {
+      const std::string* algorithm = integrity->FindString("algorithm");
+      const std::string* hash = integrity->FindString("hash");
+      absl::optional<int> block_size = integrity->FindInt("blockSize");
+      const base::Value::List* blocks = integrity->FindList("blocks");
 
       if (algorithm && hash && block_size && block_size > 0 && blocks) {
         IntegrityPayload integrity_payload;
         integrity_payload.hash = *hash;
         integrity_payload.block_size =
             static_cast<uint32_t>(block_size.value());
-        for (auto& value : blocks->GetListDeprecated()) {
-          if (auto* block = value.GetIfString()) {
+        for (auto& value : *blocks) {
+          if (const std::string* block = value.GetIfString()) {
             integrity_payload.blocks.push_back(*block);
           } else {
             LOG(FATAL)
@@ -279,8 +271,7 @@ bool Archive::Init() {
   }
 
   header_size_ = 8 + size;
-  header_ = base::DictionaryValue::From(
-      base::Value::ToUniquePtrValue(std::move(*value)));
+  header_ = std::move(value->GetDict());
   return true;
 }
 
@@ -298,13 +289,14 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
   if (!header_)
     return false;
 
-  const base::DictionaryValue* node;
-  if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
+  const base::Value::Dict* node =
+      GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  if (!node)
     return false;
 
-  std::string link;
-  if (node->GetString("link", &link))
-    return GetFileInfo(base::FilePath::FromUTF8Unsafe(link), info);
+  const std::string* link = node->FindString("link");
+  if (link)
+    return GetFileInfo(base::FilePath::FromUTF8Unsafe(*link), info);
 
   return FillFileInfoWithNode(info, header_size_, header_validated_, node);
 }
@@ -313,17 +305,18 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
   if (!header_)
     return false;
 
-  const base::DictionaryValue* node;
-  if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
+  const base::Value::Dict* node =
+      GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  if (!node)
     return false;
 
-  if (node->FindKey("link")) {
+  if (node->Find("link")) {
     stats->is_file = false;
     stats->is_link = true;
     return true;
   }
 
-  if (node->FindKey("files")) {
+  if (node->Find("files")) {
     stats->is_file = false;
     stats->is_directory = true;
     return true;
@@ -337,19 +330,17 @@ bool Archive::Readdir(const base::FilePath& path,
   if (!header_)
     return false;
 
-  const base::DictionaryValue* node;
-  if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
+  const base::Value::Dict* node =
+      GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  if (!node)
     return false;
 
-  const base::DictionaryValue* files_node;
-  if (!GetFilesNode(header_.get(), node, &files_node))
+  const base::Value::Dict* files_node = GetFilesNode(*header_, *node);
+  if (!files_node)
     return false;
 
-  base::DictionaryValue::Iterator iter(*files_node);
-  while (!iter.IsAtEnd()) {
-    files->push_back(base::FilePath::FromUTF8Unsafe(iter.key()));
-    iter.Advance();
-  }
+  for (const auto iter : *files_node)
+    files->push_back(base::FilePath::FromUTF8Unsafe(iter.first));
   return true;
 }
 
@@ -358,13 +349,14 @@ bool Archive::Realpath(const base::FilePath& path,
   if (!header_)
     return false;
 
-  const base::DictionaryValue* node;
-  if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
+  const base::Value::Dict* node =
+      GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  if (!node)
     return false;
 
-  std::string link;
-  if (node->GetString("link", &link)) {
-    *realpath = base::FilePath::FromUTF8Unsafe(link);
+  const std::string* link = node->FindString("link");
+  if (link) {
+    *realpath = base::FilePath::FromUTF8Unsafe(*link);
     return true;
   }
 
