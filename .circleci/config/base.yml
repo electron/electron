@@ -1033,6 +1033,7 @@ steps-tests: &steps-tests
     - *step-setup-linux-for-headless-testing
     - *step-restore-brew-cache
     - *step-fix-known-hosts-linux
+    - install-python2-mac
     - *step-install-signing-cert-on-mac
 
     - run:
