@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index a7a198ddd0f33bc0786b59e5027c72662d2c24ed..dfc5ba7e101ef8521bcb4d1ecdf68f1957b347e9 100644
+index 861191e82aa304be0a71dcd356d31767540450ef..1f86538121bfc753b3587d9edaf1553726542af9 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -970,7 +970,6 @@ if (is_win) {
+@@ -974,7 +974,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index a7a198ddd0f33bc0786b59e5027c72662d2c24ed..dfc5ba7e101ef8521bcb4d1ecdf68f19
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -979,6 +978,10 @@ if (is_win) {
+@@ -983,6 +982,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -744,10 +744,10 @@ index c2bf286ef1741b53022adf420809a87c3bb53cfd..f8b38d09abd3253bfd38b874ebdad753
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 87c464f6a565b0ef4930c87b5e32329c55d0c223..26af5b09600e4e064b098bac884c4d941e88e3fc 100644
+index 628cf61b4047e6207a470d49203d5f94da82df8e..643e0646f2cc08529a7bd7c12be7a1d0afe3644f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2758,8 +2758,9 @@ source_set("browser") {
+@@ -2756,8 +2756,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -816,10 +816,10 @@ index 58fcf619add5093bd99fd9c561e8686b060a01c6..76db2a2438cef84fcb6dfd4a67d2e171
    bool skip_system_calls() const {
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 35d1091e0c555d00ac1fc5ac878fa2a6e09e718b..07411f07e69a645ba388348f01237f7d38755818 100644
+index 2a1a5aaf18d43a68b13783d55279e481bd91c2e5..156c6ca844d97376268baa57dcf220561a63fa04 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -21,7 +21,6 @@
+@@ -22,7 +22,6 @@
  #include "sandbox/policy/mac/nacl_loader.sb.h"
  #include "sandbox/policy/mac/network.sb.h"
  #include "sandbox/policy/mac/ppapi.sb.h"
@@ -827,7 +827,7 @@ index 35d1091e0c555d00ac1fc5ac878fa2a6e09e718b..07411f07e69a645ba388348f01237f7d
  #include "sandbox/policy/mac/print_compositor.sb.h"
  #include "sandbox/policy/mac/renderer.sb.h"
  #include "sandbox/policy/mac/screen_ai.sb.h"
-@@ -29,6 +28,10 @@
+@@ -30,6 +29,10 @@
  #include "sandbox/policy/mac/utility.sb.h"
  #include "sandbox/policy/mojom/sandbox.mojom.h"
  
