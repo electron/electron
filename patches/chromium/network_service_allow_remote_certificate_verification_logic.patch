@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 9fbb457b91fe0077a8051872ffcd0f33f8319983..2db35a82f2ffcbbf4b2737c6e4d8e185d4079e9d 100644
+index c2824b6bcfab1c13d0e44ca96fc05c97b4a13a6e..61030982c4391dd1b4b508042628e7f006047158 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -129,6 +129,11 @@
@@ -128,7 +128,7 @@ index 9fbb457b91fe0077a8051872ffcd0f33f8319983..2db35a82f2ffcbbf4b2737c6e4d8e185
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2292,6 +2389,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2303,6 +2400,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -139,10 +139,10 @@ index 9fbb457b91fe0077a8051872ffcd0f33f8319983..2db35a82f2ffcbbf4b2737c6e4d8e185
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 051a33d67f48d3a39b56a771da3282b9d7b86053..531ad29c07ef50378ac5047bdc3bb6bfb09e517b 100644
+index 34b3e31549ee37b58eee4c11c54bd34af73af263..d88d9d2bc4b95464ca9a8cacec33361f12d25ea4 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -104,6 +104,7 @@ class URLMatcher;
+@@ -105,6 +105,7 @@ class URLMatcher;
  
  namespace network {
  class CertVerifierWithTrustAnchors;
@@ -150,7 +150,7 @@ index 051a33d67f48d3a39b56a771da3282b9d7b86053..531ad29c07ef50378ac5047bdc3bb6bf
  class CookieManager;
  class ExpectCTReporter;
  class HostResolver;
-@@ -235,6 +236,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -236,6 +237,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -159,7 +159,7 @@ index 051a33d67f48d3a39b56a771da3282b9d7b86053..531ad29c07ef50378ac5047bdc3bb6bf
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -817,6 +820,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -821,6 +824,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
