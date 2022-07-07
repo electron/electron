@@ -1132,7 +1132,7 @@ commands:
       - run:
           name: Install python2 on macos
           command: |
-            if [ "`uname`" == "Darwin" ]; then
+            if [ "`uname`" == "Darwin" ] && [ "$TARGET_ARCH" != "arm64" ]; then
               if [ ! -f "python-downloads/python-2.7.18-macosx10.9.pkg" ]; then
                 mkdir python-downloads
                 echo 'Downloading Python 2.7.18'
