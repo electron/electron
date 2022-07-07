@@ -2162,6 +2162,41 @@ describe('BrowserWindow module', () => {
     ifit(process.platform === 'darwin')('sets Window Control Overlay with hidden inset title bar', async () => {
       await testWindowsOverlay('hiddenInset');
     });
+
+    ifdescribe(process.platform === 'win32')('when an invalid titleBarStyle is initially set', () => {
+      let w: BrowserWindow;
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+          },
+          titleBarOverlay: {
+            color: '#0000f0',
+            symbolColor: '#ffffff'
+          },
+          titleBarStyle: 'hiddenInset'
+        });
+      });
+
+      afterEach(async () => {
+        await closeAllWindows();
+      });
+
+      it('does not crash changing minimizability ', () => {
+        expect(() => {
+          w.setMinimizable(false);
+        }).to.not.throw();
+      });
+
+      it('does not crash changing maximizability', () => {
+        expect(() => {
+          w.setMaximizable(false);
+        }).to.not.throw();
+      });
+    });
   });
 
   ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarOverlay" option', () => {
