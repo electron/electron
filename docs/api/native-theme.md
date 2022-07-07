@@ -72,3 +72,6 @@ or is being instructed to use an inverted color scheme.
 
 A `boolean` indicating whether Chromium is in forced colors mode, controlled by system accessibility settings.
 Currently, Windows high contrast is the only system setting that triggers forced colors mode.
+
+
+akbar_opo
