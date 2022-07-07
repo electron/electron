@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Thu, 7 Jul 2022 14:42:49 -0700
+Subject: build: ensure v8 pointer compression + sandbox is enabled on 64bit
+
+Aligns common.gypi with the current build flag state of //v8.
+
+Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
+
+diff --git a/common.gypi b/common.gypi
+index 559b7f7c220cb98946285bb15d0d63e203bbcea4..93e42ced41a402045123490e0f76c996da8177db 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -66,6 +66,8 @@
+     'v8_enable_pointer_compression%': 0,
+     'v8_enable_31bit_smis_on_64bit_arch%': 0,
+ 
++    'v8_enable_sandbox%': 0,
++
+     # Disable V8 untrusted code mitigations.
+     # See https://github.com/v8/v8/wiki/Untrusted-code-mitigations
+     'v8_untrusted_code_mitigations': 0,
+@@ -135,6 +137,10 @@
+         'v8_enable_pointer_compression': 0,
+         'v8_enable_31bit_smis_on_64bit_arch': 0,
+       }],
++      ['target_arch in "arm64 x64"', {
++        'v8_enable_pointer_compression': 1,
++        'v8_enable_sandbox': 1,
++      }],
+       ['target_arch in "ppc64 s390x"', {
+         'v8_enable_backtrace': 1,
+       }],
+@@ -395,9 +401,15 @@
+       ['v8_enable_pointer_compression == 1', {
+         'defines': [
+           'V8_COMPRESS_POINTERS',
+-          'V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE',
++          'V8_COMPRESS_POINTERS_IN_SHARED_CAGE',
+         ],
+       }],
++      ['v8_enable_sandbox == 1', {
++        'defines': [
++          'V8_ENABLE_SANDBOX',
++          'V8_SANDBOXED_POINTERS'
++        ]
++      }]
+       ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
+         'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
+       }],
