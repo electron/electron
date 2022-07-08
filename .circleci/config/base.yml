@@ -125,6 +125,9 @@ env-apple-silicon: &env-apple-silicon
   USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
   npm_config_arch: arm64
 
+env-runner: &env-runner
+  IS_ELECTRON_RUNNER: 1
+
 env-arm64: &env-arm64
   GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
   MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
@@ -1132,7 +1135,7 @@ commands:
       - run:
           name: Install python2 on macos
           command: |
-            if [ "`uname`" == "Darwin" ] && [ "$TARGET_ARCH" != "arm64" ]; then
+            if [ "`uname`" == "Darwin" ] && [ "$IS_ELECTRON_RUNNER" != "1" ]; then
               if [ ! -f "python-downloads/python-2.7.18-macosx10.9.pkg" ]; then
                 mkdir python-downloads
                 echo 'Downloading Python 2.7.18'
@@ -2059,6 +2062,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-apple-silicon
+      <<: *env-runner
     <<: *steps-tests
 
   mas-testing-x64-tests:
@@ -2077,6 +2081,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-apple-silicon
+      <<: *env-runner
     <<: *steps-tests
 
 # List all workflows
