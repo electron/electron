@@ -8,7 +8,7 @@ Aligns common.gypi with the current build flag state of //v8.
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
 diff --git a/common.gypi b/common.gypi
-index 559b7f7c220cb98946285bb15d0d63e203bbcea4..93e42ced41a402045123490e0f76c996da8177db 100644
+index 559b7f7c220cb98946285bb15d0d63e203bbcea4..b0cba989da8d9b5bd7e1050510bb09646622f88c 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -66,6 +66,8 @@
@@ -20,18 +20,17 @@ index 559b7f7c220cb98946285bb15d0d63e203bbcea4..93e42ced41a402045123490e0f76c996
      # Disable V8 untrusted code mitigations.
      # See https://github.com/v8/v8/wiki/Untrusted-code-mitigations
      'v8_untrusted_code_mitigations': 0,
-@@ -135,6 +137,10 @@
+@@ -135,6 +137,9 @@
          'v8_enable_pointer_compression': 0,
          'v8_enable_31bit_smis_on_64bit_arch': 0,
        }],
 +      ['target_arch in "arm64 x64"', {
-+        'v8_enable_pointer_compression': 1,
 +        'v8_enable_sandbox': 1,
 +      }],
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
        }],
-@@ -395,9 +401,15 @@
+@@ -395,9 +400,15 @@
        ['v8_enable_pointer_compression == 1', {
          'defines': [
            'V8_COMPRESS_POINTERS',
@@ -44,7 +43,7 @@ index 559b7f7c220cb98946285bb15d0d63e203bbcea4..93e42ced41a402045123490e0f76c996
 +          'V8_ENABLE_SANDBOX',
 +          'V8_SANDBOXED_POINTERS'
 +        ]
-+      }]
++      }],
        ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
          'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
        }],
