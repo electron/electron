@@ -25,7 +25,7 @@ index 559b7f7c220cb98946285bb15d0d63e203bbcea4..b0cba989da8d9b5bd7e1050510bb0964
          'v8_enable_31bit_smis_on_64bit_arch': 0,
        }],
 +      ['target_arch in "arm64 x64"', {
-+        'v8_enable_sandbox': 1,
++        'v8_enable_sandbox': 0,
 +      }],
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
