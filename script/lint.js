@@ -15,6 +15,11 @@ const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
 
+// Augment the PATH for this script so that we can find executables
+// in the depot_tools folder even if folks do not have an instance of
+// DEPOT_TOOLS in their path already
+process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
+
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
