@@ -388,13 +388,18 @@ source_set("chrome_spellchecker") {
       "//chrome/browser/spellchecker/spellcheck_factory.h",
       "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc",
       "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
-      "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.cc",
-      "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.h",
-      "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
-      "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
       "//chrome/browser/spellchecker/spellcheck_service.cc",
       "//chrome/browser/spellchecker/spellcheck_service.h",
     ]
+
+    if (is_win || is_linux || is_chromeos) {
+      sources += [
+        "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.cc",
+        "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.h",
+        "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
+        "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
+      ]
+    }
 
     if (has_spellcheck_panel) {
       sources += [
