@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Thu, 9 Jun 2022 11:07:32 +0200
+Subject: [ext-code-space] Fix CodeRange allocation logic
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+... which required unnecessarily big alignment for the base on Windows.
+
+Drive-by: adapt hint usage in VirtualMemoryCage::InitReservation() for
+non-zero kReservedCodeRangePages and hint values provided by
+CodeRangeAddressHint::GetAddressHint() which might be the start address
+of the previously reserved region which in turn already includes the
+kReservedCodeRangePages pages.
+
+Bug: v8:11880, v8:12942
+Change-Id: Ieee44ed2bdfc77aa8efaef449221caaae1f0f08f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3695382
+Reviewed-by: Dominik Inführ <dinfuehr@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#81026}
+(cherry picked from commit 36e47253a47d1cac3ce15008c08ddd1fc8617d53)
+
+diff --git a/src/heap/code-range.cc b/src/heap/code-range.cc
+index badef8e17f5a9395217085ee7d983d2ff935e2ea..02d5553c5d6b838e794cc250e78aa8429e181ac6 100644
+--- a/src/heap/code-range.cc
++++ b/src/heap/code-range.cc
+@@ -107,6 +107,22 @@ bool CodeRange::InitReservation(v8::PageAllocator* page_allocator,
+   if (requested <= kMinimumCodeRangeSize) {
+     requested = kMinimumCodeRangeSize;
+   }
++
++  // When V8_EXTERNAL_CODE_SPACE_BOOL is enabled the allocatable region must
++  // not cross the 4Gb boundary and thus the default compression scheme of
++  // truncating the Code pointers to 32-bits still works. It's achieved by
++  // specifying base_alignment parameter.
++  // Note that the alignment is calculated before adjusting the requested size
++  // for GetWritableReservedAreaSize(). The reasons are:
++  //  - this extra page is used by breakpad on Windows and it's allowed to cross
++  //    the 4Gb boundary,
++  //  - rounding up the adjusted size would result in requresting unnecessarily
++  //    big aligment.
++  const size_t base_alignment =
++      V8_EXTERNAL_CODE_SPACE_BOOL
++          ? base::bits::RoundUpToPowerOfTwo(requested)
++          : VirtualMemoryCage::ReservationParams::kAnyBaseAlignment;
++
+   const size_t reserved_area = GetWritableReservedAreaSize();
+   if (requested < (kMaximalCodeRangeSize - reserved_area)) {
+     requested += RoundUp(reserved_area, MemoryChunk::kPageSize);
+@@ -120,14 +136,8 @@ bool CodeRange::InitReservation(v8::PageAllocator* page_allocator,
+   VirtualMemoryCage::ReservationParams params;
+   params.page_allocator = page_allocator;
+   params.reservation_size = requested;
+-  // base_alignment should be kAnyBaseAlignment when V8_ENABLE_NEAR_CODE_RANGE
+-  // is enabled so that InitReservation would not break the alignment in
+-  // GetAddressHint().
+   const size_t allocate_page_size = page_allocator->AllocatePageSize();
+-  params.base_alignment =
+-      V8_EXTERNAL_CODE_SPACE_BOOL
+-          ? base::bits::RoundUpToPowerOfTwo(requested)
+-          : VirtualMemoryCage::ReservationParams::kAnyBaseAlignment;
++  params.base_alignment = base_alignment;
+   params.base_bias_size = RoundUp(reserved_area, allocate_page_size);
+   params.page_size = MemoryChunk::kPageSize;
+   params.requested_start_hint =
+@@ -139,8 +149,8 @@ bool CodeRange::InitReservation(v8::PageAllocator* page_allocator,
+ 
+   if (V8_EXTERNAL_CODE_SPACE_BOOL) {
+     // Ensure that the code range does not cross the 4Gb boundary and thus
+-    // default compression scheme of truncating the Code pointers to 32-bit
+-    // still work.
++    // default compression scheme of truncating the Code pointers to 32-bits
++    // still works.
+     Address base = page_allocator_->begin();
+     Address last = base + page_allocator_->size() - 1;
+     CHECK_EQ(GetPtrComprCageBaseAddress(base),
+diff --git a/src/utils/allocation.cc b/src/utils/allocation.cc
+index ac187407ce790f098495909bd06028aba64ce89c..50255fcc641475bde52fbd17e17f1da755349cd2 100644
+--- a/src/utils/allocation.cc
++++ b/src/utils/allocation.cc
+@@ -403,13 +403,17 @@ bool VirtualMemoryCage::InitReservation(
+     base_ = reservation_.address() + params.base_bias_size;
+     CHECK_EQ(reservation_.size(), params.reservation_size);
+   } else {
+-    // Otherwise, we need to try harder by first overreserving
+-    // in hopes of finding a correctly aligned address within the larger
+-    // reservation.
++    // Otherwise, we need to try harder by first overreserving in hopes of
++    // finding a correctly aligned address within the larger reservation.
++    size_t bias_size = RoundUp(params.base_bias_size, allocate_page_size);
+     Address hint =
+-        RoundDown(params.requested_start_hint,
++        RoundDown(params.requested_start_hint + bias_size,
+                   RoundUp(params.base_alignment, allocate_page_size)) -
+-        RoundUp(params.base_bias_size, allocate_page_size);
++        bias_size;
++    // Alignments requring overreserving more than twice the requested size
++    // are not supported (they are too expensive and shouldn't be necessary
++    // in the first place).
++    DCHECK_LE(params.base_alignment, params.reservation_size);
+     const int kMaxAttempts = 4;
+     for (int attempt = 0; attempt < kMaxAttempts; ++attempt) {
+       // Reserve a region of twice the size so that there is an aligned address
