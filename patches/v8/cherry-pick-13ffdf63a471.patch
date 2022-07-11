@@ -1,0 +1,170 @@
+From 13ffdf63a471dda4cd9369a55e6df539a79369dd Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Fri, 17 Jun 2022 10:14:44 +0000
+Subject: [PATCH] Merged: [compiler] make CanCover() transitive
+
+In addition to checking that a node is owned, CanCover() also needs to
+check if there are any side-effects in between the current node and
+the merged node. When merging inputs of inputs, this check was done
+with the wrong side-effect level of the in-between node.
+We partially fixed this before with `CanCoverTransitively`.
+This CL addresses the issue by always comparing to the side-effect
+level of the node from which we started, making `CanCoverTransitively`
+superfluous.
+
+Bug: chromium:1336869
+(cherry picked from commit 6048f754931e0971cab58fb0de785482d175175b)
+
+Change-Id: I63cf6bfdd40c2c55921db4a2ac737612bb7da4e4
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3722095
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.2@{#19}
+Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
+Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
+---
+
+diff --git a/src/compiler/backend/instruction-selector.cc b/src/compiler/backend/instruction-selector.cc
+index 3c96e7f..7da0bce 100644
+--- a/src/compiler/backend/instruction-selector.cc
++++ b/src/compiler/backend/instruction-selector.cc
+@@ -283,7 +283,7 @@
+ 
+ bool InstructionSelector::CanCover(Node* user, Node* node) const {
+   // 1. Both {user} and {node} must be in the same basic block.
+-  if (schedule()->block(node) != schedule()->block(user)) {
++  if (schedule()->block(node) != current_block_) {
+     return false;
+   }
+   // 2. Pure {node}s must be owned by the {user}.
+@@ -291,7 +291,7 @@
+     return node->OwnedBy(user);
+   }
+   // 3. Impure {node}s must match the effect level of {user}.
+-  if (GetEffectLevel(node) != GetEffectLevel(user)) {
++  if (GetEffectLevel(node) != current_effect_level_) {
+     return false;
+   }
+   // 4. Only {node} must have value edges pointing to {user}.
+@@ -303,21 +303,6 @@
+   return true;
+ }
+ 
+-bool InstructionSelector::CanCoverTransitively(Node* user, Node* node,
+-                                               Node* node_input) const {
+-  if (CanCover(user, node) && CanCover(node, node_input)) {
+-    // If {node} is pure, transitivity might not hold.
+-    if (node->op()->HasProperty(Operator::kPure)) {
+-      // If {node_input} is pure, the effect levels do not matter.
+-      if (node_input->op()->HasProperty(Operator::kPure)) return true;
+-      // Otherwise, {user} and {node_input} must have the same effect level.
+-      return GetEffectLevel(user) == GetEffectLevel(node_input);
+-    }
+-    return true;
+-  }
+-  return false;
+-}
+-
+ bool InstructionSelector::IsOnlyUserOfNodeInSameBlock(Node* user,
+                                                       Node* node) const {
+   BasicBlock* bb_user = schedule()->block(user);
+@@ -1192,6 +1177,7 @@
+   int effect_level = 0;
+   for (Node* const node : *block) {
+     SetEffectLevel(node, effect_level);
++    current_effect_level_ = effect_level;
+     if (node->opcode() == IrOpcode::kStore ||
+         node->opcode() == IrOpcode::kUnalignedStore ||
+         node->opcode() == IrOpcode::kCall ||
+@@ -1209,6 +1195,7 @@
+   // control input should be on the same effect level as the last node.
+   if (block->control_input() != nullptr) {
+     SetEffectLevel(block->control_input(), effect_level);
++    current_effect_level_ = effect_level;
+   }
+ 
+   auto FinishEmittedInstructions = [&](Node* node, int instruction_start) {
+diff --git a/src/compiler/backend/instruction-selector.h b/src/compiler/backend/instruction-selector.h
+index c1a12d9..8bbe306 100644
+--- a/src/compiler/backend/instruction-selector.h
++++ b/src/compiler/backend/instruction-selector.h
+@@ -407,15 +407,12 @@
+   // Used in pattern matching during code generation.
+   // Check if {node} can be covered while generating code for the current
+   // instruction. A node can be covered if the {user} of the node has the only
+-  // edge and the two are in the same basic block.
+-  // Before fusing two instructions a and b, it is useful to check that
+-  // CanCover(a, b) holds. If this is not the case, code for b must still be
+-  // generated for other users, and fusing is unlikely to improve performance.
++  // edge, the two are in the same basic block, and there are no side-effects
++  // in-between. The last check is crucial for soundness.
++  // For pure nodes, CanCover(a,b) is checked to avoid duplicated execution:
++  // If this is not the case, code for b must still be generated for other
++  // users, and fusing is unlikely to improve performance.
+   bool CanCover(Node* user, Node* node) const;
+-  // CanCover is not transitive.  The counter example are Nodes A,B,C such that
+-  // CanCover(A, B) and CanCover(B,C) and B is pure: The the effect level of A
+-  // and B might differ. CanCoverTransitively does the additional checks.
+-  bool CanCoverTransitively(Node* user, Node* node, Node* node_input) const;
+ 
+   // Used in pattern matching during code generation.
+   // This function checks that {node} and {user} are in the same basic block,
+@@ -739,6 +736,7 @@
+   BoolVector defined_;
+   BoolVector used_;
+   IntVector effect_level_;
++  int current_effect_level_;
+   IntVector virtual_registers_;
+   IntVector virtual_register_rename_;
+   InstructionScheduler* scheduler_;
+diff --git a/src/compiler/backend/loong64/instruction-selector-loong64.cc b/src/compiler/backend/loong64/instruction-selector-loong64.cc
+index 4f03f99..6b2d25f 100644
+--- a/src/compiler/backend/loong64/instruction-selector-loong64.cc
++++ b/src/compiler/backend/loong64/instruction-selector-loong64.cc
+@@ -1446,7 +1446,7 @@
+   if (CanCover(node, value)) {
+     switch (value->opcode()) {
+       case IrOpcode::kWord64Sar: {
+-        if (CanCoverTransitively(node, value, value->InputAt(0)) &&
++        if (CanCover(value, value->InputAt(0)) &&
+             TryEmitExtendingLoad(this, value, node)) {
+           return;
+         } else {
+diff --git a/src/compiler/backend/mips64/instruction-selector-mips64.cc b/src/compiler/backend/mips64/instruction-selector-mips64.cc
+index 4f5738d..1e29e0e 100644
+--- a/src/compiler/backend/mips64/instruction-selector-mips64.cc
++++ b/src/compiler/backend/mips64/instruction-selector-mips64.cc
+@@ -1532,7 +1532,7 @@
+   if (CanCover(node, value)) {
+     switch (value->opcode()) {
+       case IrOpcode::kWord64Sar: {
+-        if (CanCoverTransitively(node, value, value->InputAt(0)) &&
++        if (CanCover(value, value->InputAt(0)) &&
+             TryEmitExtendingLoad(this, value, node)) {
+           return;
+         } else {
+diff --git a/src/compiler/backend/riscv64/instruction-selector-riscv64.cc b/src/compiler/backend/riscv64/instruction-selector-riscv64.cc
+index a454740..fce1b92 100644
+--- a/src/compiler/backend/riscv64/instruction-selector-riscv64.cc
++++ b/src/compiler/backend/riscv64/instruction-selector-riscv64.cc
+@@ -1479,7 +1479,7 @@
+   if (CanCover(node, value)) {
+     switch (value->opcode()) {
+       case IrOpcode::kWord64Sar: {
+-        if (CanCoverTransitively(node, value, value->InputAt(0)) &&
++        if (CanCover(value, value->InputAt(0)) &&
+             TryEmitExtendingLoad(this, value, node)) {
+           return;
+         } else {
+diff --git a/src/compiler/backend/x64/instruction-selector-x64.cc b/src/compiler/backend/x64/instruction-selector-x64.cc
+index d40f659..62e82b5 100644
+--- a/src/compiler/backend/x64/instruction-selector-x64.cc
++++ b/src/compiler/backend/x64/instruction-selector-x64.cc
+@@ -1822,7 +1822,7 @@
+       case IrOpcode::kWord64Shr: {
+         Int64BinopMatcher m(value);
+         if (m.right().Is(32)) {
+-          if (CanCoverTransitively(node, value, value->InputAt(0)) &&
++          if (CanCover(value, value->InputAt(0)) &&
+               TryMatchLoadWord64AndShiftRight(this, value, kX64Movl)) {
+             return EmitIdentity(node);
+           }
