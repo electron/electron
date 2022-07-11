@@ -1820,6 +1820,7 @@ void BindBadgeServiceForServiceWorker(
 }
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
+    content::BrowserContext* browser_context,
     mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
         map) {
   map->Add<blink::mojom::BadgeService>(
