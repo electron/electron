@@ -1,7 +1,7 @@
-From 13ffdf63a471dda4cd9369a55e6df539a79369dd Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tobias Tebbi <tebbi@chromium.org>
 Date: Fri, 17 Jun 2022 10:14:44 +0000
-Subject: [PATCH] Merged: [compiler] make CanCover() transitive
+Subject: Merged: [compiler] make CanCover() transitive
 
 In addition to checking that a node is owned, CanCover() also needs to
 check if there are any side-effects in between the current node and
@@ -21,13 +21,12 @@ Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.2@{#19}
 Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
 Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
----
 
 diff --git a/src/compiler/backend/instruction-selector.cc b/src/compiler/backend/instruction-selector.cc
-index 3c96e7f..7da0bce 100644
+index c6b41ca79120c1f553e4c10eff8d3285bf9bbe91..8f7224471632f01a43e0bf2b93e7195d51d3e0b2 100644
 --- a/src/compiler/backend/instruction-selector.cc
 +++ b/src/compiler/backend/instruction-selector.cc
-@@ -283,7 +283,7 @@
+@@ -283,7 +283,7 @@ Instruction* InstructionSelector::Emit(Instruction* instr) {
  
  bool InstructionSelector::CanCover(Node* user, Node* node) const {
    // 1. Both {user} and {node} must be in the same basic block.
@@ -36,7 +35,7 @@ index 3c96e7f..7da0bce 100644
      return false;
    }
    // 2. Pure {node}s must be owned by the {user}.
-@@ -291,7 +291,7 @@
+@@ -291,7 +291,7 @@ bool InstructionSelector::CanCover(Node* user, Node* node) const {
      return node->OwnedBy(user);
    }
    // 3. Impure {node}s must match the effect level of {user}.
@@ -45,7 +44,7 @@ index 3c96e7f..7da0bce 100644
      return false;
    }
    // 4. Only {node} must have value edges pointing to {user}.
-@@ -303,21 +303,6 @@
+@@ -303,21 +303,6 @@ bool InstructionSelector::CanCover(Node* user, Node* node) const {
    return true;
  }
  
@@ -67,7 +66,7 @@ index 3c96e7f..7da0bce 100644
  bool InstructionSelector::IsOnlyUserOfNodeInSameBlock(Node* user,
                                                        Node* node) const {
    BasicBlock* bb_user = schedule()->block(user);
-@@ -1192,6 +1177,7 @@
+@@ -1206,6 +1191,7 @@ void InstructionSelector::VisitBlock(BasicBlock* block) {
    int effect_level = 0;
    for (Node* const node : *block) {
      SetEffectLevel(node, effect_level);
@@ -75,7 +74,7 @@ index 3c96e7f..7da0bce 100644
      if (node->opcode() == IrOpcode::kStore ||
          node->opcode() == IrOpcode::kUnalignedStore ||
          node->opcode() == IrOpcode::kCall ||
-@@ -1209,6 +1195,7 @@
+@@ -1223,6 +1209,7 @@ void InstructionSelector::VisitBlock(BasicBlock* block) {
    // control input should be on the same effect level as the last node.
    if (block->control_input() != nullptr) {
      SetEffectLevel(block->control_input(), effect_level);
@@ -84,10 +83,10 @@ index 3c96e7f..7da0bce 100644
  
    auto FinishEmittedInstructions = [&](Node* node, int instruction_start) {
 diff --git a/src/compiler/backend/instruction-selector.h b/src/compiler/backend/instruction-selector.h
-index c1a12d9..8bbe306 100644
+index b33de8e8569ebce59eebfec6eef12ed1f1874ddc..167cdc1f0c4962d55f3f9b40b7865737fc652bb0 100644
 --- a/src/compiler/backend/instruction-selector.h
 +++ b/src/compiler/backend/instruction-selector.h
-@@ -407,15 +407,12 @@
+@@ -423,15 +423,12 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
    // Used in pattern matching during code generation.
    // Check if {node} can be covered while generating code for the current
    // instruction. A node can be covered if the {user} of the node has the only
@@ -108,7 +107,7 @@ index c1a12d9..8bbe306 100644
  
    // Used in pattern matching during code generation.
    // This function checks that {node} and {user} are in the same basic block,
-@@ -739,6 +736,7 @@
+@@ -756,6 +753,7 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
    BoolVector defined_;
    BoolVector used_;
    IntVector effect_level_;
@@ -117,10 +116,10 @@ index c1a12d9..8bbe306 100644
    IntVector virtual_register_rename_;
    InstructionScheduler* scheduler_;
 diff --git a/src/compiler/backend/loong64/instruction-selector-loong64.cc b/src/compiler/backend/loong64/instruction-selector-loong64.cc
-index 4f03f99..6b2d25f 100644
+index 10d22fcaa2c3d365db51b0653c14c5db3761cef8..4235b235cfaf6851af77c93355bfbc017c89d824 100644
 --- a/src/compiler/backend/loong64/instruction-selector-loong64.cc
 +++ b/src/compiler/backend/loong64/instruction-selector-loong64.cc
-@@ -1446,7 +1446,7 @@
+@@ -1446,7 +1446,7 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
    if (CanCover(node, value)) {
      switch (value->opcode()) {
        case IrOpcode::kWord64Sar: {
@@ -130,10 +129,10 @@ index 4f03f99..6b2d25f 100644
            return;
          } else {
 diff --git a/src/compiler/backend/mips64/instruction-selector-mips64.cc b/src/compiler/backend/mips64/instruction-selector-mips64.cc
-index 4f5738d..1e29e0e 100644
+index 6b62a7c694b95a0c9b9fd768bc483808954f0813..6880088c00ad04f0e97823b04207394e2903d71f 100644
 --- a/src/compiler/backend/mips64/instruction-selector-mips64.cc
 +++ b/src/compiler/backend/mips64/instruction-selector-mips64.cc
-@@ -1532,7 +1532,7 @@
+@@ -1532,7 +1532,7 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
    if (CanCover(node, value)) {
      switch (value->opcode()) {
        case IrOpcode::kWord64Sar: {
@@ -143,10 +142,10 @@ index 4f5738d..1e29e0e 100644
            return;
          } else {
 diff --git a/src/compiler/backend/riscv64/instruction-selector-riscv64.cc b/src/compiler/backend/riscv64/instruction-selector-riscv64.cc
-index a454740..fce1b92 100644
+index 6ec4df95c2bf111226f8c5e1ab365d409b55368c..b0fe5674c595b0bcc27254071bfa1d1f6319bca5 100644
 --- a/src/compiler/backend/riscv64/instruction-selector-riscv64.cc
 +++ b/src/compiler/backend/riscv64/instruction-selector-riscv64.cc
-@@ -1479,7 +1479,7 @@
+@@ -1410,7 +1410,7 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
    if (CanCover(node, value)) {
      switch (value->opcode()) {
        case IrOpcode::kWord64Sar: {
@@ -156,10 +155,10 @@ index a454740..fce1b92 100644
            return;
          } else {
 diff --git a/src/compiler/backend/x64/instruction-selector-x64.cc b/src/compiler/backend/x64/instruction-selector-x64.cc
-index d40f659..62e82b5 100644
+index 2c6e4ad6715902879fa1f712a69881ea8d1882d9..41929c840eb7c6424dd19a81debeffe99cafda1b 100644
 --- a/src/compiler/backend/x64/instruction-selector-x64.cc
 +++ b/src/compiler/backend/x64/instruction-selector-x64.cc
-@@ -1822,7 +1822,7 @@
+@@ -1802,7 +1802,7 @@ void InstructionSelector::VisitTruncateInt64ToInt32(Node* node) {
        case IrOpcode::kWord64Shr: {
          Int64BinopMatcher m(value);
          if (m.right().Is(32)) {
