@@ -179,10 +179,12 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid optional callback provided.');
     });
 
-    ifit(process.platform !== 'linux')('throws when an invalid deviceName is passed', () => {
-      expect(() => {
-        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, () => {});
-      }).to.throw('webContents.print(): Invalid deviceName provided.');
+    it('fails when an invalid deviceName is passed', (done) => {
+      w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
+        expect(success).to.equal(false);
+        expect(reason).to.match(/Invalid deviceName provided/);
+        done();
+      });
     });
 
     it('throws when an invalid pageSize is passed', () => {
