@@ -69,7 +69,7 @@ index b54c7388603b4582356f6741c9a36f2835aa1928..b9533b78046228705e2038396eebf23b
    void SetOOMErrorHandler(OOMErrorCallback that);
  
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 55440aad20208f5c7999d9ed39d639ff31b5783b..115fda1d2365477dfa1b3902087d063007a5e9aa 100644
+index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a0b9ae99a 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -167,13 +167,6 @@
@@ -127,7 +127,7 @@ index 55440aad20208f5c7999d9ed39d639ff31b5783b..115fda1d2365477dfa1b3902087d0630
  void v8::V8::SetEntropySource(EntropySource entropy_source) {
    base::RandomNumberGenerator::SetEntropySource(entropy_source);
  }
-@@ -8648,8 +8628,6 @@ void Isolate::Initialize(Isolate* v8_isolate,
+@@ -8654,8 +8634,6 @@ void Isolate::Initialize(Isolate* v8_isolate,
  #endif
    if (params.oom_error_callback) {
      v8_isolate->SetOOMErrorHandler(params.oom_error_callback);
@@ -136,7 +136,7 @@ index 55440aad20208f5c7999d9ed39d639ff31b5783b..115fda1d2365477dfa1b3902087d0630
    }
  #if __clang__
  #pragma clang diagnostic pop
-@@ -9391,8 +9369,6 @@ size_t Isolate::CopyCodePages(size_t capacity, MemoryRange* code_pages_out) {
+@@ -9397,8 +9375,6 @@ size_t Isolate::CopyCodePages(size_t capacity, MemoryRange* code_pages_out) {
  
  CALLBACK_SETTER(FatalErrorHandler, FatalErrorCallback, exception_behavior)
  CALLBACK_SETTER(OOMErrorHandler, OOMErrorCallback, oom_behavior)
@@ -146,7 +146,7 @@ index 55440aad20208f5c7999d9ed39d639ff31b5783b..115fda1d2365477dfa1b3902087d0630
                  ModifyCodeGenerationFromStringsCallback2,
                  modify_code_gen_callback2)
 diff --git a/src/execution/isolate.h b/src/execution/isolate.h
-index 536e07a601c9705d2e41fae80d6e7c53c193c4f0..51ce80384263a70114d20fd9474e80add17bcdf7 100644
+index 00494e347438e92b509ec67f4d77688e091d348b..8c151c8674fdb5d4b3af3de88e97e70239fa8ed7 100644
 --- a/src/execution/isolate.h
 +++ b/src/execution/isolate.h
 @@ -487,16 +487,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();

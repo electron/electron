@@ -11,10 +11,10 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 573680e842c158c85954ebf30a2ed2f7a486d9e3..316af8a98c5c11bb50157efff5dc4fff94904eda 100644
+index c893bc030b266539f65d31bdc40ba0ba31b70986..b1e8daf5e79cd838c87e01da0e764e12421747db 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3683,6 +3683,21 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+@@ -3696,6 +3696,21 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
    delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
    min_window_size = delegate_->DIPToScreenSize(min_window_size);
    max_window_size = delegate_->DIPToScreenSize(max_window_size);
@@ -33,6 +33,6 @@ index 573680e842c158c85954ebf30a2ed2f7a486d9e3..316af8a98c5c11bb50157efff5dc4fff
 +    if (max_window_size.height())
 +      max_window_size.Enlarge(0, rect.bottom - rect.top);
 +  }
-   gfx::SizeRectToAspectRatio(GetWindowResizeEdge(param), aspect_ratio_.value(),
-                              min_window_size, max_window_size, window_rect);
- }
+ 
+   absl::optional<gfx::Size> max_size_param;
+   if (!max_window_size.IsEmpty())

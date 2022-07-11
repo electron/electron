@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 5a6bf2bfcca53c350ea4c2a7da5f74a607795557..7b6494cdd4dc1f9282b6f180807fa54fe37d992b 100644
+index 989f4dc6d156aef77dadf111f12c403196e5342b..9fd2b3484016df7a622aaadf094028c4966394e6 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -129,6 +129,16 @@
@@ -28,7 +28,7 @@ index 5a6bf2bfcca53c350ea4c2a7da5f74a607795557..7b6494cdd4dc1f9282b6f180807fa54f
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -181,6 +191,7 @@
+@@ -182,6 +192,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -37,7 +37,7 @@ index 5a6bf2bfcca53c350ea4c2a7da5f74a607795557..7b6494cdd4dc1f9282b6f180807fa54f
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index c61b50fbceda3bd5776430f0df6a4b9618eaf8be..c354821af86984441288f3e868f68798db8a7a47 100644
+index 6e97a162f3a823090115fdcb47828c6e0b10ad06..5fcb8cb147aa1356853cb0ed1f3731456c434946 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -150,6 +150,17 @@ void AddUiColorMixer(ColorProvider* provider,
@@ -58,7 +58,7 @@ index c61b50fbceda3bd5776430f0df6a4b9618eaf8be..c354821af86984441288f3e868f68798
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -229,6 +240,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -230,6 +241,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};

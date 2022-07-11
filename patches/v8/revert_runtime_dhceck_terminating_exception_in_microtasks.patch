@@ -35,10 +35,10 @@ index 2d2ac48555bdec0b96acd0cd8aafb47e71d4a53c..81d6204d3efd0f55105ec48ee6627293
                                                    int type) {
    return Word32Equal(instance_type, Int32Constant(type));
 diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
-index 8521fa267f4f38514eb423d70ac7327280fc0300..36c2bd99a564b9311b418c6d873c8ea119cb3ebd 100644
+index 79844e15dff8bcc9da7df17e3b76677c8cd5f87c..7efd34e45a3e263d86f1f3cef54b24c68424a8d4 100644
 --- a/src/codegen/code-stub-assembler.h
 +++ b/src/codegen/code-stub-assembler.h
-@@ -2531,7 +2531,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
+@@ -2532,7 +2532,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
  
    TNode<HeapObject> GetPendingMessage();
    void SetPendingMessage(TNode<HeapObject> message);
