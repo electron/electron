@@ -419,20 +419,33 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
   bool printer_exists = new_printer != nullptr;
   PMRelease(new_printer);
   return printer_exists;
-#elif BUILDFLAG(IS_WIN)
-  printing::ScopedPrinterHandle printer;
-  return printer.OpenPrinterWithName(base::as_wcstr(device_name));
 #else
-  return true;
+  scoped_refptr<printing::PrintBackend> print_backend =
+      printing::PrintBackend::CreateInstance(
+          g_browser_process->GetApplicationLocale());
+  return print_backend->IsValidPrinter(base::UTF16ToUTF8(device_name));
 #endif
 }
 
-std::pair<std::string, std::u16string> GetDefaultPrinterAsync() {
+// This function returns a validated device name.
+// If the user passed one to webContents.print(), we check that it's valid and
+// return it or fail if the network doesn't recognize it. If the user didn't
+// pass a device name, we first try to return the system default printer. If one
+// isn't set, then pull all the printers and use the first one or fail if none
+// exist.
+std::pair<std::string, std::u16string> GetDeviceNameToUse(
+    const std::u16string& device_name) {
 #if BUILDFLAG(IS_WIN)
   // Blocking is needed here because Windows printer drivers are oftentimes
   // not thread-safe and have to be accessed on the UI thread.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 #endif
+
+  if (!device_name.empty()) {
+    if (!IsDeviceNameValid(device_name))
+      return std::make_pair("Invalid deviceName provided", std::u16string());
+    return std::make_pair(std::string(), device_name);
+  }
 
   scoped_refptr<printing::PrintBackend> print_backend =
       printing::PrintBackend::CreateInstance(
@@ -446,14 +459,16 @@ std::pair<std::string, std::u16string> GetDefaultPrinterAsync() {
   if (code != printing::mojom::ResultCode::kSuccess)
     LOG(ERROR) << "Failed to get default printer name";
 
-  // Check for existing printers and pick the first one should it exist.
   if (printer_name.empty()) {
     printing::PrinterList printers;
     if (print_backend->EnumeratePrinters(printers) !=
         printing::mojom::ResultCode::kSuccess)
       return std::make_pair("Failed to enumerate printers", std::u16string());
-    if (!printers.empty())
-      printer_name = printers.front().printer_name;
+    if (printers.empty())
+      return std::make_pair("No printers available on the network",
+                            std::u16string());
+
+    printer_name = printers.front().printer_name;
   }
 
   return std::make_pair(std::string(), base::UTF8ToUTF16(printer_name));
@@ -2579,12 +2594,11 @@ bool WebContents::IsCurrentlyAudible() {
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
-void WebContents::OnGetDefaultPrinter(
+void WebContents::OnGetDeviceNameToUse(
     base::Value::Dict print_settings,
     printing::CompletionCallback print_callback,
-    std::u16string device_name,
     bool silent,
-    // <error, default_printer>
+    // <error, device_name>
     std::pair<std::string, std::u16string> info) {
   // The content::WebContents might be already deleted at this point, and the
   // PrintViewManagerElectron class does not do null check.
@@ -2601,16 +2615,7 @@ void WebContents::OnGetDefaultPrinter(
   }
 
   // If the user has passed a deviceName use it, otherwise use default printer.
-  std::u16string printer_name = device_name.empty() ? info.second : device_name;
-
-  // If there are no valid printers available on the network, we bail.
-  if (printer_name.empty() || !IsDeviceNameValid(printer_name)) {
-    if (print_callback)
-      std::move(print_callback).Run(false, "no valid printers available");
-    return;
-  }
-
-  print_settings.Set(printing::kSettingDeviceName, printer_name);
+  print_settings.Set(printing::kSettingDeviceName, info.second);
 
   auto* print_view_manager =
       PrintViewManagerElectron::FromWebContents(web_contents());
@@ -2700,11 +2705,6 @@ void WebContents::Print(gin::Arguments* args) {
   // Printer device name as opened by the OS.
   std::u16string device_name;
   options.Get("deviceName", &device_name);
-  if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("webContents.print(): Invalid deviceName provided.");
-    return;
-  }
 
   int scale_factor = 100;
   options.Get("scaleFactor", &scale_factor);
@@ -2794,10 +2794,10 @@ void WebContents::Print(gin::Arguments* args) {
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&GetDefaultPrinterAsync),
-      base::BindOnce(&WebContents::OnGetDefaultPrinter,
+      FROM_HERE, base::BindOnce(&GetDeviceNameToUse, device_name),
+      base::BindOnce(&WebContents::OnGetDeviceNameToUse,
                      weak_factory_.GetWeakPtr(), std::move(settings),
-                     std::move(callback), device_name, silent));
+                     std::move(callback), silent));
 }
 
 // Partially duplicated and modified from
