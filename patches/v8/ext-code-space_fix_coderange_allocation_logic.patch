@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Thu, 9 Jun 2022 11:07:32 +0200
-Subject: [ext-code-space] Fix CodeRange allocation logic
+Subject: Fix CodeRange allocation logic
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
