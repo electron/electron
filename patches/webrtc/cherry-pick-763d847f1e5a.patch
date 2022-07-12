@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Taylor Brandstetter <deadbeef@webrtc.org>
+Date: Fri, 1 Jul 2022 12:20:05 -0700
+Subject: Do not allow simulcast to be turned off using SDP munging
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This is an error that puts the PC into an inconsistent state, so
+causing a crash is the right thing to do.
+
+(cherry picked from commit 3fe8b0d9a980642ee5ebb1f9e429378b063c1f07)
+TBR=hta@webrtc.org
+
+Bug: chromium:1341043
+Change-Id: Ie1eb89400ad87f0c83634b7073236b07e92ec7ab
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/267281
+Reviewed-by: Mirko Bonadei <mbonadei@webrtc.org>
+Reviewed-by: Henrik Boström <hbos@webrtc.org>
+Commit-Queue: Harald Alvestrand <hta@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#37391}
+No-Presubmit: true
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/267427
+Commit-Queue: Taylor Brandstetter <deadbeef@webrtc.org>
+Reviewed-by: Guido Urdaneta <guidou@webrtc.org>
+Reviewed-by: Taylor Brandstetter <deadbeef@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/5005@{#9}
+Cr-Branched-From: 8f9b44ba38c134e1c69126196e4d9e566ca5d5e3-refs/heads/main@{#36552}
+
+diff --git a/pc/rtp_sender.cc b/pc/rtp_sender.cc
+index 110b5aae0a01a5d612eefdc3262b20e4dd5504fe..d1355e31ab6331058cd557b0f164c903c9bc8f46 100644
+--- a/pc/rtp_sender.cc
++++ b/pc/rtp_sender.cc
+@@ -299,8 +299,8 @@ void RtpSenderBase::SetSsrc(uint32_t ssrc) {
+       // we need to copy.
+       RtpParameters current_parameters =
+           media_channel_->GetRtpSendParameters(ssrc_);
+-      RTC_DCHECK_GE(current_parameters.encodings.size(),
+-                    init_parameters_.encodings.size());
++      RTC_CHECK_GE(current_parameters.encodings.size(),
++                   init_parameters_.encodings.size());
+       for (size_t i = 0; i < init_parameters_.encodings.size(); ++i) {
+         init_parameters_.encodings[i].ssrc =
+             current_parameters.encodings[i].ssrc;
+diff --git a/pc/rtp_sender_receiver_unittest.cc b/pc/rtp_sender_receiver_unittest.cc
+index 2c6bc7b71a1e5e30609f382fee0b4cc30f03512e..388edbaf73f0570d895b4855bc2207afb8eff1a5 100644
+--- a/pc/rtp_sender_receiver_unittest.cc
++++ b/pc/rtp_sender_receiver_unittest.cc
+@@ -1157,6 +1157,44 @@ TEST_F(RtpSenderReceiverTest,
+   DestroyVideoRtpSender();
+ }
+ 
++#if GTEST_HAS_DEATH_TEST && !defined(WEBRTC_ANDROID)
++using RtpSenderReceiverDeathTest = RtpSenderReceiverTest;
++
++TEST_F(RtpSenderReceiverDeathTest,
++       VideoSenderManualRemoveSimulcastFailsDeathTest) {
++  AddVideoTrack(false);
++
++  std::unique_ptr<MockSetStreamsObserver> set_streams_observer =
++      std::make_unique<MockSetStreamsObserver>();
++  video_rtp_sender_ = VideoRtpSender::Create(worker_thread_, video_track_->id(),
++                                             set_streams_observer.get());
++  ASSERT_TRUE(video_rtp_sender_->SetTrack(video_track_.get()));
++  EXPECT_CALL(*set_streams_observer, OnSetStreams());
++  video_rtp_sender_->SetStreams({local_stream_->id()});
++
++  std::vector<RtpEncodingParameters> init_encodings(2);
++  init_encodings[0].max_bitrate_bps = 60000;
++  init_encodings[1].max_bitrate_bps = 120000;
++  video_rtp_sender_->set_init_send_encodings(init_encodings);
++
++  RtpParameters params = video_rtp_sender_->GetParameters();
++  ASSERT_EQ(2u, params.encodings.size());
++  EXPECT_EQ(params.encodings[0].max_bitrate_bps, 60000);
++
++  // Simulate the setLocalDescription call as if the user used SDP munging
++  // to disable simulcast.
++  std::vector<uint32_t> ssrcs;
++  ssrcs.reserve(2);
++  for (int i = 0; i < 2; ++i)
++    ssrcs.push_back(kVideoSsrcSimulcast + i);
++  cricket::StreamParams stream_params =
++      cricket::StreamParams::CreateLegacy(kVideoSsrc);
++  video_media_channel_->AddSendStream(stream_params);
++  video_rtp_sender_->SetMediaChannel(video_media_channel_);
++  EXPECT_DEATH(video_rtp_sender_->SetSsrc(kVideoSsrcSimulcast), "");
++}
++#endif
++
+ TEST_F(RtpSenderReceiverTest,
+        VideoSenderMustCallGetParametersBeforeSetParametersBeforeNegotiation) {
+   video_rtp_sender_ =
