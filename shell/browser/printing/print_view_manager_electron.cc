@@ -163,12 +163,23 @@ void PrintViewManagerElectron::ScriptedPrint(
 }
 
 void PrintViewManagerElectron::ShowInvalidPrinterSettingsError() {
+  if (headless_jobs_.size() == 0) {
+    PrintViewManagerBase::ShowInvalidPrinterSettingsError();
+    return;
+  }
+
   ReleaseJob(INVALID_PRINTER_SETTINGS);
 }
 
 void PrintViewManagerElectron::PrintingFailed(
     int32_t cookie,
     printing::mojom::PrintFailureReason reason) {
+  auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(), cookie);
+  if (entry == headless_jobs_.end()) {
+    PrintViewManagerBase::PrintingFailed(cookie, reason);
+    return;
+  }
+
   ReleaseJob(reason == printing::mojom::PrintFailureReason::kInvalidPageRange
                  ? PAGE_COUNT_EXCEEDED
                  : PRINTING_FAILED);
