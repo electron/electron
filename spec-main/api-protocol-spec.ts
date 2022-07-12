@@ -743,7 +743,6 @@ describe('protocol module', () => {
       const portScheme = (global as any).portScheme;
       const u = portScheme + '://fake-host:8080/';
       registerStringProtocol(portScheme, (request, callback) => {
-        console.log(request);
         if (request.url === u) {
           callback('<script>function ajax(url) { return fetch(url).then(res => res.text()) }</script>');
         } else {
