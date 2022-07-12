@@ -373,6 +373,7 @@ source_set("electron_lib") {
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
     "//components/autofill/core/common:features",
+    "//components/webrtc",
     "//components/certificate_transparency",
     "//components/embedder_support:browser_util",
     "//components/language/core/browser",

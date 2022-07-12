@@ -12,7 +12,10 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/electron_permission_manager.h"
-#include "shell/browser/media/media_stream_devices_controller.h"
+//#include "shell/browser/media/media_stream_devices_controller.h"
+#include "components/webrtc/media_stream_devices_controller.h"
+#include "components/content_settings/core/common/content_settings.h"
+#include "shell/browser/media/media_capture_devices_dispatcher.h"
 
 namespace {
 
@@ -33,14 +36,31 @@ namespace electron {
 
 namespace {
 
+void OnMediaStreamRequestResponse(
+      const content::MediaStreamRequest& request,
+      content::MediaResponseCallback callback,
+      const blink::mojom::StreamDevicesSet& stream_devices_set,
+      blink::mojom::MediaStreamRequestResult result,
+      bool blocked_by_permissions_policy,
+      ContentSetting audio_setting,
+      ContentSetting video_setting) {
+  std::move(callback).Run(stream_devices_set,
+                           blink::mojom::MediaStreamRequestResult::OK,
+                           nullptr);
+}
+
 void MediaAccessAllowed(const content::MediaStreamRequest& request,
                         content::MediaResponseCallback callback,
                         bool allowed) {
-  MediaStreamDevicesController controller(request, std::move(callback));
-  if (allowed)
-    controller.TakeAction();
-  else
-    controller.Deny(blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED);
+  if (allowed) {
+    webrtc::MediaStreamDevicesController::RequestPermissions(
+        request, MediaCaptureDevicesDispatcher::GetInstance(),
+        base::BindOnce(
+            &OnMediaStreamRequestResponse,
+            request, std::move(callback)));
+  } else {
+    std::move(callback).Run(blink::mojom::StreamDevicesSet(), blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED, nullptr);
+  }
 }
 
 void OnPermissionResponse(base::OnceCallback<void(bool)> callback,
