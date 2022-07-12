@@ -13,6 +13,7 @@
 #include "base/mac/scoped_objc_class_swizzler.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
+#include "shell/browser/api/electron_api_push_notifications.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
 #import "shell/browser/mac/electron_application.h"
@@ -155,6 +156,45 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 
 - (IBAction)newWindowForTab:(id)sender {
   electron::Browser::Get()->NewWindowForTab();
+}
+
+- (void)application:(NSApplication*)application
+    didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
+  // https://stackoverflow.com/a/16411517
+  const char* token_data = static_cast<const char*>([deviceToken bytes]);
+  NSMutableString* token_string = [NSMutableString string];
+  for (NSUInteger i = 0; i < [deviceToken length]; i++) {
+    [token_string appendFormat:@"%02.2hhX", token_data[i]];
+  }
+  // Resolve outstanding APNS promises created during registration attempts
+  electron::api::PushNotifications* push_notifications =
+      electron::api::PushNotifications::Get();
+  if (push_notifications) {
+    push_notifications->ResolveAPNSPromiseSetWithToken(
+        base::SysNSStringToUTF8(token_string));
+  }
+}
+
+- (void)application:(NSApplication*)application
+    didFailToRegisterForRemoteNotificationsWithError:(NSError*)error {
+  std::string error_message(base::SysNSStringToUTF8(
+      [NSString stringWithFormat:@"%ld %@ %@", [error code], [error domain],
+                                 [error userInfo]]));
+  electron::api::PushNotifications* push_notifications =
+      electron::api::PushNotifications::Get();
+  if (push_notifications) {
+    push_notifications->RejectAPNSPromiseSetWithError(error_message);
+  }
+}
+
+- (void)application:(NSApplication*)application
+    didReceiveRemoteNotification:(NSDictionary*)userInfo {
+  electron::api::PushNotifications* push_notifications =
+      electron::api::PushNotifications::Get();
+  if (push_notifications) {
+    electron::api::PushNotifications::Get()->OnDidReceiveAPNSNotification(
+        electron::NSDictionaryToDictionaryValue(userInfo));
+  }
 }
 
 @end
