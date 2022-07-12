@@ -81,7 +81,7 @@ index ef3e8e68621402db5a97977f49ac74c438b0a563..aa1c1bcf7ca30adde4c25ed9bd8ed8a7
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 4c4cc16db82d7434573f7740855fbe72d68815e6..f71290800b6bb51a39b1f86be36f02d602ac3397 100644
+index 5a0cc45fb7b695bef46e475232adb70893299b96..156073daca8c69e05b478e8365b812321af1bf19 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -8,6 +8,7 @@ import "mojo/public/mojom/base/time.mojom";
@@ -103,10 +103,10 @@ index 4c4cc16db82d7434573f7740855fbe72d68815e6..f71290800b6bb51a39b1f86be36f02d6
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 8137159de740809e44bc3a3dc18c842455a6795d..7292a40382fffcc96998b04696f4a2934a2da9ee 100644
+index 27ec61dc837c2e61c7907a5c488a75983d6f9ba0..62201fd4f11ce500b3a9d82fffe7776bf8a15eb0 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -468,6 +468,7 @@ URLLoader::URLLoader(
+@@ -638,6 +638,7 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
        per_factory_corb_state_(context.GetMutableCorbState()),
@@ -114,7 +114,7 @@ index 8137159de740809e44bc3a3dc18c842455a6795d..7292a40382fffcc96998b04696f4a293
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -620,7 +621,7 @@ URLLoader::URLLoader(
+@@ -832,7 +833,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 8137159de740809e44bc3a3dc18c842455a6795d..7292a40382fffcc96998b04696f4a293
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1347,6 +1348,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1567,6 +1568,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -144,10 +144,10 @@ index 8137159de740809e44bc3a3dc18c842455a6795d..7292a40382fffcc96998b04696f4a293
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index abc8ecdcd717b06552af7cf5c4e4e8f60db16ec1..4f633b5a818388f6cfd30a15496c94dde1e2b48c 100644
+index 6bddb19e692f274afd077bd58145fcb68d59c4a2..08b95c71575e31e5b4d87e4d95ea7d7c8d318d29 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -497,6 +497,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -522,6 +522,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

@@ -19,7 +19,7 @@ index 1e54559bd5f9a2ee889b921379d70c51e902502d..6797a076b612ad4ed6d5ce7d9868d944
      using PCScan = internal::PCScan;
      const auto invocation_mode = flags & PurgeFlags::kAggressiveReclaim
 diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
-index d51b37c8a2df11f71fa6056193100d00883db43d..b44002788cf4d4f5d754dd35dd193be233e6ebcb 100644
+index fb5df2ee7c40e93bf2ebf625b14d08044006534b..67aecdd1d70ff58eb5b1b8b67990a7448a3b1ba4 100644
 --- a/base/threading/platform_thread_posix.cc
 +++ b/base/threading/platform_thread_posix.cc
 @@ -44,6 +44,7 @@

@@ -58,7 +58,7 @@ async function main () {
   const cxxflags = [
     '-std=c++17',
     '-nostdinc++',
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
+    `-I"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
     '-fPIC',

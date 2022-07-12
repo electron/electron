@@ -16,7 +16,7 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 7fc76ecb3292a892e2aa8c117cd6302f9ce63fa6..efd5da9daf8fbe80264b8b55eafc717317ba48e6 100644
+index 506ff3c2b9a14a725d13e3933bc281d05c0b6b13..9726e2d34d6d123ad3e62d843d21b755788fc062 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -21,7 +21,9 @@
@@ -29,7 +29,7 @@ index 7fc76ecb3292a892e2aa8c117cd6302f9ce63fa6..efd5da9daf8fbe80264b8b55eafc7173
  @class CALayer;
  
  namespace ui {
-@@ -115,7 +117,9 @@ class ImageTransportSurfaceOverlayMac : public gl::GLSurface,
+@@ -113,7 +115,9 @@ class ImageTransportSurfaceOverlayMac : public gl::GLSurface,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -39,7 +39,7 @@ index 7fc76ecb3292a892e2aa8c117cd6302f9ce63fa6..efd5da9daf8fbe80264b8b55eafc7173
    std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
  
    gfx::Size pixel_size_;
-@@ -210,7 +214,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::GLSurfaceEGL,
+@@ -204,7 +208,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::GLSurfaceEGL,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -50,10 +50,10 @@ index 7fc76ecb3292a892e2aa8c117cd6302f9ce63fa6..efd5da9daf8fbe80264b8b55eafc7173
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 43be379adb3df7dc31e59319c921cd89654db57a..bc495df301751628117356c8e68b5d121828ce85 100644
+index 3378b9a6d411b853fe64e02812c329f68cbbd2ad..7b2f0b3dc28ff71ae84fe63aa9ea80c2aab75969 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -59,6 +59,7 @@
+@@ -60,6 +60,7 @@
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
  
@@ -61,7 +61,7 @@ index 43be379adb3df7dc31e59319c921cd89654db57a..bc495df301751628117356c8e68b5d12
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -67,6 +68,7 @@
+@@ -68,6 +69,7 @@
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -69,17 +69,17 @@ index 43be379adb3df7dc31e59319c921cd89654db57a..bc495df301751628117356c8e68b5d12
  }
  
  ImageTransportSurfaceOverlayMac::~ImageTransportSurfaceOverlayMac() {
-@@ -146,7 +148,9 @@
+@@ -145,7 +147,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
 +#ifndef MAS_BUILD
-       params.ca_layer_params.ca_context_id = [ca_context_ contextId];
+       params.ca_context_id = [ca_context_ contextId];
 +#endif
      } else {
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
-@@ -408,6 +412,7 @@
+@@ -378,6 +382,7 @@
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
  
@@ -87,7 +87,7 @@ index 43be379adb3df7dc31e59319c921cd89654db57a..bc495df301751628117356c8e68b5d12
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -416,6 +421,7 @@
+@@ -386,6 +391,7 @@
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -95,12 +95,12 @@ index 43be379adb3df7dc31e59319c921cd89654db57a..bc495df301751628117356c8e68b5d12
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -496,7 +502,9 @@
+@@ -464,7 +470,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
 +#ifndef MAS_BUILD
-       params.ca_layer_params.ca_context_id = [ca_context_ contextId];
+       params.ca_context_id = [ca_context_ contextId];
 +#endif
      } else {
        IOSurfaceRef io_surface =

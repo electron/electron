@@ -33,7 +33,7 @@ index 8dcac3238870920d374b86033d05d77ebde351e9..02103924332eddbd158c04f8a395bb4a
  MIPS Technologies, Inc.
 +Darshan Sen <raisinten@gmail.com>
 diff --git a/third_party/crashpad/crashpad/client/crashpad_client_linux.cc b/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
-index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38dfd4cd9d70 100644
+index 295ec1615d83984835e238e349029b8755611f52..94c1cb02efe328ab45bc30fc7db8992872ed6b08 100644
 --- a/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
 +++ b/third_party/crashpad/crashpad/client/crashpad_client_linux.cc
 @@ -45,7 +45,7 @@
@@ -45,7 +45,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
  #include "util/posix/scoped_mmap.h"
  #include "util/posix/signals.h"
  
-@@ -454,7 +454,7 @@ bool CrashpadClient::StartHandler(
+@@ -459,7 +459,7 @@ bool CrashpadClient::StartHandler(
  
    argv.push_back(FormatArgumentInt("initial-client-fd", handler_sock.get()));
    argv.push_back("--shared-client-connection");
@@ -54,7 +54,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
      return false;
    }
  
-@@ -609,7 +609,7 @@ bool CrashpadClient::StartJavaHandlerForClient(
+@@ -614,7 +614,7 @@ bool CrashpadClient::StartJavaHandlerForClient(
      int socket) {
    std::vector<std::string> argv = BuildAppProcessArgs(
        class_name, database, metrics_dir, url, annotations, arguments, socket);
@@ -63,7 +63,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
  }
  
  bool CrashpadClient::StartHandlerWithLinkerAtCrash(
-@@ -658,7 +658,7 @@ bool CrashpadClient::StartHandlerWithLinkerForClient(
+@@ -663,7 +663,7 @@ bool CrashpadClient::StartHandlerWithLinkerForClient(
                                    annotations,
                                    arguments,
                                    socket);
@@ -72,7 +72,7 @@ index 53c2dadac9d6cb74a3c3e07d9917e9162474b8a0..6761db0e8ac5edba6fac90cdf79e38df
  }
  
  #endif
-@@ -692,7 +692,7 @@ bool CrashpadClient::StartHandlerForClient(
+@@ -697,7 +697,7 @@ bool CrashpadClient::StartHandlerForClient(
  
    argv.push_back(FormatArgumentInt("initial-client-fd", socket));
  

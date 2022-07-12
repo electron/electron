@@ -41,9 +41,9 @@ void StopWorker(int document_cookie) {
   std::unique_ptr<printing::PrinterQuery> printer_query =
       queue->PopPrinterQuery(document_cookie);
   if (printer_query.get()) {
-    content::GetIOThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&printing::PrinterQuery::StopWorker,
-                                  std::move(printer_query)));
+    printer_query->PostTask(FROM_HERE,
+                            base::BindOnce(&printing::PrinterQuery::StopWorker,
+                                           std::move(printer_query)));
   }
 }
 

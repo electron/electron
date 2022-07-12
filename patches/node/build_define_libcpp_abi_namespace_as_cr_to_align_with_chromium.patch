@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Mon, 6 Jun 2022 14:46:40 -0700
+Subject: build: define _LIBCPP_ABI_NAMESPACE as Cr to align with chromium
+
+Without this define native modules will be built trying to link to _LIBCPP_ABI_NAMESPACE which is the default name, chromium overrides this to Cr for PDB size reasons but they override it on all platforms.  Setting this define allows native modules to actually work. This should not be upstreamed as it is Electron specific.
+
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/3655638
+
+diff --git a/common.gypi b/common.gypi
+index e20092d15d5f71f3e90a2ce655d660a8fa1e1385..242ff08b581c143018046618e539bec12ac566f1 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -293,6 +293,7 @@
+       'V8_DEPRECATION_WARNINGS',
+       'V8_IMMINENT_DEPRECATION_WARNINGS',
+       '_GLIBCXX_USE_CXX11_ABI=1',
++      '_LIBCPP_ABI_NAMESPACE=Cr',
+     ],
+ 
+     # Forcibly disable -Werror.  We support a wide range of compilers, it's

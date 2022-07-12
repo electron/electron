@@ -6,10 +6,10 @@ Subject: build: make libcxx_abi_unstable false for electron
 https://nornagon.medium.com/a-libc-odyssey-973e51649063
 
 diff --git a/build/config/c++/BUILD.gn b/build/config/c++/BUILD.gn
-index 046792ac275853bf109537589b911cfada44ed24..e43daeaa8f8c8e23eea99b3f8f5f48f92012bbc1 100644
+index 2e5843b9f0a5d39d8dbfea0ae5d2ebb413c0ac7d..f4c901e9980ad068a2903482f712bfa8b1310057 100644
 --- a/build/config/c++/BUILD.gn
 +++ b/build/config/c++/BUILD.gn
-@@ -8,6 +8,11 @@ assert(use_custom_libcxx, "should only be used if use_custom_libcxx is set")
+@@ -9,6 +9,11 @@ assert(use_custom_libcxx, "should only be used if use_custom_libcxx is set")
  
  libcxx_abi_unstable = true
  
