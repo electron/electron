@@ -36,18 +36,6 @@ namespace electron {
 
 namespace {
 
-void OnMediaStreamRequestResponse(
-    const content::MediaStreamRequest& request,
-    content::MediaResponseCallback callback,
-    const blink::mojom::StreamDevicesSet& stream_devices_set,
-    blink::mojom::MediaStreamRequestResult result,
-    bool blocked_by_permissions_policy,
-    ContentSetting audio_setting,
-    ContentSetting video_setting) {
-  std::move(callback).Run(stream_devices_set,
-                          blink::mojom::MediaStreamRequestResult::OK, nullptr);
-}
-
 void HandleUserMediaRequest(const content::MediaStreamRequest& request,
                             content::MediaResponseCallback callback) {
   blink::mojom::StreamDevicesSetPtr stream_devices_set =
@@ -99,6 +87,18 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
       nullptr);
 }
 
+void OnMediaStreamRequestResponse(
+    const content::MediaStreamRequest& request,
+    content::MediaResponseCallback callback,
+    const blink::mojom::StreamDevicesSet& stream_devices_set,
+    blink::mojom::MediaStreamRequestResult result,
+    bool blocked_by_permissions_policy,
+    ContentSetting audio_setting,
+    ContentSetting video_setting) {
+  std::move(callback).Run(stream_devices_set,
+                          blink::mojom::MediaStreamRequestResult::OK, nullptr);
+}
+
 void MediaAccessAllowed(const content::MediaStreamRequest& request,
                         content::MediaResponseCallback callback,
                         bool allowed) {
@@ -112,11 +112,18 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
         request.audio_type ==
             blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE)
       HandleUserMediaRequest(request, std::move(callback));
-    else
+    else if (request.video_type ==
+                 blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE ||
+             request.audio_type ==
+                 blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE)
       webrtc::MediaStreamDevicesController::RequestPermissions(
           request, MediaCaptureDevicesDispatcher::GetInstance(),
           base::BindOnce(&OnMediaStreamRequestResponse, request,
                          std::move(callback)));
+    else
+      std::move(callback).Run(
+          blink::mojom::StreamDevicesSet(),
+          blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
   } else {
     std::move(callback).Run(
         blink::mojom::StreamDevicesSet(),
