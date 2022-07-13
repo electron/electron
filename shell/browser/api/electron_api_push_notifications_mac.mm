@@ -53,7 +53,7 @@ void PushNotifications::UnregisterForAPNSNotifications() {
 }
 
 void PushNotifications::OnDidReceiveAPNSNotification(
-    const base::DictionaryValue& user_info) {
+    const base::Value::Dict& user_info) {
   Emit("received-apns-notification", user_info);
 }
 
