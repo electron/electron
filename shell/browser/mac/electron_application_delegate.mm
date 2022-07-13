@@ -193,7 +193,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
       electron::api::PushNotifications::Get();
   if (push_notifications) {
     electron::api::PushNotifications::Get()->OnDidReceiveAPNSNotification(
-        electron::NSDictionaryToDictionaryValue(userInfo));
+        electron::NSDictionaryToValue(userInfo));
   }
 }
 

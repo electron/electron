@@ -39,7 +39,7 @@ class PushNotifications
   PushNotifications& operator=(const PushNotifications&) = delete;
 
 #if BUILDFLAG(IS_MAC)
-  void OnDidReceiveAPNSNotification(const base::DictionaryValue& user_info);
+  void OnDidReceiveAPNSNotification(const base::Value::Dict& user_info);
   void ResolveAPNSPromiseSetWithToken(const std::string& token_string);
   void RejectAPNSPromiseSetWithError(const std::string& error_message);
 #endif
