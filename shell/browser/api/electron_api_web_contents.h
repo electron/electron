@@ -222,12 +222,11 @@ class WebContents : public ExclusiveAccessContext,
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void OnGetDefaultPrinter(base::Value::Dict print_settings,
-                           printing::CompletionCallback print_callback,
-                           std::u16string device_name,
-                           bool silent,
-                           // <error, default_printer_name>
-                           std::pair<std::string, std::u16string> info);
+  void OnGetDeviceNameToUse(base::Value::Dict print_settings,
+                            printing::CompletionCallback print_callback,
+                            bool silent,
+                            // <error, device_name>
+                            std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
