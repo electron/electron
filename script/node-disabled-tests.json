@@ -13,7 +13,6 @@
   "parallel/test-crypto-des3-wrap",
   "parallel/test-crypto-dh-stateless",
   "parallel/test-crypto-ecb",
-  "parallel/test-crypto-engine",
   "parallel/test-crypto-fips",
   "parallel/test-crypto-keygen",
   "parallel/test-crypto-keygen-deprecation",
@@ -21,7 +20,7 @@
   "parallel/test-crypto-padding-aes256",
   "parallel/test-crypto-secure-heap",
   "parallel/test-fs-utimes-y2K38",
-  "parallel/test-heapsnapshot-near-heap-limit-worker.js",
+  "parallel/test-heapsnapshot-near-heap-limit-worker",
   "parallel/test-http2-clean-output",
   "parallel/test-https-agent-session-reuse",
   "parallel/test-https-options-boolean-check",
@@ -96,7 +95,6 @@
   "parallel/test-trace-events-fs-sync",
   "parallel/test-trace-events-metadata",
   "parallel/test-trace-events-none",
-  "parallel/test-trace-events-perf",
   "parallel/test-trace-events-process-exit",
   "parallel/test-trace-events-promises",
   "parallel/test-trace-events-v8",
@@ -125,7 +123,7 @@
   "report/test-report-writereport",
   "sequential/test-cpu-prof-kill",
   "sequential/test-diagnostic-dir-cpu-prof",
-  "sequential/test-cpu-prof-drained.js",
+  "sequential/test-cpu-prof-drained",
   "sequential/test-tls-connect",
   "wpt/test-webcrypto"
 ]
