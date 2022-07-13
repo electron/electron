@@ -85,6 +85,8 @@ filenames = {
     "shell/browser/ui/message_box_win.cc",
     "shell/browser/ui/tray_icon_win.cc",
     "shell/browser/ui/views/electron_views_delegate_win.cc",
+    "shell/browser/ui/views/win_icon_painter.cc",
+    "shell/browser/ui/views/win_icon_painter.h",
     "shell/browser/ui/views/win_frame_view.cc",
     "shell/browser/ui/views/win_frame_view.h",
     "shell/browser/ui/views/win_caption_button.cc",
