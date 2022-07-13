@@ -36,6 +36,9 @@ namespace electron {
 
 namespace {
 
+// Handles requests for legacy-style `navigator.getUserMedia(...)` calls.
+// This includes desktop capture through the chromeMediaSource /
+// chromeMediaSourceId constraints.
 void HandleUserMediaRequest(const content::MediaStreamRequest& request,
                             content::MediaResponseCallback callback) {
   blink::mojom::StreamDevicesSetPtr stream_devices_set =
@@ -88,15 +91,13 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
 }
 
 void OnMediaStreamRequestResponse(
-    const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback,
     const blink::mojom::StreamDevicesSet& stream_devices_set,
     blink::mojom::MediaStreamRequestResult result,
     bool blocked_by_permissions_policy,
     ContentSetting audio_setting,
     ContentSetting video_setting) {
-  std::move(callback).Run(stream_devices_set,
-                          blink::mojom::MediaStreamRequestResult::OK, nullptr);
+  std::move(callback).Run(stream_devices_set, result, nullptr);
 }
 
 void MediaAccessAllowed(const content::MediaStreamRequest& request,
@@ -118,8 +119,7 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
                  blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE)
       webrtc::MediaStreamDevicesController::RequestPermissions(
           request, MediaCaptureDevicesDispatcher::GetInstance(),
-          base::BindOnce(&OnMediaStreamRequestResponse, request,
-                         std::move(callback)));
+          base::BindOnce(&OnMediaStreamRequestResponse, std::move(callback)));
     else
       std::move(callback).Run(
           blink::mojom::StreamDevicesSet(),
