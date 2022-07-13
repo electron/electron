@@ -52,6 +52,7 @@ class ElectronHidDelegate : public content::HidDelegate,
       const std::string& guid) override;
   bool IsFidoAllowedForOrigin(content::BrowserContext* browser_context,
                               const url::Origin& origin) override;
+  bool IsServiceWorkerAllowedForOrigin(const url::Origin& origin) override;
 
   // HidChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::HidDeviceInfo&) override;

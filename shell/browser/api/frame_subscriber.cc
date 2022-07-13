@@ -143,6 +143,8 @@ void FrameSubscriber::OnFrameCaptured(
   Done(content_rect, bitmap);
 }
 
+void FrameSubscriber::OnNewCropVersion(uint32_t crop_version) {}
+
 void FrameSubscriber::OnFrameWithEmptyRegionCapture() {}
 
 void FrameSubscriber::OnStopped() {}

@@ -332,34 +332,32 @@ ElectronAccessibilityUIMessageHandler::ElectronAccessibilityUIMessageHandler() =
     default;
 
 void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
-    const base::ListValue* args) {
-  const base::DictionaryValue* data;
-  CHECK(args->GetDictionary(0, &data));
+    const base::Value::List& args) {
+  const base::Value::Dict& data = args.front().GetDict();
 
-  int window_id = *data->FindIntPath(kSessionIdField);
-  const std::string* request_type_p = data->FindStringPath(kRequestTypeField);
+  const int window_id = *data.FindInt(kSessionIdField);
+  const std::string* const request_type_p = data.FindString(kRequestTypeField);
   CHECK(IsValidJSValue(request_type_p));
   std::string request_type = *request_type_p;
   CHECK(request_type == kShowOrRefreshTree || request_type == kCopyTree);
   request_type = "accessibility." + request_type;
 
-  const std::string* allow_p = data->FindStringPath("filters.allow");
+  const std::string* const allow_p =
+      data.FindStringByDottedPath("filters.allow");
   CHECK(IsValidJSValue(allow_p));
-  std::string allow = *allow_p;
-  const std::string* allow_empty_p = data->FindStringPath("filters.allowEmpty");
+  const std::string* const allow_empty_p =
+      data.FindStringByDottedPath("filters.allowEmpty");
   CHECK(IsValidJSValue(allow_empty_p));
-  std::string allow_empty = *allow_empty_p;
-  const std::string* deny_p = data->FindStringPath("filters.deny");
+  const std::string* const deny_p = data.FindStringByDottedPath("filters.deny");
   CHECK(IsValidJSValue(deny_p));
-  std::string deny = *deny_p;
 
   AllowJavascript();
 
   std::vector<ui::AXPropertyFilter> property_filters;
-  AddPropertyFilters(&property_filters, allow, ui::AXPropertyFilter::ALLOW);
-  AddPropertyFilters(&property_filters, allow_empty,
+  AddPropertyFilters(&property_filters, *allow_p, ui::AXPropertyFilter::ALLOW);
+  AddPropertyFilters(&property_filters, *allow_empty_p,
                      ui::AXPropertyFilter::ALLOW_EMPTY);
-  AddPropertyFilters(&property_filters, deny, ui::AXPropertyFilter::DENY);
+  AddPropertyFilters(&property_filters, *deny_p, ui::AXPropertyFilter::DENY);
 
   for (auto* window : electron::WindowList::GetWindows()) {
     if (window->window_id() == window_id) {
@@ -385,25 +383,25 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
 void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  web_ui()->RegisterDeprecatedMessageCallback(
+  web_ui()->RegisterMessageCallback(
       "toggleAccessibility",
       base::BindRepeating(&AccessibilityUIMessageHandler::ToggleAccessibility,
                           base::Unretained(this)));
-  web_ui()->RegisterDeprecatedMessageCallback(
+  web_ui()->RegisterMessageCallback(
       "setGlobalFlag",
       base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalFlag,
                           base::Unretained(this)));
-  web_ui()->RegisterDeprecatedMessageCallback(
+  web_ui()->RegisterMessageCallback(
       "requestWebContentsTree",
       base::BindRepeating(
           &AccessibilityUIMessageHandler::RequestWebContentsTree,
           base::Unretained(this)));
-  web_ui()->RegisterDeprecatedMessageCallback(
+  web_ui()->RegisterMessageCallback(
       "requestNativeUITree",
       base::BindRepeating(
           &ElectronAccessibilityUIMessageHandler::RequestNativeUITree,
           base::Unretained(this)));
-  web_ui()->RegisterDeprecatedMessageCallback(
+  web_ui()->RegisterMessageCallback(
       "requestAccessibilityEvents",
       base::BindRepeating(
           &AccessibilityUIMessageHandler::RequestAccessibilityEvents,

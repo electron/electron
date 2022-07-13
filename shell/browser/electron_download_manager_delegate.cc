@@ -144,8 +144,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
         path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         item->GetMixedContentStatus(), path, base::FilePath(),
-        std::string() /*mime_type*/, absl::nullopt /*download_schedule*/,
-        download::DOWNLOAD_INTERRUPT_REASON_NONE);
+        std::string() /*mime_type*/, download::DOWNLOAD_INTERRUPT_REASON_NONE);
   }
 }
 
@@ -185,8 +184,7 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
       .Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
            download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
            item->GetMixedContentStatus(), path, base::FilePath(),
-           std::string() /*mime_type*/, absl::nullopt /*download_schedule*/,
-           interrupt_reason);
+           std::string() /*mime_type*/, interrupt_reason);
 }
 
 void ElectronDownloadManagerDelegate::Shutdown() {
@@ -206,8 +204,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN,
         download->GetForcedFilePath(), base::FilePath(),
-        std::string() /*mime_type*/, absl::nullopt /*download_schedule*/,
-        download::DOWNLOAD_INTERRUPT_REASON_NONE);
+        std::string() /*mime_type*/, download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 
@@ -220,7 +217,6 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN, save_path,
         base::FilePath(), std::string() /*mime_type*/,
-        absl::nullopt /*download_schedule*/,
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
