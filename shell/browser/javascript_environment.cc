@@ -253,6 +253,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   // --js-flags.
   std::string js_flags =
       cmd->GetSwitchValueASCII(blink::switches::kJavaScriptFlags);
+  js_flags.append(" --no-freeze-flags-after-init");
   if (!js_flags.empty())
     v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
