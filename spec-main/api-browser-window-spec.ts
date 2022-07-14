@@ -4803,18 +4803,34 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('fullscreen state with resizable set', () => {
-      it('resizable flag should be set to true and restored', async () => {
+      it('resizable flag should be set to false and restored', async () => {
         const w = new BrowserWindow({ resizable: false });
+
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
         w.setFullScreen(true);
         await enterFullScreen;
-        expect(w.resizable).to.be.true('resizable');
+        expect(w.resizable).to.be.false('resizable');
 
         await delay();
         const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
         w.setFullScreen(false);
         await leaveFullScreen;
         expect(w.resizable).to.be.false('resizable');
+      });
+
+      it('default resizable flag should be restored after entering/exiting fullscreen', async () => {
+        const w = new BrowserWindow();
+
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+        expect(w.resizable).to.be.false('resizable');
+
+        await delay();
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+        expect(w.resizable).to.be.true('resizable');
       });
     });
 
