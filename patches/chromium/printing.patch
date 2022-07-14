@@ -136,7 +136,7 @@ index 1e158ecd686e775f656d5a05a9d916ce8f075fa8..20613012d1e6f435c3211d78ec311cf0
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index e665eb42fad5f47b1643315d2cdcdf2eb66b069d..c2f919417909bbf5bc7deff54172f0a22c46907a 100644
+index 4bd871e5cadc693aea6e8c71b3fe3296b743d9ec..78f3db8a6fb8b9184cfd41188b11851ac8b8df85 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,8 +30,6 @@
