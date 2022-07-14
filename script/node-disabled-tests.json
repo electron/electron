@@ -123,9 +123,6 @@
   "report/test-report-uv-handles",
   "report/test-report-worker",
   "report/test-report-writereport",
-  "sequential/test-cpu-prof-kill",
-  "sequential/test-diagnostic-dir-cpu-prof",
-  "sequential/test-cpu-prof-drained.js",
   "sequential/test-tls-connect",
   "wpt/test-webcrypto"
 ]

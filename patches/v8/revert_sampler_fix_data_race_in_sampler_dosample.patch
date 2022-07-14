@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 14 Jul 2022 17:34:56 +0200
+Subject: Revert "[sampler] Fix data race in Sampler::DoSample"
+
+This reverts commit 6e586b48906cc056057fb00c4590af3b8bf23ded.
+
+diff --git a/src/libsampler/sampler.cc b/src/libsampler/sampler.cc
+index 46605291c688b5b1731bbee0e5c85c0c25fde592..171b8e59a554debb26c71f1af9cd257bb1f267c4 100644
+--- a/src/libsampler/sampler.cc
++++ b/src/libsampler/sampler.cc
+@@ -314,23 +314,20 @@ class Sampler::PlatformData {
+ class SignalHandler {
+  public:
+   static void IncreaseSamplerCount() {
+-    base::RecursiveMutexGuard lock_guard(mutex_.Pointer());
++    base::MutexGuard lock_guard(mutex_.Pointer());
+     if (++client_count_ == 1) Install();
+   }
+ 
+   static void DecreaseSamplerCount() {
+-    base::RecursiveMutexGuard lock_guard(mutex_.Pointer());
++    base::MutexGuard lock_guard(mutex_.Pointer());
+     if (--client_count_ == 0) Restore();
+   }
+ 
+   static bool Installed() {
+-    // mutex_ will also be used in Sampler::DoSample to guard the state below.
+-    base::RecursiveMutexGuard lock_guard(mutex_.Pointer());
++    base::MutexGuard lock_guard(mutex_.Pointer());
+     return signal_handler_installed_;
+   }
+ 
+-  static v8::base::RecursiveMutex* mutex() { return mutex_.Pointer(); }
+-
+  private:
+   static void Install() {
+     struct sigaction sa;
+@@ -362,15 +359,13 @@ class SignalHandler {
+   static void HandleProfilerSignal(int signal, siginfo_t* info, void* context);
+ 
+   // Protects the process wide state below.
+-  static base::LazyRecursiveMutex mutex_;
++  static base::LazyMutex mutex_;
+   static int client_count_;
+   static bool signal_handler_installed_;
+   static struct sigaction old_signal_handler_;
+ };
+ 
+-base::LazyRecursiveMutex SignalHandler::mutex_ =
+-    LAZY_RECURSIVE_MUTEX_INITIALIZER;
+-
++base::LazyMutex SignalHandler::mutex_ = LAZY_MUTEX_INITIALIZER;
+ int SignalHandler::client_count_ = 0;
+ struct sigaction SignalHandler::old_signal_handler_;
+ bool SignalHandler::signal_handler_installed_ = false;
+@@ -583,7 +578,6 @@ void Sampler::Stop() {
+ #if defined(USE_SIGNALS)
+ 
+ void Sampler::DoSample() {
+-  base::RecursiveMutexGuard lock_guard(SignalHandler::mutex());
+   if (!SignalHandler::Installed()) return;
+   DCHECK(IsActive());
+   SetShouldRecordSample();
