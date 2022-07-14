@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index c2824b6bcfab1c13d0e44ca96fc05c97b4a13a6e..61030982c4391dd1b4b508042628e7f006047158 100644
+index 2aaf6fb9cca420cde28635d7628c1b7830570f5a..d53e403bda407bb46f59395ebcbb39cd9495875b 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -129,6 +129,11 @@
+@@ -130,6 +130,11 @@
  #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index c2824b6bcfab1c13d0e44ca96fc05c97b4a13a6e..61030982c4391dd1b4b508042628e7f0
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -437,6 +442,91 @@ bool GetFullDataFilePath(
+@@ -438,6 +443,91 @@ bool GetFullDataFilePath(
  
  }  // namespace
  
@@ -114,7 +114,7 @@ index c2824b6bcfab1c13d0e44ca96fc05c97b4a13a6e..61030982c4391dd1b4b508042628e7f0
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -739,6 +829,13 @@ void NetworkContext::SetClient(
+@@ -743,6 +833,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -128,7 +128,7 @@ index c2824b6bcfab1c13d0e44ca96fc05c97b4a13a6e..61030982c4391dd1b4b508042628e7f0
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2303,6 +2400,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2304,6 +2401,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -139,10 +139,10 @@ index c2824b6bcfab1c13d0e44ca96fc05c97b4a13a6e..61030982c4391dd1b4b508042628e7f0
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 34b3e31549ee37b58eee4c11c54bd34af73af263..d88d9d2bc4b95464ca9a8cacec33361f12d25ea4 100644
+index 97039f97082b79e4b7bd5cdb4a5b28023dc70e47..614ba5b278f8bed722072ca07399b247ddb971be 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -105,6 +105,7 @@ class URLMatcher;
+@@ -104,6 +104,7 @@ class URLMatcher;
  
  namespace network {
  class CertVerifierWithTrustAnchors;

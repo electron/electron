@@ -9,7 +9,7 @@ necessary for native modules to load.
 Also, some fixes relating to mksnapshot on ARM.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index c51da9f12ecab41256bf0cdb7a0170e99302dc35..a0154b94bf390b639e1144bc3eb6041631b29716 100644
+index 5dedb63041b29734f8374983cbf3c8b67aa47c84..22260bf86f2161a5866f499540148d70007b8bda 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -626,7 +626,7 @@ config("internal_config") {

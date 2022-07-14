@@ -6,7 +6,7 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
-index a787411f89e2d95e2fa636a7cc6723bdd227e563..f8c67d10957c26fbcd21fa1fe05507efd78f1c29 100644
+index 20a3b1efcb52be5e10dc184df620ec8102f2aff3..dfebc65b2ce180e4cd175ab8d09ad7e16f6b8df5 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
 @@ -53,6 +53,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
@@ -47,7 +47,7 @@ index a787411f89e2d95e2fa636a7cc6723bdd227e563..f8c67d10957c26fbcd21fa1fe05507ef
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index bd2ebaf9f84946c708eba13c18869afadd2fdbb0..880d6f12ad188c5f8abf037b3b8d27fcf1fc2cb6 100644
+index eadda341710f3a2e35f0e5c6aeb65a0dcc7bf0dd..2a7cbfa33702b9a5b89d1e69d5e8d0af83735bd7 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
 @@ -49,6 +49,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
