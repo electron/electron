@@ -73,7 +73,7 @@ index 39bfc2200e924d0c589cfd07f085f182ef6853a6..bddff6d5ad3f6d08c4dc48e66ebc5319
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 99f0ceb45972df14813b72300e6a59710f13597f..f5e15865bf0bad73d9505698e788c1e954f46c2c 100644
+index b01562ebe042bd23e7b5184aa28bb42f98f81ecb..5392b5ac0f95eab7fef3c59fd2e9b2dc2cfb7342 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
 @@ -361,6 +361,7 @@ class WebView {

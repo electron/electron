@@ -43,7 +43,7 @@ index 5647890d0f62bcd5b1d1b2e6adc511b262a83b7f..9a818c66d76d50e9ba678e7a8e573813
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0f514494a17d6471fc52bbaf12ff625d62557998..f23d2123bf45cb1cc42d7409f6148083c617f458 100644
+index 304318a0ab840c350c834979a92bc3a205323611..422bbf9cfeca529a6d9f71d40435678ecf8355c7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4580,6 +4580,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
@@ -59,10 +59,10 @@ index 0f514494a17d6471fc52bbaf12ff625d62557998..f23d2123bf45cb1cc42d7409f6148083
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 4f96c017920c538fd23933a17e9cc666bef54fb4..cbe2d6f1e8035f84f45772001d7aa49c604ebbfc 100644
+index 9c90730dcec2d999c21e54ed1df2805a490a5a3d..d634269a0073a7dc617ad3d0eaa2c80935e4ae9e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -956,6 +956,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -958,6 +958,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
