@@ -1,7 +1,7 @@
-From 5e227bebf19358bcb08bdef6c42de8b937aac19c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ben Noordhuis <info@bnoordhuis.nl>
-Date: Sat, 09 Jul 2022 14:05:56 +0200
-Subject: [PATCH] [arm64] Fix undefined symbol linker error
+Date: Sat, 9 Jul 2022 14:05:56 +0200
+Subject: Fix undefined symbol linker error
 
 Assembler::CheckBuffer() was defined inline in a header file but without
 inline linkage, causing an undefined symbol link error on arm64 macOS.
@@ -15,13 +15,12 @@ Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
 Commit-Queue: Leszek Swirski <leszeks@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#81749}
----
 
 diff --git a/src/codegen/arm64/assembler-arm64-inl.h b/src/codegen/arm64/assembler-arm64-inl.h
-index da4201b..60deb07 100644
+index da4201b28307a71e988b50e26fc8854fdcc510d4..60deb07b65b5acaaa1e8762cc57730f366f483d2 100644
 --- a/src/codegen/arm64/assembler-arm64-inl.h
 +++ b/src/codegen/arm64/assembler-arm64-inl.h
-@@ -1066,21 +1066,6 @@
+@@ -1066,21 +1066,6 @@ const Register& Assembler::AppropriateZeroRegFor(const CPURegister& reg) const {
    return reg.Is64Bits() ? xzr : wzr;
  }
  
@@ -44,10 +43,10 @@ index da4201b..60deb07 100644
    assembler->CheckBufferSpace();
  }
 diff --git a/src/codegen/arm64/assembler-arm64.h b/src/codegen/arm64/assembler-arm64.h
-index 51f6fa7..e3d8eb2 100644
+index 703e4bba9381c57849882e7cb2cdeb751064dd2a..dceda86275d3ef0bfc2b5bea9d8f04957b2e721c 100644
 --- a/src/codegen/arm64/assembler-arm64.h
 +++ b/src/codegen/arm64/assembler-arm64.h
-@@ -2637,8 +2637,21 @@
+@@ -2625,8 +2625,21 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
    }
  
    void GrowBuffer();
