@@ -8,7 +8,7 @@ Aligns common.gypi with the current build flag state of //v8.
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
 diff --git a/common.gypi b/common.gypi
-index 559b7f7c220cb98946285bb15d0d63e203bbcea4..ea87c9f56ef83e6b0edddb9a467a21eb4ea3907b 100644
+index bdfe81d11cc50f492c93fe48f6946765b6fb5238..ca08deeb19f5fe9ee399ad809b24579fdaa10036 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@
@@ -27,7 +27,7 @@ index 559b7f7c220cb98946285bb15d0d63e203bbcea4..ea87c9f56ef83e6b0edddb9a467a21eb
        }],
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
-@@ -395,9 +397,15 @@
+@@ -394,9 +396,15 @@
        ['v8_enable_pointer_compression == 1', {
          'defines': [
            'V8_COMPRESS_POINTERS',
