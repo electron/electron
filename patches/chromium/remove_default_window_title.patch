@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Fri, 24 Jun 2022 22:27:07 +0000
+Subject: Remove default window title
+
+This is to prevent the enterprise startup dialog from having "Ozone X11"
+in the titlebar.  The intention is for the window to have no title [1]
+
+[1] https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/views/policy/enterprise_startup_dialog_view.cc;drc=855b63f8fe9115f8b38d4736a259f9a96f83fcc6;l=209
+
+R=sky
+
+Change-Id: Iecc200941ad36b6d9feb91e88791b3612e941ea6
+Fixed: 1336343
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3722478
+Reviewed-by: Scott Violet <sky@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1017858}
+
+diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
+index e312287e4aca61b51a69c8413088f56f9f704b5e..06bb59fe5e855d0a339e738cf12c566afcf376ac 100644
+--- a/ui/ozone/platform/x11/ozone_platform_x11.cc
++++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
+@@ -102,7 +102,6 @@ class OzonePlatformX11 : public OzonePlatform,
+       PlatformWindowInitProperties properties) override {
+     auto window = std::make_unique<X11Window>(delegate);
+     window->Initialize(std::move(properties));
+-    window->SetTitle(u"Ozone X11");
+     return std::move(window);
+   }
+ 
+diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
+index 3f696838ee798103480d86aee77d08bac86a5803..0a2d68371785718a736e3ba9eaf12a0fe2b59bd8 100644
+--- a/ui/ozone/platform/x11/x11_window.cc
++++ b/ui/ozone/platform/x11/x11_window.cc
+@@ -361,6 +361,8 @@ void X11Window::Initialize(PlatformWindowInitProperties properties) {
+   if (wm_role_name)
+     SetWindowRole(xwindow_, std::string(wm_role_name));
+ 
++  SetTitle(u"");
++
+   if (properties.remove_standard_frame) {
+     // Setting _GTK_HIDE_TITLEBAR_WHEN_MAXIMIZED tells gnome-shell to not force
+     // fullscreen on the window when it matches the desktop size.
+diff --git a/ui/ozone/platform/x11/x11_window.h b/ui/ozone/platform/x11/x11_window.h
+index 81d42ae3167c0a55fbe3642c5ca862deed291793..1d37c798dad0246c24726e16a9a05b3407b88668 100644
+--- a/ui/ozone/platform/x11/x11_window.h
++++ b/ui/ozone/platform/x11/x11_window.h
+@@ -364,7 +364,7 @@ class X11Window : public PlatformWindow,
+   // Was this window initialized with the override_redirect window attribute?
+   bool override_redirect_ = false;
+ 
+-  std::u16string window_title_;
++  absl::optional<std::u16string> window_title_;
+ 
+   // Whether the window is visible with respect to Aura.
+   bool window_mapped_in_client_ = false;
