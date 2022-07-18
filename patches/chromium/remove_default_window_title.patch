@@ -30,10 +30,10 @@ index e312287e4aca61b51a69c8413088f56f9f704b5e..06bb59fe5e855d0a339e738cf12c566a
    }
  
 diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
-index 3f696838ee798103480d86aee77d08bac86a5803..0a2d68371785718a736e3ba9eaf12a0fe2b59bd8 100644
+index 15b5f6ff21d3fca9e06e95bae08d1b2c0d2e3b1c..0b002c3950c9d450f42212f5dc9c5ce1e7cff010 100644
 --- a/ui/ozone/platform/x11/x11_window.cc
 +++ b/ui/ozone/platform/x11/x11_window.cc
-@@ -361,6 +361,8 @@ void X11Window::Initialize(PlatformWindowInitProperties properties) {
+@@ -362,6 +362,8 @@ void X11Window::Initialize(PlatformWindowInitProperties properties) {
    if (wm_role_name)
      SetWindowRole(xwindow_, std::string(wm_role_name));
  
@@ -43,10 +43,10 @@ index 3f696838ee798103480d86aee77d08bac86a5803..0a2d68371785718a736e3ba9eaf12a0f
      // Setting _GTK_HIDE_TITLEBAR_WHEN_MAXIMIZED tells gnome-shell to not force
      // fullscreen on the window when it matches the desktop size.
 diff --git a/ui/ozone/platform/x11/x11_window.h b/ui/ozone/platform/x11/x11_window.h
-index 81d42ae3167c0a55fbe3642c5ca862deed291793..1d37c798dad0246c24726e16a9a05b3407b88668 100644
+index 0b4ccfed94123120d491d08a4c95a02624d9d0ef..147304843f2acc90cf534b8da7710541605fe880 100644
 --- a/ui/ozone/platform/x11/x11_window.h
 +++ b/ui/ozone/platform/x11/x11_window.h
-@@ -364,7 +364,7 @@ class X11Window : public PlatformWindow,
+@@ -363,7 +363,7 @@ class X11Window : public PlatformWindow,
    // Was this window initialized with the override_redirect window attribute?
    bool override_redirect_ = false;
  
