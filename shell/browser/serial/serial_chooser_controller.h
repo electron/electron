@@ -48,6 +48,7 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
   void OnPortManagerConnectionError() override;
   void OnPermissionRevoked(const url::Origin& origin) override {}
+  void OnSerialChooserContextShutdown() override;
 
  private:
   api::Session* GetSession();
@@ -61,6 +62,12 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   url::Origin origin_;
 
   base::WeakPtr<SerialChooserContext> chooser_context_;
+
+  base::ScopedObservation<SerialChooserContext,
+                          SerialChooserContext::PortObserver,
+                          &SerialChooserContext::AddPortObserver,
+                          &SerialChooserContext::RemovePortObserver>
+      observation_{this};
 
   std::vector<device::mojom::SerialPortInfoPtr> ports_;
 

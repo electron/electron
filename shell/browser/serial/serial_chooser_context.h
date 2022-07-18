@@ -46,7 +46,12 @@ extern const char kUsbDriverKey[];
 class SerialChooserContext : public KeyedService,
                              public device::mojom::SerialPortManagerClient {
  public:
-  using PortObserver = content::SerialDelegate::Observer;
+  class PortObserver : public content::SerialDelegate::Observer {
+   public:
+    // Called when the SerialChooserContext is shutting down. Observers must
+    // remove themselves before returning.
+    virtual void OnSerialChooserContextShutdown() = 0;
+  };
 
   explicit SerialChooserContext(ElectronBrowserContext* context);
   ~SerialChooserContext() override;
@@ -54,9 +59,6 @@ class SerialChooserContext : public KeyedService,
   // disable copy
   SerialChooserContext(const SerialChooserContext&) = delete;
   SerialChooserContext& operator=(const SerialChooserContext&) = delete;
-
-  // ObjectPermissionContextBase::PermissionObserver:
-  void OnPermissionRevoked(const url::Origin& origin);
 
   // Serial-specific interface for granting and checking permissions.
   void GrantPortPermission(const url::Origin& origin,
