@@ -202,7 +202,7 @@ gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
   if (!frame_->IsFullscreen()) {
     client_bounds.Inset(GetBorderDecorationInsets());
     client_bounds.Inset(
-        gfx::Insets::TLBR(0, GetTitlebarBounds().height(), 0, 0));
+        gfx::Insets::TLBR(GetTitlebarBounds().height(), 0, 0, 0));
   }
   return client_bounds;
 }
