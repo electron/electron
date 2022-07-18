@@ -146,9 +146,13 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
   gfx::Insets insets;
   gfx::Insets input_insets;
   if (showing_frame) {
-    insets = view->GetBorderDecorationInsets();
-    if (base::i18n::IsRTL()) {
-      insets.set_left_right(insets.right(), insets.left());
+    const auto window_state = window->GetPlatformWindowState();
+    if (window_state == ui::PlatformWindowState::kUnknown ||
+        window_state == ui::PlatformWindowState::kNormal) {
+      insets = view->GetBorderDecorationInsets();
+      if (base::i18n::IsRTL()) {
+        insets.set_left_right(insets.right(), insets.left());
+      }
     }
 
     input_insets = view->GetInputInsets();
