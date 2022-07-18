@@ -30,7 +30,7 @@ v8::Local<v8::Value> Converter<base::Value::Dict>::ToV8(
     const base::Value::Dict& val) {
   base::Value value(val.Clone());
   return content::V8ValueConverter::Create()->ToV8Value(
-      &value, isolate->GetCurrentContext());
+      value, isolate->GetCurrentContext());
 }
 
 bool Converter<base::Value>::FromV8(v8::Isolate* isolate,
@@ -50,7 +50,7 @@ bool Converter<base::Value>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<base::Value>::ToV8(v8::Isolate* isolate,
                                                   const base::Value& val) {
   return content::V8ValueConverter::Create()->ToV8Value(
-      &val, isolate->GetCurrentContext());
+      val, isolate->GetCurrentContext());
 }
 
 bool Converter<base::Value::List>::FromV8(v8::Isolate* isolate,
@@ -72,7 +72,7 @@ v8::Local<v8::Value> Converter<base::Value::List>::ToV8(
     const base::Value::List& val) {
   base::Value value(val.Clone());
   return content::V8ValueConverter::Create()->ToV8Value(
-      &value, isolate->GetCurrentContext());
+      value, isolate->GetCurrentContext());
 }
 
 }  // namespace gin
