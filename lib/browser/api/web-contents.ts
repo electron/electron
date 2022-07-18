@@ -587,14 +587,12 @@ WebContents.prototype._init = function () {
       console.error(`Error occurred in handler for '${channel}':`, error);
       event.sendReply({ error: error.toString() });
     };
-    const targets = internal ? [ipcMainInternal] : [ipc, ipcMain];
-    for (const target of targets) {
-      if ((target as any)._invokeHandlers.has(channel)) {
-        (target as any)._invokeHandlers.get(channel)(event, ...args);
-        break;
-      } else {
-        event._throw(`No handler registered for '${channel}'`);
-      }
+    const targets: ElectronInternal.IpcMainInternal[] = internal ? [ipcMainInternal] : [ipc, ipcMain];
+    const target = targets.find(target => (target as any)._invokeHandlers.has(channel));
+    if (target) {
+      (target as any)._invokeHandlers.get(channel)(event, ...args);
+    } else {
+      event._throw(`No handler registered for '${channel}'`);
     }
   });
 

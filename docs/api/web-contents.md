@@ -1994,6 +1994,17 @@ This corresponds to the [animationPolicy][] accessibility feature in Chromium.
 An [`IpcMain`](ipc-main.md) scoped to just IPC messages sent from this
 WebContents.
 
+IPC messages sent with `ipcRenderer.send`, `ipcRenderer.sendSync` or
+`ipcRenderer.postMessage` will be delivered in the following order:
+
+1. `contents.on('ipc-message')`
+2. `contents.ipc.on(channel)`
+3. `ipcMain.on(channel)`
+
+For handlers registered with `invoke`, if there is a handler registered on
+`contents.ipc`, it will be called instead of any handler registered for the
+same channel name on `ipcMain`.
+
 #### `contents.audioMuted`
 
 A `boolean` property that determines whether this page is muted.

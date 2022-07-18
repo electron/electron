@@ -623,5 +623,14 @@ describe('ipc module', () => {
       const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
       expect(result).to.equal(42 * 2);
     });
+
+    it('falls back to ipcMain handlers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      ipcMain.handle('test', (_event, arg) => { return arg * 2; });
+      defer(() => ipcMain.removeHandler('test'));
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
   });
 });
