@@ -66,6 +66,7 @@ Are you getting stuck anywhere? Here are a few links to places to look:
 
 <!-- Links -->
 
+[tutorial]: ./tutorial-1-prerequisites.md
 [api documentation]: ../api/app.md
 [chromium]: https://www.chromium.org/
 [discord]: https://discord.gg/electronjs
