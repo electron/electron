@@ -862,6 +862,8 @@ Returns:
 
 Emitted when the renderer process sends an asynchronous message via `ipcRenderer.send()`.
 
+See also [`webContents.ipc`](web-contents.md#contentsipc), which provides an [`IpcMain`](ipc-main.md)-like interface for responding to IPC messages specifically from this WebContents.
+
 #### Event: 'ipc-message-sync'
 
 Returns:
@@ -871,6 +873,8 @@ Returns:
 * `...args` any[]
 
 Emitted when the renderer process sends a synchronous message via `ipcRenderer.sendSync()`.
+
+See also [`webContents.ipc`](#contentsipc), which provides an [`IpcMain`](ipc-main.md)-like interface for responding to IPC messages specifically from this WebContents.
 
 #### Event: 'preferred-size-changed'
 
@@ -1984,6 +1988,11 @@ This corresponds to the [animationPolicy][] accessibility feature in Chromium.
 [animationPolicy]: https://developer.chrome.com/docs/extensions/reference/accessibilityFeatures/#property-animationPolicy
 
 ### Instance Properties
+
+#### `contents.ipc`
+
+An [`IpcMain`](ipc-main.md) scoped to just IPC messages sent from this
+WebContents.
 
 #### `contents.audioMuted`
 
