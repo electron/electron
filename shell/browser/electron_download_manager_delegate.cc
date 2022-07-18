@@ -34,6 +34,7 @@
 #include "base/i18n/case_conversion.h"
 #include "base/win/registry.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/shell_dialogs/execute_select_file_win.h"
 #include "ui/strings/grit/ui_strings.h"
 #endif  // BUILDFLAG(IS_WIN)
 
@@ -69,46 +70,14 @@ base::FilePath CreateDownloadPath(const GURL& url,
   return download_path.Append(generated_name);
 }
 
-}  // namespace
-
-ElectronDownloadManagerDelegate::ElectronDownloadManagerDelegate(
-    content::DownloadManager* manager)
-    : download_manager_(manager) {}
-
-ElectronDownloadManagerDelegate::~ElectronDownloadManagerDelegate() {
-  if (download_manager_) {
-    DCHECK_EQ(static_cast<content::DownloadManagerDelegate*>(this),
-              download_manager_->GetDelegate());
-    download_manager_->SetDelegate(nullptr);
-    download_manager_ = nullptr;
-  }
-}
-
-void ElectronDownloadManagerDelegate::GetItemSavePath(
-    download::DownloadItem* item,
-    base::FilePath* path) {
-  api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
-  if (download)
-    *path = download->GetSavePath();
-}
-
-void ElectronDownloadManagerDelegate::GetItemSaveDialogOptions(
-    download::DownloadItem* item,
-    file_dialog::DialogSettings* options) {
-  api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
-  if (download)
-    *options = download->GetSaveDialogOptions();
-}
-
 #if BUILDFLAG(IS_WIN)
 // Get the file type description from the registry. This will be "Text Document"
 // for .txt files, "JPEG Image" for .jpg files, etc. If the registry doesn't
 // have an entry for the file type, we return false, true if the description was
 // found. 'file_ext' must be in form ".txt".
 // Copied from ui/shell_dialogs/select_file_dialog_win.cc
-bool ElectronDownloadManagerDelegate::GetRegistryDescriptionFromExtension(
-    const std::u16string& file_ext,
-    std::u16string* reg_description) {
+bool GetRegistryDescriptionFromExtension(const std::u16string& file_ext,
+                                         std::u16string* reg_description) {
   DCHECK(reg_description);
   base::win::RegKey reg_ext(HKEY_CLASSES_ROOT, base::as_wcstr(file_ext),
                             KEY_READ);
@@ -136,8 +105,7 @@ bool ElectronDownloadManagerDelegate::GetRegistryDescriptionFromExtension(
 // from the registry. If the file extension does not exist in the registry, a
 // default description will be created (e.g. "qqq" yields "QQQ File").
 // Copied from ui/shell_dialogs/select_file_dialog_win.cc
-std::vector<ui::FileFilterSpec>
-ElectronDownloadManagerDelegate::FormatFilterForExtensions(
+std::vector<ui::FileFilterSpec> FormatFilterForExtensions(
     const std::vector<std::u16string>& file_ext,
     const std::vector<std::u16string>& ext_desc,
     bool include_all_files,
@@ -180,8 +148,7 @@ ElectronDownloadManagerDelegate::FormatFilterForExtensions(
       if (ext_index != std::u16string::npos)
         ext_name = ext_name.substr(ext_index);
 
-      if (!ElectronDownloadManagerDelegate::GetRegistryDescriptionFromExtension(
-              first_extension, &desc)) {
+      if (!GetRegistryDescriptionFromExtension(first_extension, &desc)) {
         // The extension doesn't exist in the registry. Create a description
         // based on the unknown extension type (i.e. if the extension is .qqq,
         // then we create a description "QQQ File").
@@ -207,6 +174,37 @@ ElectronDownloadManagerDelegate::FormatFilterForExtensions(
   return result;
 }
 #endif  // BUILDFLAG(IS_WIN)
+
+}  // namespace
+
+ElectronDownloadManagerDelegate::ElectronDownloadManagerDelegate(
+    content::DownloadManager* manager)
+    : download_manager_(manager) {}
+
+ElectronDownloadManagerDelegate::~ElectronDownloadManagerDelegate() {
+  if (download_manager_) {
+    DCHECK_EQ(static_cast<content::DownloadManagerDelegate*>(this),
+              download_manager_->GetDelegate());
+    download_manager_->SetDelegate(nullptr);
+    download_manager_ = nullptr;
+  }
+}
+
+void ElectronDownloadManagerDelegate::GetItemSavePath(
+    download::DownloadItem* item,
+    base::FilePath* path) {
+  api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
+  if (download)
+    *path = download->GetSavePath();
+}
+
+void ElectronDownloadManagerDelegate::GetItemSaveDialogOptions(
+    download::DownloadItem* item,
+    file_dialog::DialogSettings* options) {
+  api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
+  if (download)
+    *options = download->GetSaveDialogOptions();
+}
 
 void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     uint32_t download_id,
@@ -246,20 +244,16 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     settings.force_detached = offscreen;
 
 #if BUILDFLAG(IS_WIN)
-    auto extension = settings.default_path.FinalExtension();
+    std::wstring extension = settings.default_path.FinalExtension();
     if (!extension.empty() && settings.filters.empty()) {
-      extension.erase(extension.begin());
+      std::vector<ui::FileFilterSpec> filter_spec = FormatFilterForExtensions(
+          {base::WideToUTF16(extension)}, {u""}, true, true);
 
-      std::u16string ext(extension.begin(), extension.end());
-      const std::vector<std::u16string> file_ext{u"." + ext};
-      std::vector<ui::FileFilterSpec> filter_spec =
-          FormatFilterForExtensions(file_ext, {u""}, true, true);
-
-      std::string extension_spec_conv(filter_spec[0].extension_spec.begin(),
-                                      filter_spec[0].extension_spec.end());
+      std::string extension_spec_conv(
+          base::UTF16ToUTF8(filter_spec[0].extension_spec));
       const std::vector<std::string> filter{extension_spec_conv};
-      std::string description_conv(filter_spec[0].description.begin(),
-                                   filter_spec[0].description.end());
+      std::string description_conv(
+          base::UTF16ToUTF8(filter_spec[0].description));
 
       settings.filters.emplace_back(std::make_pair(description_conv, filter));
 

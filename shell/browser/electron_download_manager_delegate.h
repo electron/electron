@@ -13,9 +13,6 @@
 #include "content/public/browser/download_manager_delegate.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_helper/dictionary.h"
-#if BUILDFLAG(IS_WIN)
-#include "ui/shell_dialogs/execute_select_file_win.h"
-#endif  // BUILDFLAG(IS_WIN)
 
 namespace content {
 class DownloadManager;
@@ -67,17 +64,6 @@ class ElectronDownloadManagerDelegate
 
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<ElectronDownloadManagerDelegate> weak_ptr_factory_{this};
-
-#if BUILDFLAG(IS_WIN)
-  // Copied from ui/shell_dialogs/select_file_dialog_win.h
-  bool GetRegistryDescriptionFromExtension(const std::u16string& file_ext,
-                                           std::u16string* reg_description);
-  std::vector<ui::FileFilterSpec> FormatFilterForExtensions(
-      const std::vector<std::u16string>& file_ext,
-      const std::vector<std::u16string>& ext_desc,
-      bool include_all_files,
-      bool keep_extension_visible);
-#endif  // BUILDFLAG(IS_WIN)
 };
 
 }  // namespace electron
