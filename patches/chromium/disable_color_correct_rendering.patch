@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 7a3d5f6dfc02f497cc01410cc6a568422eae3542..d7d459e1ad86cfab9e691142618e306bb2e936c3 100644
+index 6a148c3173f8f5653b945ed9b6ffcbf48d76d511..b30c2e686ff9b64691142ff893225c60cedeaebd 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1864,6 +1864,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -80,7 +80,7 @@ index 9d34ced366026eb7cdd00ce40a4eb1af56180d39..abf67f8246bfa37df08cd2216c388dd3
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 4be758a498c1e5b17fd8eea6c5a7719e4252723a..e166e96b4b23725ad8735ab87afd3660ed22de50 100644
+index 9b29ab96d6e7dd7160502ee2252843bdeeab84c9..a9889d625dac9148dd8bbc2853c4e09f6546bd0d 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -228,6 +228,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(

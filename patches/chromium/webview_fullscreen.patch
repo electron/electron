@@ -14,11 +14,11 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index e240f1d8510b7f6d01e601b24f50cf2af854482b..5b879246240ad3440115cfaf77f8449dd9a8d02b 100644
+index 9c6f51f1667d9bf1b430a83747faebf633a324c7..5048ba0117b5706116dc243400b5213285c16c38 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6554,6 +6554,15 @@ void RenderFrameHostImpl::EnterFullscreen(
-     notified_instances.insert(parent_site_instance);
+@@ -6565,6 +6565,15 @@ void RenderFrameHostImpl::EnterFullscreen(
+     }
    }
  
 +  // Entering fullscreen from webview should also notify its outer frame.
