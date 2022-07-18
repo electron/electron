@@ -466,4 +466,9 @@ gfx::Size ClientFrameViewLinux::SizeWithDecorations(gfx::Size size) const {
   return size;
 }
 
+views::View* ClientFrameViewLinux::TargetForRect(views::View* root,
+                                                 const gfx::Rect& rect) {
+  return views::NonClientFrameView::TargetForRect(root, rect);
+}
+
 }  // namespace electron
