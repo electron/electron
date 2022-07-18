@@ -346,7 +346,7 @@ step-wait-for-goma: &step-wait-for-goma
           sleep 5
       done
       echo "Goma ready"
-    no_output_timeout: 2m
+    no_output_timeout: 5m
 
 step-restore-brew-cache: &step-restore-brew-cache
   restore_cache:
