@@ -5,9 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_ELECTRON_DOWNLOAD_MANAGER_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_ELECTRON_DOWNLOAD_MANAGER_DELEGATE_H_
 
-#if BUILDFLAG(IS_WIN)
 #include <vector>
-#endif  // BUILDFLAG(IS_WIN)
 
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/download_manager_delegate.h"
