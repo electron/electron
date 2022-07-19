@@ -129,7 +129,7 @@ app.whenReady().then(async () => {
 });
 
 ```
-Then, in your preload scripts you recieve the port through IPC and set up the 
+Then, in your preload scripts you receive the port through IPC and set up the 
 listeners. 
 
 ```js
