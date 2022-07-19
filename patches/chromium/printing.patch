@@ -78,7 +78,7 @@ index 331a084371402b5a2440b5d60feac8f0189e84b9..6755d1f497cef4deea6b83df1d8720dc
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index d9ae000f1348529ab849349d7562dbb04fe9fd16..cf66978761f5dda2f8958234d62c3cf11ae4cf9c 100644
+index d9ae000f1348529ab849349d7562dbb04fe9fd16..fcfeffd86bd897467b12bf1aba4aaac09986cfd9 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,7 +20,6 @@
@@ -97,7 +97,7 @@ index d9ae000f1348529ab849349d7562dbb04fe9fd16..cf66978761f5dda2f8958234d62c3cf1
  #include "printing/backend/print_backend.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/mojom/print.mojom.h"
-@@ -222,16 +222,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value::Dict new_settings,
+@@ -222,16 +222,19 @@ void PrintJobWorker::UpdatePrintSettings(base::Value::Dict new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && defined(USE_CUPS)
    }
  
@@ -111,12 +111,10 @@ index d9ae000f1348529ab849349d7562dbb04fe9fd16..cf66978761f5dda2f8958234d62c3cf1
 -    result = printing_context_->UpdatePrintSettings(std::move(new_settings));
 +    // Reset settings from previous print job
 +    printing_context_->ResetSettings();
-+    mojom::ResultCode get_default_result = printing_context_->UseDefaultSettings();
-+    if (get_default_result == mojom::ResultCode::kSuccess) {
-+      mojom::ResultCode update_result =
-+              printing_context_->UpdatePrintSettings(std::move(new_settings));
-+      GetSettingsDone(std::move(callback), update_result);
-+    }
++    mojom::ResultCode result_code = printing_context_->UseDefaultSettings();
++    if (result_code == mojom::ResultCode::kSuccess)
++      result_code = printing_context_->UpdatePrintSettings(std::move(new_settings));
++    GetSettingsDone(std::move(callback), result_code);
    }
 -  GetSettingsDone(std::move(callback), result);
  }
