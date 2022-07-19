@@ -95,7 +95,7 @@ without needing to use the main process as an in-between.
 const { BrowserWindow, app, MessageChannelMain } = require('electron')
 
 app.whenReady().then(async () => {
-  // create the windows
+  // create the windows.
   const mainWindow = new BrowserWindow({
     show: false,
     webPreferences: { 
@@ -115,10 +115,10 @@ app.whenReady().then(async () => {
   })
 
 
-  // set up the channel
+  // set up the channel.
   const { port1, port2 } = new MessageChannelMain();
   
-  // once the webContents are ready, send a port to each webContents with postMessage
+  // once the webContents are ready, send a port to each webContents with postMessage.
   mainWindow.once('ready-to-show', () => {
     mainWindow.webContents.postMessage('port', null, [port1]);
   });
@@ -137,7 +137,7 @@ listeners.
 const { ipcRenderer } = require('electron');
 
 ipcRenderer.on('port', e => {
-  // we recieved a port, make it available to your app.
+  // port received, make it globally available.
   window.messagePort = e.ports[0];
   
   window.messagePort.onmessage = messageEvent => {
