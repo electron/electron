@@ -131,7 +131,7 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
   host_supports_client_frame_shadow_ = tree_host->SupportsClientFrameShadow();
 
   frame_provider_ = ui::LinuxUi::instance()->GetWindowFrameProvider(
-      !host_supports_client_frame_shadow_);
+      !host_supports_client_frame_shadow_, frame_->IsMaximized());
 
   UpdateWindowTitle();
 
@@ -273,6 +273,9 @@ void ClientFrameViewLinux::Layout() {
     title_->SetVisible(false);
     return;
   }
+
+  frame_provider_ = ui::LinuxUi::instance()->GetWindowFrameProvider(
+      !host_supports_client_frame_shadow_, frame_->IsMaximized());
 
   UpdateButtonImages();
   LayoutButtons();
