@@ -84,6 +84,82 @@ process, you can listen for the `close` event by calling `port.on('close',
 
 ## Example use cases
 
+### Setting up a MessageChannel between two renderers
+
+In this example, the main process sets up a MessageChannel, then sends each port 
+to a different renderer. This allows renderers to send messages to each other 
+without needing to use the main process as an in-between. 
+
+```js
+// main.js ///////////////////////////////////////////////////////////////////
+const { BrowserWindow, app, MessageChannelMain } = require('electron')
+
+app.whenReady().then(async () => {
+  // create the windows
+  const mainWindow = new BrowserWindow({
+    show: false,
+    webPreferences: { 
+      contextIsolation: false,
+      nodeIntegration: true ,
+      preload: 'preloadMain.js',
+    }
+  })
+
+  const secondaryWindow = BrowserWindow({
+    show: false,
+    webPreferences: { 
+      contextIsolation: false,
+      nodeIntegration: true ,
+      preload: 'preloadSecondary.js',
+    }
+  })
+
+
+  // set up the channel
+  const { port1, port2 } = new MessageChannelMain();
+  
+  // once the webContents are ready, send a port to each webContents with postMessage
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.webContents.postMessage('port', null, [port1]);
+  });
+
+  secondaryWindow.once('ready-to-show', () => {
+    secondaryWindow.webContents.postMessage('port', null, [port2]);
+  });
+});
+
+```
+Then, in your preload scripts you recieve the port through IPC and set up the 
+listeners. 
+
+```js
+// preloadMain.js and preloadSecondary.js
+const { ipcRenderer } = require('electron');
+
+ipcRenderer.on('port', e => {
+  // we recieved a port, make it available to your app.
+  window.messagePort = e.ports[0];
+  
+  window.messagePort.onmessage = messageEvent => {
+    // handle message
+  };
+});
+```
+In this example messagePort is bound to the `window` object directly. It is better
+to use `contextIsolation` and set up specific contextBridge calls for each of your 
+expected messages, but for the simplicity of this example we don't.
+
+That means window.messagePort is globally available and you can call 
+`postMessage` on it from anywhere in your app to send a message to the other 
+renderer.
+
+```js
+// elsewhere in your code to send a message to the other renderers message handler
+window.messagePort.postmessage("ping");
+```
+
+
+
 ### Worker process
 
 In this example, your app has a worker process implemented as a hidden window.
