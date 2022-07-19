@@ -38,6 +38,7 @@
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_main_delegate.h"
 #include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
@@ -529,6 +530,18 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
       download_manager->Shutdown();
     }
   }
+
+  // Shutdown node utility process since the content layer will
+  // destroy the service after this step (PostMainMessageLoopRun) via
+  // BrowserProcessIOThread::ProcessHostCleanUp()
+  auto& utility_process_wrappers = GetAllUtilityProcessWrappers();
+  for (base::IDMap<api::UtilityProcessWrapper*>::iterator iter(
+           &utility_process_wrappers);
+       !iter.IsAtEnd(); iter.Advance()) {
+    auto* utility_process_wrapper = iter.GetCurrentValue();
+    utility_process_wrapper->ShutdownServiceProcess();
+  }
+  utility_process_wrappers.Clear();
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.

@@ -5,8 +5,16 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_UTILITY_PROCESS_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_UTILITY_PROCESS_H_
 
+#include <string>
+#include <vector>
+
+#include "base/containers/id_map.h"
+#include "base/memory/weak_ptr.h"
+#include "base/process/process_handle.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/services/node/public/mojom/node_service.mojom.h"
 #include "v8/include/v8.h"
 
 namespace gin {
@@ -14,6 +22,10 @@ class Arguments;
 template <typename T>
 class Handle;
 }  // namespace gin
+
+namespace base {
+class Process;
+}  // namespace base
 
 namespace electron {
 
@@ -26,6 +38,8 @@ class UtilityProcessWrapper
   ~UtilityProcessWrapper() override;
   static gin::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
 
+  void ShutdownServiceProcess();
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -33,13 +47,28 @@ class UtilityProcessWrapper
   const char* GetTypeName() override;
 
  private:
-  UtilityProcessWrapper();
+  UtilityProcessWrapper(node::mojom::NodeServiceParamsPtr params,
+                        std::u16string display_name,
+                        bool use_plugin_helper);
+  void OnServiceProcessLaunched(const base::Process& process);
+  void OnServiceProcessDisconnected(uint32_t error_code,
+                                    const std::string& description);
   void Pin(v8::Isolate* isolate);
 
+  void PostMessage(gin::Arguments* args);
+  int Kill(int signal) const;
+  v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
+
   v8::Global<v8::Value> pinned_wrapper_;
+  int32_t wrapper_id_;
+  base::ProcessId pid_ = base::kNullProcessId;
+  mojo::Remote<node::mojom::NodeService> node_service_remote_;
+  base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
 };
 
 }  // namespace api
+
+base::IDMap<api::UtilityProcessWrapper*>& GetAllUtilityProcessWrappers();
 
 }  // namespace electron
 

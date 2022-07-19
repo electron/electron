@@ -62,6 +62,7 @@ auto_filenames = {
     "docs/api/touch-bar-spacer.md",
     "docs/api/touch-bar.md",
     "docs/api/tray.md",
+    "docs/api/utility-process.md",
     "docs/api/web-contents.md",
     "docs/api/web-frame-main.md",
     "docs/api/web-frame.md",
@@ -334,6 +335,7 @@ auto_filenames = {
   ]
 
   utility_node_bundle_deps = [
+    "lib/browser/message-port-main.ts",
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
     "lib/common/reset-search-paths.ts",

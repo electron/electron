@@ -4,8 +4,25 @@
 
 module node.mojom;
 
+import "mojo/public/mojom/base/file_path.mojom";
 import "sandbox/policy/mojom/sandbox.mojom";
+import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
+
+struct EnvironmentVariable {
+  string name;
+  string value;
+};
+
+struct NodeServiceParams {
+  mojo_base.mojom.FilePath script;
+  array<string> args;
+  array<string> exec_args;
+  array<EnvironmentVariable> environment;
+};
 
 [ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
 interface NodeService {
+  Initialize(NodeServiceParams params);
+
+  ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 };

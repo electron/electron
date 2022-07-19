@@ -5,7 +5,9 @@
 #ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 #define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
@@ -87,7 +89,9 @@ class NodeBindings {
 
   // Create the environment and load node.js.
   node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform);
+                                       node::MultiIsolatePlatform* platform,
+                                       std::vector<std::string> args = {},
+                                       std::vector<std::string> exec_args = {});
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);

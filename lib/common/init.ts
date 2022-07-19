@@ -46,7 +46,8 @@ timers.setTimeout = wrapWithActivateUvLoop(timers.setTimeout);
 timers.setInterval = wrapWithActivateUvLoop(timers.setInterval);
 
 // Only override the global setTimeout/setInterval impls in the browser process
-if (process.type === 'browser') {
+if (process.type === 'browser' ||
+    process.type === 'utility_node') {
   global.setTimeout = timers.setTimeout;
   global.setInterval = timers.setInterval;
 }
