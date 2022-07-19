@@ -140,6 +140,10 @@ ipcRenderer.on('port', (e, msg) => {
 
 ### Instance Properties
 
+#### `frame.ipc` _Readonly_
+
+An [`IpcMain`](ipc-main.md) instance scoped to the frame.
+
 #### `frame.url` _Readonly_
 
 A `string` representing the current URL of the frame.

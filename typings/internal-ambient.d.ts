@@ -237,6 +237,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_frame_main'): {
       WebFrameMain: typeof Electron.WebFrameMain;
       fromId(processId: number, routingId: number): Electron.WebFrameMain;
+      fromIdOrNull(processId: number, routingId: number): Electron.WebFrameMain;
     }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
