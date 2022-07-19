@@ -1,0 +1,11 @@
+// Copyright (c) 2022 Microsoft, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+module node.mojom;
+
+import "sandbox/policy/mojom/sandbox.mojom";
+
+[ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
+interface NodeService {
+};

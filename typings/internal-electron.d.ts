@@ -9,7 +9,8 @@ declare namespace Electron {
   enum ProcessType {
     browser = 'browser',
     renderer = 'renderer',
-    worker = 'worker'
+    worker = 'worker',
+    utility_node = 'utility_node'
   }
 
   interface App {

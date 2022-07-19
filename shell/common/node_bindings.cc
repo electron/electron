@@ -70,6 +70,7 @@
   V(electron_browser_system_preferences) \
   V(electron_browser_base_window)        \
   V(electron_browser_tray)               \
+  V(electron_browser_utility_process)    \
   V(electron_browser_view)               \
   V(electron_browser_web_contents)       \
   V(electron_browser_web_contents_view)  \
@@ -385,7 +386,9 @@ void NodeBindings::Initialize() {
   SetNodeCliFlags();
 
   auto env = base::Environment::Create();
-  SetNodeOptions(env.get());
+  if (browser_env_ != BrowserEnvironment::kUtility) {
+    SetNodeOptions(env.get());
+  }
 
   std::vector<std::string> argv = {"electron"};
   std::vector<std::string> exec_argv;
@@ -439,6 +442,9 @@ node::Environment* NodeBindings::CreateEnvironment(
     case BrowserEnvironment::kWorker:
       process_type = "worker";
       break;
+    case BrowserEnvironment::kUtility:
+      process_type = "utility_node";
+      break;
   }
 
   v8::Isolate* isolate = context->GetIsolate();
@@ -446,7 +452,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Do not set DOM globals for renderer process.
   // We must set this before the node bootstrapper which is run inside
   // CreateEnvironment
-  if (browser_env_ != BrowserEnvironment::kBrowser)
+  if (browser_env_ != BrowserEnvironment::kBrowser &&
+      browser_env_ != BrowserEnvironment::kUtility)
     global.Set("_noBrowserGlobals", true);
 
   if (browser_env_ == BrowserEnvironment::kBrowser) {
@@ -478,7 +485,8 @@ node::Environment* NodeBindings::CreateEnvironment(
                    node::EnvironmentFlags::kHideConsoleWindows |
                    node::EnvironmentFlags::kNoGlobalSearchPaths;
 
-  if (browser_env_ != BrowserEnvironment::kBrowser) {
+  if (browser_env_ != BrowserEnvironment::kBrowser &&
+      browser_env_ != BrowserEnvironment::kUtility) {
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
@@ -511,7 +519,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
-  if (browser_env_ != BrowserEnvironment::kBrowser) {
+  if (browser_env_ != BrowserEnvironment::kBrowser &&
+      browser_env_ != BrowserEnvironment::kUtility) {
     // We need to bootstrap the env in non-browser processes so that
     // _noBrowserGlobals is read correctly before we remove it
     global.Delete("_noBrowserGlobals");
@@ -533,7 +542,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   // renderer process.
   is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
 
-  if (browser_env_ == BrowserEnvironment::kBrowser) {
+  if (browser_env_ == BrowserEnvironment::kBrowser ||
+      browser_env_ != BrowserEnvironment::kUtility) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {

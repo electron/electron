@@ -40,6 +40,10 @@ const main = async () => {
     {
       name: 'asar_bundle_deps',
       config: 'webpack.config.asar.js'
+    },
+    {
+      name: 'utility_node_bundle_deps',
+      config: 'webpack.config.utility_node.js'
     }
   ];
 

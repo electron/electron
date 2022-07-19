@@ -220,6 +220,7 @@ auto_filenames = {
     "lib/browser/api/system-preferences.ts",
     "lib/browser/api/touch-bar.ts",
     "lib/browser/api/tray.ts",
+    "lib/browser/api/utility-process.ts",
     "lib/browser/api/view.ts",
     "lib/browser/api/views/image-view.ts",
     "lib/browser/api/web-contents-view.ts",
@@ -325,6 +326,20 @@ auto_filenames = {
     "lib/asar/fs-wrapper.ts",
     "lib/asar/init.ts",
     "lib/common/webpack-provider.ts",
+    "package.json",
+    "tsconfig.electron.json",
+    "tsconfig.json",
+    "typings/internal-ambient.d.ts",
+    "typings/internal-electron.d.ts",
+  ]
+
+  utility_node_bundle_deps = [
+    "lib/common/define-properties.ts",
+    "lib/common/init.ts",
+    "lib/common/reset-search-paths.ts",
+    "lib/utility_node/api/exports/electron.ts",
+    "lib/utility_node/api/module-list.ts",
+    "lib/utility_node/init.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",

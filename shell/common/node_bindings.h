@@ -74,7 +74,7 @@ class UvHandle {
 
 class NodeBindings {
  public:
-  enum class BrowserEnvironment { kBrowser, kRenderer, kWorker };
+  enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
   static NodeBindings* Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinModules();

@@ -31,6 +31,7 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'systemPreferences', loader: () => require('./system-preferences') },
   { name: 'TouchBar', loader: () => require('./touch-bar') },
   { name: 'Tray', loader: () => require('./tray') },
+  { name: 'UtilityProcess', loader: () => require('./utility-process') },
   { name: 'View', loader: () => require('./view') },
   { name: 'webContents', loader: () => require('./web-contents') },
   { name: 'WebContentsView', loader: () => require('./web-contents-view') },

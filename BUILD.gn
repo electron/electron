@@ -202,6 +202,15 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
+webpack_build("electron_utility_node_bundle") {
+  deps = [ ":build_electron_definitions" ]
+
+  inputs = auto_filenames.utility_node_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.utility_node.js"
+  out_file = "$target_gen_dir/js2c/utility_node_init.js"
+}
+
 action("electron_js2c") {
   deps = [
     ":electron_asar_bundle",
@@ -209,6 +218,7 @@ action("electron_js2c") {
     ":electron_isolated_renderer_bundle",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
+    ":electron_utility_node_bundle",
     ":electron_worker_bundle",
   ]
 
@@ -218,6 +228,7 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
+    "$target_gen_dir/js2c/utility_node_init.js",
     "$target_gen_dir/js2c/worker_init.js",
   ]
 
@@ -368,6 +379,7 @@ source_set("electron_lib") {
     "chromium_src:chrome",
     "chromium_src:chrome_spellchecker",
     "shell/common/api:mojo",
+    "shell/services/node/public/mojom",
     "//base:base_static",
     "//base/allocator:buildflags",
     "//chrome:strings",
