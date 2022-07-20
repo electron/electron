@@ -144,6 +144,27 @@ ipcRenderer.on('port', (e, msg) => {
 
 An [`IpcMain`](ipc-main.md) instance scoped to the frame.
 
+IPC messages sent with `ipcRenderer.send`, `ipcRenderer.sendSync` or
+`ipcRenderer.postMessage` will be delivered in the following order:
+
+1. `contents.on('ipc-message')`
+2. `contents.mainFrame.on(channel)`
+3. `contents.ipc.on(channel)`
+4. `ipcMain.on(channel)`
+
+Handlers registered with `invoke` will be checked in the following order. The
+first one that is defined will be called, the rest will be ignored.
+
+1. `contents.mainFrame.handle(channel)`
+2. `contents.handle(channel)`
+3. `ipcMain.handle(channel)`
+
+In most cases, only the main frame of a WebContents can send or receive IPC
+messages. However, if the `nodeIntegrationInSubFrames` option is enabled, it is
+possible for child frames to send and receive IPC messages also. The
+[`WebContents.ipc`](web-contents.md#contentsipc-readonly) interface may be more
+convenient when `nodeIntegrationInSubFrames` is not enabled.
+
 #### `frame.url` _Readonly_
 
 A `string` representing the current URL of the frame.
