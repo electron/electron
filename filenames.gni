@@ -498,6 +498,7 @@ filenames = {
     "shell/browser/ui/inspectable_web_contents.cc",
     "shell/browser/ui/inspectable_web_contents.h",
     "shell/browser/ui/inspectable_web_contents_delegate.h",
+    "shell/browser/ui/inspectable_web_contents_view.cc",
     "shell/browser/ui/inspectable_web_contents_view.h",
     "shell/browser/ui/inspectable_web_contents_view_delegate.cc",
     "shell/browser/ui/inspectable_web_contents_view_delegate.h",
