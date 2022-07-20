@@ -150,3 +150,4 @@ m102_ensure_raw_ptr_t_and_t_are_treated_identically_in_base.patch
 post_media_log_destruction_to_avoid_destruction.patch
 add_stop_method_to_batchingmedialog.patch
 make_gtk_getlibgtk_public.patch
+cherry-pick-3cbd5973d704.patch
