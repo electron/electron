@@ -1,0 +1,1144 @@
+From e7a4790021209066278f87bd58b1206f2a12ff13 Mon Sep 17 00:00:00 2001
+From: Justin Novosad <junov@chromium.org>
+Date: Mon, 04 Jul 2022 15:53:22 -0400
+Subject: [PATCH] Check interface availability when deserializing objects.
+
+According to the spec, objects of interfaces that are Serializable
+or Transferable cannot be received in realms where their interfaces
+are not exposed.  In such cases, the deserialization algorithm is
+supposed to thoe a DataCloneError DOM exception [1, 2]. Such exceptions
+must then be caught by either the Window post message steps[3] or the
+message port post message steps[4], which will result in a messageerror
+event being fired at the destination port.
+
+Before this change, it was possible infiltrate many interfaces into
+realms where they are not allowed.  In particular, it was possible
+to post objects exposed only to Window and Workers to an Audio
+Worklet, resulting in unpredictable behavior and security
+vulnerabilities.
+
+[1] For transferable objects, see step 3.3.2 of the Structured
+    Deserialize With Transfer algorithm:
+    https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserializewithtransfer
+[2] For serializable objects, see step 20.2 of the Strucured
+    Deserialize algorithm:
+    https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize
+[3] See step 8.4 of:
+    https://html.spec.whatwg.org/multipage/web-messaging.html#window-post-message-steps
+[4] See step 7.3 of:
+    https://html.spec.whatwg.org/multipage/web-messaging.html#message-port-post-message-steps
+
+Bug: 1334864
+Change-Id: Id1d26d1959bed373edd4d13e80c31f6d4dc751cd
+---
+
+diff --git a/components/pdf/renderer/pdf_view_web_plugin_client.cc b/components/pdf/renderer/pdf_view_web_plugin_client.cc
+index d5c0436..59c1704 100644
+--- a/components/pdf/renderer/pdf_view_web_plugin_client.cc
++++ b/components/pdf/renderer/pdf_view_web_plugin_client.cc
+@@ -95,8 +95,9 @@
+   v8::Local<v8::Value> converted_message =
+       v8_value_converter_->ToV8Value(&message_as_value, context);
+ 
+-  plugin_container_->EnqueueMessageEvent(
+-      blink::WebSerializedScriptValue::Serialize(isolate_, converted_message));
++  plugin_container_->EnqueueMessageEvent(blink::WebDOMMessageEvent(
++      isolate_,
++      blink::WebSerializedScriptValue::Serialize(isolate_, converted_message)));
+ }
+ 
+ void PdfViewWebPluginClient::Invalidate() {
+diff --git a/components/plugins/renderer/plugin_placeholder.cc b/components/plugins/renderer/plugin_placeholder.cc
+index 5b6fcaa..d1dfb4b 100644
+--- a/components/plugins/renderer/plugin_placeholder.cc
++++ b/components/plugins/renderer/plugin_placeholder.cc
+@@ -134,7 +134,7 @@
+           content::V8ValueConverter::Create()->ToV8Value(
+               &value,
+               element.GetDocument().GetFrame()->MainWorldScriptContext()));
+-  blink::WebDOMMessageEvent msg_event(message_data);
++  blink::WebDOMMessageEvent msg_event(blink::MainThreadIsolate(), message_data);
+ 
+   plugin()->Container()->EnqueueMessageEvent(msg_event);
+ }
+diff --git a/content/renderer/pepper/message_channel.cc b/content/renderer/pepper/message_channel.cc
+index 36d4aa1d..8aa3b15 100644
+--- a/content/renderer/pepper/message_channel.cc
++++ b/content/renderer/pepper/message_channel.cc
+@@ -369,7 +369,8 @@
+   //     at least, postMessage on Workers does not provide the origin or source.
+   //     TODO(dmichael):  Add origin if we change to a more iframe-like origin
+   //                      policy (see crbug.com/81537)
+-  WebDOMMessageEvent msg_event(message_data);
++  WebDOMMessageEvent msg_event(container->V8ObjectForElement()->GetIsolate(),
++                               message_data);
+   container->EnqueueMessageEvent(msg_event);
+ }
+ 
+diff --git a/third_party/blink/public/web/web_dom_message_event.h b/third_party/blink/public/web/web_dom_message_event.h
+index 2b1c6f9..173eb1c 100644
+--- a/third_party/blink/public/web/web_dom_message_event.h
++++ b/third_party/blink/public/web/web_dom_message_event.h
+@@ -54,6 +54,7 @@
+ class WebDOMMessageEvent : public WebDOMEvent {
+  public:
+   BLINK_EXPORT WebDOMMessageEvent(
++      v8::Isolate* isolate,
+       const WebSerializedScriptValue& message_data,
+       const WebString& origin = WebString(),
+       const WebFrame* source_frame = nullptr,
+diff --git a/third_party/blink/renderer/bindings/bindings.gni b/third_party/blink/renderer/bindings/bindings.gni
+index 712e987..2956f26 100644
+--- a/third_party/blink/renderer/bindings/bindings.gni
++++ b/third_party/blink/renderer/bindings/bindings.gni
+@@ -107,6 +107,7 @@
+                     "core/v8/script_value.h",
+                     "core/v8/serialization/post_message_helper.cc",
+                     "core/v8/serialization/post_message_helper.h",
++                    "core/v8/serialization/serialization_tag.cc",
+                     "core/v8/serialization/serialization_tag.h",
+                     "core/v8/serialization/serialized_color_params.cc",
+                     "core/v8/serialization/serialized_color_params.h",
+diff --git a/third_party/blink/renderer/bindings/core/v8/serialization/serialization_tag.cc b/third_party/blink/renderer/bindings/core/v8/serialization/serialization_tag.cc
+new file mode 100644
+index 0000000..fbcfbac
+--- /dev/null
++++ b/third_party/blink/renderer/bindings/core/v8/serialization/serialization_tag.cc
+@@ -0,0 +1,71 @@
++// Copyright 2022 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/bindings/core/v8/serialization/serialization_tag.h"
++
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
++
++namespace blink {
++
++// TODO(junov): This should ideally be generated from IDL, but it's complicated.
++bool IsInterfaceExposed(SerializationTag tag, ExecutionContext* ec) {
++  switch (tag) {
++    case kRTCCertificateTag:
++      return ec->IsWindow();
++
++    case kBlobTag:
++    case kBlobIndexTag:
++    case kCropTargetTag:
++    case kCryptoKeyTag:
++    case kDOMMatrixTag:
++    case kDOMMatrixReadOnlyTag:
++    case kDOMMatrix2DTag:
++    case kDOMMatrix2DReadOnlyTag:
++    case kDOMPointTag:
++    case kDOMPointReadOnlyTag:
++    case kDOMQuadTag:
++    case kDOMRectTag:
++    case kDOMRectReadOnlyTag:
++    case kFileTag:
++    case kFileIndexTag:
++    case kFileListTag:
++    case kFileListIndexTag:
++    case kFileSystemFileHandleTag:
++    case kFileSystemDirectoryHandleTag:
++    case kImageBitmapTag:
++    case kImageBitmapTransferTag:
++    case kImageDataTag:
++    case kMediaStreamTrackTag:
++    case kMojoHandleTag:
++    case kOffscreenCanvasTransferTag:
++      return ec->IsWindow() || ec->IsWorkerGlobalScope();
++
++    case kMessagePortTag:
++      return ec->IsWindow() || ec->IsWorkerGlobalScope() ||
++             ec->IsAudioWorkletGlobalScope();
++
++    case kAudioDataTag:
++    case kEncodedAudioChunkTag:
++    case kEncodedVideoChunkTag:
++    case kMediaSourceHandleTag:
++    case kRTCEncodedAudioFrameTag:
++    case kRTCEncodedVideoFrameTag:
++    case kVideoFrameTag:
++      return ec->IsWindow() || ec->IsDedicatedWorkerGlobalScope();
++
++    case kDOMExceptionTag:  // https://github.com/whatwg/webidl/pull/1137
++    case kDOMFileSystemTag:
++    case kReadableStreamTransferTag:
++    case kTransformStreamTransferTag:
++    case kVersionTag:
++    case kWritableStreamTransferTag:
++      return true;
++
++    default:
++      NOTREACHED();
++  }
++  return false;
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/bindings/core/v8/serialization/serialization_tag.h b/third_party/blink/renderer/bindings/core/v8/serialization/serialization_tag.h
+index 6e7322c..9048c1d 100644
+--- a/third_party/blink/renderer/bindings/core/v8/serialization/serialization_tag.h
++++ b/third_party/blink/renderer/bindings/core/v8/serialization/serialization_tag.h
+@@ -7,6 +7,8 @@
+ 
+ namespace blink {
+ 
++class ExecutionContext;
++
+ // Serialization format is a sequence of tags followed by zero or more data
+ // arguments.  Tags always take exactly one byte. A serialized stream first
+ // begins with a complete VersionTag. If the stream does not begin with a
+@@ -75,7 +77,7 @@
+   kReadableStreamTransferTag = 'r',   // index:uint32_t
+   kTransformStreamTransferTag = 'm',  // index:uint32_t
+   kWritableStreamTransferTag = 'w',   // index:uint32_t
+-  kMediaStreamTrack =
++  kMediaStreamTrackTag =
+       's',             // session_id.high:uint64_t, session_id.low:uint64_t,
+                        // kind:WebCoreString, id:WebCoreString,
+                        // label:WebCoreString, enabled:byte, muted:byte,
+@@ -129,6 +131,8 @@
+   kVersionTag = 0xFF       // version:uint32_t -> Uses this as the file version.
+ };
+ 
++bool IsInterfaceExposed(SerializationTag, ExecutionContext*);
++
+ }  // namespace blink
+ 
+ #endif  // THIRD_PARTY_BLINK_RENDERER_BINDINGS_CORE_V8_SERIALIZATION_SERIALIZATION_TAG_H_
+diff --git a/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_deserializer.cc b/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_deserializer.cc
+index f290381..74b0e85 100644
+--- a/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_deserializer.cc
++++ b/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_deserializer.cc
+@@ -251,6 +251,12 @@
+ ScriptWrappable* V8ScriptValueDeserializer::ReadDOMObject(
+     SerializationTag tag,
+     ExceptionState& exception_state) {
++  if (!IsInterfaceExposed(tag, ExecutionContext::From(GetScriptState()))) {
++    exception_state.ThrowDOMException(
++        DOMExceptionCode::kDataCloneError,
++        "Data uses an interface that is not exposed in the destination realm.");
++    return nullptr;
++  }
+   switch (tag) {
+     case kBlobTag: {
+       if (Version() < 3)
+diff --git a/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_deserializer.h b/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_deserializer.h
+index 286b37f..7598273 100644
+--- a/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_deserializer.h
++++ b/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_deserializer.h
+@@ -47,7 +47,7 @@
+   V8ScriptValueDeserializer& operator=(const V8ScriptValueDeserializer&) =
+       delete;
+ 
+-  v8::Local<v8::Value> Deserialize();
++  v8::Local<v8::Value> Deserialize();  // May throw a V8 exception.
+ 
+  protected:
+   virtual ScriptWrappable* ReadDOMObject(SerializationTag, ExceptionState&);
+diff --git a/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_deserializer_for_modules.cc b/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_deserializer_for_modules.cc
+index 8feec90..48708e7 100644
+--- a/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_deserializer_for_modules.cc
++++ b/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_deserializer_for_modules.cc
+@@ -49,6 +49,13 @@
+           V8ScriptValueDeserializer::ReadDOMObject(tag, exception_state))
+     return wrappable;
+ 
++  // V8ScriptValueDeserializer::ReadDOMObject checks interface exposure
++  // for both core and module interfaces, and will have thrown an exception
++  // if there is an issue.
++  if (exception_state.HadException()) {
++    return nullptr;
++  }
++
+   switch (tag) {
+     case kCryptoKeyTag:
+       return ReadCryptoKey();
+@@ -96,7 +103,7 @@
+       return ReadEncodedAudioChunk();
+     case kEncodedVideoChunkTag:
+       return ReadEncodedVideoChunk();
+-    case kMediaStreamTrack:
++    case kMediaStreamTrackTag:
+       return ReadMediaStreamTrack();
+     case kCropTargetTag:
+       return ReadCropTarget();
+diff --git a/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_serializer_for_modules.cc b/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_serializer_for_modules.cc
+index cc225c4..fcee48f 100644
+--- a/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_serializer_for_modules.cc
++++ b/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_serializer_for_modules.cc
+@@ -548,7 +548,7 @@
+     return false;
+   }
+ 
+-  WriteTag(kMediaStreamTrack);
++  WriteTag(kMediaStreamTrackTag);
+   WriteUnguessableToken(*track->serializable_session_id());
+   WriteUTF8String(track->kind());
+   WriteUTF8String(track->id());
+diff --git a/third_party/blink/renderer/core/events/message_event.cc b/third_party/blink/renderer/core/events/message_event.cc
+index 25f6d71..497f1d4 100644
+--- a/third_party/blink/renderer/core/events/message_event.cc
++++ b/third_party/blink/renderer/core/events/message_event.cc
+@@ -74,6 +74,7 @@
+ }
+ 
+ void MessageEvent::RegisterAmountOfExternallyAllocatedMemory() {
++  DCHECK(data_.IsEmpty());  // Should be called before ResolveData
+   CHECK_EQ(amount_of_external_memory_, 0u);
+   size_t size = SizeOfExternalMemoryInBytes();
+ 
+@@ -137,7 +138,8 @@
+   DCHECK(IsValidSource(source_.Get()));
+ }
+ 
+-MessageEvent::MessageEvent(scoped_refptr<SerializedScriptValue> data,
++MessageEvent::MessageEvent(v8::Isolate* isolate,
++                           scoped_refptr<SerializedScriptValue> data,
+                            const String& origin,
+                            const String& last_event_id,
+                            EventTarget* source,
+@@ -154,9 +156,11 @@
+       user_activation_(user_activation) {
+   DCHECK(IsValidSource(source_.Get()));
+   RegisterAmountOfExternallyAllocatedMemory();
++  ResolveData(isolate);
+ }
+ 
+ MessageEvent::MessageEvent(
++    v8::Isolate* isolate,
+     scoped_refptr<SerializedScriptValue> data,
+     const String& origin,
+     const String& last_event_id,
+@@ -176,6 +180,7 @@
+       delegated_capability_(delegated_capability) {
+   DCHECK(IsValidSource(source_.Get()));
+   RegisterAmountOfExternallyAllocatedMemory();
++  ResolveData(isolate);
+ }
+ 
+ MessageEvent::MessageEvent(const String& origin, EventTarget* source)
+@@ -254,6 +259,7 @@
+ }
+ 
+ void MessageEvent::initMessageEvent(
++    v8::Isolate* isolate,
+     const AtomicString& type,
+     bool bubbles,
+     bool cancelable,
+@@ -281,6 +287,7 @@
+   user_activation_ = user_activation;
+   delegated_capability_ = delegated_capability;
+   RegisterAmountOfExternallyAllocatedMemory();
++  ResolveData(isolate);
+ }
+ 
+ void MessageEvent::initMessageEvent(const AtomicString& type,
+@@ -308,20 +315,33 @@
+ }
+ 
+ ScriptValue MessageEvent::data(ScriptState* script_state) {
+-  is_data_dirty_ = false;
+-
++  is_data_dirty_ = false;  // For use by [CachedAttribute]
+   v8::Isolate* isolate = script_state->GetIsolate();
+-  v8::Local<v8::Value> value;
++  if (data_.IsEmpty()) {
++    // Serialized script values should be deserialized eagerly.
++    DCHECK(!data_as_serialized_script_value_);
++    ResolveData(isolate, script_state);
++  }
++  return ScriptValue(isolate, std::move(data_));
++}
++
++void MessageEvent::ResolveData(v8::Isolate* isolate,
++                               ScriptState* script_state) {
++  DCHECK(data_type_ == MessageEvent::kDataTypeSerializedScriptValue ||
++         script_state);
++  // Data needs to be resolved eagerly in cases where it is a serialized
++  // script value.  This is so the event type can be changed to "messageerror"
++  // if an exception is thrown during deserialization.
+   switch (data_type_) {
+     case kDataTypeNull:
+-      value = v8::Null(isolate);
++      data_ = v8::Null(isolate);
+       break;
+ 
+     case kDataTypeScriptValue:
+       if (data_as_v8_value_.IsEmpty())
+-        value = v8::Null(isolate);
++        data_ = v8::Null(isolate);
+       else
+-        value = data_as_v8_value_.GetAcrossWorld(script_state);
++        data_ = data_as_v8_value_.GetAcrossWorld(script_state);
+       break;
+ 
+     case MessageEvent::kDataTypeSerializedScriptValue:
+@@ -333,26 +353,36 @@
+         MessagePortArray message_ports = ports();
+         SerializedScriptValue::DeserializeOptions options;
+         options.message_ports = &message_ports;
+-        value = data_as_serialized_script_value_->Deserialize(isolate, options);
++        data_ = data_as_serialized_script_value_->Deserialize(isolate, options);
++        data_as_serialized_script_value_
++            .Clear();  // We only need to deserialize once.
++        v8::String::Utf8Value text(
++            isolate,
++            data_->ToString(isolate->GetCurrentContext()).ToLocalChecked());
++        LOG(ERROR) << "Value: " << *text;
++        if (data_->IsNull()) {
++          LOG(ERROR) << "Type changed to message error";
++          // Deserialization has failed.  This happens if the deserialization
++          // algorithm threw a DataCloneError DOMException internally.
++          SetType(event_type_names::kMessageerror);
++        }
+       } else {
+-        value = v8::Null(isolate);
++        data_ = v8::Null(isolate);
+       }
+       break;
+ 
+     case MessageEvent::kDataTypeString:
+-      value = V8String(isolate, data_as_string_);
++      data_ = V8String(isolate, data_as_string_);
+       break;
+ 
+     case MessageEvent::kDataTypeBlob:
+-      value = ToV8(data_as_blob_, script_state);
++      data_ = ToV8(data_as_blob_, script_state);
+       break;
+ 
+     case MessageEvent::kDataTypeArrayBuffer:
+-      value = ToV8(data_as_array_buffer_, script_state);
++      data_ = ToV8(data_as_array_buffer_, script_state);
+       break;
+   }
+-
+-  return ScriptValue(isolate, value);
+ }
+ 
+ const AtomicString& MessageEvent::InterfaceName() const {
+diff --git a/third_party/blink/renderer/core/events/message_event.h b/third_party/blink/renderer/core/events/message_event.h
+index af92c5b..499de48 100644
+--- a/third_party/blink/renderer/core/events/message_event.h
++++ b/third_party/blink/renderer/core/events/message_event.h
+@@ -62,21 +62,26 @@
+     return MakeGarbageCollected<MessageEvent>(origin, last_event_id, source,
+                                               ports);
+   }
+-  static MessageEvent* Create(MessagePortArray* ports,
++  static MessageEvent* Create(v8::Isolate* isolate,
++                              MessagePortArray* ports,
+                               scoped_refptr<SerializedScriptValue> data,
+                               const String& origin = String(),
+                               const String& last_event_id = String(),
+                               EventTarget* source = nullptr) {
+-    return MakeGarbageCollected<MessageEvent>(
+-        std::move(data), origin, last_event_id, source, ports, nullptr);
++    return MakeGarbageCollected<MessageEvent>(isolate, std::move(data), origin,
++                                              last_event_id, source, ports,
++                                              nullptr);
+   }
+-  static MessageEvent* Create(MessagePortArray* ports,
++  static MessageEvent* Create(v8::Isolate* isolate,
++                              MessagePortArray* ports,
+                               scoped_refptr<SerializedScriptValue> data,
+                               UserActivation* user_activation) {
+-    return MakeGarbageCollected<MessageEvent>(
+-        std::move(data), String(), String(), nullptr, ports, user_activation);
++    return MakeGarbageCollected<MessageEvent>(isolate, std::move(data),
++                                              String(), String(), nullptr,
++                                              ports, user_activation);
+   }
+   static MessageEvent* Create(
++      v8::Isolate* isolate,
+       Vector<MessagePortChannel> channels,
+       scoped_refptr<SerializedScriptValue> data,
+       const String& origin = String(),
+@@ -86,8 +91,8 @@
+       mojom::blink::DelegatedCapability delegated_capability =
+           mojom::blink::DelegatedCapability::kNone) {
+     return MakeGarbageCollected<MessageEvent>(
+-        std::move(data), origin, last_event_id, source, std::move(channels),
+-        user_activation, delegated_capability);
++        isolate, std::move(data), origin, last_event_id, source,
++        std::move(channels), user_activation, delegated_capability);
+   }
+   static MessageEvent* CreateError(const String& origin = String(),
+                                    EventTarget* source = nullptr) {
+@@ -114,13 +119,15 @@
+                const String& last_event_id,
+                EventTarget* source,
+                MessagePortArray*);
+-  MessageEvent(scoped_refptr<SerializedScriptValue> data,
++  MessageEvent(v8::Isolate* isolate,
++               scoped_refptr<SerializedScriptValue> data,
+                const String& origin,
+                const String& last_event_id,
+                EventTarget* source,
+                MessagePortArray*,
+                UserActivation* user_activation);
+-  MessageEvent(scoped_refptr<SerializedScriptValue> data,
++  MessageEvent(v8::Isolate* isolate,
++               scoped_refptr<SerializedScriptValue> data,
+                const String& origin,
+                const String& last_event_id,
+                EventTarget* source,
+@@ -142,7 +149,8 @@
+                         const String& last_event_id,
+                         EventTarget* source,
+                         MessagePortArray& ports);
+-  void initMessageEvent(const AtomicString& type,
++  void initMessageEvent(v8::Isolate* isolate,
++                        const AtomicString& type,
+                         bool bubbles,
+                         bool cancelable,
+                         scoped_refptr<SerializedScriptValue> data,
+@@ -205,6 +213,8 @@
+       v8::Local<v8::Object> wrapper) override;
+ 
+  private:
++  void ResolveData(v8::Isolate* isolate, ScriptState* script_state = nullptr);
++
+   enum DataType {
+     kDataTypeNull,  // For "messageerror" events.
+     kDataTypeScriptValue,
+@@ -227,6 +237,7 @@
+   Member<Blob> data_as_blob_;
+   Member<DOMArrayBuffer> data_as_array_buffer_;
+   bool is_data_dirty_ = true;
++  v8::Local<v8::Value> data_;
+   String origin_;
+   String last_event_id_;
+   Member<EventTarget> source_;
+diff --git a/third_party/blink/renderer/core/exported/web_dom_message_event.cc b/third_party/blink/renderer/core/exported/web_dom_message_event.cc
+index beae7ec..7f083f9 100644
+--- a/third_party/blink/renderer/core/exported/web_dom_message_event.cc
++++ b/third_party/blink/renderer/core/exported/web_dom_message_event.cc
+@@ -46,6 +46,7 @@
+ namespace blink {
+ 
+ WebDOMMessageEvent::WebDOMMessageEvent(
++    v8::Isolate* isolate,
+     const WebSerializedScriptValue& message_data,
+     const WebString& origin,
+     const WebFrame* source_frame,
+@@ -64,8 +65,8 @@
+   // TODO(esprehn): Chromium always passes empty string for lastEventId, is that
+   // right?
+   Unwrap<MessageEvent>()->initMessageEvent(
+-      "message", false, false, message_data, origin, "" /*lastEventId*/, window,
+-      ports, nullptr /*user_activation*/,
++      isolate, "message", false, false, message_data, origin,
++      "" /*lastEventId*/, window, ports, nullptr /*user_activation*/,
+       mojom::blink::DelegatedCapability::kNone);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
+index fd6118f..d91fa92 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -1073,7 +1073,8 @@
+   // Convert the posted message to a MessageEvent so it can be unpacked for
+   // local dispatch.
+   MessageEvent* event = MessageEvent::Create(
+-      std::move(posted_message->channels), std::move(posted_message->data),
++      GetIsolate(), std::move(posted_message->channels),
++      std::move(posted_message->data),
+       posted_message->source_origin->ToString(), String(),
+       posted_message->source, posted_message->user_activation,
+       posted_message->delegated_capability);
+diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
+index 9d8a9be..0eba4f9 100644
+--- a/third_party/blink/renderer/core/frame/local_frame.cc
++++ b/third_party/blink/renderer/core/frame/local_frame.cc
+@@ -3090,9 +3090,9 @@
+   }
+ 
+   message_event->initMessageEvent(
+-      "message", false, false, std::move(message.message), source_origin,
+-      "" /*lastEventId*/, window, ports, user_activation,
+-      message.delegated_capability);
++      DomWindow()->GetExecutionContext()->GetIsolate(), "message", false, false,
++      std::move(message.message), source_origin, "" /*lastEventId*/, window,
++      ports, user_activation, message.delegated_capability);
+ 
+   // If the agent cluster id had a value it means this was locked when it
+   // was serialized.
+diff --git a/third_party/blink/renderer/core/html/portal/portal_post_message_helper.cc b/third_party/blink/renderer/core/html/portal/portal_post_message_helper.cc
+index 50281f8..b0a41885 100644
+--- a/third_party/blink/renderer/core/html/portal/portal_post_message_helper.cc
++++ b/third_party/blink/renderer/core/html/portal/portal_post_message_helper.cc
+@@ -81,8 +81,9 @@
+   }
+ 
+   MessageEvent* event = MessageEvent::Create(
+-      message.ports, message.message, source_origin->ToString(), String(),
+-      event_target, user_activation);
++      event_target->GetExecutionContext()->GetIsolate(), message.ports,
++      message.message, source_origin->ToString(), String(), event_target,
++      user_activation);
+   event->EntangleMessagePorts(event_target->GetExecutionContext());
+ 
+   ThreadDebugger* debugger = MainThreadDebugger::Instance();
+diff --git a/third_party/blink/renderer/core/messaging/message_port.cc b/third_party/blink/renderer/core/messaging/message_port.cc
+index b72ede6..4288190 100644
+--- a/third_party/blink/renderer/core/messaging/message_port.cc
++++ b/third_party/blink/renderer/core/messaging/message_port.cc
+@@ -350,8 +350,8 @@
+         message.user_activation->has_been_active,
+         message.user_activation->was_active);
+   }
+-  return MessageEvent::Create(ports, std::move(message.message),
+-                              user_activation);
++  return MessageEvent::Create(context->GetIsolate(), ports,
++                              std::move(message.message), user_activation);
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc b/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
+index 7e89602..db31dc4 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
++++ b/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
+@@ -201,13 +201,13 @@
+   if (!worker_object_ || AskedToTerminate())
+     return;
+ 
+-  ThreadDebugger* debugger =
+-      ThreadDebugger::From(GetExecutionContext()->GetIsolate());
++  v8::Isolate* isolate = GetExecutionContext()->GetIsolate();
++  ThreadDebugger* debugger = ThreadDebugger::From(isolate);
+   MessagePortArray* ports = MessagePort::EntanglePorts(
+       *GetExecutionContext(), std::move(message.ports));
+   debugger->ExternalAsyncTaskStarted(message.sender_stack_trace_id);
+   worker_object_->DispatchEvent(
+-      *MessageEvent::Create(ports, std::move(message.message)));
++      *MessageEvent::Create(isolate, ports, std::move(message.message)));
+   debugger->ExternalAsyncTaskFinished(message.sender_stack_trace_id);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+index 10a1833..9fc6102 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+@@ -547,10 +547,10 @@
+ 
+ void WorkerGlobalScope::ReceiveMessage(BlinkTransferableMessage message) {
+   DCHECK(!IsContextPaused());
++  v8::Isolate* isolate = GetThread()->GetIsolate();
+   MessagePortArray* ports =
+       MessagePort::EntanglePorts(*this, std::move(message.ports));
+-  WorkerThreadDebugger* debugger =
+-      WorkerThreadDebugger::From(GetThread()->GetIsolate());
++  WorkerThreadDebugger* debugger = WorkerThreadDebugger::From(isolate);
+   if (debugger)
+     debugger->ExternalAsyncTaskStarted(message.sender_stack_trace_id);
+   UserActivation* user_activation = nullptr;
+@@ -559,8 +559,8 @@
+         message.user_activation->has_been_active,
+         message.user_activation->was_active);
+   }
+-  DispatchEvent(*MessageEvent::Create(ports, std::move(message.message),
+-                                      user_activation));
++  DispatchEvent(*MessageEvent::Create(
++      isolate, ports, std::move(message.message), user_activation));
+   if (debugger)
+     debugger->ExternalAsyncTaskFinished(message.sender_stack_trace_id);
+ }
+diff --git a/third_party/blink/renderer/modules/broadcastchannel/broadcast_channel.cc b/third_party/blink/renderer/modules/broadcastchannel/broadcast_channel.cc
+index 0e7c1b13..53a1f43 100644
+--- a/third_party/blink/renderer/modules/broadcastchannel/broadcast_channel.cc
++++ b/third_party/blink/renderer/modules/broadcastchannel/broadcast_channel.cc
+@@ -160,7 +160,8 @@
+       GetExecutionContext()->IsSameAgentCluster(
+           *message.locked_agent_cluster_id)) {
+     event = MessageEvent::Create(
+-        nullptr, std::move(message.message),
++        GetExecutionContext()->GetIsolate(), nullptr,
++        std::move(message.message),
+         GetExecutionContext()->GetSecurityOrigin()->ToString());
+   } else {
+     event = MessageEvent::CreateError(
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_container.cc b/third_party/blink/renderer/modules/service_worker/service_worker_container.cc
+index a934b4b..1ea2cd1 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_container.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_container.cc
+@@ -677,7 +677,7 @@
+         GetExecutionContext()->IsSameAgentCluster(
+             *msg.locked_agent_cluster_id)) {
+       event = MessageEvent::Create(
+-          ports, std::move(msg.message),
++          GetExecutionContext()->GetIsolate(), ports, std::move(msg.message),
+           GetExecutionContext()->GetSecurityOrigin()->ToString(),
+           String() /* lastEventId */, service_worker);
+     } else {
+diff --git a/third_party/blink/web_tests/external/wpt/webmessaging/block-unexposed-interfaces.html b/third_party/blink/web_tests/external/wpt/webmessaging/block-unexposed-interfaces.html
+new file mode 100644
+index 0000000..45527c9
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/webmessaging/block-unexposed-interfaces.html
+@@ -0,0 +1,463 @@
++<!DOCTYPE html>
++<title>Posting an object whose interface is not exposed in the target realm results in messageerror.</title>
++<link rel="author" title="Justin Novosad" href="mailto:junov@chromium.org">
++<link rel="help" href="https://html.spec.whatwg.org/multipage/web-messaging.html#window-post-message-steps">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++
++<script id="worklet" type="text/worklet">
++  class MyWorkletProcessor extends AudioWorkletProcessor {
++    constructor() {
++      super();
++      const port = this.port;
++      port.onmessage = (message) => {
++        port.postMessage("message");
++        if (message.data instanceof VideoFrame) {
++          message.data.close();
++        }
++      }
++      port.onmessageerror = () => {
++        port.postMessage("messageerror");
++      }
++    }
++    process(inputs, outputs, params) {
++      return false;
++    }
++  }
++  registerProcessor("my-worklet-processor", MyWorkletProcessor);
++</script>
++
++<script id="worker" type="text/worker">
++  self.onmessage = (message) => {
++    self.postMessage("message");
++    if (message.data instanceof VideoFrame) {
++      message.data.close();
++    }
++  }
++  self.onmessageerror = () => {
++    self.postMessage("messageerror");
++  }
++</script>
++
++<script id="shared_worker" type="text/worker">
++  self.onconnect = function(e) {
++    const port = e.ports[0];
++    port.onmessage = (message) => {
++      if (message.data == "close") {
++        self.close();
++      } else {
++        port.postMessage("message");
++        if (message.data instanceof VideoFrame) {
++          message.data.close();
++        }
++      }
++    }
++    port.onmessageerror = () => {
++      port.postMessage("messageerror");
++    }
++  }
++</script>
++
++<script>
++
++function ExpectMessage(port, expectation, resolve, reject, shutdown) {
++  port.onmessage = (e) => {
++    if (e.data == expectation) {
++      resolve();
++    } else {
++      reject("Expected a '" + expectation + "' event, received a '" + e.data + "' event.");
++    }
++    shutdown();
++  }
++}
++
++function PostToAudioWorklet(obj, is_transfer, expectation) {
++  return new Promise((resolve, reject) => {
++    const string = document.getElementById('worklet').textContent;
++    const blob = new Blob([string], {type:'text/javascript'});
++    const url = URL.createObjectURL(blob);
++    let audio_context = new OfflineAudioContext(1, 128, 8000);
++    audio_context.audioWorklet.addModule(url).then(() => {
++      try {
++        let node = new AudioWorkletNode(audio_context, 'my-worklet-processor');
++        node.port.postMessage(obj, is_transfer ? [obj] : []);
++        ExpectMessage(node.port, expectation, resolve, reject, () => {});
++      } catch (e) {
++        reject(e);
++      }
++    });
++  });
++}
++
++function PostToDedicatedWorker(obj, is_transfer, expectation) {
++  return new Promise((resolve, reject) => {
++    try {
++      const string = document.getElementById('worker').textContent;
++      const blob = new Blob([string], {type:'text/javascript'});
++      const url = URL.createObjectURL(blob);
++      let worker = new Worker(url);
++      worker.postMessage(obj, is_transfer ? [obj] : []);
++      function shutdown() { worker.terminate(); }
++      ExpectMessage(worker, expectation, resolve, reject, shutdown);
++    } catch (e) {
++      reject(e);
++    }
++  });
++}
++
++function PostToSharedWorker(obj, is_transfer, expectation) {
++  return new Promise((resolve, reject) => {
++    try {
++      const string = document.getElementById('shared_worker').textContent;
++      const blob = new Blob([string], {type:'text/javascript'});
++      const url = URL.createObjectURL(blob);
++      let worker = new SharedWorker(url);
++      worker.port.postMessage(obj, is_transfer ? [obj] : []);
++      function shutdown() {
++        worker.port.postMessage("close");
++      }
++      ExpectMessage(worker.port, expectation, resolve, reject, shutdown);
++    } catch (e) {
++      reject(e);
++    }
++  });
++}
++
++// TODO: Add test coverage for RTCEncodedAudioFrame, RTCEncodedVideoFrame,
++// MediaStreamTrack, FileSystemDirectoryHandle, FileSystem and
++// FileSystemFileHandle.
++// These interfaces are harder to test because the objects are non-trivial
++// to construct.
++
++// TODO: Add test coverage for EncodedAudioChunk and EncodedVideoChunk.
++// The serialization behaviours for these interfaces is not yet defined in
++// any spec despite serialization being implemented in blink.
++
++
++const test_specs = [
++    {
++        interface: "AudioData",
++        builder: () => { return new AudioData({
++          format: "u8",
++          sampleRate: 8000,
++          numberOfFrames: 100,
++          numberOfChannels: 1,
++          timestamp: 12345,
++          data: new Uint8Array(100),
++        });},
++        transferable: false,  // TODO: true. Not yet implemented.
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: false,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "Blob",
++        builder: () => { return new Blob( new Array(0)); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "CropTarget",
++        async_builder: () => {
++          const e = document.createElement('div');
++          return CropTarget.fromElement(e);
++        },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "CryptoKey",
++        async_builder: () => {
++          return window.crypto.subtle.generateKey(
++              {
++                  name: "HMAC",
++                  hash: {name: "SHA-512"}
++              },
++              true,
++              ["sign", "verify"]
++          );
++        },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMException",
++        builder: () => { return new DOMException()},
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: true,  // https://github.com/whatwg/webidl/pull/1137
++    },
++    {
++        interface: "DOMMatrix",
++        builder: () => { return new DOMMatrix([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMMatrix (2D)",
++        builder: () => { return new DOMMatrix([0, 0, 0, 0, 0, 0]); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMMatrixReadOnly",
++        builder: () => { return new DOMMatrixReadOnly([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMMatrixReadOnly (2D)",
++        builder: () => { return new DOMMatrixReadOnly([0, 0, 0, 0, 0, 0]); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMPoint",
++        builder: () => { return new DOMPoint(0, 0, 0, 1); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMPointReadOnly",
++        builder: () => { return new DOMPointReadOnly(0, 0, 0, 0); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMQuad",
++        builder: () => { return new DOMQuad(); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMRect",
++        builder: () => { return new DOMRect()},
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "DOMRectReadOnly",
++        builder: () => { return new DOMRectReadOnly()},
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "File",
++        builder: () => { return new File(new Array(0), "foo"); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "FileList",
++        builder: () => {
++          const file_input = document.createElement('input');
++          file_input.type = "file";
++          return file_input.files;
++        },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "ImageBitmap",
++        async_builder: () => {
++          const c = new OffscreenCanvas(10, 10);
++          const ctx = c.getContext('2d');
++          ctx.fillRect(0, 0, 10, 10);
++          return createImageBitmap(c);
++        },
++        transferable: true,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "ImageData",
++        builder: () => { return new ImageData(10, 10); },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "MessagePort",
++        builder: () => {
++          const c = new MessageChannel();
++          return c.port1;
++        },
++        transferable: true,
++        serializable: false,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: true,
++    },
++    {
++        interface: "OffscreenCanvas",
++        builder: () => { return new OffscreenCanvas(10, 10);},
++        transferable: true,
++        serializable: false,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "RTCCertificate",
++        async_builder: () => {
++          return RTCPeerConnection.generateCertificate({
++              name: 'RSASSA-PKCS1-v1_5',
++              hash: 'SHA-256',
++              modulusLength: 2048,
++              publicExponent: new Uint8Array([1, 0, 1])
++          });
++        },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: false,
++        exposed_in_shared_worker: false,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "VideoFrame",
++        builder: () => {
++          const c = new OffscreenCanvas(10, 10);
++          const ctx = c.getContext('2d');
++          ctx.fillRect(0, 0, 10, 10);
++          return new VideoFrame(c, {timestamp: 123});
++        },
++        transferable: false,
++        serializable: true,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: false,
++        exposed_in_audio_worklet: false,
++    },
++    {
++        interface: "ReadableStream",
++        builder: () => { return new ReadableStream(); },
++        transferable: true,
++        serializable: false,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: true,
++    },
++    {
++        interface: "WritableStream",
++        builder: () => { return new WritableStream({}); },
++        transferable: true,
++        serializable: false,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: true,
++    },
++    {
++        interface: "TransformStream",
++        builder: () => { return new TransformStream({}); },
++        transferable: true,
++        serializable: false,
++        exposed_in_dedicated_worker: true,
++        exposed_in_shared_worker: true,
++        exposed_in_audio_worklet: true,
++    },
++];
++
++function BuildObj(spec) {
++    if ('builder' in spec) {
++        return new Promise((resolve) => {resolve(spec.builder());});
++    }
++    return spec.async_builder();
++}
++
++test_specs.forEach((spec) => {
++  if (spec.serializable) {
++    BuildObj(spec).then((obj) => {
++      promise_test(() => {
++        const expectation = spec.exposed_in_audio_worklet ? "message" : "messageerror";
++        return PostToAudioWorklet(obj , false, expectation);
++      }, "Cloning of " + spec.interface + " to AudioWorklet " + (spec.exposed_in_audio_worklet ? "" : "not ") + "allowed.");
++      promise_test(() => {
++        const expectation = spec.exposed_in_dedicated_worker ? "message" : "messageerror";
++        return PostToDedicatedWorker(obj , false, expectation);
++      }, "Cloning of " + spec.interface + " to DedicatedWorker " + (spec.exposed_in_dedicated_worker ? "" : "not ") + "allowed.");
++      promise_test(() => {
++        const expectation = spec.exposed_in_shared_worker ? "message" : "messageerror";
++        return PostToSharedWorker(obj , false, expectation);
++      }, "Cloning of " + spec.interface + " to SharedWorker " + (spec.exposed_in_shared_worker ? "" : "not ") + "allowed.");
++    });
++  }
++  if (spec.transferable) {
++    // Note: For transfer tests, we need to rebuild new objects at each test
++    // because they get detached
++    promise_test(() => {
++      const expectation = spec.exposed_in_audio_worklet ? "message" : "messageerror";
++      return new Promise((resolve, reject) => {
++        BuildObj(spec).then((obj) => {
++          PostToAudioWorklet(obj, true, expectation).then(resolve, reject);
++        }, reject);
++      });
++    }, "Transfer of " + spec.interface + " to AudioWorklet " + (spec.exposed_in_audio_worklet ? "" : "not ") + "allowed.");
++    promise_test(() => {
++      const expectation = spec.exposed_in_dedicated_worker ? "message" : "messageerror";
++      return new Promise((resolve, reject) => {
++        BuildObj(spec).then((obj) => {
++          PostToDedicatedWorker(obj, true, expectation).then(resolve, reject);
++        }, reject);
++      });
++    }, "Transfer of " + spec.interface + " to DedicatedWorker " + (spec.exposed_in_dedicated_worker ? "" : "not ") + "allowed.");
++    promise_test(() => {
++      const expectation = spec.exposed_in_shared_worker ? "message" : "messageerror";
++      return new Promise((resolve, reject) => {
++        BuildObj(spec).then((obj) => {
++          PostToSharedWorker(obj, true, expectation).then(resolve, reject);
++        }, reject);
++      });
++    }, "Transfer of " + spec.interface + " to SharedWorker " + (spec.exposed_in_shared_worker ? "" : "not ") + "allowed.");
++  }
++});
++
++
++</script>
