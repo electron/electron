@@ -390,6 +390,7 @@ source_set("electron_lib") {
     "//components/user_prefs",
     "//components/viz/host",
     "//components/viz/service",
+    "//components/webrtc",
     "//content/public/browser",
     "//content/public/child",
     "//content/public/gpu",
