@@ -1,7 +1,7 @@
-From 3cbd5973d7049e630acdf28969c12c2dec82f6cf Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Date: Mon, 18 Jul 2022 20:44:41 +0000
-Subject: [PATCH] Keep refptr to ServiceWorkerVersion in MaybeTimeoutRequest
+Subject: Keep refptr to ServiceWorkerVersion in MaybeTimeoutRequest
 
 The callback in ServiceWorkerVersion::MaybeTimeoutRequest may reduce the
 reference to the version object, which can be the last reference to it.
@@ -23,13 +23,12 @@ Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Owners-Override: Srinivas Sista <srinivassista@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5005@{#1263}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index 495b079..90facd12 100644
+index 0b4b32d13db8958f579085a41bc5e20b26543f61..5797e3f954ae0769a91c8f259e19e50e2bf31a94 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2012,18 +2012,17 @@
+@@ -1993,18 +1993,17 @@ void ServiceWorkerVersion::OnTimeoutTimer() {
  
    MarkIfStale();
  
@@ -53,7 +52,7 @@ index 495b079..90facd12 100644
      embedded_worker_->RemoveObserver(this);
      embedded_worker_->Detach();
      embedded_worker_ = std::make_unique<EmbeddedWorkerInstance>(this);
-@@ -2050,7 +2049,6 @@
+@@ -2031,7 +2030,6 @@ void ServiceWorkerVersion::OnTimeoutTimer() {
      DCHECK(running_status() == EmbeddedWorkerStatus::STARTING ||
             running_status() == EmbeddedWorkerStatus::STOPPING)
          << static_cast<int>(running_status());
@@ -61,7 +60,7 @@ index 495b079..90facd12 100644
      FinishStartWorker(blink::ServiceWorkerStatusCode::kErrorTimeout);
      if (running_status() == EmbeddedWorkerStatus::STARTING)
        embedded_worker_->Stop();
-@@ -2059,17 +2057,22 @@
+@@ -2040,17 +2038,22 @@ void ServiceWorkerVersion::OnTimeoutTimer() {
  
    // Requests have not finished before their expiration.
    bool stop_for_timeout = false;
@@ -89,10 +88,10 @@ index 495b079..90facd12 100644
      embedded_worker_->Stop();
  
 diff --git a/content/browser/service_worker/service_worker_version.h b/content/browser/service_worker/service_worker_version.h
-index 4d63846d..c7adbdce 100644
+index dcf0dfaf515f8058438d727b30fb4c508a7211a9..a88bc2513f988a00b538baa596a1e713c2600cf8 100644
 --- a/content/browser/service_worker/service_worker_version.h
 +++ b/content/browser/service_worker/service_worker_version.h
-@@ -883,6 +883,8 @@
+@@ -863,6 +863,8 @@ class CONTENT_EXPORT ServiceWorkerVersion
                                 bool is_browser_startup_complete,
                                 blink::ServiceWorkerStatusCode status);
  
