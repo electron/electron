@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 5499f85fa578511d5817ecd9be2f33cf56e2db4b..3f0a3b2133f0d48054f33df28b93a9ee40d7ed78 100644
+index feb9b85f68323d72bb4605d197e59bc810acf2a6..fe2488390e09b4be53508ee65d8d3d2e3919db19 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -1762,9 +1762,15 @@ bool RenderProcessHostImpl::Init() {
@@ -42,7 +42,7 @@ index 5499f85fa578511d5817ecd9be2f33cf56e2db4b..3f0a3b2133f0d48054f33df28b93a9ee
  
      auto file_data = std::make_unique<ChildProcessLauncherFileData>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index af8173d4203150237387529aa2b974aeec7c5a41..9fadaa80a4547a583484355342c3fd98d53bcd27 100644
+index 8ec0f24f780a74dd91efe31211b85412db8b0bee..560e15818c3f75b49b89b0f9dbb1a6f1056ba756 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -31,6 +31,9 @@ namespace content {

@@ -87,7 +87,7 @@ index 60e99da4a9493dbaca871b08d75341a48488a65e..3328e9e90bd4904dd404b413fd4245f4
  }
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index f61b04b02673e9a73f9c23823017a56b65b47dee..297b5c5584e9221adf11515c015fd7f413d29aab 100644
+index ff23c448562bb3fe3a7f13129d49bfa4d8eae6a8..a02fbea171103b5fe787158a9158e9be0b31189f 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -100,7 +100,7 @@ index f61b04b02673e9a73f9c23823017a56b65b47dee..297b5c5584e9221adf11515c015fd7f4
  
  namespace {
  
-@@ -609,6 +611,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -608,6 +610,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    if ([NSApp isActive])
      return window == [NSApp accessibilityFocusedWindow];
  
@@ -108,7 +108,7 @@ index f61b04b02673e9a73f9c23823017a56b65b47dee..297b5c5584e9221adf11515c015fd7f4
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -636,6 +639,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -635,6 +638,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    // from within the app shim content.
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]])
      return true;
@@ -197,7 +197,7 @@ index 6975087ef6cc6483aa0d8c301cedfb126d471e11..fc7c4474aaa74000b901b93b26bb46d7
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index a922dc6ce99ed32ede8812a63a836f72691bece3..9e4ef4235c49eeb7cd34f05ae2d75169d787fa55 100644
+index b4e25a37e1fe15312b961e5d5da51a5f3785bf29..ccc2920dc56d978807eb7c9ca856d65171510880 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -341,6 +341,13 @@ component("base") {

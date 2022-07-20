@@ -146,7 +146,7 @@ index 9fafa6b0089aabf55984b68cff85e353fe50ce52..9472ad8f4f776f98d398113b22a6a710
                  ModifyCodeGenerationFromStringsCallback2,
                  modify_code_gen_callback2)
 diff --git a/src/execution/isolate.h b/src/execution/isolate.h
-index 13100146bdc981480a08156b54649b8f995789ae..9a117c4220704ed512b117aa2f50c3791f8e9189 100644
+index 1b6e86c7c0cd93ca497b0ce55436d5bf0371a045..7640faa7b12d1b30bfe03c2c4cbdecdc5dcfdcb2 100644
 --- a/src/execution/isolate.h
 +++ b/src/execution/isolate.h
 @@ -487,16 +487,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();

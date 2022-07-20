@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index bdfc0719057218afeb61fec8f4e75298c3baa54c..9c6f51f1667d9bf1b430a83747faebf633a324c7 100644
+index 3568dbca319895f0d6ffdc84afe486aa3386fd39..b494324f1a7011a45d34bce03fad7ff2fa9b11de 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7283,6 +7283,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7282,6 +7282,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -68,7 +68,7 @@ index cc492885ec8ae5577c6e8702dc30749331332103..c852b894f976304e6b20908a6e66ccd6
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 15620fd7b5d95eb031641e0eeb6d4c2ec74071d2..8f75315f0d4ba45314be5d2d88a417b44ba2c254 100644
+index 6f443c293cec75c84405b7447438d269c6c3d59e..c9f7ecc80521b2f3e3817fe7796afb0b47588710 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -617,6 +617,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -212,7 +212,7 @@ index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index ec10f16c6e6c5507ad2fb0afe306a744885eb58e..3f7a069c3f1b8412074864eb99bf47469a699837 100644
+index f78c68a7fd385d95b96d4edafe093eff91b956cf..42e6adc5a048132ef4f60c3bec41d49b6644e731 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2084,6 +2084,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

@@ -796,10 +796,10 @@ index 66026548181a897c161d7202646f33fd8847ccb8..113a8165b5db6294087773e5a4b2f003
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 56e3651f7e79957e444ec82b534a07dff9ef7415..43f2d487947eaf77171d918cc5072aee4291290b 100644
+index 1969237ba26855b2bc89b9459c06febf25b0c49a..3d8e43f38bc9431c168fb3f76e7393cf9d5ebfc5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2766,8 +2766,9 @@ source_set("browser") {
+@@ -2749,8 +2749,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -832,10 +832,10 @@ index e3c1b29138f175836424bcfe917cd00bd081b34c..7d8b6f06c5d1a7ea9a5ed86c5c612e8d
  
  bool UtilitySandboxedProcessLauncherDelegate::GetAppContainerId(
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 56ee836445c53c5cde3947fca19d8576d2684f6f..454e26baa8b3688c2af98081085aa5378ff0554b 100644
+index c23742bbbb9cabb08467591308b8f9ba377205be..5c5f3b7ec364e004cf998f7a50fdb7ed5ae9fec9 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -128,7 +128,6 @@ void PrintingContext::UsePdfSettings() {
+@@ -143,7 +143,6 @@ void PrintingContext::UsePdfSettings() {
  
  mojom::ResultCode PrintingContext::UpdatePrintSettings(
      base::Value::Dict job_settings) {
@@ -844,7 +844,7 @@ index 56ee836445c53c5cde3947fca19d8576d2684f6f..454e26baa8b3688c2af98081085aa537
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 58fcf619add5093bd99fd9c561e8686b060a01c6..76db2a2438cef84fcb6dfd4a67d2e171428e4be0 100644
+index 0e6dd8092f6025790560ca2bab2d68daf47caff2..a4aa6e21b1d37e534b543ad8b112070eedd12d2e 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
 @@ -171,6 +171,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
