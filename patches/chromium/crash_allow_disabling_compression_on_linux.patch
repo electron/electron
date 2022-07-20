@@ -13,7 +13,7 @@ Ultimately we should remove the option to disable compression, and
 subsequently remove this patch.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index a372e9bb12f9cec6235fe529d73b6e0009328038..58f6f559265d0da5e6ca4c711df4b1dbf3d40e38 100644
+index 62d15f57e4c5a0a24aa730e8979fb1e9537fecd3..77fd14f5e9a4330364da4e7e5ee089c9196b4939 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -111,6 +111,8 @@ void SetUploadURL(const std::string& url) {

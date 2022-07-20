@@ -23,11 +23,11 @@
 #include "ui/gfx/text_constants.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
+#include "ui/linux/linux_ui.h"
+#include "ui/linux/nav_button_provider.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/strings/grit/ui_strings.h"
 #include "ui/views/controls/button/image_button.h"
-#include "ui/views/linux_ui/linux_ui.h"
-#include "ui/views/linux_ui/nav_button_provider.h"
 #include "ui/views/style/typography.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/frame_buttons.h"
@@ -41,6 +41,25 @@ namespace {
 constexpr int kResizeOutsideBorderSize = 10;
 constexpr int kResizeInsideBoundsSize = 5;
 
+ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
+    views::Button::ButtonState state) {
+  switch (state) {
+    case views::Button::STATE_NORMAL:
+      return ui::NavButtonProvider::ButtonState::kNormal;
+    case views::Button::STATE_HOVERED:
+      return ui::NavButtonProvider::ButtonState::kHovered;
+    case views::Button::STATE_PRESSED:
+      return ui::NavButtonProvider::ButtonState::kPressed;
+    case views::Button::STATE_DISABLED:
+      return ui::NavButtonProvider::ButtonState::kDisabled;
+
+    case views::Button::STATE_COUNT:
+    default:
+      NOTREACHED();
+      return ui::NavButtonProvider::ButtonState::kNormal;
+  }
+}
+
 }  // namespace
 
 // static
@@ -48,19 +67,18 @@ const char ClientFrameViewLinux::kViewClassName[] = "ClientFrameView";
 
 ClientFrameViewLinux::ClientFrameViewLinux()
     : theme_(ui::NativeTheme::GetInstanceForNativeUi()),
-      nav_button_provider_(
-          views::LinuxUI::instance()->CreateNavButtonProvider()),
+      nav_button_provider_(ui::LinuxUi::instance()->CreateNavButtonProvider()),
       nav_buttons_{
-          NavButton{views::NavButtonProvider::FrameButtonDisplayType::kClose,
+          NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kClose,
                     views::FrameButton::kClose, &views::Widget::Close,
                     IDS_APP_ACCNAME_CLOSE, HTCLOSE},
-          NavButton{views::NavButtonProvider::FrameButtonDisplayType::kMaximize,
+          NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kMaximize,
                     views::FrameButton::kMaximize, &views::Widget::Maximize,
                     IDS_APP_ACCNAME_MAXIMIZE, HTMAXBUTTON},
-          NavButton{views::NavButtonProvider::FrameButtonDisplayType::kRestore,
+          NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kRestore,
                     views::FrameButton::kMaximize, &views::Widget::Restore,
                     IDS_APP_ACCNAME_RESTORE, HTMAXBUTTON},
-          NavButton{views::NavButtonProvider::FrameButtonDisplayType::kMinimize,
+          NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kMinimize,
                     views::FrameButton::kMinimize, &views::Widget::Minimize,
                     IDS_APP_ACCNAME_MINIMIZE, HTMINBUTTON},
       },
@@ -85,14 +103,14 @@ ClientFrameViewLinux::ClientFrameViewLinux()
 
   native_theme_observer_.Observe(theme_);
 
-  if (views::LinuxUI* ui = views::LinuxUI::instance()) {
+  if (ui::LinuxUi* ui = ui::LinuxUi::instance()) {
     ui->AddWindowButtonOrderObserver(this);
     OnWindowButtonOrderingChange();
   }
 }
 
 ClientFrameViewLinux::~ClientFrameViewLinux() {
-  if (views::LinuxUI* ui = views::LinuxUI::instance())
+  if (ui::LinuxUi* ui = ui::LinuxUi::instance())
     ui->RemoveWindowButtonOrderObserver(this);
   theme_->RemoveObserver(this);
 }
@@ -112,7 +130,7 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
           window->GetAcceleratedWidget()));
   host_supports_client_frame_shadow_ = tree_host->SupportsClientFrameShadow();
 
-  frame_provider_ = views::LinuxUI::instance()->GetWindowFrameProvider(
+  frame_provider_ = ui::LinuxUi::instance()->GetWindowFrameProvider(
       !host_supports_client_frame_shadow_);
 
   UpdateWindowTitle();
@@ -326,11 +344,11 @@ void ClientFrameViewLinux::UpdateThemeValues() {
   SchedulePaint();
 }
 
-views::NavButtonProvider::FrameButtonDisplayType
+ui::NavButtonProvider::FrameButtonDisplayType
 ClientFrameViewLinux::GetButtonTypeToSkip() const {
   return frame_->IsMaximized()
-             ? views::NavButtonProvider::FrameButtonDisplayType::kMaximize
-             : views::NavButtonProvider::FrameButtonDisplayType::kRestore;
+             ? ui::NavButtonProvider::FrameButtonDisplayType::kMaximize
+             : ui::NavButtonProvider::FrameButtonDisplayType::kRestore;
 }
 
 void ClientFrameViewLinux::UpdateButtonImages() {
@@ -338,7 +356,7 @@ void ClientFrameViewLinux::UpdateButtonImages() {
                                      frame_->IsMaximized(),
                                      ShouldPaintAsActive());
 
-  views::NavButtonProvider::FrameButtonDisplayType skip_type =
+  ui::NavButtonProvider::FrameButtonDisplayType skip_type =
       GetButtonTypeToSkip();
 
   for (NavButton& button : nav_buttons_) {
@@ -351,7 +369,8 @@ void ClientFrameViewLinux::UpdateButtonImages() {
       views::Button::ButtonState state =
           static_cast<views::Button::ButtonState>(state_id);
       button.button->SetImage(
-          state, nav_button_provider_->GetImage(button.type, state));
+          state, nav_button_provider_->GetImage(
+                     button.type, ButtonStateToNavButtonProviderState(state)));
     }
   }
 }
@@ -369,7 +388,7 @@ void ClientFrameViewLinux::LayoutButtons() {
 void ClientFrameViewLinux::LayoutButtonsOnSide(
     ButtonSide side,
     gfx::Rect* remaining_content_bounds) {
-  views::NavButtonProvider::FrameButtonDisplayType skip_type =
+  ui::NavButtonProvider::FrameButtonDisplayType skip_type =
       GetButtonTypeToSkip();
 
   std::vector<views::FrameButton> frame_buttons;

@@ -205,6 +205,8 @@ v8::Local<v8::Value> Converter<blink::mojom::MediaStreamType>::ToV8(
       return gin::StringToV8(isolate, "gumDesktopAudioCapture");
     case blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE:
       return gin::StringToV8(isolate, "displayVideoCapture");
+    case blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_SET:
+      return gin::StringToV8(isolate, "displayVideoCaptureSet");
     case blink::mojom::MediaStreamType::DISPLAY_AUDIO_CAPTURE:
       return gin::StringToV8(isolate, "displayAudioCapture");
     case blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_THIS_TAB:

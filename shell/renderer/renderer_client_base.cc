@@ -18,7 +18,6 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
-#include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_protocol.h"
@@ -47,6 +46,7 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/media/multi_buffer_data_source.h"  // nogncheck
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
+#include "third_party/widevine/cdm/buildflags.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "base/strings/sys_string_conversions.h"
@@ -56,7 +56,7 @@
 #include <shlobj.h>
 #endif
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
+#if BUILDFLAG(ENABLE_WIDEVINE)
 #include "chrome/renderer/media/chrome_key_systems.h"  // nogncheck
 #endif
 
@@ -377,8 +377,10 @@ bool RendererClientBase::OverrideCreatePlugin(
 
 void RendererClientBase::GetSupportedKeySystems(
     media::GetSupportedKeySystemsCB cb) {
-#if defined(WIDEVINE_CDM_AVAILABLE)
+#if BUILDFLAG(ENABLE_WIDEVINE)
   GetChromeKeySystems(std::move(cb));
+#else
+  std::move(cb).Run({});
 #endif
 }
 

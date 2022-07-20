@@ -57,7 +57,7 @@ class Debugger : public gin::Wrappable<Debugger>,
 
  private:
   using PendingRequestMap =
-      std::map<int, gin_helper::Promise<base::DictionaryValue>>;
+      std::map<int, gin_helper::Promise<base::Value::Dict>>;
 
   void Attach(gin::Arguments* args);
   bool IsAttached();

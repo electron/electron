@@ -173,7 +173,7 @@ async function runClangTidy (
   const worker = async () => {
     let filenames = chunkedFilenames.shift();
 
-    while (filenames) {
+    while (filenames?.length) {
       results.push(
         await spawnAsync(cmd, [...args, ...filenames], {}).then((result) => {
           console.log(result.stdout);

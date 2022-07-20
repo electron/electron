@@ -52,12 +52,10 @@ class ElectronBluetoothDelegate : public content::BluetoothDelegate {
       content::RenderFrameHost* frame,
       const content::BluetoothScanningPrompt::EventHandler& event_handler)
       override;
-  void ShowDeviceCredentialsPrompt(content::RenderFrameHost* frame,
-                                   const std::u16string& device_identifier,
-                                   CredentialsCallback callback) override;
-  void ShowDevicePairConfirmPrompt(content::RenderFrameHost* frame,
-                                   const std::u16string& device_identifier,
-                                   PairConfirmCallback callback) override;
+  void ShowDevicePairPrompt(content::RenderFrameHost* frame,
+                            const std::u16string& device_identifier,
+                            PairPromptCallback callback,
+                            PairingKind pairing_kind) override;
   blink::WebBluetoothDeviceId GetWebBluetoothDeviceId(
       content::RenderFrameHost* frame,
       const std::string& device_address) override;

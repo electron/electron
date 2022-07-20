@@ -14,6 +14,13 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (20.0)
 
+### Behavior Changed: V8 Memory Cage enabled
+
+The V8 memory cage has been enabled, which has implications for native modules
+which wrap non-V8 memory with `ArrayBuffer` or `Buffer`. See the [blog post
+about the V8 memory cage](https://www.electronjs.org/blog/v8-memory-cage) for
+more details.
+
 ### API Changed: `webContents.printToPDF()`
 
 `webContents.printToPDF()` has been modified to conform to [`Page.printToPDF`](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF) in the Chrome DevTools Protocol. This has been changes in order to
@@ -98,7 +105,10 @@ is the origin that is checking for device permission.
 
 ## Planned Breaking API Changes (19.0)
 
-None
+### Removed: IA32 Linux binaries
+
+This is a result of Chromium 102.0.4999.0 dropping support for IA32 Linux.
+This concludes the [removal of support for IA32 Linux](#removed-ia32-linux-support).
 
 ## Planned Breaking API Changes (18.0)
 
@@ -1264,6 +1274,10 @@ the module's `binding.gyp` must be true (which is the default). If this hook is
 not present, then the native module will fail to load on Windows, with an error
 message like `Cannot find module`. See the [native module
 guide](/docs/tutorial/using-native-node-modules.md) for more.
+
+### Removed: IA32 Linux support
+
+Electron 18 will no longer run on 32-bit Linux systems. See [discontinuing support for 32-bit Linux](https://www.electronjs.org/blog/linux-32bit-support) for more information.
 
 ## Breaking API Changes (3.0)
 

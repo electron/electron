@@ -20,6 +20,7 @@
 #include "base/posix/eintr_wrapper.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
+#include "base/strings/string_util.h"
 #include "base/threading/thread_restrictions.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "content/public/browser/browser_thread.h"
@@ -401,6 +402,20 @@ void Beep() {
 
 bool GetDesktopName(std::string* setme) {
   return base::Environment::Create()->GetVar("CHROME_DESKTOP", setme);
+}
+
+std::string GetXdgAppId() {
+  std::string desktop_file_name;
+  if (GetDesktopName(&desktop_file_name)) {
+    const std::string kDesktopExtension{".desktop"};
+    if (base::EndsWith(desktop_file_name, kDesktopExtension,
+                       base::CompareCase::INSENSITIVE_ASCII)) {
+      desktop_file_name.resize(desktop_file_name.size() -
+                               kDesktopExtension.size());
+    }
+  }
+
+  return desktop_file_name;
 }
 
 }  // namespace platform_util

@@ -114,9 +114,9 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   bool has_mime_type = dict.Get("mimeType", &head->mime_type);
   bool has_content_type = false;
 
-  base::DictionaryValue headers;
+  base::Value::Dict headers;
   if (dict.Get("headers", &headers)) {
-    for (const auto iter : headers.DictItems()) {
+    for (const auto iter : headers) {
       if (iter.second.is_string()) {
         // key, value
         head->headers->AddHeader(iter.first, iter.second.GetString());
@@ -513,7 +513,7 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
   if (!dict.Get("method", &request->method))
     request->method = original_request.method;
 
-  base::DictionaryValue upload_data;
+  base::Value::Dict upload_data;
   if (request->method != net::HttpRequestHeaders::kGetMethod &&
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
