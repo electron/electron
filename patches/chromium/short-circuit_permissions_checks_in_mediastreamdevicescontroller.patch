@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 353ed84da62b954a90c8d0a886495c0822f30429..1a1162ba960419a4de5eb2839ebc3debadca86d5 100644
+index 13bbeaac938b27446d5b62eb92ca761487db5fef..4cfe57a6356bbc2492f59957a0dfcf63052b7ee8 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -93,11 +93,14 @@ void MediaStreamDevicesController::RequestPermissions(
@@ -70,7 +70,7 @@ index 353ed84da62b954a90c8d0a886495c0822f30429..1a1162ba960419a4de5eb2839ebc3deb
  
        permission_types.push_back(blink::PermissionType::CAMERA_PAN_TILT_ZOOM);
      }
-@@ -425,6 +433,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -417,6 +425,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
    if (rfh->GetLastCommittedOrigin().GetURL() != request_.security_origin) {
      return false;
    }
@@ -78,7 +78,7 @@ index 353ed84da62b954a90c8d0a886495c0822f30429..1a1162ba960419a4de5eb2839ebc3deb
    permissions::PermissionResult result =
        permissions::PermissionsClient::Get()
            ->GetPermissionManager(web_contents_->GetBrowserContext())
-@@ -433,6 +442,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -425,6 +434,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      DCHECK_EQ(CONTENT_SETTING_BLOCK, result.content_setting);
      return true;
    }
