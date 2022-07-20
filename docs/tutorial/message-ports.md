@@ -86,9 +86,9 @@ process, you can listen for the `close` event by calling `port.on('close',
 
 ### Setting up a MessageChannel between two renderers
 
-In this example, the main process sets up a MessageChannel, then sends each port 
-to a different renderer. This allows renderers to send messages to each other 
-without needing to use the main process as an in-between. 
+In this example, the main process sets up a MessageChannel, then sends each port
+to a different renderer. This allows renderers to send messages to each other
+without needing to use the main process as an in-between.
 
 ```js
 // main.js ///////////////////////////////////////////////////////////////////
@@ -127,8 +127,9 @@ app.whenReady().then(async () => {
   })
 })
 ```
-Then, in your preload scripts you receive the port through IPC and set up the 
-listeners. 
+
+Then, in your preload scripts you receive the port through IPC and set up the
+listeners.
 
 ```js
 // preloadMain.js and preloadSecondary.js
@@ -143,20 +144,19 @@ ipcRenderer.on('port', e => {
   }
 })
 ```
+
 In this example messagePort is bound to the `window` object directly. It is better
-to use `contextIsolation` and set up specific contextBridge calls for each of your 
+to use `contextIsolation` and set up specific contextBridge calls for each of your
 expected messages, but for the simplicity of this example we don't.
 
-That means window.messagePort is globally available and you can call 
-`postMessage` on it from anywhere in your app to send a message to the other 
+That means window.messagePort is globally available and you can call
+`postMessage` on it from anywhere in your app to send a message to the other
 renderer.
 
 ```js
 // elsewhere in your code to send a message to the other renderers message handler
 window.messagePort.postmessage('ping')
 ```
-
-
 
 ### Worker process
 
