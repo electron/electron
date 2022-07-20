@@ -566,8 +566,9 @@ source_set("electron_lib") {
       "//ui/base/ime/linux",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
+      "//ui/linux:linux_ui",
+      "//ui/linux:linux_ui_factory",
       "//ui/views/controls/webview",
-      "//ui/views/linux_ui:linux_ui_factory",
       "//ui/wm",
     ]
     if (ozone_platform_x11) {

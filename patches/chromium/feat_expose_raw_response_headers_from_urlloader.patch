@@ -103,7 +103,7 @@ index 3d2bcc3e81eb42f645fa4e8b1425cb5c54cfd3a1..4cdbe0e38609abfd0b0b5856deb8b2dd
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 04ed3a3391b82751d0014027caf37c402a8f068a..7140c4ced6265c388a4015350b1da5d487a02569 100644
+index 6805b5f3976f60e0cc72634f71bcb21879ffbde1..4d60c127bec00859ed523ca652336239ab71ae00 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -603,6 +603,7 @@ URLLoader::URLLoader(
@@ -114,7 +114,7 @@ index 04ed3a3391b82751d0014027caf37c402a8f068a..7140c4ced6265c388a4015350b1da5d4
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -794,7 +795,7 @@ URLLoader::URLLoader(
+@@ -792,7 +793,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 04ed3a3391b82751d0014027caf37c402a8f068a..7140c4ced6265c388a4015350b1da5d4
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1536,6 +1537,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1541,6 +1542,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

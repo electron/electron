@@ -345,7 +345,7 @@ describe('web security', () => {
 
     it('wasm codegen is disallowed by default', async () => {
       const r = await loadWasm('');
-      expect(r).to.equal('WebAssembly.instantiate(): Wasm code generation disallowed by embedder');
+      expect(r).to.equal('WebAssembly.instantiate(): Refused to compile or instantiate WebAssembly module because \'unsafe-eval\' is not an allowed source of script in the following Content Security Policy directive: "script-src \'self\' \'unsafe-inline\'"');
     });
 
     it('wasm codegen is allowed with "wasm-unsafe-eval" csp', async () => {

@@ -39,10 +39,10 @@ index 818af524388b1aba51e984b7ff7f7b856d1e590b..7ba8a0e9bc11a65e72e66aebd87e1935
                         const Operand& operand, FlagsUpdate S, AddSubOp op) {
    DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
 diff --git a/src/codegen/arm64/assembler-arm64.h b/src/codegen/arm64/assembler-arm64.h
-index f12e1ef130451afa1cb334a4ba07bdb2588ccc24..703e4bba9381c57849882e7cb2cdeb751064dd2a 100644
+index e3d8eb27dea2d241933bcb597bef35b46fcd2a09..0a752245ec25c80d5ed34b1a858fa43cc0d6dd40 100644
 --- a/src/codegen/arm64/assembler-arm64.h
 +++ b/src/codegen/arm64/assembler-arm64.h
-@@ -2119,11 +2119,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+@@ -2120,11 +2120,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
      return rm.code() << Rm_offset;
    }
  
@@ -55,7 +55,7 @@ index f12e1ef130451afa1cb334a4ba07bdb2588ccc24..703e4bba9381c57849882e7cb2cdeb75
  
    static Instr Ra(CPURegister ra) {
      DCHECK_NE(ra.code(), kSPRegInternalCode);
-@@ -2147,15 +2143,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+@@ -2148,15 +2144,8 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
  
    // These encoding functions allow the stack pointer to be encoded, and
    // disallow the zero register.

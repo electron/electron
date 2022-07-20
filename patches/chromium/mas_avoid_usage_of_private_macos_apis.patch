@@ -39,7 +39,7 @@ index dd14c8cfa32ab0bb2e92f192c54a494c4f5b4fb7..2c6f0b336c97bc23995e9fe8cdc7f72a
  
  }  // namespace base
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index bb1cb98f246f120f566fab65565f49a6468b82b4..929188b8d0e39f171679067347d4f83632364cc7 100644
+index cee826cf8ca533778c716fd2592e625e93fe7efb..adfec0021ae00b3a9ccc792695a51a182626fee5 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -30,12 +30,6 @@
@@ -76,7 +76,7 @@ index bb1cb98f246f120f566fab65565f49a6468b82b4..929188b8d0e39f171679067347d4f836
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index e12c36384ddc05554ed362bba2c0a8b418634f0a..1c740410de70ee5a888ee7cf406dfa3bccc28c9b 100644
+index bf33d321197226a74d4f26731108ad8b0b8c72a0..349dc2cdde63e32daf06f1ccc0d29e7ce8b2ac46 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -19,14 +19,19 @@

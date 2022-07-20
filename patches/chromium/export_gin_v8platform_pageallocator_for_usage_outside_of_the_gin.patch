@@ -21,7 +21,7 @@ index 2f2e0d67c7141e5daad2d50031c71a542677e108..c53bd76fcd3703cb483949d5ec53f24f
    v8::ZoneBackingAllocator* GetZoneBackingAllocator() override;
  #endif
 diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
-index 9e79f7e411a3242e3e7662933389e05b94a4818c..05e3156571ac0dc9ff71464b8e73d74db96496a0 100644
+index b02ab8b6ac701d948daac73bd89bc1fc6533d60c..36c096b4c053eae9326c8ccb7ed6aea07b68c3e5 100644
 --- a/gin/v8_platform.cc
 +++ b/gin/v8_platform.cc
 @@ -367,6 +367,10 @@ PageAllocator* V8Platform::GetPageAllocator() {
