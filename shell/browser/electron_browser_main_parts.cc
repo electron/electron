@@ -370,7 +370,6 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
   auto linux_ui = ui::CreateLinuxUi();
-  DCHECK(ui::LinuxInputMethodContextFactory::instance());
 
   // Try loading gtk symbols used by Electron.
   electron::InitializeElectron_gtk(gtk::GetLibGtk());
