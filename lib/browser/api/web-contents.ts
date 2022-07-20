@@ -124,13 +124,6 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
   return true;
 };
 
-WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args) {
-  const frame = getWebFrame(this, frameId);
-  if (!frame) return false;
-  frame._sendInternal(channel, ...args);
-  return true;
-};
-
 // Following methods are mapped to webFrame.
 const webFrameMethods = [
   'insertCSS',
