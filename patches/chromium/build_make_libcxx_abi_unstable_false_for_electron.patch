@@ -9,7 +9,7 @@ diff --git a/build/config/c++/BUILD.gn b/build/config/c++/BUILD.gn
 index 09324583a2f98621fe328ec9f0178736dabe6d2b..d57c2c16ea3475c3ad77e81bdb9700ec2f64976a 100644
 --- a/build/config/c++/BUILD.gn
 +++ b/build/config/c++/BUILD.gn
-@@ -29,10 +29,12 @@ config("runtime_library") {
+@@ -29,11 +29,12 @@ config("runtime_library") {
    #    on Windows, the increase is great enough that we go above the 4GB size
    #    limit for PDBs (https://crbug.com/1327710#c5). To fix this, we set
    #    _LIBCPP_ABI_NAMESPACE to a shorter value.
@@ -18,11 +18,11 @@ index 09324583a2f98621fe328ec9f0178736dabe6d2b..d57c2c16ea3475c3ad77e81bdb9700ec
 -    "_LIBCPP_ABI_VERSION=2",
 -  ]
 +  defines += [ "_LIBCPP_ABI_NAMESPACE=Cr" ]
-+
+ 
 +  if (!is_electron_build) {
 +    # This breaks native node modules
 +    defines += [ "_LIBCPP_ABI_VERSION=2" ]
 +  }
- 
-   if (!libcxx_is_shared) {
-     # Don't leak any symbols on a static build.
+   # Disable usages of __builtin_assume(...) when building libc++, as it causes
+   # some msan errors (crbug.com/1344905).
+   defines += [ "_LIBCPP_ASSERTIONS_DISABLE_ASSUME" ]
