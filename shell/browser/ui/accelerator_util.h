@@ -14,7 +14,7 @@
 namespace accelerator_util {
 
 typedef struct {
-  int position;
+  size_t position;
   electron::ElectronMenuModel* model;
 } MenuItem;
 typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;

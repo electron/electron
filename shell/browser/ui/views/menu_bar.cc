@@ -92,7 +92,7 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
     return false;
 
   auto children = GetChildrenInZOrder();
-  for (int i = 0, n = children.size(); i < n; ++i) {
+  for (size_t i = 0, n = children.size(); i < n; ++i) {
     if (children[i]->GetBoundsInScreen().Contains(screenPoint) &&
         (menu_model_->GetTypeAt(i) == ElectronMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
@@ -174,7 +174,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::ButtonPressed(int id, const ui::Event& event) {
+void MenuBar::ButtonPressed(size_t id, const ui::Event& event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(pane_has_focus());
 
@@ -222,7 +222,7 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
 
 void MenuBar::RebuildChildren() {
   RemoveAllChildViews();
-  for (int i = 0, n = GetItemCount(); i < n; ++i) {
+  for (size_t i = 0, n = GetItemCount(); i < n; ++i) {
     auto* button = new SubmenuButton(
         base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),
         menu_model_->GetLabelAt(i), background_color_);
