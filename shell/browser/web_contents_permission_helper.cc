@@ -128,7 +128,6 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
                    blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_SET ||
                request.audio_type ==
                    blink::mojom::MediaStreamType::DISPLAY_AUDIO_CAPTURE) {
-      LOG(INFO) << "Got here " << request.video_type;
       content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
           request.render_process_id, request.render_frame_id);
       if (!rfh)
