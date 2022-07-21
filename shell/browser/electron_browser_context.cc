@@ -424,62 +424,63 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
   display_media_request_handler_ = handler;
 }
 
-bool ElectronBrowserContext::ChooseMediaDevice(
+void ElectronBrowserContext::DisplayMediaDeviceChosen(
+    const content::MediaStreamRequest& request,
+    content::MediaResponseCallback callback,
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> result) {
+  blink::mojom::StreamDevicesSetPtr stream_devices_set =
+      blink::mojom::StreamDevicesSet::New();
+  if (result->IsNull()) {
+    std::move(callback).Run(
+        *stream_devices_set,
+        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    return;
+  }
+  gin_helper::Dictionary result_dict;
+  if (!gin::ConvertFromV8(isolate, result, &result_dict)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Result must be null or a dictionary");
+    std::move(callback).Run(
+        *stream_devices_set,
+        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    return;
+  }
+  stream_devices_set->stream_devices.emplace_back(
+      blink::mojom::StreamDevices::New());
+  blink::mojom::StreamDevices& devices = *stream_devices_set->stream_devices[0];
+  if (result_dict.Has("video")) {
+    gin_helper::Dictionary video_dict;
+    std::string id;
+    std::string name;
+    if (result_dict.Get("video", &video_dict) && video_dict.Get("id", &id) &&
+        video_dict.Get("name", &name)) {
+      devices.video_device =
+          blink::MediaStreamDevice(request.video_type, id, name);
+    }
+  }
+  if (result_dict.Has("audio")) {
+    gin_helper::Dictionary audio_dict;
+    std::string id;
+    std::string name;
+    if (result_dict.Get("audio", &audio_dict) && audio_dict.Get("id", &id) &&
+        audio_dict.Get("name", &name)) {
+      devices.audio_device =
+          blink::MediaStreamDevice(request.audio_type, id, name);
+    }
+  }
+
+  std::move(callback).Run(*stream_devices_set,
+                          blink::mojom::MediaStreamRequestResult::OK, nullptr);
+}
+
+bool ElectronBrowserContext::ChooseDisplayMediaDevice(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback) {
   if (!display_media_request_handler_)
     return false;
-  DisplayMediaResponseCallbackJs callbackJs = base::BindOnce(
-      [](const content::MediaStreamRequest& request,
-         content::MediaResponseCallback callback, v8::Isolate* isolate,
-         v8::Local<v8::Value> result) {
-        blink::mojom::StreamDevicesSetPtr stream_devices_set =
-            blink::mojom::StreamDevicesSet::New();
-        if (result->IsNull()) {
-          std::move(callback).Run(
-              *stream_devices_set,
-              blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
-          return;
-        }
-        gin_helper::Dictionary result_dict;
-        if (!gin::ConvertFromV8(isolate, result, &result_dict)) {
-          gin_helper::ErrorThrower(isolate).ThrowTypeError(
-              "Result must be null or a dictionary");
-          std::move(callback).Run(
-              *stream_devices_set,
-              blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
-          return;
-        }
-        stream_devices_set->stream_devices.emplace_back(
-            blink::mojom::StreamDevices::New());
-        blink::mojom::StreamDevices& devices =
-            *stream_devices_set->stream_devices[0];
-        if (result_dict.Has("video")) {
-          gin_helper::Dictionary video_dict;
-          std::string id;
-          std::string name;
-          if (result_dict.Get("video", &video_dict) &&
-              video_dict.Get("id", &id) && video_dict.Get("name", &name)) {
-            devices.video_device =
-                blink::MediaStreamDevice(request.video_type, id, name);
-          }
-        }
-        if (result_dict.Has("audio")) {
-          gin_helper::Dictionary audio_dict;
-          std::string id;
-          std::string name;
-          if (result_dict.Get("audio", &audio_dict) &&
-              audio_dict.Get("id", &id) && audio_dict.Get("name", &name)) {
-            devices.audio_device =
-                blink::MediaStreamDevice(request.audio_type, id, name);
-          }
-        }
-
-        std::move(callback).Run(*stream_devices_set,
-                                blink::mojom::MediaStreamRequestResult::OK,
-                                nullptr);
-      },
-      request, std::move(callback));
+  DisplayMediaResponseCallbackJs callbackJs =
+      base::BindOnce(&DisplayMediaDeviceChosen, request, std::move(callback));
   display_media_request_handler_.Run(request, std::move(callbackJs));
   return true;
 }

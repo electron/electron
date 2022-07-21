@@ -217,10 +217,6 @@ const char* DesktopCapturer::GetTypeName() {
   return "DesktopCapturer";
 }
 
-const blink::MediaStreamDevices& GetVideoCaptureDevices() {
-  return MediaCaptureDevicesDispatcher::GetInstance()->GetVideoCaptureDevices();
-}
-
 }  // namespace electron::api
 
 namespace {
@@ -232,8 +228,6 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);
-  dict.SetMethod("getVideoCaptureDevices",
-                 &electron::api::GetVideoCaptureDevices);
 }
 
 }  // namespace

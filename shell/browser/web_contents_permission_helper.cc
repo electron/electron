@@ -137,7 +137,7 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
       ElectronBrowserContext* electron_browser_context =
           static_cast<ElectronBrowserContext*>(browser_context);
       auto split_callback = base::SplitOnceCallback(std::move(callback));
-      if (electron_browser_context->ChooseMediaDevice(
+      if (electron_browser_context->ChooseDisplayMediaDevice(
               request, std::move(split_callback.second)))
         return;
       std::move(split_callback.first)

@@ -165,8 +165,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   network::mojom::SSLConfigPtr GetSSLConfig();
   void SetSSLConfigClient(mojo::Remote<network::mojom::SSLConfigClient> client);
 
-  bool ChooseMediaDevice(const content::MediaStreamRequest& request,
-                         content::MediaResponseCallback callback);
+  bool ChooseDisplayMediaDevice(const content::MediaStreamRequest& request,
+                                content::MediaResponseCallback callback);
   void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler);
 
   ~ElectronBrowserContext() override;
@@ -194,6 +194,12 @@ class ElectronBrowserContext : public content::BrowserContext {
   ElectronBrowserContext(const std::string& partition,
                          bool in_memory,
                          base::Value::Dict options);
+
+  static void DisplayMediaDeviceChosen(
+      const content::MediaStreamRequest& request,
+      content::MediaResponseCallback callback,
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> result);
 
   // Initialize pref registry.
   void InitPrefs();

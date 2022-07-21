@@ -21,47 +21,6 @@ struct Converter<content::MediaStreamRequest> {
                                    const content::MediaStreamRequest& request);
 };
 
-template <>
-struct Converter<blink::MediaStreamDevice> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::MediaStreamDevice* out);
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::MediaStreamDevice& device);
-};
-
-template <>
-struct Converter<blink::mojom::StreamDevicesPtr> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::mojom::StreamDevicesPtr* out);
-};
-
-template <>
-struct Converter<blink::mojom::MediaStreamRequestResult> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::mojom::MediaStreamRequestResult* out);
-};
-
-template <>
-struct Converter<blink::MediaStreamRequestType> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const blink::MediaStreamRequestType& request_type);
-};
-
-template <>
-struct Converter<blink::mojom::MediaStreamType> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const blink::mojom::MediaStreamType& stream_type);
-
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::mojom::MediaStreamType* out);
-};
-
 }  // namespace gin
 
 #endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_MEDIA_CONVERTER_H_
