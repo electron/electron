@@ -567,7 +567,10 @@ WebContents.prototype._init = function () {
   this._windowOpenHandler = null;
 
   const ipc = new IpcMainImpl();
-  this.ipc = ipc;
+  Object.defineProperty(this, "ipc", {
+    get() { return ipc; },
+    writable: false,
+  });
 
   // Dispatch IPC messages to the ipc module.
   this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
