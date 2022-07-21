@@ -97,7 +97,6 @@ app.whenReady().then(async () => {
     show: false,
     webPreferences: {
       contextIsolation: false,
-      nodeIntegration: true,
       preload: 'preloadMain.js'
     }
   })
@@ -106,7 +105,6 @@ app.whenReady().then(async () => {
     show: false,
     webPreferences: {
       contextIsolation: false,
-      nodeIntegration: true,
       preload: 'preloadSecondary.js'
     }
   })
