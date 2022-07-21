@@ -709,10 +709,10 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `userGesture` Boolean - whether a user gesture was active when this request was triggered.
   * `callback` Function
     * `streams` Object
-      * `video` Object (optional)
+      * `video` Object | WebFrameMain (optional)
         * `id` String - the id of the stream being granted.
         * `name` String - the name of the stream being granted.
-      * `audio` Object (optional)
+      * `audio` Object | WebFrameMain (optional)
         * `id` String - the id of the stream being granted.
         * `name` String - the name of the stream being granted.
 

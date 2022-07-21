@@ -77,6 +77,29 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
     expect(message).to.equal('Could not start video source');
   });
 
+  it('does not crash when using a bogus web-contents-media-stream:// ID', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      callback({
+        video: { id: 'web-contents-media-stream://9999:9999', name: 'whatever' }
+      });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    // This is a little surprising... apparently chrome will generate a stream
+    // for this non-existent web contents?
+    expect(ok).to.be.true();
+  });
+
   it('is not called when calling getUserMedia', async () => {
     const ses = session.fromPartition('' + Math.random());
     ses.setDisplayMediaRequestHandler(() => {
@@ -98,14 +121,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
     let requestHandlerCalled = false;
     ses.setDisplayMediaRequestHandler((request, callback) => {
       requestHandlerCalled = true;
-      callback(
-        {
-          video: {
-            id: `web-contents-media-stream://${w.webContents.mainFrame.processId}:${w.webContents.mainFrame.routingId}`,
-            name: 'self'
-          }
-        }
-      );
+      callback({ video: w.webContents.mainFrame });
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
@@ -114,6 +130,45 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         preferCurrentTab: true,
         video: true,
         audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true(message);
+  });
+
+  it('can supply a screen response to preferCurrentTab', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setDisplayMediaRequestHandler(async (request, callback) => {
+      requestHandlerCalled = true;
+      const sources = await desktopCapturer.getSources({ types: ['screen'] });
+      callback({ video: sources[0] });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        preferCurrentTab: true,
+        video: true,
+        audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true(message);
+  });
+
+  it('can supply a frame response', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setDisplayMediaRequestHandler(async (request, callback) => {
+      requestHandlerCalled = true;
+      callback({ video: w.webContents.mainFrame });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
     `);
     expect(requestHandlerCalled).to.be.true();
@@ -177,5 +232,23 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
     expect(ok).to.be.true(message);
+  });
+
+  it('can remove a displayMediaRequestHandler', async () => {
+    const ses = session.fromPartition('' + Math.random());
+
+    ses.setDisplayMediaRequestHandler(() => {
+      throw new Error('bad');
+    });
+    ses.setDisplayMediaRequestHandler(null);
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(ok).to.be.false();
+    expect(message).to.equal('Not supported');
   });
 });

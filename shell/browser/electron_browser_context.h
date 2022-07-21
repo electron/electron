@@ -16,6 +16,7 @@
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
+#include "gin/arguments.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
@@ -60,7 +61,7 @@ class WebViewManager;
 class ProtocolRegistry;
 
 using DisplayMediaResponseCallbackJs =
-    base::OnceCallback<void(v8::Isolate* isolate, v8::Local<v8::Value> result)>;
+    base::OnceCallback<void(gin::Arguments* args)>;
 using DisplayMediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
                                  DisplayMediaResponseCallbackJs)>;
@@ -198,8 +199,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   static void DisplayMediaDeviceChosen(
       const content::MediaStreamRequest& request,
       content::MediaResponseCallback callback,
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> result);
+      gin::Arguments* args);
 
   // Initialize pref registry.
   void InitPrefs();

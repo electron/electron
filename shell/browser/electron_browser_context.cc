@@ -31,8 +31,10 @@
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/browser/web_contents_media_capture_id.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -51,6 +53,7 @@
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
@@ -427,20 +430,20 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
 void ElectronBrowserContext::DisplayMediaDeviceChosen(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback,
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> result) {
+    gin::Arguments* args) {
   blink::mojom::StreamDevicesSetPtr stream_devices_set =
       blink::mojom::StreamDevicesSet::New();
-  if (result->IsNull()) {
+  v8::Local<v8::Value> result;
+  if (!args->GetNext(&result) || result->IsNullOrUndefined()) {
     std::move(callback).Run(
         *stream_devices_set,
         blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
     return;
   }
   gin_helper::Dictionary result_dict;
-  if (!gin::ConvertFromV8(isolate, result, &result_dict)) {
-    gin_helper::ErrorThrower(isolate).ThrowTypeError(
-        "Result must be null or a dictionary");
+  if (!gin::ConvertFromV8(args->isolate(), result, &result_dict)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowTypeError("Result must be null or a dictionary");
     std::move(callback).Run(
         *stream_devices_set,
         blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
@@ -453,20 +456,44 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
     gin_helper::Dictionary video_dict;
     std::string id;
     std::string name;
+    content::RenderFrameHost* rfh;
     if (result_dict.Get("video", &video_dict) && video_dict.Get("id", &id) &&
         video_dict.Get("name", &name)) {
       devices.video_device =
           blink::MediaStreamDevice(request.video_type, id, name);
+    } else if (result_dict.Get("video", &rfh)) {
+      devices.video_device = blink::MediaStreamDevice(
+          request.video_type,
+          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
+                                             rfh->GetRoutingID())
+              .ToString(),
+          "Tab video");
+    } else {
+      gin_helper::ErrorThrower(args->isolate())
+          .ThrowTypeError(
+              "video must be a WebFrameMain or DesktopCapturerSource");
     }
   }
   if (result_dict.Has("audio")) {
     gin_helper::Dictionary audio_dict;
     std::string id;
     std::string name;
+    content::RenderFrameHost* rfh;
     if (result_dict.Get("audio", &audio_dict) && audio_dict.Get("id", &id) &&
         audio_dict.Get("name", &name)) {
       devices.audio_device =
           blink::MediaStreamDevice(request.audio_type, id, name);
+    } else if (result_dict.Get("audio", &rfh)) {
+      devices.audio_device = blink::MediaStreamDevice(
+          request.audio_type,
+          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
+                                             rfh->GetRoutingID())
+              .ToString(),
+          "Tab audio");
+    } else {
+      gin_helper::ErrorThrower(args->isolate())
+          .ThrowTypeError(
+              "audio must be a WebFrameMain or DesktopCapturerSource");
     }
   }
 
