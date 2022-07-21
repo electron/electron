@@ -26,14 +26,10 @@ v8::Local<v8::Value> Converter<content::MediaStreamRequest>::ToV8(
       .Set("frame", rfh)
       .Set("securityOrigin", request.security_origin)
       .Set("userGesture", request.user_gesture)
-      .Set("type", request.request_type)
-      .Set("requestedAudioDeviceId", request.requested_audio_device_id)
-      .Set("requestedVideoDeviceId", request.requested_video_device_id)
-      .Set("audioType", request.audio_type)
-      .Set("videoType", request.video_type)
-      .Set("disableLocalEcho", request.disable_local_echo)
-      .Set("requestPanTiltZoomPermission",
-           request.request_pan_tilt_zoom_permission)
+      .Set("videoRequested",
+           request.video_type != blink::mojom::MediaStreamType::NO_SERVICE)
+      .Set("audioRequested",
+           request.audio_type != blink::mojom::MediaStreamType::NO_SERVICE)
       .Build();
 }
 

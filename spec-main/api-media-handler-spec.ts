@@ -27,8 +27,10 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
   it('works when calling getDisplayMedia', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
+    let mediaRequest: any = null;
     ses.setMediaRequestHandler((request, callback) => {
       requestHandlerCalled = true;
+      mediaRequest = request;
       desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
         // Grant access to the first screen found.
         const { id, name } = sources[0];
@@ -44,10 +46,12 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
     const { ok, message } = await w.webContents.executeJavaScript(`
       navigator.mediaDevices.getDisplayMedia({
         video: true,
-        audio: true,
+        audio: false,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
     `);
     expect(requestHandlerCalled).to.be.true();
+    expect(mediaRequest.videoRequested).to.be.true();
+    expect(mediaRequest.audioRequested).to.be.false();
     expect(ok).to.be.true(message);
   });
 

@@ -702,25 +702,23 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 
 * `handler` Function | null
   * `request` Object
-    * `frame` [WebFrameMain](web-frame-main.md) - frame that is requesting access to media
-    * `type` String - Type of request. Can be 'deviceAccess', 'deviceUpdate' or 'generateStream'.
-    * `audioType` String - can be 'deviceAudioCapture', 'displayAudioCapture' or 'noService'.
-    * `videoType` String - can be 'deviceVideoCapture', 'displayVideoCapture', 'displayVideoCaptureThisTab' or 'noService'.
-    * `requestedAudioDeviceId` String -
-    * `requestedVideoDeviceId` String -
+    * `frame` [WebFrameMain](web-frame-main.md) - frame that is requesting access to media.
+    * `securityOrigin` String - origin of the page making the request.
+    * `videoRequested` Boolean - true if the web content requested a video stream.
+    * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - whether a user gesture was active when this request was triggered.
   * `callback` Function
-    * `devices` Object
+    * `streams` Object
       * `video` Object (optional)
-        * `id` String - the id of the device being granted
-        * `name` String - the name of the device being granted
+        * `id` String - the id of the stream being granted.
+        * `name` String - the name of the stream being granted.
       * `audio` Object (optional)
-        * `id` String - the id of the device being granted
-        * `name` String - the name of the device being granted
+        * `id` String - the id of the stream being granted.
+        * `name` String - the name of the stream being granted.
 
-This handler will be called when web content requests access to media devices
-via the `navigator.mediaDevices` API. Use the
-[desktopCapturer](desktop-capturer.md) API to choose which device(s) to grant
+This handler will be called when web content requests access to display media
+via the `navigator.mediaDevices.getDisplayMedia` API. Use the
+[desktopCapturer](desktop-capturer.md) API to choose which stream(s) to grant
 access to.
 
 ```javascript
