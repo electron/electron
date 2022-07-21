@@ -430,39 +430,56 @@ bool ElectronBrowserContext::ChooseMediaDevice(
   if (!media_request_handler_)
     return false;
   MediaResponseCallbackJs callbackJs = base::BindOnce(
-      [](content::MediaResponseCallback callback,
-         const std::vector<blink::mojom::StreamDevicesPtr>& stream_devices,
-         blink::mojom::MediaStreamRequestResult result) {
+      [](const content::MediaStreamRequest& request,
+         content::MediaResponseCallback callback, v8::Isolate* isolate,
+         v8::Local<v8::Value> result) {
         blink::mojom::StreamDevicesSetPtr stream_devices_set =
             blink::mojom::StreamDevicesSet::New();
-        for (const auto& stream_device : stream_devices) {
-          if (!stream_device->audio_device && !stream_device->video_device) {
-            v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-            gin_helper::ErrorThrower thrower(isolate);
-            thrower.ThrowTypeError(
-                "At least one of {audio, video} device must be set");
-            return;
+        if (result->IsNull()) {
+          std::move(callback).Run(
+              *stream_devices_set,
+              blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+          return;
+        }
+        gin_helper::Dictionary result_dict;
+        if (!gin::ConvertFromV8(isolate, result, &result_dict)) {
+          gin_helper::ErrorThrower(isolate).ThrowTypeError(
+              "Result must be null or a dictionary");
+          std::move(callback).Run(
+              *stream_devices_set,
+              blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+          return;
+        }
+        stream_devices_set->stream_devices.emplace_back(
+            blink::mojom::StreamDevices::New());
+        blink::mojom::StreamDevices& devices =
+            *stream_devices_set->stream_devices[0];
+        if (result_dict.Has("video")) {
+          gin_helper::Dictionary video_dict;
+          std::string id;
+          std::string name;
+          if (result_dict.Get("video", &video_dict) &&
+              video_dict.Get("id", &id) && video_dict.Get("name", &name)) {
+            devices.video_device =
+                blink::MediaStreamDevice(request.video_type, id, name);
           }
-          if (stream_device->audio_device &&
-              stream_device->audio_device->id.empty()) {
-            v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-            gin_helper::ErrorThrower thrower(isolate);
-            thrower.ThrowTypeError("Audio device id cannot be empty");
-            return;
+        }
+        if (result_dict.Has("audio")) {
+          gin_helper::Dictionary audio_dict;
+          std::string id;
+          std::string name;
+          if (result_dict.Get("audio", &audio_dict) &&
+              audio_dict.Get("id", &id) && audio_dict.Get("name", &name)) {
+            devices.audio_device =
+                blink::MediaStreamDevice(request.audio_type, id, name);
           }
-          if (stream_device->video_device &&
-              stream_device->video_device->id.empty()) {
-            v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-            gin_helper::ErrorThrower thrower(isolate);
-            thrower.ThrowTypeError("Video device id cannot be empty");
-            return;
-          }
-          stream_devices_set->stream_devices.push_back(stream_device.Clone());
         }
 
-        std::move(callback).Run(*stream_devices_set, result, nullptr);
+        std::move(callback).Run(*stream_devices_set,
+                                blink::mojom::MediaStreamRequestResult::OK,
+                                nullptr);
       },
-      std::move(callback));
+      request, std::move(callback));
   media_request_handler_.Run(request, std::move(callbackJs));
   return true;
 }

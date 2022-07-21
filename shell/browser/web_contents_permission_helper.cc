@@ -120,10 +120,35 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
       webrtc::MediaStreamDevicesController::RequestPermissions(
           request, MediaCaptureDevicesDispatcher::GetInstance(),
           base::BindOnce(&OnMediaStreamRequestResponse, std::move(callback)));
-    else
+    else if (request.video_type ==
+                 blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE ||
+             request.video_type == blink::mojom::MediaStreamType::
+                                       DISPLAY_VIDEO_CAPTURE_THIS_TAB ||
+             request.video_type ==
+                 blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_SET ||
+             request.audio_type ==
+                 blink::mojom::MediaStreamType::DISPLAY_AUDIO_CAPTURE) {
+      LOG(INFO) << "Got here " << request.video_type;
+      content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+          request.render_process_id, request.render_frame_id);
+      if (!rfh)
+        return;
+
+      content::BrowserContext* browser_context = rfh->GetBrowserContext();
+      ElectronBrowserContext* electron_browser_context =
+          static_cast<ElectronBrowserContext*>(browser_context);
+      auto split_callback = base::SplitOnceCallback(std::move(callback));
+      if (electron_browser_context->ChooseMediaDevice(
+              request, std::move(split_callback.second)))
+        return;
+      std::move(split_callback.first)
+          .Run(blink::mojom::StreamDevicesSet(),
+               blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+    } else {
       std::move(callback).Run(
           blink::mojom::StreamDevicesSet(),
           blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+    }
   } else {
     std::move(callback).Run(
         blink::mojom::StreamDevicesSet(),

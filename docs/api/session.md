@@ -710,17 +710,13 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `requestedVideoDeviceId` String -
     * `userGesture` Boolean - whether a user gesture was active when this request was triggered.
   * `callback` Function
-    * `devices` Object[]
-      * `videoDevice` Object (optional)
+    * `devices` Object
+      * `video` Object (optional)
         * `id` String - the id of the device being granted
         * `name` String - the name of the device being granted
-        * `type` String - the type of the device being granted. Can be 'deviceAudioCapture', 'displayAudioCapture', 'deviceVideoCapture', 'displayVideoCapture', 'displayVideoCaptureThisTab' or 'noService'.
-      * `audioDevice` Object (optional)
+      * `audio` Object (optional)
         * `id` String - the id of the device being granted
         * `name` String - the name of the device being granted
-        * `type` String - the type of the device being granted. Can be 'deviceAudioCapture', 'displayAudioCapture', 'deviceVideoCapture', 'displayVideoCapture', 'displayVideoCaptureThisTab' or 'noService'.
-    * `result` String - the result of the request. Can be 'ok',
-      'permissionDenied', 'permissionDismissed', 'noHardware', or 'notSupported'.
 
 This handler will be called when web content requests access to media devices
 via the `navigator.mediaDevices` API. Use the
@@ -731,13 +727,11 @@ access to.
 const { session, desktopCapturer } = require('electron')
 
 session.defaultSession.setMediaRequestHandler((request, callback) => {
-  if (request.videoType === 'displayVideoCapture') {
-    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-      // Grant access to the first screen found.
-      const { id, name } = sources[0]
-      callback([{ video_device: { id, name, type: request.videoType } }], 'ok')
-    })
-  }
+  desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+    // Grant access to the first screen found.
+    const { id, name } = sources[0]
+    callback({ video: { id, name } })
+  })
 })
 ```
 

@@ -39,6 +39,13 @@ class ElectronExtensionSystem;
 }
 #endif
 
+namespace v8 {
+template <typename T>
+class Local;
+class Isolate;
+class Value;
+}  // namespace v8
+
 namespace electron {
 
 using DevicePermissionMap =
@@ -52,9 +59,8 @@ class ResolveProxyHelper;
 class WebViewManager;
 class ProtocolRegistry;
 
-using MediaResponseCallbackJs = base::OnceCallback<void(
-    const std::vector<blink::mojom::StreamDevicesPtr>& devices,
-    blink::mojom::MediaStreamRequestResult result)>;
+using MediaResponseCallbackJs =
+    base::OnceCallback<void(v8::Isolate* isolate, v8::Local<v8::Value> result)>;
 using MediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
                                  MediaResponseCallbackJs)>;

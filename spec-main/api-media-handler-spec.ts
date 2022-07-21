@@ -29,17 +29,15 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
     let requestHandlerCalled = false;
     ses.setMediaRequestHandler((request, callback) => {
       requestHandlerCalled = true;
-      if (request.videoType === 'displayVideoCapture') {
-        desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-          // Grant access to the first screen found.
-          const { id, name } = sources[0];
-          callback([{
-            videoDevice: { id, name, type: request.videoType }
-            // TODO: 'loopback' and 'loopbackWithMute' are currently only supported on Windows.
-            // audioDevice: { id: 'loopback', name: 'System Audio', type: request.audioType }
-          }], 'ok');
+      desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+        // Grant access to the first screen found.
+        const { id, name } = sources[0];
+        callback({
+          video: { id, name }
+          // TODO: 'loopback' and 'loopbackWithMute' are currently only supported on Windows.
+          // audio: { id: 'loopback', name: 'System Audio' }
         });
-      }
+      });
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
@@ -53,15 +51,32 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
     expect(ok).to.be.true(message);
   });
 
-  it('works when calling getUserMedia', async () => {
+  it('does not crash when using a bogus ID', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
     ses.setMediaRequestHandler((request, callback) => {
       requestHandlerCalled = true;
-      const devices = (process._linkedBinding('electron_browser_desktop_capturer') as any).getVideoCaptureDevices();
-      callback([
-        { videoDevice: devices[0] }
-      ], 'ok');
+      callback({
+        video: { id: 'bogus', name: 'whatever' }
+      });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.false();
+    expect(message).to.equal('Could not start video source');
+  });
+
+  it('is not called when calling getUserMedia', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    ses.setMediaRequestHandler(() => {
+      throw new Error('bad');
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
@@ -71,20 +86,22 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
     `);
-    expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
 
-  it('works when calling getUserMedia with preferCurrentTab', async () => {
+  it('works when calling getDisplayMedia with preferCurrentTab', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
     ses.setMediaRequestHandler((request, callback) => {
-      console.log(request);
       requestHandlerCalled = true;
-      const devices = (process._linkedBinding('electron_browser_desktop_capturer') as any).getVideoCaptureDevices();
-      callback([
-        { videoDevice: devices[0] }
-      ], 'ok');
+      callback(
+        {
+          video: {
+            id: `web-contents-media-stream://${w.webContents.mainFrame.processId}:${w.webContents.mainFrame.routingId}`,
+            name: 'self'
+          }
+        }
+      );
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
@@ -99,15 +116,10 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
     expect(ok).to.be.true(message);
   });
 
-  it('works when calling legacy getUserMedia', async () => {
+  it('is not called when calling legacy getUserMedia', async () => {
     const ses = session.fromPartition('' + Math.random());
-    let requestHandlerCalled = false;
-    ses.setMediaRequestHandler((request, callback) => {
-      requestHandlerCalled = true;
-      const devices = (process._linkedBinding('electron_browser_desktop_capturer') as any).getVideoCaptureDevices();
-      callback([
-        { videoDevice: devices[0] }
-      ], 'ok');
+    ses.setMediaRequestHandler(() => {
+      throw new Error('bad');
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
@@ -117,16 +129,13 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
         audio: true,
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
-    expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
 
-  it('works when calling legacy getUserMedia with desktop capture constraint', async () => {
+  it('is not called when calling legacy getUserMedia with desktop capture constraint', async () => {
     const ses = session.fromPartition('' + Math.random());
-    let requestHandlerCalled = false;
-    ses.setMediaRequestHandler((request, callback) => {
-      requestHandlerCalled = true;
-      callback([], 'noHardware');
+    ses.setMediaRequestHandler(() => {
+      throw new Error('bad');
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
@@ -139,7 +148,6 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
         },
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
-    expect(requestHandlerCalled).to.be.false();
     expect(ok).to.be.true(message);
   });
 
