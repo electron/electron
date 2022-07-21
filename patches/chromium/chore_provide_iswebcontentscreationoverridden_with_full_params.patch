@@ -108,10 +108,10 @@ index 1318d5e04d5448d2b357454c3ce4207264288760..3b0324c35d5b18ed2e29264aae860c48
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index bcf8873d6307a936640e8253478058e4c3fa8169..95feb63978276e063e8c03ce18f517242864b12d 100644
+index c3a387b22fe600c6535ac4b39b06fec4f4cdf4ac..2bd230fbb36909a0a5cb9984a00d7df19e3f229e 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1798,12 +1798,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1806,12 +1806,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -288,7 +288,7 @@ index eec7bf18d17e85bde8017d4c8e7f064987b4d4d3..d5457e3a2ae96305cbd215f034029533
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index 8349c8cb2078d09c9550024ae5ca845bdebfbd35..e3763eaa2c6f7ce842cf8964bf5590efd3892c61 100644
+index cf38ea90f9fa7c63bc10459d7cc7340c1dbe2041..da0a921cf5f7f30abe16a9d6fa6888c06d4105bf 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 @@ -213,8 +213,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(
@@ -302,7 +302,7 @@ index 8349c8cb2078d09c9550024ae5ca845bdebfbd35..e3763eaa2c6f7ce842cf8964bf5590ef
    // view is used for displaying embedded extension options, we want any
    // external links to be opened in a new tab, not in a new guest view so we
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.h b/extensions/browser/guest_view/extension_options/extension_options_guest.h
-index 7350382146178f58960a9bf68cd959076d2d9790..a70a94d14bdfa993feab60b8e4f32e1002cf38cc 100644
+index f1c474143b087988b8084ad1bdf01b8ba80327e8..47ffb7d406eb04622fffce9f0671eddab4ff8fe3 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.h
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.h
 @@ -58,8 +58,7 @@ class ExtensionOptionsGuest
@@ -316,7 +316,7 @@ index 7350382146178f58960a9bf68cd959076d2d9790..a70a94d14bdfa993feab60b8e4f32e10
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 9fa230c1cd95f71690f5beef7b77c9759215e3e0..f0160abfd4980d323c8e3def86df7bdf3a137dc3 100644
+index 55a78179723f1a49fe0fec7b25a40ffca034de75..e89d129de62ff03009360284ece599b4d13d85f4 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -403,8 +403,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -330,7 +330,7 @@ index 9fa230c1cd95f71690f5beef7b77c9759215e3e0..f0160abfd4980d323c8e3def86df7bdf
  }
  
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index ef6faf317dd4168adf6fd530a7da0b80f9166dec..f401659a81d4aeaf71039d71eb8fec4844497334 100644
+index af1cf98c17916f698a27de0d20eac6ed1d641759..5d118497d3570ff2d82d3bfa64b7e0cb91a98d40 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 @@ -171,8 +171,7 @@ class MimeHandlerViewGuest

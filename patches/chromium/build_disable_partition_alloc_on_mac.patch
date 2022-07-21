@@ -9,7 +9,7 @@ and can be removed when the crash in fork is resolved.
 Related issue: https://github.com/electron/electron/issues/32718
 
 diff --git a/base/allocator/allocator.gni b/base/allocator/allocator.gni
-index c3c62f83553bd0d258de4d5d9ecd8b02a74f594b..3dbf4462fa056db7a4084453ef35f1b944fbd093 100644
+index 2f879ed755ed9affdef49bf2ff9364b063eb164f..90c83ecc2f103797ed46ca83837181710bf0d3af 100644
 --- a/base/allocator/allocator.gni
 +++ b/base/allocator/allocator.gni
 @@ -20,7 +20,7 @@ _disable_partition_alloc = is_component_build || (is_win && is_debug)

@@ -313,7 +313,7 @@ index d59a16112d27e2696437163483c44eca414c225c..1ccd20fe7efa3cbae48f99d0660b0252
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index 7cb34e119cd30353fe56e7c71ed5e1d417896888..dbb6cc8e37eff9b30269687f29808ec3ca46b243 100644
+index 0faa991dccfc290e4119ddcbd500850b15e1f301..b08c593e4a3c219d5156055f401f00927bf05c82 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
 @@ -86,6 +86,7 @@
