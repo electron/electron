@@ -478,7 +478,11 @@ step-fix-sync: &step-fix-sync
       fi
 
       cd src/third_party/angle
+      rm .git/objects/info/alternates
       git remote set-url origin https://chromium.googlesource.com/angle/angle.git
+      cp .git/config .git/config.backup
+      git remote remove origin
+      mv .git/config.backup .git/config
       git fetch
       # Run update_depot_tools to make sure ninja gets downloaded
       update_depot_tools
