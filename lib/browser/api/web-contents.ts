@@ -570,6 +570,7 @@ WebContents.prototype._init = function () {
   Object.defineProperty(this, "ipc", {
     get() { return ipc; },
     writable: false,
+    enumerable: true,
   });
 
   // Dispatch IPC messages to the ipc module.
