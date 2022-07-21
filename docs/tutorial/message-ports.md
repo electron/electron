@@ -8,8 +8,7 @@ your app.
 
 Here is a very brief example of what a MessagePort is and how it works:
 
-```js
-// renderer.js ///////////////////////////////////////////////////////////////
+```js title='renderer.js (Renderer Process)'
 // MessagePorts are created in pairs. A connected pair of message ports is
 // called a channel.
 const channel = new MessageChannel()
@@ -28,8 +27,7 @@ port2.postMessage({ answer: 42 })
 ipcRenderer.postMessage('port', null, [port1])
 ```
 
-```js
-// main.js ///////////////////////////////////////////////////////////////////
+```js title='main.js (Main Process)'
 // In the main process, we receive the port.
 ipcMain.on('port', (event) => {
   // When we receive a MessagePort in the main process, it becomes a
@@ -130,8 +128,7 @@ app.whenReady().then(async () => {
 Then, in your preload scripts you receive the port through IPC and set up the
 listeners.
 
-```js
-// preloadMain.js and preloadSecondary.js
+```js title='preloadMain.js and preloadSecondary.js (Preload scripts)'
 const { ipcRenderer } = require('electron')
 
 ipcRenderer.on('port', e => {
@@ -146,13 +143,14 @@ ipcRenderer.on('port', e => {
 
 In this example messagePort is bound to the `window` object directly. It is better
 to use `contextIsolation` and set up specific contextBridge calls for each of your
-expected messages, but for the simplicity of this example we don't.
+expected messages, but for the simplicity of this example we don't. You can find an
+example of context isolation further down this page at [Communicating directly between the main process and the main world of a context-isolated page](#communicating-directly-between-the-main-process-and-the-main-world-of-a-context-isolated-page)
 
 That means window.messagePort is globally available and you can call
 `postMessage` on it from anywhere in your app to send a message to the other
 renderer.
 
-```js
+```js title='renderer.js (Renderer Process)'
 // elsewhere in your code to send a message to the other renderers message handler
 window.messagePort.postmessage('ping')
 ```
@@ -163,8 +161,7 @@ In this example, your app has a worker process implemented as a hidden window.
 You want the app page to be able to communicate directly with the worker
 process, without the performance overhead of relaying via the main process.
 
-```js
-// main.js ///////////////////////////////////////////////////////////////////
+```js title='main.js (Main Process)'
 const { BrowserWindow, app, ipcMain, MessageChannelMain } = require('electron')
 
 app.whenReady().then(async () => {
@@ -202,8 +199,7 @@ app.whenReady().then(async () => {
 })
 ```
 
-```html
-<!-- worker.html ------------------------------------------------------------>
+```html  title='worker.html'
 <script>
 const { ipcRenderer } = require('electron')
 
@@ -226,8 +222,7 @@ ipcRenderer.on('new-client', (event) => {
 </script>
 ```
 
-```html
-<!-- app.html --------------------------------------------------------------->
+```html  title='app.html'
 <script>
 const { ipcRenderer } = require('electron')
 
@@ -255,9 +250,7 @@ Electron's built-in IPC methods only support two modes: fire-and-forget
 can implement a "response stream", where a single request responds with a
 stream of data.
 
-```js
-// renderer.js ///////////////////////////////////////////////////////////////
-
+```js title='renderer.js (Renderer Process)'
 const makeStreamingRequest = (element, callback) => {
   // MessageChannels are lightweight--it's cheap to create a new one for each
   // request.
@@ -286,9 +279,7 @@ makeStreamingRequest(42, (data) => {
 // We will see "got response data: 42" 10 times.
 ```
 
-```js
-// main.js ///////////////////////////////////////////////////////////////////
-
+```js  title='main.js (Main Process)'
 ipcMain.on('give-me-a-stream', (event, msg) => {
   // The renderer has sent us a MessagePort that it wants us to send our
   // response over.
@@ -315,8 +306,7 @@ the renderer are delivered to the isolated world, rather than to the main
 world. Sometimes you want to deliver messages to the main world directly,
 without having to step through the isolated world.
 
-```js
-// main.js ///////////////////////////////////////////////////////////////////
+```js title='main.js (Main Process)'
 const { BrowserWindow, app, MessageChannelMain } = require('electron')
 const path = require('path')
 
@@ -351,8 +341,7 @@ app.whenReady().then(async () => {
 })
 ```
 
-```js
-// preload.js ////////////////////////////////////////////////////////////////
+```js title='preload.js (Preload Script)'
 const { ipcRenderer } = require('electron')
 
 // We need to wait until the main world is ready to receive the message before
@@ -370,8 +359,7 @@ ipcRenderer.on('main-world-port', async (event) => {
 })
 ```
 
-```html
-<!-- index.html ------------------------------------------------------------->
+```html title='index.html'
 <script>
 window.onmessage = (event) => {
   // event.source === window means the message is coming from the preload
