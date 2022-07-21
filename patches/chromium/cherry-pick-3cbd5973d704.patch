@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Date: Mon, 18 Jul 2022 20:44:41 +0000
+Subject: Keep refptr to ServiceWorkerVersion in MaybeTimeoutRequest
+
+The callback in ServiceWorkerVersion::MaybeTimeoutRequest may reduce the
+reference to the version object, which can be the last reference to it.
+In thet case, the object can be destroyed and the `inflight_requests_`
+field access after the callback become invalid.
+This CL keeps this to avoid the object destruction.
+
+(cherry picked from commit 5926fa916d9ad53c77e31ee757e1979275d7466c)
+
+Bug: 1339844
+Change-Id: I6564627bad0527dea007ca73261c5636dab56755
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3739330
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Reviewed-by: Sergei Glazunov <glazunov@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1023475}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3766241
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Owners-Override: Srinivas Sista <srinivassista@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5005@{#1263}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+
+diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
+index e478e2c59bc70437709b73fd0204599f26e09697..40e01aa77df0f7bd94c8a2d1a4864d0bd72efb64 100644
+--- a/content/browser/service_worker/service_worker_version.cc
++++ b/content/browser/service_worker/service_worker_version.cc
+@@ -2010,18 +2010,17 @@ void ServiceWorkerVersion::OnTimeoutTimer() {
+ 
+   MarkIfStale();
+ 
++  // Global `this` protecter.
++  // callbacks initiated by this function sometimes reduce refcnt to 0
++  // to make this instance freed.
++  scoped_refptr<ServiceWorkerVersion> protect_this(this);
++
+   // Stopping the worker hasn't finished within a certain period.
+   if (GetTickDuration(stop_time_) > kStopWorkerTimeout) {
+     DCHECK_EQ(EmbeddedWorkerStatus::STOPPING, running_status());
+     ReportError(blink::ServiceWorkerStatusCode::kErrorTimeout,
+                 "DETACH_STALLED_IN_STOPPING");
+ 
+-    // Detach the worker. Remove |this| as a listener first; otherwise
+-    // OnStoppedInternal might try to restart before the new worker
+-    // is created. Also, protect |this|, since swapping out the
+-    // EmbeddedWorkerInstance could destroy our ServiceWorkerHost which could in
+-    // turn destroy |this|.
+-    scoped_refptr<ServiceWorkerVersion> protect_this(this);
+     embedded_worker_->RemoveObserver(this);
+     embedded_worker_->Detach();
+     embedded_worker_ = std::make_unique<EmbeddedWorkerInstance>(this);
+@@ -2048,7 +2047,6 @@ void ServiceWorkerVersion::OnTimeoutTimer() {
+     DCHECK(running_status() == EmbeddedWorkerStatus::STARTING ||
+            running_status() == EmbeddedWorkerStatus::STOPPING)
+         << static_cast<int>(running_status());
+-    scoped_refptr<ServiceWorkerVersion> protect(this);
+     FinishStartWorker(blink::ServiceWorkerStatusCode::kErrorTimeout);
+     if (running_status() == EmbeddedWorkerStatus::STARTING)
+       embedded_worker_->Stop();
+@@ -2057,17 +2055,22 @@ void ServiceWorkerVersion::OnTimeoutTimer() {
+ 
+   // Requests have not finished before their expiration.
+   bool stop_for_timeout = false;
+-  auto timeout_iter = request_timeouts_.begin();
+-  while (timeout_iter != request_timeouts_.end()) {
++  std::set<InflightRequestTimeoutInfo> request_timeouts;
++  request_timeouts.swap(request_timeouts_);
++  auto timeout_iter = request_timeouts.begin();
++  while (timeout_iter != request_timeouts.end()) {
+     const InflightRequestTimeoutInfo& info = *timeout_iter;
+-    if (!RequestExpired(info.expiration))
++    if (!RequestExpired(info.expiration)) {
+       break;
++    }
+     if (MaybeTimeoutRequest(info)) {
+       stop_for_timeout =
+           stop_for_timeout || info.timeout_behavior == KILL_ON_TIMEOUT;
+     }
+-    timeout_iter = request_timeouts_.erase(timeout_iter);
++    timeout_iter = request_timeouts.erase(timeout_iter);
+   }
++  DCHECK(request_timeouts_.empty());
++  request_timeouts_.swap(request_timeouts);
+   if (stop_for_timeout && running_status() != EmbeddedWorkerStatus::STOPPING)
+     embedded_worker_->Stop();
+ 
+diff --git a/content/browser/service_worker/service_worker_version.h b/content/browser/service_worker/service_worker_version.h
+index c5f05a66e8f5bea35a79e9fdc1cffe8c0a079846..12a236b064e73abad022a2fc5d1b330b148e8448 100644
+--- a/content/browser/service_worker/service_worker_version.h
++++ b/content/browser/service_worker/service_worker_version.h
+@@ -871,6 +871,8 @@ class CONTENT_EXPORT ServiceWorkerVersion
+                                bool is_browser_startup_complete,
+                                blink::ServiceWorkerStatusCode status);
+ 
++  // The caller of MaybeTimeoutRequest must increase reference count of |this|
++  // to avoid it deleted during the execution.
+   bool MaybeTimeoutRequest(const InflightRequestTimeoutInfo& info);
+   void SetAllRequestExpirations(const base::TimeTicks& expiration);
+ 
