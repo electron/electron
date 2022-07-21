@@ -130,6 +130,11 @@ set `NSPrincipalClass` to `AtomApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
+As with the `open-file`, be sure to register a listener for the 'open-url' event
+early in your application startup to detect if the the application being is
+being opened to handle a URL. If you register the listener in response to a 'ready'
+event, you'll miss it.
+
 ### Event: 'activate' _macOS_
 
 Returns:
