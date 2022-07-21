@@ -43,10 +43,10 @@ index 273750752cdef18ccd7d54b9b28c524375bb3e8d..3eec2e5c14186b39a67ca8ad410a3268
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0e1e25d40ebf3ca92c57dfdfb52c5269198aa6f7..889da8724da515ab7e6b412fbaff434eb53289dc 100644
+index 44c1f304cf2d88dca06ee1bd53c774022766ed35..c4c6159fa9bb94b340a5fbc545e77ac696e8cc52 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4526,6 +4526,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4532,6 +4532,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
