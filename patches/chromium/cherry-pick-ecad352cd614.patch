@@ -91,11 +91,26 @@ index e70a95b72f75f9bbfb114a94396c048bce2a3647..cce6a266327b43837d7a6ccaca7f2969
    // Ensures only subclasses and factories (e.g. Clone()) can create MediaLog.
    MediaLog();
 diff --git a/third_party/blink/renderer/modules/webcodecs/codec_logger.h b/third_party/blink/renderer/modules/webcodecs/codec_logger.h
-index 2d389c1835365e423d6289fb883cb6cccd4d8e84..50abcbbdcfe434c53476b14d8eb929a6f38c892d 100644
+index 2d389c1835365e423d6289fb883cb6cccd4d8e84..fae0d8a4fb41b61316c5a61a1ba3d777562d206d 100644
 --- a/third_party/blink/renderer/modules/webcodecs/codec_logger.h
 +++ b/third_party/blink/renderer/modules/webcodecs/codec_logger.h
-@@ -71,7 +71,16 @@ class MODULES_EXPORT CodecLogger final {
+@@ -7,6 +7,10 @@
+ 
+ #include <memory>
+ 
++#include "base/check.h"
++#include "base/location.h"
++#include "base/memory/scoped_refptr.h"
++#include "base/sequence_checker.h"
+ #include "media/base/media_log.h"
+ #include "media/base/media_util.h"
+ #include "media/base/status.h"
+@@ -69,9 +73,20 @@ class MODULES_EXPORT CodecLogger final {
+     // This allows us to destroy |parent_media_log_| and stop logging,
+     // without causing problems to |media_log_| users.
      media_log_ = parent_media_log_->Clone();
++
++    task_runner_ = task_runner;
    }
  
 -  ~CodecLogger() { DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_); }
@@ -112,3 +127,13 @@ index 2d389c1835365e423d6289fb883cb6cccd4d8e84..50abcbbdcfe434c53476b14d8eb929a6
  
    void SendPlayerNameInformation(const ExecutionContext& context,
                                   std::string loadedAs) {
+@@ -132,6 +147,9 @@ class MODULES_EXPORT CodecLogger final {
+   // can be safely accessed, and whose raw pointer can be given callbacks.
+   std::unique_ptr<media::MediaLog> media_log_;
+ 
++  // Keep task runner around for posting the media log to upon destruction.
++  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
++
+   SEQUENCE_CHECKER(sequence_checker_);
+ };
+ 
