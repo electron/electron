@@ -90,8 +90,7 @@ In this example, the main process sets up a MessageChannel, then sends each port
 to a different renderer. This allows renderers to send messages to each other
 without needing to use the main process as an in-between.
 
-```js
-// main.js ///////////////////////////////////////////////////////////////////
+```js title='main.js (Main Process)'
 const { BrowserWindow, app, MessageChannelMain } = require('electron')
 
 app.whenReady().then(async () => {
