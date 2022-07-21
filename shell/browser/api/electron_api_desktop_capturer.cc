@@ -18,7 +18,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
-#include "shell/common/gin_converters/media_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
