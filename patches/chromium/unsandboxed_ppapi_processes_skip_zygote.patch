@@ -6,7 +6,7 @@ Subject: unsandboxed_ppapi_processes_skip_zygote.patch
 Unsandboxed ppapi processes should skip zygote.
 
 diff --git a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
-index b0279116fef365106926dd3b5e4cd5f0670c70ae..0b9e71de7a94d8b19b3534e8b8b9a5d56193567b 100644
+index 6e1d72902ec3e4a479304ff39b8b537d23f5cdf3..b7b198b159d250eca1498206ec29cc0270071f2a 100644
 --- a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
 @@ -8,6 +8,7 @@

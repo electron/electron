@@ -13,7 +13,7 @@
 #include "base/nix/xdg_util.h"
 #include "third_party/skia/include/core/SkImage.h"
 #include "ui/base/glib/glib_signal.h"
-#include "ui/views/linux_ui/status_icon_linux.h"
+#include "ui/linux/status_icon_linux.h"
 
 typedef struct _AppIndicator AppIndicator;
 typedef struct _GtkWidget GtkWidget;
@@ -33,7 +33,7 @@ namespace electron::gtkui {
 class AppIndicatorIconMenu;
 
 // Status icon implementation which uses libappindicator.
-class AppIndicatorIcon : public views::StatusIconLinux {
+class AppIndicatorIcon : public ui::StatusIconLinux {
  public:
   // The id uniquely identifies the new status icon from other chrome status
   // icons.
@@ -49,7 +49,7 @@ class AppIndicatorIcon : public views::StatusIconLinux {
   // Indicates whether libappindicator so could be opened.
   static bool CouldOpen();
 
-  // Overridden from views::StatusIconLinux:
+  // Overridden from ui::StatusIconLinux:
   void SetIcon(const gfx::ImageSkia& image) override;
   void SetToolTip(const std::u16string& tool_tip) override;
   void UpdatePlatformContextMenu(ui::MenuModel* menu) override;

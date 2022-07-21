@@ -345,7 +345,7 @@ describe('web security', () => {
 
     it('wasm codegen is disallowed by default', async () => {
       const r = await loadWasm('');
-      expect(r).to.equal('WebAssembly.instantiate(): Wasm code generation disallowed by embedder');
+      expect(r).to.equal('WebAssembly.instantiate(): Refused to compile or instantiate WebAssembly module because \'unsafe-eval\' is not an allowed source of script in the following Content Security Policy directive: "script-src \'self\' \'unsafe-inline\'"');
     });
 
     it('wasm codegen is allowed with "wasm-unsafe-eval" csp', async () => {
@@ -1036,6 +1036,14 @@ describe('chromium features', () => {
           }
         }).then((stream) => stream.getVideoTracks())`);
       expect(labels.some((l: any) => l)).to.be.true();
+    });
+
+    it('fails with "not supported" for getDisplayMedia', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const { ok, err } = await w.webContents.executeJavaScript('navigator.mediaDevices.getDisplayMedia({video: true}).then(s => ({ok: true}), e => ({ok: false, err: e.message}))');
+      expect(ok).to.be.false();
+      expect(err).to.equal('Not supported');
     });
   });
 

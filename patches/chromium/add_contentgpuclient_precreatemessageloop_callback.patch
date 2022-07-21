@@ -10,7 +10,7 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index ff57e2a67ccc37be912ba3fca9df4b9e28898c6e..0045b3c1b89728e3950929b49e15bbc67a826c02 100644
+index b692a49b71661b8394c1126250fb150653aece97..c087c0f99a15edd3a9c776a68c76b2cf46257123 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
 @@ -239,6 +239,10 @@ int GpuMain(MainFunctionParams parameters) {

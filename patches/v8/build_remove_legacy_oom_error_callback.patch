@@ -30,10 +30,10 @@ index b39921dea0415362d1a30159f3fac0e345e2313e..810fc4edaf69565959148d3c1ec662f0
    bool is_heap_oom = false;
    const char* detail = nullptr;
 diff --git a/include/v8-initialization.h b/include/v8-initialization.h
-index 5cadd1788926a7b305ba4d05792b9efa6183d73e..c01c337317afb088927cae0239542281a89d1bb1 100644
+index 66adf98c17998dd81178e515db01ef43daae14d7..224ae0dc6b34b4724192a1b0547be110f796a9b2 100644
 --- a/include/v8-initialization.h
 +++ b/include/v8-initialization.h
-@@ -286,9 +286,6 @@ class V8_EXPORT V8 {
+@@ -284,9 +284,6 @@ class V8_EXPORT V8 {
     */
    static void SetFatalMemoryErrorCallback(OOMErrorCallback callback);
  
@@ -69,10 +69,10 @@ index b54c7388603b4582356f6741c9a36f2835aa1928..b9533b78046228705e2038396eebf23b
    void SetOOMErrorHandler(OOMErrorCallback that);
  
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a0b9ae99a 100644
+index 9fafa6b0089aabf55984b68cff85e353fe50ce52..9472ad8f4f776f98d398113b22a6a710596b3cde 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -167,13 +167,6 @@
+@@ -171,13 +171,6 @@
  
  namespace v8 {
  
@@ -86,7 +86,7 @@ index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a
  static OOMErrorCallback g_oom_error_callback = nullptr;
  
  static ScriptOrigin GetScriptOriginForScript(i::Isolate* i_isolate,
-@@ -231,9 +224,6 @@ void i::V8::FatalProcessOutOfMemory(i::Isolate* i_isolate, const char* location,
+@@ -235,9 +228,6 @@ void i::V8::FatalProcessOutOfMemory(i::Isolate* i_isolate, const char* location,
      // Give the embedder a chance to handle the condition. If it doesn't,
      // just crash.
      if (g_oom_error_callback) g_oom_error_callback(location, details);
@@ -96,7 +96,7 @@ index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a
      FATAL("Fatal process out of memory: %s", location);
      UNREACHABLE();
    }
-@@ -309,9 +299,6 @@ void i::V8::FatalProcessOutOfMemory(i::Isolate* i_isolate, const char* location,
+@@ -313,9 +303,6 @@ void i::V8::FatalProcessOutOfMemory(i::Isolate* i_isolate, const char* location,
    }
    Utils::ReportOOMFailure(i_isolate, location, details);
    if (g_oom_error_callback) g_oom_error_callback(location, details);
@@ -106,7 +106,7 @@ index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a
    // If the fatal error handler returns, we stop execution.
    FATAL("API fatal error handler returned after process out of memory");
  }
-@@ -343,8 +330,6 @@ void Utils::ReportOOMFailure(i::Isolate* i_isolate, const char* location,
+@@ -347,8 +334,6 @@ void Utils::ReportOOMFailure(i::Isolate* i_isolate, const char* location,
                               const OOMDetails& details) {
    if (auto oom_callback = i_isolate->oom_behavior()) {
      oom_callback(location, details);
@@ -115,7 +115,7 @@ index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a
    } else {
      // TODO(wfh): Remove this fallback once Blink is setting OOM handler. See
      // crbug.com/614440.
-@@ -6141,11 +6126,6 @@ void v8::V8::SetFatalMemoryErrorCallback(
+@@ -6175,11 +6160,6 @@ void v8::V8::SetFatalMemoryErrorCallback(
    g_oom_error_callback = oom_error_callback;
  }
  
@@ -127,7 +127,7 @@ index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a
  void v8::V8::SetEntropySource(EntropySource entropy_source) {
    base::RandomNumberGenerator::SetEntropySource(entropy_source);
  }
-@@ -8654,8 +8634,6 @@ void Isolate::Initialize(Isolate* v8_isolate,
+@@ -8702,8 +8682,6 @@ void Isolate::Initialize(Isolate* v8_isolate,
  #endif
    if (params.oom_error_callback) {
      v8_isolate->SetOOMErrorHandler(params.oom_error_callback);
@@ -136,7 +136,7 @@ index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a
    }
  #if __clang__
  #pragma clang diagnostic pop
-@@ -9397,8 +9375,6 @@ size_t Isolate::CopyCodePages(size_t capacity, MemoryRange* code_pages_out) {
+@@ -9445,8 +9423,6 @@ size_t Isolate::CopyCodePages(size_t capacity, MemoryRange* code_pages_out) {
  
  CALLBACK_SETTER(FatalErrorHandler, FatalErrorCallback, exception_behavior)
  CALLBACK_SETTER(OOMErrorHandler, OOMErrorCallback, oom_behavior)
@@ -146,7 +146,7 @@ index 82ed3b8c44b62d67fc7e897423ca1c1999befb7f..dcae2f80cba468c1a98e589fd68ce60a
                  ModifyCodeGenerationFromStringsCallback2,
                  modify_code_gen_callback2)
 diff --git a/src/execution/isolate.h b/src/execution/isolate.h
-index 00494e347438e92b509ec67f4d77688e091d348b..8c151c8674fdb5d4b3af3de88e97e70239fa8ed7 100644
+index 13100146bdc981480a08156b54649b8f995789ae..9a117c4220704ed512b117aa2f50c3791f8e9189 100644
 --- a/src/execution/isolate.h
 +++ b/src/execution/isolate.h
 @@ -487,16 +487,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();
