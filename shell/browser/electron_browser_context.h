@@ -59,11 +59,11 @@ class ResolveProxyHelper;
 class WebViewManager;
 class ProtocolRegistry;
 
-using MediaResponseCallbackJs =
+using DisplayMediaResponseCallbackJs =
     base::OnceCallback<void(v8::Isolate* isolate, v8::Local<v8::Value> result)>;
-using MediaRequestHandler =
+using DisplayMediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
-                                 MediaResponseCallbackJs)>;
+                                 DisplayMediaResponseCallbackJs)>;
 
 class ElectronBrowserContext : public content::BrowserContext {
  public:
@@ -167,7 +167,7 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   bool ChooseMediaDevice(const content::MediaStreamRequest& request,
                          content::MediaResponseCallback callback);
-  void SetMediaRequestHandler(MediaRequestHandler handler);
+  void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler);
 
   ~ElectronBrowserContext() override;
 
@@ -233,7 +233,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
-  MediaRequestHandler media_request_handler_;
+  DisplayMediaRequestHandler display_media_request_handler_;
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;

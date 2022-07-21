@@ -74,8 +74,8 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
-#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "third_party/blink/public/common/storage_key/storage_key.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -646,14 +646,15 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionCheckHandler(handler);
 }
 
-void Session::SetMediaRequestHandler(v8::Isolate* isolate,
-                                     v8::Local<v8::Value> val) {
+void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
+                                            v8::Local<v8::Value> val) {
   if (val->IsNull())
-    browser_context_->SetMediaRequestHandler(MediaRequestHandler());
-  MediaRequestHandler handler;
+    browser_context_->SetDisplayMediaRequestHandler(
+        DisplayMediaRequestHandler());
+  DisplayMediaRequestHandler handler;
   if (!gin::ConvertFromV8(isolate, val, &handler))
     return;
-  browser_context_->SetMediaRequestHandler(handler);
+  browser_context_->SetDisplayMediaRequestHandler(handler);
 }
 
 void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
@@ -1211,7 +1212,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
-      .SetMethod("setMediaRequestHandler", &Session::SetMediaRequestHandler)
+      .SetMethod("setDisplayMediaRequestHandler",
+                 &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)

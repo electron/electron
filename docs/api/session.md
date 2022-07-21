@@ -698,7 +698,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 })
 ```
 
-#### `ses.setMediaRequestHandler(handler)`
+#### `ses.setDisplayMediaRequestHandler(handler)`
 
 * `handler` Function | null
   * `request` Object
@@ -724,7 +724,7 @@ access to.
 ```javascript
 const { session, desktopCapturer } = require('electron')
 
-session.defaultSession.setMediaRequestHandler((request, callback) => {
+session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
   desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
     // Grant access to the first screen found.
     const { id, name } = sources[0]

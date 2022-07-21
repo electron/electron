@@ -6,7 +6,7 @@ import { ifdescribe } from './spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
-ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => {
+ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler', () => {
   afterEach(closeAllWindows);
   // These tests are done on an http server because navigator.userAgentData
   // requires a secure context.
@@ -28,7 +28,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
     let mediaRequest: any = null;
-    ses.setMediaRequestHandler((request, callback) => {
+    ses.setDisplayMediaRequestHandler((request, callback) => {
       requestHandlerCalled = true;
       mediaRequest = request;
       desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
@@ -58,7 +58,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
   it('does not crash when using a bogus ID', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
-    ses.setMediaRequestHandler((request, callback) => {
+    ses.setDisplayMediaRequestHandler((request, callback) => {
       requestHandlerCalled = true;
       callback({
         video: { id: 'bogus', name: 'whatever' }
@@ -79,7 +79,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
 
   it('is not called when calling getUserMedia', async () => {
     const ses = session.fromPartition('' + Math.random());
-    ses.setMediaRequestHandler(() => {
+    ses.setDisplayMediaRequestHandler(() => {
       throw new Error('bad');
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
@@ -96,7 +96,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
   it('works when calling getDisplayMedia with preferCurrentTab', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
-    ses.setMediaRequestHandler((request, callback) => {
+    ses.setDisplayMediaRequestHandler((request, callback) => {
       requestHandlerCalled = true;
       callback(
         {
@@ -122,7 +122,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
 
   it('is not called when calling legacy getUserMedia', async () => {
     const ses = session.fromPartition('' + Math.random());
-    ses.setMediaRequestHandler(() => {
+    ses.setDisplayMediaRequestHandler(() => {
       throw new Error('bad');
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
@@ -138,7 +138,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setMediaRequestHandler', () => 
 
   it('is not called when calling legacy getUserMedia with desktop capture constraint', async () => {
     const ses = session.fromPartition('' + Math.random());
-    ses.setMediaRequestHandler(() => {
+    ses.setDisplayMediaRequestHandler(() => {
       throw new Error('bad');
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });

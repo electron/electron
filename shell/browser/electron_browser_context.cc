@@ -419,17 +419,17 @@ void ElectronBrowserContext::SetSSLConfigClient(
   ssl_config_client_ = std::move(client);
 }
 
-void ElectronBrowserContext::SetMediaRequestHandler(
-    MediaRequestHandler handler) {
-  media_request_handler_ = handler;
+void ElectronBrowserContext::SetDisplayMediaRequestHandler(
+    DisplayMediaRequestHandler handler) {
+  display_media_request_handler_ = handler;
 }
 
 bool ElectronBrowserContext::ChooseMediaDevice(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback) {
-  if (!media_request_handler_)
+  if (!display_media_request_handler_)
     return false;
-  MediaResponseCallbackJs callbackJs = base::BindOnce(
+  DisplayMediaResponseCallbackJs callbackJs = base::BindOnce(
       [](const content::MediaStreamRequest& request,
          content::MediaResponseCallback callback, v8::Isolate* isolate,
          v8::Local<v8::Value> result) {
@@ -480,7 +480,7 @@ bool ElectronBrowserContext::ChooseMediaDevice(
                                 nullptr);
       },
       request, std::move(callback));
-  media_request_handler_.Run(request, std::move(callbackJs));
+  display_media_request_handler_.Run(request, std::move(callbackJs));
   return true;
 }
 
