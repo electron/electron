@@ -483,7 +483,8 @@ void NativeWindowMac::Close() {
   // [window_ performClose:nil], the window won't close properly
   // even after the user has ended the sheet.
   // Ensure it's closed before calling [window_ performClose:nil].
-  SetEnabled(true);
+  if ([window_ attachedSheet])
+    [window_ endSheet:[window_ attachedSheet]];
 
   [window_ performClose:nil];
 
@@ -553,7 +554,8 @@ void NativeWindowMac::Hide() {
   // If a sheet is attached to the window when we call [window_ orderOut:nil],
   // the sheet won't be able to show again on the same window.
   // Ensure it's closed before calling [window_ orderOut:nil].
-  SetEnabled(true);
+  if ([window_ attachedSheet])
+    [window_ endSheet:[window_ attachedSheet]];
 
   if (is_modal() && parent()) {
     [window_ orderOut:nil];
@@ -597,9 +599,18 @@ bool NativeWindowMac::IsEnabled() {
 
 void NativeWindowMac::SetEnabled(bool enable) {
   if (!enable) {
-    [window_ beginSheet:window_
+    NSRect frame = [window_ frame];
+    NSWindow* window =
+        [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, frame.size.width,
+                                                         frame.size.height)
+                                    styleMask:NSWindowStyleMaskTitled
+                                      backing:NSBackingStoreBuffered
+                                        defer:NO];
+    [window setAlphaValue:0.5];
+
+    [window_ beginSheet:window
         completionHandler:^(NSModalResponse returnCode) {
-          NSLog(@"modal enabled");
+          NSLog(@"main window disabled");
           return;
         }];
   } else if ([window_ attachedSheet]) {
