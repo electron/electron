@@ -54,7 +54,7 @@ executors:
         type: enum
         enum: ["macos.x86.medium.gen2", "large"]
     macos:
-      xcode: "12.4.0"
+      xcode: 13.3.0
     resource_class: << parameters.size >>
 
   # Electron Runners
@@ -124,6 +124,9 @@ env-apple-silicon: &env-apple-silicon
   TARGET_ARCH: arm64
   USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
   npm_config_arch: arm64
+
+env-runner: &env-runner
+  IS_ELECTRON_RUNNER: 1
 
 env-arm64: &env-arm64
   GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
@@ -364,10 +367,7 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         sudo mkdir -p $TMPDIR/del-target
-        if [ "$TARGET_ARCH" == "arm64" ]; then
-          # Remount the root volume as writable, don't ask questions plz
-          sudo mount -uw /
-        fi
+
         tmpify() {
           if [ -d "$1" ]; then
             sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
@@ -409,33 +409,32 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         tmpify /usr/local/Homebrew
         sudo rm -rf $TMPDIR/del-target
 
-        if [ "$TARGET_ARCH" == "arm64" ]; then
-          sudo rm -rf "/System/Library/Desktop Pictures"
-          sudo rm -rf /System/Library/Templates/Data
-          sudo rm -rf /System/Library/Speech/Voices
-          sudo rm -rf "/System/Library/Screen Savers"
-          sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
-          sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
-          sudo rm -rf /System/Volumes/Data/Library/Java
-          sudo rm -rf /System/Volumes/Data/Library/Ruby
-          sudo rm -rf /System/Volumes/Data/Library/Printers
-          sudo rm -rf /System/iOSSupport
-          sudo rm -rf /System/Applications/*.app
-          sudo rm -rf /System/Applications/Utilities/*.app
-          sudo rm -rf /System/Library/LinguisticData
-          sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
-          # sudo rm -rf /System/Library/Fonts/*
-          # sudo rm -rf /System/Library/PreferencePanes
-          sudo rm -rf /System/Library/AssetsV2/*
-          sudo rm -rf /Applications/Safari.app
-          sudo rm -rf ~/project/src/build/linux
-          sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
-          sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
+        # sudo rm -rf "/System/Library/Desktop Pictures"
+        # sudo rm -rf /System/Library/Templates/Data
+        # sudo rm -rf /System/Library/Speech/Voices
+        # sudo rm -rf "/System/Library/Screen Savers"
+        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs
+        # sudo rm -rf "/System/Volumes/Data/Library/Application Support/Apple/Photos/Print Products"
+        # sudo rm -rf /System/Volumes/Data/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/
+        # sudo rm -rf /System/Volumes/Data/Library/Java
+        # sudo rm -rf /System/Volumes/Data/Library/Ruby
+        # sudo rm -rf /System/Volumes/Data/Library/Printers
+        # sudo rm -rf /System/iOSSupport
+        # sudo rm -rf /System/Applications/*.app
+        # sudo rm -rf /System/Applications/Utilities/*.app
+        # sudo rm -rf /System/Library/LinguisticData
+        # sudo rm -rf /System/Volumes/Data/private/var/db/dyld/*
+        # sudo rm -rf /System/Library/Fonts/*
+        # sudo rm -rf /System/Library/PreferencePanes
+        # sudo rm -rf /System/Library/AssetsV2/*
+        sudo rm -rf /Applications/Safari.app
+        sudo rm -rf ~/project/src/build/linux
+        sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
+        sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
 
-          # lipo off some huge binaries arm64 versions to save space
-          strip_arm_deep $(xcode-select -p)/../SharedFrameworks
-          strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-        fi
+        # lipo off some huge binaries arm64 versions to save space
+        strip_arm_deep $(xcode-select -p)/../SharedFrameworks
+        # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
       fi
     background: true
 
@@ -479,7 +478,11 @@ step-fix-sync: &step-fix-sync
       fi
 
       cd src/third_party/angle
+      rm .git/objects/info/alternates
       git remote set-url origin https://chromium.googlesource.com/angle/angle.git
+      cp .git/config .git/config.backup
+      git remote remove origin
+      mv .git/config.backup .git/config
       git fetch
       # Run update_depot_tools to make sure ninja gets downloaded
       update_depot_tools
@@ -489,6 +492,7 @@ step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
     name: Import and trust self-signed codesigning cert on MacOS
     command: |
       if  [ "$TARGET_ARCH" != "arm64" ] && [ "`uname`" == "Darwin" ]; then
+        sudo security authorizationdb write com.apple.trust-settings.admin allow
         cd src/electron
         ./script/codesign/generate-identity.sh
       fi
@@ -618,7 +622,7 @@ step-electron-publish: &step-electron-publish
         echo 'Uploading Electron release distribution to Azure'
         script/release/uploaders/upload.py --verbose --UPLOAD_TO_STORAGE
       else
-        echo 'Uploading Electron release distribution to Github releases'
+        echo 'Uploading Electron release distribution to GitHub releases'
         script/release/uploaders/upload.py --verbose
       fi
 
@@ -986,6 +990,7 @@ steps-electron-gn-check: &steps-electron-gn-check
     - *step-checkout-electron
     - *step-depot-tools-get
     - *step-depot-tools-add-to-path
+    - install-python2-mac
     - *step-setup-env-for-build
     - *step-setup-goma-for-build
     - *step-generate-deps-hash
@@ -1090,6 +1095,7 @@ steps-tests: &steps-tests
     - *step-setup-linux-for-headless-testing
     - *step-restore-brew-cache
     - *step-fix-known-hosts-linux
+    - install-python2-mac
     - *step-install-signing-cert-on-mac
 
     - run:
@@ -1179,6 +1185,31 @@ steps-test-node: &steps-test-node
 
 # Command Aliases
 commands:
+  install-python2-mac:
+    steps:
+      - restore_cache:
+          keys:
+            - v2.7.18-python-cache-{{ arch }}
+          name: Restore python cache
+      - run:
+          name: Install python2 on macos
+          command: |
+            if [ "`uname`" == "Darwin" ] && [ "$IS_ELECTRON_RUNNER" != "1" ]; then
+              if [ ! -f "python-downloads/python-2.7.18-macosx10.9.pkg" ]; then
+                mkdir python-downloads
+                echo 'Downloading Python 2.7.18'
+                curl -O https://dev-cdn.electronjs.org/python/python-2.7.18-macosx10.9.pkg
+                mv python-2.7.18-macosx10.9.pkg python-downloads
+              else
+                echo 'Using Python install from cache'
+              fi
+              sudo installer -pkg python-downloads/python-2.7.18-macosx10.9.pkg -target /        
+            fi
+      - save_cache:
+          paths:
+            - python-downloads
+          key: v2.7.18-python-cache-{{ arch }}
+          name: Persisting python cache
   maybe-restore-portaled-src-cache:
     parameters:
       halt-if-successful:
@@ -1346,6 +1377,7 @@ commands:
             - run: rm -rf src/electron
       - *step-restore-brew-cache
       - *step-install-gnutar-on-mac
+      - install-python2-mac
       - *step-save-brew-cache
       - when:
           condition: << parameters.build >>
@@ -1541,6 +1573,7 @@ commands:
             - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-restore-brew-cache
+      - install-python2-mac
       - *step-get-more-space-on-mac
       - when:
           condition: << parameters.checkout >>
@@ -1600,7 +1633,7 @@ jobs:
       name: linux-docker
       size: medium
     environment:
-      <<: *env-linux-medium
+      <<: *env-linux-2xlarge
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-electron-ts-compile-for-doc-change
@@ -2186,6 +2219,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-apple-silicon
+      <<: *env-runner
     <<: *steps-tests
 
   mas-testing-x64-tests:
@@ -2204,6 +2238,7 @@ jobs:
       <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-apple-silicon
+      <<: *env-runner
     <<: *steps-tests
 
   # Layer 4: Summary.
