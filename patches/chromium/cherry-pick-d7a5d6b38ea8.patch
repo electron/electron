@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Thu, 14 Jul 2022 22:27:14 +0000
+Subject: Fix dawn write handle data update OOB check
+
+(cherry picked from commit 0ba6ae3d447de7bc599a191f6792a4e6676f10a3)
+
+Bug: chromium:1340654
+Change-Id: I9d87cb868eccc380f707ab6c3c6bdc26c386fbfc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3738662
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1021911}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3758974
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Reviewed-by: Austin Eng <enga@chromium.org>
+Commit-Queue: Austin Eng <enga@chromium.org>
+Auto-Submit: Shrek Shao <shrekshao@google.com>
+Cr-Commit-Position: refs/branch-heads/5005@{#1246}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+
+diff --git a/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc b/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
+index 42b95578177f61f624997f074993de855218079e..d2e9f4a8475925e0c4efe495c6b59aa46679a8f3 100644
+--- a/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
++++ b/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
+@@ -30,7 +30,8 @@ class ReadHandleImpl
+                            size_t offset,
+                            size_t size,
+                            void* serializePointer) override {
+-    DCHECK_LE(size + offset, size_);
++    DCHECK_LE(offset, size_);
++    DCHECK_LE(size, size_ - offset);
+     // Copy the data into the shared memory allocation.
+     // In the case of buffer mapping, this is the mapped GPU memory which we
+     // copy into client-visible shared memory.
+@@ -57,10 +58,16 @@ class WriteHandleImpl
+                              size_t size) override {
+     // Nothing is serialized because we're using shared memory.
+     DCHECK_EQ(deserialize_size, 0u);
+-    DCHECK_LE(size + offset, size_);
+     DCHECK(mTargetData);
+     DCHECK(ptr_);
+ 
++    if (offset > mDataLength || size > mDataLength - offset) {
++      return false;
++    }
++    if (offset > size_ || size > size_ - offset) {
++      return false;
++    }
++
+     // Copy from shared memory into the target buffer.
+     // mTargetData will always be the starting address
+     // of the backing buffer after the dawn side change.
+diff --git a/gpu/command_buffer/service/webgpu_decoder_impl.cc b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+index 6879bddb8354e3f57f1431f05f30801e267940f5..b866ec5094547bf23b48dbe73e2023f68a039666 100644
+--- a/gpu/command_buffer/service/webgpu_decoder_impl.cc
++++ b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+@@ -1114,7 +1114,6 @@ error::Error WebGPUDecoderImpl::HandleDawnCommands(
+                "WebGPUDecoderImpl::HandleDawnCommands", "bytes", size);
+ 
+   if (!wire_server_->HandleCommands(shm_commands, size)) {
+-    NOTREACHED();
+     return error::kLostContext;
+   }
+ 
