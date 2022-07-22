@@ -8,6 +8,8 @@
 #import <AppKit/AppKit.h>
 #import <objc/runtime.h>
 
+#include <vector>
+
 #include "base/strings/sys_string_conversions.h"
 #import "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/drag_util.h"

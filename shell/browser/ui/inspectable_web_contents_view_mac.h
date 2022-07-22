@@ -8,6 +8,8 @@
 
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 
+#include <vector>
+
 #include "base/mac/scoped_nsobject.h"
 
 @class ElectronInspectableWebContentsView;

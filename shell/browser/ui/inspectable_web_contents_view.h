@@ -7,6 +7,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
 #include <string>
+#include <vector>
 
 #include "shell/common/api/api.mojom.h"
 #include "ui/gfx/native_widget_types.h"

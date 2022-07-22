@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <utility>
+#include <vector>
 
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/drag_util.h"
