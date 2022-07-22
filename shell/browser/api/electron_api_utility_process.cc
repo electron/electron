@@ -171,7 +171,7 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   opts.Get("serviceName", &display_name);
   bool use_plugin_helper = false;
 #if BUILDFLAG(IS_MAC)
-  opts.Get("disableLibraryValidation", &use_plugin_helper);
+  opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
 #endif
   auto handle = gin::CreateHandle(
       args->isolate(), new UtilityProcessWrapper(

@@ -23,8 +23,11 @@ Process: [Main](../glossary.md#main-process)<br />
   * `serviceName` string - Name of the process that will appear in `name` property of
     [`child-process-gone` event of `app`](app.md#event-child-process-gone).
     Default is `node.mojom.NodeService`.
-  * `disableLibraryValidation` boolean (optional) _macOS_ - Allows launching the process using
-    Helper (Plugin).app which can code signed with entitlement that disables library validation.
+  * `allowLoadingUnsignedLibraries` boolean (optional) _macOS_ - With this flag, the utility process will be
+    launched via the `Electron Helper (Plugin).app` helper executable on macOS, which can be
+    codesigned with `com.apple.security.cs.disable-library-validation` and
+    `com.apple.security.cs.allow-unsigned-executable-memory` entitlements. This will allow the utility process
+    to load unsigned libraries. Unless you specifically need this capability, it is best to leave this disabled.
     Default is `false`.
 
 ### Instance Methods
