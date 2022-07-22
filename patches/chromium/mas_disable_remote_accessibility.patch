@@ -44,10 +44,10 @@ index 306db835fe203f663b1d84dd3490b619eb3f60b2..7a41d7afe6197e0a78934206782b1063
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 34721e51d0ebe3a99751bba88b0afe026a910cc6..3a415dd6daf655c31ceb6fd6d307dc6e96c9aced 100644
+index c8a108cd8d39bf5185db438092579f67d31938f1..7ceaca262d71b1738d1dc92421db5e94494d5a97 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -582,10 +582,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -583,10 +583,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -263,7 +263,7 @@ index fc847f1ae010e4e0d69836f16d83515b8a92073a..a4bebe5078ace6c49cb34912813bbaf7
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 0ca869c22670d057362132b30c704876e1d4d850..839a6777ebd596f41467fd90c725eea374bf9a0a 100644
+index 84aa682cd5356a8d59455cb24f360339745ac7d4..a831015e4c441b9657c47ea387ac6dedf0b52a17 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -295,14 +295,22 @@ void HandleAccelerator(const ui::Accelerator& accelerator,

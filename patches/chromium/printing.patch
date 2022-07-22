@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index a3cf0a49943f53608f783f439917c256ec5b9040..d52cc220107218e53290d21ce1c52a7f855385b4 100644
+index 4efccb3390c7234db0d6abcdae3e5d2b9e21c252..fda9213e7b29e1fc60f4219ac2f63475ae5cd81a 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -973,7 +973,6 @@ if (is_win) {
@@ -796,10 +796,10 @@ index 66026548181a897c161d7202646f33fd8847ccb8..113a8165b5db6294087773e5a4b2f003
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 1a6ad373c1b34c2bf0f2050beeef40e8637313d0..61a37a376e8cd90f79f91beefdfad5d2600760f0 100644
+index e7351dc83236255afe210228d6ee5618e917b07f..2986c5ac38205fb71c87ba5da306ff5c3f077ba5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2756,8 +2756,9 @@ source_set("browser") {
+@@ -2759,8 +2759,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -832,7 +832,7 @@ index e3c1b29138f175836424bcfe917cd00bd081b34c..7d8b6f06c5d1a7ea9a5ed86c5c612e8d
  
  bool UtilitySandboxedProcessLauncherDelegate::GetAppContainerId(
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index c23742bbbb9cabb08467591308b8f9ba377205be..5c5f3b7ec364e004cf998f7a50fdb7ed5ae9fec9 100644
+index 6cca846b9831da669ca52aff776caf5a23f6f4d1..39d1032f276181a535de9fba89c2246c7a9814d7 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -143,7 +143,6 @@ void PrintingContext::UsePdfSettings() {

@@ -10,7 +10,7 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 1dfe162dc69f404b49bae6197fa7b713600eb9bd..dedfb41c933ad7930cbab5aae502e1df28cf05e4 100644
+index d1fa110e7ccdcf496fe5e967cdb85b5fa0e54301..b2f206ed814e43e04815d1247ba4c6aa27f7084d 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -360,6 +360,11 @@ class CONTENT_EXPORT ContentRendererClient {

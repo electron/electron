@@ -108,10 +108,10 @@ index 1318d5e04d5448d2b357454c3ce4207264288760..3b0324c35d5b18ed2e29264aae860c48
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index c3a387b22fe600c6535ac4b39b06fec4f4cdf4ac..2bd230fbb36909a0a5cb9984a00d7df19e3f229e 100644
+index 3aa1e336d8da2f58ca93a6faaa2e6f0f9b4deb48..ab41334aeff9d0462833e1b57eb1977bf0ddd6e8 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1806,12 +1806,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1821,12 +1821,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -127,10 +127,10 @@ index c3a387b22fe600c6535ac4b39b06fec4f4cdf4ac..2bd230fbb36909a0a5cb9984a00d7df1
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 64eeec32ac70f32b71cd30f7d1adb1f12fa6fa46..8ebf50854a4fdf2cdc9b7f90844456c12902cb4b 100644
+index c9e2f4c315d27ee6a4ad27e20934b8a35b86caf3..3fafa126714e328fd3decf9c3bc5dcc753b8db8f 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -843,8 +843,7 @@ class Browser : public TabStripModelObserver,
+@@ -851,8 +851,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -372,7 +372,7 @@ index 0661fd642dcee69a7c8f955490dadf32dc0eb468..e3fa74da87513fbfcd035fa872dc938d
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 807879aa4894e5fabe043d07d5899e5700a7c172..5044c462ccfeaeb4aeb2dd3189e40e60c835ed73 100644
+index aa488570851f68e892b024c901f31b658929fc72..efe6a6bc939a6bdea0eaca65e12242e23f3e6d59 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -179,8 +179,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
