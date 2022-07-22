@@ -90,8 +90,10 @@ class NodeBindings {
   // Create the environment and load node.js.
   node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
                                        node::MultiIsolatePlatform* platform,
-                                       std::vector<std::string> args = {},
-                                       std::vector<std::string> exec_args = {});
+                                       std::vector<std::string> args,
+                                       std::vector<std::string> exec_args);
+  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
+                                       node::MultiIsolatePlatform* platform);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);

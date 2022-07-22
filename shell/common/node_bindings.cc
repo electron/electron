@@ -423,17 +423,6 @@ node::Environment* NodeBindings::CreateEnvironment(
     node::MultiIsolatePlatform* platform,
     std::vector<std::string> args,
     std::vector<std::string> exec_args) {
-  if (browser_env_ != BrowserEnvironment::kUtility) {
-#if BUILDFLAG(IS_WIN)
-    auto& atom_args = ElectronCommandLine::argv();
-    args.resize(atom_args.size());
-    std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
-                   [](auto& a) { return base::WideToUTF8(a); });
-#else
-    args = ElectronCommandLine::argv();
-#endif
-  }
-
   // Feed node the path to initialization script.
   std::string process_type;
   switch (browser_env_) {
@@ -593,6 +582,20 @@ node::Environment* NodeBindings::CreateEnvironment(
   process.Set("helperExecPath", helper_exec_path);
 
   return env;
+}
+
+node::Environment* NodeBindings::CreateEnvironment(
+    v8::Handle<v8::Context> context,
+    node::MultiIsolatePlatform* platform) {
+#if BUILDFLAG(IS_WIN)
+  auto& atom_args = ElectronCommandLine::argv();
+  std::vector<std::string> args(atom_args.size());
+  std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
+                 [](auto& a) { return base::WideToUTF8(a); });
+#else
+  auto args = ElectronCommandLine::argv();
+#endif
+  return CreateEnvironment(context, platform, args, {});
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
