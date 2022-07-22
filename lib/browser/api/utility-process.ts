@@ -1,8 +1,10 @@
 import { EventEmitter } from 'events';
 import * as path from 'path';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-const { CreateProcessWrapper } = process._linkedBinding('electron_browser_utility_process');
+const { createProcessWrapper } = process._linkedBinding('electron_browser_utility_process');
 
+// Signal validation is based on
+// https://github.com/nodejs/node/blob/main/lib/child_process.js#L938-L946
 let signalsToNamesMapping: Record<number, string>;
 function getSignalsToNamesMapping () {
   if (signalsToNamesMapping !== undefined) { return signalsToNamesMapping; }
@@ -16,7 +18,7 @@ function getSignalsToNamesMapping () {
   return signalsToNamesMapping;
 }
 
-function convertToValidSignal (signal: string | number | undefined): number {
+function convertToValidSignal (signal: string | number): number {
   if (typeof signal === 'number' && getSignalsToNamesMapping()[signal]) { return signal; }
 
   const { signals } = require('os').constants;
@@ -27,6 +29,14 @@ function convertToValidSignal (signal: string | number | undefined): number {
   }
 
   return signals.SIGTERM;
+}
+
+function sanitizeKillSignal (signal: string | number): number {
+  if (typeof signal === 'string' || typeof signal === 'number') {
+    return convertToValidSignal(signal);
+  } else {
+    throw new TypeError('Kill signal must be a string or number');
+  }
 }
 
 export default class UtilityProcess extends EventEmitter {
@@ -68,7 +78,7 @@ export default class UtilityProcess extends EventEmitter {
       }
     }
 
-    this._handle = CreateProcessWrapper({ modulePath, args, ...options });
+    this._handle = createProcessWrapper({ modulePath, args, ...options });
     this._handle.emit = (channel: string, ...args: any[]) => {
       if (channel === 'exit') {
         this.emit('exit', ...args);
@@ -100,8 +110,9 @@ export default class UtilityProcess extends EventEmitter {
     if (this._handle === null) {
       return false;
     }
+    signal = signal || 'SIGTERM';
     const sig = signal === 0 ? signal
-      : convertToValidSignal(signal);
+      : sanitizeKillSignal(signal);
     const err = this._handle.kill(sig);
     if (err === 0) return true;
     return false;

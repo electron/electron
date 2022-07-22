@@ -1,5 +1,5 @@
 import { defineProperties } from '@electron/internal/common/define-properties';
-import { utilityNodeModuleList } from '@electron/internal/utility_node/api/module-list';
+import { utilityNodeModuleList } from '@electron/internal/utility_process/api/module-list';
 
 module.exports = {};
 

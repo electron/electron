@@ -78,6 +78,11 @@ Emitted once the child process has spawned successfully.
 
 #### Event: 'exit'
 
+Returns:
+
+* `event` Event
+* `code` number
+
 Emitted when the child process has a normal termination.
 For other abnormal exit cases listen to the [`child-process-gone` event of `app`](app.md#event-child-process-gone).
 

@@ -43,9 +43,7 @@ const makeElectronModule = (name: string) => {
 };
 
 makeElectronModule('electron');
-if (process.type !== 'utility_node') {
-  makeElectronModule('electron/common');
-}
+makeElectronModule('electron/common');
 if (process.type === 'browser') {
   makeElectronModule('electron/main');
 }

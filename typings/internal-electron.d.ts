@@ -10,7 +10,7 @@ declare namespace Electron {
     browser = 'browser',
     renderer = 'renderer',
     worker = 'worker',
-    utility_node = 'utility_node'
+    utility_process = 'utility_process'
   }
 
   interface App {

@@ -113,7 +113,7 @@ A `string` representing the current process's type, can be:
 * `browser` - The main process
 * `renderer` - A renderer process
 * `worker` - In a web worker
-* `utility_node` - In a node process launched as a service
+* `utility_process` - In a node process launched as a service
 
 ### `process.versions.chrome` _Readonly_
 

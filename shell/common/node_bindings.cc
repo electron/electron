@@ -447,7 +447,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       process_type = "worker";
       break;
     case BrowserEnvironment::kUtility:
-      process_type = "utility_node";
+      process_type = "utility_process";
       break;
   }
 
@@ -546,7 +546,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
 
   if (browser_env_ == BrowserEnvironment::kBrowser ||
-      browser_env_ != BrowserEnvironment::kUtility) {
+      browser_env_ == BrowserEnvironment::kUtility) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {

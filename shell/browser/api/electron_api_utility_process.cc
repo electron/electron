@@ -46,7 +46,6 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     : wrapper_id_(GetAllUtilityProcessWrappers().Add(this)) {
   DCHECK(!node_service_remote_.is_bound());
 
-  node_service_remote_.reset();
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
 
@@ -79,11 +78,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
   // Emit 'spawn' event
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  v8::Local<v8::Object> self;
-  if (GetWrapper(isolate).ToLocal(&self))
-    gin_helper::EmitEvent(isolate, self, "spawn");
+  Emit("spawn");
 }
 
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
@@ -93,30 +88,15 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
     GetAllUtilityProcessWrappers().Remove(wrapper_id_);
   node_service_remote_.reset();
   // Emit 'exit' event
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  v8::Local<v8::Object> self;
-  if (GetWrapper(isolate).ToLocal(&self)) {
-    gin_helper::EmitEvent(isolate, self, "exit");
-    pinned_wrapper_.Reset();
-  }
+  Emit("exit");
+  Unpin();
 }
 
 void UtilityProcessWrapper::ShutdownServiceProcess() {
   node_service_remote_.reset();
   // Emit 'exit' event
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  v8::Local<v8::Object> self;
-  if (GetWrapper(isolate).ToLocal(&self)) {
-    gin_helper::EmitEvent(isolate, self, "exit");
-    pinned_wrapper_.Reset();
-  }
-}
-
-void UtilityProcessWrapper::Pin(v8::Isolate* isolate) {
-  // Prevent ourselves from being GC'd until the process is exited.
-  pinned_wrapper_.Reset(isolate, GetWrapper(isolate).ToLocalChecked());
+  Emit("exit", 0 /* exit_code */);
+  Unpin();
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
@@ -231,7 +211,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("CreateProcessWrapper",
+  dict.SetMethod("createProcessWrapper",
                  &electron::api::UtilityProcessWrapper::Create);
 }
 

@@ -42,8 +42,8 @@ const main = async () => {
       config: 'webpack.config.asar.js'
     },
     {
-      name: 'utility_node_bundle_deps',
-      config: 'webpack.config.utility_node.js'
+      name: 'utility_process_bundle_deps',
+      config: 'webpack.config.utility_process.js'
     }
   ];
 

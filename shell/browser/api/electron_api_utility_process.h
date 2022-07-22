@@ -14,6 +14,7 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/pinnable.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 #include "v8/include/v8.h"
 
@@ -33,6 +34,7 @@ namespace api {
 
 class UtilityProcessWrapper
     : public gin::Wrappable<UtilityProcessWrapper>,
+      public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper> {
  public:
   ~UtilityProcessWrapper() override;
@@ -53,13 +55,11 @@ class UtilityProcessWrapper
   void OnServiceProcessLaunched(const base::Process& process);
   void OnServiceProcessDisconnected(uint32_t error_code,
                                     const std::string& description);
-  void Pin(v8::Isolate* isolate);
 
   void PostMessage(gin::Arguments* args);
   int Kill(int signal) const;
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
-  v8::Global<v8::Value> pinned_wrapper_;
   int32_t wrapper_id_;
   base::ProcessId pid_ = base::kNullProcessId;
   mojo::Remote<node::mojom::NodeService> node_service_remote_;

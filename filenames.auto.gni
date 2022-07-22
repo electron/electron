@@ -334,14 +334,14 @@ auto_filenames = {
     "typings/internal-electron.d.ts",
   ]
 
-  utility_node_bundle_deps = [
+  utility_process_bundle_deps = [
     "lib/browser/message-port-main.ts",
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
     "lib/common/reset-search-paths.ts",
-    "lib/utility_node/api/exports/electron.ts",
-    "lib/utility_node/api/module-list.ts",
-    "lib/utility_node/init.ts",
+    "lib/utility_process/api/exports/electron.ts",
+    "lib/utility_process/api/module-list.ts",
+    "lib/utility_process/init.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",

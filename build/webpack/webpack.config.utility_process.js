@@ -1,4 +1,4 @@
 module.exports = require('./webpack.config.base')({
-  target: 'utility_node',
+  target: 'utility_process',
   alwaysHasNode: true
 });

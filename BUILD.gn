@@ -202,13 +202,13 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_utility_node_bundle") {
+webpack_build("electron_utility_process_bundle") {
   deps = [ ":build_electron_definitions" ]
 
-  inputs = auto_filenames.utility_node_bundle_deps
+  inputs = auto_filenames.utility_process_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.utility_node.js"
-  out_file = "$target_gen_dir/js2c/utility_node_init.js"
+  config_file = "//electron/build/webpack/webpack.config.utility_process.js"
+  out_file = "$target_gen_dir/js2c/utility_process_init.js"
 }
 
 action("electron_js2c") {
@@ -218,7 +218,7 @@ action("electron_js2c") {
     ":electron_isolated_renderer_bundle",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
-    ":electron_utility_node_bundle",
+    ":electron_utility_process_bundle",
     ":electron_worker_bundle",
   ]
 
@@ -228,7 +228,7 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
-    "$target_gen_dir/js2c/utility_node_init.js",
+    "$target_gen_dir/js2c/utility_process_init.js",
     "$target_gen_dir/js2c/worker_init.js",
   ]
 
