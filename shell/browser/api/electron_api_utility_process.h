@@ -40,7 +40,8 @@ class UtilityProcessWrapper
   ~UtilityProcessWrapper() override;
   static gin::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
 
-  void ShutdownServiceProcess();
+  void OnServiceProcessDisconnected(uint32_t error_code,
+                                    const std::string& description);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -53,14 +54,11 @@ class UtilityProcessWrapper
                         std::u16string display_name,
                         bool use_plugin_helper);
   void OnServiceProcessLaunched(const base::Process& process);
-  void OnServiceProcessDisconnected(uint32_t error_code,
-                                    const std::string& description);
 
   void PostMessage(gin::Arguments* args);
   int Kill(int signal) const;
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
-  int32_t wrapper_id_;
   base::ProcessId pid_ = base::kNullProcessId;
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
   base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
@@ -68,7 +66,8 @@ class UtilityProcessWrapper
 
 }  // namespace api
 
-base::IDMap<api::UtilityProcessWrapper*>& GetAllUtilityProcessWrappers();
+base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>&
+GetAllUtilityProcessWrappers();
 
 }  // namespace electron
 

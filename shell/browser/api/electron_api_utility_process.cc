@@ -28,8 +28,10 @@
 
 namespace electron {
 
-base::IDMap<api::UtilityProcessWrapper*>& GetAllUtilityProcessWrappers() {
-  static base::NoDestructor<base::IDMap<api::UtilityProcessWrapper*>>
+base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>&
+GetAllUtilityProcessWrappers() {
+  static base::NoDestructor<
+      base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>>
       s_all_utility_process_wrappers;
   return *s_all_utility_process_wrappers;
 }
@@ -42,8 +44,7 @@ gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {
 UtilityProcessWrapper::UtilityProcessWrapper(
     node::mojom::NodeServiceParamsPtr params,
     std::u16string display_name,
-    bool use_plugin_helper)
-    : wrapper_id_(GetAllUtilityProcessWrappers().Add(this)) {
+    bool use_plugin_helper) {
   DCHECK(!node_service_remote_.is_bound());
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
@@ -77,6 +78,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
     const base::Process& process) {
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
+  GetAllUtilityProcessWrappers().AddWithID(this, pid_);
   // Emit 'spawn' event
   Emit("spawn");
 }
@@ -84,15 +86,8 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
     uint32_t error_code,
     const std::string& description) {
-  if (GetAllUtilityProcessWrappers().Lookup(wrapper_id_))
-    GetAllUtilityProcessWrappers().Remove(wrapper_id_);
-  node_service_remote_.reset();
-  // Emit 'exit' event
-  Emit("exit");
-  Unpin();
-}
-
-void UtilityProcessWrapper::ShutdownServiceProcess() {
+  if (GetAllUtilityProcessWrappers().Lookup(pid_))
+    GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();
   // Emit 'exit' event
   Emit("exit", 0 /* exit_code */);
