@@ -6,6 +6,7 @@
 
 #include "base/command_line.h"
 #include "base/environment.h"
+#include "ui/ozone/buildflags.h"
 #include "ui/ozone/public/ozone_switches.h"
 
 #if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
