@@ -55,6 +55,8 @@ static_library("chrome") {
     "//chrome/browser/process_singleton.h",
     "//chrome/browser/process_singleton_internal.cc",
     "//chrome/browser/process_singleton_internal.h",
+    "//chrome/browser/themes/theme_properties.cc",
+    "//chrome/browser/themes/theme_properties.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.cc",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc",
@@ -130,6 +132,7 @@ static_library("chrome") {
 
   public_deps = [
     "//chrome/browser:dev_ui_browser_resources",
+    "//chrome/browser/ui/color:mixers",
     "//chrome/common",
     "//chrome/common:version_header",
     "//components/keyed_service/content",
