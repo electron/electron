@@ -443,7 +443,9 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
   gin_helper::Dictionary result_dict;
   if (!gin::ConvertFromV8(args->isolate(), result, &result_dict)) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError("Display Media Request streams callback must be called with null or a valid object");
+        .ThrowTypeError(
+            "Display Media Request streams callback must be called with null "
+            "or a valid object");
     std::move(callback).Run(
         *stream_devices_set,
         blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
@@ -467,7 +469,8 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
                                              rfh->GetRoutingID())
               .ToString(),
-          "Tab video");
+          base::UTF16ToUTF8(
+              content::WebContents::FromRenderFrameHost(rfh)->GetTitle()));
     } else {
       gin_helper::ErrorThrower(args->isolate())
           .ThrowTypeError(

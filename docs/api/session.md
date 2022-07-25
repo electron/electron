@@ -709,10 +709,10 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `userGesture` Boolean - whether a user gesture was active when this request was triggered.
   * `callback` Function
     * `streams` Object
-      * `video` Object | WebFrameMain (optional)
+      * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
         * `id` String - the id of the stream being granted.
         * `name` String - the name of the stream being granted.
-      * `audio` Object | WebFrameMain (optional)
+      * `audio` Object | [WebFrameMain](web-frame-main.md) (optional)
         * `id` String - the id of the stream being granted.
         * `name` String - the name of the stream being granted.
 
@@ -727,11 +727,13 @@ const { session, desktopCapturer } = require('electron')
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
   desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
     // Grant access to the first screen found.
-    const { id, name } = sources[0]
-    callback({ video: { id, name } })
+    callback({ video: sources[0] })
   })
 })
 ```
+
+Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
+will capture the video or audio stream from that frame.
 
 Passing `null` instead of a function resets the handler to its default state.
 
