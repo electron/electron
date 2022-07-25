@@ -70,15 +70,15 @@ device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(
 
 void ElectronSerialDelegate::AddObserver(content::RenderFrameHost* frame,
                                          Observer* observer) {
-  return GetChooserContext(frame)->AddPortObserver(observer);
+  observer_list_.AddObserver(observer);
+  auto* chooser_context = GetChooserContext(frame);
+  if (!port_observation_.IsObserving())
+    port_observation_.Observe(chooser_context);
 }
 
 void ElectronSerialDelegate::RemoveObserver(content::RenderFrameHost* frame,
                                             Observer* observer) {
-  SerialChooserContext* serial_chooser_context = GetChooserContext(frame);
-  if (serial_chooser_context) {
-    return serial_chooser_context->RemovePortObserver(observer);
-  }
+  observer_list_.RemoveObserver(observer);
 }
 
 void ElectronSerialDelegate::RevokePortPermissionWebInitiated(
@@ -117,6 +117,29 @@ SerialChooserController* ElectronSerialDelegate::AddControllerForFrame(
 void ElectronSerialDelegate::DeleteControllerForFrame(
     content::RenderFrameHost* render_frame_host) {
   controller_map_.erase(render_frame_host);
+}
+
+// SerialChooserContext::PortObserver:
+void ElectronSerialDelegate::OnPortAdded(
+    const device::mojom::SerialPortInfo& port) {
+  for (auto& observer : observer_list_)
+    observer.OnPortAdded(port);
+}
+
+void ElectronSerialDelegate::OnPortRemoved(
+    const device::mojom::SerialPortInfo& port) {
+  for (auto& observer : observer_list_)
+    observer.OnPortRemoved(port);
+}
+
+void ElectronSerialDelegate::OnPortManagerConnectionError() {
+  port_observation_.Reset();
+  for (auto& observer : observer_list_)
+    observer.OnPortManagerConnectionError();
+}
+
+void ElectronSerialDelegate::OnSerialChooserContextShutdown() {
+  port_observation_.Reset();
 }
 
 }  // namespace electron
