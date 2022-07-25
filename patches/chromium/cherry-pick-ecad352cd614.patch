@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Wed, 8 Jun 2022 04:33:20 +0000
+Subject: Add Stop method to BatchingMediaLog
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Now that ~MediaLog is posted for a later destruction due to garbage
+collector ownership of CodecLogger, it's possible for the
+SendQueuedMediaEvents call from ~BatchingMediaLog to reference
+InspectorMediaEventHandler::inspector_context_ after it has been freed.
+
+This fix forces BatchingMediaLog to shut down it's logging capabilities
+when the destruction call is caused by the garbage collector deletion
+phase
+
+R=​liberato
+
+(cherry picked from commit 1bbfaf23cd8a1e977cb445a82a4caae107632a59)
+
+Bug: 1333333
+Change-Id: I0bdca72a71177c4c5a6a9dc692aad3de4c25f4e2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3689639
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1011247}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3694435
+Auto-Submit: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5060@{#672}
+Cr-Branched-From: b83393d0f4038aeaf67f970a024d8101df7348d1-refs/heads/main@{#1002911}
+
+diff --git a/content/renderer/media/batching_media_log.cc b/content/renderer/media/batching_media_log.cc
+index c7263471a3b352fe329c26dc258ccf7af2049820..fbd8f5c7720d3636870d63bfcefbdb55d862fef7 100644
+--- a/content/renderer/media/batching_media_log.cc
++++ b/content/renderer/media/batching_media_log.cc
+@@ -75,6 +75,11 @@ BatchingMediaLog::~BatchingMediaLog() {
+     SendQueuedMediaEvents();
+ }
+ 
++void BatchingMediaLog::Stop() {
++  base::AutoLock lock(lock_);
++  event_handlers_.clear();
++}
++
+ void BatchingMediaLog::OnWebMediaPlayerDestroyedLocked() {
+   base::AutoLock lock(lock_);
+   for (const auto& handler : event_handlers_)
+diff --git a/content/renderer/media/batching_media_log.h b/content/renderer/media/batching_media_log.h
+index eb757a4ca922bd5456d0e436d10cc540ee9134ae..6c2df688caee4d2fc17e973cdad12f20342e56fe 100644
+--- a/content/renderer/media/batching_media_log.h
++++ b/content/renderer/media/batching_media_log.h
+@@ -45,6 +45,8 @@ class CONTENT_EXPORT BatchingMediaLog : public media::MediaLog {
+ 
+   ~BatchingMediaLog() override;
+ 
++  void Stop() override;
++
+   // Will reset |last_ipc_send_time_| with the value of NowTicks().
+   void SetTickClockForTesting(const base::TickClock* tick_clock);
+ 
+diff --git a/media/base/media_log.cc b/media/base/media_log.cc
+index 3728433c5eb473cc9c82b6cf33b22bbf89471eea..46887da3dc21c504b26d6ff174eb14d68298c6b1 100644
+--- a/media/base/media_log.cc
++++ b/media/base/media_log.cc
+@@ -49,6 +49,9 @@ std::string MediaLog::GetErrorMessageLocked() {
+   return "";
+ }
+ 
++// Default implementation.
++void MediaLog::Stop() {}
++
+ void MediaLog::AddMessage(MediaLogMessageLevel level, std::string message) {
+   std::unique_ptr<MediaLogRecord> record(
+       CreateRecord(MediaLogRecord::Type::kMessage));
+diff --git a/media/base/media_log.h b/media/base/media_log.h
+index e70a95b72f75f9bbfb114a94396c048bce2a3647..cce6a266327b43837d7a6ccaca7f2969c06fef4b 100644
+--- a/media/base/media_log.h
++++ b/media/base/media_log.h
+@@ -131,6 +131,10 @@ class MEDIA_EXPORT MediaLog {
+   // even if this occurs, in the "won't crash" sense.
+   virtual std::unique_ptr<MediaLog> Clone();
+ 
++  // Can be used for stopping a MediaLog during a garbage-collected destruction
++  // sequence.
++  virtual void Stop();
++
+  protected:
+   // Ensures only subclasses and factories (e.g. Clone()) can create MediaLog.
+   MediaLog();
+diff --git a/third_party/blink/renderer/modules/webcodecs/codec_logger.h b/third_party/blink/renderer/modules/webcodecs/codec_logger.h
+index 2d389c1835365e423d6289fb883cb6cccd4d8e84..fae0d8a4fb41b61316c5a61a1ba3d777562d206d 100644
+--- a/third_party/blink/renderer/modules/webcodecs/codec_logger.h
++++ b/third_party/blink/renderer/modules/webcodecs/codec_logger.h
+@@ -7,6 +7,10 @@
+ 
+ #include <memory>
+ 
++#include "base/check.h"
++#include "base/location.h"
++#include "base/memory/scoped_refptr.h"
++#include "base/sequence_checker.h"
+ #include "media/base/media_log.h"
+ #include "media/base/media_util.h"
+ #include "media/base/status.h"
+@@ -69,9 +73,20 @@ class MODULES_EXPORT CodecLogger final {
+     // This allows us to destroy |parent_media_log_| and stop logging,
+     // without causing problems to |media_log_| users.
+     media_log_ = parent_media_log_->Clone();
++
++    task_runner_ = task_runner;
+   }
+ 
+-  ~CodecLogger() { DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_); }
++  ~CodecLogger() {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    // media logs must be posted for destruction, since they can cause the
++    // garbage collector to trigger an immediate cleanup and delete the owning
++    // instance of |CodecLogger|.
++    if (parent_media_log_) {
++      parent_media_log_->Stop();
++      task_runner_->DeleteSoon(FROM_HERE, std::move(parent_media_log_));
++    }
++  }
+ 
+   void SendPlayerNameInformation(const ExecutionContext& context,
+                                  std::string loadedAs) {
+@@ -132,6 +147,9 @@ class MODULES_EXPORT CodecLogger final {
+   // can be safely accessed, and whose raw pointer can be given callbacks.
+   std::unique_ptr<media::MediaLog> media_log_;
+ 
++  // Keep task runner around for posting the media log to upon destruction.
++  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
++
+   SEQUENCE_CHECKER(sequence_checker_);
+ };
+ 
