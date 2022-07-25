@@ -490,7 +490,8 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       devices.audio_device = blink::MediaStreamDevice(
           request.audio_type,
           content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID())
+                                             rfh->GetRoutingID(),
+                                             /* disable_local_echo= */ true)
               .ToString(),
           "Tab audio");
     } else {
