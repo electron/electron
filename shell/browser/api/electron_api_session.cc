@@ -652,8 +652,11 @@ void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
     browser_context_->SetDisplayMediaRequestHandler(
         DisplayMediaRequestHandler());
   DisplayMediaRequestHandler handler;
-  if (!gin::ConvertFromV8(isolate, val, &handler))
+  if (!gin::ConvertFromV8(isolate, val, &handler)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Display media request handler must be null or a function");
     return;
+  }
   browser_context_->SetDisplayMediaRequestHandler(handler);
 }
 
