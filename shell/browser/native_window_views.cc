@@ -875,7 +875,7 @@ bool NativeWindowViews::IsMovable() {
 void NativeWindowViews::SetMinimizable(bool minimizable) {
 #if defined(OS_WIN)
   FlipWindowStyle(GetAcceleratedWidget(), minimizable, WS_MINIMIZEBOX);
-  if (titlebar_overlay_enabled()) {
+  if (IsWindowControlsOverlayEnabled()) {
     auto* frame_view =
         static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
     frame_view->caption_button_container()->UpdateButtons();
@@ -895,7 +895,7 @@ bool NativeWindowViews::IsMinimizable() {
 void NativeWindowViews::SetMaximizable(bool maximizable) {
 #if defined(OS_WIN)
   FlipWindowStyle(GetAcceleratedWidget(), maximizable, WS_MAXIMIZEBOX);
-  if (titlebar_overlay_enabled()) {
+  if (IsWindowControlsOverlayEnabled()) {
     auto* frame_view =
         static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
     frame_view->caption_button_container()->UpdateButtons();
@@ -935,7 +935,7 @@ void NativeWindowViews::SetClosable(bool closable) {
   } else {
     EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
   }
-  if (titlebar_overlay_enabled()) {
+  if (IsWindowControlsOverlayEnabled()) {
     auto* frame_view =
         static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
     frame_view->caption_button_container()->UpdateButtons();
