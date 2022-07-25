@@ -23,6 +23,7 @@ filenames = {
 
   lib_sources_linux = [
     "shell/browser/browser_linux.cc",
+    "shell/browser/electron_browser_main_parts_linux.cc",
     "shell/browser/lib/power_observer_linux.cc",
     "shell/browser/lib/power_observer_linux.h",
     "shell/browser/linux/unity_service.cc",
