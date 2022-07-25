@@ -75,19 +75,19 @@ base::FilePath CreateDownloadPath(const GURL& url,
 // for .txt files, "JPEG Image" for .jpg files, etc. If the registry doesn't
 // have an entry for the file type, we return false, true if the description was
 // found. 'file_ext' must be in form ".txt".
-// Copied from ui/shell_dialogs/select_file_dialog_win.cc
-bool GetRegistryDescriptionFromExtension(const std::u16string& file_ext,
-                                         std::u16string* reg_description) {
+// Modified from ui/shell_dialogs/select_file_dialog_win.cc
+bool GetRegistryDescriptionFromExtension(const std::string& file_ext,
+                                         std::string* reg_description) {
   DCHECK(reg_description);
-  base::win::RegKey reg_ext(HKEY_CLASSES_ROOT, base::as_wcstr(file_ext),
-                            KEY_READ);
+  base::win::RegKey reg_ext(
+      HKEY_CLASSES_ROOT, base::as_wcstr(base::UTF8ToUTF16(file_ext)), KEY_READ);
   std::wstring reg_app;
   if (reg_ext.ReadValue(nullptr, &reg_app) == ERROR_SUCCESS &&
       !reg_app.empty()) {
     base::win::RegKey reg_link(HKEY_CLASSES_ROOT, reg_app.c_str(), KEY_READ);
     std::wstring description;
     if (reg_link.ReadValue(nullptr, &description) == ERROR_SUCCESS) {
-      *reg_description = base::WideToUTF16(description);
+      *reg_description = base::WideToUTF8(description);
       return true;
     }
   }
@@ -105,26 +105,26 @@ bool GetRegistryDescriptionFromExtension(const std::u16string& file_ext,
 // from the registry. If the file extension does not exist in the registry, a
 // default description will be created (e.g. "qqq" yields "QQQ File").
 // Copied from ui/shell_dialogs/select_file_dialog_win.cc
-std::vector<ui::FileFilterSpec> FormatFilterForExtensions(
-    const std::vector<std::u16string>& file_ext,
-    const std::vector<std::u16string>& ext_desc,
+file_dialog::Filters FormatFilterForExtensions(
+    const std::vector<std::string>& file_ext,
+    const std::vector<std::string>& ext_desc,
     bool include_all_files,
     bool keep_extension_visible) {
-  const std::u16string all_ext = u"*.*";
-  const std::u16string all_desc =
-      l10n_util::GetStringUTF16(IDS_APP_SAVEAS_ALL_FILES);
+  const std::string all_ext = "*";
+  const std::string all_desc =
+      l10n_util::GetStringUTF8(IDS_APP_SAVEAS_ALL_FILES);
 
   DCHECK(file_ext.size() >= ext_desc.size());
 
   if (file_ext.empty())
     include_all_files = true;
 
-  std::vector<ui::FileFilterSpec> result;
+  file_dialog::Filters result;
   result.reserve(file_ext.size() + 1);
 
   for (size_t i = 0; i < file_ext.size(); ++i) {
-    std::u16string ext = file_ext[i];
-    std::u16string desc;
+    std::string ext = file_ext[i];
+    std::string desc;
     if (i < ext_desc.size())
       desc = ext_desc[i];
 
@@ -136,40 +136,41 @@ std::vector<ui::FileFilterSpec> FormatFilterForExtensions(
     }
 
     if (desc.empty()) {
-      DCHECK(ext.find(u'.') != std::u16string::npos);
-      std::u16string first_extension = ext.substr(ext.find(u'.'));
-      size_t first_separator_index = first_extension.find(u';');
-      if (first_separator_index != std::u16string::npos)
+      DCHECK(ext.find('.') != std::string::npos);
+      std::string first_extension = ext.substr(ext.find('.'));
+      size_t first_separator_index = first_extension.find(';');
+      if (first_separator_index != std::string::npos)
         first_extension = first_extension.substr(0, first_separator_index);
 
       // Find the extension name without the preceeding '.' character.
-      std::u16string ext_name = first_extension;
-      size_t ext_index = ext_name.find_first_not_of(u'.');
-      if (ext_index != std::u16string::npos)
+      std::string ext_name = first_extension;
+      size_t ext_index = ext_name.find_first_not_of('.');
+      if (ext_index != std::string::npos)
         ext_name = ext_name.substr(ext_index);
 
       if (!GetRegistryDescriptionFromExtension(first_extension, &desc)) {
         // The extension doesn't exist in the registry. Create a description
         // based on the unknown extension type (i.e. if the extension is .qqq,
         // then we create a description "QQQ File").
-        desc = l10n_util::GetStringFUTF16(IDS_APP_SAVEAS_EXTENSION_FORMAT,
-                                          base::i18n::ToUpper(ext_name));
+        desc = l10n_util::GetStringFUTF8(
+            IDS_APP_SAVEAS_EXTENSION_FORMAT,
+            base::i18n::ToUpper(base::UTF8ToUTF16(ext_name)));
         include_all_files = true;
       }
       if (desc.empty())
-        desc = u"*." + ext_name;
+        desc = "*." + ext_name;
     } else if (keep_extension_visible) {
       // Having '*' in the description could cause the windows file dialog to
       // not include the file extension in the file dialog. So strip out any '*'
       // characters if `keep_extension_visible` is set.
-      base::ReplaceChars(desc, u"*", base::StringPiece16(), &desc);
+      base::ReplaceChars(desc, "*", base::StringPiece(), &desc);
     }
 
-    result.push_back({desc, ext});
+    result.push_back({desc, {ext}});
   }
 
   if (include_all_files)
-    result.push_back({all_desc, all_ext});
+    result.push_back({all_desc, {all_ext}});
 
   return result;
 }
@@ -246,19 +247,12 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
 #if BUILDFLAG(IS_WIN)
     std::wstring extension = settings.default_path.FinalExtension();
     if (!extension.empty() && settings.filters.empty()) {
-      std::vector<ui::FileFilterSpec> filter_spec = FormatFilterForExtensions(
-          {base::WideToUTF16(extension)}, {u""}, true, true);
+      file_dialog::Filters filter_spec = FormatFilterForExtensions(
+          {base::WideToUTF8(extension)}, {""}, true, true);
 
-      std::string extension_spec_conv(
-          base::UTF16ToUTF8(filter_spec[0].extension_spec));
-      const std::vector<std::string> filter{extension_spec_conv};
-      std::string description_conv(
-          base::UTF16ToUTF8(filter_spec[0].description));
-
-      settings.filters.emplace_back(std::make_pair(description_conv, filter));
-
-      std::vector<std::string> all_files{"*.*"};
-      settings.filters.emplace_back(std::make_pair("All Files", all_files));
+      for (file_dialog::Filter filter : filter_spec) {
+        settings.filters.emplace_back(filter);
+      }
     }
 #endif  // BUILDFLAG(IS_WIN)
 
