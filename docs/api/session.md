@@ -710,8 +710,12 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
   * `callback` Function
     * `streams` Object
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
-        * `id` String - the id of the stream being granted.
-        * `name` String - the name of the stream being granted.
+        * `id` String - the id of the stream being granted. This will usually
+          come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
+          object.
+        * `name` String - the name of the stream being granted. This will
+          usually come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
+          object.
       * `audio` Object | [WebFrameMain](web-frame-main.md) (optional)
         * `id` String - the id of the stream being granted.
         * `name` String - the name of the stream being granted.
