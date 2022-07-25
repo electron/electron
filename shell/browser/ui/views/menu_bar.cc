@@ -193,7 +193,7 @@ void MenuBar::ButtonPressed(int id, const ui::Event& event) {
   SubmenuButton* source = nullptr;
   for (auto* child : children()) {
     auto* button = static_cast<SubmenuButton*>(child);
-    if (button->tag() == id) {
+    if (button->GetID() == id) {
       source = button;
       break;
     }
@@ -226,7 +226,7 @@ void MenuBar::RebuildChildren() {
     auto* button = new SubmenuButton(
         base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),
         menu_model_->GetLabelAt(i), background_color_);
-    button->set_tag(i);
+    button->SetID(i);
     AddChildView(button);
   }
   UpdateViewColors();
