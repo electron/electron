@@ -443,7 +443,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
   gin_helper::Dictionary result_dict;
   if (!gin::ConvertFromV8(args->isolate(), result, &result_dict)) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError("Result must be null or a dictionary");
+        .ThrowTypeError("Display Media Request streams callback must be called with null or a valid object");
     std::move(callback).Run(
         *stream_devices_set,
         blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
