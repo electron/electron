@@ -648,9 +648,11 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
 
 void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
                                             v8::Local<v8::Value> val) {
-  if (val->IsNull())
+  if (val->IsNull()) {
     browser_context_->SetDisplayMediaRequestHandler(
         DisplayMediaRequestHandler());
+    return;
+  }
   DisplayMediaRequestHandler handler;
   if (!gin::ConvertFromV8(isolate, val, &handler)) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(

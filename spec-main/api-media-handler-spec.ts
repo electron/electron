@@ -77,6 +77,106 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
     expect(message).to.equal('Could not start video source');
   });
 
+  it('does not crash when providing only audio for a video request', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    let callbackError: any;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      try {
+        callback({
+          audio: 'loopback'
+        });
+      } catch (e) {
+        callbackError = e;
+      }
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.false();
+    expect(callbackError?.message).to.equal('Video was requested, but no video stream was provided');
+  });
+
+  it('does not crash when providing only an audio stream for an audio+video request', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    let callbackError: any;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      try {
+        callback({
+          audio: 'loopback'
+        });
+      } catch (e) {
+        callbackError = e;
+      }
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.false();
+    expect(callbackError?.message).to.equal('Video was requested, but no video stream was provided');
+  });
+
+  it('does not crash when providing a non-loopback audio stream', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      callback({
+        video: w.webContents.mainFrame,
+        audio: 'default' as any
+      });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true();
+  });
+
+  it('does not crash when providing no streams', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    let callbackError: any;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      try {
+        callback({});
+      } catch (e) {
+        callbackError = e;
+      }
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.false();
+    expect(callbackError.message).to.equal('Video was requested, but no video stream was provided');
+  });
+
   it('does not crash when using a bogus web-contents-media-stream:// ID', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
