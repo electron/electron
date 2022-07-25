@@ -560,10 +560,9 @@ WebContents.prototype._init = function () {
   this._windowOpenHandler = null;
 
   const ipc = new IpcMainImpl();
-  Object.defineProperty(this, "ipc", {
-    get() { return ipc; },
-    writable: false,
-    enumerable: true,
+  Object.defineProperty(this, 'ipc', {
+    get () { return ipc; },
+    enumerable: true
   });
 
   // Dispatch IPC messages to the ipc module.
