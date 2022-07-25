@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Wed, 29 Jun 2022 10:18:59 +0000
+Subject: Merged: [compiler] fix FrameState revisit bug in escape analysis
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit 17da9e70833014e0a2646db5c11588f0aee02de7)
+
+Bug: chromium:1340335, chromium:1315901
+Change-Id: I81cdc6bc3d6c7441ebc333d33801329c05fbd5d4
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3755103
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Commit-Queue: Samuel Groß <saelo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.2@{#25}
+Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
+Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
+
+diff --git a/src/compiler/escape-analysis.cc b/src/compiler/escape-analysis.cc
+index fe8126f9638e77ef72ddc56c7ae67822786d3020..d6ea2171efa2744496b441786cdf1c4bb2df74db 100644
+--- a/src/compiler/escape-analysis.cc
++++ b/src/compiler/escape-analysis.cc
+@@ -78,6 +78,8 @@ class ReduceScope {
+   explicit ReduceScope(Node* node, Reduction* reduction)
+       : current_node_(node), reduction_(reduction) {}
+ 
++  void SetValueChanged() { reduction()->set_value_changed(); }
++
+  protected:
+   Node* current_node() const { return current_node_; }
+   Reduction* reduction() { return reduction_; }
+@@ -806,7 +808,9 @@ void ReduceNode(const Operator* op, EscapeAnalysisTracker::Scope* current,
+       break;
+     }
+     case IrOpcode::kStateValues:
+-      // These uses are always safe.
++      // We visit StateValue nodes through their correpsonding FrameState node,
++      // so we need to make sure we revisit the FrameState.
++      current->SetValueChanged();
+       break;
+     case IrOpcode::kFrameState: {
+       // We mark the receiver as escaping due to the non-standard `.getThis`
