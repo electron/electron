@@ -21,10 +21,10 @@ index b857d325233430a5b79b3022d33823486e558309..83cc6ded4b3354f37b8e1dc0d9e4f328
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 33f6efe4df4eecabcbcd08f908ed3ef12d056eb2..0e1e25d40ebf3ca92c57dfdfb52c5269198aa6f7 100644
+index 141f6e137f2d7e2a6779cad3e8729b9cfb557480..44c1f304cf2d88dca06ee1bd53c774022766ed35 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3947,6 +3947,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3953,6 +3953,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 33f6efe4df4eecabcbcd08f908ed3ef12d056eb2..0e1e25d40ebf3ca92c57dfdfb52c5269
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -3991,12 +3999,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3997,12 +4005,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -68,7 +68,7 @@ index 9c3a03faeee19f6f0a250680db36906ee64bf55a..0450700d02c74e047fa5124aa43b9f75
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 69bcd725d0f86bf3b175fde86bd2dbd85b59f002..b72d89b19024a9074108dde4c5c9cd0f45b719bb 100644
+index c1beba6701e68255c212e56d78ae8259e2ffdab9..9f77c2a5df8f25876f875c4a7148d82c3dd79db8 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -595,6 +595,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -81,7 +81,7 @@ index 69bcd725d0f86bf3b175fde86bd2dbd85b59f002..b72d89b19024a9074108dde4c5c9cd0f
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d0b7aed3162b8ea7673ab3ef31d2a3302f4e6456..6328fc21548f2b8277b461f9938dbcc50f6853f1 100644
+index a49794184baa977ddf03cd911f8d8d7d671df65f..7997c0de85315e30b350316f33e598a0221d583f 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -164,6 +164,7 @@ class NetworkService;
