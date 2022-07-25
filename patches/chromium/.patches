@@ -119,5 +119,7 @@ build_disable_print_content_analysis.patch
 feat_move_firstpartysets_to_content_browser_client.patch
 custom_protocols_plzserviceworker.patch
 posix_replace_doubleforkandexec_with_forkandspawn.patch
+cherry-pick-ecad352cd614.patch
+cherry-pick-f427936d32db.patch
 cherry-pick-22c61cfae5d1.patch
 remove_default_window_title.patch
