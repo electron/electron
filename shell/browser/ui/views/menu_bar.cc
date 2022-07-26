@@ -81,7 +81,7 @@ void MenuBar::ActivateAccelerator(char16_t key) {
     static_cast<SubmenuButton*>(child)->Activate(nullptr);
 }
 
-int MenuBar::GetItemCount() const {
+size_t MenuBar::GetItemCount() const {
   return menu_model_ ? menu_model_->GetItemCount() : 0;
 }
 
@@ -193,7 +193,8 @@ void MenuBar::ButtonPressed(size_t id, const ui::Event& event) {
   SubmenuButton* source = nullptr;
   for (auto* child : children()) {
     auto* button = static_cast<SubmenuButton*>(child);
-    if (button->GetID() == id) {
+    int button_id = button->GetID();
+    if (button_id >= 0 && static_cast<size_t>(button_id) == id) {
       source = button;
       break;
     }
