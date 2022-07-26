@@ -63,6 +63,7 @@ async function itremote (name: string, fn: Function, args?: any[]) {
 
 describe('<webview> tag', function () {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
+  const blankPageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')).toString();
 
   function hideChildWindows (e: any, wc: WebContents) {
     wc.setWindowOpenHandler(() => ({
@@ -977,8 +978,8 @@ describe('<webview> tag', function () {
         });
 
         const { message } = await w.executeJavaScript(`new Promise(resolve => {
-          webview.src = "file://${fixtures}/pages/b.html"
           webview.addEventListener('console-message', e => resolve({message: e.message}))
+          webview.src = ${JSON.stringify(`file://${fixtures}/pages/b.html`)}
         })`);
 
         expect(message).to.equal('b');
@@ -1265,13 +1266,13 @@ describe('<webview> tag', function () {
     describe('disablewebsecurity attribute', () => {
       it('does not disable web security when not set', async () => {
         await loadWebView(w, { src: 'about:blank' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch('file://${fixtures}/pages/blank.html').then(() => 'ok', () => 'failed')")`);
+        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')")`);
         expect(result).to.equal('failed');
       });
 
       it('disables web security when set', async () => {
         await loadWebView(w, { src: 'about:blank', disablewebsecurity: '' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch('file://${fixtures}/pages/blank.html').then(() => 'ok', () => 'failed')")`);
+        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')")`);
         expect(result).to.equal('ok');
       });
 
@@ -1414,7 +1415,7 @@ describe('<webview> tag', function () {
 
       it('can disables web security and enable nodeintegration', async () => {
         await loadWebView(w, { src: 'about:blank', webpreferences: 'webSecurity=no, nodeIntegration=yes, contextIsolation=no' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch('file://${fixtures}/pages/blank.html').then(() => 'ok', () => 'failed')")`);
+        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')")`);
         expect(result).to.equal('ok');
         const type = await w.executeJavaScript('webview.executeJavaScript("typeof require")');
         expect(type).to.equal('function');
