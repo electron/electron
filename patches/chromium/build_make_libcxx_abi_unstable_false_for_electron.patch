@@ -6,10 +6,10 @@ Subject: build: make libcxx_abi_unstable false for electron
 https://nornagon.medium.com/a-libc-odyssey-973e51649063
 
 diff --git a/build/config/c++/BUILD.gn b/build/config/c++/BUILD.gn
-index e6d08c8d17472bcb13e3dfba1249d760d4b49f78..b45a41b04a65bedfce568eb9b5b27b89894aaf58 100644
+index 90486efae3ed6cc14ea15f4beaaa995e501e2825..37c36442ff0a375d79c37bdec624ce5564c83d0d 100644
 --- a/build/config/c++/BUILD.gn
 +++ b/build/config/c++/BUILD.gn
-@@ -29,11 +29,12 @@ config("runtime_library") {
+@@ -29,10 +29,12 @@ config("runtime_library") {
    #    on Windows, the increase is great enough that we go above the 4GB size
    #    limit for PDBs (https://crbug.com/1327710#c5). To fix this, we set
    #    _LIBCPP_ABI_NAMESPACE to a shorter value.
@@ -18,11 +18,11 @@ index e6d08c8d17472bcb13e3dfba1249d760d4b49f78..b45a41b04a65bedfce568eb9b5b27b89
 -    "_LIBCPP_ABI_VERSION=2",
 -  ]
 +  defines += [ "_LIBCPP_ABI_NAMESPACE=Cr" ]
- 
++
 +  if (!is_electron_build) {
 +    # This breaks native node modules
 +    defines += [ "_LIBCPP_ABI_VERSION=2" ]
 +  }
-   # Disable usages of __builtin_assume(...) when building libc++, as it causes
-   # some msan errors (crbug.com/1344905).
-   defines += [ "_LIBCPP_ASSERTIONS_DISABLE_ASSUME" ]
+ 
+   if (!libcxx_is_shared) {
+     # Don't leak any symbols on a static build.
