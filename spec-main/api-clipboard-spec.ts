@@ -1,9 +1,8 @@
-const { expect } = require('chai');
-const path = require('path');
-const { Buffer } = require('buffer');
-const { ifdescribe, ifit } = require('./spec-helpers');
-
-const { clipboard, nativeImage } = require('electron');
+import { expect } from 'chai';
+import * as path from 'path';
+import { Buffer } from 'buffer';
+import { ifdescribe, ifit } from './spec-helpers';
+import { clipboard, nativeImage } from 'electron/common';
 
 // FIXME(zcbenz): Clipboard tests are failing on WOA.
 ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', () => {
@@ -13,7 +12,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     it('returns NativeImage instance', () => {
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
-      clipboard.writeImage(p);
+      clipboard.writeImage(i);
       const readImage = clipboard.readImage();
       expect(readImage.toDataURL()).to.equal(i.toDataURL());
     });
@@ -67,7 +66,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       const type = process.platform === 'darwin' ? 'NSFilenamesPboardType' : 'FileNameW';
 
       expect(() => {
-        const result = clipboard.read(type);
+        clipboard.read(type);
       }).to.not.throw();
     });
     it('can read data written with writeBuffer', () => {
@@ -91,7 +90,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
         html: '<b>Hi</b>',
         rtf: '{\\rtf1\\utf8 text}',
         bookmark: 'a title',
-        image: p
+        image: i
       });
 
       expect(clipboard.readText()).to.equal(text);
@@ -126,7 +125,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
 
     it('throws an error when a non-Buffer is specified', () => {
       expect(() => {
-        clipboard.writeBuffer('public/utf8-plain-text', 'hello');
+        clipboard.writeBuffer('public/utf8-plain-text', 'hello' as any);
       }).to.throw(/buffer must be a node Buffer/);
     });
 
