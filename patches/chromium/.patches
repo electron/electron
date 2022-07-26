@@ -121,3 +121,4 @@ custom_protocols_plzserviceworker.patch
 posix_replace_doubleforkandexec_with_forkandspawn.patch
 cherry-pick-22c61cfae5d1.patch
 remove_default_window_title.patch
+keep_handling_scroll_update_if_you_can.patch
