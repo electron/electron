@@ -1366,7 +1366,6 @@ describe('<webview> tag', function () {
 
         const parsedMessage = JSON.parse(message);
         expect(parsedMessage).to.include({
-          numberOfEntries: 1,
           testValue
         });
       });
