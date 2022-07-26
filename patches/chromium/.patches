@@ -138,3 +138,4 @@ cherry-pick-22abbad430b6.patch
 cherry-pick-3cbd5973d704.patch
 cherry-pick-902f0d144a5b.patch
 cherry-pick-664e0d8b4cfb.patch
+chore_add_electron_deps_to_gitignores.patch
