@@ -4,10 +4,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, WebContents, app, BrowserView } from 'electron/main';
-import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit, delay, defer } from './spec-helpers';
+import { ifdescribe, delay, defer } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -1903,60 +1902,6 @@ describe('webContents module', () => {
       const result = await w.webContents.executeJavaScript(
         `runTest(${features.isPictureInPictureEnabled()})`, true);
       expect(result).to.be.true();
-    });
-  });
-
-  describe('devtools window', () => {
-    let hasRobotJS = false;
-    try {
-      // We have other tests that check if native modules work, if we fail to require
-      // robotjs let's skip this test to avoid false negatives
-      require('robotjs');
-      hasRobotJS = true;
-    } catch (err) { /* no-op */ }
-
-    afterEach(closeAllWindows);
-
-    // NB. on macOS, this requires that you grant your terminal the ability to
-    // control your computer. Open System Preferences > Security & Privacy >
-    // Privacy > Accessibility and grant your terminal the permission to control
-    // your computer.
-    ifit(hasRobotJS)('can receive and handle menu events', async () => {
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
-      w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
-
-      // Ensure the devtools are loaded
-      w.webContents.closeDevTools();
-      const opened = emittedOnce(w.webContents, 'devtools-opened');
-      w.webContents.openDevTools();
-      await opened;
-      await emittedOnce(w.webContents.devToolsWebContents!, 'did-finish-load');
-      w.webContents.devToolsWebContents!.focus();
-
-      // Focus an input field
-      await w.webContents.devToolsWebContents!.executeJavaScript(`
-        const input = document.createElement('input')
-        document.body.innerHTML = ''
-        document.body.appendChild(input)
-        input.focus()
-      `);
-
-      // Write something to the clipboard
-      clipboard.writeText('test value');
-
-      const pasted = w.webContents.devToolsWebContents!.executeJavaScript(`new Promise(resolve => {
-        document.querySelector('input').addEventListener('paste', (e) => {
-          resolve(e.target.value)
-        })
-      })`);
-
-      // Fake a paste request using robotjs to emulate a REAL keyboard paste event
-      require('robotjs').keyTap('v', process.platform === 'darwin' ? ['command'] : ['control']);
-
-      const val = await pasted;
-
-      // Once we're done expect the paste to have been successful
-      expect(val).to.equal('test value', 'value should eventually become the pasted value');
     });
   });
 
