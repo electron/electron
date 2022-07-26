@@ -676,10 +676,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
 
-  absl::optional<std::string> user_agent_override =
-      GetBrowserContext()->GetUserAgentOverride();
-  if (user_agent_override)
-    SetUserAgent(*user_agent_override);
+  SetUserAgent(GetBrowserContext()->GetUserAgent());
+
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
@@ -885,10 +883,7 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  absl::optional<std::string> user_agent_override =
-      GetBrowserContext()->GetUserAgentOverride();
-  if (user_agent_override)
-    SetUserAgent(*user_agent_override);
+  SetUserAgent(GetBrowserContext()->GetUserAgent());
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;
