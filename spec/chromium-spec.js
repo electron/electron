@@ -7,7 +7,6 @@ const url = require('url');
 const ChildProcess = require('child_process');
 const { ipcRenderer } = require('electron');
 const { emittedOnce, waitForEvent } = require('./events-helpers');
-const { resolveGetters } = require('./expect-helpers');
 const { ifit, ifdescribe, delay } = require('./spec-helpers');
 const features = process._linkedBinding('electron_common_features');
 
