@@ -69,7 +69,7 @@ index b54c7388603b4582356f6741c9a36f2835aa1928..b9533b78046228705e2038396eebf23b
    void SetOOMErrorHandler(OOMErrorCallback that);
  
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 9fafa6b0089aabf55984b68cff85e353fe50ce52..9472ad8f4f776f98d398113b22a6a710596b3cde 100644
+index 29831f551b1925189dd368a3e785f29b4dfe736b..626127ad3ae286abcc06610f46fab4f2cbaac08a 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -171,13 +171,6 @@

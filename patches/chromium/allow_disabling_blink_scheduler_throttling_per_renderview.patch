@@ -6,10 +6,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 261e1dda1e128e22d15f3454f9012265db45bd74..98b130f0791d1ca2d59ef62151df7e60f3f40831 100644
+index 5b61200e03caebd8d08553d28eb3cdab79c53b94..95db8e527270a06e9935828eaa35bf0f064f9aac 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -666,6 +666,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -663,6 +663,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -48,10 +48,10 @@ index 4d2a4c6746e1dbfc619faf2e16eaa4948d74e372..6c9f190ff595234eca18ff20ca0655da
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 2887102d3c22fb8aaaece9d4d58acc4f122702ee..5cb8f2a99b645b38866cefbe708f944e6333a410 100644
+index da701a2e04dd633dc26aee7215e4e7d3de576343..2bd7eeb23d91e583f2d33795a5dd0d7779f60e57 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -147,6 +147,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient {
+@@ -143,6 +143,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient {
                    bool was_created_by_renderer,
                    scoped_refptr<base::SingleThreadTaskRunner> task_runner);
  
@@ -85,10 +85,10 @@ index b01562ebe042bd23e7b5184aa28bb42f98f81ecb..5392b5ac0f95eab7fef3c59fd2e9b2dc
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 390e47422a0a106d0e5746c0af0611d420af8025..9151815e6bf33a3a6980f8337f578dc90e458696 100644
+index 10755e0d1ca790a47ad64bcfddb029fa59832911..183727d40c4c42b1f9388df690c4c9385b4bf4f3 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3742,6 +3742,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3745,6 +3745,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index 390e47422a0a106d0e5746c0af0611d420af8025..9151815e6bf33a3a6980f8337f578dc9
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3753,7 +3760,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3756,7 +3763,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(

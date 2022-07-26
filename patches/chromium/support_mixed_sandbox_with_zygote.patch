@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 2bc3626d2df6c70c80faa211564356c186d840ac..cfa4344d2432b1d62b1bfb4f15af04e57a97347f 100644
+index bc9523a38ed17c308d173629a816752fdb852a56..37f392f3e4e3e9f374a83391186edc5eff75a1ea 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -1762,9 +1762,15 @@ bool RenderProcessHostImpl::Init() {
@@ -42,7 +42,7 @@ index 2bc3626d2df6c70c80faa211564356c186d840ac..cfa4344d2432b1d62b1bfb4f15af04e5
  
      auto file_data = std::make_unique<ChildProcessLauncherFileData>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 8ec0f24f780a74dd91efe31211b85412db8b0bee..560e15818c3f75b49b89b0f9dbb1a6f1056ba756 100644
+index 71bbf3608a2b112e51b6b178755f06657f657ff9..6f3f2f00f35f5c5b38654cb0388cba070e3cdab2 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -31,6 +31,9 @@ namespace content {
@@ -66,7 +66,7 @@ index 8ec0f24f780a74dd91efe31211b85412db8b0bee..560e15818c3f75b49b89b0f9dbb1a6f1
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index 3a0e25b38965de5b57fd0be1112cf62dfda846d7..f412080cfb49330d855fdf1cbc13ff8850530401 100644
+index d820cb4ff004194d9c18bfddaf90bf520e8446ff..0dcffcf367b5d08bb31b68e648c1f4ce3aa15600 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate

@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 4efccb3390c7234db0d6abcdae3e5d2b9e21c252..fda9213e7b29e1fc60f4219ac2f63475ae5cd81a 100644
+index 2d0aa4f29712cbeaa79f5b1d3474f7fad3374743..267158d946736f100186812565431c5624454d53 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -973,7 +973,6 @@ if (is_win) {
@@ -796,10 +796,10 @@ index 66026548181a897c161d7202646f33fd8847ccb8..113a8165b5db6294087773e5a4b2f003
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e7351dc83236255afe210228d6ee5618e917b07f..2986c5ac38205fb71c87ba5da306ff5c3f077ba5 100644
+index 797b066d24760b181e9f3e44b874e5973e538077..ba4c9c99347d432be245cd505c4be06f4f391f0e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2759,8 +2759,9 @@ source_set("browser") {
+@@ -2760,8 +2760,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -812,7 +812,7 @@ index e7351dc83236255afe210228d6ee5618e917b07f..2986c5ac38205fb71c87ba5da306ff5c
      if (is_chromeos) {
        sources += [
 diff --git a/content/browser/utility_sandbox_delegate_win.cc b/content/browser/utility_sandbox_delegate_win.cc
-index e3c1b29138f175836424bcfe917cd00bd081b34c..7d8b6f06c5d1a7ea9a5ed86c5c612e8df08f2659 100644
+index 2ae5fc805ccbd81448d3b9d5aa482bcfd7a747f8..b2ed764463f977bd242d9da79270244062c210d6 100644
 --- a/content/browser/utility_sandbox_delegate_win.cc
 +++ b/content/browser/utility_sandbox_delegate_win.cc
 @@ -95,6 +95,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetPolicy* policy) {
@@ -830,7 +830,7 @@ index e3c1b29138f175836424bcfe917cd00bd081b34c..7d8b6f06c5d1a7ea9a5ed86c5c612e8d
 +#endif
  }  // namespace
  
- bool UtilitySandboxedProcessLauncherDelegate::GetAppContainerId(
+ std::string UtilitySandboxedProcessLauncherDelegate::GetSandboxTag() {
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
 index 6cca846b9831da669ca52aff776caf5a23f6f4d1..39d1032f276181a535de9fba89c2246c7a9814d7 100644
 --- a/printing/printing_context.cc

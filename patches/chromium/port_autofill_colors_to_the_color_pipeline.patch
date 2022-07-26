@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 989f4dc6d156aef77dadf111f12c403196e5342b..9fd2b3484016df7a622aaadf094028c4966394e6 100644
+index 351ec3adf1267b928d5431cf5437d24cf0376427..65099f4dd2ba8c72173273250f556f0d9f01ea1a 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -129,6 +129,16 @@
@@ -28,7 +28,7 @@ index 989f4dc6d156aef77dadf111f12c403196e5342b..9fd2b3484016df7a622aaadf094028c4
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -182,6 +192,7 @@
+@@ -183,6 +193,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -37,10 +37,10 @@ index 989f4dc6d156aef77dadf111f12c403196e5342b..9fd2b3484016df7a622aaadf094028c4
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 6e97a162f3a823090115fdcb47828c6e0b10ad06..5fcb8cb147aa1356853cb0ed1f3731456c434946 100644
+index 23a18910cf9eb5e3d822c16bd8353210c1846fb2..178b52f9c64695863ca7cbef89f88dc9216efb02 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -150,6 +150,17 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -151,6 +151,17 @@ void AddUiColorMixer(ColorProvider* provider,
                 gfx::kGoogleGreyAlpha500);
    mixer[kColorProgressBarPaused] = {kColorDisabledForeground};
    mixer[kColorProgressBar] = {kColorAccent};
@@ -58,7 +58,7 @@ index 6e97a162f3a823090115fdcb47828c6e0b10ad06..5fcb8cb147aa1356853cb0ed1f373145
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -230,6 +241,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -232,6 +243,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};

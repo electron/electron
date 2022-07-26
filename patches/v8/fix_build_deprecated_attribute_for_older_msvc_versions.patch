@@ -6,10 +6,10 @@ Subject: fix: usage of c++ [[deprecated]] attribute for older msvc versions
 This attribute can only be used in all contexts in Visual Studio 2019
 
 diff --git a/include/v8config.h b/include/v8config.h
-index b556704d92cd3575ac1782da41be21acd7f71902..f380f950e065fd05a6252c1ca2ced44f37bf73cd 100644
+index 1cd79f09a59ce0b91de7ae56cc393097a0bb23b6..c512b60465eb4fd1d14146a4d06d9d66fa90c835 100644
 --- a/include/v8config.h
 +++ b/include/v8config.h
-@@ -464,10 +464,13 @@ path. Add it with -I<path> to the command line
+@@ -469,10 +469,13 @@ path. Add it with -I<path> to the command line
  # define V8_NOINLINE /* NOT SUPPORTED */
  #endif
  
@@ -25,7 +25,7 @@ index b556704d92cd3575ac1782da41be21acd7f71902..f380f950e065fd05a6252c1ca2ced44f
  #else
  # define V8_DEPRECATED(message)
  #endif
-@@ -475,13 +478,17 @@ path. Add it with -I<path> to the command line
+@@ -480,13 +483,17 @@ path. Add it with -I<path> to the command line
  
  // A macro (V8_DEPRECATE_SOON) to make it easier to see what will be deprecated.
  #if defined(V8_IMMINENT_DEPRECATION_WARNINGS)

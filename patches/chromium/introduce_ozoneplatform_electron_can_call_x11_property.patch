@@ -9,7 +9,7 @@ at rutime. It would be best if eventually all usages of this property were
 replaced with clean ozone native implementations.
 
 diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
-index 0a928218b574167f002692b0e26b157f58bd0ab6..49939728d09192de338113a34502887a45bc185d 100644
+index 67d987f54bac082f7e8ad040e9a2c24cf60934d8..514e461a8d4d919dac4fb2c51677ae9bbf7448cd 100644
 --- a/ui/ozone/platform/x11/ozone_platform_x11.cc
 +++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
 @@ -193,6 +193,7 @@ class OzonePlatformX11 : public OzonePlatform,
@@ -21,10 +21,10 @@ index 0a928218b574167f002692b0e26b157f58bd0ab6..49939728d09192de338113a34502887a
        properties->supports_global_application_menus = true;
        properties->app_modal_dialogs_use_event_blocker = true;
 diff --git a/ui/ozone/public/ozone_platform.h b/ui/ozone/public/ozone_platform.h
-index df6b551b94bd4e04f4c0d6e976c68cc187a57d85..3b6dd20277af88568cdb17a7fddf89bdf89b5640 100644
+index 193224d33283d4d3c45dc11b9620700a3a379cce..81abd63261952f0930a4659f270791d27d9d74a3 100644
 --- a/ui/ozone/public/ozone_platform.h
 +++ b/ui/ozone/public/ozone_platform.h
-@@ -132,6 +132,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
+@@ -129,6 +129,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
      // Linux only: determines if Skia can fall back to the X11 output device.
      bool skia_can_fall_back_to_x11 = false;
  
