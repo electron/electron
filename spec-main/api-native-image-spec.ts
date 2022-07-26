@@ -4,76 +4,37 @@ import { ifdescribe, ifit } from './spec-helpers';
 import * as path from 'path';
 
 describe('nativeImage module', () => {
-  const ImageFormat = {
-    PNG: 'png',
-    JPEG: 'jpeg'
-  };
-
   const fixturesPath = path.join(__dirname, '..', 'spec', 'fixtures');
-  const images: {
-    path: string
-    filename?: string
-    dataUrl?: string
-    hasDataUrl: boolean
-    width: number
-    height: number
-    format: string
-    hasAlphaChannel: boolean
-  }[] = [
-    {
-      path: path.join(fixturesPath, 'assets', 'logo.png'),
-      filename: 'logo.png',
-      format: ImageFormat.PNG,
-      hasAlphaChannel: true,
-      hasDataUrl: false,
-      width: 538,
-      height: 190
-    },
-    {
-      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=',
-      path: path.join(fixturesPath, 'assets', '1x1.png'),
-      format: ImageFormat.PNG,
-      hasAlphaChannel: true,
-      hasDataUrl: true,
-      height: 1,
-      width: 1
-    },
-    {
-      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==',
-      path: path.join(fixturesPath, 'assets', '2x2.jpg'),
-      format: ImageFormat.JPEG,
-      hasAlphaChannel: false,
-      hasDataUrl: true,
-      height: 2,
-      width: 2
-    },
-    {
-      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC',
-      path: path.join(fixturesPath, 'assets', '3x3.png'),
-      format: ImageFormat.PNG,
-      hasAlphaChannel: true,
-      hasDataUrl: true,
-      height: 3,
-      width: 3
-    }
+
+  const imageLogo = {
+    path: path.join(fixturesPath, 'assets', 'logo.png'),
+    width: 538,
+    height: 190
+  };
+  const image1x1 = {
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=',
+    path: path.join(fixturesPath, 'assets', '1x1.png'),
+    height: 1,
+    width: 1
+  };
+  const image2x2 = {
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==',
+    path: path.join(fixturesPath, 'assets', '2x2.jpg'),
+    height: 2,
+    width: 2
+  };
+  const image3x3 = {
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC',
+    path: path.join(fixturesPath, 'assets', '3x3.png'),
+    height: 3,
+    width: 3
+  };
+
+  const dataUrlImages = [
+    image1x1,
+    image2x2,
+    image3x3
   ];
-
-  const imageMatchesTheFilters = (image: any, filters: Record<string, any> | null = null) => {
-    if (filters === null) {
-      return true;
-    }
-
-    return Object.entries(filters)
-      .every(([key, value]) => (image as any)[key] === value);
-  };
-
-  const getImages = (filters: Record<string, any>) => {
-    return images.filter(i => imageMatchesTheFilters(i, filters));
-  };
-
-  const getImage = (filters: Record<string, any>) => {
-    return getImages(filters)[0];
-  };
 
   ifdescribe(process.platform === 'darwin')('isMacTemplateImage state', () => {
     describe('with properties', () => {
@@ -215,8 +176,7 @@ describe('nativeImage module', () => {
     });
 
     it('returns an image created from the given string', () => {
-      const imagesData = getImages({ hasDataUrl: true });
-      for (const imageData of imagesData) {
+      for (const imageData of dataUrlImages) {
         const imageFromPath = nativeImage.createFromPath(imageData.path);
         const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl!);
 
@@ -231,8 +191,7 @@ describe('nativeImage module', () => {
 
   describe('toDataURL()', () => {
     it('returns a PNG data URL', () => {
-      const imagesData = getImages({ hasDataUrl: true });
-      for (const imageData of imagesData) {
+      for (const imageData of dataUrlImages) {
         const imageFromPath = nativeImage.createFromPath(imageData.path!);
 
         const scaleFactors = [1.0, 2.0];
@@ -243,7 +202,7 @@ describe('nativeImage module', () => {
     });
 
     it('returns a data URL at 1x scale factor by default', () => {
-      const imageData = getImage({ filename: 'logo.png' });
+      const imageData = imageLogo;
       const image = nativeImage.createFromPath(imageData.path);
 
       const imageOne = nativeImage.createFromBuffer(image.toPNG(), {
@@ -262,7 +221,7 @@ describe('nativeImage module', () => {
     });
 
     it('supports a scale factor', () => {
-      const imageData = getImage({ filename: 'logo.png' });
+      const imageData = imageLogo;
       const image = nativeImage.createFromPath(imageData.path);
       const expectedSize = { width: imageData.width, height: imageData.height };
 
@@ -278,7 +237,7 @@ describe('nativeImage module', () => {
 
   describe('toPNG()', () => {
     it('returns a buffer at 1x scale factor by default', () => {
-      const imageData = getImage({ filename: 'logo.png' });
+      const imageData = imageLogo;
       const imageA = nativeImage.createFromPath(imageData.path);
 
       const imageB = nativeImage.createFromBuffer(imageA.toPNG(), {
@@ -297,7 +256,7 @@ describe('nativeImage module', () => {
     });
 
     it('supports a scale factor', () => {
-      const imageData = getImage({ filename: 'logo.png' });
+      const imageData = imageLogo;
       const image = nativeImage.createFromPath(imageData.path);
 
       const imageFromBufferOne = nativeImage.createFromBuffer(
@@ -455,7 +414,7 @@ describe('nativeImage module', () => {
     });
 
     it('returns an aspect ratio of an image', () => {
-      const imageData = getImage({ filename: 'logo.png' });
+      const imageData = imageLogo;
       // imageData.width / imageData.height = 2.831578947368421
       const expectedAspectRatio = 2.8315789699554443;
 
@@ -506,7 +465,7 @@ describe('nativeImage module', () => {
     it('supports adding a buffer representation for a scale factor', () => {
       const image = nativeImage.createEmpty();
 
-      const imageDataOne = getImage({ width: 1, height: 1 });
+      const imageDataOne = image1x1;
       image.addRepresentation({
         scaleFactor: 1.0,
         buffer: nativeImage.createFromPath(imageDataOne.path).toPNG()
@@ -514,7 +473,7 @@ describe('nativeImage module', () => {
 
       expect(image.getScaleFactors()).to.deep.equal([1]);
 
-      const imageDataTwo = getImage({ width: 2, height: 2 });
+      const imageDataTwo = image2x2;
       image.addRepresentation({
         scaleFactor: 2.0,
         buffer: nativeImage.createFromPath(imageDataTwo.path).toPNG()
@@ -522,7 +481,7 @@ describe('nativeImage module', () => {
 
       expect(image.getScaleFactors()).to.deep.equal([1, 2]);
 
-      const imageDataThree = getImage({ width: 3, height: 3 });
+      const imageDataThree = image3x3;
       image.addRepresentation({
         scaleFactor: 3.0,
         buffer: nativeImage.createFromPath(imageDataThree.path).toPNG()
@@ -550,19 +509,19 @@ describe('nativeImage module', () => {
     it('supports adding a data URL representation for a scale factor', () => {
       const image = nativeImage.createEmpty();
 
-      const imageDataOne = getImage({ width: 1, height: 1 });
+      const imageDataOne = image1x1;
       image.addRepresentation({
         scaleFactor: 1.0,
         dataURL: imageDataOne.dataUrl
       });
 
-      const imageDataTwo = getImage({ width: 2, height: 2 });
+      const imageDataTwo = image2x2;
       image.addRepresentation({
         scaleFactor: 2.0,
         dataURL: imageDataTwo.dataUrl
       });
 
-      const imageDataThree = getImage({ width: 3, height: 3 });
+      const imageDataThree = image3x3;
       image.addRepresentation({
         scaleFactor: 3.0,
         dataURL: imageDataThree.dataUrl
@@ -583,16 +542,16 @@ describe('nativeImage module', () => {
     });
 
     it('supports adding a representation to an existing image', () => {
-      const imageDataOne = getImage({ width: 1, height: 1 });
+      const imageDataOne = image1x1;
       const image = nativeImage.createFromPath(imageDataOne.path);
 
-      const imageDataTwo = getImage({ width: 2, height: 2 });
+      const imageDataTwo = image2x2;
       image.addRepresentation({
         scaleFactor: 2.0,
         dataURL: imageDataTwo.dataUrl
       });
 
-      const imageDataThree = getImage({ width: 3, height: 3 });
+      const imageDataThree = image3x3;
       image.addRepresentation({
         scaleFactor: 2.0,
         dataURL: imageDataThree.dataUrl
