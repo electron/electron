@@ -308,11 +308,6 @@ std::string ElectronBrowserContext::GetUserAgent() const {
   return user_agent_.value_or(ElectronBrowserClient::Get()->GetUserAgent());
 }
 
-absl::optional<std::string> ElectronBrowserContext::GetUserAgentOverride()
-    const {
-  return user_agent_;
-}
-
 predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_.get()) {
     preconnect_manager_ =
