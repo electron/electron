@@ -1,9 +1,7 @@
-'use strict';
-
-const { expect } = require('chai');
-const { nativeImage } = require('electron');
-const { ifdescribe, ifit } = require('./spec-helpers');
-const path = require('path');
+import { expect } from 'chai';
+import { nativeImage } from 'electron/common';
+import { ifdescribe, ifit } from './spec-helpers';
+import * as path from 'path';
 
 describe('nativeImage module', () => {
   const ImageFormat = {
@@ -11,8 +9,19 @@ describe('nativeImage module', () => {
     JPEG: 'jpeg'
   };
 
-  const images = [
+  const fixturesPath = path.join(__dirname, '..', 'spec', 'fixtures');
+  const images: {
+    path: string
+    filename?: string
+    dataUrl?: string
+    hasDataUrl: boolean
+    width: number
+    height: number
+    format: string
+    hasAlphaChannel: boolean
+  }[] = [
     {
+      path: path.join(fixturesPath, 'assets', 'logo.png'),
       filename: 'logo.png',
       format: ImageFormat.PNG,
       hasAlphaChannel: true,
@@ -22,7 +31,7 @@ describe('nativeImage module', () => {
     },
     {
       dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYlWNgAAIAAAUAAdafFs0AAAAASUVORK5CYII=',
-      filename: '1x1.png',
+      path: path.join(fixturesPath, 'assets', '1x1.png'),
       format: ImageFormat.PNG,
       hasAlphaChannel: true,
       hasDataUrl: true,
@@ -31,7 +40,7 @@ describe('nativeImage module', () => {
     },
     {
       dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQYlWP8//8/AwMDEwMDAwMDAwAkBgMBBMzldwAAAABJRU5ErkJggg==',
-      filename: '2x2.jpg',
+      path: path.join(fixturesPath, 'assets', '2x2.jpg'),
       format: ImageFormat.JPEG,
       hasAlphaChannel: false,
       hasDataUrl: true,
@@ -40,7 +49,7 @@ describe('nativeImage module', () => {
     },
     {
       dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAADElEQVQYlWNgIAoAAAAnAAGZWEMnAAAAAElFTkSuQmCC',
-      filename: '3x3.png',
+      path: path.join(fixturesPath, 'assets', '3x3.png'),
       format: ImageFormat.PNG,
       hasAlphaChannel: true,
       hasDataUrl: true,
@@ -49,71 +58,35 @@ describe('nativeImage module', () => {
     }
   ];
 
-  /**
-   * @param {?string} filename
-   * @returns {?string} Full path.
-   */
-  const getImagePathFromFilename = (filename) => {
-    return (filename === null) ? null
-      : path.join(__dirname, 'fixtures', 'assets', filename);
-  };
-
-  /**
-   * @param {!Object} image
-   * @param {Object} filters
-   * @returns {boolean}
-   */
-  const imageMatchesTheFilters = (image, filters = null) => {
+  const imageMatchesTheFilters = (image: any, filters: Record<string, any> | null = null) => {
     if (filters === null) {
       return true;
     }
 
     return Object.entries(filters)
-      .every(([key, value]) => image[key] === value);
+      .every(([key, value]) => (image as any)[key] === value);
   };
 
-  /**
-   * @param {!Object} filters
-   * @returns {!Array} A matching images list.
-   */
-  const getImages = (filters) => {
-    const matchingImages = images
-      .filter(i => imageMatchesTheFilters(i, filters));
-
-    // Add `.path` property to every image.
-    matchingImages
-      .forEach(i => { i.path = getImagePathFromFilename(i.filename); });
-
-    return matchingImages;
+  const getImages = (filters: Record<string, any>) => {
+    return images.filter(i => imageMatchesTheFilters(i, filters));
   };
 
-  /**
-   * @param {!Object} filters
-   * @returns {Object} A matching image if any.
-   */
-  const getImage = (filters) => {
-    const matchingImages = getImages(filters);
-
-    let matchingImage = null;
-    if (matchingImages.length > 0) {
-      matchingImage = matchingImages[0];
-    }
-
-    return matchingImage;
+  const getImage = (filters: Record<string, any>) => {
+    return getImages(filters)[0];
   };
 
   ifdescribe(process.platform === 'darwin')('isMacTemplateImage state', () => {
     describe('with properties', () => {
       it('correctly recognizes a template image', () => {
-        const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
         expect(image.isMacTemplateImage).to.be.false();
 
-        const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
+        const templateImage = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo_Template.png'));
         expect(templateImage.isMacTemplateImage).to.be.true();
       });
 
       it('sets a template image', function () {
-        const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
         expect(image.isMacTemplateImage).to.be.false();
 
         image.isMacTemplateImage = true;
@@ -123,15 +96,15 @@ describe('nativeImage module', () => {
 
     describe('with functions', () => {
       it('correctly recognizes a template image', () => {
-        const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
         expect(image.isTemplateImage()).to.be.false();
 
-        const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
+        const templateImage = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo_Template.png'));
         expect(templateImage.isTemplateImage()).to.be.true();
       });
 
       it('sets a template image', function () {
-        const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
         expect(image.isTemplateImage()).to.be.false();
 
         image.setTemplateImage(true);
@@ -168,7 +141,7 @@ describe('nativeImage module', () => {
     });
 
     it('returns an image created from the given buffer', () => {
-      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const imageA = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
 
       const imageB = nativeImage.createFromBitmap(imageA.toBitmap(), imageA.getSize());
       expect(imageB.getSize()).to.deep.equal({ width: 538, height: 190 });
@@ -178,10 +151,10 @@ describe('nativeImage module', () => {
     });
 
     it('throws on invalid arguments', () => {
-      expect(() => nativeImage.createFromBitmap(null, {})).to.throw('buffer must be a node Buffer');
-      expect(() => nativeImage.createFromBitmap([12, 14, 124, 12], {})).to.throw('buffer must be a node Buffer');
-      expect(() => nativeImage.createFromBitmap(Buffer.from([]), {})).to.throw('width is required');
-      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1 })).to.throw('height is required');
+      expect(() => nativeImage.createFromBitmap(null as any, {} as any)).to.throw('buffer must be a node Buffer');
+      expect(() => nativeImage.createFromBitmap([12, 14, 124, 12] as any, {} as any)).to.throw('buffer must be a node Buffer');
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), {} as any)).to.throw('width is required');
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1 } as any)).to.throw('height is required');
       expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1, height: 1 })).to.throw('invalid buffer size');
     });
   });
@@ -197,7 +170,7 @@ describe('nativeImage module', () => {
     });
 
     it('returns an image created from the given buffer', () => {
-      const imageA = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const imageA = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
 
       const imageB = nativeImage.createFromBuffer(imageA.toPNG());
       expect(imageB.getSize()).to.deep.equal({ width: 538, height: 190 });
@@ -231,8 +204,8 @@ describe('nativeImage module', () => {
     });
 
     it('throws on invalid arguments', () => {
-      expect(() => nativeImage.createFromBuffer(null)).to.throw('buffer must be a node Buffer');
-      expect(() => nativeImage.createFromBuffer([12, 14, 124, 12])).to.throw('buffer must be a node Buffer');
+      expect(() => nativeImage.createFromBuffer(null as any)).to.throw('buffer must be a node Buffer');
+      expect(() => nativeImage.createFromBuffer([12, 14, 124, 12] as any)).to.throw('buffer must be a node Buffer');
     });
   });
 
@@ -245,12 +218,12 @@ describe('nativeImage module', () => {
       const imagesData = getImages({ hasDataUrl: true });
       for (const imageData of imagesData) {
         const imageFromPath = nativeImage.createFromPath(imageData.path);
-        const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl);
+        const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl!);
 
         expect(imageFromDataUrl.isEmpty()).to.be.false();
         expect(imageFromDataUrl.getSize()).to.deep.equal(imageFromPath.getSize());
         expect(imageFromDataUrl.toBitmap()).to.satisfy(
-          bitmap => imageFromPath.toBitmap().equals(bitmap));
+          (bitmap: any) => imageFromPath.toBitmap().equals(bitmap));
         expect(imageFromDataUrl.toDataURL()).to.equal(imageFromPath.toDataURL());
       }
     });
@@ -260,7 +233,7 @@ describe('nativeImage module', () => {
     it('returns a PNG data URL', () => {
       const imagesData = getImages({ hasDataUrl: true });
       for (const imageData of imagesData) {
-        const imageFromPath = nativeImage.createFromPath(imageData.path);
+        const imageFromPath = nativeImage.createFromPath(imageData.path!);
 
         const scaleFactors = [1.0, 2.0];
         for (const scaleFactor of scaleFactors) {
@@ -349,28 +322,28 @@ describe('nativeImage module', () => {
     });
 
     it('loads images from paths relative to the current working directory', () => {
-      const imagePath = path.relative('.', path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const imagePath = path.relative('.', path.join(fixturesPath, 'assets', 'logo.png'));
       const image = nativeImage.createFromPath(imagePath);
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
     it('loads images from paths with `.` segments', () => {
-      const imagePath = `${path.join(__dirname, 'fixtures')}${path.sep}.${path.sep}${path.join('assets', 'logo.png')}`;
+      const imagePath = `${path.join(fixturesPath)}${path.sep}.${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
     it('loads images from paths with `..` segments', () => {
-      const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
+      const imagePath = `${path.join(fixturesPath, 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
     ifit(process.platform === 'darwin')('Gets an NSImage pointer on macOS', function () {
-      const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
+      const imagePath = `${path.join(fixturesPath, 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
       const nsimage = image.getNativeHandle();
 
@@ -382,7 +355,7 @@ describe('nativeImage module', () => {
     });
 
     ifit(process.platform === 'win32')('loads images from .ico files on Windows', function () {
-      const imagePath = path.join(__dirname, 'fixtures', 'assets', 'icon.ico');
+      const imagePath = path.join(fixturesPath, 'assets', 'icon.ico');
       const image = nativeImage.createFromPath(imagePath);
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
@@ -413,7 +386,7 @@ describe('nativeImage module', () => {
 
   describe('resize(options)', () => {
     it('returns a resized image', () => {
-      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
       for (const [resizeTo, expectedSize] of new Map([
         [{}, { width: 538, height: 190 }],
         [{ width: 269 }, { width: 269, height: 95 }],
@@ -436,7 +409,7 @@ describe('nativeImage module', () => {
     });
 
     it('supports a quality option', () => {
-      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
       const good = image.resize({ width: 100, height: 100, quality: 'good' });
       const better = image.resize({ width: 100, height: 100, quality: 'better' });
       const best = image.resize({ width: 100, height: 100, quality: 'best' });
@@ -453,7 +426,7 @@ describe('nativeImage module', () => {
     });
 
     it('returns an empty image when the bounds are invalid', () => {
-      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
       expect(image.crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty()).to.be.true();
       expect(image.crop({ width: -1, height: 10, x: 0, y: 0 }).isEmpty()).to.be.true();
       expect(image.crop({ width: 10, height: -35, x: 0, y: 0 }).isEmpty()).to.be.true();
@@ -461,7 +434,7 @@ describe('nativeImage module', () => {
     });
 
     it('returns a cropped image', () => {
-      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
       const cropA = image.crop({ width: 25, height: 64, x: 0, y: 0 });
       const cropB = image.crop({ width: 25, height: 64, x: 30, y: 40 });
       expect(cropA.getSize()).to.deep.equal({ width: 25, height: 64 });
@@ -470,7 +443,7 @@ describe('nativeImage module', () => {
     });
 
     it('toBitmap() returns a buffer of the right size', () => {
-      const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+      const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
       const crop = image.crop({ width: 25, height: 64, x: 0, y: 0 });
       expect(crop.toBitmap().length).to.equal(25 * 64 * 4);
     });
@@ -510,7 +483,7 @@ describe('nativeImage module', () => {
     });
 
     it('returns native image given valid params', async () => {
-      const goodPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
+      const goodPath = path.join(fixturesPath, 'assets', 'logo.png');
       const goodSize = { width: 100, height: 100 };
       const result = await nativeImage.createThumbnailFromPath(goodPath, goodSize);
       expect(result.isEmpty()).to.equal(false);
@@ -559,7 +532,7 @@ describe('nativeImage module', () => {
 
       image.addRepresentation({
         scaleFactor: 4.0,
-        buffer: 'invalid'
+        buffer: 'invalid' as any
       });
 
       // this one failed, so it shouldn't show up in the scale factors
