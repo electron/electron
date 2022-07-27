@@ -245,13 +245,11 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     settings.force_detached = offscreen;
 
 #if BUILDFLAG(IS_WIN)
-    std::wstring extension = settings.default_path.FinalExtension();
-    if (!extension.empty() && settings.filters.empty()) {
-      file_dialog::Filters filter_spec = FormatFilterForExtensions(
-          {base::WideToUTF8(extension)}, {""}, true, true);
-
-      for (file_dialog::Filter filter : filter_spec) {
-        settings.filters.emplace_back(filter);
+    if (settings.filters.empty()) {
+      const std::wstring extension = settings.default_path.FinalExtension();
+      if (!extension.empty()) {
+        settings.filters = FormatFilterForExtensions(
+            {base::WideToUTF8(extension)}, {""}, true, true);
       }
     }
 #endif  // BUILDFLAG(IS_WIN)
