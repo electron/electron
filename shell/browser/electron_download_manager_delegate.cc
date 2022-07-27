@@ -79,8 +79,8 @@ base::FilePath CreateDownloadPath(const GURL& url,
 bool GetRegistryDescriptionFromExtension(const std::string& file_ext,
                                          std::string* reg_description) {
   DCHECK(reg_description);
-  base::win::RegKey reg_ext(
-      HKEY_CLASSES_ROOT, base::as_wcstr(base::UTF8ToUTF16(file_ext)), KEY_READ);
+  base::win::RegKey reg_ext(HKEY_CLASSES_ROOT,
+                            base::UTF8ToWide(file_ext).c_str(), KEY_READ);
   std::wstring reg_app;
   if (reg_ext.ReadValue(nullptr, &reg_app) == ERROR_SUCCESS &&
       !reg_app.empty()) {
