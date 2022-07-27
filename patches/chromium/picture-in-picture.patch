@@ -138,7 +138,7 @@ index 55b53039e4db6afa197fbb61c40d0a21095c5bf9..9dfdd0288391aac31556c716d24c66d1
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 0d5857b5f3afa823a7a2aff68f833623ec2e7b1c..fb6217f28c306921a86afc9b854a60b4e38e1584 100644
+index 9ce062e48c356f2ac23feb97c31aabcac8610942..08c27dc6f54c9216098d29b6a5331483722517d2 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -15,9 +15,11 @@

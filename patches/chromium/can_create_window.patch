@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 1a64db630fa1a50305a69683375a333807e9ad65..cb1b2bb7080ec867b9fe4d880d03b5ae22240b9d 100644
+index 390efe0507dd0de345f0eadc13a9f92c722f7362..54187c4ee61d2656c80f336fd5316b05a24e42d7 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -7300,6 +7300,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,10 +21,10 @@ index 1a64db630fa1a50305a69683375a333807e9ad65..cb1b2bb7080ec867b9fe4d880d03b5ae
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c50fed7d2f82b32e98bcd077ac6f4f08e583ecb4..cc49409802381468f8f05ad27497b50fea6a1b22 100644
+index c144e6a6929d9f4290a156ec76578d901df4cd56..12218e16222585f6e6945b3d2772b08193823647 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3995,6 +3995,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4006,6 +4006,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index c50fed7d2f82b32e98bcd077ac6f4f08e583ecb4..cc49409802381468f8f05ad27497b50f
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -4039,12 +4047,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4050,12 +4058,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -53,10 +53,10 @@ index c50fed7d2f82b32e98bcd077ac6f4f08e583ecb4..cc49409802381468f8f05ad27497b50f
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 9f825078fd641e81bed52b9ceefd314bf5ee81c4..6039cfedd499919e46f236409628f7fc62b8b071 100644
+index 659b532ec13a4191007ab029d4a9f50ef1f71034..b2d318f7898f4ea9a81edd6a9467fc3666c5c2db 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -582,6 +582,10 @@ struct CreateNewWindowParams {
+@@ -577,6 +577,10 @@ struct CreateNewWindowParams {
  
    // Additional parameters for creating picture-in-picture windows.
    blink.mojom.PictureInPictureWindowOptions? pip_options;
@@ -68,7 +68,7 @@ index 9f825078fd641e81bed52b9ceefd314bf5ee81c4..6039cfedd499919e46f236409628f7fc
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 5f50e84d4539ceee4d3eb9485c62cfc22e8da057..71f04542a4df7f66f516e9abf586ab9b82852697 100644
+index 6e13fb47df7d03bca41dd049bc5693a510df0945..f5cb58a1fa5a22e1198df15be85e08a27d708489 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -617,6 +617,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -81,7 +81,7 @@ index 5f50e84d4539ceee4d3eb9485c62cfc22e8da057..71f04542a4df7f66f516e9abf586ab9b
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 614766cd642efdeab96acac461c1b0482bf030f3..4db68d545340f067947099ba7f15957461c5e6b1 100644
+index 2f475430b85cf6029f0066f30069294847d05bd1..f399bc59be5705542b34185e7fe7202a029c40ea 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -164,6 +164,7 @@ class NetworkService;
@@ -102,7 +102,7 @@ index 614766cd642efdeab96acac461c1b0482bf030f3..4db68d545340f067947099ba7f159574
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index ef3889063b562a37fbd945fe30db0d776ecaee7a..99e8449e9c515dd70ed88546a71f83ae139178fe 100644
+index 74847a4fbd4d0d897ce6aecd1b39e30bc226f8f4..3ddcc2d403a68fdc2b4b0246899cd9507ecc6195 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -26,6 +26,17 @@ namespace content {
@@ -124,7 +124,7 @@ index ef3889063b562a37fbd945fe30db0d776ecaee7a..99e8449e9c515dd70ed88546a71f83ae
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index b088cb301003359fefad0ea9ca42b96f0cf3de6c..eec7bf18d17e85bde8017d4c8e7f064987b4d4d3 100644
+index 0274e3bb5cc62ce2c52be68a50b57c339fc5bba7..1ea3e1fdf067ea54ce54d31f494ac2bf42b2de3f 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@

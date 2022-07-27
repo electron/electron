@@ -44,10 +44,10 @@ index 66adf98c17998dd81178e515db01ef43daae14d7..224ae0dc6b34b4724192a1b0547be110
     * Get statistics about the shared memory usage.
     */
 diff --git a/include/v8-isolate.h b/include/v8-isolate.h
-index b54c7388603b4582356f6741c9a36f2835aa1928..b9533b78046228705e2038396eebf23b1d663df1 100644
+index 61f265aeeb99668c9dfa941104e6a9ad3d100687..a6e92e5cf4f55c0785d0fe4e89c0e29985a32908 100644
 --- a/include/v8-isolate.h
 +++ b/include/v8-isolate.h
-@@ -288,9 +288,6 @@ class V8_EXPORT Isolate {
+@@ -290,9 +290,6 @@ class V8_EXPORT Isolate {
      FatalErrorCallback fatal_error_callback = nullptr;
      OOMErrorCallback oom_error_callback = nullptr;
  
@@ -57,7 +57,7 @@ index b54c7388603b4582356f6741c9a36f2835aa1928..b9533b78046228705e2038396eebf23b
      /**
       * The following parameter is experimental and may change significantly.
       * This is currently for internal testing.
-@@ -1468,10 +1465,6 @@ class V8_EXPORT Isolate {
+@@ -1470,10 +1467,6 @@ class V8_EXPORT Isolate {
    /** Set the callback to invoke in case of fatal errors. */
    void SetFatalErrorHandler(FatalErrorCallback that);
  
