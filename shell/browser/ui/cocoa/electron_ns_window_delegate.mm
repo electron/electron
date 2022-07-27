@@ -238,7 +238,7 @@ using FullScreenTransitionState =
   // Store resizable mask so it can be restored after exiting fullscreen.
   is_resizable_ = shell_->HasStyleMask(NSWindowStyleMaskResizable);
 
-  shell_->SetFullScreenTransitionState(FullScreenTransitionState::ENTERING);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::ENTERING);
 
   shell_->NotifyWindowWillEnterFullScreen();
 
@@ -247,7 +247,7 @@ using FullScreenTransitionState =
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
-  shell_->SetFullScreenTransitionState(FullScreenTransitionState::NONE);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::NONE);
 
   shell_->NotifyWindowEnterFullScreen();
 
@@ -258,13 +258,13 @@ using FullScreenTransitionState =
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
-  shell_->SetFullScreenTransitionState(FullScreenTransitionState::EXITING);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::EXITING);
 
   shell_->NotifyWindowWillLeaveFullScreen();
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  shell_->SetFullScreenTransitionState(FullScreenTransitionState::NONE);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::NONE);
 
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowLeaveFullScreen();
