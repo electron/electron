@@ -1,7 +1,7 @@
-From 2a2d7536227b03d2c29d48471696900ba2a522eb Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Eng <enga@chromium.org>
 Date: Mon, 18 Jul 2022 10:45:42 +0000
-Subject: [PATCH] [M96-LTS] WebGPU: Mark the context lost on GPU context lost
+Subject: WebGPU: Mark the context lost on GPU context lost
 
 M96 merge issues:
   - gpu.h:
@@ -33,13 +33,12 @@ Reviewed-by: Simon Hangl <simonha@google.com>
 Owners-Override: Simon Hangl <simonha@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1661}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/third_party/blink/DEPS b/third_party/blink/DEPS
-index 4c61e45..a32bf301 100644
+index 4c61e4543aafa55766c4f24d41057c003c3f4804..a32bf301919ad0e4b1e96079e0666da5f6c46de9 100644
 --- a/third_party/blink/DEPS
 +++ b/third_party/blink/DEPS
-@@ -6,3 +6,10 @@
+@@ -6,3 +6,10 @@ include_rules = [
      "+base/trace_event",
      "+third_party/perfetto/include/perfetto/tracing",
  ]
@@ -51,10 +50,10 @@ index 4c61e45..a32bf301 100644
 +    ],
 +}
 diff --git a/third_party/blink/renderer/modules/BUILD.gn b/third_party/blink/renderer/modules/BUILD.gn
-index 8c52e52..b61ead28 100644
+index cea17d196ad24af479bf63f23d5c39f101447176..ede72ab76e65575b185194545aa4f299623f31f4 100644
 --- a/third_party/blink/renderer/modules/BUILD.gn
 +++ b/third_party/blink/renderer/modules/BUILD.gn
-@@ -655,6 +655,7 @@
+@@ -662,6 +662,7 @@ source_set("unit_tests") {
      "//third_party/blink/renderer/modules/peerconnection:test_support",
      "//third_party/blink/renderer/modules/storage:unit_tests",
      "//third_party/blink/renderer/modules/webcodecs:unit_tests",
@@ -63,10 +62,10 @@ index 8c52e52..b61ead28 100644
      "//third_party/blink/renderer/platform",
      "//third_party/blink/renderer/platform:test_support",
 diff --git a/third_party/blink/renderer/modules/webgpu/BUILD.gn b/third_party/blink/renderer/modules/webgpu/BUILD.gn
-index dd904a9..9a9c0e38 100644
+index 5bc070fe16d427a64a49f03ff457aeff29422317..c94897a036ef2acdb20f2c2bdf90f2071319ffa5 100644
 --- a/third_party/blink/renderer/modules/webgpu/BUILD.gn
 +++ b/third_party/blink/renderer/modules/webgpu/BUILD.gn
-@@ -90,3 +90,17 @@
+@@ -91,3 +91,17 @@ blink_modules_sources("webgpu") {
      "//third_party/dawn/src/dawn:dawn_headers",
    ]
  }
@@ -85,22 +84,22 @@ index dd904a9..9a9c0e38 100644
 +  ]
 +}
 diff --git a/third_party/blink/renderer/modules/webgpu/DEPS b/third_party/blink/renderer/modules/webgpu/DEPS
-index 55b27be..cab332cf 100644
+index ded05aa68e59cadddb678d5254119ae3dad1b47e..9e777ab0473f0bb9cbd46e4d6c1498f1a12a6f40 100644
 --- a/third_party/blink/renderer/modules/webgpu/DEPS
 +++ b/third_party/blink/renderer/modules/webgpu/DEPS
-@@ -9,6 +9,7 @@
+@@ -9,6 +9,7 @@ include_rules = [
      "+gpu/command_buffer/client/raster_interface.h",
      "+gpu/command_buffer/client/shared_image_interface.h",
      "+gpu/command_buffer/client/webgpu_interface.h",
 +    "+gpu/command_buffer/client/webgpu_interface_stub.h",
      "+media/base/video_frame.h",
+     "+media/renderers/paint_canvas_video_renderer.h",
      "+services/metrics/public/cpp/ukm_builders.h",
- ]
 diff --git a/third_party/blink/renderer/modules/webgpu/gpu.cc b/third_party/blink/renderer/modules/webgpu/gpu.cc
-index 241d2e6..26231ab 100644
+index e72d047ebbb652e6fef53f8030b70c85e12b991c..4ed11cf2cc03ad12b3d13738572f1fea76529cb7 100644
 --- a/third_party/blink/renderer/modules/webgpu/gpu.cc
 +++ b/third_party/blink/renderer/modules/webgpu/gpu.cc
-@@ -277,4 +277,9 @@
+@@ -263,4 +263,9 @@ void GPU::TrackMappableBuffer(GPUBuffer* buffer) {
    mappable_buffers_.insert(buffer);
  }
  
@@ -111,7 +110,7 @@ index 241d2e6..26231ab 100644
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/modules/webgpu/gpu.h b/third_party/blink/renderer/modules/webgpu/gpu.h
-index d059b172..10274d4 100644
+index d059b172ad090b6bc1ee3be5ddd59c5b5ccd934d..10274d41ed5dc73cdd7a2d1cd0d3ec064c23bc00 100644
 --- a/third_party/blink/renderer/modules/webgpu/gpu.h
 +++ b/third_party/blink/renderer/modules/webgpu/gpu.h
 @@ -9,6 +9,7 @@
@@ -122,7 +121,7 @@ index d059b172..10274d4 100644
  #include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
  #include "third_party/blink/renderer/platform/supplementable.h"
  
-@@ -24,9 +25,9 @@
+@@ -24,9 +25,9 @@ class ScriptPromiseResolver;
  class ScriptState;
  class DawnControlClientHolder;
  
@@ -135,7 +134,7 @@ index d059b172..10274d4 100644
    DEFINE_WRAPPERTYPEINFO();
  
   public:
-@@ -59,6 +60,9 @@
+@@ -59,6 +60,9 @@ class GPU final : public ScriptWrappable,
    // https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/platform/heap/BlinkGCAPIReference.md#weak-collections
    void TrackMappableBuffer(GPUBuffer* buffer);
  
@@ -147,7 +146,7 @@ index d059b172..10274d4 100644
                                  const GPURequestAdapterOptions* options,
 diff --git a/third_party/blink/renderer/modules/webgpu/gpu_context_lost_test.cc b/third_party/blink/renderer/modules/webgpu/gpu_context_lost_test.cc
 new file mode 100644
-index 0000000..b03b6425
+index 0000000000000000000000000000000000000000..b03b6425b3e7d5129f2c5c21b5dce8216e6aeff2
 --- /dev/null
 +++ b/third_party/blink/renderer/modules/webgpu/gpu_context_lost_test.cc
 @@ -0,0 +1,234 @@
@@ -386,10 +385,10 @@ index 0000000..b03b6425
 +
 +}  // namespace blink
 diff --git a/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.cc b/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.cc
-index 65a72b04..3ab5796 100644
+index be5b392fa83a4197958f9f032eac4dd41af61f61..6a6283972e7bf597fdf720eefafb57dc4e3263a2 100644
 --- a/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.cc
 +++ b/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.cc
-@@ -17,9 +17,17 @@
+@@ -17,9 +17,17 @@ scoped_refptr<DawnControlClientHolder> DawnControlClientHolder::Create(
    auto dawn_control_client_holder =
        base::MakeRefCounted<DawnControlClientHolder>(std::move(context_provider),
                                                      std::move(task_runner));
@@ -408,7 +407,7 @@ index 65a72b04..3ab5796 100644
    return dawn_control_client_holder;
  }
  
-@@ -38,7 +46,7 @@
+@@ -38,7 +46,7 @@ DawnControlClientHolder::DawnControlClientHolder(
  DawnControlClientHolder::~DawnControlClientHolder() = default;
  
  void DawnControlClientHolder::Destroy() {
@@ -417,7 +416,7 @@ index 65a72b04..3ab5796 100644
  
    // Destroy the WebGPU context.
    // This ensures that GPU resources are eagerly reclaimed.
-@@ -68,8 +76,16 @@
+@@ -68,8 +76,16 @@ DawnControlClientHolder::GetContextProviderWeakPtr() const {
    return context_provider_->GetWeakPtr();
  }
  
@@ -436,18 +435,18 @@ index 65a72b04..3ab5796 100644
  
  std::unique_ptr<RecyclableCanvasResource>
 diff --git a/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h b/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h
-index fd58ce9..efa8dc7 100644
+index 550038892c97e8f5f46e7a08c07821aa083b67d1..9e3c086225aff661e2402b974534d27860f4f446 100644
 --- a/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h
 +++ b/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h
-@@ -47,6 +47,7 @@
+@@ -47,6 +47,7 @@ class PLATFORM_EXPORT DawnControlClientHolder
    base::WeakPtr<WebGraphicsContext3DProviderWrapper> GetContextProviderWeakPtr()
        const;
    const DawnProcTable& GetProcs() const { return procs_; }
 +  void MarkContextLost();
    bool IsContextLost() const;
    std::unique_ptr<RecyclableCanvasResource> GetOrCreateCanvasResource(
-       const IntSize& size,
-@@ -57,11 +58,14 @@
+       const SkImageInfo& info,
+@@ -56,11 +57,14 @@ class PLATFORM_EXPORT DawnControlClientHolder
    friend class RefCounted<DawnControlClientHolder>;
    ~DawnControlClientHolder();
  
