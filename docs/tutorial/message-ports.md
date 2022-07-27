@@ -131,9 +131,9 @@ const { ipcRenderer } = require('electron')
 
 ipcRenderer.on('port', e => {
   // port received, make it globally available.
-  window.messagePort = e.ports[0]
+  window.electronMessagePort = e.ports[0]
 
-  window.messagePort.onmessage = messageEvent => {
+  window.electronMessagePort.onmessage = messageEvent => {
     // handle message
   }
 })
@@ -150,7 +150,7 @@ renderer.
 
 ```js title='renderer.js (Renderer Process)'
 // elsewhere in your code to send a message to the other renderers message handler
-window.messagePort.postmessage('ping')
+window.electronMessagePort.postmessage('ping')
 ```
 
 ### Worker process
