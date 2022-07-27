@@ -3,9 +3,6 @@
   "productName": "Electron Test",
   "main": "static/main.js",
   "version": "0.1.0",
-  "scripts": {
-    "postinstall": "node ../script/run-if-exists.js node_modules/robotjs node-gyp rebuild"
-  },
   "devDependencies": {
     "basic-auth": "^2.0.1",
     "chai": "^4.2.0",

@@ -13,6 +13,7 @@ import { promisify } from 'util';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
+import * as ws from 'ws';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -678,13 +679,7 @@ describe('chromium features', () => {
     });
   });
 
-  describe('navigator.geolocation', () => {
-    before(function () {
-      if (!features.isFakeLocationProviderEnabled()) {
-        return this.skip();
-      }
-    });
-
+  ifdescribe(features.isFakeLocationProviderEnabled())('navigator.geolocation', () => {
     it('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,
@@ -706,6 +701,17 @@ describe('chromium features', () => {
       const [, channel] = await message;
       expect(channel).to.equal('success', 'unexpected response from geolocation api');
     });
+
+    it('returns position when permission is granted', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const position = await w.webContents.executeJavaScript(`new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(
+          x => resolve({coords: x.coords, timestamp: x.timestamp}),
+          reject))`);
+      expect(position).to.have.property('coords');
+      expect(position).to.have.property('timestamp');
+    });
   });
 
   describe('web workers', () => {
@@ -725,6 +731,68 @@ describe('chromium features', () => {
 
       const [code] = await emittedOnce(appProcess, 'exit');
       expect(code).to.equal(0);
+    });
+
+    it('Worker can work', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const data = await w.webContents.executeJavaScript(`
+        const worker = new Worker('../workers/worker.js');
+        const message = 'ping';
+        const eventPromise = new Promise((resolve) => { worker.onmessage = resolve; });
+        worker.postMessage(message);
+        eventPromise.then(t => t.data)
+      `);
+      expect(data).to.equal('ping');
+    });
+
+    it('Worker has no node integration by default', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const data = await w.webContents.executeJavaScript(`
+        const worker = new Worker('../workers/worker_node.js');
+        new Promise((resolve) => { worker.onmessage = e => resolve(e.data); })
+      `);
+      expect(data).to.equal('undefined undefined undefined undefined');
+    });
+
+    it('Worker has node integration with nodeIntegrationInWorker', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false } });
+      w.loadURL(`file://${fixturesPath}/pages/worker.html`);
+      const [, data] = await emittedOnce(ipcMain, 'worker-result');
+      expect(data).to.equal('object function object function');
+    });
+
+    describe('SharedWorker', () => {
+      it('can work', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        const data = await w.webContents.executeJavaScript(`
+          const worker = new SharedWorker('../workers/shared_worker.js');
+          const message = 'ping';
+          const eventPromise = new Promise((resolve) => { worker.port.onmessage = e => resolve(e.data); });
+          worker.port.postMessage(message);
+          eventPromise
+        `);
+        expect(data).to.equal('ping');
+      });
+
+      it('has no node integration by default', async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        const data = await w.webContents.executeJavaScript(`
+          const worker = new SharedWorker('../workers/shared_worker_node.js');
+          new Promise((resolve) => { worker.port.onmessage = e => resolve(e.data); })
+        `);
+        expect(data).to.equal('undefined undefined undefined undefined');
+      });
+
+      it('has node integration with nodeIntegrationInWorker', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false } });
+        w.loadURL(`file://${fixturesPath}/pages/shared_worker.html`);
+        const [, data] = await emittedOnce(ipcMain, 'worker-result');
+        expect(data).to.equal('object function object function');
+      });
     });
   });
 
@@ -1611,6 +1679,116 @@ describe('chromium features', () => {
         const brands = await w.webContents.executeJavaScript('navigator.userAgentData.brands');
         expect(brands.map((b: any) => b.brand)).to.include('Chromium');
       });
+    });
+  });
+
+  describe('Badging API', () => {
+    it('does not crash', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      await w.webContents.executeJavaScript('navigator.setAppBadge(42)');
+      await w.webContents.executeJavaScript('navigator.setAppBadge()');
+      await w.webContents.executeJavaScript('navigator.clearAppBadge()');
+    });
+  });
+
+  describe('navigator.webkitGetUserMedia', () => {
+    it('calls its callbacks', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        navigator.webkitGetUserMedia({
+          audio: true,
+          video: false
+        }, () => resolve(),
+        () => resolve());
+      })`);
+    });
+  });
+
+  describe('navigator.language', () => {
+    it('should not be empty', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      expect(await w.webContents.executeJavaScript('navigator.language')).to.not.equal('');
+    });
+  });
+
+  describe('heap snapshot', () => {
+    it('does not crash', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      await w.webContents.executeJavaScript('process._linkedBinding(\'electron_common_v8_util\').takeHeapSnapshot()');
+    });
+  });
+
+  ifdescribe(process.platform !== 'win32' && process.platform !== 'linux')('webgl', () => {
+    it('can be gotten as context in canvas', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const canWebglContextBeCreated = await w.webContents.executeJavaScript(`
+        document.createElement('canvas').getContext('webgl') != null;
+      `);
+      expect(canWebglContextBeCreated).to.be.true();
+    });
+  });
+
+  describe('iframe', () => {
+    it('does not have node integration', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const result = await w.webContents.executeJavaScript(`
+        const iframe = document.createElement('iframe')
+        iframe.src = './set-global.html';
+        document.body.appendChild(iframe);
+        new Promise(resolve => iframe.onload = e => resolve(iframe.contentWindow.test))
+      `);
+      expect(result).to.equal('undefined undefined undefined');
+    });
+  });
+
+  describe('websockets', () => {
+    it('has user agent', async () => {
+      const server = http.createServer();
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const port = (server.address() as AddressInfo).port;
+      const wss = new ws.Server({ server: server });
+      const finished = new Promise<string | undefined>((resolve, reject) => {
+        wss.on('error', reject);
+        wss.on('connection', (ws, upgradeReq) => {
+          resolve(upgradeReq.headers['user-agent']);
+        });
+      });
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript(`
+        new WebSocket('ws://127.0.0.1:${port}');
+      `);
+      expect(await finished).to.include('Electron');
+    });
+  });
+
+  describe('fetch', () => {
+    it('does not crash', async () => {
+      const server = http.createServer((req, res) => {
+        res.end('test');
+      });
+      defer(() => server.close());
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const port = (server.address() as AddressInfo).port;
+      const w = new BrowserWindow({ show: false });
+      w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const x = await w.webContents.executeJavaScript(`
+        fetch('http://127.0.0.1:${port}').then((res) => res.body.getReader())
+          .then((reader) => {
+            return reader.read().then((r) => {
+              reader.cancel();
+              return r.value;
+            });
+          })
+      `);
+      expect(x).to.deep.equal(new Uint8Array([116, 101, 115, 116]));
     });
   });
 });
