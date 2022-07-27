@@ -20,14 +20,15 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index aca208728d0dae78e57bf4b7f0af46ed5ad73e68..3ace9a5d0368fd1bd5116f4ca1057c7887a611c5 100644
+index aca208728d0dae78e57bf4b7f0af46ed5ad73e68..2afef2fb0d3890bdada7d5785a4a48494d580cab 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1852,6 +1852,9 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1852,6 +1852,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
 +  if (!settings_.enable_color_correct_rendering) {
++    params.color_space = gfx::ColorSpace();
 +    return params;
 +  }
  
@@ -112,7 +113,7 @@ index 73a50b19f8bf75119b6af7698cdf7d569c504e77..9fdc3d5235a95cfc9ef3b94ba9c19630
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
      sandbox::policy::switches::kNoSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 75d7af9a79d4e7f2cd39e45496ab5fff66407638..b4ddafdd126edd16172f00448bbbd56eaf509b1f 100644
+index 75d7af9a79d4e7f2cd39e45496ab5fff66407638..35b0bb908245330fbdc5205caa3299bf6fd8f7b4 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -131,7 +132,18 @@ index 75d7af9a79d4e7f2cd39e45496ab5fff66407638..b4ddafdd126edd16172f00448bbbd56e
  
  namespace blink {
  
-@@ -118,6 +120,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
+@@ -19,6 +21,10 @@ namespace blink {
+ // Level 4 specification.
+ gfx::ColorSpace PredefinedColorSpaceToGfxColorSpace(
+     PredefinedColorSpace color_space) {
++  auto* cmd_line = base::CommandLine::ForCurrentProcess();
++  if (cmd_line->HasSwitch(switches::kDisableColorCorrectRendering)) {
++    return gfx::ColorSpace();
++  }
+   switch (color_space) {
+     case PredefinedColorSpace::kSRGB:
+       return gfx::ColorSpace::CreateSRGB();
+@@ -118,6 +124,11 @@ uint8_t CanvasColorParams::BytesPerPixel() const {
  }
  
  gfx::ColorSpace CanvasColorParams::GetStorageGfxColorSpace() const {
