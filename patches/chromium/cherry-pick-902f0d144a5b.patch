@@ -1,0 +1,42 @@
+From 902f0d144a5b9d3c2d04536b5a7b5e4d6274bd55 Mon Sep 17 00:00:00 2001
+From: Justin Novosad <junov@chromium.org>
+Date: Fri, 15 Jul 2022 23:12:50 +0000
+Subject: [PATCH] Mitigate bad cast in OffscreenCanvas::GetFontSelector
+
+This change will cause the browser to crash if the execution context
+is not a Window or WorkerGlobalScope.  This is a temporary solution
+to handle the case where the execution context is an
+AudioWorkletGlobalScope.  The longer term solution, which will be
+implemented in a follow-up CL, is to block OffscreenCanvas objects from
+being transferred to AudioWorklets, as required by the postMessage spec.
+
+BUG=1334864
+
+(cherry picked from commit 028c11e59fd41bc22eff06dbec10fe9b0e82bd04)
+
+Change-Id: Ief5e37eca6dff14098b12cdbe6fc362c3dd87d1d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3722117
+Auto-Submit: Justin Novosad <junov@chromium.org>
+Reviewed-by: Juanmi Huertas <juanmihd@chromium.org>
+Commit-Queue: Juanmi Huertas <juanmihd@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1017357}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3752921
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5005@{#1254}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+---
+
+diff --git a/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc b/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
+index 69f6da1..d15636e1 100644
+--- a/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
++++ b/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
+@@ -549,6 +549,9 @@
+   if (auto* window = DynamicTo<LocalDOMWindow>(GetExecutionContext())) {
+     return window->document()->GetStyleEngine().GetFontSelector();
+   }
++  // TODO(crbug.com/1334864): Temporary mitigation.  Remove the following
++  // CHECK once a more comprehensive solution has been implemented.
++  CHECK(GetExecutionContext()->IsWorkerGlobalScope());
+   return To<WorkerGlobalScope>(GetExecutionContext())->GetFontSelector();
+ }
+ 
