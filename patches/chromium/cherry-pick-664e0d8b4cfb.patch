@@ -1,7 +1,7 @@
-From 664e0d8b4cfb328c8425a385d9b958d031013e65 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Etienne Bergeron <etienneb@chromium.org>
 Date: Tue, 19 Jul 2022 16:46:43 +0000
-Subject: [PATCH] [M96-LTS] Fix incorrect text itemization for \r codepoint
+Subject: Fix incorrect text itemization for \r codepoint
 
 M96 merge issues:
   render_text_unittest.cc
@@ -31,13 +31,12 @@ Reviewed-by: Etienne Bergeron <etienneb@chromium.org>
 Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1662}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/ui/gfx/render_text_harfbuzz.cc b/ui/gfx/render_text_harfbuzz.cc
-index e378c6c6..9e99256 100644
+index cd19053ad39a8386b348ae89fb2cf59bcfddb01a..cd779904454940f744cd82c5365ece7147633c2b 100644
 --- a/ui/gfx/render_text_harfbuzz.cc
 +++ b/ui/gfx/render_text_harfbuzz.cc
-@@ -200,7 +200,7 @@
+@@ -201,7 +201,7 @@ GraphemeProperties RetrieveGraphemeProperties(const base::StringPiece16& text,
          properties.block = ublock_getCode(codepoint);
      }
  
@@ -47,10 +46,10 @@ index e378c6c6..9e99256 100644
      if (IsBracket(codepoint))
        properties.has_bracket = true;
 diff --git a/ui/gfx/render_text_unittest.cc b/ui/gfx/render_text_unittest.cc
-index 629bb25d..42f346c5 100644
+index 43d03699495c935cd1203e8195d12571fa92b347..e33d25270efb49ee8498108dfa0473b4f760d732 100644
 --- a/ui/gfx/render_text_unittest.cc
 +++ b/ui/gfx/render_text_unittest.cc
-@@ -1573,6 +1573,9 @@
+@@ -1575,6 +1575,9 @@ const RunListCase kBasicsRunListCases[] = {
      {"multiline_newline1", u"\n\n", "[0][1]", true},
      {"multiline_newline2", u"\r\n\r\n", "[0->1][2->3]", true},
      {"multiline_newline3", u"\r\r\n", "[0][1->2]", true},
@@ -60,7 +59,7 @@ index 629bb25d..42f346c5 100644
  };
  
  INSTANTIATE_TEST_SUITE_P(ItemizeTextToRunsBasics,
-@@ -8546,4 +8549,14 @@
+@@ -8561,4 +8564,14 @@ TEST_F(RenderTextTest, StringSizeUpdatedWhenDeviceScaleFactorChanges) {
  }
  #endif
  
