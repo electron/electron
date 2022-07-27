@@ -942,7 +942,7 @@ Returns `boolean` - Whether current window is a modal window.
 
 #### `win.maximize()`
 
-Maximizes the window. This will also show (but not focus) the window if it
+Maximizes the window. This will also show the window if it
 isn't being displayed already.
 
 #### `win.unmaximize()`
