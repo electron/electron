@@ -31,6 +31,8 @@
 #include "shell/common/options_switches.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <vector>
+
 #include "base/i18n/case_conversion.h"
 #include "base/win/registry.h"
 #include "ui/base/l10n/l10n_util.h"
