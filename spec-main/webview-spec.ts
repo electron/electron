@@ -1266,13 +1266,13 @@ describe('<webview> tag', function () {
     describe('disablewebsecurity attribute', () => {
       it('does not disable web security when not set', async () => {
         await loadWebView(w, { src: 'about:blank' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')")`);
+        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
         expect(result).to.equal('failed');
       });
 
       it('disables web security when set', async () => {
         await loadWebView(w, { src: 'about:blank', disablewebsecurity: '' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')")`);
+        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
         expect(result).to.equal('ok');
       });
 
@@ -1413,9 +1413,9 @@ describe('<webview> tag', function () {
         });
       });
 
-      it('can disables web security and enable nodeintegration', async () => {
+      it('can disable web security and enable nodeintegration', async () => {
         await loadWebView(w, { src: 'about:blank', webpreferences: 'webSecurity=no, nodeIntegration=yes, contextIsolation=no' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript("fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')")`);
+        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
         expect(result).to.equal('ok');
         const type = await w.executeJavaScript('webview.executeJavaScript("typeof require")');
         expect(type).to.equal('function');
