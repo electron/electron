@@ -152,3 +152,4 @@ add_stop_method_to_batchingmedialog.patch
 make_gtk_getlibgtk_public.patch
 cherry-pick-d7a5d6b38ea8.patch
 cherry-pick-3cbd5973d704.patch
+cherry-pick-2a2d7536227b.patch
