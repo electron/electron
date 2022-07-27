@@ -4234,6 +4234,14 @@ describe('BrowserWindow module', () => {
         await createTwo();
       });
 
+      ifit(process.platform !== 'darwin')('can disable and enable a window', () => {
+        const w = new BrowserWindow({ show: false });
+        w.setEnabled(false);
+        expect(w.isEnabled()).to.be.false('w.isEnabled()');
+        w.setEnabled(true);
+        expect(w.isEnabled()).to.be.true('!w.isEnabled()');
+      });
+
       ifit(process.platform !== 'darwin')('disables parent window', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w, modal: true });
