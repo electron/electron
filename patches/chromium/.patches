@@ -153,3 +153,4 @@ make_gtk_getlibgtk_public.patch
 cherry-pick-d7a5d6b38ea8.patch
 cherry-pick-3cbd5973d704.patch
 cherry-pick-2a2d7536227b.patch
+cherry-pick-664e0d8b4cfb.patch
