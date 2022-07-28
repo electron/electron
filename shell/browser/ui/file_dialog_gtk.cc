@@ -62,8 +62,9 @@ class FileChooserDialog {
     auto label = settings.button_label;
 
     if (electron::IsElectron_gtkInitialized()) {
+      fake_parent_ = CreateFakeParent();
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_native_new(
-          settings.title.c_str(), NULL, action,
+          settings.title.c_str(), GTK_WINDOW(fake_parent_), action,
           label.empty() ? nullptr : label.c_str(), nullptr));
     } else {
       const char* confirm_text = gtk_util::GetOkLabel();
@@ -130,6 +131,8 @@ class FileChooserDialog {
   ~FileChooserDialog() {
     if (electron::IsElectron_gtkInitialized()) {
       gtk_native_dialog_destroy(GTK_NATIVE_DIALOG(dialog_));
+      if (GTK_IS_WIDGET(fake_parent_))
+        gtk_widget_destroy(fake_parent_);
     } else {
       gtk_widget_destroy(GTK_WIDGET(dialog_));
     }
@@ -220,12 +223,23 @@ class FileChooserDialog {
 
  private:
   void AddFilters(const Filters& filters);
+  GtkWidget* CreateFakeParent();
 
   electron::NativeWindowViews* parent_;
   electron::UnresponsiveSuppressor unresponsive_suppressor_;
 
   GtkFileChooser* dialog_;
   GtkWidget* preview_;
+
+  // In the event, GTK >= 3.20 is available, the file dialog will use the XDG
+  // Desktop Portal to present a file chooser to the user. Because an Electron
+  // window is not a GtkWindow, we can create one out of thin air which will
+  // allow us to pass it to the gtk_file_chooser_native_new() function. The XDG
+  // Desktop Portal implementation (xdg-desktop-portal-gtk, for instance), will
+  // then use our fake parent representing the Electron window to set the
+  // transiency of the window instead of Chromium's
+  // gtk::SetGtkTransientForAura().
+  GtkWidget* fake_parent_ = nullptr;
 
   Filters filters_;
   std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> save_promise_;
@@ -281,6 +295,19 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     gtk_file_filter_set_name(gtk_filter, filter.first.c_str());
     gtk_file_chooser_add_filter(dialog_, gtk_filter);
   }
+}
+
+GtkWidget* FileChooserDialog::CreateFakeParent() {
+  GdkScreen* screen = nullptr;
+  GdkDisplay* display = gdk_display_open(nullptr);
+
+  if (!display)
+    return nullptr;
+
+  screen = gdk_display_get_default_screen(display);
+
+  return GTK_WIDGET(g_object_new(GTK_TYPE_WINDOW, "type", GTK_WINDOW_TOPLEVEL,
+                                 "screen", screen, NULL));
 }
 
 bool CanPreview(const struct stat& st) {
