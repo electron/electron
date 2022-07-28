@@ -1,0 +1,463 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Austin Eng <enga@chromium.org>
+Date: Mon, 18 Jul 2022 10:45:42 +0000
+Subject: WebGPU: Mark the context lost on GPU context lost
+
+M96 merge issues:
+  - gpu.h:
+    BoxedMappableWGPUBufferHandles not present in M96
+  - dawn_control_client_holder.h/cc:
+    GetWGPUInstance() not present in M96
+  - Copied part of the DEPS rules from https://crrev.com/c/3456506 to
+  fix a presubmit issue:
+    ** Presubmit ERRORS **
+    You added one or more #includes that violate checkdeps rules.
+      third_party/blink/renderer/modules/webgpu/gpu_context_lost_test.cc
+          Illegal include: "base/run_loop.h"
+        Because of "-base" from third_party's include_rules.
+
+Fixes a bug where completely destructing the context instead of
+marking it lost when receiving a context lost notification freed
+memory still accessible by the page.
+
+(cherry picked from commit 6c7f327b7a15aabd3fc5d57e9c05b95d02f1cd36)
+
+Fixed: 1336014
+Change-Id: I662e531102af91362b4f62700bfbee507fc44d1f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3708646
+Commit-Queue: Austin Eng <enga@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1017003}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3732492
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Reviewed-by: Simon Hangl <simonha@google.com>
+Owners-Override: Simon Hangl <simonha@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1661}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/DEPS b/third_party/blink/DEPS
+index 4c61e4543aafa55766c4f24d41057c003c3f4804..a32bf301919ad0e4b1e96079e0666da5f6c46de9 100644
+--- a/third_party/blink/DEPS
++++ b/third_party/blink/DEPS
+@@ -6,3 +6,10 @@ include_rules = [
+     "+base/trace_event",
+     "+third_party/perfetto/include/perfetto/tracing",
+ ]
++
++specific_include_rules = {
++    ".*_test\.cc": [
++        # Some tests use base::RunLoop.
++        "+base/run_loop.h",
++    ],
++}
+diff --git a/third_party/blink/renderer/modules/BUILD.gn b/third_party/blink/renderer/modules/BUILD.gn
+index cea17d196ad24af479bf63f23d5c39f101447176..ede72ab76e65575b185194545aa4f299623f31f4 100644
+--- a/third_party/blink/renderer/modules/BUILD.gn
++++ b/third_party/blink/renderer/modules/BUILD.gn
+@@ -662,6 +662,7 @@ source_set("unit_tests") {
+     "//third_party/blink/renderer/modules/peerconnection:test_support",
+     "//third_party/blink/renderer/modules/storage:unit_tests",
+     "//third_party/blink/renderer/modules/webcodecs:unit_tests",
++    "//third_party/blink/renderer/modules/webgpu:unit_tests",
+     "//third_party/blink/renderer/modules/webtransport:unit_tests",
+     "//third_party/blink/renderer/platform",
+     "//third_party/blink/renderer/platform:test_support",
+diff --git a/third_party/blink/renderer/modules/webgpu/BUILD.gn b/third_party/blink/renderer/modules/webgpu/BUILD.gn
+index 5bc070fe16d427a64a49f03ff457aeff29422317..c94897a036ef2acdb20f2c2bdf90f2071319ffa5 100644
+--- a/third_party/blink/renderer/modules/webgpu/BUILD.gn
++++ b/third_party/blink/renderer/modules/webgpu/BUILD.gn
+@@ -91,3 +91,17 @@ blink_modules_sources("webgpu") {
+     "//third_party/dawn/src/dawn:dawn_headers",
+   ]
+ }
++
++source_set("unit_tests") {
++  testonly = true
++  sources = [ "gpu_context_lost_test.cc" ]
++
++  deps = [
++    "//base/test:test_support",
++    "//third_party/blink/renderer/controller:blink_bindings_test_sources",
++    "//third_party/blink/renderer/core",
++    "//third_party/blink/renderer/core:testing",
++    "//third_party/blink/renderer/modules",
++    "//third_party/blink/renderer/platform:test_support",
++  ]
++}
+diff --git a/third_party/blink/renderer/modules/webgpu/DEPS b/third_party/blink/renderer/modules/webgpu/DEPS
+index ded05aa68e59cadddb678d5254119ae3dad1b47e..9e777ab0473f0bb9cbd46e4d6c1498f1a12a6f40 100644
+--- a/third_party/blink/renderer/modules/webgpu/DEPS
++++ b/third_party/blink/renderer/modules/webgpu/DEPS
+@@ -9,6 +9,7 @@ include_rules = [
+     "+gpu/command_buffer/client/raster_interface.h",
+     "+gpu/command_buffer/client/shared_image_interface.h",
+     "+gpu/command_buffer/client/webgpu_interface.h",
++    "+gpu/command_buffer/client/webgpu_interface_stub.h",
+     "+media/base/video_frame.h",
+     "+media/renderers/paint_canvas_video_renderer.h",
+     "+services/metrics/public/cpp/ukm_builders.h",
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu.cc b/third_party/blink/renderer/modules/webgpu/gpu.cc
+index e72d047ebbb652e6fef53f8030b70c85e12b991c..4ed11cf2cc03ad12b3d13738572f1fea76529cb7 100644
+--- a/third_party/blink/renderer/modules/webgpu/gpu.cc
++++ b/third_party/blink/renderer/modules/webgpu/gpu.cc
+@@ -263,4 +263,9 @@ void GPU::TrackMappableBuffer(GPUBuffer* buffer) {
+   mappable_buffers_.insert(buffer);
+ }
+ 
++void GPU::SetDawnControlClientHolderForTesting(
++    scoped_refptr<DawnControlClientHolder> dawn_control_client) {
++  dawn_control_client_ = std::move(dawn_control_client);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu.h b/third_party/blink/renderer/modules/webgpu/gpu.h
+index d059b172ad090b6bc1ee3be5ddd59c5b5ccd934d..10274d41ed5dc73cdd7a2d1cd0d3ec064c23bc00 100644
+--- a/third_party/blink/renderer/modules/webgpu/gpu.h
++++ b/third_party/blink/renderer/modules/webgpu/gpu.h
+@@ -9,6 +9,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise.h"
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/execution_context/execution_context_lifecycle_observer.h"
++#include "third_party/blink/renderer/modules/modules_export.h"
+ #include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+ #include "third_party/blink/renderer/platform/supplementable.h"
+ 
+@@ -24,9 +25,9 @@ class ScriptPromiseResolver;
+ class ScriptState;
+ class DawnControlClientHolder;
+ 
+-class GPU final : public ScriptWrappable,
+-                  public Supplement<NavigatorBase>,
+-                  public ExecutionContextLifecycleObserver {
++class MODULES_EXPORT GPU final : public ScriptWrappable,
++                                 public Supplement<NavigatorBase>,
++                                 public ExecutionContextLifecycleObserver {
+   DEFINE_WRAPPERTYPEINFO();
+ 
+  public:
+@@ -59,6 +60,9 @@ class GPU final : public ScriptWrappable,
+   // https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/platform/heap/BlinkGCAPIReference.md#weak-collections
+   void TrackMappableBuffer(GPUBuffer* buffer);
+ 
++  void SetDawnControlClientHolderForTesting(
++      scoped_refptr<DawnControlClientHolder> dawn_control_client);
++
+  private:
+   void OnRequestAdapterCallback(ScriptState* script_state,
+                                 const GPURequestAdapterOptions* options,
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu_context_lost_test.cc b/third_party/blink/renderer/modules/webgpu/gpu_context_lost_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..b03b6425b3e7d5129f2c5c21b5dce8216e6aeff2
+--- /dev/null
++++ b/third_party/blink/renderer/modules/webgpu/gpu_context_lost_test.cc
+@@ -0,0 +1,234 @@
++// Copyright 2022 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "base/callback.h"
++#include "base/run_loop.h"
++#include "base/test/mock_callback.h"
++#include "gpu/command_buffer/client/webgpu_interface_stub.h"
++#include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_testing.h"
++#include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/frame/local_frame.h"
++#include "third_party/blink/renderer/core/frame/navigator.h"
++#include "third_party/blink/renderer/core/testing/dummy_page_holder.h"
++#include "third_party/blink/renderer/modules/webgpu/gpu.h"
++#include "third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h"
++#include "third_party/blink/renderer/platform/graphics/gpu/drawing_buffer_test_helpers.h"
++
++namespace blink {
++
++namespace {
++
++class WebGPUContextProviderForTest
++    : public WebGraphicsContext3DProviderForTests {
++ public:
++  explicit WebGPUContextProviderForTest(
++      base::MockCallback<base::OnceClosure>* destruction_callback)
++      : WebGraphicsContext3DProviderForTests(
++            std::make_unique<gpu::webgpu::WebGPUInterfaceStub>()),
++        destruction_callback_(destruction_callback) {}
++  ~WebGPUContextProviderForTest() override {
++    if (destruction_callback_) {
++      destruction_callback_->Run();
++    }
++  }
++
++  static WebGPUContextProviderForTest* From(
++      scoped_refptr<DawnControlClientHolder>& dawn_control_client) {
++    return static_cast<WebGPUContextProviderForTest*>(
++        dawn_control_client->GetContextProviderWeakPtr()->ContextProvider());
++  }
++
++  void ClearDestructionCallback() { destruction_callback_ = nullptr; }
++
++  void SetLostContextCallback(
++      base::RepeatingClosure lost_context_callback) override {
++    lost_context_callback_ = std::move(lost_context_callback);
++  }
++
++  void CallLostContextCallback() { lost_context_callback_.Run(); }
++
++ private:
++  base::MockCallback<base::OnceClosure>* destruction_callback_;
++  base::RepeatingClosure lost_context_callback_;
++};
++
++class WebGPUContextLostTest : public testing::Test {
++ protected:
++  void SetUp() override { page_ = std::make_unique<DummyPageHolder>(); }
++
++  std::tuple<ExecutionContext*, GPU*> SetUpGPU(V8TestingScope* v8_test_scope) {
++    ExecutionContext* execution_context =
++        ExecutionContext::From(v8_test_scope->GetScriptState());
++
++    Navigator* navigator = page_->GetFrame().DomWindow()->navigator();
++    GPU* gpu = MakeGarbageCollected<GPU>(*navigator);
++    return std::make_tuple(execution_context, gpu);
++  }
++
++  std::unique_ptr<DummyPageHolder> page_;
++};
++
++// Test that the context provider is destructed after the last reference to
++// its owning DawnControlClientHolder is dropped.
++TEST_F(WebGPUContextLostTest, DestructedAfterLastRefDropped) {
++  V8TestingScope v8_test_scope;
++  ExecutionContext* execution_context =
++      ExecutionContext::From(v8_test_scope.GetScriptState());
++
++  base::MockCallback<base::OnceClosure> destruction_callback;
++  auto context_provider =
++      std::make_unique<WebGPUContextProviderForTest>(&destruction_callback);
++
++  auto dawn_control_client = DawnControlClientHolder::Create(
++      std::move(context_provider),
++      execution_context->GetTaskRunner(TaskType::kWebGPU));
++
++  // Drop the last reference to the DawnControlClientHolder which will
++  // now destroy the context provider.
++  EXPECT_CALL(destruction_callback, Run()).Times(1);
++  dawn_control_client = nullptr;
++}
++
++// Test that the GPU lost context callback marks the context lost, but does not
++// destruct it.
++TEST_F(WebGPUContextLostTest, GPULostContext) {
++  V8TestingScope v8_test_scope;
++  GPU* gpu;
++  ExecutionContext* execution_context;
++  std::tie(execution_context, gpu) = SetUpGPU(&v8_test_scope);
++
++  base::MockCallback<base::OnceClosure> destruction_callback;
++  auto context_provider =
++      std::make_unique<WebGPUContextProviderForTest>(&destruction_callback);
++
++  auto dawn_control_client = DawnControlClientHolder::Create(
++      std::move(context_provider),
++      execution_context->GetTaskRunner(TaskType::kWebGPU));
++
++  gpu->SetDawnControlClientHolderForTesting(dawn_control_client);
++
++  // Trigger the lost context callback, but the context should not be destroyed.
++  EXPECT_CALL(destruction_callback, Run()).Times(0);
++  WebGPUContextProviderForTest::From(dawn_control_client)
++      ->CallLostContextCallback();
++  testing::Mock::VerifyAndClear(&destruction_callback);
++
++  // The context should be marked lost.
++  EXPECT_TRUE(dawn_control_client->IsContextLost());
++
++  // The context provider should still be live.
++  auto context_provider_weak_ptr =
++      dawn_control_client->GetContextProviderWeakPtr();
++  EXPECT_NE(context_provider_weak_ptr, nullptr);
++
++  // Clear the destruction callback since it is stack-allocated in this frame.
++  static_cast<WebGPUContextProviderForTest*>(
++      context_provider_weak_ptr->ContextProvider())
++      ->ClearDestructionCallback();
++}
++
++// Test that the GPU lost context callback marks the context lost, and then when
++// the context is recreated, the context still lives until the previous
++// DawnControlClientHolder is destroyed.
++TEST_F(WebGPUContextLostTest, RecreatedAfterGPULostContext) {
++  V8TestingScope v8_test_scope;
++  GPU* gpu;
++  ExecutionContext* execution_context;
++  std::tie(execution_context, gpu) = SetUpGPU(&v8_test_scope);
++
++  base::MockCallback<base::OnceClosure> destruction_callback;
++  auto context_provider =
++      std::make_unique<WebGPUContextProviderForTest>(&destruction_callback);
++
++  auto dawn_control_client = DawnControlClientHolder::Create(
++      std::move(context_provider),
++      execution_context->GetTaskRunner(TaskType::kWebGPU));
++
++  gpu->SetDawnControlClientHolderForTesting(dawn_control_client);
++
++  // Trigger the lost context callback, but the context should not be destroyed.
++  EXPECT_CALL(destruction_callback, Run()).Times(0);
++  WebGPUContextProviderForTest::From(dawn_control_client)
++      ->CallLostContextCallback();
++  testing::Mock::VerifyAndClear(&destruction_callback);
++
++  // The context should be marked lost.
++  EXPECT_TRUE(dawn_control_client->IsContextLost());
++
++  // The context provider should still be live.
++  auto context_provider_weak_ptr =
++      dawn_control_client->GetContextProviderWeakPtr();
++  EXPECT_NE(context_provider_weak_ptr, nullptr);
++
++  // Make a new context provider and DawnControlClientHolder
++  base::MockCallback<base::OnceClosure> destruction_callback2;
++  auto context_provider2 =
++      std::make_unique<WebGPUContextProviderForTest>(&destruction_callback2);
++
++  auto dawn_control_client2 = DawnControlClientHolder::Create(
++      std::move(context_provider2),
++      execution_context->GetTaskRunner(TaskType::kWebGPU));
++
++  // Set the new context, but the previous context should still not be
++  // destroyed.
++  EXPECT_CALL(destruction_callback, Run()).Times(0);
++  gpu->SetDawnControlClientHolderForTesting(dawn_control_client2);
++  testing::Mock::VerifyAndClear(&destruction_callback);
++
++  // Drop the last reference to the previous DawnControlClientHolder which will
++  // now destroy the previous context provider.
++  EXPECT_CALL(destruction_callback, Run()).Times(1);
++  dawn_control_client = nullptr;
++  testing::Mock::VerifyAndClear(&destruction_callback);
++
++  // Clear the destruction callback since it is stack-allocated in this frame.
++  static_cast<WebGPUContextProviderForTest*>(
++      dawn_control_client2->GetContextProviderWeakPtr()->ContextProvider())
++      ->ClearDestructionCallback();
++}
++
++// Test that ContextDestroyed lifecycle event destructs the context.
++TEST_F(WebGPUContextLostTest, ContextDestroyed) {
++  V8TestingScope v8_test_scope;
++  GPU* gpu;
++  ExecutionContext* execution_context;
++  std::tie(execution_context, gpu) = SetUpGPU(&v8_test_scope);
++  base::MockCallback<base::OnceClosure> destruction_callback;
++  auto context_provider =
++      std::make_unique<WebGPUContextProviderForTest>(&destruction_callback);
++
++  auto dawn_control_client = DawnControlClientHolder::Create(
++      std::move(context_provider),
++      execution_context->GetTaskRunner(TaskType::kWebGPU));
++
++  gpu->SetDawnControlClientHolderForTesting(dawn_control_client);
++
++  // Trigger the context destroyed lifecycle event. The context should not be
++  // destroyed yet.
++  EXPECT_CALL(destruction_callback, Run()).Times(0);
++  gpu->ContextDestroyed();
++  testing::Mock::VerifyAndClear(&destruction_callback);
++
++  // The context should be marked lost.
++  EXPECT_TRUE(dawn_control_client->IsContextLost());
++
++  // Getting the context provider should return null.
++  EXPECT_EQ(dawn_control_client->GetContextProviderWeakPtr(), nullptr);
++
++  // The context is destructed in a posted task with a fresh callstack to avoid
++  // re-entrancy issues. Expectations should resolve by the end of the next
++  // task.
++  EXPECT_CALL(destruction_callback, Run()).Times(1);
++  base::RunLoop loop;
++  execution_context->GetTaskRunner(TaskType::kWebGPU)
++      ->PostTask(FROM_HERE, loop.QuitClosure());
++  loop.Run();
++  testing::Mock::VerifyAndClear(&destruction_callback);
++}
++
++}  // namespace
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.cc b/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.cc
+index be5b392fa83a4197958f9f032eac4dd41af61f61..6a6283972e7bf597fdf720eefafb57dc4e3263a2 100644
+--- a/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.cc
++++ b/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.cc
+@@ -17,9 +17,17 @@ scoped_refptr<DawnControlClientHolder> DawnControlClientHolder::Create(
+   auto dawn_control_client_holder =
+       base::MakeRefCounted<DawnControlClientHolder>(std::move(context_provider),
+                                                     std::move(task_runner));
++  // The context lost callback occurs when the client receives
++  // OnGpuControlLostContext. This can happen on fatal errors when the GPU
++  // channel is disconnected: the GPU process crashes, the GPU process fails to
++  // deserialize a message, etc. We mark the context lost, but NOT destroy the
++  // entire WebGraphicsContext3DProvider as that would free services for mapping
++  // shared memory. There may still be outstanding mapped GPUBuffers pointing to
++  // this memory.
+   dawn_control_client_holder->context_provider_->ContextProvider()
+       ->SetLostContextCallback(WTF::BindRepeating(
+-          &DawnControlClientHolder::Destroy, dawn_control_client_holder));
++          &DawnControlClientHolder::MarkContextLost,
++          dawn_control_client_holder->weak_ptr_factory_.GetWeakPtr()));
+   return dawn_control_client_holder;
+ }
+ 
+@@ -38,7 +46,7 @@ DawnControlClientHolder::DawnControlClientHolder(
+ DawnControlClientHolder::~DawnControlClientHolder() = default;
+ 
+ void DawnControlClientHolder::Destroy() {
+-  api_channel_->Disconnect();
++  MarkContextLost();
+ 
+   // Destroy the WebGPU context.
+   // This ensures that GPU resources are eagerly reclaimed.
+@@ -68,8 +76,16 @@ DawnControlClientHolder::GetContextProviderWeakPtr() const {
+   return context_provider_->GetWeakPtr();
+ }
+ 
++void DawnControlClientHolder::MarkContextLost() {
++  if (context_lost_) {
++    return;
++  }
++  api_channel_->Disconnect();
++  context_lost_ = true;
++}
++
+ bool DawnControlClientHolder::IsContextLost() const {
+-  return !context_provider_;
++  return context_lost_;
+ }
+ 
+ std::unique_ptr<RecyclableCanvasResource>
+diff --git a/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h b/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h
+index 550038892c97e8f5f46e7a08c07821aa083b67d1..9e3c086225aff661e2402b974534d27860f4f446 100644
+--- a/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h
++++ b/third_party/blink/renderer/platform/graphics/gpu/dawn_control_client_holder.h
+@@ -47,6 +47,7 @@ class PLATFORM_EXPORT DawnControlClientHolder
+   base::WeakPtr<WebGraphicsContext3DProviderWrapper> GetContextProviderWeakPtr()
+       const;
+   const DawnProcTable& GetProcs() const { return procs_; }
++  void MarkContextLost();
+   bool IsContextLost() const;
+   std::unique_ptr<RecyclableCanvasResource> GetOrCreateCanvasResource(
+       const SkImageInfo& info,
+@@ -56,11 +57,14 @@ class PLATFORM_EXPORT DawnControlClientHolder
+   friend class RefCounted<DawnControlClientHolder>;
+   ~DawnControlClientHolder();
+ 
++  bool context_lost_ = false;
+   std::unique_ptr<WebGraphicsContext3DProviderWrapper> context_provider_;
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+   scoped_refptr<gpu::webgpu::APIChannel> api_channel_;
+   DawnProcTable procs_;
+   WebGPURecyclableResourceCache recyclable_resource_cache_;
++
++  base::WeakPtrFactory<DawnControlClientHolder> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace blink
