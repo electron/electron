@@ -130,7 +130,8 @@ jobs:
       run: |
         cd src
         echo "Verifying non proprietary ffmpeg"
-        python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg  
+        python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
+      shell: cmd
     - name: Kill processes left running from last test run
       run: |
         Get-Process | Where Name -Like "electron*" | Stop-Process
