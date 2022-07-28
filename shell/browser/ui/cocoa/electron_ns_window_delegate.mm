@@ -19,7 +19,7 @@
 
 using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 using FullScreenTransitionState =
-    electron::NativeWindowMac::FullScreenTransitionState;
+    electron::NativeWindow::FullScreenTransitionState;
 
 @implementation ElectronNSWindowDelegate
 
