@@ -718,8 +718,10 @@ std::string NativeWindow::GetAccessibleTitle() {
 }
 
 void NativeWindow::HandlePendingFullscreenTransitions() {
-  if (pending_transitions_.empty())
+  if (pending_transitions_.empty()) {
+    set_fullscreen_transition_type(FullScreenTransitionType::NONE);
     return;
+  }
 
   bool next_transition = pending_transitions_.front();
   pending_transitions_.pop();

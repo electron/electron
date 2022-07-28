@@ -4954,6 +4954,17 @@ describe('BrowserWindow module', () => {
         await leaveFullScreen;
       });
 
+      it('should be able to load a URL while transitioning to fullscreen', async () => {
+        const w = new BrowserWindow({ fullscreen: true });
+        w.loadFile(path.join(fixtures, 'pages', 'c.html'));
+
+        const load = emittedOnce(w.webContents, 'did-finish-load');
+        const enterFS = emittedOnce(w, 'enter-full-screen');
+
+        await Promise.all([enterFS, load]);
+        expect(w.fullScreen).to.be.true();
+      });
+
       it('can be changed with setFullScreen method', async () => {
         const w = new BrowserWindow();
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
