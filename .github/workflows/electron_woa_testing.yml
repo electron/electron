@@ -2,7 +2,7 @@ name: Electron WOA Testing
 
 on:
   push:    
-    branches: *
+    branches: '**'
   workflow_dispatch:
     inputs:
       appveyor_job_id:
