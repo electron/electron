@@ -575,7 +575,7 @@ index 95d9f19082978772297cff1bcd9c5f73db50bd62..96fe7fbb54fe0908e2153d901c130b6a
    // Tells the browser that there are invalid printer settings.
    ShowInvalidPrinterSettingsError();
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 0766270f7c8ff9f903395229a541ae1f6183899c..3f9b4a7ade69f3447f8537d2585991aeed63e6d7 100644
+index 3e0b0ac6ebe9ac45c3b21e0e2360d25e4dae4c1b..6f291c79aa7036c58ac202343bce84a2aa0e0df6 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -42,6 +42,7 @@
@@ -680,7 +680,7 @@ index 0766270f7c8ff9f903395229a541ae1f6183899c..3f9b4a7ade69f3447f8537d2585991ae
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2364,36 +2379,52 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2369,36 +2384,52 @@ void PrintRenderFrameHelper::IPCProcessed() {
    }
  }
  
@@ -745,7 +745,7 @@ index 0766270f7c8ff9f903395229a541ae1f6183899c..3f9b4a7ade69f3447f8537d2585991ae
      notify_browser_of_print_failure_ = false;
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
-@@ -2518,7 +2549,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
+@@ -2523,7 +2554,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
        std::move(params),
        base::BindOnce(
            [](base::OnceClosure quit_closure, mojom::PrintPagesParamsPtr* output,

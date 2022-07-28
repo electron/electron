@@ -53,10 +53,10 @@ index c144e6a6929d9f4290a156ec76578d901df4cd56..12218e16222585f6e6945b3d2772b081
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 659b532ec13a4191007ab029d4a9f50ef1f71034..b2d318f7898f4ea9a81edd6a9467fc3666c5c2db 100644
+index fc7e18c294993f1fa8cef88782ae3f4ba60e4d54..c41545fc79a6a45c82aa39ff21e790bdcd7b8f01 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -577,6 +577,10 @@ struct CreateNewWindowParams {
+@@ -571,6 +571,10 @@ struct CreateNewWindowParams {
  
    // Additional parameters for creating picture-in-picture windows.
    blink.mojom.PictureInPictureWindowOptions? pip_options;
@@ -150,10 +150,10 @@ index 0274e3bb5cc62ce2c52be68a50b57c339fc5bba7..1ea3e1fdf067ea54ce54d31f494ac2bf
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 204ec3ec84ee3c2cc124dccedb8da433846e2db9..9b71c4902041c193b2f19428ac2c29a525d7fc63 100644
+index 9bad812c09551b59680ec462d70f774894c8a8a3..198767158ca8dc202ec20811c5b35be5c2c59643 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -311,6 +311,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -309,6 +309,10 @@ WebView* RenderViewImpl::CreateView(
        /*openee_can_access_opener_origin=*/true, !creator->IsAllowedToDownload(),
        creator->IsAdFrame());
  

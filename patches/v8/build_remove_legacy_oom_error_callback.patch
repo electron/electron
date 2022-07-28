@@ -15,7 +15,7 @@ This patch can be removed in v8 10.6, when legacy_oom_error_callback
 is removed.
 
 diff --git a/include/v8-callbacks.h b/include/v8-callbacks.h
-index b39921dea0415362d1a30159f3fac0e345e2313e..810fc4edaf69565959148d3c1ec662f0db3e8490 100644
+index 8cd160cd65aa12dac6e81dac44a8dd0431e68034..db7bbb4c15d5c0589efb18544f631aa1332cee54 100644
 --- a/include/v8-callbacks.h
 +++ b/include/v8-callbacks.h
 @@ -217,10 +217,6 @@ using AddHistogramSampleCallback = void (*)(void* histogram, int sample);
@@ -146,7 +146,7 @@ index 29831f551b1925189dd368a3e785f29b4dfe736b..626127ad3ae286abcc06610f46fab4f2
                  ModifyCodeGenerationFromStringsCallback2,
                  modify_code_gen_callback2)
 diff --git a/src/execution/isolate.h b/src/execution/isolate.h
-index 1b6e86c7c0cd93ca497b0ce55436d5bf0371a045..7640faa7b12d1b30bfe03c2c4cbdecdc5dcfdcb2 100644
+index 25de765545c39a35d82f7b248ab4174365619704..8bce47fdc728232b3a24f7e32724e8c4adf4ae8e 100644
 --- a/src/execution/isolate.h
 +++ b/src/execution/isolate.h
 @@ -487,16 +487,9 @@ V8_EXPORT_PRIVATE void FreeCurrentEmbeddedBlob();
