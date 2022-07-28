@@ -1,0 +1,283 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@chromium.org>
+Date: Tue, 12 Jul 2022 18:13:14 +0000
+Subject: M102: Retain nodes when manipulating their dictionaries in
+ CPDF_NameTree.
+
+-- Pass retain ptrs consistently in a few other places.
+
+Bug: chromium:1335861
+Change-Id: If23cf6b6ec39ef02384beaa6745e1c7256160cba
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/94430
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+(cherry picked from commit ebebb757c1f210ccc16e0cb2b425860a141a4e9f)
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/95271
+Reviewed-by: Nigi <nigi@chromium.org>
+
+diff --git a/core/fpdfapi/parser/cpdf_array.cpp b/core/fpdfapi/parser/cpdf_array.cpp
+index 708e6778a8d5383c2fd15518e091bb439212a1c7..6aa6f3089f191799231d49949de7f60adf367b5a 100644
+--- a/core/fpdfapi/parser/cpdf_array.cpp
++++ b/core/fpdfapi/parser/cpdf_array.cpp
+@@ -10,6 +10,7 @@
+ #include <utility>
+ 
+ #include "core/fpdfapi/parser/cpdf_boolean.h"
++#include "core/fpdfapi/parser/cpdf_dictionary.h"
+ #include "core/fpdfapi/parser/cpdf_name.h"
+ #include "core/fpdfapi/parser/cpdf_number.h"
+ #include "core/fpdfapi/parser/cpdf_reference.h"
+@@ -153,6 +154,10 @@ float CPDF_Array::GetNumberAt(size_t index) const {
+   return m_Objects[index]->GetNumber();
+ }
+ 
++RetainPtr<CPDF_Dictionary> CPDF_Array::GetMutableDictAt(size_t index) {
++  return pdfium::WrapRetain(GetDictAt(index));
++}
++
+ CPDF_Dictionary* CPDF_Array::GetDictAt(size_t index) {
+   CPDF_Object* p = GetDirectObjectAt(index);
+   if (!p)
+diff --git a/core/fpdfapi/parser/cpdf_array.h b/core/fpdfapi/parser/cpdf_array.h
+index 2270c7d9c8f22bbac3d67c8c5b6570bc128a72b4..223cd59ab7cb6cc2c08071118d1fbb3241904c6b 100644
+--- a/core/fpdfapi/parser/cpdf_array.h
++++ b/core/fpdfapi/parser/cpdf_array.h
+@@ -62,7 +62,8 @@ class CPDF_Array final : public CPDF_Object {
+   bool GetBooleanAt(size_t index, bool bDefault) const;
+   int GetIntegerAt(size_t index) const;
+   float GetNumberAt(size_t index) const;
+-  CPDF_Dictionary* GetDictAt(size_t index);
++  RetainPtr<CPDF_Dictionary> GetMutableDictAt(size_t index);
++  CPDF_Dictionary* GetDictAt(size_t index);  // prefer previous form.
+   const CPDF_Dictionary* GetDictAt(size_t index) const;
+   CPDF_Stream* GetStreamAt(size_t index);
+   const CPDF_Stream* GetStreamAt(size_t index) const;
+diff --git a/core/fpdfapi/parser/cpdf_dictionary.cpp b/core/fpdfapi/parser/cpdf_dictionary.cpp
+index fc671e76bfb6f17af93a19cca57aa0532c4111e4..047b25e2c0b539a00814de6cd80d8f224413586b 100644
+--- a/core/fpdfapi/parser/cpdf_dictionary.cpp
++++ b/core/fpdfapi/parser/cpdf_dictionary.cpp
+@@ -148,6 +148,11 @@ float CPDF_Dictionary::GetNumberFor(const ByteString& key) const {
+   return p ? p->GetNumber() : 0;
+ }
+ 
++RetainPtr<CPDF_Dictionary> CPDF_Dictionary::GetMutableDictFor(
++    const ByteString& key) {
++  return pdfium::WrapRetain(GetDictFor(key));
++}
++
+ const CPDF_Dictionary* CPDF_Dictionary::GetDictFor(
+     const ByteString& key) const {
+   const CPDF_Object* p = GetDirectObjectFor(key);
+@@ -165,6 +170,11 @@ CPDF_Dictionary* CPDF_Dictionary::GetDictFor(const ByteString& key) {
+       static_cast<const CPDF_Dictionary*>(this)->GetDictFor(key));
+ }
+ 
++RetainPtr<CPDF_Array> CPDF_Dictionary::GetMutableArrayFor(
++    const ByteString& key) {
++  return pdfium::WrapRetain(GetArrayFor(key));
++}
++
+ const CPDF_Array* CPDF_Dictionary::GetArrayFor(const ByteString& key) const {
+   return ToArray(GetDirectObjectFor(key));
+ }
+diff --git a/core/fpdfapi/parser/cpdf_dictionary.h b/core/fpdfapi/parser/cpdf_dictionary.h
+index d2f814327e7b880d68119aa938e73af1260668d5..fe990efaa9844fc6a7aa2c6fd671d74a2446383a 100644
+--- a/core/fpdfapi/parser/cpdf_dictionary.h
++++ b/core/fpdfapi/parser/cpdf_dictionary.h
+@@ -67,9 +67,11 @@ class CPDF_Dictionary final : public CPDF_Object {
+   int GetIntegerFor(const ByteString& key, int default_int) const;
+   float GetNumberFor(const ByteString& key) const;
+   const CPDF_Dictionary* GetDictFor(const ByteString& key) const;
+-  CPDF_Dictionary* GetDictFor(const ByteString& key);
++  CPDF_Dictionary* GetDictFor(const ByteString& key);  // Prefer next form.
++  RetainPtr<CPDF_Dictionary> GetMutableDictFor(const ByteString& key);
+   const CPDF_Array* GetArrayFor(const ByteString& key) const;
+-  CPDF_Array* GetArrayFor(const ByteString& key);
++  CPDF_Array* GetArrayFor(const ByteString& key);  // Prefer next form.
++  RetainPtr<CPDF_Array> GetMutableArrayFor(const ByteString& key);
+   const CPDF_Stream* GetStreamFor(const ByteString& key) const;
+   CPDF_Stream* GetStreamFor(const ByteString& key);
+   CFX_FloatRect GetRectFor(const ByteString& key) const;
+diff --git a/core/fpdfdoc/cpdf_nametree.cpp b/core/fpdfdoc/cpdf_nametree.cpp
+index dfd4e619c055229135b67bb056cb546992fe1d21..20b68b5874ff14b5625c6fc028211ce44b53a119 100644
+--- a/core/fpdfdoc/cpdf_nametree.cpp
++++ b/core/fpdfdoc/cpdf_nametree.cpp
+@@ -42,7 +42,7 @@ std::pair<WideString, WideString> GetNodeLimitsAndSanitize(
+ // Get the limit arrays that leaf array |pFind| is under in the tree with root
+ // |pNode|. |pLimits| will hold all the limit arrays from the leaf up to before
+ // the root. Return true if successful.
+-bool GetNodeAncestorsLimitsInternal(CPDF_Dictionary* pNode,
++bool GetNodeAncestorsLimitsInternal(const RetainPtr<CPDF_Dictionary>& pNode,
+                                     const CPDF_Array* pFind,
+                                     int nLevel,
+                                     std::vector<CPDF_Array*>* pLimits) {
+@@ -59,7 +59,7 @@ bool GetNodeAncestorsLimitsInternal(CPDF_Dictionary* pNode,
+     return false;
+ 
+   for (size_t i = 0; i < pKids->size(); ++i) {
+-    CPDF_Dictionary* pKid = pKids->GetDictAt(i);
++    RetainPtr<CPDF_Dictionary> pKid = pKids->GetMutableDictAt(i);
+     if (!pKid)
+       continue;
+ 
+@@ -73,8 +73,9 @@ bool GetNodeAncestorsLimitsInternal(CPDF_Dictionary* pNode,
+ 
+ // Wrapper for GetNodeAncestorsLimitsInternal() so callers do not need to know
+ // about the details.
+-std::vector<CPDF_Array*> GetNodeAncestorsLimits(CPDF_Dictionary* pNode,
+-                                                const CPDF_Array* pFind) {
++std::vector<CPDF_Array*> GetNodeAncestorsLimits(
++    const RetainPtr<CPDF_Dictionary>& pNode,
++    const CPDF_Array* pFind) {
+   std::vector<CPDF_Array*> results;
+   GetNodeAncestorsLimitsInternal(pNode, pFind, 0, &results);
+   return results;
+@@ -168,21 +169,22 @@ bool UpdateNodesAndLimitsUponDeletion(CPDF_Dictionary* pNode,
+ // will be the index of |csName| in |ppFind|. If |csName| is not found, |ppFind|
+ // will be the leaf array that |csName| should be added to, and |pFindIndex|
+ // will be the index that it should be added at.
+-CPDF_Object* SearchNameNodeByNameInternal(CPDF_Dictionary* pNode,
+-                                          const WideString& csName,
+-                                          int nLevel,
+-                                          size_t* nIndex,
+-                                          CPDF_Array** ppFind,
+-                                          int* pFindIndex) {
++CPDF_Object* SearchNameNodeByNameInternal(
++    const RetainPtr<CPDF_Dictionary>& pNode,
++    const WideString& csName,
++    int nLevel,
++    size_t* nIndex,
++    RetainPtr<CPDF_Array>* ppFind,
++    int* pFindIndex) {
+   if (nLevel > kNameTreeMaxRecursion)
+     return nullptr;
+ 
+-  CPDF_Array* pLimits = pNode->GetArrayFor("Limits");
+-  CPDF_Array* pNames = pNode->GetArrayFor("Names");
++  RetainPtr<CPDF_Array> pLimits = pNode->GetMutableArrayFor("Limits");
++  RetainPtr<CPDF_Array> pNames = pNode->GetMutableArrayFor("Names");
+   if (pLimits) {
+     WideString csLeft;
+     WideString csRight;
+-    std::tie(csLeft, csRight) = GetNodeLimitsAndSanitize(pLimits);
++    std::tie(csLeft, csRight) = GetNodeLimitsAndSanitize(pLimits.Get());
+     // Skip this node if the name to look for is smaller than its lower limit.
+     if (csName.Compare(csLeft) < 0)
+       return nullptr;
+@@ -221,12 +223,12 @@ CPDF_Object* SearchNameNodeByNameInternal(CPDF_Dictionary* pNode,
+   }
+ 
+   // Search through the node's children.
+-  CPDF_Array* pKids = pNode->GetArrayFor("Kids");
++  RetainPtr<CPDF_Array> pKids = pNode->GetMutableArrayFor("Kids");
+   if (!pKids)
+     return nullptr;
+ 
+   for (size_t i = 0; i < pKids->size(); i++) {
+-    CPDF_Dictionary* pKid = pKids->GetDictAt(i);
++    RetainPtr<CPDF_Dictionary> pKid = pKids->GetMutableDictAt(i);
+     if (!pKid)
+       continue;
+ 
+@@ -240,9 +242,9 @@ CPDF_Object* SearchNameNodeByNameInternal(CPDF_Dictionary* pNode,
+ 
+ // Wrapper for SearchNameNodeByNameInternal() so callers do not need to know
+ // about the details.
+-CPDF_Object* SearchNameNodeByName(CPDF_Dictionary* pNode,
++CPDF_Object* SearchNameNodeByName(const RetainPtr<CPDF_Dictionary>& pNode,
+                                   const WideString& csName,
+-                                  CPDF_Array** ppFind,
++                                  RetainPtr<CPDF_Array>* ppFind,
+                                   int* pFindIndex) {
+   size_t nIndex = 0;
+   return SearchNameNodeByNameInternal(pNode, csName, 0, &nIndex, ppFind,
+@@ -438,17 +440,17 @@ size_t CPDF_NameTree::GetCount() const {
+ 
+ bool CPDF_NameTree::AddValueAndName(RetainPtr<CPDF_Object> pObj,
+                                     const WideString& name) {
+-  CPDF_Array* pFind = nullptr;
++  RetainPtr<CPDF_Array> pFind;
+   int nFindIndex = -1;
+   // Handle the corner case where the root node is empty. i.e. No kids and no
+   // names. In which case, just insert into it and skip all the searches.
+-  CPDF_Array* pNames = m_pRoot->GetArrayFor("Names");
++  RetainPtr<CPDF_Array> pNames = m_pRoot->GetMutableArrayFor("Names");
+   if (pNames && pNames->IsEmpty() && !m_pRoot->GetArrayFor("Kids"))
+     pFind = pNames;
+ 
+   if (!pFind) {
+     // Fail if the tree already contains this name or if the tree is too deep.
+-    if (SearchNameNodeByName(m_pRoot.Get(), name, &pFind, &nFindIndex))
++    if (SearchNameNodeByName(m_pRoot, name, &pFind, &nFindIndex))
+       return false;
+   }
+ 
+@@ -478,7 +480,7 @@ bool CPDF_NameTree::AddValueAndName(RetainPtr<CPDF_Object> pObj,
+   // Expand the limits that the newly added name is under, if the name falls
+   // outside of the limits of its leaf array or any arrays above it.
+   std::vector<CPDF_Array*> all_limits =
+-      GetNodeAncestorsLimits(m_pRoot.Get(), pFind);
++      GetNodeAncestorsLimits(m_pRoot, pFind.Get());
+   for (auto* pLimits : all_limits) {
+     if (!pLimits)
+       continue;
+@@ -524,7 +526,7 @@ CPDF_Object* CPDF_NameTree::LookupValueAndName(size_t nIndex,
+ }
+ 
+ CPDF_Object* CPDF_NameTree::LookupValue(const WideString& csName) const {
+-  return SearchNameNodeByName(m_pRoot.Get(), csName, nullptr, nullptr);
++  return SearchNameNodeByName(m_pRoot, csName, nullptr, nullptr);
+ }
+ 
+ CPDF_Array* CPDF_NameTree::LookupNewStyleNamedDest(const ByteString& sName) {
+diff --git a/testing/resources/javascript/bug_1335681.in b/testing/resources/javascript/bug_1335681.in
+new file mode 100644
+index 0000000000000000000000000000000000000000..254e5964518c40029fcde1e0f31f3e2703d9b85f
+--- /dev/null
++++ b/testing/resources/javascript/bug_1335681.in
+@@ -0,0 +1,38 @@
++{{header}}
++{{object 1 0}} <<
++  /Pages 1 0 R
++  /OpenAction 2 0 R
++  /Names <<
++      /Dests 3 0 R
++  >>
++>>
++endobj
++{{object 2 0}} <<
++  /Type /Action
++  /S /JavaScript
++  /JS (
++    app.alert\("Starting"\);
++    this.gotoNamedDest\(""\);
++  )
++>>
++endobj
++{{object 3 0}} <<
++  /Kids 4 0 R
++>>
++endobj
++{{object 4 0}} [
++  << >>
++  << >>
++  <<
++    /Kids [
++      <<
++        /Limits 4 0 R
++      >>
++    ]
++  >>
++]
++endobj
++{{xref}}
++{{trailer}}
++{{startxref}}
++%%EOF
+diff --git a/testing/resources/javascript/bug_1335681_expected.txt b/testing/resources/javascript/bug_1335681_expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..80a6951c49c8c8ef9a4e0036f7d4875c38373b89
+--- /dev/null
++++ b/testing/resources/javascript/bug_1335681_expected.txt
+@@ -0,0 +1 @@
++Alert: Starting
