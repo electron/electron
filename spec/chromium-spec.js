@@ -63,14 +63,6 @@ describe('chromium feature', () => {
   });
 
   describe('window.open', () => {
-    it('accepts "nodeIntegration" as feature', async () => {
-      const message = waitForEvent(window, 'message');
-      const b = window.open(`file://${fixtures}/pages/window-opener-node.html`, '', 'nodeIntegration=no,show=no');
-      const event = await message;
-      b.close();
-      expect(event.data.isProcessGlobalUndefined).to.be.true();
-    });
-
     it('inherit options of parent window', async () => {
       const message = waitForEvent(window, 'message');
       const b = window.open(`file://${fixtures}/pages/window-open-size.html`, '', 'show=no');
