@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Etienne Bergeron <etienneb@chromium.org>
+Date: Tue, 19 Jul 2022 16:46:43 +0000
+Subject: Fix incorrect text itemization for \r codepoint
+
+M96 merge issues:
+  render_text_unittest.cc
+    Tests Clusterfuzz_Issue_1298286/1299054 aren't present
+    in M96 and caused a merge conflict.
+
+The "\r" codepoint should be split to be rendered in a single
+harfbuzz run (same as "\n").
+
+We do recognize these sequences as newline:
+  \r
+  \n
+  \r\n
+
+Previously, the itemization will leave the "\r" with the previous
+run. This is leading to incorrect multiline lines splitting.
+
+(cherry picked from commit eee0c5ca752ad50df9986c551cb98226ce078893)
+
+Bug: 1287804
+Change-Id: Idfc00a3cf147eb53258d5da9ea105e2d6dc25f05
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3708936
+Commit-Queue: Etienne Bergeron <etienneb@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1014955}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3726349
+Reviewed-by: Etienne Bergeron <etienneb@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#1662}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/ui/gfx/render_text_harfbuzz.cc b/ui/gfx/render_text_harfbuzz.cc
+index cd19053ad39a8386b348ae89fb2cf59bcfddb01a..cd779904454940f744cd82c5365ece7147633c2b 100644
+--- a/ui/gfx/render_text_harfbuzz.cc
++++ b/ui/gfx/render_text_harfbuzz.cc
+@@ -201,7 +201,7 @@ GraphemeProperties RetrieveGraphemeProperties(const base::StringPiece16& text,
+         properties.block = ublock_getCode(codepoint);
+     }
+ 
+-    if (codepoint == '\n' || codepoint == ' ')
++    if (codepoint == '\n' || codepoint == '\r' || codepoint == ' ')
+       properties.has_control = true;
+     if (IsBracket(codepoint))
+       properties.has_bracket = true;
+diff --git a/ui/gfx/render_text_unittest.cc b/ui/gfx/render_text_unittest.cc
+index 43d03699495c935cd1203e8195d12571fa92b347..e33d25270efb49ee8498108dfa0473b4f760d732 100644
+--- a/ui/gfx/render_text_unittest.cc
++++ b/ui/gfx/render_text_unittest.cc
+@@ -1575,6 +1575,9 @@ const RunListCase kBasicsRunListCases[] = {
+     {"multiline_newline1", u"\n\n", "[0][1]", true},
+     {"multiline_newline2", u"\r\n\r\n", "[0->1][2->3]", true},
+     {"multiline_newline3", u"\r\r\n", "[0][1->2]", true},
++    {"multiline_newline4", u"x\r\r", "[0][1][2]", true},
++    {"multiline_newline5", u"x\n\r\r", "[0][1][2][3]", true},
++    {"multiline_newline6", u"x\ny\rz\r\n", "[0][1][2][3][4][5->6]", true},
+ };
+ 
+ INSTANTIATE_TEST_SUITE_P(ItemizeTextToRunsBasics,
+@@ -8561,4 +8564,14 @@ TEST_F(RenderTextTest, StringSizeUpdatedWhenDeviceScaleFactorChanges) {
+ }
+ #endif
+ 
++TEST_F(RenderTextTest, Clusterfuzz_Issue_1287804) {
++  RenderText* render_text = GetRenderText();
++  render_text->SetMaxLines(1);
++  render_text->SetText(u">\r\r");
++  render_text->SetMultiline(true);
++  render_text->SetDisplayRect(Rect(0, 0, 100, 24));
++  render_text->SetElideBehavior(ELIDE_TAIL);
++  EXPECT_EQ(RangeF(0, 0), render_text->GetCursorSpan(Range(0, 0)));
++}
++
+ }  // namespace gfx
