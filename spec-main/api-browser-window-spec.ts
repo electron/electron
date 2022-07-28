@@ -4955,6 +4955,12 @@ describe('BrowserWindow module', () => {
 
         await Promise.all([enterFS, load]);
         expect(w.fullScreen).to.be.true();
+
+        await delay();
+
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
       });
 
       it('can be changed with setFullScreen method', async () => {
