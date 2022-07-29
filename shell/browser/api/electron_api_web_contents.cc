@@ -4169,6 +4169,15 @@ gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
                   : gin::Handle<WebContents>();
 }
 
+gin::Handle<WebContents> WebContentsFromFrame(v8::Isolate* isolate,
+                                              WebFrameMain* web_frame) {
+  content::RenderFrameHost* rfh = web_frame->render_frame_host();
+  content::WebContents* source = content::WebContents::FromRenderFrameHost(rfh);
+  WebContents* contents = WebContents::From(source);
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
+}
+
 gin::Handle<WebContents> WebContentsFromDevToolsTargetID(
     v8::Isolate* isolate,
     std::string target_id) {
@@ -4197,6 +4206,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
+  dict.SetMethod("fromFrame", &WebContentsFromFrame);
   dict.SetMethod("fromDevToolsTargetId", &WebContentsFromDevToolsTargetID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }
