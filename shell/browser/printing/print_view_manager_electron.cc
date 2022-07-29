@@ -63,27 +63,27 @@ void PrintViewManagerElectron::BindPrintManagerHost(
 // static
 std::string PrintViewManagerElectron::PrintResultToString(PrintResult result) {
   switch (result) {
-    case PRINT_SUCCESS:
+    case kPrintSuccess:
       return std::string();  // no error message
-    case PRINTING_FAILED:
+    case kPrintFailure:
       return "Printing failed";
-    case INVALID_PRINTER_SETTINGS:
+    case kInvalidPrinterSettings:
       return "Show invalid printer settings error";
-    case INVALID_MEMORY_HANDLE:
+    case kInvalidMemoryHandle:
       return "Invalid memory handle";
-    case METAFILE_MAP_ERROR:
+    case kMetafileMapError:
       return "Map to shared memory error";
-    case METAFILE_INVALID_HEADER:
+    case kMetafileInvalidHeader:
       return "Invalid metafile header";
-    case METAFILE_GET_DATA_ERROR:
+    case kMetafileGetDataError:
       return "Get data from metafile error";
-    case SIMULTANEOUS_PRINT_ACTIVE:
+    case kSimultaneousPrintActive:
       return "The previous printing job hasn't finished";
-    case PAGE_RANGE_SYNTAX_ERROR:
+    case kPageRangeSyntaxError:
       return "Page range syntax error";
-    case PAGE_RANGE_INVALID_RANGE:
+    case kPageRangeInvalidRange:
       return "Page range is invalid (start > end)";
-    case PAGE_COUNT_EXCEEDED:
+    case kPageCountExceeded:
       return "Page range exceeds page count";
     default:
       NOTREACHED();
@@ -99,39 +99,31 @@ void PrintViewManagerElectron::PrintToPdf(
   DCHECK(callback);
 
   if (callback_) {
-    std::move(callback).Run(SIMULTANEOUS_PRINT_ACTIVE,
+    std::move(callback).Run(kSimultaneousPrintActive,
                             base::MakeRefCounted<base::RefCountedString>());
     return;
   }
 
   if (!rfh->IsRenderFrameLive()) {
-    std::move(callback).Run(PRINTING_FAILED,
+    std::move(callback).Run(kPrintFailure,
                             base::MakeRefCounted<base::RefCountedString>());
     return;
   }
 
-  absl::variant<printing::PageRanges, print_to_pdf::PageRangeError>
+  absl::variant<printing::PageRanges, print_to_pdf::PdfPrintResult>
       parsed_ranges = print_to_pdf::TextPageRangesToPageRanges(page_ranges);
-  if (absl::holds_alternative<print_to_pdf::PageRangeError>(parsed_ranges)) {
-    PrintResult print_result;
-    switch (absl::get<print_to_pdf::PageRangeError>(parsed_ranges)) {
-      case print_to_pdf::PageRangeError::kSyntaxError:
-        print_result = PAGE_RANGE_SYNTAX_ERROR;
-        break;
-      case print_to_pdf::PageRangeError::kInvalidRange:
-        print_result = PAGE_RANGE_INVALID_RANGE;
-        break;
-    }
-    std::move(callback).Run(print_result,
-                            base::MakeRefCounted<base::RefCountedString>());
+  if (absl::holds_alternative<print_to_pdf::PdfPrintResult>(parsed_ranges)) {
+    DCHECK_NE(absl::get<print_to_pdf::PdfPrintResult>(parsed_ranges),
+              print_to_pdf::PdfPrintResult::kPrintSuccess);
+    std::move(callback).Run(
+        static_cast<PrintResult>(
+            absl::get<print_to_pdf::PdfPrintResult>(parsed_ranges)),
+        base::MakeRefCounted<base::RefCountedString>());
     return;
   }
 
   printing_rfh_ = rfh;
   print_pages_params->pages = absl::get<printing::PageRanges>(parsed_ranges);
-  auto cookie = print_pages_params->params->document_cookie;
-  set_cookie(cookie);
-  headless_jobs_.emplace_back(cookie);
   callback_ = std::move(callback);
 
   // There is no need for a weak pointer here since the mojo proxy is held
@@ -147,26 +139,32 @@ void PrintViewManagerElectron::OnDidPrintWithParams(
   if (result->is_failure_reason()) {
     switch (result->get_failure_reason()) {
       case printing::mojom::PrintFailureReason::kGeneralFailure:
-        ReleaseJob(PRINTING_FAILED);
+        FailJob(kPrintFailure);
         return;
       case printing::mojom::PrintFailureReason::kInvalidPageRange:
-        ReleaseJob(PAGE_COUNT_EXCEEDED);
+        FailJob(kPageCountExceeded);
         return;
     }
   }
 
   auto& content = *result->get_params()->content;
   if (!content.metafile_data_region.IsValid()) {
-    ReleaseJob(INVALID_MEMORY_HANDLE);
+    FailJob(kInvalidMemoryHandle);
     return;
   }
+
   base::ReadOnlySharedMemoryMapping map = content.metafile_data_region.Map();
   if (!map.IsValid()) {
-    ReleaseJob(METAFILE_MAP_ERROR);
+    FailJob(kMetafileMapError);
     return;
   }
-  data_ = std::string(static_cast<const char*>(map.memory()), map.size());
-  ReleaseJob(PRINT_SUCCESS);
+
+  std::string data =
+      std::string(static_cast<const char*>(map.memory()), map.size());
+  std::move(callback_).Run(kPrintSuccess,
+                           base::RefCountedString::TakeString(&data));
+
+  Reset();
 }
 
 void PrintViewManagerElectron::GetDefaultPrintSettings(
@@ -201,7 +199,7 @@ void PrintViewManagerElectron::ShowInvalidPrinterSettingsError() {
     return;
   }
 
-  ReleaseJob(INVALID_PRINTER_SETTINGS);
+  FailJob(kInvalidPrinterSettings);
 }
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -248,12 +246,7 @@ void PrintViewManagerElectron::RenderFrameDeleted(
   if (printing_rfh_ != render_frame_host)
     return;
 
-  if (callback_) {
-    std::move(callback_).Run(PRINTING_FAILED,
-                             base::MakeRefCounted<base::RefCountedString>());
-  }
-
-  Reset();
+  FailJob(kPrintFailure);
 }
 
 void PrintViewManagerElectron::DidGetPrintedPagesCount(int32_t cookie,
@@ -270,17 +263,14 @@ void PrintViewManagerElectron::Reset() {
   data_.clear();
 }
 
-void PrintViewManagerElectron::ReleaseJob(PrintResult result) {
+void PrintViewManagerElectron::FailJob(PrintResult result) {
+  DCHECK_NE(result, kPrintSuccess);
   if (callback_) {
-    DCHECK(result == PRINT_SUCCESS || data_.empty());
     std::move(callback_).Run(result,
-                             base::RefCountedString::TakeString(&data_));
-    if (printing_rfh_ && printing_rfh_->IsRenderFrameLive()) {
-      GetPrintRenderFrame(printing_rfh_)->PrintingDone(result == PRINT_SUCCESS);
-    }
-
-    Reset();
+                             base::MakeRefCounted<base::RefCountedString>());
   }
+
+  Reset();
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintViewManagerElectron);
