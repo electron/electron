@@ -1323,7 +1323,7 @@ win.setSheetOffset(toolbarRect.height)
 
 Starts or stops flashing the window to attract user's attention.
 
-#### `win.setSkipTaskbar(skip)`
+#### `win.setSkipTaskbar(skip)` _macOS_ _Windows_
 
 * `skip` boolean
 
