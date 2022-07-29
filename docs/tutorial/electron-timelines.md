@@ -30,7 +30,6 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 | 20.0.0 | 2022-May-26 | 2022-Jun-21 | 2022-Aug-02 | M104 | v16.15 | ✅ |
 | 21.0.0 | 2022-Aug-04 | 2022-Aug-30 | 2022-Sep-27 | M106 | TBD | ✅ |
 
-
 **Notes:**
 
 * The `-alpha.1`, `-beta.1`, and `stable` dates are our solid release dates.
