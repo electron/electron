@@ -4162,6 +4162,7 @@ namespace {
 
 using electron::api::GetAllWebContents;
 using electron::api::WebContents;
+using electron::api::WebFrameMain;
 
 gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
   WebContents* contents = WebContents::FromID(id);
