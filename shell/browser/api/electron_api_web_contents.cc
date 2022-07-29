@@ -3433,6 +3433,10 @@ content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetPrimaryMainFrame();
 }
 
+content::RenderFrameHost* WebContents::Opener() {
+  return web_contents()->GetOpener();
+}
+
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
   if (frame)
@@ -4043,6 +4047,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
+      .SetProperty("opener", &WebContents::Opener)
       .Build();
 }
 
