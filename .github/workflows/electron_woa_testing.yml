@@ -1,0 +1,166 @@
+name: Electron WOA Testing
+
+on:
+  push:    
+    branches: '**'
+  workflow_dispatch:
+    inputs:
+      appveyor_job_id:
+        description: 'Job Id of Appveyor WOA job to test'
+        type: text
+        required: true
+
+jobs:
+  electron-woa-testing:
+
+    runs-on: [self-hosted, woa]
+
+    permissions:
+      checks: write
+      pull-requests: write
+
+    steps:
+    - uses: LouisBrunner/checks-action@v1.1.1
+      if: ${{ github.event_name == 'push' && github.repository == 'electron/electron' }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: electron-woa-testing
+        status: in_progress
+    - name: Clean Workspace
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        Remove-Item * -Recurse -Force
+      shell: powershell
+    - name: Checkout
+      uses: actions/checkout@v3
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      with:
+        path: src\electron
+        fetch-depth: 0
+    - name: Yarn install
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        cd src\electron
+        node script/yarn.js install --frozen-lockfile
+    - name: Download and extract dist.zip for test
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        $localArtifactPath = "$pwd\dist.zip"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/dist.zip"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+        & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\Default -y $localArtifactPath
+      shell: powershell
+    - name: Download and extract native test executables for test
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        $localArtifactPath = "src\out\Default\shell_browser_ui_unittests.exe"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/shell_browser_ui_unittests.exe"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+      shell: powershell
+    - name: Download and extract ffmpeg.zip for test
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        $localArtifactPath = "$pwd\ffmpeg.zip"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/ffmpeg.zip"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+        & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
+      shell: powershell
+    - name: Download node headers for test
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        $localArtifactPath = "src\node_headers.zip"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/node_headers.zip"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+        cd src
+        & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y node_headers.zip
+      shell: powershell
+    - name: Download electron.lib for test
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        $localArtifactPath = "src\out\Default\electron.lib"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/electron.lib"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+      shell: powershell
+    # Uncomment the following block if pdb files are needed to debug issues
+    # - name: Download pdb files for detailed stacktraces
+    #   if: ${{ github.event_name == 'workflow_dispatch' }}
+    #   run: |
+    #     try {
+    #       $localArtifactPath = "src\pdb.zip"
+    #       $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/pdb.zip"
+    #       Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+    #       cd src
+    #       & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y pdb.zip
+    #     } catch {
+    #       Write-Host "There was an exception encountered while downloading pdb files:" $_.Exception.Message
+    #     } finally {
+    #       $global:LASTEXITCODE = 0
+    #     }
+    #   shell: powershell
+    - name: Setup node headers
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        New-Item src\out\Default\gen\node_headers\Release -Type directory
+        Copy-Item -path src\out\Default\electron.lib -destination src\out\Default\gen\node_headers\Release\node.lib
+      shell: powershell
+    - name: Run Electron Main process tests
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        cd src
+        set npm_config_nodedir=%cd%\out\Default\gen\node_headers
+        set npm_config_arch=arm64
+        cd electron
+        node script/yarn test --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion  
+      env:
+        ELECTRON_ENABLE_STACK_DUMPING: true
+        ELECTRON_OUT_DIR: Default
+        IGNORE_YARN_INSTALL_ERROR: 1
+        ELECTRON_TEST_RESULTS_DIR: junit
+        MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
+        MOCHA_REPORTER: mocha-multi-reporters
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+    - name: Run Electron Remote based tests
+      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) }}
+      run: |
+        cd src
+        set npm_config_nodedir=%cd%\out\Default\gen\node_headers
+        set npm_config_arch=arm64
+        cd electron
+        node script/yarn test --runners=remote --enable-logging --disable-features=CalculateNativeWinOcclusion
+      env:
+        ELECTRON_OUT_DIR: Default
+        IGNORE_YARN_INSTALL_ERROR: 1
+        ELECTRON_TEST_RESULTS_DIR: junit
+        MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
+        MOCHA_REPORTER: mocha-multi-reporters
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action/composite@v1
+      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) }}
+      with:
+        files: "src/junit/**/*.xml"
+        check_name: "electron-woa-testing"
+    - name: Verify ffmpeg
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      run: |
+        cd src
+        echo "Verifying non proprietary ffmpeg"
+        python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
+      shell: cmd
+    - name: Kill processes left running from last test run
+      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) || cancelled() }}
+      run: |
+        Get-Process | Where Name -Like "electron*" | Stop-Process
+        Get-Process | Where Name -Like "msedge*" | Stop-Process
+      shell: powershell
+    - name: Delete user app data directories
+      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) || cancelled() }}
+      run: |
+        Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
+      shell: powershell
+    - uses: LouisBrunner/checks-action@v1.1.1
+      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) || cancelled() }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: electron-woa-testing
+        conclusion: "${{ job.status }}"
