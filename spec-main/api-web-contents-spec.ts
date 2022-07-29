@@ -46,6 +46,16 @@ describe('webContents module', () => {
     });
   });
 
+  describe('fromFrame()', () => {
+    it('returns WebContents for mainFrame', () => {
+      const contents = (webContents as any).create() as WebContents;
+      expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
+    });
+    it('returns undefined for an unknown frame', () => {
+      expect(webContents.fromFrame(undefined)).to.be.undefined();
+    });
+  });
+
   describe('fromDevToolsTargetId()', () => {
     it('returns WebContents for attached DevTools target', async () => {
       const w = new BrowserWindow({ show: false });
