@@ -1281,6 +1281,53 @@ describe('webContents module', () => {
     });
   });
 
+  describe('opener api', () => {
+    afterEach(closeAllWindows);
+    it('can get opener with window.open()', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const childPromise = emittedOnce(w.webContents, 'did-create-window');
+      w.webContents.executeJavaScript('window.open("about:blank")', true);
+      const [childWindow] = await childPromise;
+      expect(childWindow.opener).to.equal(w.webContents.mainFrame);
+    });
+    it('has no opener when using "noopener"', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const childPromise = emittedOnce(w.webContents, 'did-create-window');
+      w.webContents.executeJavaScript('window.open("about:blank", undefined, "noopener")', true);
+      const [childWindow] = await childPromise;
+      expect(childWindow.opener).to.be.undefined();
+    });
+    it('can get opener with a[target=_blank]', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const childPromise = emittedOnce(w.webContents, 'did-create-window');
+      w.webContents.executeJavaScript(`(function() {
+        const a = document.createElement('a');
+        a.target = '_blank';
+        a.href = 'about:blank';
+        a.click();
+      }())`, true);
+      const [childWindow] = await childPromise;
+      expect(childWindow.opener).to.equal(w.webContents.mainFrame);
+    });
+    it('has no opener with a[target=_blank][rel=noopener]', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const childPromise = emittedOnce(w.webContents, 'did-create-window');
+      w.webContents.executeJavaScript(`(function() {
+        const a = document.createElement('a');
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.href = 'about:blank';
+        a.click();
+      }())`, true);
+      const [childWindow] = await childPromise;
+      expect(childWindow.opener).to.be.undefined();
+    });
+  });
+
   describe('render view deleted events', () => {
     let server: http.Server;
     let serverUrl: string;
