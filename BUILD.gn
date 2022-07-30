@@ -233,9 +233,7 @@ action("electron_js2c") {
 action("generate_config_gypi") {
   outputs = [ "$root_gen_dir/config.gypi" ]
   script = "script/generate-config-gypi.py"
-  inputs = [
-    "//third_party/electron_node/configure.py"
-  ]
+  inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
 }
 
