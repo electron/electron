@@ -6,7 +6,7 @@ import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, WebContents, app, BrowserView } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe, delay, defer } from './spec-helpers';
+import { ifdescribe, delay, defer, waitUntil } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -51,8 +51,20 @@ describe('webContents module', () => {
       const contents = (webContents as any).create() as WebContents;
       expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
     });
-    it('returns undefined for an unknown frame', () => {
-      expect(webContents.fromFrame(undefined)).to.be.undefined();
+    it('returns undefined for disposed frame', async () => {
+      const contents = (webContents as any).create() as WebContents;
+      const { mainFrame } = contents;
+      contents.destroy();
+      await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
+    });
+    it('throws when passing invalid argument', async () => {
+      let errored = false;
+      try {
+        webContents.fromFrame({} as any);
+      } catch {
+        errored = true;
+      }
+      expect(errored).to.be.true();
     });
   });
 
@@ -1299,7 +1311,7 @@ describe('webContents module', () => {
       const childPromise = emittedOnce(w.webContents, 'did-create-window');
       w.webContents.executeJavaScript('window.open("about:blank")', true);
       const [childWindow] = await childPromise;
-      expect(childWindow.opener).to.equal(w.webContents.mainFrame);
+      expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
     });
     it('has no opener when using "noopener"', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
@@ -1307,20 +1319,21 @@ describe('webContents module', () => {
       const childPromise = emittedOnce(w.webContents, 'did-create-window');
       w.webContents.executeJavaScript('window.open("about:blank", undefined, "noopener")', true);
       const [childWindow] = await childPromise;
-      expect(childWindow.opener).to.be.undefined();
+      expect(childWindow.webContents.opener).to.be.null();
     });
-    it('can get opener with a[target=_blank]', async () => {
+    it('can get opener with a[target=_blank][rel=opener]', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
       const childPromise = emittedOnce(w.webContents, 'did-create-window');
       w.webContents.executeJavaScript(`(function() {
         const a = document.createElement('a');
         a.target = '_blank';
+        a.rel = 'opener';
         a.href = 'about:blank';
         a.click();
       }())`, true);
       const [childWindow] = await childPromise;
-      expect(childWindow.opener).to.equal(w.webContents.mainFrame);
+      expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
     });
     it('has no opener with a[target=_blank][rel=noopener]', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
@@ -1334,7 +1347,7 @@ describe('webContents module', () => {
         a.click();
       }())`, true);
       const [childWindow] = await childPromise;
-      expect(childWindow.opener).to.be.undefined();
+      expect(childWindow.webContents.opener).to.be.null();
     });
   });
 
