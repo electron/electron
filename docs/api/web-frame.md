@@ -314,3 +314,12 @@ current renderer process.
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct WebFrame instances that refer to the same underlying frame will have
 the same `routingId`.
+
+### `webFrame.securityOrigin` _Readonly_
+
+A `string` representing the security origin assigned to this frame. A security
+origin can be defined as a URL which is shared across one or more frames
+with same-site synchronous script access. An `<iframe>` or window opened with
+`open()` may share the same security origin if permitted by the browser's
+same-site rules. Isolated resources without any parent frame, such as Data URIs
+or `about:blank`, may return an empty string.

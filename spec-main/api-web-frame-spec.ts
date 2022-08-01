@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import * as http from 'http';
 import * as path from 'path';
 import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
 import { emittedOnce } from './events-helpers';
@@ -75,9 +76,14 @@ describe('webFrame module', () => {
   describe('api', () => {
     let w: WebContents;
     before(async () => {
-      const win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      const winOpts = { show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } };
+      const win = new BrowserWindow(winOpts);
       await win.loadURL('about:blank');
       w = win.webContents;
+      w.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: winOpts
+      }));
       await w.executeJavaScript('webFrame = require(\'electron\').webFrame; null');
     });
     it('top is self for top frame', async () => {
@@ -190,6 +196,70 @@ describe('webFrame module', () => {
       it('executeJavaScript(InIsolatedWorld) can be used without a callback', async () => {
         expect(await w.executeJavaScript('webFrame.executeJavaScript(\'1 + 1\')')).to.equal(2);
         expect(await w.executeJavaScript('webFrame.executeJavaScriptInIsolatedWorld(999, [{code: \'1 + 1\'}])')).to.equal(2);
+      });
+    });
+
+    describe('securityOrigin', () => {
+      let server: http.Server;
+      const getServerUrl = () => `http://127.0.0.1:${(server.address() as any).port}/`;
+      const getSecurityOrigin = (webContents: Electron.WebContents = w) => webContents.executeJavaScript('require("electron").webFrame.securityOrigin');
+
+      before(async () => {
+        const createServer = () => new Promise<http.Server>(resolve => {
+          server = http.createServer((req, res) => {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end('<!doctype html>');
+          });
+          server.listen(0, '127.0.0.1', () => {
+            resolve(server);
+          });
+        });
+        await createServer();
+      });
+
+      after(() => {
+        server.close();
+      });
+
+      afterEach(async () => {
+        // Force new renderer process to clear out sticky security origin from
+        // previous test.
+        w.forcefullyCrashRenderer();
+        const p = emittedOnce(w, 'dom-ready');
+        w.reload();
+        await p;
+        await w.loadURL('about:blank');
+      });
+
+      it('results in origin for http', async () => {
+        await w.loadURL(getServerUrl());
+        expect(await getSecurityOrigin()).to.equal(getServerUrl());
+      });
+      it('results in same origin for child about:blank', async () => {
+        await w.loadURL(getServerUrl());
+        const p = emittedOnce(w, 'did-create-window');
+        w.executeJavaScript('window.open("about:blank"); void 0;');
+        const [childWindow] = await p;
+        expect(await getSecurityOrigin(childWindow.webContents)).to.equal(getServerUrl());
+        childWindow.close();
+      });
+      it('results in same origin for child iframe', async () => {
+        w.loadURL(getServerUrl());
+        const childFramePromise = emittedOnce(w, 'frame-created');
+        w.executeJavaScript(`(() => {
+          window.addEventListener('DOMContentLoaded', () => {
+            const iframe = document.createElement('iframe');
+            iframe.src = 'about:blank';
+            document.documentElement.appendChild(iframe);
+          });
+        })()`);
+        await childFramePromise;
+        expect(await w.executeJavaScript('require("electron").webFrame.firstChild.securityOrigin')).to.equal(getServerUrl());
+      });
+      it('results in an empty string for isolated pages', async () => {
+        expect(await getSecurityOrigin()).to.equal(''); // about:blank
+        await w.loadURL('data:text/html,howdy');
+        expect(await getSecurityOrigin()).to.equal('');
       });
     });
   });

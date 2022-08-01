@@ -23,6 +23,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
@@ -37,6 +38,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/platform/url_conversion.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -395,7 +397,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetProperty("top", &WebFrameRenderer::GetTop)
         .SetProperty("firstChild", &WebFrameRenderer::GetFirstChild)
         .SetProperty("nextSibling", &WebFrameRenderer::GetNextSibling)
-        .SetProperty("routingId", &WebFrameRenderer::GetRoutingId);
+        .SetProperty("routingId", &WebFrameRenderer::GetRoutingId)
+        .SetProperty("securityOrigin", &WebFrameRenderer::GetSecurityOrigin);
   }
 
   const char* GetTypeName() override { return "WebFrameRenderer"; }
@@ -884,6 +887,21 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return 0;
 
     return render_frame->GetRoutingID();
+  }
+
+  GURL GetSecurityOrigin(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "routingId", &render_frame))
+      return GURL::EmptyGURL();
+
+    blink::WebSecurityOrigin security_origin =
+        render_frame->GetWebFrame()->GetSecurityOrigin();
+
+    // Opaque origins are unique origins for isolated pages like data: and
+    // about:blank which aren't serializable.
+    return security_origin.IsOpaque()
+               ? GURL::EmptyGURL()
+               : blink::WebStringToGURL(security_origin.ToString());
   }
 };
 
