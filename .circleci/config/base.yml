@@ -1935,7 +1935,7 @@ jobs:
   osx-publish-x64-skip-checkout:
     executor:
       name: macos
-      size: large
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -1956,7 +1956,7 @@ jobs:
   osx-publish-arm64-skip-checkout:
     executor:
       name: macos
-      size: large
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2026,7 +2026,7 @@ jobs:
   mas-publish-x64-skip-checkout:
     executor:
       name: macos
-      size: large
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large-release
       <<: *env-mas
@@ -2047,7 +2047,7 @@ jobs:
   mas-publish-arm64-skip-checkout:
     executor:
       name: macos
-      size: large
+      size: macos.x86.medium.gen2
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
