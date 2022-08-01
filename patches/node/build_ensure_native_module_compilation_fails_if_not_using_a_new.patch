@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index ca08deeb19f5fe9ee399ad809b24579fdaa10036..c68cf1eb0f9cdd2a8fe314237c1e790fe3690272 100644
+index fe9c96722661071d4497e57d5a8d9ae7d6824159..6bf1b3395250d05cad215bd56f6efea9abc7a7aa 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -85,6 +85,8 @@
@@ -40,10 +40,10 @@ index ca08deeb19f5fe9ee399ad809b24579fdaa10036..c68cf1eb0f9cdd2a8fe314237c1e790f
          'defines': [
            'V8_COMPRESS_POINTERS',
 diff --git a/configure.py b/configure.py
-index 426afed7cd0a3a403d4b753af0b25f55024d0f71..6ab1469c07298c9083a77d0211727a6fff37267e 100755
+index fe741d15da821396883dd72b4e0a42c7758bd557..be7bdfbe75aa70b1797ee01f0506ba60ae740e2d 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1427,6 +1427,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1421,6 +1421,7 @@ def configure_library(lib, output, pkgname=None):
  
  
  def configure_v8(o):
