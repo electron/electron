@@ -17,7 +17,7 @@ ipcRendererInternal.sendSync = function (channel, ...args) {
 ipcRendererInternal.invoke = async function<T> (channel: string, ...args: any[]) {
   const { error, result } = await ipc.invoke<T>(internal, channel, args);
   if (error) {
-    throw new Error(`Error invoking remote method '${channel}': ${error}`);
+    throw error;
   }
   return result;
 };
