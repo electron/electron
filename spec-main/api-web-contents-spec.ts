@@ -847,6 +847,12 @@ describe('webContents module', () => {
   });
 
   describe('userAgent APIs', () => {
+    it('is not empty by default', () => {
+      const w = new BrowserWindow({ show: false });
+      const userAgent = w.webContents.getUserAgent();
+      expect(userAgent).to.be.a('string').that.is.not.empty();
+    });
+
     it('can set the user agent (functions)', () => {
       const w = new BrowserWindow({ show: false });
       const userAgent = w.webContents.getUserAgent();
