@@ -5280,7 +5280,8 @@ describe('BrowserWindow module', () => {
 
     afterEach(closeAllWindows);
 
-    it('separates the page context from the Electron/preload context', async () => {
+    // TODO (jkleinsc) renable this test on mas arm64
+    ifit(!process.mas || process.arch !== 'arm64')('separates the page context from the Electron/preload context', async () => {
       const iw = new BrowserWindow({
         show: false,
         webPreferences: {
