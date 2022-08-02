@@ -901,6 +901,13 @@ if (is_mac) {
         "@executable_path/../../../../../..",
       ]
     }
+
+    # For component ffmpeg under non-component build, it is linked from
+    # @loader_path. However the ffmpeg.dylib is moved to a different place
+    # when generating app bundle, and we should change to link from @rpath.
+    if (is_component_ffmpeg && !is_component_build) {
+      ldflags += [ "-Wcrl,installnametool,-change,@loader_path/libffmpeg.dylib,@rpath/libffmpeg.dylib" ]
+    }
   }
 
   template("electron_helper_app") {
