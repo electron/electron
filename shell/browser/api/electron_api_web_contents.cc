@@ -1340,6 +1340,8 @@ void WebContents::OnEnterFullscreenModeForTab(
     return;
   }
 
+  owner_window()->set_fullscreen_transition_type(
+      NativeWindow::FullScreenTransitionType::HTML);
   exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
       requesting_frame, options.display_id);
 
@@ -3519,12 +3521,15 @@ void WebContents::EnumerateDirectory(
 
 bool WebContents::IsFullscreenForTabOrPending(
     const content::WebContents* source) {
-  bool transition_fs = owner_window()
-                           ? owner_window()->fullscreen_transition_state() !=
-                                 NativeWindow::FullScreenTransitionState::NONE
-                           : false;
+  if (!owner_window())
+    return html_fullscreen_;
 
-  return html_fullscreen_ || transition_fs;
+  bool in_transition = owner_window()->fullscreen_transition_state() !=
+                       NativeWindow::FullScreenTransitionState::NONE;
+  bool is_html_transition = owner_window()->fullscreen_transition_type() ==
+                            NativeWindow::FullScreenTransitionType::HTML;
+
+  return html_fullscreen_ || (in_transition && is_html_transition);
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
