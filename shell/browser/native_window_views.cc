@@ -281,7 +281,13 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       new ElectronDesktopWindowTreeHostLinux(this, native_widget);
 #endif
 
+  // We want to set the can_resize param before initializing
+  // the widget, but we want to do it without emitting any events.
+  set_can_resize(resizable_);
   widget()->Init(std::move(params));
+
+  // Now that the widget is initialized, use the
+  // regular SetCanResize so that events can be emitted if needed.
   SetCanResize(resizable_);
 
   bool fullscreen = false;
