@@ -16,10 +16,10 @@ app.whenReady().then(() => {
   client.once('end', () => {
     if (lastArg === '--first') {
       // Once without execPath specified
-      app.relaunch({ args: process.argv.slice(1).concat('--second') });
-    } else if (lastArg !== '--second') {
+      app.relaunch({ args: process.argv.slice(1, -1).concat('--second') });
+    } else if (lastArg === '--second') {
       // And once with execPath specified
-      app.relaunch({ execPath: process.argv[0], args: process.argv.slice(1).concat('--third') });
+      app.relaunch({ execPath: process.argv[0], args: process.argv.slice(1, -1).concat('--third') });
     }
     app.exit(0);
   });
