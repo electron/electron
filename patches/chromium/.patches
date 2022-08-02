@@ -139,3 +139,4 @@ cherry-pick-3cbd5973d704.patch
 cherry-pick-902f0d144a5b.patch
 cherry-pick-664e0d8b4cfb.patch
 chore_add_electron_deps_to_gitignores.patch
+chore_allow_chromium_to_handle_synthetic_mouse_events_for_touch.patch
