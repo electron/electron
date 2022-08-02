@@ -99,4 +99,25 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
   return false;
 }
 
+bool ElectronDesktopWindowTreeHostWin::HandleMouseEventForCaption(
+    UINT message) const {
+  // Windows does not seem to generate WM_NCPOINTERDOWN/UP touch events for
+  // caption buttons with WCO. This results in a no-op for
+  // HWNDMessageHandler::HandlePointerEventTypeTouchOrNonClient and
+  // WM_SYSCOMMAND is not generated for the touch action. However, Windows will
+  // also generate a mouse event for every touch action and this gets handled in
+  // HWNDMessageHandler::HandleMouseEventInternal.
+  // With https://chromium-review.googlesource.com/c/chromium/src/+/1048877/
+  // Chromium lets the OS handle caption buttons for FrameMode::SYSTEM_DRAWN but
+  // again this does not generate the SC_MINIMIZE, SC_MAXIMIZE, SC_RESTORE
+  // commands when Non-client mouse events are generated for HTCLOSE,
+  // HTMINBUTTON, HTMAXBUTTON. To workaround this issue, wit this delegate we
+  // let chromium handle the mouse events via
+  // HWNDMessageHandler::HandleMouseInputForCaption instead of the OS and this
+  // will generate the necessary system commands to perform caption button
+  // actions due to the DefWindowProc call.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/views/win/hwnd_message_handler.cc;l=3611
+  return native_window_view_->IsWindowControlsOverlayEnabled();
+}
+
 }  // namespace electron

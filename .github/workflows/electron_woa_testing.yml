@@ -11,39 +11,43 @@ on:
         required: true
 
 jobs:
-  electron-woa-testing:
+  electron-woa-init:
+    if: ${{ github.event_name == 'push' && github.repository == 'electron/electron' }}
+    runs-on: ubuntu-latest
+    steps:
+        - name: Dummy step for push event
+          run: |
+            echo "This job is a needed initialization step for Electron WOA testing.  Another test result will appear once the electron-woa-testing build is done."
 
-    runs-on: [self-hosted, woa]
-
+  electron-woa-testing:    
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'electron/electron' }}    
+    runs-on: [self-hosted, woa]  
     permissions:
       checks: write
       pull-requests: write
-
     steps:
     - uses: LouisBrunner/checks-action@v1.1.1
-      if: ${{ github.event_name == 'push' && github.repository == 'electron/electron' }}
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         name: electron-woa-testing
         status: in_progress
+        details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}    
+        output: |
+          {"summary":"Test In Progress","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}        
     - name: Clean Workspace
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         Remove-Item * -Recurse -Force
       shell: powershell
     - name: Checkout
       uses: actions/checkout@v3
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       with:
         path: src\electron
         fetch-depth: 0
     - name: Yarn install
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         cd src\electron
         node script/yarn.js install --frozen-lockfile
     - name: Download and extract dist.zip for test
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         $localArtifactPath = "$pwd\dist.zip"
         $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/dist.zip"
@@ -51,14 +55,12 @@ jobs:
         & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\Default -y $localArtifactPath
       shell: powershell
     - name: Download and extract native test executables for test
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         $localArtifactPath = "src\out\Default\shell_browser_ui_unittests.exe"
         $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/shell_browser_ui_unittests.exe"
         Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
       shell: powershell
     - name: Download and extract ffmpeg.zip for test
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         $localArtifactPath = "$pwd\ffmpeg.zip"
         $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/ffmpeg.zip"
@@ -66,7 +68,6 @@ jobs:
         & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
       shell: powershell
     - name: Download node headers for test
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         $localArtifactPath = "src\node_headers.zip"
         $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/node_headers.zip"
@@ -75,7 +76,6 @@ jobs:
         & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y node_headers.zip
       shell: powershell
     - name: Download electron.lib for test
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         $localArtifactPath = "src\out\Default\electron.lib"
         $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/electron.lib"
@@ -98,13 +98,11 @@ jobs:
     #     }
     #   shell: powershell
     - name: Setup node headers
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         New-Item src\out\Default\gen\node_headers\Release -Type directory
         Copy-Item -path src\out\Default\electron.lib -destination src\out\Default\gen\node_headers\Release\node.lib
       shell: powershell
     - name: Run Electron Main process tests
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         cd src
         set npm_config_nodedir=%cd%\out\Default\gen\node_headers
@@ -120,7 +118,7 @@ jobs:
         MOCHA_REPORTER: mocha-multi-reporters
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
     - name: Run Electron Remote based tests
-      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) }}
+      if: ${{ success() || failure() }}
       run: |
         cd src
         set npm_config_nodedir=%cd%\out\Default\gen\node_headers
@@ -134,33 +132,47 @@ jobs:
         MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
         MOCHA_REPORTER: mocha-multi-reporters
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action/composite@v1
-      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) }}
-      with:
-        files: "src/junit/**/*.xml"
-        check_name: "electron-woa-testing"
     - name: Verify ffmpeg
-      if: ${{ github.event_name == 'workflow_dispatch' }}
       run: |
         cd src
         echo "Verifying non proprietary ffmpeg"
         python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
       shell: cmd
     - name: Kill processes left running from last test run
-      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) || cancelled() }}
+      if: ${{ always() }}
       run: |
         Get-Process | Where Name -Like "electron*" | Stop-Process
         Get-Process | Where Name -Like "msedge*" | Stop-Process
       shell: powershell
     - name: Delete user app data directories
-      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) || cancelled() }}
+      if: ${{ always() }}
       run: |
         Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
       shell: powershell
     - uses: LouisBrunner/checks-action@v1.1.1
-      if: ${{ github.event_name == 'workflow_dispatch' &&  (success() || failure()) || cancelled() }}
+      if: ${{ success() }}
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         name: electron-woa-testing
         conclusion: "${{ job.status }}"
+        details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        output: |
+          {"summary":"${{ job.status }}","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+    - uses: LouisBrunner/checks-action@v1.1.1
+      if: ${{ success() }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: electron-woa-testing
+        conclusion: "${{ job.status }}"
+        details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        output: |
+          {"summary":"Job Succeeded","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}          
+    - uses: LouisBrunner/checks-action@v1.1.1
+      if: ${{ ! success() }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: electron-woa-testing
+        conclusion: "${{ job.status }}"
+        details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        output: |
+          {"summary":"Job Failed","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}                    
