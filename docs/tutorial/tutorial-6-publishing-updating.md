@@ -1,5 +1,5 @@
 ---
-title: 'Publishing and Updating'
+title: "Publishing and Updating"
 description: "There are several ways to update an Electron application. The easiest and officially supported one is taking advantage of the built-in Squirrel framework and Electron's autoUpdater module."
 slug: tutorial-publishing-updating
 hide_title: false
@@ -27,7 +27,7 @@ into your app code.
 ## Using update.electronjs.org
 
 The Electron maintainers provide a free auto-updating service for open-source apps
-at https://update.electronjs.org . Its requirements are:
+at [https://update.electronjs.org](https://update.electronjs.org). Its requirements are:
 
 - Your app runs on macOS or Windows
 - Your app has a public GitHub repository
@@ -195,7 +195,7 @@ npm install update-electron-app
 Then, import the module and call it immediately in the main process.
 
 ```js title='main.js'
-require('update-electron-app')()
+require("update-electron-app")();
 ```
 
 And that is all it takes! Once your application is packaged, it will update itself for each new
