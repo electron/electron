@@ -31,6 +31,16 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/options_switches.h"
 
+#if BUILDFLAG(IS_WIN)
+#include <vector>
+
+#include "base/i18n/case_conversion.h"
+#include "base/win/registry.h"
+#include "ui/base/l10n/l10n_util.h"
+#include "ui/shell_dialogs/execute_select_file_win.h"
+#include "ui/strings/grit/ui_strings.h"
+#endif  // BUILDFLAG(IS_WIN)
+
 namespace electron {
 
 namespace {
@@ -62,6 +72,112 @@ base::FilePath CreateDownloadPath(const GURL& url,
 
   return download_path.Append(generated_name);
 }
+
+#if BUILDFLAG(IS_WIN)
+// Get the file type description from the registry. This will be "Text Document"
+// for .txt files, "JPEG Image" for .jpg files, etc. If the registry doesn't
+// have an entry for the file type, we return false, true if the description was
+// found. 'file_ext' must be in form ".txt".
+// Modified from ui/shell_dialogs/select_file_dialog_win.cc
+bool GetRegistryDescriptionFromExtension(const std::string& file_ext,
+                                         std::string* reg_description) {
+  DCHECK(reg_description);
+  base::win::RegKey reg_ext(HKEY_CLASSES_ROOT,
+                            base::UTF8ToWide(file_ext).c_str(), KEY_READ);
+  std::wstring reg_app;
+  if (reg_ext.ReadValue(nullptr, &reg_app) == ERROR_SUCCESS &&
+      !reg_app.empty()) {
+    base::win::RegKey reg_link(HKEY_CLASSES_ROOT, reg_app.c_str(), KEY_READ);
+    std::wstring description;
+    if (reg_link.ReadValue(nullptr, &description) == ERROR_SUCCESS) {
+      *reg_description = base::WideToUTF8(description);
+      return true;
+    }
+  }
+  return false;
+}
+
+// Set up a filter for a Save/Open dialog, |ext_desc| as the text descriptions
+// of the |file_ext| types (optional), and (optionally) the default 'All Files'
+// view. The purpose of the filter is to show only files of a particular type in
+// a Windows Save/Open dialog box. The resulting filter is returned. The filter
+// created here are:
+//   1. only files that have 'file_ext' as their extension
+//   2. all files (only added if 'include_all_files' is true)
+// If a description is not provided for a file extension, it will be retrieved
+// from the registry. If the file extension does not exist in the registry, a
+// default description will be created (e.g. "qqq" yields "QQQ File").
+// Copied from ui/shell_dialogs/select_file_dialog_win.cc
+file_dialog::Filters FormatFilterForExtensions(
+    const std::vector<std::string>& file_ext,
+    const std::vector<std::string>& ext_desc,
+    bool include_all_files,
+    bool keep_extension_visible) {
+  const std::string all_ext = "*";
+  const std::string all_desc =
+      l10n_util::GetStringUTF8(IDS_APP_SAVEAS_ALL_FILES);
+
+  DCHECK(file_ext.size() >= ext_desc.size());
+
+  if (file_ext.empty())
+    include_all_files = true;
+
+  file_dialog::Filters result;
+  result.reserve(file_ext.size() + 1);
+
+  for (size_t i = 0; i < file_ext.size(); ++i) {
+    std::string ext = file_ext[i];
+    std::string desc;
+    if (i < ext_desc.size())
+      desc = ext_desc[i];
+
+    if (ext.empty()) {
+      // Force something reasonable to appear in the dialog box if there is no
+      // extension provided.
+      include_all_files = true;
+      continue;
+    }
+
+    if (desc.empty()) {
+      DCHECK(ext.find('.') != std::string::npos);
+      std::string first_extension = ext.substr(ext.find('.'));
+      size_t first_separator_index = first_extension.find(';');
+      if (first_separator_index != std::string::npos)
+        first_extension = first_extension.substr(0, first_separator_index);
+
+      // Find the extension name without the preceeding '.' character.
+      std::string ext_name = first_extension;
+      size_t ext_index = ext_name.find_first_not_of('.');
+      if (ext_index != std::string::npos)
+        ext_name = ext_name.substr(ext_index);
+
+      if (!GetRegistryDescriptionFromExtension(first_extension, &desc)) {
+        // The extension doesn't exist in the registry. Create a description
+        // based on the unknown extension type (i.e. if the extension is .qqq,
+        // then we create a description "QQQ File").
+        desc = l10n_util::GetStringFUTF8(
+            IDS_APP_SAVEAS_EXTENSION_FORMAT,
+            base::i18n::ToUpper(base::UTF8ToUTF16(ext_name)));
+        include_all_files = true;
+      }
+      if (desc.empty())
+        desc = "*." + ext_name;
+    } else if (keep_extension_visible) {
+      // Having '*' in the description could cause the windows file dialog to
+      // not include the file extension in the file dialog. So strip out any '*'
+      // characters if `keep_extension_visible` is set.
+      base::ReplaceChars(desc, "*", base::StringPiece(), &desc);
+    }
+
+    result.push_back({desc, {ext}});
+  }
+
+  if (include_all_files)
+    result.push_back({all_desc, {all_ext}});
+
+  return result;
+}
+#endif  // BUILDFLAG(IS_WIN)
 
 }  // namespace
 
@@ -130,6 +246,16 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     auto* web_preferences = WebContentsPreferences::From(web_contents);
     const bool offscreen = !web_preferences || web_preferences->IsOffscreen();
     settings.force_detached = offscreen;
+
+#if BUILDFLAG(IS_WIN)
+    if (settings.filters.empty()) {
+      const std::wstring extension = settings.default_path.FinalExtension();
+      if (!extension.empty()) {
+        settings.filters = FormatFilterForExtensions(
+            {base::WideToUTF8(extension)}, {""}, true, true);
+      }
+    }
+#endif  // BUILDFLAG(IS_WIN)
 
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
