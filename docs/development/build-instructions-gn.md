@@ -12,6 +12,8 @@ Check the build prerequisites for your platform before proceeding
 * [Linux](build-instructions-linux.md#prerequisites)
 * [Windows](build-instructions-windows.md#prerequisites)
 
+Building Electron can require >200GB disk space between source code and temporary files/caches (depending on file system), and >6 hours compile time (depending on hardware).
+
 ## Build Tools
 
 [Electron's Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. If you wish to set up the environment manually, the instructions are listed below.
