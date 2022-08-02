@@ -15,10 +15,10 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 95b38bfe8928b012568bf0ac444620948b9e7512..aabe1588f6c974a51f676cd04bbf1e9488ccd31d 100644
+index 7438cdf5604e237b46a22a2dd808aa6d031aea5f..fe882b31026b527df28d384e6e7e7cccaee61d61 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -308,6 +308,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
+@@ -309,6 +309,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
  
  }  // namespace
  
@@ -29,7 +29,7 @@ index 95b38bfe8928b012568bf0ac444620948b9e7512..aabe1588f6c974a51f676cd04bbf1e94
  // A scoping class that prevents a window from being able to redraw in response
  // to invalidations that may occur within it for the lifetime of the object.
  //
-@@ -358,7 +362,8 @@ class HWNDMessageHandler::ScopedRedrawLock {
+@@ -359,7 +363,8 @@ class HWNDMessageHandler::ScopedRedrawLock {
          hwnd_(owner_->hwnd()),
          cancel_unlock_(false),
          should_lock_(owner_->IsVisible() && !owner->HasChildRenderingWindow() &&
@@ -39,7 +39,7 @@ index 95b38bfe8928b012568bf0ac444620948b9e7512..aabe1588f6c974a51f676cd04bbf1e94
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -1051,6 +1056,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
+@@ -1052,6 +1057,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
    return scoped_enable;
  }
  

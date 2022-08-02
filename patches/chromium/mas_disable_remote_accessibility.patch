@@ -87,7 +87,7 @@ index 60e99da4a9493dbaca871b08d75341a48488a65e..3328e9e90bd4904dd404b413fd4245f4
  }
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 20ae4fc9272e378a871591b9e5d39bde5c92f963..ff60e3ca645663e129f1c8b7a0e803702d5ea4c4 100644
+index 6c0700b182e9765afd60d8deec501d13432e1b0a..c85c024a5a5711471e24698f14dda21b49817424 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
