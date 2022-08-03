@@ -3,7 +3,7 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, delay, defer } from './spec-helpers';
+import { ifit, delay, defer, ifdescribe } from './spec-helpers';
 import { AssertionError, expect } from 'chai';
 import * as http from 'http';
 import { AddressInfo } from 'net';
@@ -1833,7 +1833,6 @@ describe('<webview> tag', function () {
     });
 
     describe('<webview>.goForward()', () => {
-      useRemoteContext({ webPreferences: { webviewTag: true } });
       itremote('should work after a replaced history entry', async (fixtures: string) => {
         const webview = new WebView();
 
