@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as http from 'http';
 import * as v8 from 'v8';
 import { SuiteFunction, TestFunction } from 'mocha';
+import { BrowserWindow } from 'electron/main';
+import { AssertionError } from 'chai';
 
 const addOnly = <T>(fn: Function): T => {
   const wrapped = (...args: any[]) => {
@@ -144,4 +146,46 @@ export async function repeatedly<T> (
     if (until(ret)) { return ret; }
     if (+new Date() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
   }
+}
+
+async function makeRemoteContext (opts?: any) {
+  const { webPreferences, ...rest } = opts ?? {};
+  const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, ...webPreferences }, ...rest });
+  await w.loadURL('about:blank');
+  return w;
+}
+
+const remoteContext: BrowserWindow[] = [];
+export async function getRemoteContext () {
+  if (remoteContext.length) { return remoteContext[0]; }
+  const w = await makeRemoteContext();
+  defer(() => w.close());
+  return w;
+}
+
+export function useRemoteContext (opts?: any) {
+  before(async () => {
+    remoteContext.unshift(await makeRemoteContext(opts));
+  });
+  after(() => {
+    const w = remoteContext.shift();
+    w!.close();
+  });
+}
+
+export async function itremote (name: string, fn: Function, args?: any[]) {
+  it(name, async () => {
+    const w = await getRemoteContext();
+    const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
+      try {
+        const chai_1 = require('chai')
+        chai_1.use(require('dirty-chai'))
+        await (${fn})(...${JSON.stringify(args ?? [])})
+        return {ok: true};
+      } catch (e) {
+        return {ok: false, message: e.message}
+      }
+    })()`);
+    if (!ok) { throw new AssertionError(message); }
+  });
 }
