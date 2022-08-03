@@ -5280,8 +5280,7 @@ describe('BrowserWindow module', () => {
 
     afterEach(closeAllWindows);
 
-    // TODO (jkleinsc) renable this test on mas arm64
-    ifit(!process.mas || process.arch !== 'arm64')('separates the page context from the Electron/preload context', async () => {
+    it('separates the page context from the Electron/preload context', async () => {
       const iw = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -5294,7 +5293,8 @@ describe('BrowserWindow module', () => {
       const [, data] = await p;
       expect(data).to.deep.equal(expectedContextData);
     });
-    it('recreates the contexts on reload', async () => {
+    // TODO (jkleinsc) renable this test on mas arm64
+    ifit(!process.mas || process.arch !== 'arm64')('recreates the contexts on reload', async () => {
       const iw = new BrowserWindow({
         show: false,
         webPreferences: {
