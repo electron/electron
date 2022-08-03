@@ -415,6 +415,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
           last_window_state_ != ui::SHOW_STATE_MAXIMIZED) {
         last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
         NotifyWindowMaximize();
+        ResetWindowControls();
       } else if (w_param == SIZE_MINIMIZED &&
                  last_window_state_ != ui::SHOW_STATE_MINIMIZED) {
         last_window_state_ = ui::SHOW_STATE_MINIMIZED;
@@ -440,15 +441,20 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
         default:
           break;
       }
-      // If a given window was minimized/maximized and has since been
-      // restored, ensure the WCO buttons are set to normal state.
-      auto* ncv = widget()->non_client_view();
-      if (IsWindowControlsOverlayEnabled() && ncv) {
-        auto* frame_view = static_cast<WinFrameView*>(ncv->frame_view());
-        frame_view->caption_button_container()->ResetWindowControls();
-      }
+      ResetWindowControls();
       break;
     }
+  }
+}
+
+void NativeWindowViews::ResetWindowControls() {
+  // If a given window was minimized and has since been
+  // unminimized (restored/maximized), ensure the WCO buttons
+  // are reset to their default unpressed state.
+  auto* ncv = widget()->non_client_view();
+  if (IsWindowControlsOverlayEnabled() && ncv) {
+    auto* frame_view = static_cast<WinFrameView*>(ncv->frame_view());
+    frame_view->caption_button_container()->ResetWindowControls();
   }
 }
 
