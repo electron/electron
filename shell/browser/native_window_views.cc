@@ -728,7 +728,6 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if BUILDFLAG(IS_WIN)
   if (is_moving_ || is_resizing_) {
     pending_bounds_change_ = bounds;
-    return;
   }
 #endif
 
