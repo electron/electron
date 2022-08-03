@@ -122,4 +122,5 @@ posix_replace_doubleforkandexec_with_forkandspawn.patch
 cherry-pick-22c61cfae5d1.patch
 remove_default_window_title.patch
 keep_handling_scroll_update_if_you_can.patch
+chore_add_electron_deps_to_gitignores.patch
 chore_allow_chromium_to_handle_synthetic_mouse_events_for_touch.patch
