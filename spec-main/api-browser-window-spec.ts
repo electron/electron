@@ -5293,8 +5293,7 @@ describe('BrowserWindow module', () => {
       const [, data] = await p;
       expect(data).to.deep.equal(expectedContextData);
     });
-    // TODO (jkleinsc) renable this test on mas arm64
-    ifit(!process.mas || process.arch !== 'arm64')('recreates the contexts on reload', async () => {
+    it('recreates the contexts on reload', async () => {
       const iw = new BrowserWindow({
         show: false,
         webPreferences: {
