@@ -36,6 +36,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
   bool GetDwmFrameInsetsInPixels(gfx::Insets* insets) const override;
   bool GetClientAreaInsets(gfx::Insets* insets,
                            HMONITOR monitor) const override;
+  bool HandleMouseEventForCaption(UINT message) const override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;

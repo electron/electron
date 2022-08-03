@@ -303,14 +303,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
 #if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
-    // TODO(ckerr): remove in Electron v20.0.0
     // Before the window is mapped the SetWMSpecState can not work, so we have
     // to manually set the _NET_WM_STATE.
     std::vector<x11::Atom> state_atom_list;
-    bool skip_taskbar = false;
-    if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
-      state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
-    }
 
     // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
     if (fullscreen) {
@@ -1045,10 +1040,6 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar->AddTab(GetAcceleratedWidget());
     taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
   }
-#elif defined(USE_OZONE_PLATFORM_X11)
-  if (IsX11())
-    SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
-                   x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
 #endif
 }
 
