@@ -197,4 +197,9 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   }
 }
 
+- (void)dealloc {
+  [[[NSWorkspace sharedWorkspace] notificationCenter] removeObserver:self];
+  [super dealloc];
+}
+
 @end
