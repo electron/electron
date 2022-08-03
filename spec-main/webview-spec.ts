@@ -3,13 +3,18 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, delay } from './spec-helpers';
-import { expect } from 'chai';
+import { ifit, delay, defer } from './spec-helpers';
+import { AssertionError, expect } from 'chai';
+import * as http from 'http';
+import { AddressInfo } from 'net';
+
+declare let WebView: any;
 
 async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {
   await w.executeJavaScript(`
     new Promise((resolve, reject) => {
       const webview = new WebView()
+      webview.id = 'webview'
       for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
         webview.setAttribute(k, v)
       }
@@ -25,11 +30,40 @@ async function loadWebView (w: WebContents, attributes: Record<string, string>, 
     })
   `);
 }
+async function loadWebViewAndWaitForMessage (w: WebContents, attributes: Record<string, string>): Promise<string> {
+  return await w.executeJavaScript(`new Promise((resolve, reject) => {
+    const webview = new WebView()
+    for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
+      webview.setAttribute(k, v)
+    }
+    webview.addEventListener('console-message', (e) => {
+      resolve(e.message)
+    })
+    document.body.appendChild(webview)
+  })`);
+};
+
+async function itremote (name: string, fn: Function, args?: any[]) {
+  it(name, async () => {
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, webviewTag: true } });
+    defer(() => w.close());
+    w.loadURL('about:blank');
+    const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
+      try {
+        const chai_1 = require('chai')
+        await (${fn})(...${JSON.stringify(args ?? [])})
+        return {ok: true};
+      } catch (e) {
+        return {ok: false, message: e.message}
+      }
+    })()`);
+    if (!ok) { throw new AssertionError(message); }
+  });
+}
 
 describe('<webview> tag', function () {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
-
-  afterEach(closeAllWindows);
+  const blankPageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')).toString();
 
   function hideChildWindows (e: any, wc: WebContents) {
     wc.setWindowOpenHandler(() => ({
@@ -48,81 +82,85 @@ describe('<webview> tag', function () {
     app.off('web-contents-created', hideChildWindows);
   });
 
-  it('works without script tag in page', async () => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        webviewTag: true,
-        nodeIntegration: true,
-        contextIsolation: false
-      }
-    });
-    w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
-    await emittedOnce(ipcMain, 'pong');
-  });
+  describe('behavior', () => {
+    afterEach(closeAllWindows);
 
-  it('works with sandbox', async () => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        webviewTag: true,
-        sandbox: true
-      }
-    });
-    w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
-    await emittedOnce(ipcMain, 'pong');
-  });
-
-  it('works with contextIsolation', async () => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        webviewTag: true,
-        contextIsolation: true
-      }
-    });
-    w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
-    await emittedOnce(ipcMain, 'pong');
-  });
-
-  it('works with contextIsolation + sandbox', async () => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        webviewTag: true,
-        contextIsolation: true,
-        sandbox: true
-      }
-    });
-    w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
-    await emittedOnce(ipcMain, 'pong');
-  });
-
-  it('works with Trusted Types', async () => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        webviewTag: true
-      }
-    });
-    w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html'));
-    await emittedOnce(ipcMain, 'pong');
-  });
-
-  it('is disabled by default', async () => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        preload: path.join(fixtures, 'module', 'preload-webview.js'),
-        nodeIntegration: true
-      }
+    it('works without script tag in page', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
+      await emittedOnce(ipcMain, 'pong');
     });
 
-    const webview = emittedOnce(ipcMain, 'webview');
-    w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
-    const [, type] = await webview;
+    it('works with sandbox', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          sandbox: true
+        }
+      });
+      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      await emittedOnce(ipcMain, 'pong');
+    });
 
-    expect(type).to.equal('undefined', 'WebView still exists');
+    it('works with contextIsolation', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          contextIsolation: true
+        }
+      });
+      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      await emittedOnce(ipcMain, 'pong');
+    });
+
+    it('works with contextIsolation + sandbox', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          contextIsolation: true,
+          sandbox: true
+        }
+      });
+      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      await emittedOnce(ipcMain, 'pong');
+    });
+
+    it('works with Trusted Types', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+      w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html'));
+      await emittedOnce(ipcMain, 'pong');
+    });
+
+    it('is disabled by default', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(fixtures, 'module', 'preload-webview.js'),
+          nodeIntegration: true
+        }
+      });
+
+      const webview = emittedOnce(ipcMain, 'webview');
+      w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
+      const [, type] = await webview;
+
+      expect(type).to.equal('undefined', 'WebView still exists');
+    });
   });
 
   // FIXME(deepak1556): Ch69 follow up.
@@ -130,6 +168,8 @@ describe('<webview> tag', function () {
     afterEach(() => {
       ipcMain.removeAllListeners('pong');
     });
+
+    afterEach(closeAllWindows);
 
     it('updates when the window is shown after the ready-to-show event', async () => {
       const w = new BrowserWindow({ show: false });
@@ -166,6 +206,7 @@ describe('<webview> tag', function () {
   });
 
   describe('did-attach-webview event', () => {
+    afterEach(closeAllWindows);
     it('is emitted when a webview has been attached', async () => {
       const w = new BrowserWindow({
         show: false,
@@ -186,6 +227,7 @@ describe('<webview> tag', function () {
   });
 
   describe('did-attach event', () => {
+    afterEach(closeAllWindows);
     it('is emitted when a webview has been attached', async () => {
       const w = new BrowserWindow({
         webPreferences: {
@@ -206,6 +248,7 @@ describe('<webview> tag', function () {
   });
 
   describe('did-change-theme-color event', () => {
+    afterEach(closeAllWindows);
     it('emits when theme color changes', async () => {
       const w = new BrowserWindow({
         webPreferences: {
@@ -230,54 +273,59 @@ describe('<webview> tag', function () {
     });
   });
 
-  // This test is flaky on WOA, so skip it there.
-  ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads devtools extensions registered on the parent window', async () => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        webviewTag: true,
-        nodeIntegration: true,
-        contextIsolation: false
-      }
-    });
-    w.webContents.session.removeExtension('foo');
-
-    const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
-    await w.webContents.session.loadExtension(extensionPath);
-
-    w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
-    loadWebView(w.webContents, {
-      nodeintegration: 'on',
-      webpreferences: 'contextIsolation=no',
-      src: `file://${path.join(__dirname, 'fixtures', 'blank.html')}`
-    }, true);
-    let childWebContentsId = 0;
-    app.once('web-contents-created', (e, webContents) => {
-      childWebContentsId = webContents.id;
-      webContents.on('devtools-opened', function () {
-        const showPanelIntervalId = setInterval(function () {
-          if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
-            webContents.devToolsWebContents.executeJavaScript('(' + function () {
-              const { UI } = (window as any);
-              const tabs = UI.inspectorView.tabbedPane.tabs;
-              const lastPanelId: any = tabs[tabs.length - 1].id;
-              UI.inspectorView.showPanel(lastPanelId);
-            }.toString() + ')()');
-          } else {
-            clearInterval(showPanelIntervalId);
-          }
-        }, 100);
+  describe('devtools', () => {
+    afterEach(closeAllWindows);
+    // This test is flaky on WOA, so skip it there.
+    ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads devtools extensions registered on the parent window', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
       });
-    });
+      w.webContents.session.removeExtension('foo');
 
-    const [, { runtimeId, tabId }] = await emittedOnce(ipcMain, 'answer');
-    expect(runtimeId).to.match(/^[a-z]{32}$/);
-    expect(tabId).to.equal(childWebContentsId);
+      const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
+      await w.webContents.session.loadExtension(extensionPath);
+
+      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
+      loadWebView(w.webContents, {
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
+        src: `file://${path.join(__dirname, 'fixtures', 'blank.html')}`
+      }, true);
+      let childWebContentsId = 0;
+      app.once('web-contents-created', (e, webContents) => {
+        childWebContentsId = webContents.id;
+        webContents.on('devtools-opened', function () {
+          const showPanelIntervalId = setInterval(function () {
+            if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
+              webContents.devToolsWebContents.executeJavaScript('(' + function () {
+                const { UI } = (window as any);
+                const tabs = UI.inspectorView.tabbedPane.tabs;
+                const lastPanelId: any = tabs[tabs.length - 1].id;
+                UI.inspectorView.showPanel(lastPanelId);
+              }.toString() + ')()');
+            } else {
+              clearInterval(showPanelIntervalId);
+            }
+          }, 100);
+        });
+      });
+
+      const [, { runtimeId, tabId }] = await emittedOnce(ipcMain, 'answer');
+      expect(runtimeId).to.match(/^[a-z]{32}$/);
+      expect(tabId).to.equal(childWebContentsId);
+    });
   });
 
   describe('zoom behavior', () => {
     const zoomScheme = standardScheme;
     const webviewSession = session.fromPartition('webview-temp');
+
+    afterEach(closeAllWindows);
 
     before(() => {
       const protocol = webviewSession.protocol;
@@ -421,6 +469,7 @@ describe('<webview> tag', function () {
   });
 
   describe('requestFullscreen from webview', () => {
+    afterEach(closeAllWindows);
     const loadWebViewWindow = async () => {
       const w = new BrowserWindow({
         webPreferences: {
@@ -891,6 +940,486 @@ describe('<webview> tag', function () {
         })
         document.body.appendChild(webview)
       })`);
+    });
+  });
+
+  describe('attributes', () => {
+    let w: WebContents;
+    before(async () => {
+      const window = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      w = window.webContents;
+    });
+    afterEach(async () => {
+      await w.executeJavaScript(`{
+        document.querySelectorAll('webview').forEach(el => el.remove())
+      }`);
+    });
+    after(closeAllWindows);
+
+    describe('src attribute', () => {
+      it('specifies the page to load', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          src: `file://${fixtures}/pages/a.html`
+        });
+        expect(message).to.equal('a');
+      });
+
+      it('navigates to new page when changed', async () => {
+        await loadWebView(w, {
+          src: `file://${fixtures}/pages/a.html`
+        });
+
+        const { message } = await w.executeJavaScript(`new Promise(resolve => {
+          webview.addEventListener('console-message', e => resolve({message: e.message}))
+          webview.src = ${JSON.stringify(`file://${fixtures}/pages/b.html`)}
+        })`);
+
+        expect(message).to.equal('b');
+      });
+
+      it('resolves relative URLs', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          src: './e.html'
+        });
+        expect(message).to.equal('Window script is loaded before preload script');
+      });
+
+      it('ignores empty values', async () => {
+        loadWebView(w, {});
+
+        for (const emptyValue of ['""', 'null', 'undefined']) {
+          const src = await w.executeJavaScript(`webview.src = ${emptyValue}, webview.src`);
+          expect(src).to.equal('');
+        }
+      });
+
+      it('does not wait until loadURL is resolved', async () => {
+        await loadWebView(w, { src: 'about:blank' });
+
+        const delay = await w.executeJavaScript(`new Promise(resolve => {
+          const before = Date.now();
+          webview.src = 'file://${fixtures}/pages/blank.html';
+          const now = Date.now();
+          resolve(now - before);
+        })`);
+
+        // Setting src is essentially sending a sync IPC message, which should
+        // not exceed more than a few ms.
+        //
+        // This is for testing #18638.
+        expect(delay).to.be.below(100);
+      });
+    });
+
+    describe('nodeintegration attribute', () => {
+      it('inserts no node symbols when not set', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          src: `file://${fixtures}/pages/c.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'undefined',
+          module: 'undefined',
+          process: 'undefined',
+          global: 'undefined'
+        });
+      });
+
+      it('inserts node symbols when set', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: `file://${fixtures}/pages/d.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function',
+          module: 'object',
+          process: 'object'
+        });
+      });
+
+      it('loads node symbols after POST navigation when set', async function () {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: `file://${fixtures}/pages/post.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function',
+          module: 'object',
+          process: 'object'
+        });
+      });
+
+      it('disables node integration on child windows when it is disabled on the webview', async () => {
+        const src = url.format({
+          pathname: `${fixtures}/pages/webview-opener-no-node-integration.html`,
+          protocol: 'file',
+          query: {
+            p: `${fixtures}/pages/window-opener-node.html`
+          },
+          slashes: true
+        });
+        const message = await loadWebViewAndWaitForMessage(w, {
+          allowpopups: 'on',
+          webpreferences: 'contextIsolation=no',
+          src
+        });
+        expect(JSON.parse(message).isProcessGlobalUndefined).to.be.true();
+      });
+
+      ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native modules when navigation happens', async function () {
+        await loadWebView(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: `file://${fixtures}/pages/native-module.html`
+        });
+
+        const message = await w.executeJavaScript(`new Promise(resolve => {
+          webview.addEventListener('console-message', e => resolve(e.message))
+          webview.reload();
+        })`);
+
+        expect(message).to.equal('function');
+      });
+    });
+
+    describe('preload attribute', () => {
+      it('loads the script before other scripts in window', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          preload: `${fixtures}/module/preload.js`,
+          src: `file://${fixtures}/pages/e.html`
+        });
+
+        expect(message).to.be.a('string');
+        expect(message).to.be.not.equal('Window script is loaded before preload script');
+      });
+
+      it('preload script can still use "process" and "Buffer" when nodeintegration is off', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          preload: `${fixtures}/module/preload-node-off.js`,
+          src: `file://${fixtures}/api/blank.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          process: 'object',
+          Buffer: 'function'
+        });
+      });
+
+      it('runs in the correct scope when sandboxed', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          preload: `${fixtures}/module/preload-context.js`,
+          src: `file://${fixtures}/api/blank.html`,
+          webpreferences: 'sandbox=yes'
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function', // arguments passed to it should be available
+          electron: 'undefined', // objects from the scope it is called from should not be available
+          window: 'object', // the window object should be available
+          localVar: 'undefined' // but local variables should not be exposed to the window
+        });
+      });
+
+      it('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          preload: `${fixtures}/module/preload-node-off-wrapper.js`,
+          webpreferences: 'sandbox=no',
+          src: `file://${fixtures}/api/blank.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          process: 'object',
+          Buffer: 'function'
+        });
+      });
+
+      it('receives ipc message in preload script', async () => {
+        await loadWebView(w, {
+          preload: `${fixtures}/module/preload-ipc.js`,
+          src: `file://${fixtures}/pages/e.html`
+        });
+
+        const message = 'boom!';
+        const { channel, args } = await w.executeJavaScript(`new Promise(resolve => {
+          webview.send('ping', ${JSON.stringify(message)})
+          webview.addEventListener('ipc-message', ({channel, args}) => resolve({channel, args}))
+        })`);
+
+        expect(channel).to.equal('pong');
+        expect(args).to.deep.equal([message]);
+      });
+
+      itremote('<webview>.sendToFrame()', async (fixtures: string) => {
+        const w = new WebView();
+        w.setAttribute('nodeintegration', 'on');
+        w.setAttribute('webpreferences', 'contextIsolation=no');
+        w.setAttribute('preload', `file://${fixtures}/module/preload-ipc.js`);
+        w.setAttribute('src', `file://${fixtures}/pages/ipc-message.html`);
+        document.body.appendChild(w);
+        const { frameId } = await new Promise(resolve => w.addEventListener('ipc-message', resolve, { once: true }));
+
+        const message = 'boom!';
+
+        w.sendToFrame(frameId, 'ping', message);
+        const { channel, args } = await new Promise(resolve => w.addEventListener('ipc-message', resolve, { once: true }));
+
+        expect(channel).to.equal('pong');
+        expect(args).to.deep.equal([message]);
+      }, [fixtures]);
+
+      it('works without script tag in page', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          preload: `${fixtures}/module/preload.js`,
+          webpreferences: 'sandbox=no',
+          src: `file://${fixtures}/pages/base-page.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function',
+          module: 'object',
+          process: 'object',
+          Buffer: 'function'
+        });
+      });
+
+      it('resolves relative URLs', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          preload: '../module/preload.js',
+          webpreferences: 'sandbox=no',
+          src: `file://${fixtures}/pages/e.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function',
+          module: 'object',
+          process: 'object',
+          Buffer: 'function'
+        });
+      });
+
+      itremote('ignores empty values', async () => {
+        const webview = new WebView();
+
+        for (const emptyValue of ['', null, undefined]) {
+          webview.preload = emptyValue;
+          expect(webview.preload).to.equal('');
+        }
+      });
+    });
+
+    describe('httpreferrer attribute', () => {
+      it('sets the referrer url', async () => {
+        const referrer = 'http://github.com/';
+        const received = await new Promise<string | undefined>((resolve, reject) => {
+          const server = http.createServer((req, res) => {
+            try {
+              resolve(req.headers.referer);
+            } catch (e) {
+              reject(e);
+            } finally {
+              res.end();
+              server.close();
+            }
+          }).listen(0, '127.0.0.1', () => {
+            const port = (server.address() as AddressInfo).port;
+            loadWebView(w, {
+              httpreferrer: referrer,
+              src: `http://127.0.0.1:${port}`
+            });
+          });
+        });
+        expect(received).to.equal(referrer);
+      });
+    });
+
+    describe('useragent attribute', () => {
+      it('sets the user agent', async () => {
+        const referrer = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko';
+        const message = await loadWebViewAndWaitForMessage(w, {
+          src: `file://${fixtures}/pages/useragent.html`,
+          useragent: referrer
+        });
+        expect(message).to.equal(referrer);
+      });
+    });
+
+    describe('disablewebsecurity attribute', () => {
+      it('does not disable web security when not set', async () => {
+        await loadWebView(w, { src: 'about:blank' });
+        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
+        expect(result).to.equal('failed');
+      });
+
+      it('disables web security when set', async () => {
+        await loadWebView(w, { src: 'about:blank', disablewebsecurity: '' });
+        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
+        expect(result).to.equal('ok');
+      });
+
+      it('does not break node integration', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          disablewebsecurity: '',
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: `file://${fixtures}/pages/d.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function',
+          module: 'object',
+          process: 'object'
+        });
+      });
+
+      it('does not break preload script', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          disablewebsecurity: '',
+          preload: `${fixtures}/module/preload.js`,
+          webpreferences: 'sandbox=no',
+          src: `file://${fixtures}/pages/e.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function',
+          module: 'object',
+          process: 'object',
+          Buffer: 'function'
+        });
+      });
+    });
+
+    describe('partition attribute', () => {
+      it('inserts no node symbols when not set', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          partition: 'test1',
+          src: `file://${fixtures}/pages/c.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'undefined',
+          module: 'undefined',
+          process: 'undefined',
+          global: 'undefined'
+        });
+      });
+
+      it('inserts node symbols when set', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          nodeintegration: 'on',
+          partition: 'test2',
+          webpreferences: 'contextIsolation=no',
+          src: `file://${fixtures}/pages/d.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function',
+          module: 'object',
+          process: 'object'
+        });
+      });
+
+      it('isolates storage for different id', async () => {
+        await w.executeJavaScript('localStorage.setItem(\'test\', \'one\')');
+
+        const message = await loadWebViewAndWaitForMessage(w, {
+          partition: 'test3',
+          src: `file://${fixtures}/pages/partition/one.html`
+        });
+
+        const parsedMessage = JSON.parse(message);
+        expect(parsedMessage).to.include({
+          numberOfEntries: 0,
+          testValue: null
+        });
+      });
+
+      it('uses current session storage when no id is provided', async () => {
+        await w.executeJavaScript('localStorage.setItem(\'test\', \'two\')');
+        const testValue = 'two';
+
+        const message = await loadWebViewAndWaitForMessage(w, {
+          src: `file://${fixtures}/pages/partition/one.html`
+        });
+
+        const parsedMessage = JSON.parse(message);
+        expect(parsedMessage).to.include({
+          testValue
+        });
+      });
+    });
+
+    describe('allowpopups attribute', () => {
+      const generateSpecs = (description: string, webpreferences = '') => {
+        describe(description, () => {
+          it('can not open new window when not set', async () => {
+            const message = await loadWebViewAndWaitForMessage(w, {
+              webpreferences,
+              src: `file://${fixtures}/pages/window-open-hide.html`
+            });
+            expect(message).to.equal('null');
+          });
+
+          it('can open new window when set', async () => {
+            const message = await loadWebViewAndWaitForMessage(w, {
+              webpreferences,
+              allowpopups: 'on',
+              src: `file://${fixtures}/pages/window-open-hide.html`
+            });
+            expect(message).to.equal('window');
+          });
+        });
+      };
+
+      generateSpecs('without sandbox');
+      generateSpecs('with sandbox', 'sandbox=yes');
+    });
+
+    describe('webpreferences attribute', () => {
+      it('can enable nodeintegration', async () => {
+        const message = await loadWebViewAndWaitForMessage(w, {
+          src: `file://${fixtures}/pages/d.html`,
+          webpreferences: 'nodeIntegration,contextIsolation=no'
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'function',
+          module: 'object',
+          process: 'object'
+        });
+      });
+
+      it('can disable web security and enable nodeintegration', async () => {
+        await loadWebView(w, { src: 'about:blank', webpreferences: 'webSecurity=no, nodeIntegration=yes, contextIsolation=no' });
+        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
+        expect(result).to.equal('ok');
+        const type = await w.executeJavaScript('webview.executeJavaScript("typeof require")');
+        expect(type).to.equal('function');
+      });
     });
   });
 });
