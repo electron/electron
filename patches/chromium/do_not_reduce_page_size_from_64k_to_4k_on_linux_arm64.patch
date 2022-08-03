@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20Inf=C3=BChr?= <dinfuehr@chromium.org>
+Date: Tue, 22 Mar 2022 17:33:03 +0000
+Subject: Do not reduce page size from 64K to 4K on Linux/ARM64
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This fixes build on Asahi Linux which uses 16K pages.
+
+Change-Id: I8cf3664849d98bcb984f339ebf9076d1cfaf5701
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3542265
+Reviewed-by: Andrew Grieve <agrieve@chromium.org>
+Commit-Queue: Dominik Inführ <dinfuehr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#983900}
+
+diff --git a/build/config/android/BUILD.gn b/build/config/android/BUILD.gn
+index 4fc5565e27a596fe4aa1a093cfc0567fbd24b2a0..69341cea35d0c44aeb5f09b39783bd2abfcdcc43 100644
+--- a/build/config/android/BUILD.gn
++++ b/build/config/android/BUILD.gn
+@@ -47,6 +47,13 @@ config("compiler") {
+     "-Wl,--exclude-libs=libvpx_assembly_arm.a",
+   ]
+ 
++  if (current_cpu == "arm64") {
++    # Reduce the page size from 65536 in order to reduce binary size slightly
++    # by shrinking the alignment gap between segments. This also causes all
++    # segments to be mapped adjacently, which breakpad relies on.
++    ldflags += [ "-Wl,-z,max-page-size=4096" ]
++  }
++
+   if (current_cpu == "arm64") {
+     if (arm_control_flow_integrity == "standard") {
+       cflags += [ "-mbranch-protection=standard" ]
+diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
+index 7b9ce0172eedf2b55fe7f3de7baee2f2028f4a7b..8f932d6493ec84f89c69078f95db7fc7ad03ef05 100644
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -454,14 +454,7 @@ config("compiler") {
+ 
+   # Linux-specific compiler flags setup.
+   # ------------------------------------
+-  if ((is_posix || is_fuchsia) && !is_apple && use_lld) {
+-    if (current_cpu == "arm64") {
+-      # Reduce the page size from 65536 in order to reduce binary size slightly
+-      # by shrinking the alignment gap between segments. This also causes all
+-      # segments to be mapped adjacently, which breakpad relies on.
+-      ldflags += [ "-Wl,-z,max-page-size=4096" ]
+-    }
+-  } else if (use_gold) {
++  if (use_gold) {
+     ldflags += [ "-fuse-ld=gold" ]
+     if (!is_android) {
+       # On Android, this isn't needed.  gcc in the NDK knows to look next to
