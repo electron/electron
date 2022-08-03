@@ -44,183 +44,6 @@ describe('<webview> tag', function () {
     webview.remove();
   });
 
-  describe('new-window event', () => {
-    it('emits when window.open is called', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/window-open.html`,
-        allowpopups: true
-      });
-      const { url, frameName } = await waitForEvent(webview, 'new-window');
-
-      expect(url).to.equal('http://host/');
-      expect(frameName).to.equal('host');
-    });
-
-    it('emits when link with target is called', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/target-name.html`,
-        allowpopups: true
-      });
-      const { url, frameName } = await waitForEvent(webview, 'new-window');
-
-      expect(url).to.equal('http://host/');
-      expect(frameName).to.equal('target');
-    });
-  });
-
-  describe('ipc-message event', () => {
-    it('emits when guest sends an ipc message to browser', async () => {
-      loadWebView(webview, {
-        nodeintegration: 'on',
-        webpreferences: 'contextIsolation=no',
-        src: `file://${fixtures}/pages/ipc-message.html`
-      });
-      const { frameId, channel, args } = await waitForEvent(webview, 'ipc-message');
-
-      expect(frameId).to.be.an('array').that.has.lengthOf(2);
-      expect(channel).to.equal('channel');
-      expect(args).to.deep.equal(['arg1', 'arg2']);
-    });
-  });
-
-  describe('page-title-updated event', () => {
-    it('emits when title is set', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/a.html`
-      });
-      const { title, explicitSet } = await waitForEvent(webview, 'page-title-updated');
-
-      expect(title).to.equal('test');
-      expect(explicitSet).to.be.true();
-    });
-  });
-
-  describe('page-favicon-updated event', () => {
-    it('emits when favicon urls are received', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/a.html`
-      });
-      const { favicons } = await waitForEvent(webview, 'page-favicon-updated');
-
-      expect(favicons).to.be.an('array').of.length(2);
-      if (process.platform === 'win32') {
-        expect(favicons[0]).to.match(/^file:\/\/\/[A-Z]:\/favicon.png$/i);
-      } else {
-        expect(favicons[0]).to.equal('file:///favicon.png');
-      }
-    });
-  });
-
-  describe('did-redirect-navigation event', () => {
-    let server = null;
-    let uri = null;
-
-    before((done) => {
-      server = http.createServer((req, res) => {
-        if (req.url === '/302') {
-          res.setHeader('Location', '/200');
-          res.statusCode = 302;
-          res.end();
-        } else {
-          res.end();
-        }
-      });
-      server.listen(0, '127.0.0.1', () => {
-        uri = `http://127.0.0.1:${(server.address()).port}`;
-        done();
-      });
-    });
-
-    after(() => {
-      server.close();
-    });
-
-    it('is emitted on redirects', async () => {
-      loadWebView(webview, {
-        src: `${uri}/302`
-      });
-
-      const event = await waitForEvent(webview, 'did-redirect-navigation');
-
-      expect(event.url).to.equal(`${uri}/200`);
-      expect(event.isInPlace).to.be.false();
-      expect(event.isMainFrame).to.be.true();
-      expect(event.frameProcessId).to.be.a('number');
-      expect(event.frameRoutingId).to.be.a('number');
-    });
-  });
-
-  describe('will-navigate event', () => {
-    it('emits when a url that leads to outside of the page is clicked', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/webview-will-navigate.html`
-      });
-      const { url } = await waitForEvent(webview, 'will-navigate');
-
-      expect(url).to.equal('http://host/');
-    });
-  });
-
-  describe('did-navigate event', () => {
-    let p = path.join(fixtures, 'pages', 'webview-will-navigate.html');
-    p = p.replace(/\\/g, '/');
-    const pageUrl = url.format({
-      protocol: 'file',
-      slashes: true,
-      pathname: p
-    });
-
-    it('emits when a url that leads to outside of the page is clicked', async () => {
-      loadWebView(webview, { src: pageUrl });
-      const { url } = await waitForEvent(webview, 'did-navigate');
-
-      expect(url).to.equal(pageUrl);
-    });
-  });
-
-  describe('did-navigate-in-page event', () => {
-    it('emits when an anchor link is clicked', async () => {
-      let p = path.join(fixtures, 'pages', 'webview-did-navigate-in-page.html');
-      p = p.replace(/\\/g, '/');
-      const pageUrl = url.format({
-        protocol: 'file',
-        slashes: true,
-        pathname: p
-      });
-      loadWebView(webview, { src: pageUrl });
-      const event = await waitForEvent(webview, 'did-navigate-in-page');
-      expect(event.url).to.equal(`${pageUrl}#test_content`);
-    });
-
-    it('emits when window.history.replaceState is called', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/webview-did-navigate-in-page-with-history.html`
-      });
-      const { url } = await waitForEvent(webview, 'did-navigate-in-page');
-      expect(url).to.equal('http://host/');
-    });
-
-    it('emits when window.location.hash is changed', async () => {
-      let p = path.join(fixtures, 'pages', 'webview-did-navigate-in-page-with-hash.html');
-      p = p.replace(/\\/g, '/');
-      const pageUrl = url.format({
-        protocol: 'file',
-        slashes: true,
-        pathname: p
-      });
-      loadWebView(webview, { src: pageUrl });
-      const event = await waitForEvent(webview, 'did-navigate-in-page');
-      expect(event.url).to.equal(`${pageUrl}#test`);
-    });
-  });
-
-  describe('close event', () => {
-    it('should fire when interior page calls window.close', async () => {
-      loadWebView(webview, { src: `file://${fixtures}/pages/close.html` });
-      await waitForEvent(webview, 'close');
-    });
-  });
-
   // FIXME(zcbenz): Disabled because of moving to OOPIF webview.
   xdescribe('setDevToolsWebContents() API', () => {
     it('sets webContents of webview as devtools', async () => {
@@ -245,51 +68,6 @@ describe('<webview> tag', function () {
       document.body.removeChild(webview2);
 
       expect(name).to.be.equal('InspectorFrontendHostImpl');
-    });
-  });
-
-  describe('devtools-opened event', () => {
-    it('should fire when webview.openDevTools() is called', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/base-page.html`
-      });
-      await waitForEvent(webview, 'dom-ready');
-
-      webview.openDevTools();
-      await waitForEvent(webview, 'devtools-opened');
-
-      webview.closeDevTools();
-    });
-  });
-
-  describe('devtools-closed event', () => {
-    it('should fire when webview.closeDevTools() is called', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/base-page.html`
-      });
-      await waitForEvent(webview, 'dom-ready');
-
-      webview.openDevTools();
-      await waitForEvent(webview, 'devtools-opened');
-
-      webview.closeDevTools();
-      await waitForEvent(webview, 'devtools-closed');
-    });
-  });
-
-  describe('devtools-focused event', () => {
-    it('should fire when webview.openDevTools() is called', async () => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/base-page.html`
-      });
-
-      const waitForDevToolsFocused = waitForEvent(webview, 'devtools-focused');
-
-      await waitForEvent(webview, 'dom-ready');
-      webview.openDevTools();
-
-      await waitForDevToolsFocused;
-      webview.closeDevTools();
     });
   });
 
@@ -416,28 +194,6 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('dom-ready event', () => {
-    it('emits when document is loaded', (done) => {
-      const server = http.createServer(() => {});
-      server.listen(0, '127.0.0.1', () => {
-        const port = server.address().port;
-        webview.addEventListener('dom-ready', () => {
-          done();
-        });
-        loadWebView(webview, {
-          src: `file://${fixtures}/pages/dom-ready.html?port=${port}`
-        });
-      });
-    });
-
-    it('throws a custom error when an API method is called before the event is emitted', () => {
-      const expectedErrorMessage =
-          'The WebView must be attached to the DOM ' +
-          'and the dom-ready event emitted before this method can be called.';
-      expect(() => { webview.stop(); }).to.throw(expectedErrorMessage);
-    });
-  });
-
   describe('executeJavaScript', () => {
     it('can return the result of the executed script', async () => {
       await loadWebView(webview, {
@@ -510,26 +266,6 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('context-menu event', () => {
-    it('emits when right-clicked in page', async () => {
-      await loadWebView(webview, { src: 'about:blank' });
-
-      const promise = waitForEvent(webview, 'context-menu');
-
-      // Simulate right-click to create context-menu event.
-      const opts = { x: 0, y: 0, button: 'right' };
-      webview.sendInputEvent({ ...opts, type: 'mouseDown' });
-      webview.sendInputEvent({ ...opts, type: 'mouseUp' });
-
-      const { params } = await promise;
-
-      expect(params.pageURL).to.equal(webview.getURL());
-      expect(params.frame).to.be.undefined();
-      expect(params.x).to.be.a('number');
-      expect(params.y).to.be.a('number');
-    });
-  });
-
   describe('media-started-playing media-paused events', () => {
     beforeEach(function () {
       if (!document.createElement('audio').canPlayType('audio/wav')) {
@@ -553,39 +289,6 @@ describe('<webview> tag', function () {
 
       webview.executeJavaScript('document.querySelector("audio").pause()', true);
       await waitForEvent(webview, 'media-paused');
-    });
-  });
-
-  describe('found-in-page event', () => {
-    it('emits when a request is made', async () => {
-      const didFinishLoad = waitForEvent(webview, 'did-finish-load');
-      loadWebView(webview, { src: `file://${fixtures}/pages/content.html` });
-      // TODO(deepak1556): With https://codereview.chromium.org/2836973002
-      // focus of the webContents is required when triggering the api.
-      // Remove this workaround after determining the cause for
-      // incorrect focus.
-      webview.focus();
-      await didFinishLoad;
-
-      const activeMatchOrdinal = [];
-
-      for (;;) {
-        const foundInPage = waitForEvent(webview, 'found-in-page');
-        const requestId = webview.findInPage('virtual');
-        const event = await foundInPage;
-
-        expect(event.result.requestId).to.equal(requestId);
-        expect(event.result.matches).to.equal(3);
-
-        activeMatchOrdinal.push(event.result.activeMatchOrdinal);
-
-        if (event.result.activeMatchOrdinal === event.result.matches) {
-          break;
-        }
-      }
-
-      expect(activeMatchOrdinal).to.deep.equal([1, 2, 3]);
-      webview.stopFindInPage('clearSelection');
     });
   });
 
@@ -653,63 +356,6 @@ describe('<webview> tag', function () {
 
       const data = await webview.printToPDF({});
       expect(data).to.be.an.instanceof(Uint8Array).that.is.not.empty();
-    });
-  });
-
-  describe('will-attach-webview event', () => {
-    it('does not emit when src is not changed', async () => {
-      console.log('loadWebView(webview)');
-      loadWebView(webview);
-      await delay();
-      const expectedErrorMessage =
-          'The WebView must be attached to the DOM ' +
-          'and the dom-ready event emitted before this method can be called.';
-      expect(() => { webview.stop(); }).to.throw(expectedErrorMessage);
-    });
-
-    it('supports changing the web preferences', async () => {
-      ipcRenderer.send('disable-node-on-next-will-attach-webview');
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        nodeintegration: 'yes',
-        src: `file://${fixtures}/pages/a.html`
-      });
-
-      const types = JSON.parse(message);
-      expect(types).to.include({
-        require: 'undefined',
-        module: 'undefined',
-        process: 'undefined',
-        global: 'undefined'
-      });
-    });
-
-    it('handler modifying params.instanceId does not break <webview>', async () => {
-      ipcRenderer.send('break-next-will-attach-webview');
-
-      await startLoadingWebViewAndWaitForMessage(webview, {
-        src: `file://${fixtures}/pages/a.html`
-      });
-    });
-
-    it('supports preventing a webview from being created', async () => {
-      ipcRenderer.send('prevent-next-will-attach-webview');
-
-      loadWebView(webview, {
-        src: `file://${fixtures}/pages/c.html`
-      });
-      await waitForEvent(webview, 'destroyed');
-    });
-
-    it('supports removing the preload script', async () => {
-      ipcRenderer.send('disable-preload-on-next-will-attach-webview');
-
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        nodeintegration: 'yes',
-        preload: path.join(fixtures, 'module', 'preload-set-global.js'),
-        src: `file://${fixtures}/pages/a.html`
-      });
-
-      expect(message).to.equal('undefined');
     });
   });
 

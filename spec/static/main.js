@@ -147,30 +147,6 @@ app.whenReady().then(async function () {
   });
 });
 
-ipcMain.on('prevent-next-will-attach-webview', (event) => {
-  event.sender.once('will-attach-webview', event => event.preventDefault());
-});
-
-ipcMain.on('break-next-will-attach-webview', (event, id) => {
-  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
-    params.instanceId = null;
-  });
-});
-
-ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
-  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
-    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'c.html')}`;
-    webPreferences.nodeIntegration = false;
-  });
-});
-
-ipcMain.on('disable-preload-on-next-will-attach-webview', (event, id) => {
-  event.sender.once('will-attach-webview', (event, webPreferences, params) => {
-    params.src = `file://${path.join(__dirname, '..', 'fixtures', 'pages', 'webview-stripped-preload.html')}`;
-    delete webPreferences.preload;
-  });
-});
-
 ipcMain.on('handle-uncaught-exception', (event, message) => {
   suspendListeners(process, 'uncaughtException', (error) => {
     event.returnValue = error.message;

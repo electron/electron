@@ -10,7 +10,11 @@ import { AddressInfo } from 'net';
 
 declare let WebView: any;
 
-async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {
+async function loadWebView (w: WebContents, attributes: Record<string, string>, opts?: {openDevTools?: boolean}): Promise<void> {
+  const { openDevTools } = {
+    openDevTools: false,
+    ...opts
+  };
   await w.executeJavaScript(`
     new Promise((resolve, reject) => {
       const webview = new WebView()
@@ -30,17 +34,20 @@ async function loadWebView (w: WebContents, attributes: Record<string, string>, 
     })
   `);
 }
-async function loadWebViewAndWaitForMessage (w: WebContents, attributes: Record<string, string>): Promise<string> {
+async function loadWebViewAndWaitForEvent (w: WebContents, attributes: Record<string, string>, eventName: string): Promise<any> {
   return await w.executeJavaScript(`new Promise((resolve, reject) => {
     const webview = new WebView()
+    webview.id = 'webview'
     for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
       webview.setAttribute(k, v)
     }
-    webview.addEventListener('console-message', (e) => {
-      resolve(e.message)
-    })
+    webview.addEventListener(${JSON.stringify(eventName)}, (e) => resolve({...e}), {once: true})
     document.body.appendChild(webview)
   })`);
+};
+async function loadWebViewAndWaitForMessage (w: WebContents, attributes: Record<string, string>): Promise<string> {
+  const { message } = await loadWebViewAndWaitForEvent(w, attributes, 'console-message');
+  return message;
 };
 
 async function itremote (name: string, fn: Function, args?: any[]) {
@@ -295,7 +302,7 @@ describe('<webview> tag', function () {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no',
         src: `file://${path.join(__dirname, 'fixtures', 'blank.html')}`
-      }, true);
+      }, { openDevTools: true });
       let childWebContentsId = 0;
       app.once('web-contents-created', (e, webContents) => {
         childWebContentsId = webContents.id;
@@ -1419,6 +1426,340 @@ describe('<webview> tag', function () {
         expect(result).to.equal('ok');
         const type = await w.executeJavaScript('webview.executeJavaScript("typeof require")');
         expect(type).to.equal('function');
+      });
+    });
+  });
+
+  describe('events', () => {
+    let w: WebContents;
+    before(async () => {
+      const window = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      w = window.webContents;
+    });
+    afterEach(async () => {
+      await w.executeJavaScript(`{
+        document.querySelectorAll('webview').forEach(el => el.remove())
+      }`);
+    });
+    after(closeAllWindows);
+
+    describe('new-window event', () => {
+      it('emits when window.open is called', async () => {
+        const { url, frameName } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/window-open.html`,
+          allowpopups: 'true'
+        }, 'new-window');
+
+        expect(url).to.equal('http://host/');
+        expect(frameName).to.equal('host');
+      });
+
+      it('emits when link with target is called', async () => {
+        const { url, frameName } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/target-name.html`,
+          allowpopups: 'true'
+        }, 'new-window');
+
+        expect(url).to.equal('http://host/');
+        expect(frameName).to.equal('target');
+      });
+    });
+
+    describe('ipc-message event', () => {
+      it('emits when guest sends an ipc message to browser', async () => {
+        const { frameId, channel, args } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/ipc-message.html`,
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no'
+        }, 'ipc-message');
+
+        expect(frameId).to.be.an('array').that.has.lengthOf(2);
+        expect(channel).to.equal('channel');
+        expect(args).to.deep.equal(['arg1', 'arg2']);
+      });
+    });
+
+    describe('page-title-updated event', () => {
+      it('emits when title is set', async () => {
+        const { title, explicitSet } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/a.html`
+        }, 'page-title-updated');
+
+        expect(title).to.equal('test');
+        expect(explicitSet).to.be.true();
+      });
+    });
+
+    describe('page-favicon-updated event', () => {
+      it('emits when favicon urls are received', async () => {
+        const { favicons } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/a.html`
+        }, 'page-favicon-updated');
+
+        expect(favicons).to.be.an('array').of.length(2);
+        if (process.platform === 'win32') {
+          expect(favicons[0]).to.match(/^file:\/\/\/[A-Z]:\/favicon.png$/i);
+        } else {
+          expect(favicons[0]).to.equal('file:///favicon.png');
+        }
+      });
+    });
+
+    describe('did-redirect-navigation event', () => {
+      it('is emitted on redirects', async () => {
+        const server = http.createServer((req, res) => {
+          if (req.url === '/302') {
+            res.setHeader('Location', '/200');
+            res.statusCode = 302;
+            res.end();
+          } else {
+            res.end();
+          }
+        });
+        const uri = await new Promise<string>(resolve => server.listen(0, '127.0.0.1', () => {
+          resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+        }));
+        defer(() => { server.close(); });
+        const event = await loadWebViewAndWaitForEvent(w, {
+          src: `${uri}/302`
+        }, 'did-redirect-navigation');
+
+        expect(event.url).to.equal(`${uri}/200`);
+        expect(event.isInPlace).to.be.false();
+        expect(event.isMainFrame).to.be.true();
+        expect(event.frameProcessId).to.be.a('number');
+        expect(event.frameRoutingId).to.be.a('number');
+      });
+    });
+
+    describe('will-navigate event', () => {
+      it('emits when a url that leads to outside of the page is clicked', async () => {
+        const { url } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/webview-will-navigate.html`
+        }, 'will-navigate');
+
+        expect(url).to.equal('http://host/');
+      });
+    });
+
+    describe('did-navigate event', () => {
+      it('emits when a url that leads to outside of the page is clicked', async () => {
+        const pageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-will-navigate.html')).toString();
+        const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate');
+        expect(event.url).to.equal(pageUrl);
+      });
+    });
+
+    describe('did-navigate-in-page event', () => {
+      it('emits when an anchor link is clicked', async () => {
+        const pageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-did-navigate-in-page.html')).toString();
+        const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate-in-page');
+        expect(event.url).to.equal(`${pageUrl}#test_content`);
+      });
+
+      it('emits when window.history.replaceState is called', async () => {
+        const { url } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/webview-did-navigate-in-page-with-history.html`
+        }, 'did-navigate-in-page');
+        expect(url).to.equal('http://host/');
+      });
+
+      it('emits when window.location.hash is changed', async () => {
+        const pageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-did-navigate-in-page-with-hash.html')).toString();
+        const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate-in-page');
+        expect(event.url).to.equal(`${pageUrl}#test`);
+      });
+    });
+
+    describe('close event', () => {
+      it('should fire when interior page calls window.close', async () => {
+        await loadWebViewAndWaitForEvent(w, { src: `file://${fixtures}/pages/close.html` }, 'close');
+      });
+    });
+
+    describe('devtools-opened event', () => {
+      it('should fire when webview.openDevTools() is called', async () => {
+        await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/base-page.html`
+        }, 'dom-ready');
+
+        await w.executeJavaScript(`new Promise((resolve) => {
+          webview.openDevTools()
+          webview.addEventListener('devtools-opened', () => resolve(), {once: true})
+        })`);
+      });
+    });
+
+    describe('devtools-closed event', () => {
+      itremote('should fire when webview.closeDevTools() is called', async (fixtures: string) => {
+        const webview = new WebView();
+        webview.src = `file://${fixtures}/pages/base-page.html`;
+        document.body.appendChild(webview);
+        await new Promise(resolve => webview.addEventListener('dom-ready', resolve, { once: true }));
+
+        webview.openDevTools();
+        await new Promise(resolve => webview.addEventListener('devtools-opened', resolve, { once: true }));
+
+        webview.closeDevTools();
+        await new Promise(resolve => webview.addEventListener('devtools-closed', resolve, { once: true }));
+      }, [fixtures]);
+    });
+
+    describe('devtools-focused event', () => {
+      itremote('should fire when webview.openDevTools() is called', async (fixtures: string) => {
+        const webview = new WebView();
+        webview.src = `file://${fixtures}/pages/base-page.html`;
+        document.body.appendChild(webview);
+
+        const waitForDevToolsFocused = new Promise(resolve => webview.addEventListener('devtools-focused', resolve, { once: true }));
+        await new Promise(resolve => webview.addEventListener('dom-ready', resolve, { once: true }));
+        webview.openDevTools();
+
+        await waitForDevToolsFocused;
+        webview.closeDevTools();
+      }, [fixtures]);
+    });
+
+    describe('dom-ready event', () => {
+      it('emits when document is loaded', async () => {
+        const server = http.createServer(() => {});
+        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        const port = (server.address() as AddressInfo).port;
+        await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/dom-ready.html?port=${port}`
+        }, 'dom-ready');
+      });
+
+      itremote('throws a custom error when an API method is called before the event is emitted', () => {
+        const expectedErrorMessage =
+            'The WebView must be attached to the DOM ' +
+            'and the dom-ready event emitted before this method can be called.';
+        const webview = new WebView();
+        expect(() => { webview.stop(); }).to.throw(expectedErrorMessage);
+      });
+    });
+
+    describe('context-menu event', () => {
+      it('emits when right-clicked in page', async () => {
+        await loadWebView(w, { src: 'about:blank' });
+
+        const { params, url } = await w.executeJavaScript(`new Promise(resolve => {
+          webview.addEventListener('context-menu', (e) => resolve({...e, url: webview.getURL() }), {once: true})
+          // Simulate right-click to create context-menu event.
+          const opts = { x: 0, y: 0, button: 'right' };
+          webview.sendInputEvent({ ...opts, type: 'mouseDown' });
+          webview.sendInputEvent({ ...opts, type: 'mouseUp' });
+        })`);
+
+        expect(params.pageURL).to.equal(url);
+        expect(params.frame).to.be.undefined();
+        expect(params.x).to.be.a('number');
+        expect(params.y).to.be.a('number');
+      });
+    });
+
+    describe('found-in-page event', () => {
+      itremote('emits when a request is made', async (fixtures: string) => {
+        const webview = new WebView();
+        const didFinishLoad = new Promise(resolve => webview.addEventListener('did-finish-load', resolve, { once: true }));
+        webview.src = `file://${fixtures}/pages/content.html`;
+        document.body.appendChild(webview);
+        // TODO(deepak1556): With https://codereview.chromium.org/2836973002
+        // focus of the webContents is required when triggering the api.
+        // Remove this workaround after determining the cause for
+        // incorrect focus.
+        webview.focus();
+        await didFinishLoad;
+
+        const activeMatchOrdinal = [];
+
+        for (;;) {
+          const foundInPage = new Promise<any>(resolve => webview.addEventListener('found-in-page', resolve, { once: true }));
+          const requestId = webview.findInPage('virtual');
+          const event = await foundInPage;
+
+          expect(event.result.requestId).to.equal(requestId);
+          expect(event.result.matches).to.equal(3);
+
+          activeMatchOrdinal.push(event.result.activeMatchOrdinal);
+
+          if (event.result.activeMatchOrdinal === event.result.matches) {
+            break;
+          }
+        }
+
+        expect(activeMatchOrdinal).to.deep.equal([1, 2, 3]);
+        webview.stopFindInPage('clearSelection');
+      }, [fixtures]);
+    });
+
+    describe('will-attach-webview event', () => {
+      itremote('does not emit when src is not changed', async () => {
+        const webview = new WebView();
+        document.body.appendChild(webview);
+        await new Promise(resolve => setTimeout(resolve));
+        const expectedErrorMessage = 'The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.';
+        expect(() => { webview.stop(); }).to.throw(expectedErrorMessage);
+      });
+
+      it('supports changing the web preferences', async () => {
+        w.once('will-attach-webview', (event, webPreferences, params) => {
+          params.src = `file://${path.join(fixtures, 'pages', 'c.html')}`;
+          webPreferences.nodeIntegration = false;
+        });
+        const message = await loadWebViewAndWaitForMessage(w, {
+          nodeintegration: 'yes',
+          src: `file://${fixtures}/pages/a.html`
+        });
+
+        const types = JSON.parse(message);
+        expect(types).to.include({
+          require: 'undefined',
+          module: 'undefined',
+          process: 'undefined',
+          global: 'undefined'
+        });
+      });
+
+      it('handler modifying params.instanceId does not break <webview>', async () => {
+        w.once('will-attach-webview', (event, webPreferences, params) => {
+          params.instanceId = null as any;
+        });
+
+        await loadWebViewAndWaitForMessage(w, {
+          src: `file://${fixtures}/pages/a.html`
+        });
+      });
+
+      it('supports preventing a webview from being created', async () => {
+        w.once('will-attach-webview', event => event.preventDefault());
+
+        await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/c.html`
+        }, 'destroyed');
+      });
+
+      it('supports removing the preload script', async () => {
+        w.once('will-attach-webview', (event, webPreferences, params) => {
+          params.src = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-stripped-preload.html')).toString();
+          delete webPreferences.preload;
+        });
+
+        const message = await loadWebViewAndWaitForMessage(w, {
+          nodeintegration: 'yes',
+          preload: path.join(fixtures, 'module', 'preload-set-global.js'),
+          src: `file://${fixtures}/pages/a.html`
+        });
+
+        expect(message).to.equal('undefined');
       });
     });
   });
