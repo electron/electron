@@ -9,7 +9,7 @@ necessary for native modules to load.
 Also, some fixes relating to mksnapshot on ARM.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index c918081b31fdf15efd325ae9d688f6c4f59aded1..3820a03365e58a05f2df16195ed6061f1c451a05 100644
+index c918081b31fdf15efd325ae9d688f6c4f59aded1..15d0dcf9f6ea151f4dcacff0f3dc11b318a1e1cd 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -636,7 +636,7 @@ config("internal_config") {
@@ -30,12 +30,3 @@ index c918081b31fdf15efd325ae9d688f6c4f59aded1..3820a03365e58a05f2df16195ed6061f
  
      deps = [
        ":v8_libbase",
-@@ -6037,6 +6037,8 @@ if (current_toolchain == v8_snapshot_toolchain) {
- 
-     configs = [ ":internal_config" ]
- 
-+    configs += [ "//electron/build/config:build_time_executable" ]
-+
-     deps = [
-       ":v8_base_without_compiler",
-       ":v8_compiler_for_mksnapshot",
