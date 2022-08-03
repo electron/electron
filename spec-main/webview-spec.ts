@@ -60,6 +60,7 @@ async function itremote (name: string, fn: Function, args?: any[]) {
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
         const chai_1 = require('chai')
+        chai_1.use(require('dirty-chai'))
         await (${fn})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {
