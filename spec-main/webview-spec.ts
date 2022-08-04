@@ -2090,12 +2090,21 @@ describe('<webview> tag', function () {
         const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
         await loadWebViewAndWaitForEvent(w, { src }, 'did-stop-loading');
 
-        const image = await w.executeJavaScript('webview.capturePage()');
-        const imgBuffer = image.toPNG();
+        // Retry a few times due to flake.
+        for (let i = 0; i < 5; i++) {
+          try {
+            const image = await w.executeJavaScript('webview.capturePage()');
+            const imgBuffer = image.toPNG();
 
-        // Check the 25th byte in the PNG.
-        // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
-        expect(imgBuffer[25]).to.equal(6);
+            // Check the 25th byte in the PNG.
+            // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
+            expect(imgBuffer[25]).to.equal(6);
+            return;
+          } catch (e) {
+            /* drop the error */
+          }
+        }
+        expect(false).to.be.true('could not successfully capture the page');
       });
     });
 
