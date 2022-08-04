@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 267af5f85d4036e144ad9829922dcd3ac62b8a31..a658a43a12f5597a7bea094471191d040fc3d6c2 100644
+index 90e1c4adeab61374adf9da5708497ea32a46c7f5..b812a22802c7c425ab259dfe5681cafe6ad758c8 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -134,6 +134,8 @@ viz_component("service") {
@@ -94,7 +94,7 @@ index 267af5f85d4036e144ad9829922dcd3ac62b8a31..a658a43a12f5597a7bea094471191d04
      "display_embedder/software_output_surface.h",
      "display_embedder/vsync_parameter_listener.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider.h b/components/viz/service/display_embedder/output_surface_provider.h
-index 2e9453c18f2f6623d31b477aa856152ddacc3e23..93b6080135c08bc9d4cf7020f4fcb15c06a01a60 100644
+index 18ea9142343e68dfa64c5e81269dbc80e55c1277..c76c4bcd3b30230753be51d87eabffa93a107b6e 100644
 --- a/components/viz/service/display_embedder/output_surface_provider.h
 +++ b/components/viz/service/display_embedder/output_surface_provider.h
 @@ -38,7 +38,8 @@ class OutputSurfaceProvider {
@@ -108,7 +108,7 @@ index 2e9453c18f2f6623d31b477aa856152ddacc3e23..93b6080135c08bc9d4cf7020f4fcb15c
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index c019d729f29440e44d9dd47ff62d3f8fa1ee19a8..8f589394b12cff75df9708310c5f891664674c28 100644
+index d6ffe3a759fbde3fbb0f86fda9a07c63d50ff73a..4854bca8e1d3117534e4bf02ea8ebf5b2e6ea70c 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,12 +23,14 @@
@@ -119,9 +119,9 @@ index c019d729f29440e44d9dd47ff62d3f8fa1ee19a8..8f589394b12cff75df9708310c5f8916
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
  #include "gpu/command_buffer/client/shared_memory_limits.h"
+ #include "gpu/command_buffer/service/scheduler_sequence.h"
  #include "gpu/config/gpu_finch_features.h"
  #include "gpu/ipc/common/surface_handle.h"
- #include "gpu/ipc/scheduler_sequence.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
  #include "ui/base/ui_base_switches.h"
  

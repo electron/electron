@@ -35,10 +35,10 @@ index b2f206ed814e43e04815d1247ba4c6aa27f7084d..62c1555386315e00bdf7f677eb85f04e
    // from the worker thread.
    virtual void WillDestroyWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index f2401245c4feb507966a47c82c66d956802d5ede..916fc0110338224c21bc6cc29536a152659e9569 100644
+index c05cc4f60a97f10cb0ed194267d6c81a0b50cc7c..f7b7c348509c775c8877058aa525c5900fc9aec3 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -885,6 +885,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
+@@ -881,6 +881,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
        worker);
  }
  
@@ -52,10 +52,10 @@ index f2401245c4feb507966a47c82c66d956802d5ede..916fc0110338224c21bc6cc29536a152
      const blink::WebSecurityOrigin& script_origin) {
    return GetContentClient()->renderer()->AllowScriptExtensionForServiceWorker(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index ad67b32366ee276d4a9917e17ce335c3ec507a48..62bc2b9122733d397093fdba0b2315cb0993cb48 100644
+index 7aa2a565643c27d946588bfc5212b3df39eb9d82..488d24afedf147307cb71480f5e6f1716318f0d2 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -183,6 +183,8 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -182,6 +182,8 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;

@@ -313,10 +313,10 @@ index d59a16112d27e2696437163483c44eca414c225c..1ccd20fe7efa3cbae48f99d0660b0252
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index 0faa991dccfc290e4119ddcbd500850b15e1f301..b08c593e4a3c219d5156055f401f00927bf05c82 100644
+index 397f01d7249f491840e5953b65c2d54eb92dc638..a7279e44346cb5b0b26599bd62693ad40a59e84f 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-@@ -86,6 +86,7 @@
+@@ -87,6 +87,7 @@
      }
    }
  
@@ -324,11 +324,11 @@ index 0faa991dccfc290e4119ddcbd500850b15e1f301..b08c593e4a3c219d5156055f401f0092
    // AXTextMarker
    if (IsAXTextMarker(value)) {
      return AXTextMarkerToBaseValue(value, indexer);
-@@ -94,6 +95,7 @@
+@@ -95,6 +96,7 @@
    // AXTextMarkerRange
    if (IsAXTextMarkerRange(value))
      return AXTextMarkerRangeToBaseValue(value, indexer);
 +#endif
  
    // Accessible object
-   if (IsNSAccessibilityElement(value) || IsAXUIElement(value)) {
+   if (AXElementWrapper::IsValidElement(value)) {

@@ -103,10 +103,10 @@ index 3d2bcc3e81eb42f645fa4e8b1425cb5c54cfd3a1..4cdbe0e38609abfd0b0b5856deb8b2dd
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index abec6b443248a1fb9d8c640072547f578d11864d..c6337b0c6f9a674df90c43544d7a76eefce981cb 100644
+index bc7e0a4b2ae29ac40765a9339248d42d4d31713b..2e01e4898fd17cc96fab8c2a06d4d6aeacaf22f2 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -603,6 +603,7 @@ URLLoader::URLLoader(
+@@ -606,6 +606,7 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
        per_factory_corb_state_(context.GetMutableCorbState()),
@@ -114,7 +114,7 @@ index abec6b443248a1fb9d8c640072547f578d11864d..c6337b0c6f9a674df90c43544d7a76ee
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -792,7 +793,7 @@ URLLoader::URLLoader(
+@@ -795,7 +796,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index abec6b443248a1fb9d8c640072547f578d11864d..c6337b0c6f9a674df90c43544d7a76ee
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1542,6 +1543,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1545,6 +1546,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
