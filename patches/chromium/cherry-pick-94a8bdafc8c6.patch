@@ -1,7 +1,10 @@
-From 94a8bdafc8c644020b51fabbba4b6ab6a40bb94f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Keren Zhu <kerenzhu@chromium.org>
-Date: Thu, 09 Jun 2022 14:50:26 +0000
-Subject: [PATCH] Fix use-after-free vulnerability in ComboboxModel
+Date: Thu, 9 Jun 2022 14:50:26 +0000
+Subject: Fix use-after-free vulnerability in ComboboxModel
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Stop the Combobox from observing the model when the model gets
 destroyed. This is done by adding a virtual OnComboboxModelDestroying()
@@ -18,13 +21,12 @@ Reviewed-by: Matthias Körber <koerber@google.com>
 Auto-Submit: Keren Zhu <kerenzhu@chromium.org>
 Reviewed-by: Peter Boström <pbos@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1012504}
----
 
 diff --git a/chrome/browser/ui/bookmarks/recently_used_folders_combo_model.cc b/chrome/browser/ui/bookmarks/recently_used_folders_combo_model.cc
-index 323f856..0d0bb0d 100644
+index 323f85651611ff98e45884e3b0b7211eaa25039b..0d0bb0d21b1d96841a30bfea336af918b6da83f8 100644
 --- a/chrome/browser/ui/bookmarks/recently_used_folders_combo_model.cc
 +++ b/chrome/browser/ui/bookmarks/recently_used_folders_combo_model.cc
-@@ -130,16 +130,6 @@
+@@ -130,16 +130,6 @@ int RecentlyUsedFoldersComboModel::GetDefaultIndex() const {
    return it == items_.end() ? 0 : static_cast<int>(it - items_.begin());
  }
  
@@ -41,7 +43,7 @@ index 323f856..0d0bb0d 100644
  void RecentlyUsedFoldersComboModel::BookmarkModelLoaded(BookmarkModel* model,
                                                          bool ids_reassigned) {}
  
-@@ -176,7 +166,7 @@
+@@ -176,7 +166,7 @@ void RecentlyUsedFoldersComboModel::OnWillRemoveBookmarks(
      }
    }
    if (changed) {
@@ -50,7 +52,7 @@ index 323f856..0d0bb0d 100644
        observer.OnComboboxModelChanged(this);
    }
  }
-@@ -219,7 +209,7 @@
+@@ -219,7 +209,7 @@ void RecentlyUsedFoldersComboModel::BookmarkAllUserNodesRemoved(
      }
    }
    if (changed) {
@@ -60,10 +62,10 @@ index 323f856..0d0bb0d 100644
    }
  }
 diff --git a/chrome/browser/ui/bookmarks/recently_used_folders_combo_model.h b/chrome/browser/ui/bookmarks/recently_used_folders_combo_model.h
-index 8682e75..0c02c68 100644
+index 8682e750f4407e615264986024e2a7dd0bae038f..0c02c685a02875c7b91ca9e6228864bc04e45c10 100644
 --- a/chrome/browser/ui/bookmarks/recently_used_folders_combo_model.h
 +++ b/chrome/browser/ui/bookmarks/recently_used_folders_combo_model.h
-@@ -38,8 +38,6 @@
+@@ -38,8 +38,6 @@ class RecentlyUsedFoldersComboModel : public ui::ComboboxModel,
    std::u16string GetItemAt(int index) const override;
    bool IsItemSeparatorAt(int index) const override;
    int GetDefaultIndex() const override;
@@ -72,7 +74,7 @@ index 8682e75..0c02c68 100644
  
    // Overriden from bookmarks::BookmarkModelObserver:
    void BookmarkModelLoaded(bookmarks::BookmarkModel* model,
-@@ -90,8 +88,6 @@
+@@ -90,8 +88,6 @@ class RecentlyUsedFoldersComboModel : public ui::ComboboxModel,
    const raw_ptr<bookmarks::BookmarkModel> bookmark_model_;
  
    const raw_ptr<const bookmarks::BookmarkNode> parent_node_;
@@ -82,10 +84,10 @@ index 8682e75..0c02c68 100644
  
  #endif  // CHROME_BROWSER_UI_BOOKMARKS_RECENTLY_USED_FOLDERS_COMBO_MODEL_H_
 diff --git a/chrome/browser/ui/bookmarks/recently_used_folders_combo_model_unittest.cc b/chrome/browser/ui/bookmarks/recently_used_folders_combo_model_unittest.cc
-index 60455386..3bfe6852 100644
+index 60455386b7d5f1da72c92424ccf95fd971e7590a..3bfe6852b8a54a53aafea5eeec2da850097b2f0a 100644
 --- a/chrome/browser/ui/bookmarks/recently_used_folders_combo_model_unittest.cc
 +++ b/chrome/browser/ui/bookmarks/recently_used_folders_combo_model_unittest.cc
-@@ -41,6 +41,8 @@
+@@ -41,6 +41,8 @@ class TestComboboxModelObserver : public ui::ComboboxModelObserver {
      changed_ = true;
    }
  
@@ -95,10 +97,10 @@ index 60455386..3bfe6852 100644
    bool changed_;
  };
 diff --git a/components/autofill/core/browser/ui/address_combobox_model.cc b/components/autofill/core/browser/ui/address_combobox_model.cc
-index c7e6f90..d52dc0e 100644
+index c7e6f906ff32cb198f8723d6678971ae6cff28a2..d52dc0e925c54634452f86ca90792b318776e895 100644
 --- a/components/autofill/core/browser/ui/address_combobox_model.cc
 +++ b/components/autofill/core/browser/ui/address_combobox_model.cc
-@@ -84,14 +84,6 @@
+@@ -84,14 +84,6 @@ int AddressComboboxModel::GetDefaultIndex() const {
    return ui::ComboboxModel::GetDefaultIndex();
  }
  
@@ -113,7 +115,7 @@ index c7e6f90..d52dc0e 100644
  int AddressComboboxModel::AddNewProfile(const AutofillProfile& profile) {
    profiles_cache_.push_back(std::make_unique<AutofillProfile>(profile));
    UpdateAddresses();
-@@ -131,7 +123,7 @@
+@@ -131,7 +123,7 @@ void AddressComboboxModel::UpdateAddresses() {
    for (size_t i = 0; i < profiles_cache_.size(); ++i)
      addresses_.emplace_back(profiles_cache_[i]->guid(), labels[i]);
  
@@ -123,10 +125,10 @@ index c7e6f90..d52dc0e 100644
    }
  }
 diff --git a/components/autofill/core/browser/ui/address_combobox_model.h b/components/autofill/core/browser/ui/address_combobox_model.h
-index 02d6520..3a41b30c 100644
+index 02d65209d2729deae608481411e1539ba08f5f7e..3a41b30c92543633da29e40e2c64cc4597e322d2 100644
 --- a/components/autofill/core/browser/ui/address_combobox_model.h
 +++ b/components/autofill/core/browser/ui/address_combobox_model.h
-@@ -40,8 +40,6 @@
+@@ -40,8 +40,6 @@ class AddressComboboxModel : public ui::ComboboxModel {
    std::u16string GetItemAt(int index) const override;
    bool IsItemSeparatorAt(int index) const override;
    int GetDefaultIndex() const override;
@@ -135,7 +137,7 @@ index 02d6520..3a41b30c 100644
  
    // Adds |profile| to model and return its combobox index. The lifespan of
    // |profile| beyond this call is undefined so a copy must be made.
-@@ -72,9 +70,6 @@
+@@ -72,9 +70,6 @@ class AddressComboboxModel : public ui::ComboboxModel {
  
    // If non empty, the guid of the address that should be selected by default.
    std::string default_selected_guid_;
@@ -146,10 +148,10 @@ index 02d6520..3a41b30c 100644
  
  }  // namespace autofill
 diff --git a/components/autofill/core/browser/ui/region_combobox_model.cc b/components/autofill/core/browser/ui/region_combobox_model.cc
-index 6439ccb..42626af 100644
+index 6439ccb1f074f1c3965dfb2b45ab6f6636437c17..42626aff427f1b3f3400aba399e3f9c89faa06ba 100644
 --- a/components/autofill/core/browser/ui/region_combobox_model.cc
 +++ b/components/autofill/core/browser/ui/region_combobox_model.cc
-@@ -67,14 +67,6 @@
+@@ -67,14 +67,6 @@ bool RegionComboboxModel::IsItemSeparatorAt(int index) const {
    return regions_[index].first.empty();
  }
  
@@ -164,7 +166,7 @@ index 6439ccb..42626af 100644
  void RegionComboboxModel::OnRegionDataLoaded(
      const std::vector<const ::i18n::addressinput::RegionData*>& regions) {
    // The RegionDataLoader will eventually self destruct after this call.
-@@ -95,7 +87,7 @@
+@@ -95,7 +87,7 @@ void RegionComboboxModel::OnRegionDataLoaded(
      failed_to_load_data_ = true;
    }
  
@@ -174,10 +176,10 @@ index 6439ccb..42626af 100644
    }
  }
 diff --git a/components/autofill/core/browser/ui/region_combobox_model.h b/components/autofill/core/browser/ui/region_combobox_model.h
-index d1b5d8b..52cffd5 100644
+index d1b5d8b9db0c4d9d15e4f2a50a6cba38b33f1be8..52cffd5d00649f8e2be7189bca128ba4c3e8a97d 100644
 --- a/components/autofill/core/browser/ui/region_combobox_model.h
 +++ b/components/autofill/core/browser/ui/region_combobox_model.h
-@@ -54,8 +54,6 @@
+@@ -54,8 +54,6 @@ class RegionComboboxModel : public ui::ComboboxModel {
    int GetItemCount() const override;
    std::u16string GetItemAt(int index) const override;
    bool IsItemSeparatorAt(int index) const override;
@@ -186,7 +188,7 @@ index d1b5d8b..52cffd5 100644
  
   private:
    // Callback for the RegionDataLoader.
-@@ -72,9 +70,6 @@
+@@ -72,9 +70,6 @@ class RegionComboboxModel : public ui::ComboboxModel {
    // List of <code, name> pairs for ADDRESS_HOME_STATE combobox values;
    std::vector<std::pair<std::string, std::string>> regions_;
  
@@ -197,7 +199,7 @@ index d1b5d8b..52cffd5 100644
    base::WeakPtrFactory<RegionComboboxModel> weak_factory_{this};
  };
 diff --git a/ui/base/models/combobox_model.cc b/ui/base/models/combobox_model.cc
-index d307ee0..413adeb 100644
+index d307ee0ec592ae01a1d04cef85c0a492b7f7e29e..413adebd0349e304006de0cc0c4e2a4536ebbf06 100644
 --- a/ui/base/models/combobox_model.cc
 +++ b/ui/base/models/combobox_model.cc
 @@ -4,10 +4,18 @@
@@ -219,7 +221,7 @@ index d307ee0..413adeb 100644
  std::u16string ComboboxModel::GetDropDownTextAt(int index) const {
    return GetItemAt(index);
  }
-@@ -36,4 +44,12 @@
+@@ -36,4 +44,12 @@ bool ComboboxModel::IsItemEnabledAt(int index) const {
    return true;
  }
  
@@ -233,7 +235,7 @@ index d307ee0..413adeb 100644
 +
  }  // namespace ui
 diff --git a/ui/base/models/combobox_model.h b/ui/base/models/combobox_model.h
-index 5264aaa..eeff7dc 100644
+index 5264aaa5550859fce39a8485feff16c8fd83d897..eeff7dc8444e77fd598eb7ce05ab18259a9d7ef5 100644
 --- a/ui/base/models/combobox_model.h
 +++ b/ui/base/models/combobox_model.h
 @@ -8,6 +8,7 @@
@@ -244,7 +246,7 @@ index 5264aaa..eeff7dc 100644
  
  namespace ui {
  
-@@ -17,7 +18,8 @@
+@@ -17,7 +18,8 @@ class ImageModel;
  // A data model for a combo box.
  class COMPONENT_EXPORT(UI_BASE) ComboboxModel {
   public:
@@ -254,7 +256,7 @@ index 5264aaa..eeff7dc 100644
  
    // Returns the number of items in the combo box.
    virtual int GetItemCount() const = 0;
-@@ -52,9 +54,17 @@
+@@ -52,9 +54,17 @@ class COMPONENT_EXPORT(UI_BASE) ComboboxModel {
    // Returns true if the item at |index| is enabled.
    virtual bool IsItemEnabledAt(int index) const;
  
@@ -276,10 +278,10 @@ index 5264aaa..eeff7dc 100644
  
  }  // namespace ui
 diff --git a/ui/base/models/combobox_model_observer.h b/ui/base/models/combobox_model_observer.h
-index 5e00ab6..44325ff 100644
+index 5e00ab68a0c14d0b48317ca287e3f105351a102c..44325ff0aa94b75eb662be1637f44aa5524a33e8 100644
 --- a/ui/base/models/combobox_model_observer.h
 +++ b/ui/base/models/combobox_model_observer.h
-@@ -16,10 +16,13 @@
+@@ -16,10 +16,13 @@ class ComboboxModel;
  class COMPONENT_EXPORT(UI_BASE) ComboboxModelObserver
      : public base::CheckedObserver {
   public:
@@ -295,10 +297,10 @@ index 5e00ab6..44325ff 100644
    ~ComboboxModelObserver() override = default;
  };
 diff --git a/ui/views/controls/combobox/combobox.cc b/ui/views/controls/combobox/combobox.cc
-index aa13525..b8d41cf 100644
+index aa135250e469d2405fba618c96b0bf38acaf59f0..b8d41cfeb67f3b4c098b2b329b2dfa7fe246dabb 100644
 --- a/ui/views/controls/combobox/combobox.cc
 +++ b/ui/views/controls/combobox/combobox.cc
-@@ -578,6 +578,10 @@
+@@ -578,6 +578,10 @@ void Combobox::OnComboboxModelChanged(ui::ComboboxModel* model) {
    OnContentSizeMaybeChanged();
  }
  
@@ -310,10 +312,10 @@ index aa13525..b8d41cf 100644
    return callback_;
  }
 diff --git a/ui/views/controls/combobox/combobox.h b/ui/views/controls/combobox/combobox.h
-index fc77f8e..1a3f533 100644
+index fc77f8e49cead5fb689fba3d56c65c1b8e69f298..1a3f533256eca91e4fd4552ee5425b7ca8e7ad7e 100644
 --- a/ui/views/controls/combobox/combobox.h
 +++ b/ui/views/controls/combobox/combobox.h
-@@ -131,6 +131,7 @@
+@@ -131,6 +131,7 @@ class VIEWS_EXPORT Combobox : public View,
   protected:
    // Overridden from ComboboxModelObserver:
    void OnComboboxModelChanged(ui::ComboboxModel* model) override;
@@ -322,10 +324,10 @@ index fc77f8e..1a3f533 100644
    // Getters to be used by metadata.
    const base::RepeatingClosure& GetCallback() const;
 diff --git a/ui/views/controls/combobox/combobox_unittest.cc b/ui/views/controls/combobox/combobox_unittest.cc
-index 7ce20ac..91661f3 100644
+index 7ce20acc4b3ecd6470d5f017f9171d0be35c09d2..91661f33074d3453b4f28a410ecc918b793f86c6 100644
 --- a/ui/views/controls/combobox/combobox_unittest.cc
 +++ b/ui/views/controls/combobox/combobox_unittest.cc
-@@ -84,13 +84,6 @@
+@@ -84,13 +84,6 @@ class TestComboboxModel : public ui::ComboboxModel {
      return 0;
    }
  
@@ -339,7 +341,7 @@ index 7ce20ac..91661f3 100644
    void SetSeparators(const std::set<int>& separators) {
      separators_ = separators;
      OnModelChanged();
-@@ -103,11 +96,10 @@
+@@ -103,11 +96,10 @@ class TestComboboxModel : public ui::ComboboxModel {
  
   private:
    void OnModelChanged() {
@@ -352,7 +354,7 @@ index 7ce20ac..91661f3 100644
    std::set<int> separators_;
    int item_count_ = kItemCount;
  };
-@@ -134,20 +126,13 @@
+@@ -134,20 +126,13 @@ class VectorComboboxModel : public ui::ComboboxModel {
    }
    bool IsItemSeparatorAt(int index) const override { return false; }
    int GetDefaultIndex() const override { return default_index_; }
@@ -374,7 +376,7 @@ index 7ce20ac..91661f3 100644
    int default_index_ = 0;
    const raw_ptr<std::vector<std::string>> values_;
  };
-@@ -884,6 +869,15 @@
+@@ -884,6 +869,15 @@ TEST_F(ComboboxTest, SetTooltipTextNotifiesAccessibilityEvent) {
    EXPECT_EQ(test_tooltip_text, ASCIIToUTF16(name));
  }
  
@@ -391,10 +393,10 @@ index 7ce20ac..91661f3 100644
  
  using ComboboxDefaultTest = ViewsTestBase;
 diff --git a/ui/views/controls/editable_combobox/editable_combobox.cc b/ui/views/controls/editable_combobox/editable_combobox.cc
-index b5301bf..faac607f 100644
+index b5301bfb0a3c8da3daa1d3646c2f4872cef2cdab..faac607fefcc8caf572eb83456e7520146c1d0ad 100644
 --- a/ui/views/controls/editable_combobox/editable_combobox.cc
 +++ b/ui/views/controls/editable_combobox/editable_combobox.cc
-@@ -190,10 +190,15 @@
+@@ -190,10 +190,15 @@ class EditableCombobox::EditableComboboxMenuModel
      return combobox_model_->GetDropDownIconAt(items_shown_[index].index);
    }
  
