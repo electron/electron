@@ -13,7 +13,7 @@ import { closeWindow, closeAllWindows } from './window-helpers';
 import { areColorsSimilar, captureScreen, CHROMA_COLOR_HEX, getPixelColor } from './screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
-const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate

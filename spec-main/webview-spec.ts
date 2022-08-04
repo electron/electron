@@ -53,7 +53,8 @@ async function loadWebViewAndWaitForMessage (w: WebContents, attributes: Record<
 };
 
 describe('<webview> tag', function () {
-  const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
+  useRemoteContext({ webPreferences: { webviewTag: true } });
+  const fixtures = path.join(__dirname, 'fixtures');
   const blankPageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')).toString();
 
   function hideChildWindows (e: any, wc: WebContents) {

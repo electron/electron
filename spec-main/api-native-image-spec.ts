@@ -4,7 +4,7 @@ import { ifdescribe, ifit } from './spec-helpers';
 import * as path from 'path';
 
 describe('nativeImage module', () => {
-  const fixturesPath = path.join(__dirname, '..', 'spec', 'fixtures');
+  const fixturesPath = path.join(__dirname, 'fixtures');
 
   const imageLogo = {
     path: path.join(fixturesPath, 'assets', 'logo.png'),

@@ -29,7 +29,7 @@ describe('security warnings', () => {
     // Create HTTP Server
     server = http.createServer((request, response) => {
       const uri = url.parse(request.url!).pathname!;
-      let filename = path.join(__dirname, '..', 'spec', 'fixtures', 'pages', uri);
+      let filename = path.join(__dirname, 'fixtures', 'pages', uri);
 
       fs.stat(filename, (error, stats) => {
         if (error) {

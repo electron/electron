@@ -4,7 +4,7 @@ import { delay } from './spec-helpers';
 import { expect } from 'chai';
 import { closeAllWindows } from './window-helpers';
 
-const fixturesPath = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
+const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('autofill', () => {
   afterEach(closeAllWindows);

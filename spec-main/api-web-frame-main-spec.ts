@@ -9,7 +9,7 @@ import { AddressInfo } from 'net';
 import { ifit, waitUntil } from './spec-helpers';
 
 describe('webFrameMain module', () => {
-  const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
+  const fixtures = path.resolve(__dirname, 'fixtures');
   const subframesPath = path.join(fixtures, 'sub-frames');
 
   const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;

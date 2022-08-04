@@ -12,7 +12,7 @@ const features = process._linkedBinding('electron_common_features');
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('node feature', () => {
-  const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
+  const fixtures = path.join(__dirname, 'fixtures');
 
   describe('child_process', () => {
     describe('child_process.fork', () => {

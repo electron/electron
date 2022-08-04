@@ -7,7 +7,7 @@ import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
 
 describe('debugger module', () => {
-  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+  const fixtures = path.resolve(__dirname, 'fixtures');
   let w: BrowserWindow;
 
   beforeEach(() => {

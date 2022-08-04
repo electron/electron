@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { screen, desktopCapturer, NativeImage } from 'electron';
 
-const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+const fixtures = path.resolve(__dirname, 'fixtures');
 
 /** Chroma key green. */
 export const CHROMA_COLOR_HEX = '#00b140';

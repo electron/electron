@@ -14,7 +14,7 @@ import { emittedOnce } from './events-helpers';
 import { WebmGenerator } from './video-helpers';
 import { delay } from './spec-helpers';
 
-const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
+const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 const registerStringProtocol = protocol.registerStringProtocol;
 const registerBufferProtocol = protocol.registerBufferProtocol;

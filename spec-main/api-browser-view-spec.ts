@@ -7,7 +7,7 @@ import { defer, ifit, startRemoteControlApp } from './spec-helpers';
 import { areColorsSimilar, captureScreen, getPixelColor } from './screen-helpers';
 
 describe('BrowserView module', () => {
-  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+  const fixtures = path.resolve(__dirname, 'fixtures');
 
   let w: BrowserWindow;
   let view: BrowserView;

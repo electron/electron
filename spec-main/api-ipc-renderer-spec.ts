@@ -5,7 +5,7 @@ import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
 
 describe('ipcRenderer module', () => {
-  const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
+  const fixtures = path.join(__dirname, 'fixtures');
 
   let w: BrowserWindow;
   before(async () => {

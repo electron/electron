@@ -16,7 +16,7 @@ import { AddressInfo } from 'net';
 /* eslint-disable standard/no-callback-literal */
 
 describe('session module', () => {
-  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+  const fixtures = path.resolve(__dirname, 'fixtures');
   const url = 'http://127.0.0.1';
 
   describe('session.defaultSession', () => {
@@ -1139,7 +1139,7 @@ describe('session module', () => {
   describe('ses.setSSLConfig()', () => {
     it('can disable cipher suites', async () => {
       const ses = session.fromPartition('' + Math.random());
-      const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
+      const fixturesPath = path.resolve(__dirname, 'fixtures');
       const certPath = path.join(fixturesPath, 'certificates');
       const server = https.createServer({
         key: fs.readFileSync(path.join(certPath, 'server.key')),

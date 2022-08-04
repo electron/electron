@@ -11,7 +11,7 @@ import * as importedFs from 'fs';
 const features = process._linkedBinding('electron_common_features');
 
 describe('asar package', () => {
-  const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
+  const fixtures = path.join(__dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
 
   afterEach(closeAllWindows);
@@ -141,7 +141,7 @@ function promisify (_f: Function): any {
 }
 
 describe('asar package', function () {
-  const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
+  const fixtures = path.join(__dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
   const fs = require('fs') as typeof importedFs; // dummy, to fool typescript
 

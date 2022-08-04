@@ -12,7 +12,7 @@ import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit, waitUntil } from './spec-helpers';
 import split = require('split')
 
-const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
+const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('electron module', () => {
   it('does not expose internal modules to require', () => {

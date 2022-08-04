@@ -103,7 +103,7 @@ describe('shell module', () => {
       }).to.throw('Failed to read shortcut link');
     });
 
-    const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+    const fixtures = path.resolve(__dirname, 'fixtures');
     it('reads all properties of a shortcut', () => {
       const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'));
       expect(shortcut).to.deep.equal(shortcutOptions);

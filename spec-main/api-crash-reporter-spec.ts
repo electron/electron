@@ -610,7 +610,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
   describe('when not started', () => {
     it('does not prevent process from crashing', async () => {
-      const appPath = path.join(__dirname, '..', 'spec', 'fixtures', 'api', 'cookie-app');
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'cookie-app');
       await runApp(appPath);
     });
   });

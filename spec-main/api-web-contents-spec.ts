@@ -9,7 +9,7 @@ import { closeAllWindows } from './window-helpers';
 import { ifdescribe, delay, defer } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
-const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
+const fixturesPath = path.resolve(__dirname, 'fixtures');
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 

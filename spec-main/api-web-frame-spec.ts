@@ -5,7 +5,7 @@ import { emittedOnce } from './events-helpers';
 import { defer } from './spec-helpers';
 
 describe('webFrame module', () => {
-  const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+  const fixtures = path.resolve(__dirname, 'fixtures');
 
   it('can use executeJavaScript', async () => {
     const w = new BrowserWindow({

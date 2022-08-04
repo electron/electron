@@ -17,7 +17,7 @@ import * as ws from 'ws';
 
 const features = process._linkedBinding('electron_common_features');
 
-const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
+const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('reporting api', () => {
   // TODO(nornagon): this started failing a lot on CI. Figure out why and fix
