@@ -34,7 +34,6 @@ if (is_mac) {
   import("//third_party/icu/config.gni")
   import("//ui/gl/features.gni")
   import("//v8/gni/v8.gni")
-  import("build/rules.gni")
 
   assert(
       mac_deployment_target == "10.13",
@@ -752,10 +751,6 @@ if (is_mac) {
   electron_framework_version = "A"
   electron_version = read_file("ELECTRON_VERSION", "trim string")
 
-  mac_xib_bundle_data("electron_xibs") {
-    sources = [ "shell/common/resources/mac/MainMenu.xib" ]
-  }
-
   action("fake_v8_context_snapshot_generator") {
     script = "build/fake_v8_context_snapshot_generator.py"
     args = [
@@ -867,7 +862,6 @@ if (is_mac) {
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_swiftshader_library",
-      ":electron_xibs",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]

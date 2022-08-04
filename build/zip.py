@@ -20,9 +20,6 @@ PATHS_TO_SKIP = [
   './libVkICD_mock_',
   # Skip because these are outputs that we don't need.
   './VkICD_mock_',
-  # Skip because its an output of create_bundle from
-  # //build/config/mac/rules.gni that we don't need
-  'Electron.dSYM',
   # Refs https://chromium-review.googlesource.com/c/angle/angle/+/2425197.
   # Remove this when Angle themselves remove the file:
   # https://issuetracker.google.com/issues/168736059
