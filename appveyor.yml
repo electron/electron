@@ -202,7 +202,6 @@ test_script:
       }
   - cd electron
   - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log )
-  - if "%RUN_TESTS%"=="true" ( echo Running remote test suite & node script/yarn test -- --trace-uncaught --runners=remote --runTestFilesSeparately --enable-logging=file --log-file=%cd%\electron.log )
   - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log )  
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )

@@ -34,7 +34,6 @@ const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 const runners = new Map([
   ['main', { description: 'Main process specs', run: runMainProcessElectronTests }],
-  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }],
   ['native', { description: 'Native specs', run: runNativeElectronTests }]
 ]);
 
