@@ -1,7 +1,10 @@
-From 06aea31d10f860ae4236e3422252557762d39188 Mon Sep 17 00:00:00 2001
-From: Henrik Boström <hbos@webrtc.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@webrtc.org>
 Date: Wed, 13 Jul 2022 11:10:14 +0200
-Subject: [PATCH] [Merge-104] Disallow invalid arguments in RestoreEncodingLayers.
+Subject: Disallow invalid arguments in RestoreEncodingLayers.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Changing DCHECK into CHECK for good measure.
 
@@ -17,13 +20,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#37511}
 Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/269242
 Cr-Commit-Position: refs/branch-heads/5112@{#8}
 Cr-Branched-From: a976a871159f85f975fbd6f170d0a8f00a4aee49-refs/heads/main@{#37168}
----
 
 diff --git a/pc/rtp_sender.cc b/pc/rtp_sender.cc
-index 3ee9145..86bf644 100644
+index d1355e31ab6331058cd557b0f164c903c9bc8f46..c41904ac8395c874ea327cab9c800d9311da8dd8 100644
 --- a/pc/rtp_sender.cc
 +++ b/pc/rtp_sender.cc
-@@ -75,8 +75,8 @@
+@@ -74,8 +74,8 @@ RtpParameters RestoreEncodingLayers(
      const RtpParameters& parameters,
      const std::vector<std::string>& removed_rids,
      const std::vector<RtpEncodingParameters>& all_layers) {
