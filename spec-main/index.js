@@ -1,8 +1,6 @@
 const path = require('path');
 const v8 = require('v8');
 
-module.paths.push(path.resolve(__dirname, '../spec/node_modules'));
-
 // Extra module paths which can be used to load Mocha reporters
 if (process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS) {
   for (const modulePath of process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS.split(':')) {
@@ -117,7 +115,7 @@ app.whenReady().then(async () => {
     return true;
   };
 
-  const getFiles = require('../spec/static/get-files');
+  const { getFiles } = require('./get-files');
   const testFiles = await getFiles(__dirname, { filter });
   testFiles.sort().forEach((file) => {
     mocha.addFile(file);

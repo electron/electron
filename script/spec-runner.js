@@ -13,7 +13,7 @@ const fail = '✗'.red;
 
 const args = require('minimist')(process.argv, {
   string: ['runners', 'target'],
-  boolean: ['buildNativeTests', 'runTestFilesSeparately'],
+  boolean: ['buildNativeTests'],
   unknown: arg => unknownFlags.push(arg)
 });
 
@@ -37,7 +37,7 @@ const runners = new Map([
   ['native', { description: 'Native specs', run: runNativeElectronTests }]
 ]);
 
-const specHashPath = path.resolve(__dirname, '../spec/.hash');
+const specHashPath = path.resolve(__dirname, '../spec-main/.hash');
 
 let runnersToRun = null;
 if (args.runners !== undefined) {
@@ -58,7 +58,6 @@ async function main () {
       (lastSpecInstallHash !== currentSpecInstallHash);
 
   if (somethingChanged) {
-    await installSpecModules(path.resolve(__dirname, '..', 'spec'));
     await installSpecModules(path.resolve(__dirname, '..', 'spec-main'));
     await getSpecHash().then(saveSpecHash);
   }
@@ -154,23 +153,7 @@ const specFilter = (file) => {
 };
 
 async function runTests (specDir, testName) {
-  if (args.runTestFilesSeparately) {
-    const getFiles = require('../spec/static/get-files');
-    const testFiles = await getFiles(path.resolve(__dirname, `../${specDir}`), { filter: specFilter });
-    const baseElectronDir = path.resolve(__dirname, '..');
-    unknownArgs.splice(unknownArgs.length, 0, '--files', '');
-    testFiles.sort().forEach(async (file) => {
-      unknownArgs.splice((unknownArgs.length - 1), 1, path.relative(baseElectronDir, file));
-      console.log(`Running tests for ${unknownArgs[unknownArgs.length - 1]}`);
-      await runTestUsingElectron(specDir, testName);
-    });
-  } else {
-    await runTestUsingElectron(specDir, testName);
-  }
-}
-
-async function runRemoteBasedElectronTests () {
-  await runTests('spec', 'remote');
+  await runTestUsingElectron(specDir, testName);
 }
 
 async function runNativeElectronTests () {
@@ -259,15 +242,15 @@ function getSpecHash () {
   return Promise.all([
     (async () => {
       const hasher = crypto.createHash('SHA256');
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')));
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')));
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')));
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../script/spec-runner.js')));
       return hasher.digest('hex');
     })(),
     (async () => {
-      const specNodeModulesPath = path.resolve(__dirname, '../spec/node_modules');
+      const specNodeModulesPath = path.resolve(__dirname, '../spec-main/node_modules');
       if (!fs.existsSync(specNodeModulesPath)) {
         return null;
       }
