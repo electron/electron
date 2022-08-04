@@ -1237,7 +1237,7 @@ describe('asar package', function () {
     ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('child_process.execFile', function () {
       itremote('executes binaries', async function () {
         const echo = path.join(asarDir, 'echo.asar', 'echo');
-        const { stdout } = await promisify(require('child_process').execFile)(echo, ['test']);
+        const stdout = await promisify(require('child_process').execFile)(echo, ['test']);
         expect(stdout).to.equal('test\n');
       });
 
