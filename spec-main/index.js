@@ -11,7 +11,7 @@ if (process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS) {
 }
 
 // Add search paths for loaded spec files
-require('../spec/global-paths')(module.paths);
+require('./global-paths')(module.paths);
 
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
