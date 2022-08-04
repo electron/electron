@@ -153,9 +153,23 @@ Returns:
 
 * `event` Event
 
-Emitted when mac application become active. Difference from `activate` event is
-that `did-become-active` is emitted every time the app becomes active, not only
-when Dock icon is clicked or application is re-launched.
+Emitted when the application becomes active (i.e., the macOS title bar is
+showing the name of the app). The difference between this and the `activate`
+event is that `did-become-active` is emitted every time the app becomes active,
+whereas `activate` is only emitted when the Dock icon is clicked or the
+application is re-launched.
+
+See [`-[NSApplicationDelegate applicationDidBecomeActive:]`](https://developer.apple.com/documentation/appkit/nsapplicationdelegate/1428577-applicationdidbecomeactive?language=objc)
+
+### Event: 'did-resign-active' _macOS_
+
+Returns:
+
+* `event` Event
+
+Emitted when the application loses active state.
+
+See [`-[NSApplicationDelegate applicationDidResignActive:]`](https://developer.apple.com/documentation/appkit/nsapplicationdelegate/1428636-applicationdidresignactive?language=objc)
 
 ### Event: 'continue-activity' _macOS_
 
@@ -1426,6 +1440,28 @@ details.
 
 **Note:** Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
 
+### `app.isActive()` _macOS_
+
+Returns `boolean` - `true` if the app is currently active (i.e., the macOS
+title bar is showing the name of the app).
+
+See [`-[NSApplication active]`](https://developer.apple.com/documentation/appkit/nsapplication/1428493-active?language=objc).
+
+### `app.activate([opts])` _macOS_
+
+* `opts` Object (optional)
+  * `ignoreOtherApps` boolean - If false, the app is activated only if no other
+    app is currently active. If true, the app activates regardless. Defaults to
+    false.
+
+See [`-[NSApplication activateIgnoringOtherApps:]`](https://developer.apple.com/documentation/appkit/nsapplication/1428468-activateignoringotherapps?language=objc).
+
+### `app.deactivate()` _macOS_
+
+Deactivates the app.
+
+See [`-[NSApplication deactivate]`](https://developer.apple.com/documentation/appkit/nsapplication/1428428-deactivate?language=objc).
+
 ## Properties
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_
@@ -1437,6 +1473,13 @@ See [Chromium's accessibility docs](https://www.chromium.org/developers/design-d
 This API must be called after the `ready` event is emitted.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
+
+### `app.active` _macOS_ _Readonly_
+
+A `boolean` property, `true` if the app is currently active (i.e., the macOS
+title bar is showing the name of the app).
+
+See [`-[NSApplication active]`](https://developer.apple.com/documentation/appkit/nsapplication/1428493-active?language=objc).
 
 ### `app.applicationMenu`
 

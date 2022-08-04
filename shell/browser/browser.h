@@ -278,6 +278,8 @@ class Browser : public WindowListObserver {
 
   // Tell the application that application did become active
   void DidBecomeActive();
+
+  void DidResignActive();
 #endif  // BUILDFLAG(IS_MAC)
 
   // Tell the application that application is activated with visible/invisible

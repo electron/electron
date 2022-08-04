@@ -80,4 +80,19 @@ bool App::IsRunningUnderARM64Translation() const {
   return proc_translated == 1;
 }
 
+bool App::IsActive() const {
+  return NSApp.active;
+}
+
+void App::Activate(absl::optional<gin_helper::Dictionary> opts) const {
+  bool ignore_other_apps = false;
+  if (opts)
+    opts->Get("ignoreOtherApps", &ignore_other_apps);
+  [NSApp activateIgnoringOtherApps:ignore_other_apps];
+}
+
+void App::Deactivate() const {
+  [NSApp deactivate];
+}
+
 }  // namespace electron::api

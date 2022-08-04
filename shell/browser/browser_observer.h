@@ -84,6 +84,8 @@ class BrowserObserver : public base::CheckedObserver {
 
   // Browser did become active.
   virtual void OnDidBecomeActive() {}
+
+  virtual void OnDidResignActive() {}
 #endif
 
  protected:

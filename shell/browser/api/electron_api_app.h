@@ -116,6 +116,7 @@ class App : public ElectronBrowserClient::Delegate,
                                  base::Value::Dict user_info) override;
   void OnNewWindowForTab() override;
   void OnDidBecomeActive() override;
+  void OnDidResignActive() override;
 #endif
 
   // content::ContentBrowserClient:
@@ -227,6 +228,9 @@ class App : public ElectronBrowserClient::Delegate,
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
   bool IsRunningUnderRosettaTranslation() const;
+  bool IsActive() const;
+  void Activate(absl::optional<gin_helper::Dictionary> opts) const;
+  void Deactivate() const;
   v8::Global<v8::Value> dock_;
 #endif
 

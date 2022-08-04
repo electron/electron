@@ -285,6 +285,11 @@ void Browser::DidBecomeActive() {
   for (BrowserObserver& observer : observers_)
     observer.OnDidBecomeActive();
 }
+
+void Browser::DidResignActive() {
+  for (BrowserObserver& observer : observers_)
+    observer.OnDidResignActive();
+}
 #endif
 
 }  // namespace electron

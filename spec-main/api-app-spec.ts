@@ -9,7 +9,7 @@ import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit, waitUntil } from './spec-helpers';
+import { defer, ifdescribe, ifit, waitUntil } from './spec-helpers';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
@@ -1835,6 +1835,53 @@ describe('app module', () => {
           .on('error', reject)
           .end();
       })).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('active state', () => {
+    afterEach(closeAllWindows);
+    it('is inactive after deactivating', async () => {
+      const b = new BrowserWindow();
+      // It's not clear what state the app will be in prior to the test, so get
+      // to a known state first.
+      if (!app.active) {
+        app.activate({ ignoreOtherApps: true });
+        await emittedOnce(app, 'did-become-active');
+        expect(app.active).to.be.true();
+      }
+
+      // [NSApplication deactivate] confusingly doesn't actually deactivate the
+      // app. But it does blur the windows? So let's test that.
+      b.focus();
+      expect(b.isFocused()).to.be.true();
+      app.deactivate();
+      expect(b.isFocused()).to.be.false();
+    });
+
+    it('is active after activating', async () => {
+      // If the app is active, force it to be inactivated.
+      // app.deactivate() doesn't actually do that, for unknown reasons. But
+      // setActivationPolicy('prohibited') works, so let's do that instead.
+      if (app.active) {
+        app.setActivationPolicy('prohibited');
+        defer(() => app.setActivationPolicy('regular'));
+        await emittedOnce(app, 'did-resign-active');
+        app.setActivationPolicy('regular');
+        expect(app.active).to.be.false();
+      }
+      app.activate({ ignoreOtherApps: true });
+      await emittedOnce(app, 'did-become-active');
+      expect(app.active).to.be.true();
+    });
+
+    it('emits did-resign-active', async () => {
+      app.activate({ ignoreOtherApps: true });
+      expect(app.active).to.be.true();
+      app.setActivationPolicy('prohibited');
+      defer(() => app.setActivationPolicy('regular'));
+      await emittedOnce(app, 'did-resign-active');
+      app.setActivationPolicy('regular');
+      expect(app.active).to.be.false();
     });
   });
 });

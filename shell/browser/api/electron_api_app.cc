@@ -782,6 +782,10 @@ void App::OnNewWindowForTab() {
 void App::OnDidBecomeActive() {
   Emit("did-become-active");
 }
+
+void App::OnDidResignActive() {
+  Emit("did-resign-active");
+}
 #endif
 
 bool App::CanCreateWindow(
@@ -1742,6 +1746,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)
+      .SetMethod("isActive", &App::IsActive)
+      .SetMethod("activate", &App::Activate)
+      .SetMethod("deactivate", &App::Deactivate)
 #endif
       .SetMethod("setAboutPanelOptions",
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
@@ -1805,6 +1812,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("dock", &App::GetDockAPI)
       .SetProperty("runningUnderRosettaTranslation",
                    &App::IsRunningUnderRosettaTranslation)
+      .SetProperty("active", &App::IsActive)
 #endif
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
       .SetProperty("runningUnderARM64Translation",
