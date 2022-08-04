@@ -1540,11 +1540,15 @@ bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
                                           sandbox::mojom::Sandbox sandbox_type,
                                           ChildSpawnFlags flags) {
   // Allow crashpad to communicate via named pipe.
+  if (policy->GetConfig()->IsConfigured())
+    return true;
+
   sandbox::ResultCode result = policy->GetConfig()->AddRule(
       sandbox::SubSystem::kFiles, sandbox::Semantics::kFilesAllowAny,
       L"\\??\\pipe\\crashpad_*");
   if (result != sandbox::SBOX_ALL_OK)
     return false;
+
   return true;
 }
 #endif  // BUILDFLAG(IS_WIN)
