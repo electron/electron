@@ -107,7 +107,7 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
   host_supports_client_frame_shadow_ = tree_host->SupportsClientFrameShadow();
 
   frame_provider_ = views::LinuxUI::instance()->GetWindowFrameProvider(
-      !host_supports_client_frame_shadow_);
+      !host_supports_client_frame_shadow_, frame_->IsMaximized());
 
   UpdateWindowTitle();
 
@@ -179,7 +179,7 @@ gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
   if (!frame_->IsFullscreen()) {
     client_bounds.Inset(GetBorderDecorationInsets());
     client_bounds.Inset(
-        gfx::Insets::TLBR(0, GetTitlebarBounds().height(), 0, 0));
+        gfx::Insets::TLBR(GetTitlebarBounds().height(), 0, 0, 0));
   }
   return client_bounds;
 }
@@ -250,6 +250,9 @@ void ClientFrameViewLinux::Layout() {
     title_->SetVisible(false);
     return;
   }
+
+  frame_provider_ = views::LinuxUI::instance()->GetWindowFrameProvider(
+      !host_supports_client_frame_shadow_, frame_->IsMaximized());
 
   UpdateButtonImages();
   LayoutButtons();
@@ -459,6 +462,11 @@ gfx::Size ClientFrameViewLinux::SizeWithDecorations(gfx::Size size) const {
   size.Enlarge(0, GetTitlebarBounds().height());
   size.Enlarge(decoration_insets.width(), decoration_insets.height());
   return size;
+}
+
+views::View* ClientFrameViewLinux::TargetForRect(views::View* root,
+                                                 const gfx::Rect& rect) {
+  return views::NonClientFrameView::TargetForRect(root, rect);
 }
 
 }  // namespace electron
