@@ -1,16 +1,6 @@
 const path = require('path');
 const v8 = require('v8');
 
-// Extra module paths which can be used to load Mocha reporters
-if (process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS) {
-  for (const modulePath of process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS.split(':')) {
-    module.paths.push(modulePath);
-  }
-}
-
-// Add search paths for loaded spec files
-require('./global-paths')(module.paths);
-
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
   console.error('Unhandled exception in main spec runner:', err);
