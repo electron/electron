@@ -53,7 +53,6 @@ async function loadWebViewAndWaitForMessage (w: WebContents, attributes: Record<
 };
 
 describe('<webview> tag', function () {
-  useRemoteContext({ webPreferences: { webviewTag: true } });
   const fixtures = path.join(__dirname, 'fixtures');
   const blankPageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')).toString();
 
