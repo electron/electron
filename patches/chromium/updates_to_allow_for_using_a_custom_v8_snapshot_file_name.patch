@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ryan Manuel <ryanm@cypress.io>
+Date: Thu, 4 Aug 2022 22:37:01 -0500
+Subject: Updates to allow for using a custom v8 snapshot file name
+
+
+diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
+index f19e32fd33ff0ce8f44ecec76e4583273f43b231..e24a23704d93b5209323677c50a66e7f38ebb29b 100644
+--- a/content/app/content_main_runner_impl.cc
++++ b/content/app/content_main_runner_impl.cc
+@@ -232,6 +232,11 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+ 
+ void LoadV8SnapshotFile(const base::CommandLine& command_line) {
+   const gin::V8SnapshotFileType snapshot_type = GetSnapshotType(command_line);
++  const std::string& custom_v8_snapshot_file_name = command_line.GetSwitchValueASCII(switches::kCustomV8SnapshotFileName);
++  if (!custom_v8_snapshot_file_name.empty()) {
++    gin::V8Initializer::LoadV8SnapshotFromFileName(&*custom_v8_snapshot_file_name.begin(), snapshot_type);
++    return;
++  }
+ #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+   base::FileDescriptorStore& file_descriptor_store =
+       base::FileDescriptorStore::GetInstance();
+diff --git a/content/public/common/content_switches.cc b/content/public/common/content_switches.cc
+index a60146c49d70419227ecc3b09365f472ee5a56ed..06d86901658b575d43b353c88a42e47d617693a2 100644
+--- a/content/public/common/content_switches.cc
++++ b/content/public/common/content_switches.cc
+@@ -617,6 +617,8 @@ const char kProcessPerTab[]                 = "process-per-tab";
+ // renderer or plugin host.  If it's empty, it's the browser.
+ const char kProcessType[]                   = "type";
+ 
++const char kCustomV8SnapshotFileName[]      = "custom-v8-snapshot-file-name";
++
+ // Uses a specified proxy server, overrides system settings. This switch only
+ // affects HTTP and HTTPS requests. ARC-apps use only HTTP proxy server with the
+ // highest priority.
+diff --git a/content/public/common/content_switches.h b/content/public/common/content_switches.h
+index ccc81e32a1a6a3cf90f2c716848d47857045a0c7..6ede3fcc07f83b499578c633408519fc57c979ef 100644
+--- a/content/public/common/content_switches.h
++++ b/content/public/common/content_switches.h
+@@ -182,6 +182,7 @@ extern const char kPpapiStartupDialog[];
+ CONTENT_EXPORT extern const char kProcessPerSite[];
+ CONTENT_EXPORT extern const char kProcessPerTab[];
+ CONTENT_EXPORT extern const char kProcessType[];
++CONTENT_EXPORT extern const char kCustomV8SnapshotFileName[];
+ CONTENT_EXPORT extern const char kProxyServer[];
+ CONTENT_EXPORT extern const char kPullToRefresh[];
+ CONTENT_EXPORT extern const char kQuotaChangeEventInterval[];
+diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
+index 1b41c6ad5681ee85250b27cb9d221995ca1e4b7f..988167eb608c6bfbcda71702f31d6cc3e77e0adb 100644
+--- a/gin/v8_initializer.cc
++++ b/gin/v8_initializer.cc
+@@ -511,8 +511,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+ 
+ #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
+ 
+-// static
+-void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
++void V8Initializer::LoadV8SnapshotFromFileName(const char* file_name, V8SnapshotFileType snapshot_file_type) {
+   if (g_mapped_snapshot) {
+     // TODO(crbug.com/802962): Confirm not loading different type of snapshot
+     // files in a process.
+@@ -521,10 +520,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+ 
+   base::MemoryMappedFile::Region file_region;
+   base::File file =
+-      OpenV8File(GetSnapshotFileName(snapshot_file_type), &file_region);
++      OpenV8File(file_name, &file_region);
+   LoadV8SnapshotFromFile(std::move(file), &file_region, snapshot_file_type);
+ }
+ 
++// static
++void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
++  const char* file_name = GetSnapshotFileName(snapshot_file_type);
++
++  LoadV8SnapshotFromFileName(file_name, snapshot_file_type);
++}
++
+ // static
+ void V8Initializer::LoadV8SnapshotFromFile(
+     base::File snapshot_file,
+diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
+index 13a120c7fe8e69a44793473f3124c33d572a07a3..70f566c8186e5c0cfbff5d8c67357955fa8226e3 100644
+--- a/gin/v8_initializer.h
++++ b/gin/v8_initializer.h
+@@ -42,6 +42,7 @@ class GIN_EXPORT V8Initializer {
+                                         int* snapshot_size_out);
+ 
+ #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
++  static void LoadV8SnapshotFromFileName(const char* file_name, V8SnapshotFileType snapshot_file_type);
+   // Load V8 snapshot from default resources, if they are available.
+   static void LoadV8Snapshot(
+       V8SnapshotFileType snapshot_file_type = V8SnapshotFileType::kDefault);
