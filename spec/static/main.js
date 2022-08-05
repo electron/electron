@@ -147,15 +147,6 @@ app.whenReady().then(async function () {
   });
 });
 
-ipcMain.on('handle-uncaught-exception', (event, message) => {
-  suspendListeners(process, 'uncaughtException', (error) => {
-    event.returnValue = error.message;
-  });
-  fs.readFile(__filename, () => {
-    throw new Error(message);
-  });
-});
-
 ipcMain.on('handle-unhandled-rejection', (event, message) => {
   suspendListeners(process, 'unhandledRejection', (error) => {
     event.returnValue = error.message;
