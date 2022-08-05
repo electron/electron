@@ -24,9 +24,9 @@ const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
   ['spec-main', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
-  ['spec', 'ts-smoke', 'electron', 'main.ts'],
-  ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
-  ['spec', 'ts-smoke', 'runner.js']
+  ['spec-main', 'ts-smoke', 'electron', 'main.ts'],
+  ['spec-main', 'ts-smoke', 'electron', 'renderer.ts'],
+  ['spec-main', 'ts-smoke', 'runner.js']
 ].map(tokens => path.join(ELECTRON_ROOT, ...tokens)));
 
 const IS_WINDOWS = process.platform === 'win32';
