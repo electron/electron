@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, defer, delay } from './spec-helpers';
+import { ifit, ifdescribe, defer, delay, itremote } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
@@ -894,6 +894,27 @@ describe('chromium features', () => {
       });
     }
 
+    // FIXME(zcbenz): This test is making the spec runner hang on exit on Windows.
+    ifit(process.platform !== 'win32')('disables node integration when it is disabled on the parent window', async () => {
+      const windowUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'window-opener-no-node-integration.html'));
+      windowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-node.html`);
+
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+
+      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
+        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=false')
+        const e = await message
+        b.close();
+        return {
+          eventData: e.data
+        }
+      })()`);
+
+      expect(eventData.isProcessGlobalUndefined).to.be.true();
+    });
+
     it('disables node integration when it is disabled on the parent window for chrome devtools URLs', async () => {
       // NB. webSecurity is disabled because native window.open() is not
       // allowed to load devtools:// URLs.
@@ -1007,6 +1028,79 @@ describe('chromium features', () => {
       });
       expect(frameName).to.equal('__proto__');
     });
+
+    // TODO(nornagon): I'm not sure this ... ever was correct?
+    it.skip('inherit options of parent window', async () => {
+      const w = new BrowserWindow({ show: false, width: 123, height: 456 });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      const url = `file://${fixturesPath}/pages/window-open-size.html`;
+      const { width, height, eventData } = await w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
+        const b = window.open(${JSON.stringify(url)}, '', 'show=false')
+        const e = await message
+        b.close();
+        const width = outerWidth;
+        const height = outerHeight;
+        return {
+          width,
+          height,
+          eventData: e.data
+        }
+      })()`);
+      expect(eventData).to.equal(`size: ${width} ${height}`);
+      expect(eventData).to.equal('size: 123 456');
+    });
+
+    it('does not override child options', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      const windowUrl = `file://${fixturesPath}/pages/window-open-size.html`;
+      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
+        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,width=350,height=450')
+        const e = await message
+        b.close();
+        return { eventData: e.data }
+      })()`);
+      expect(eventData).to.equal('size: 350 450');
+    });
+
+    it('disables the <webview> tag when it is disabled on the parent window', async () => {
+      const windowUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'window-opener-no-webview-tag.html'));
+      windowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-webview.html`);
+
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+
+      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
+        const b = window.open(${JSON.stringify(windowUrl)}, '', 'webviewTag=no,contextIsolation=no,nodeIntegration=yes,show=no')
+        const e = await message
+        b.close();
+        return { eventData: e.data }
+      })()`);
+      expect(eventData.isWebViewGlobalUndefined).to.be.true();
+    });
+
+    it('throws an exception when the arguments cannot be converted to strings', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      await expect(
+        w.webContents.executeJavaScript('window.open(\'\', { toString: null })')
+      ).to.eventually.be.rejected();
+
+      await expect(
+        w.webContents.executeJavaScript('window.open(\'\', \'\', { toString: 3 })')
+      ).to.eventually.be.rejected();
+    });
+
+    it('does not throw an exception when the features include webPreferences', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      await expect(
+        w.webContents.executeJavaScript('window.open(\'\', \'\', \'show=no,webPreferences=\'); null')
+      ).to.eventually.be.fulfilled();
+    });
   });
 
   describe('window.opener', () => {
@@ -1022,6 +1116,92 @@ describe('chromium features', () => {
       const [, channel, opener] = await emittedOnce(w.webContents, 'ipc-message');
       expect(channel).to.equal('opener');
       expect(opener).to.equal(null);
+    });
+
+    it('is not null for window opened by window.open', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+
+      const windowUrl = `file://${fixturesPath}/pages/window-opener.html`;
+      const eventData = await w.webContents.executeJavaScript(`
+        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no');
+        new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => e.data);
+      `);
+      expect(eventData).to.equal('object');
+    });
+  });
+
+  describe('window.opener.postMessage', () => {
+    it('sets source and origin correctly', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+
+      const windowUrl = `file://${fixturesPath}/pages/window-opener-postMessage.html`;
+      const { sourceIsChild, origin } = await w.webContents.executeJavaScript(`
+        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no');
+        new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => ({
+          sourceIsChild: e.source === b,
+          origin: e.origin
+        }));
+      `);
+
+      expect(sourceIsChild).to.be.true();
+      expect(origin).to.equal('file://');
+    });
+
+    it('supports windows opened from a <webview>', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+      w.loadURL('about:blank');
+      const childWindowUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'webview-opener-postMessage.html'));
+      childWindowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-postMessage.html`);
+      const message = await w.webContents.executeJavaScript(`
+        const webview = new WebView();
+        webview.allowpopups = true;
+        webview.setAttribute('webpreferences', 'contextIsolation=no');
+        webview.src = ${JSON.stringify(childWindowUrl)}
+        const consoleMessage = new Promise(resolve => webview.addEventListener('console-message', resolve, {once: true}));
+        document.body.appendChild(webview);
+        consoleMessage.then(e => e.message)
+      `);
+
+      expect(message).to.equal('message');
+    });
+
+    describe('targetOrigin argument', () => {
+      let serverURL: string;
+      let server: any;
+
+      beforeEach((done) => {
+        server = http.createServer((req, res) => {
+          res.writeHead(200);
+          const filePath = path.join(fixturesPath, 'pages', 'window-opener-targetOrigin.html');
+          res.end(fs.readFileSync(filePath, 'utf8'));
+        });
+        server.listen(0, '127.0.0.1', () => {
+          serverURL = `http://127.0.0.1:${server.address().port}`;
+          done();
+        });
+      });
+
+      afterEach(() => {
+        server.close();
+      });
+
+      it('delivers messages that match the origin', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+        w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+        const data = await w.webContents.executeJavaScript(`
+          window.open(${JSON.stringify(serverURL)}, '', 'show=no,contextIsolation=no,nodeIntegration=yes');
+          new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => e.data)
+        `);
+        expect(data).to.equal('deliver');
+      });
     });
   });
 
@@ -1523,6 +1703,67 @@ describe('chromium features', () => {
         expect(childError).to.be.null();
       });
     });
+
+    describe('DOM storage quota increase', () => {
+      ['localStorage', 'sessionStorage'].forEach((storageName) => {
+        it(`allows saving at least 40MiB in ${storageName}`, async () => {
+          const w = new BrowserWindow({ show: false });
+          w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+          // Although JavaScript strings use UTF-16, the underlying
+          // storage provider may encode strings differently, muddling the
+          // translation between character and byte counts. However,
+          // a string of 40 * 2^20 characters will require at least 40MiB
+          // and presumably no more than 80MiB, a size guaranteed to
+          // to exceed the original 10MiB quota yet stay within the
+          // new 100MiB quota.
+          // Note that both the key name and value affect the total size.
+          const testKeyName = '_electronDOMStorageQuotaIncreasedTest';
+          const length = 40 * Math.pow(2, 20) - testKeyName.length;
+          await w.webContents.executeJavaScript(`
+            ${storageName}.setItem(${JSON.stringify(testKeyName)}, 'X'.repeat(${length}));
+          `);
+          // Wait at least one turn of the event loop to help avoid false positives
+          // Although not entirely necessary, the previous version of this test case
+          // failed to detect a real problem (perhaps related to DOM storage data caching)
+          // wherein calling `getItem` immediately after `setItem` would appear to work
+          // but then later (e.g. next tick) it would not.
+          await delay(1);
+          try {
+            const storedLength = await w.webContents.executeJavaScript(`${storageName}.getItem(${JSON.stringify(testKeyName)}).length`);
+            expect(storedLength).to.equal(length);
+          } finally {
+            await w.webContents.executeJavaScript(`${storageName}.removeItem(${JSON.stringify(testKeyName)});`);
+          }
+        });
+
+        it(`throws when attempting to use more than 128MiB in ${storageName}`, async () => {
+          const w = new BrowserWindow({ show: false });
+          w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+          await expect((async () => {
+            const testKeyName = '_electronDOMStorageQuotaStillEnforcedTest';
+            const length = 128 * Math.pow(2, 20) - testKeyName.length;
+            try {
+              await w.webContents.executeJavaScript(`
+                ${storageName}.setItem(${JSON.stringify(testKeyName)}, 'X'.repeat(${length}));
+              `);
+            } finally {
+              await w.webContents.executeJavaScript(`${storageName}.removeItem(${JSON.stringify(testKeyName)});`);
+            }
+          })()).to.eventually.be.rejected();
+        });
+      });
+    });
+
+    describe('persistent storage', () => {
+      it('can be requested', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const grantedBytes = await w.webContents.executeJavaScript(`new Promise(resolve => {
+          navigator.webkitPersistentStorage.requestQuota(1024 * 1024, resolve);
+        })`);
+        expect(grantedBytes).to.equal(1048576);
+      });
+    });
   });
 
   ifdescribe(features.isPDFViewerEnabled())('PDF Viewer', () => {
@@ -1789,6 +2030,125 @@ describe('chromium features', () => {
           })
       `);
       expect(x).to.deep.equal(new Uint8Array([116, 101, 115, 116]));
+    });
+  });
+
+  describe('Promise', () => {
+    before(() => {
+      ipcMain.handle('ping', (e, arg) => arg);
+    });
+    after(() => {
+      ipcMain.removeHandler('ping');
+    });
+    itremote('resolves correctly in Node.js calls', async () => {
+      await new Promise<void>((resolve, reject) => {
+        class XElement extends HTMLElement {}
+        customElements.define('x-element', XElement);
+        setImmediate(() => {
+          let called = false;
+          Promise.resolve().then(() => {
+            if (called) resolve();
+            else reject(new Error('wrong sequence'));
+          });
+          document.createElement('x-element');
+          called = true;
+        });
+      });
+    });
+
+    itremote('resolves correctly in Electron calls', async () => {
+      await new Promise<void>((resolve, reject) => {
+        class YElement extends HTMLElement {}
+        customElements.define('y-element', YElement);
+        require('electron').ipcRenderer.invoke('ping').then(() => {
+          let called = false;
+          Promise.resolve().then(() => {
+            if (called) resolve();
+            else reject(new Error('wrong sequence'));
+          });
+          document.createElement('y-element');
+          called = true;
+        });
+      });
+    });
+  });
+
+  describe('synchronous prompts', () => {
+    describe('window.alert(message, title)', () => {
+      itremote('throws an exception when the arguments cannot be converted to strings', () => {
+        expect(() => {
+          window.alert({ toString: null });
+        }).to.throw('Cannot convert object to primitive value');
+      });
+    });
+
+    describe('window.confirm(message, title)', () => {
+      itremote('throws an exception when the arguments cannot be converted to strings', () => {
+        expect(() => {
+          (window.confirm as any)({ toString: null }, 'title');
+        }).to.throw('Cannot convert object to primitive value');
+      });
+    });
+  });
+
+  describe('window.history', () => {
+    describe('window.history.go(offset)', () => {
+      itremote('throws an exception when the argument cannot be converted to a string', () => {
+        expect(() => {
+          (window.history.go as any)({ toString: null });
+        }).to.throw('Cannot convert object to primitive value');
+      });
+    });
+  });
+
+  describe('console functions', () => {
+    itremote('should exist', () => {
+      expect(console.log, 'log').to.be.a('function');
+      expect(console.error, 'error').to.be.a('function');
+      expect(console.warn, 'warn').to.be.a('function');
+      expect(console.info, 'info').to.be.a('function');
+      expect(console.debug, 'debug').to.be.a('function');
+      expect(console.trace, 'trace').to.be.a('function');
+      expect(console.time, 'time').to.be.a('function');
+      expect(console.timeEnd, 'timeEnd').to.be.a('function');
+    });
+  });
+
+  ifdescribe(features.isTtsEnabled())('SpeechSynthesis', () => {
+    before(function () {
+      // TODO(nornagon): this is broken on CI, it triggers:
+      // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
+      // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
+      // (null text in SpeechSynthesisUtterance struct).
+      this.skip();
+    });
+    itremote('should emit lifecycle events', async () => {
+      const sentence = `long sentence which will take at least a few seconds to
+          utter so that it's possible to pause and resume before the end`;
+      const utter = new SpeechSynthesisUtterance(sentence);
+      // Create a dummy utterance so that speech synthesis state
+      // is initialized for later calls.
+      speechSynthesis.speak(new SpeechSynthesisUtterance());
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utter);
+      // paused state after speak()
+      expect(speechSynthesis.paused).to.be.false();
+      await new Promise((resolve) => { utter.onstart = resolve; });
+      // paused state after start event
+      expect(speechSynthesis.paused).to.be.false();
+
+      speechSynthesis.pause();
+      // paused state changes async, right before the pause event
+      expect(speechSynthesis.paused).to.be.false();
+      await new Promise((resolve) => { utter.onpause = resolve; });
+      expect(speechSynthesis.paused).to.be.true();
+
+      speechSynthesis.resume();
+      await new Promise((resolve) => { utter.onresume = resolve; });
+      // paused state after resume event
+      expect(speechSynthesis.paused).to.be.false();
+
+      await new Promise((resolve) => { utter.onend = resolve; });
     });
   });
 });

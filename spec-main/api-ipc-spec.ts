@@ -3,8 +3,13 @@ import { expect } from 'chai';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { defer } from './spec-helpers';
+import * as path from 'path';
+import * as http from 'http';
+import { AddressInfo } from 'net';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
+const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('ipc module', () => {
   describe('invoke', () => {
@@ -90,7 +95,7 @@ describe('ipc module', () => {
     });
 
     it('throws an error when invoking a handler that was removed', async () => {
-      ipcMain.handle('test', () => {});
+      ipcMain.handle('test', () => { });
       ipcMain.removeHandler('test');
       const done = new Promise<void>(resolve => ipcMain.once('result', (e, arg) => {
         expect(arg.error).to.match(/No handler registered/);
@@ -101,9 +106,9 @@ describe('ipc module', () => {
     });
 
     it('forbids multiple handlers', async () => {
-      ipcMain.handle('test', () => {});
+      ipcMain.handle('test', () => { });
       try {
-        expect(() => { ipcMain.handle('test', () => {}); }).to.throw(/second handler/);
+        expect(() => { ipcMain.handle('test', () => { }); }).to.throw(/second handler/);
       } finally {
         ipcMain.removeHandler('test');
       }
@@ -562,5 +567,196 @@ describe('ipc module', () => {
 
     generateTests('WebContents.postMessage', contents => contents.postMessage.bind(contents));
     generateTests('WebFrameMain.postMessage', contents => contents.mainFrame.postMessage.bind(contents.mainFrame));
+  });
+
+  describe('WebContents.ipc', () => {
+    afterEach(closeAllWindows);
+
+    it('receives ipc messages sent from the WebContents', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.send(\'test\', 42)');
+      const [, num] = await emittedOnce(w.webContents.ipc, 'test');
+      expect(num).to.equal(42);
+    });
+
+    it('receives sync-ipc messages sent from the WebContents', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.ipc.on('test', (event, arg) => {
+        event.returnValue = arg * 2;
+      });
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.sendSync(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('receives postMessage messages sent from the WebContents, w/ MessagePorts', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.postMessage(\'test\', null, [(new MessageChannel).port1])');
+      const [event] = await emittedOnce(w.webContents.ipc, 'test');
+      expect(event.ports.length).to.equal(1);
+    });
+
+    it('handles invoke messages sent from the WebContents', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.ipc.handle('test', (_event, arg) => arg * 2);
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('cascades to ipcMain', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      let gotFromIpcMain = false;
+      const ipcMainReceived = new Promise<void>(resolve => ipcMain.on('test', () => { gotFromIpcMain = true; resolve(); }));
+      const ipcReceived = new Promise<boolean>(resolve => w.webContents.ipc.on('test', () => { resolve(gotFromIpcMain); }));
+      defer(() => ipcMain.removeAllListeners('test'));
+      w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.send(\'test\', 42)');
+
+      // assert that they are delivered in the correct order
+      expect(await ipcReceived).to.be.false();
+      await ipcMainReceived;
+    });
+
+    it('overrides ipcMain handlers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.ipc.handle('test', (_event, arg) => arg * 2);
+      ipcMain.handle('test', () => { throw new Error('should not be called'); });
+      defer(() => ipcMain.removeHandler('test'));
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('falls back to ipcMain handlers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      ipcMain.handle('test', (_event, arg) => { return arg * 2; });
+      defer(() => ipcMain.removeHandler('test'));
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('receives ipcs from child frames', async () => {
+      const server = http.createServer((req, res) => {
+        res.setHeader('content-type', 'text/html');
+        res.end('');
+      });
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const port = (server.address() as AddressInfo).port;
+      defer(() => {
+        server.close();
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegrationInSubFrames: true, preload: path.resolve(fixturesPath, 'preload-expose-ipc.js') } });
+      // Preloads don't run in about:blank windows, and file:// urls can't be loaded in iframes, so use a blank http page.
+      await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
+      w.webContents.mainFrame.frames[0].executeJavaScript('ipc.send(\'test\', 42)');
+      const [, arg] = await emittedOnce(w.webContents.ipc, 'test');
+      expect(arg).to.equal(42);
+    });
+  });
+
+  describe('WebFrameMain.ipc', () => {
+    afterEach(closeAllWindows);
+    it('responds to ipc messages in the main frame', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.send(\'test\', 42)');
+      const [, arg] = await emittedOnce(w.webContents.mainFrame.ipc, 'test');
+      expect(arg).to.equal(42);
+    });
+
+    it('responds to sync ipc messages in the main frame', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.mainFrame.ipc.on('test', (event, arg) => {
+        event.returnValue = arg * 2;
+      });
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.sendSync(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('receives postMessage messages sent from the WebContents, w/ MessagePorts', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.postMessage(\'test\', null, [(new MessageChannel).port1])');
+      const [event] = await emittedOnce(w.webContents.mainFrame.ipc, 'test');
+      expect(event.ports.length).to.equal(1);
+    });
+
+    it('handles invoke messages sent from the WebContents', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.mainFrame.ipc.handle('test', (_event, arg) => arg * 2);
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('cascades to WebContents and ipcMain', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      let gotFromIpcMain = false;
+      let gotFromWebContents = false;
+      const ipcMainReceived = new Promise<void>(resolve => ipcMain.on('test', () => { gotFromIpcMain = true; resolve(); }));
+      const ipcWebContentsReceived = new Promise<boolean>(resolve => w.webContents.ipc.on('test', () => { gotFromWebContents = true; resolve(gotFromIpcMain); }));
+      const ipcReceived = new Promise<boolean>(resolve => w.webContents.mainFrame.ipc.on('test', () => { resolve(gotFromWebContents); }));
+      defer(() => ipcMain.removeAllListeners('test'));
+      w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.send(\'test\', 42)');
+
+      // assert that they are delivered in the correct order
+      expect(await ipcReceived).to.be.false();
+      expect(await ipcWebContentsReceived).to.be.false();
+      await ipcMainReceived;
+    });
+
+    it('overrides ipcMain handlers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.mainFrame.ipc.handle('test', (_event, arg) => arg * 2);
+      ipcMain.handle('test', () => { throw new Error('should not be called'); });
+      defer(() => ipcMain.removeHandler('test'));
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('overrides WebContents handlers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.ipc.handle('test', () => { throw new Error('should not be called'); });
+      w.webContents.mainFrame.ipc.handle('test', (_event, arg) => arg * 2);
+      ipcMain.handle('test', () => { throw new Error('should not be called'); });
+      defer(() => ipcMain.removeHandler('test'));
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('falls back to WebContents handlers', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      w.webContents.ipc.handle('test', (_event, arg) => { return arg * 2; });
+      const result = await w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.invoke(\'test\', 42)');
+      expect(result).to.equal(42 * 2);
+    });
+
+    it('receives ipcs from child frames', async () => {
+      const server = http.createServer((req, res) => {
+        res.setHeader('content-type', 'text/html');
+        res.end('');
+      });
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const port = (server.address() as AddressInfo).port;
+      defer(() => {
+        server.close();
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegrationInSubFrames: true, preload: path.resolve(fixturesPath, 'preload-expose-ipc.js') } });
+      // Preloads don't run in about:blank windows, and file:// urls can't be loaded in iframes, so use a blank http page.
+      await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
+      w.webContents.mainFrame.frames[0].executeJavaScript('ipc.send(\'test\', 42)');
+      w.webContents.mainFrame.ipc.on('test', () => { throw new Error('should not be called'); });
+      const [, arg] = await emittedOnce(w.webContents.mainFrame.frames[0].ipc, 'test');
+      expect(arg).to.equal(42);
+    });
   });
 });
