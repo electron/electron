@@ -5,7 +5,7 @@
   // Pass a random parameter to create independent worker.
   let worker = new SharedWorker(`../workers/shared_worker_node.js?a={Math.random()}`)
   worker.port.onmessage = function (event) {
-    ipcRenderer.sendToHost(event.data)
+    ipcRenderer.send('worker-result', event.data)
   }
 </script>
 </body>

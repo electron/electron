@@ -217,6 +217,7 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   HandleSIGCHLD();
 #endif
 #if BUILDFLAG(IS_LINUX)
+  DetectOzonePlatform();
   ui::OzonePlatform::PreEarlyInitialization();
 #endif
 #if BUILDFLAG(IS_MAC)
@@ -277,12 +278,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {
-#if defined(USE_AURA)
-  if (!display::Screen::GetScreen()) {
-    screen_ = views::CreateDesktopScreen();
-  }
-#endif
-
   if (!views::LayoutProvider::Get())
     layout_provider_ = std::make_unique<views::LayoutProvider>();
 
@@ -312,6 +307,14 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 
   // Load resources bundle according to locale.
   std::string loaded_locale = LoadResourceBundle(locale);
+
+#if defined(USE_AURA)
+  // NB: must be called _after_ locale resource bundle is loaded,
+  // because ui lib makes use of it in X11
+  if (!display::Screen::GetScreen()) {
+    screen_ = views::CreateDesktopScreen();
+  }
+#endif
 
   // Initialize the app locale.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);

@@ -1,23 +1,3 @@
-config("build_time_executable") {
-  configs = []
-
-  if (is_electron_build && !is_component_build) {
-    # The executables which have this config applied are dependent on ffmpeg,
-    # which is always a shared library in an Electron build. However, in the
-    # non-component build, executables don't have rpath set to search for
-    # libraries in the executable's directory, so ffmpeg cannot be found. So
-    # let's make sure rpath is set here.
-    # See '//build/config/gcc/BUILD.gn' for details on the rpath setting.
-    if (is_linux) {
-      configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
-    }
-
-    if (is_mac) {
-      ldflags = [ "-Wl,-rpath,@loader_path/." ]
-    }
-  }
-}
-
 # For MAS build, we force defining "MAS_BUILD".
 config("mas_build") {
   if (is_mas_build) {

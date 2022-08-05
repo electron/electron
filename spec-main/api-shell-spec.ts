@@ -2,9 +2,10 @@ import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
-import { ifit } from './spec-helpers';
+import { ifdescribe, ifit } from './spec-helpers';
 import * as http from 'http';
 import * as fs from 'fs-extra';
+import * as os from 'os';
 import * as path from 'path';
 import { AddressInfo } from 'net';
 import { expect } from 'chai';
@@ -82,6 +83,75 @@ describe('shell module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
       await expect(w.webContents.executeJavaScript('require(\'electron\').shell.trashItem(\'does-not-exist\')')).to.be.rejectedWith(/does-not-exist|Failed to move item|Failed to create FileOperation/);
+    });
+  });
+
+  const shortcutOptions = {
+    target: 'C:\\target',
+    description: 'description',
+    cwd: 'cwd',
+    args: 'args',
+    appUserModelId: 'appUserModelId',
+    icon: 'icon',
+    iconIndex: 1,
+    toastActivatorClsid: '{0E3CFA27-6FEA-410B-824F-A174B6E865E5}'
+  };
+  ifdescribe(process.platform === 'win32')('shell.readShortcutLink(shortcutPath)', () => {
+    it('throws when failed', () => {
+      expect(() => {
+        shell.readShortcutLink('not-exist');
+      }).to.throw('Failed to read shortcut link');
+    });
+
+    const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+    it('reads all properties of a shortcut', () => {
+      const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'));
+      expect(shortcut).to.deep.equal(shortcutOptions);
+    });
+  });
+
+  ifdescribe(process.platform === 'win32')('shell.writeShortcutLink(shortcutPath[, operation], options)', () => {
+    const tmpShortcut = path.join(os.tmpdir(), `${Date.now()}.lnk`);
+
+    afterEach(() => {
+      fs.unlinkSync(tmpShortcut);
+    });
+
+    it('writes the shortcut', () => {
+      expect(shell.writeShortcutLink(tmpShortcut, { target: 'C:\\' })).to.be.true();
+      expect(fs.existsSync(tmpShortcut)).to.be.true();
+    });
+
+    it('correctly sets the fields', () => {
+      expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+    });
+
+    it('updates the shortcut', () => {
+      expect(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions)).to.be.false();
+      expect(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+      const change = { target: 'D:\\' };
+      expect(shell.writeShortcutLink(tmpShortcut, 'update', change)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal({ ...shortcutOptions, ...change });
+    });
+
+    it('replaces the shortcut', () => {
+      expect(shell.writeShortcutLink(tmpShortcut, 'replace', shortcutOptions)).to.be.false();
+      expect(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+      const change = {
+        target: 'D:\\',
+        description: 'description2',
+        cwd: 'cwd2',
+        args: 'args2',
+        appUserModelId: 'appUserModelId2',
+        icon: 'icon2',
+        iconIndex: 2,
+        toastActivatorClsid: '{C51A3996-CAD9-4934-848B-16285D4A1496}'
+      };
+      expect(shell.writeShortcutLink(tmpShortcut, 'replace', change)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(change);
     });
   });
 });

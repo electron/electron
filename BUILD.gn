@@ -233,6 +233,7 @@ action("electron_js2c") {
 action("generate_config_gypi") {
   outputs = [ "$root_gen_dir/config.gypi" ]
   script = "script/generate-config-gypi.py"
+  inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
 }
 
@@ -899,6 +900,13 @@ if (is_mac) {
         "-rpath",
         "@executable_path/../../../../../..",
       ]
+    }
+
+    # For component ffmpeg under non-component build, it is linked from
+    # @loader_path. However the ffmpeg.dylib is moved to a different place
+    # when generating app bundle, and we should change to link from @rpath.
+    if (is_component_ffmpeg && !is_component_build) {
+      ldflags += [ "-Wcrl,installnametool,-change,@loader_path/libffmpeg.dylib,@rpath/libffmpeg.dylib" ]
     }
   }
 

@@ -9,11 +9,14 @@ import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.
 // eslint-disable-next-line
 session
+
+const webFrameMainBinding = process._linkedBinding('electron_browser_web_frame_main');
 
 let nextId = 0;
 const getNextId = function () {
@@ -121,13 +124,6 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
   const frame = getWebFrame(this, frameId);
   if (!frame) return false;
   frame.send(channel, ...args);
-  return true;
-};
-
-WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args) {
-  const frame = getWebFrame(this, frameId);
-  if (!frame) return false;
-  frame._sendInternal(channel, ...args);
   return true;
 };
 
@@ -563,6 +559,12 @@ WebContents.prototype._init = function () {
 
   this._windowOpenHandler = null;
 
+  const ipc = new IpcMainImpl();
+  Object.defineProperty(this, 'ipc', {
+    get () { return ipc; },
+    enumerable: true
+  });
+
   // Dispatch IPC messages to the ipc module.
   this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
     addSenderFrameToEvent(event);
@@ -571,6 +573,9 @@ WebContents.prototype._init = function () {
     } else {
       addReplyToEvent(event);
       this.emit('ipc-message', event, channel, ...args);
+      const maybeWebFrame = webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
+      maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, ...args);
+      ipc.emit(channel, event, ...args);
       ipcMain.emit(channel, event, ...args);
     }
   });
@@ -582,8 +587,10 @@ WebContents.prototype._init = function () {
       console.error(`Error occurred in handler for '${channel}':`, error);
       event.sendReply({ error: error.toString() });
     };
-    const target = internal ? ipcMainInternal : ipcMain;
-    if ((target as any)._invokeHandlers.has(channel)) {
+    const maybeWebFrame = webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
+    const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame && maybeWebFrame.ipc, ipc, ipcMain];
+    const target = targets.find(target => target && (target as any)._invokeHandlers.has(channel));
+    if (target) {
       (target as any)._invokeHandlers.get(channel)(event, ...args);
     } else {
       event._throw(`No handler registered for '${channel}'`);
@@ -597,10 +604,13 @@ WebContents.prototype._init = function () {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
-      if (this.listenerCount('ipc-message-sync') === 0 && ipcMain.listenerCount(channel) === 0) {
+      const maybeWebFrame = webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
+      if (this.listenerCount('ipc-message-sync') === 0 && ipc.listenerCount(channel) === 0 && ipcMain.listenerCount(channel) === 0 && (!maybeWebFrame || maybeWebFrame.ipc.listenerCount(channel) === 0)) {
         console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
       }
       this.emit('ipc-message-sync', event, channel, ...args);
+      maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, ...args);
+      ipc.emit(channel, event, ...args);
       ipcMain.emit(channel, event, ...args);
     }
   });
@@ -608,6 +618,9 @@ WebContents.prototype._init = function () {
   this.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
     addSenderFrameToEvent(event);
     event.ports = ports.map(p => new MessagePortMain(p));
+    ipc.emit(channel, event, message);
+    const maybeWebFrame = webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
+    maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, message);
     ipcMain.emit(channel, event, message);
   });
 

@@ -30,11 +30,14 @@ template("webpack_build") {
     args = [
       "--config",
       rebase_path(invoker.config_file),
-      "--output-filename=" + get_path_info(invoker.out_file, "file"),
-      "--output-path=" + rebase_path(get_path_info(invoker.out_file, "dir")),
-      "--env.buildflags=" +
-          rebase_path("$target_gen_dir/buildflags/buildflags.h"),
-      "--env.mode=" + mode,
+      "--output-filename",
+      get_path_info(invoker.out_file, "file"),
+      "--output-path",
+      rebase_path(get_path_info(invoker.out_file, "dir")),
+      "--env",
+      "buildflags=" + rebase_path("$target_gen_dir/buildflags/buildflags.h"),
+      "--env",
+      "mode=" + mode,
     ]
     deps += [ "//electron/buildflags" ]
 
