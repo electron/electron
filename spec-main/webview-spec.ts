@@ -3,8 +3,8 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, delay, defer, ifdescribe } from './spec-helpers';
-import { AssertionError, expect } from 'chai';
+import { ifit, ifdescribe, delay, defer, itremote, useRemoteContext } from './spec-helpers';
+import { expect } from 'chai';
 import * as http from 'http';
 import { AddressInfo } from 'net';
 import * as auth from 'basic-auth';
@@ -51,25 +51,6 @@ async function loadWebViewAndWaitForMessage (w: WebContents, attributes: Record<
   const { message } = await loadWebViewAndWaitForEvent(w, attributes, 'console-message');
   return message;
 };
-
-async function itremote (name: string, fn: Function, args?: any[]) {
-  it(name, async () => {
-    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, webviewTag: true } });
-    defer(() => w.close());
-    w.loadURL('about:blank');
-    const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
-      try {
-        const chai_1 = require('chai')
-        chai_1.use(require('dirty-chai'))
-        await (${fn})(...${JSON.stringify(args ?? [])})
-        return {ok: true};
-      } catch (e) {
-        return {ok: false, message: e.message}
-      }
-    })()`);
-    if (!ok) { throw new AssertionError(message); }
-  });
-}
 
 describe('<webview> tag', function () {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
@@ -1108,6 +1089,7 @@ describe('<webview> tag', function () {
     });
 
     describe('preload attribute', () => {
+      useRemoteContext({ webPreferences: { webviewTag: true } });
       it('loads the script before other scripts in window', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
           preload: `${fixtures}/module/preload.js`,
@@ -1434,6 +1416,7 @@ describe('<webview> tag', function () {
   });
 
   describe('events', () => {
+    useRemoteContext({ webPreferences: { webviewTag: true } });
     let w: WebContents;
     before(async () => {
       const window = new BrowserWindow({
