@@ -1,8 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ryan Manuel <ryanm@cypress.io>
 Date: Thu, 4 Aug 2022 22:37:01 -0500
-Subject: Updates to allow for using a custom v8 snapshot file name
+Subject: Allow using a custom v8 snapshot file name
 
+By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This patch allows consumers
+to have multiple v8 snapshots loaded in different contexts by passing `custom-v8-snapshot-file-name`
+via the command line.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
 index f19e32fd33ff0ce8f44ecec76e4583273f43b231..e24a23704d93b5209323677c50a66e7f38ebb29b 100644
