@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Thu, 23 Jun 2022 18:52:27 +0000
+Subject: Fix Windows build with enable_plugins=false.
+
+Add some #if checks to Windows-only code so plugins enums are only
+referenced when plugins are enabled. Also only build
+plugin_list_unittest.cc when plugins are enabled.
+
+Bug: 1027360
+Change-Id: I0d265ae711e5e3401076dc89d1d49329f423ca64
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3719402
+Reviewed-by: Alex Gough <ajgo@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1017281}
+
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+index 939c28a029418bc353795aa1a007508680f42e57..2db6a0d23d72c3d77db6eec4de7c9d0f0500fbe2 100644
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -3951,7 +3951,9 @@ std::wstring ChromeContentBrowserClient::GetAppContainerSidForSandboxType(
+       return std::wstring();
+     case sandbox::mojom::Sandbox::kGpu:
+       return std::wstring();
++#if BUILDFLAG(ENABLE_PLUGINS)
+     case sandbox::mojom::Sandbox::kPpapi:
++#endif
+     case sandbox::mojom::Sandbox::kNoSandbox:
+     case sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges:
+     case sandbox::mojom::Sandbox::kXrCompositing:
+@@ -4023,7 +4025,9 @@ bool ChromeContentBrowserClient::PreSpawnChild(
+       break;
+     case sandbox::mojom::Sandbox::kUtility:
+     case sandbox::mojom::Sandbox::kGpu:
++#if BUILDFLAG(ENABLE_PLUGINS)
+     case sandbox::mojom::Sandbox::kPpapi:
++#endif
+     case sandbox::mojom::Sandbox::kNoSandbox:
+     case sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges:
+     case sandbox::mojom::Sandbox::kXrCompositing:
+diff --git a/chrome/child/pdf_child_init.cc b/chrome/child/pdf_child_init.cc
+index e53cfc60b41fe0d4eeb0362e9923f1e39e61a64d..8e0d72623bbb0c92c8fd8b97ab833c947806667b 100644
+--- a/chrome/child/pdf_child_init.cc
++++ b/chrome/child/pdf_child_init.cc
+@@ -14,6 +14,7 @@
+ #include "base/win/windows_version.h"
+ #include "content/public/child/child_thread.h"
+ #include "content/public/common/content_switches.h"
++#include "ppapi/buildflags/buildflags.h"
+ #include "sandbox/policy/mojom/sandbox.mojom.h"
+ #include "sandbox/policy/sandbox_type.h"
+ #include "sandbox/policy/switches.h"
+@@ -57,7 +58,9 @@ void MaybePatchGdiGetFontData() {
+   auto service_sandbox_type =
+       sandbox::policy::SandboxTypeFromCommandLine(command_line);
+   bool need_gdi =
++#if BUILDFLAG(ENABLE_PLUGINS)
+       service_sandbox_type == sandbox::mojom::Sandbox::kPpapi ||
++#endif
+       service_sandbox_type == sandbox::mojom::Sandbox::kPrintCompositor ||
+       service_sandbox_type == sandbox::mojom::Sandbox::kPdfConversion ||
+       (service_sandbox_type == sandbox::mojom::Sandbox::kRenderer &&
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index dec80de25675467a07d3c213538d240507916254..1df3675fed1656094e808fa4477ffd2ea126b83d 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -2168,7 +2168,6 @@ test("content_unittests") {
+     "../browser/payments/payment_manager_unittest.cc",
+     "../browser/permissions/permission_controller_impl_unittest.cc",
+     "../browser/picture_in_picture/picture_in_picture_service_impl_unittest.cc",
+-    "../browser/plugin_list_unittest.cc",
+     "../browser/ppapi_plugin_sandboxed_process_launcher_delegate_unittest.cc",
+     "../browser/prerender/prerender_host_registry_unittest.cc",
+     "../browser/prerender/prerender_host_unittest.cc",
+@@ -2870,8 +2869,8 @@ test("content_unittests") {
+     deps += [ "//ui/events:test_support" ]
+   }
+ 
+-  if (!is_win && !is_mac) {
+-    sources -= [ "../browser/plugin_list_unittest.cc" ]
++  if (enable_plugins && (is_win || is_mac)) {
++    sources += [ "../browser/plugin_list_unittest.cc" ]
+   }
+ 
+   if (use_ozone) {
+diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
+index e4e7cfe65b87ef3bc6b88073dc384a50fd8256ea..0f89e8b8e971fe77cc537cb2e92b54f1d988bc2a 100644
+--- a/sandbox/policy/win/sandbox_win.cc
++++ b/sandbox/policy/win/sandbox_win.cc
+@@ -38,6 +38,7 @@
+ #include "base/win/sid.h"
+ #include "base/win/win_util.h"
+ #include "base/win/windows_version.h"
++#include "ppapi/buildflags/buildflags.h"
+ #include "printing/buildflags/buildflags.h"
+ #include "sandbox/features.h"
+ #include "sandbox/policy/features.h"
+@@ -1216,8 +1217,10 @@ std::string SandboxWin::GetSandboxTypeInEnglish(Sandbox sandbox_type) {
+       return "Utility";
+     case Sandbox::kGpu:
+       return "GPU";
++#if BUILDFLAG(ENABLE_PLUGINS)
+     case Sandbox::kPpapi:
+       return "PPAPI";
++#endif
+     case Sandbox::kNetwork:
+       return "Network";
+     case Sandbox::kCdm:
