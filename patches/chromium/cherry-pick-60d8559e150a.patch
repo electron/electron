@@ -1,0 +1,42 @@
+From 60d8559e150a6bc99704967c06c68c2d0926cd5a Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Tue, 12 Jul 2022 18:52:14 +0000
+Subject: [PATCH] M104: Better define "first result" in PDFiumEngine::AddFindResult().
+
+Currently, changing the PDF layout confuses AddFindResult() and causes
+it to fail a DCHECK(). Adjust AddFindResult() to avoid the failing
+DCHECK().
+
+This is a cherry-pick of https://crrev.com/1021389 without the test
+changes.
+
+Bug: 1339745
+Change-Id: I25c2b6b436700f9aeca4924fef662ad2909f0a8c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3758626
+Reviewed-by: K. Moon <kmoon@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5112@{#820}
+Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
+---
+
+diff --git a/pdf/pdfium/pdfium_engine.cc b/pdf/pdfium/pdfium_engine.cc
+index fca3207..8b1fb836 100644
+--- a/pdf/pdfium/pdfium_engine.cc
++++ b/pdf/pdfium/pdfium_engine.cc
+@@ -1971,7 +1971,7 @@
+ }
+ 
+ void PDFiumEngine::AddFindResult(const PDFiumRange& result) {
+-  bool first_result = find_results_.empty();
++  bool first_result = find_results_.empty() && !resume_find_index_.has_value();
+   // Figure out where to insert the new location, since we could have
+   // started searching midway and now we wrapped.
+   size_t result_index;
+@@ -1988,7 +1988,6 @@
+   UpdateTickMarks();
+   client_->NotifyNumberOfFindResultsChanged(find_results_.size(), false);
+   if (first_result) {
+-    DCHECK(!resume_find_index_);
+     DCHECK(!current_find_index_);
+     SelectFindResult(/*forward=*/true);
+   }
