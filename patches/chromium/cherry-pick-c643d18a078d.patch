@@ -1,0 +1,26 @@
+From c643d18a078d21af52875981331100bfcc0004bb Mon Sep 17 00:00:00 2001
+From: Rayan Kanso <rayankans@google.com>
+Date: Tue, 07 Jun 2022 13:13:36 +0000
+Subject: [PATCH] [BackgroundFetch] Don't expose URL chain in case of CO redirect
+
+Bug: 1278255
+Change-Id: If853327b853e29792e5c8d1dfaeecf21d6fec004
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3693143
+Reviewed-by: Susanne Westphal <swestphal@google.com>
+Commit-Queue: Rayan Kanso <rayankans@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1011409}
+---
+
+diff --git a/content/browser/background_fetch/storage/mark_request_complete_task.cc b/content/browser/background_fetch/storage/mark_request_complete_task.cc
+index 32a818b..d729dfc 100644
+--- a/content/browser/background_fetch/storage/mark_request_complete_task.cc
++++ b/content/browser/background_fetch/storage/mark_request_complete_task.cc
+@@ -104,6 +104,8 @@
+   BackgroundFetchCrossOriginFilter filter(
+       registration_id_.storage_key().origin(), *request_info_);
+   if (!filter.CanPopulateBody()) {
++    // Don't expose the initial URL in case of cross-origin redirects.
++    response_->url_list.resize(1);
+     failure_reason_ = proto::BackgroundFetchRegistration::FETCH_ERROR;
+     // No point writing the response to the cache since it won't be exposed.
+     CreateAndStoreCompletedRequest(std::move(done_closure));
