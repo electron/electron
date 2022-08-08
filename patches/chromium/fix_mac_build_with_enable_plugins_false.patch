@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Thu, 23 Jun 2022 17:54:12 +0000
+Subject: Fix Mac build with enable_plugins=false.
+
+Remove spurious includes of plugin headers, and add appropriate #ifs.
+
+Bug: 1027360
+Change-Id: I445252f5de14dff8e89ab371429a24ad3e57ca97
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3719213
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1017248}
+
+diff --git a/chrome/browser/app_controller_mac.mm b/chrome/browser/app_controller_mac.mm
+index 480244fb50f636f519485693b8d1a4cf5033c3b0..f426e30ff371c35382512d7ec7846ca6cf58515e 100644
+--- a/chrome/browser/app_controller_mac.mm
++++ b/chrome/browser/app_controller_mac.mm
+@@ -108,7 +108,6 @@
+ #include "components/prefs/pref_service.h"
+ #include "components/sessions/core/tab_restore_service.h"
+ #include "content/public/browser/download_manager.h"
+-#include "content/public/browser/plugin_service.h"
+ #include "extensions/browser/extension_registry.h"
+ #include "extensions/browser/extension_system.h"
+ #include "net/base/filename_util.h"
+diff --git a/content/browser/sandbox_mac_unittest.mm b/content/browser/sandbox_mac_unittest.mm
+index 05e9b29d7a039094fb6fd63fb8b152439f089d41..b860c1e54f0ced814fb269087924d2f695f816f3 100644
+--- a/content/browser/sandbox_mac_unittest.mm
++++ b/content/browser/sandbox_mac_unittest.mm
+@@ -30,6 +30,7 @@
+ #include "content/browser/sandbox_parameters_mac.h"
+ #include "content/common/mac/font_loader.h"
+ #include "crypto/openssl_util.h"
++#include "ppapi/buildflags/buildflags.h"
+ #include "sandbox/mac/seatbelt.h"
+ #include "sandbox/mac/seatbelt_exec.h"
+ #include "sandbox/policy/mac/sandbox_mac.h"
+@@ -93,7 +94,9 @@ void ExecuteInAllSandboxTypes(const std::string& multiprocess_main,
+         sandbox::mojom::Sandbox::kCdm,
+         sandbox::mojom::Sandbox::kGpu,
+         sandbox::mojom::Sandbox::kNaClLoader,
++#if BUILDFLAG(ENABLE_PLUGINS)
+         sandbox::mojom::Sandbox::kPpapi,
++#endif
+         sandbox::mojom::Sandbox::kPrintBackend,
+         sandbox::mojom::Sandbox::kPrintCompositor,
+         sandbox::mojom::Sandbox::kRenderer,
+diff --git a/content/browser/sandbox_parameters_mac.mm b/content/browser/sandbox_parameters_mac.mm
+index 76a22420f605994ebe0a7ffa9a7f2a0535c2440f..cf8b251180177c3ea4f8ddb2450f0483d201ba2b 100644
+--- a/content/browser/sandbox_parameters_mac.mm
++++ b/content/browser/sandbox_parameters_mac.mm
+@@ -20,7 +20,6 @@
+ #include "base/strings/sys_string_conversions.h"
+ #include "base/system/sys_info.h"
+ #include "content/public/browser/content_browser_client.h"
+-#include "content/public/browser/plugin_service.h"
+ #include "content/public/common/content_client.h"
+ #include "content/public/common/content_features.h"
+ #include "content/public/common/content_switches.h"
+@@ -34,6 +33,7 @@
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+ 
+ #if BUILDFLAG(ENABLE_PLUGINS)
++#include "content/public/browser/plugin_service.h"
+ #include "content/public/common/pepper_plugin_info.h"
+ #endif
+ 
+@@ -229,11 +229,11 @@ void SetupSandboxParameters(sandbox::mojom::Sandbox sandbox_type,
+     case sandbox::mojom::Sandbox::kNetwork:
+       SetupNetworkSandboxParameters(client);
+       break;
+-    case sandbox::mojom::Sandbox::kPpapi:
+ #if BUILDFLAG(ENABLE_PLUGINS)
++    case sandbox::mojom::Sandbox::kPpapi:
+       SetupPPAPISandboxParameters(client);
+-#endif
+       break;
++#endif
+     case sandbox::mojom::Sandbox::kNoSandbox:
+       CHECK(false) << "Unhandled parameters for sandbox_type "
+                    << static_cast<int>(sandbox_type);
+diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
+index 34f8b003c96b9fff00b666ae184b5076e5d6fd45..11392b99ecad98f2cf39e67d545fe1947ede1593 100644
+--- a/sandbox/policy/mac/sandbox_mac.mm
++++ b/sandbox/policy/mac/sandbox_mac.mm
+@@ -12,6 +12,7 @@
+ #include "base/files/scoped_file.h"
+ #include "base/logging.h"
+ #include "base/posix/eintr_wrapper.h"
++#include "ppapi/buildflags/buildflags.h"
+ #include "printing/buildflags/buildflags.h"
+ #include "sandbox/policy/mac/audio.sb.h"
+ #include "sandbox/policy/mac/cdm.sb.h"
+@@ -69,9 +70,11 @@
+     case sandbox::mojom::Sandbox::kNetwork:
+       profile += kSeatbeltPolicyString_network;
+       break;
++#if BUILDFLAG(ENABLE_PLUGINS)
+     case sandbox::mojom::Sandbox::kPpapi:
+       profile += kSeatbeltPolicyString_ppapi;
+       break;
++#endif
+ #if BUILDFLAG(ENABLE_PRINTING)
+     case sandbox::mojom::Sandbox::kPrintBackend:
+       profile += kSeatbeltPolicyString_print_backend;
+diff --git a/ui/views_content_client/views_content_client_main_parts_mac.mm b/ui/views_content_client/views_content_client_main_parts_mac.mm
+index 044600ad464fc48a805bf3e47811808983d43fef..df23f797e4f0898d9dc7742e05d286f540bfdacb 100644
+--- a/ui/views_content_client/views_content_client_main_parts_mac.mm
++++ b/ui/views_content_client/views_content_client_main_parts_mac.mm
+@@ -12,7 +12,6 @@
+ #include "base/mac/scoped_nsobject.h"
+ #include "base/path_service.h"
+ #include "content/public/browser/context_factory.h"
+-#include "content/public/browser/plugin_service.h"
+ #include "content/public/common/content_paths.h"
+ #include "content/public/common/result_codes.h"
+ #include "content/shell/browser/shell_application_mac.h"
