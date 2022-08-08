@@ -60,8 +60,8 @@ const splitPath = (archivePathOrBuffer: string | Buffer) => {
 // Convert asar archive's Stats object to fs's Stats object.
 let nextInode = 0;
 
-const uid = process.getuid != null ? process.getuid() : 0;
-const gid = process.getgid != null ? process.getgid() : 0;
+const uid = process.getuid?.() ?? 0;
+const gid = process.getgid?.() ?? 0;
 
 const fakeTime = new Date();
 
