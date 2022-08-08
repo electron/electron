@@ -129,3 +129,4 @@ add_maximized_parameter_to_linuxui_getwindowframeprovider.patch
 cherry-pick-94a8bdafc8c6.patch
 fix_mac_build_with_enable_plugins_false.patch
 fix_windows_build_with_enable_plugins_false.patch
+cherry-pick-54a7927b19f9.patch
