@@ -38,8 +38,8 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
       : null;
 
   const webPreferences: Electron.WebPreferences = {
-    nodeIntegration: params.nodeintegration != null ? params.nodeintegration : false,
-    nodeIntegrationInSubFrames: params.nodeintegrationinsubframes != null ? params.nodeintegrationinsubframes : false,
+    nodeIntegration: params.nodeintegration ?? false,
+    nodeIntegrationInSubFrames: params.nodeintegrationinsubframes ?? false,
     plugins: params.plugins,
     zoomFactor: embedder.zoomFactor,
     disablePopups: !params.allowpopups,

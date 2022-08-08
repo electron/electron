@@ -27,7 +27,7 @@ into your app code.
 ## Using update.electronjs.org
 
 The Electron maintainers provide a free auto-updating service for open-source apps
-at https://update.electronjs.org. Its requirements are:
+at [https://update.electronjs.org](https://update.electronjs.org). Its requirements are:
 
 - Your app runs on macOS or Windows
 - Your app has a public GitHub repository

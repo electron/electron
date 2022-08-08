@@ -990,7 +990,7 @@ step-ts-compile: &step-ts-compile
       do
         out="${f:29}"
         if [ "$out" != "base.js" ]; then
-          node script/yarn webpack --config $f --output-filename=$out --output-path=./.tmp --env.mode=development
+          node script/yarn webpack --config $f --output-filename=$out --output-path=./.tmp --env mode=development
         fi
       done
 
