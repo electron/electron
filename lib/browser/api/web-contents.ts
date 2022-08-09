@@ -670,7 +670,6 @@ WebContents.prototype._init = function () {
       const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
-          event,
           embedder: event.sender,
           disposition,
           referrer,
@@ -717,18 +716,16 @@ WebContents.prototype._init = function () {
           transparent: windowOpenOverriddenOptions.transparent,
           ...windowOpenOverriddenOptions.webPreferences
         } : undefined;
-        // TODO(zcbenz): The features string is parsed twice: here where it is
-        // passed to C++, and in |makeBrowserWindowOptions| later where it is
-        // not actually used since the WebContents is created here.
-        // We should be able to remove the latter once the |new-window| event
-        // is removed.
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
-        // Parameters should keep same with |makeBrowserWindowOptions|.
         const webPreferences = makeWebPreferences({
           embedder: event.sender,
           insecureParsedWebPreferences: parsedWebPreferences,
           secureOverrideWebPreferences
         });
+        windowOpenOverriddenOptions = {
+          ...windowOpenOverriddenOptions,
+          webPreferences
+        };
         this._setNextChildWebPreferences(webPreferences);
       }
     });
@@ -750,7 +747,6 @@ WebContents.prototype._init = function () {
       }
 
       openGuestWindow({
-        event,
         embedder: event.sender,
         guest: webContents,
         overrideBrowserWindowOptions: overriddenOptions,
