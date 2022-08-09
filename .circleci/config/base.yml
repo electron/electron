@@ -568,7 +568,7 @@ step-electron-build: &step-electron-build
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
-        (zip mksnapshot.zip out/Default/mksnapshot_args out/Default/clang_x64_v8_arm64/gen/v8/embedded.S v8/tools/builtins-pgo/*.profile)
+        (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
         rm -rf out/Default/clang_x64_v8_arm64/gen
         rm -rf out/Default/clang_x64_v8_arm64/obj
         rm -rf out/Default/clang_x64_v8_arm64/thinlto-cache
@@ -647,7 +647,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
     paths:
       # Build artifacts
       - src/out/Default/dist.zip
-      - src/mksnapshot.zip
+      - src/out/Default/mksnapshot.zip
       - src/out/Default/chromedriver.zip
       - src/out/Default/gen/node_headers
       - src/out/Default/overlapped-checker
@@ -681,7 +681,7 @@ step-mksnapshot-unzip: &step-mksnapshot-unzip
   run:
     name: Unzip mksnapshot.zip
     command: |
-      cd src
+      cd src/out/Default
       unzip -:o mksnapshot.zip
 
 step-chromedriver-unzip: &step-chromedriver-unzip
@@ -772,7 +772,7 @@ step-mksnapshot-build: &step-mksnapshot-build
       fi
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ] && [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-        (zip mksnapshot.zip out/Default/mksnapshot_args out/Default/gen/v8/embedded.S v8/tools/builtins-pgo/*.profile)
+        (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
 
 step-hunspell-build: &step-hunspell-build
@@ -1202,7 +1202,7 @@ commands:
             mv_if_exist src/out/Default/dist.zip
             mv_if_exist src/out/Default/gen/node_headers.tar.gz
             mv_if_exist src/out/Default/symbols.zip
-            mv_if_exist src/mksnapshot.zip
+            mv_if_exist src/out/Default/mksnapshot.zip
             mv_if_exist src/out/Default/chromedriver.zip
             mv_if_exist src/out/ffmpeg/ffmpeg.zip
             mv_if_exist src/out/Default/hunspell_dictionaries.zip
