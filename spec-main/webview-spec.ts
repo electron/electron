@@ -1817,6 +1817,7 @@ describe('<webview> tag', function () {
     });
 
     describe('<webview>.goForward()', () => {
+      useRemoteContext({ webPreferences: { webviewTag: true } });
       itremote('should work after a replaced history entry', async (fixtures: string) => {
         const webview = new WebView();
 
