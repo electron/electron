@@ -1,0 +1,204 @@
+From bd9724c9fe6333eddd9c18a7b35ba9f7541ad1ca Mon Sep 17 00:00:00 2001
+From: Min Qin <qinmin@chromium.org>
+Date: Tue, 28 Jun 2022 16:27:43 +0000
+Subject: [PATCH] [M104][Background fetch] passing update_first_party_url_on_redirect=false for fetch
+
+Background fetch doesn't work like regular download as it is not
+considered a top frame navigation. This CL let background fetch to
+pass update_first_party_url_on_redirect=false to DownloadURLParameters,
+and handle it properly w.r.t samesite cookies.
+
+BUG=1268580
+
+(cherry picked from commit bf1e93c6af21dad12088b615feda07a90a85c158)
+
+Change-Id: I3a1cc33be8578d5d8c796dbbb21fa35a47bdda36
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3712307
+Reviewed-by: Rayan Kanso <rayankans@chromium.org>
+Commit-Queue: Min Qin <qinmin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1016316}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3727786
+Cr-Commit-Position: refs/branch-heads/5112@{#397}
+Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
+---
+
+diff --git a/components/background_fetch/background_fetch_delegate_base.cc b/components/background_fetch/background_fetch_delegate_base.cc
+index 9e1a767..e3994b9 100644
+--- a/components/background_fetch/background_fetch_delegate_base.cc
++++ b/components/background_fetch/background_fetch_delegate_base.cc
+@@ -101,6 +101,7 @@
+                           weak_ptr_factory_.GetWeakPtr());
+   params.traffic_annotation =
+       net::MutableNetworkTrafficAnnotationTag(traffic_annotation);
++  params.request_params.update_first_party_url_on_redirect = false;
+ 
+   JobDetails* job_details = GetJobDetails(job_id);
+   if (job_details->job_state == JobDetails::State::kPendingWillStartPaused ||
+diff --git a/components/download/content/internal/download_driver_impl.cc b/components/download/content/internal/download_driver_impl.cc
+index 2b2da55..b207ce5 100644
+--- a/components/download/content/internal/download_driver_impl.cc
++++ b/components/download/content/internal/download_driver_impl.cc
+@@ -229,6 +229,8 @@
+     download_url_params->set_isolation_info(
+         request_params.isolation_info.value());
+   }
++  download_url_params->set_update_first_party_url_on_redirect(
++      request_params.update_first_party_url_on_redirect);
+ 
+   download_manager_coordinator_->DownloadUrl(std::move(download_url_params));
+ }
+diff --git a/components/download/internal/common/download_utils.cc b/components/download/internal/common/download_utils.cc
+index 11f52486..45432672 100644
+--- a/components/download/internal/common/download_utils.cc
++++ b/components/download/internal/common/download_utils.cc
+@@ -386,8 +386,10 @@
+     // cross-site URL has been visited before.
+     url::Origin origin = url::Origin::Create(params->url());
+     request->trusted_params->isolation_info = net::IsolationInfo::Create(
+-        net::IsolationInfo::RequestType::kMainFrame, origin, origin,
+-        net::SiteForCookies::FromOrigin(origin));
++        params->update_first_party_url_on_redirect()
++            ? net::IsolationInfo::RequestType::kMainFrame
++            : net::IsolationInfo::RequestType::kOther,
++        origin, origin, net::SiteForCookies::FromOrigin(origin));
+     request->site_for_cookies = net::SiteForCookies::FromUrl(params->url());
+   }
+ 
+@@ -395,7 +397,8 @@
+   request->referrer = params->referrer();
+   request->referrer_policy = params->referrer_policy();
+   request->is_outermost_main_frame = true;
+-  request->update_first_party_url_on_redirect = true;
++  request->update_first_party_url_on_redirect =
++      params->update_first_party_url_on_redirect();
+ 
+   // Downloads should be treated as navigations from Fetch spec perspective.
+   // See also:
+diff --git a/components/download/public/background_service/download_params.h b/components/download/public/background_service/download_params.h
+index 8b911276..a976d47 100644
+--- a/components/download/public/background_service/download_params.h
++++ b/components/download/public/background_service/download_params.h
+@@ -126,6 +126,12 @@
+   // be invalidate during download resumption in new browser session. Not
+   // supported on iOS.
+   absl::optional<net::IsolationInfo> isolation_info;
++
++  // First-party URL redirect policy: During server redirects, whether the
++  // first-party URL for cookies will need to be changed. Download is normally
++  // considered a main frame navigation. However, this is not true for
++  // background fetch.
++  bool update_first_party_url_on_redirect = true;
+ };
+ 
+ // The parameters that describe a download request made to the DownloadService.
+diff --git a/components/download/public/common/download_url_parameters.cc b/components/download/public/common/download_url_parameters.cc
+index 3dec714..25ea6f1 100644
+--- a/components/download/public/common/download_url_parameters.cc
++++ b/components/download/public/common/download_url_parameters.cc
+@@ -34,7 +34,8 @@
+       traffic_annotation_(traffic_annotation),
+       download_source_(DownloadSource::UNKNOWN),
+       require_safety_checks_(true),
+-      has_user_gesture_(false) {}
++      has_user_gesture_(false),
++      update_first_party_url_on_redirect_(true) {}
+ 
+ DownloadUrlParameters::~DownloadUrlParameters() = default;
+ 
+diff --git a/components/download/public/common/download_url_parameters.h b/components/download/public/common/download_url_parameters.h
+index ba0a03c..61eb9af 100644
+--- a/components/download/public/common/download_url_parameters.h
++++ b/components/download/public/common/download_url_parameters.h
+@@ -279,6 +279,11 @@
+     has_user_gesture_ = has_user_gesture;
+   }
+ 
++  void set_update_first_party_url_on_redirect(
++      bool update_first_party_url_on_redirect) {
++    update_first_party_url_on_redirect_ = update_first_party_url_on_redirect;
++  }
++
+   OnStartedCallback& callback() { return callback_; }
+   bool content_initiated() const { return content_initiated_; }
+   const std::string& last_modified() const { return last_modified_; }
+@@ -335,6 +340,9 @@
+     return isolation_info_;
+   }
+   bool has_user_gesture() const { return has_user_gesture_; }
++  bool update_first_party_url_on_redirect() const {
++    return update_first_party_url_on_redirect_;
++  }
+ 
+   // STATE CHANGING: All save_info_ sub-objects will be in an indeterminate
+   // state following this call.
+@@ -383,6 +391,7 @@
+   bool require_safety_checks_;
+   absl::optional<net::IsolationInfo> isolation_info_;
+   bool has_user_gesture_;
++  bool update_first_party_url_on_redirect_;
+ };
+ 
+ }  // namespace download
+diff --git a/content/browser/download/download_browsertest.cc b/content/browser/download/download_browsertest.cc
+index 63f6db6..8dc384f 100644
+--- a/content/browser/download/download_browsertest.cc
++++ b/content/browser/download/download_browsertest.cc
+@@ -3764,6 +3764,58 @@
+                                 site_a.GetURL("a.test", "/")));
+ }
+ 
++// Tests that if `update_first_party_url_on_redirect` is set to false, download
++// will not behave like a top-level frame navigation and SameSite=Strict cookies
++// will not be set on a redirection.
++IN_PROC_BROWSER_TEST_F(
++    DownloadContentTest,
++    SiteForCookies_DownloadUrl_NotUpdateFirstPartyUrlOnRedirect) {
++  net::EmbeddedTestServer site_a;
++  net::EmbeddedTestServer site_b;
++
++  base::StringPairs cookie_headers;
++  cookie_headers.push_back(std::make_pair(
++      std::string("Set-Cookie"), std::string("A=strict; SameSite=Strict")));
++  cookie_headers.push_back(std::make_pair(std::string("Set-Cookie"),
++                                          std::string("B=lax; SameSite=Lax")));
++
++  // This will request a URL on b.test, which redirects to a url that sets the
++  // cookies on a.test.
++  site_a.RegisterRequestHandler(CreateBasicResponseHandler(
++      "/sets-samesite-cookies", net::HTTP_OK, cookie_headers,
++      "application/octet-stream", "abcd"));
++  ASSERT_TRUE(site_a.Start());
++  site_b.RegisterRequestHandler(
++      CreateRedirectHandler("/redirected-download",
++                            site_a.GetURL("a.test", "/sets-samesite-cookies")));
++  ASSERT_TRUE(site_b.Start());
++
++  // Download the file.
++  SetupEnsureNoPendingDownloads();
++  std::unique_ptr<download::DownloadUrlParameters> download_parameters(
++      DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
++          shell()->web_contents(),
++          site_b.GetURL("b.test", "/redirected-download"),
++          TRAFFIC_ANNOTATION_FOR_TESTS));
++  download_parameters->set_update_first_party_url_on_redirect(false);
++  std::unique_ptr<DownloadTestObserver> observer(CreateWaiter(shell(), 1));
++  DownloadManagerForShell(shell())->DownloadUrl(std::move(download_parameters));
++  observer->WaitForFinished();
++
++  // Get the important info from other threads and check it.
++  EXPECT_TRUE(EnsureNoPendingDownloads());
++
++  std::vector<download::DownloadItem*> downloads;
++  DownloadManagerForShell(shell())->GetAllDownloads(&downloads);
++  ASSERT_EQ(1u, downloads.size());
++  ASSERT_EQ(download::DownloadItem::COMPLETE, downloads[0]->GetState());
++
++  // Check that the cookies were not set on a.test.
++  EXPECT_EQ("",
++            content::GetCookies(shell()->web_contents()->GetBrowserContext(),
++                                site_a.GetURL("a.test", "/")));
++}
++
+ // Verifies that isolation info set in DownloadUrlParameters can be populated.
+ IN_PROC_BROWSER_TEST_F(DownloadContentTest,
+                        SiteForCookies_DownloadUrl_IsolationInfoPopulated) {
