@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Min Qin <qinmin@chromium.org>
 Date: Tue, 28 Jun 2022 16:27:43 +0000
-Subject: [M104][Background fetch] passing
- update_first_party_url_on_redirect=false for fetch
+Subject: passing update_first_party_url_on_redirect=false for fetch
 
 Background fetch doesn't work like regular download as it is not
 considered a top frame navigation. This CL let background fetch to
