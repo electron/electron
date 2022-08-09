@@ -1,7 +1,7 @@
-From bd9724c9fe6333eddd9c18a7b35ba9f7541ad1ca Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Min Qin <qinmin@chromium.org>
 Date: Tue, 28 Jun 2022 16:27:43 +0000
-Subject: [PATCH] [M104][Background fetch] passing update_first_party_url_on_redirect=false for fetch
+Subject: passing update_first_party_url_on_redirect=false for fetch
 
 Background fetch doesn't work like regular download as it is not
 considered a top frame navigation. This CL let background fetch to
@@ -20,13 +20,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1016316}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3727786
 Cr-Commit-Position: refs/branch-heads/5112@{#397}
 Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
----
 
 diff --git a/components/background_fetch/background_fetch_delegate_base.cc b/components/background_fetch/background_fetch_delegate_base.cc
-index 9e1a767..e3994b9 100644
+index 5f88192eb4e92d4c41c79db188b8b9982f005258..26f7716ae83b70cdcf7cdb23652c2c56d7dc27bf 100644
 --- a/components/background_fetch/background_fetch_delegate_base.cc
 +++ b/components/background_fetch/background_fetch_delegate_base.cc
-@@ -101,6 +101,7 @@
+@@ -101,6 +101,7 @@ void BackgroundFetchDelegateBase::DownloadUrl(
                            weak_ptr_factory_.GetWeakPtr());
    params.traffic_annotation =
        net::MutableNetworkTrafficAnnotationTag(traffic_annotation);
@@ -35,10 +34,10 @@ index 9e1a767..e3994b9 100644
    JobDetails* job_details = GetJobDetails(job_id);
    if (job_details->job_state == JobDetails::State::kPendingWillStartPaused ||
 diff --git a/components/download/content/internal/download_driver_impl.cc b/components/download/content/internal/download_driver_impl.cc
-index 2b2da55..b207ce5 100644
+index 2b2da55b06e3b4859f439d5b3bf7013b981b75a0..b207ce5c6bd3c332a34885e1dc58cc11d91fe31c 100644
 --- a/components/download/content/internal/download_driver_impl.cc
 +++ b/components/download/content/internal/download_driver_impl.cc
-@@ -229,6 +229,8 @@
+@@ -229,6 +229,8 @@ void DownloadDriverImpl::Start(
      download_url_params->set_isolation_info(
          request_params.isolation_info.value());
    }
@@ -48,10 +47,10 @@ index 2b2da55..b207ce5 100644
    download_manager_coordinator_->DownloadUrl(std::move(download_url_params));
  }
 diff --git a/components/download/internal/common/download_utils.cc b/components/download/internal/common/download_utils.cc
-index 11f52486..45432672 100644
+index 11f524861320eae8ab694022d97a6fe2ac7366ce..454326720b5c88cc61e4527790797fd7f522014d 100644
 --- a/components/download/internal/common/download_utils.cc
 +++ b/components/download/internal/common/download_utils.cc
-@@ -386,8 +386,10 @@
+@@ -386,8 +386,10 @@ std::unique_ptr<network::ResourceRequest> CreateResourceRequest(
      // cross-site URL has been visited before.
      url::Origin origin = url::Origin::Create(params->url());
      request->trusted_params->isolation_info = net::IsolationInfo::Create(
@@ -64,7 +63,7 @@ index 11f52486..45432672 100644
      request->site_for_cookies = net::SiteForCookies::FromUrl(params->url());
    }
  
-@@ -395,7 +397,8 @@
+@@ -395,7 +397,8 @@ std::unique_ptr<network::ResourceRequest> CreateResourceRequest(
    request->referrer = params->referrer();
    request->referrer_policy = params->referrer_policy();
    request->is_outermost_main_frame = true;
@@ -75,10 +74,10 @@ index 11f52486..45432672 100644
    // Downloads should be treated as navigations from Fetch spec perspective.
    // See also:
 diff --git a/components/download/public/background_service/download_params.h b/components/download/public/background_service/download_params.h
-index 8b911276..a976d47 100644
+index 8b911276e757ee889ed05a3fd60cc365ad8f1982..a976d470094462be735e81cf097f32b34c258270 100644
 --- a/components/download/public/background_service/download_params.h
 +++ b/components/download/public/background_service/download_params.h
-@@ -126,6 +126,12 @@
+@@ -126,6 +126,12 @@ struct RequestParams {
    // be invalidate during download resumption in new browser session. Not
    // supported on iOS.
    absl::optional<net::IsolationInfo> isolation_info;
@@ -92,10 +91,10 @@ index 8b911276..a976d47 100644
  
  // The parameters that describe a download request made to the DownloadService.
 diff --git a/components/download/public/common/download_url_parameters.cc b/components/download/public/common/download_url_parameters.cc
-index 3dec714..25ea6f1 100644
+index 3dec7148d86cd3892670df8b95dcb78d49616e89..25ea6f13e0df9f23364b75c48b870d8ea6a53e92 100644
 --- a/components/download/public/common/download_url_parameters.cc
 +++ b/components/download/public/common/download_url_parameters.cc
-@@ -34,7 +34,8 @@
+@@ -34,7 +34,8 @@ DownloadUrlParameters::DownloadUrlParameters(
        traffic_annotation_(traffic_annotation),
        download_source_(DownloadSource::UNKNOWN),
        require_safety_checks_(true),
@@ -106,10 +105,10 @@ index 3dec714..25ea6f1 100644
  DownloadUrlParameters::~DownloadUrlParameters() = default;
  
 diff --git a/components/download/public/common/download_url_parameters.h b/components/download/public/common/download_url_parameters.h
-index ba0a03c..61eb9af 100644
+index ba0a03cb035a79651967ac2882f89f577bd0c012..61eb9af8a00c3e4adf700178994a9e6e864bcf0c 100644
 --- a/components/download/public/common/download_url_parameters.h
 +++ b/components/download/public/common/download_url_parameters.h
-@@ -279,6 +279,11 @@
+@@ -279,6 +279,11 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadUrlParameters {
      has_user_gesture_ = has_user_gesture;
    }
  
@@ -121,7 +120,7 @@ index ba0a03c..61eb9af 100644
    OnStartedCallback& callback() { return callback_; }
    bool content_initiated() const { return content_initiated_; }
    const std::string& last_modified() const { return last_modified_; }
-@@ -335,6 +340,9 @@
+@@ -335,6 +340,9 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadUrlParameters {
      return isolation_info_;
    }
    bool has_user_gesture() const { return has_user_gesture_; }
@@ -131,7 +130,7 @@ index ba0a03c..61eb9af 100644
  
    // STATE CHANGING: All save_info_ sub-objects will be in an indeterminate
    // state following this call.
-@@ -383,6 +391,7 @@
+@@ -383,6 +391,7 @@ class COMPONENTS_DOWNLOAD_EXPORT DownloadUrlParameters {
    bool require_safety_checks_;
    absl::optional<net::IsolationInfo> isolation_info_;
    bool has_user_gesture_;
@@ -140,10 +139,10 @@ index ba0a03c..61eb9af 100644
  
  }  // namespace download
 diff --git a/content/browser/download/download_browsertest.cc b/content/browser/download/download_browsertest.cc
-index 63f6db6..8dc384f 100644
+index 6dcc861171b7034d7426c5c683cafca689e3d7ea..500521ce2c383d40c13a9359ba4c49d3417670f7 100644
 --- a/content/browser/download/download_browsertest.cc
 +++ b/content/browser/download/download_browsertest.cc
-@@ -3764,6 +3764,58 @@
+@@ -3763,6 +3763,58 @@ IN_PROC_BROWSER_TEST_F(DownloadContentTest, UpdateSiteForCookies) {
                                  site_a.GetURL("a.test", "/")));
  }
  
