@@ -1,7 +1,7 @@
-From 54e32332750c2bf9e13e5d426281f50a3664ccf8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Min Qin <qinmin@chromium.org>
 Date: Tue, 12 Jul 2022 19:48:53 +0000
-Subject: [PATCH] [Merge 104] Sanitize default file name in windows select file dialog
+Subject: Sanitize default file name in windows select file dialog
 
 On windows, '%' is a special character and can be used for environment
 variables. So if the default file name is '%DATADIR%', it can actually
@@ -23,10 +23,9 @@ Cr-Original-Commit-Position: refs/heads/main@{#1014602}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3758469
 Cr-Commit-Position: refs/branch-heads/5112@{#822}
 Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
----
 
 diff --git a/ui/shell_dialogs/execute_select_file_win.cc b/ui/shell_dialogs/execute_select_file_win.cc
-index 063d4c7c..162dbc3 100644
+index 063d4c7c96cba45448d4d7b0e7a8ddd3a6f67937..162dbc3aeb4ead16a415228b40fb67008e89fe63 100644
 --- a/ui/shell_dialogs/execute_select_file_win.cc
 +++ b/ui/shell_dialogs/execute_select_file_win.cc
 @@ -10,6 +10,7 @@
@@ -37,7 +36,7 @@ index 063d4c7c..162dbc3 100644
  #include "base/strings/string_util.h"
  #include "base/win/com_init_util.h"
  #include "base/win/registry.h"
-@@ -50,7 +51,7 @@
+@@ -50,7 +51,7 @@ bool SetDefaultPath(IFileDialog* file_dialog,
      default_folder = default_path;
    } else {
      default_folder = default_path.DirName();
@@ -46,7 +45,7 @@ index 063d4c7c..162dbc3 100644
    }
  
    // Do not fail the file dialog operation if the specified folder is invalid.
-@@ -371,6 +372,33 @@
+@@ -371,6 +372,33 @@ std::wstring AppendExtensionIfNeeded(const std::wstring& filename,
    return return_value;
  }
  
@@ -81,10 +80,10 @@ index 063d4c7c..162dbc3 100644
      SelectFileDialog::Type type,
      const std::u16string& title,
 diff --git a/ui/shell_dialogs/execute_select_file_win.h b/ui/shell_dialogs/execute_select_file_win.h
-index dc808af3..8fa96906 100644
+index dc808af395333a2bd81c2bd73faac4c6063fd409..8fa96906c0288d0021c1500bd442a35c0c29dfd2 100644
 --- a/ui/shell_dialogs/execute_select_file_win.h
 +++ b/ui/shell_dialogs/execute_select_file_win.h
-@@ -26,6 +26,12 @@
+@@ -26,6 +26,12 @@ SHELL_DIALOGS_EXPORT std::wstring AppendExtensionIfNeeded(
      const std::wstring& filter_selected,
      const std::wstring& suggested_ext);
  
@@ -98,10 +97,10 @@ index dc808af3..8fa96906 100644
  struct FileFilterSpec {
    // A human readable description of this filter. E.g. "HTML Files."
 diff --git a/ui/shell_dialogs/execute_select_file_win_unittest.cc b/ui/shell_dialogs/execute_select_file_win_unittest.cc
-index df5e8a8..b6c604f 100644
+index df5e8a89d9b0854626a99750a56e3f2500dba812..b6c604fa5a798ba6e448e892ca7a9212cce507fc 100644
 --- a/ui/shell_dialogs/execute_select_file_win_unittest.cc
 +++ b/ui/shell_dialogs/execute_select_file_win_unittest.cc
-@@ -50,3 +50,38 @@
+@@ -50,3 +50,38 @@ TEST(ShellDialogsWin, AppendExtensionIfNeeded) {
                                            test_cases[i].suggested_ext));
    }
  }
