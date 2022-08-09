@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Min Qin <qinmin@chromium.org>
+Date: Tue, 12 Jul 2022 19:48:53 +0000
+Subject: Sanitize default file name in windows select file dialog
+
+On windows, '%' is a special character and can be used for environment
+variables. So if the default file name is '%DATADIR%', it can actually
+refer to another directory and thus causing weird behaviors.
+And '%' cannot be escaped when used in the file dialog. Both "^%" and
+"%%" don't work. This CL mitigates the issue by replacing '%' with '_'.
+This only affects the default file name when showing the dialog. Power
+users can still change the file name by adding '%' if needed.
+
+BUG=1308422
+
+(cherry picked from commit 9cdce354cb3b0da5b4b311638973d407be7712b6)
+
+Change-Id: Ibb275f5c3c2c9458c20d1e97ad527f7c95184eaa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3688608
+Reviewed-by: Robert Liao <robliao@chromium.org>
+Commit-Queue: Min Qin <qinmin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1014602}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3758469
+Cr-Commit-Position: refs/branch-heads/5112@{#822}
+Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
+
+diff --git a/ui/shell_dialogs/execute_select_file_win.cc b/ui/shell_dialogs/execute_select_file_win.cc
+index 063d4c7c96cba45448d4d7b0e7a8ddd3a6f67937..162dbc3aeb4ead16a415228b40fb67008e89fe63 100644
+--- a/ui/shell_dialogs/execute_select_file_win.cc
++++ b/ui/shell_dialogs/execute_select_file_win.cc
+@@ -10,6 +10,7 @@
+ #include "base/callback.h"
+ #include "base/files/file.h"
+ #include "base/files/file_util.h"
++#include "base/strings/string_tokenizer.h"
+ #include "base/strings/string_util.h"
+ #include "base/win/com_init_util.h"
+ #include "base/win/registry.h"
+@@ -50,7 +51,7 @@ bool SetDefaultPath(IFileDialog* file_dialog,
+     default_folder = default_path;
+   } else {
+     default_folder = default_path.DirName();
+-    default_file_name = default_path.BaseName();
++    default_file_name = GetSanitizedFileName(default_path.BaseName());
+   }
+ 
+   // Do not fail the file dialog operation if the specified folder is invalid.
+@@ -371,6 +372,33 @@ std::wstring AppendExtensionIfNeeded(const std::wstring& filename,
+   return return_value;
+ }
+ 
++base::FilePath GetSanitizedFileName(const base::FilePath& file_name) {
++  base::StringTokenizerT<std::wstring, std::wstring::const_iterator> t(
++      file_name.value(), L"%");
++  t.set_options(base::StringTokenizer::RETURN_EMPTY_TOKENS);
++  std::wstring result;
++  bool token_valid = t.GetNext();
++  while (token_valid) {
++    // Append substring before the first "%".
++    result.append(t.token());
++    // Done if we are reaching the end delimiter,
++    if (!t.GetNext()) {
++      break;
++    }
++    std::wstring string_after_first_percent = t.token();
++    token_valid = t.GetNext();
++    // If there are no other "%", append the string after
++    // the first "%". Otherwise, remove the string between
++    // the "%" and continue handing the remaining string.
++    if (!token_valid) {
++      result.append(L"%");
++      result.append(string_after_first_percent);
++      break;
++    }
++  }
++  return base::FilePath(result);
++}
++
+ void ExecuteSelectFile(
+     SelectFileDialog::Type type,
+     const std::u16string& title,
+diff --git a/ui/shell_dialogs/execute_select_file_win.h b/ui/shell_dialogs/execute_select_file_win.h
+index dc808af395333a2bd81c2bd73faac4c6063fd409..8fa96906c0288d0021c1500bd442a35c0c29dfd2 100644
+--- a/ui/shell_dialogs/execute_select_file_win.h
++++ b/ui/shell_dialogs/execute_select_file_win.h
+@@ -26,6 +26,12 @@ SHELL_DIALOGS_EXPORT std::wstring AppendExtensionIfNeeded(
+     const std::wstring& filter_selected,
+     const std::wstring& suggested_ext);
+ 
++// Given a file name, return the sanitized version by removing substrings that
++// are embedded in double '%' characters as those are reserved for environment
++// variables. Implementation detail exported for unit tests.
++SHELL_DIALOGS_EXPORT base::FilePath GetSanitizedFileName(
++    const base::FilePath& file_name);
++
+ // Describes a filter for a file dialog.
+ struct FileFilterSpec {
+   // A human readable description of this filter. E.g. "HTML Files."
+diff --git a/ui/shell_dialogs/execute_select_file_win_unittest.cc b/ui/shell_dialogs/execute_select_file_win_unittest.cc
+index 8ea243924a1834dbe88dd53c5c6e8bde46d33b08..6237bf7d640e55929fb3c549674520f20adb0c94 100644
+--- a/ui/shell_dialogs/execute_select_file_win_unittest.cc
++++ b/ui/shell_dialogs/execute_select_file_win_unittest.cc
+@@ -51,3 +51,38 @@ TEST(ShellDialogsWin, AppendExtensionIfNeeded) {
+                                           test_cases[i].suggested_ext));
+   }
+ }
++
++TEST(ShellDialogsWin, GetSanitizedFileName) {
++  struct GetSanitizedFileNameTestCase {
++    const wchar_t* filename;
++    const wchar_t* sanitized_filename;
++  } test_cases[] = {
++      {L"", L""},
++      {L"a.txt", L"a.txt"},
++
++      // Only 1 "%" in file name.
++      {L"%", L"%"},
++      {L"%.txt", L"%.txt"},
++      {L"ab%c.txt", L"ab%c.txt"},
++      {L"abc.t%", L"abc.t%"},
++
++      // 2 "%" in file name.
++      {L"%%", L""},
++      {L"%c%", L""},
++      {L"%c%d", L"d"},
++      {L"d%c%.txt", L"d.txt"},
++      {L"ab%c.t%", L"ab"},
++      {L"abc.%t%", L"abc."},
++
++      // More than 2 "%" in file name.
++      {L"%ab%c%.txt", L"c%.txt"},
++      {L"%abc%.%txt%", L"."},
++      {L"%ab%c%.%txt%", L"ctxt%"},
++  };
++
++  for (size_t i = 0; i < std::size(test_cases); ++i) {
++    SCOPED_TRACE(base::StringPrintf("i=%zu", i));
++    EXPECT_EQ(base::FilePath(test_cases[i].sanitized_filename),
++              ui::GetSanitizedFileName(base::FilePath(test_cases[i].filename)));
++  }
++}
