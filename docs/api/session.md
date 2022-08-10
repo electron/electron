@@ -1025,7 +1025,7 @@ is emitted.
 
 #### `ses.getStoragePath()`
 
-A `string | null` indicating the absolute file system path where data for this
+Returns `string | null` - The absolute file system path where data for this
 session is persisted on disk.  For in memory sessions this returns `null`.
 
 ### Instance Properties
