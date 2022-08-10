@@ -77,13 +77,11 @@ SerialChooserController::SerialChooserController(
   DCHECK(chooser_context_);
   chooser_context_->GetPortManager()->GetDevices(base::BindOnce(
       &SerialChooserController::OnGetDevices, weak_factory_.GetWeakPtr()));
+  observation_.Observe(chooser_context_.get());
 }
 
 SerialChooserController::~SerialChooserController() {
   RunCallback(/*port=*/nullptr);
-  if (chooser_context_) {
-    chooser_context_->RemovePortObserver(this);
-  }
 }
 
 api::Session* SerialChooserController::GetSession() {
@@ -117,7 +115,11 @@ void SerialChooserController::OnPortRemoved(
 }
 
 void SerialChooserController::OnPortManagerConnectionError() {
-  // TODO(nornagon/jkleinsc): report event
+  observation_.Reset();
+}
+
+void SerialChooserController::OnSerialChooserContextShutdown() {
+  observation_.Reset();
 }
 
 void SerialChooserController::OnDeviceChosen(const std::string& port_id) {

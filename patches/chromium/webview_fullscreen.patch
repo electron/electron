@@ -14,11 +14,11 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index bdf2fa0461840d6059b4a7d6660a356be5c38ba0..867b0efca67ce1d4198c2312a6ddc6a784784913 100644
+index 9c6f51f1667d9bf1b430a83747faebf633a324c7..edc7111e2a61c917ec987264ddfbc4ee55f33730 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6421,6 +6421,15 @@ void RenderFrameHostImpl::EnterFullscreen(
-     notified_instances.insert(parent_site_instance);
+@@ -6565,6 +6565,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+     }
    }
  
 +  // Entering fullscreen from webview should also notify its outer frame.
@@ -26,8 +26,10 @@ index bdf2fa0461840d6059b4a7d6660a356be5c38ba0..867b0efca67ce1d4198c2312a6ddc6a7
 +    RenderFrameProxyHost* outer_proxy =
 +        frame_tree_node()->render_manager()->GetProxyToOuterDelegate();
 +    DCHECK(outer_proxy);
-+    outer_proxy->GetAssociatedRemoteFrame()->WillEnterFullscreen(
-+        options.Clone());
++    if (outer_proxy->is_render_frame_proxy_live()) {
++      outer_proxy->GetAssociatedRemoteFrame()->WillEnterFullscreen(
++          options.Clone());
++    }
 +  }
 +
    // Focus the window if another frame may have delegated the capability.

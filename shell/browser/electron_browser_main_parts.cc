@@ -76,9 +76,9 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
+#include "ui/linux/linux_ui.h"
+#include "ui/linux/linux_ui_factory.h"
 #include "ui/ozone/public/ozone_platform.h"
-#include "ui/views/linux_ui/linux_ui.h"
-#include "ui/views/linux_ui/linux_ui_factory.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -217,6 +217,7 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   HandleSIGCHLD();
 #endif
 #if BUILDFLAG(IS_LINUX)
+  DetectOzonePlatform();
   ui::OzonePlatform::PreEarlyInitialization();
 #endif
 #if BUILDFLAG(IS_MAC)
@@ -277,12 +278,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {
-#if defined(USE_AURA)
-  if (!display::Screen::GetScreen()) {
-    screen_ = views::CreateDesktopScreen();
-  }
-#endif
-
   if (!views::LayoutProvider::Get())
     layout_provider_ = std::make_unique<views::LayoutProvider>();
 
@@ -312,6 +307,14 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 
   // Load resources bundle according to locale.
   std::string loaded_locale = LoadResourceBundle(locale);
+
+#if defined(USE_AURA)
+  // NB: must be called _after_ locale resource bundle is loaded,
+  // because ui lib makes use of it in X11
+  if (!display::Screen::GetScreen()) {
+    screen_ = views::CreateDesktopScreen();
+  }
+#endif
 
   // Initialize the app locale.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
@@ -366,7 +369,7 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
-  auto linux_ui = CreateLinuxUi();
+  auto linux_ui = ui::CreateLinuxUi();
   DCHECK(ui::LinuxInputMethodContextFactory::instance());
 
   // Try loading gtk symbols used by Electron.
@@ -388,7 +391,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
-  views::LinuxUI::SetInstance(std::move(linux_ui));
+  ui::LinuxUi::SetInstance(std::move(linux_ui));
 
   // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
   // implementation). Start observing them once it's initialized.

@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d6cce8a676b93a67fa1a5e64d2b189c9dfa616a5..10f4ace6027c32b57f5d070026ecd9565c40b62f 100644
+index 267af5f85d4036e144ad9829922dcd3ac62b8a31..a658a43a12f5597a7bea094471191d040fc3d6c2 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -134,6 +134,8 @@ viz_component("service") {
@@ -108,7 +108,7 @@ index 2e9453c18f2f6623d31b477aa856152ddacc3e23..93b6080135c08bc9d4cf7020f4fcb15c
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 3aaccca596c0287f56841131fc6a5878281593fc..f0fc2e11ddbb7ded1964a815f79e5a1858ac25d2 100644
+index c019d729f29440e44d9dd47ff62d3f8fa1ee19a8..8f589394b12cff75df9708310c5f891664674c28 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,12 +23,14 @@
@@ -136,16 +136,16 @@ index 3aaccca596c0287f56841131fc6a5878281593fc..f0fc2e11ddbb7ded1964a815f79e5a18
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -101,7 +104,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -97,7 +100,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
-     output_surface = std::make_unique<SoftwareOutputSurface>(
+     return std::make_unique<SoftwareOutputSurface>(
 -        CreateSoftwareOutputDeviceForPlatform(surface_handle, display_client));
 +        CreateSoftwareOutputDeviceForPlatform(surface_handle, display_client, offscreen));
    } else {
      DCHECK(gpu_dependency);
-     {
-@@ -139,10 +142,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+ 
+@@ -137,10 +140,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -212,10 +212,10 @@ index 33e12349a951ef533b964d1158f8fa124623e946..fc04bcaffefc277dd1d0cdd766168de0
          IOSurfaceCreateMachPort(current_paint_buffer_->io_surface));
      client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
-index a480befb5d8db36e7e281d5033aeef0bea83d220..4e54acc897d08c87bccc3b44f68634e2873cb132 100644
+index 16a4e74e11775b694dfeeb82b475c628b86174b1..f8099e165da6c8253016abc92ea3021056e37c85 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
 +++ b/components/viz/service/display_embedder/software_output_device_mac.h
-@@ -59,6 +59,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
+@@ -60,6 +60,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
    void UpdateAndCopyBufferDamage(Buffer* previous_paint_buffer,
                                   const SkRegion& new_damage_rect);
  
@@ -572,7 +572,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 68332e455e2d44efac75253179f3b78d7ce0717a..0ec6343dd574078d381155238ddc2f1d0abb5323 100644
+index 5dee5932ce9cacc68af498ef2312fd58cd285e15..d8f977154e5f0c0456ee03ddf67f94b0e7ab475d 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -83,6 +83,7 @@ class DisplayPrivate;
@@ -610,7 +610,7 @@ index 68332e455e2d44efac75253179f3b78d7ce0717a..0ec6343dd574078d381155238ddc2f1d
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -479,6 +493,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -482,6 +496,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  

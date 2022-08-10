@@ -190,7 +190,9 @@ bool ElectronCrashReporterClient::GetShouldCompressUploads() {
 
 void ElectronCrashReporterClient::GetProcessSimpleAnnotations(
     std::map<std::string, std::string>* annotations) {
-  *annotations = global_annotations_;
+  for (auto&& pair : global_annotations_) {
+    (*annotations)[pair.first] = pair.second;
+  }
   (*annotations)["prod"] = ELECTRON_PRODUCT_NAME;
   (*annotations)["ver"] = ELECTRON_VERSION_STRING;
 }

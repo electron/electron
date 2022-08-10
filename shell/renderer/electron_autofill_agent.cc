@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_view.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_keyboard_event.h"
 #include "third_party/blink/public/platform/web_string.h"

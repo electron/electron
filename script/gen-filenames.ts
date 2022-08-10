@@ -48,10 +48,10 @@ const main = async () => {
     const child = cp.spawn('node', [
       './node_modules/webpack-cli/bin/cli.js',
       '--config', `./build/webpack/${webpackTarget.config}`,
-      '--display', 'errors-only',
-      `--output-path=${tmpDir}`,
-      `--output-filename=${webpackTarget.name}.measure.js`,
-      '--env.PRINT_WEBPACK_GRAPH'
+      '--stats', 'errors-only',
+      '--output-path', tmpDir,
+      '--output-filename', `${webpackTarget.name}.measure.js`,
+      '--env', 'PRINT_WEBPACK_GRAPH'
     ], {
       cwd: path.resolve(__dirname, '..')
     });

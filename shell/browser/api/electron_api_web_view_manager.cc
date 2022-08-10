@@ -28,10 +28,6 @@ void AddGuest(int guest_instance_id,
     electron::WebContentsZoomController::FromWebContents(guest_web_contents)
         ->SetDefaultZoomFactor(zoom_factor);
   }
-
-  WebContentsPreferences::From(guest_web_contents)->Merge(options);
-  // Trigger re-calculation of webkit prefs.
-  guest_web_contents->NotifyPreferencesChanged();
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {

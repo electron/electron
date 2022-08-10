@@ -90,11 +90,13 @@ base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
 SerialChooserContext::SerialChooserContext(ElectronBrowserContext* context)
     : browser_context_(context) {}
 
-SerialChooserContext::~SerialChooserContext() = default;
-
-void SerialChooserContext::OnPermissionRevoked(const url::Origin& origin) {
-  for (auto& observer : port_observer_list_)
-    observer.OnPermissionRevoked(origin);
+SerialChooserContext::~SerialChooserContext() {
+  // Notify observers that the chooser context is about to be destroyed.
+  // Observers must remove themselves from the observer lists.
+  for (auto& observer : port_observer_list_) {
+    observer.OnSerialChooserContextShutdown();
+    DCHECK(!port_observer_list_.HasObserver(&observer));
+  }
 }
 
 void SerialChooserContext::GrantPortPermission(
@@ -127,8 +129,6 @@ void SerialChooserContext::RevokePortPermissionWebInitiated(
   auto it = port_info_.find(token);
   if (it == port_info_.end())
     return;
-
-  return OnPermissionRevoked(origin);
 }
 
 // static

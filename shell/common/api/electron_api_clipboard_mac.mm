@@ -14,7 +14,7 @@ void Clipboard::WriteFindText(const std::u16string& text) {
 }
 
 std::u16string Clipboard::ReadFindText() {
-  return GetFindPboardText();
+  return base::SysNSStringToUTF16([[FindPasteboard sharedInstance] findText]);
 }
 
 }  // namespace electron::api

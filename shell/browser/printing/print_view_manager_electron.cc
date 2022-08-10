@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/bind.h"
 #include "build/build_config.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 #include "printing/mojom/print.mojom.h"
@@ -133,7 +134,39 @@ void PrintViewManagerElectron::PrintToPdf(
   headless_jobs_.emplace_back(cookie);
   callback_ = std::move(callback);
 
-  GetPrintRenderFrame(rfh)->PrintWithParams(std::move(print_pages_params));
+  // There is no need for a weak pointer here since the mojo proxy is held
+  // in the base class. If we're gone, mojo will discard the callback.
+  GetPrintRenderFrame(rfh)->PrintWithParams(
+      std::move(print_pages_params),
+      base::BindOnce(&PrintViewManagerElectron::OnDidPrintWithParams,
+                     base::Unretained(this)));
+}
+
+void PrintViewManagerElectron::OnDidPrintWithParams(
+    printing::mojom::PrintWithParamsResultPtr result) {
+  if (result->is_failure_reason()) {
+    switch (result->get_failure_reason()) {
+      case printing::mojom::PrintFailureReason::kGeneralFailure:
+        ReleaseJob(PRINTING_FAILED);
+        return;
+      case printing::mojom::PrintFailureReason::kInvalidPageRange:
+        ReleaseJob(PAGE_COUNT_EXCEEDED);
+        return;
+    }
+  }
+
+  auto& content = *result->get_params()->content;
+  if (!content.metafile_data_region.IsValid()) {
+    ReleaseJob(INVALID_MEMORY_HANDLE);
+    return;
+  }
+  base::ReadOnlySharedMemoryMapping map = content.metafile_data_region.Map();
+  if (!map.IsValid()) {
+    ReleaseJob(METAFILE_MAP_ERROR);
+    return;
+  }
+  data_ = std::string(static_cast<const char*>(map.memory()), map.size());
+  ReleaseJob(PRINT_SUCCESS);
 }
 
 void PrintViewManagerElectron::GetDefaultPrintSettings(
@@ -163,15 +196,12 @@ void PrintViewManagerElectron::ScriptedPrint(
 }
 
 void PrintViewManagerElectron::ShowInvalidPrinterSettingsError() {
-  ReleaseJob(INVALID_PRINTER_SETTINGS);
-}
+  if (headless_jobs_.size() == 0) {
+    PrintViewManagerBase::ShowInvalidPrinterSettingsError();
+    return;
+  }
 
-void PrintViewManagerElectron::PrintingFailed(
-    int32_t cookie,
-    printing::mojom::PrintFailureReason reason) {
-  ReleaseJob(reason == printing::mojom::PrintFailureReason::kInvalidPageRange
-                 ? PAGE_COUNT_EXCEEDED
-                 : PRINTING_FAILED);
+  ReleaseJob(INVALID_PRINTER_SETTINGS);
 }
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -232,37 +262,6 @@ void PrintViewManagerElectron::DidGetPrintedPagesCount(int32_t cookie,
   if (entry == headless_jobs_.end()) {
     PrintViewManagerBase::DidGetPrintedPagesCount(cookie, number_pages);
   }
-}
-
-void PrintViewManagerElectron::DidPrintDocument(
-    printing::mojom::DidPrintDocumentParamsPtr params,
-    DidPrintDocumentCallback callback) {
-  auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(),
-                         params->document_cookie);
-  if (entry == headless_jobs_.end()) {
-    PrintViewManagerBase::DidPrintDocument(std::move(params),
-                                           std::move(callback));
-    return;
-  }
-
-  auto& content = *params->content;
-  if (!content.metafile_data_region.IsValid()) {
-    ReleaseJob(INVALID_MEMORY_HANDLE);
-    std::move(callback).Run(false);
-    return;
-  }
-
-  base::ReadOnlySharedMemoryMapping map = content.metafile_data_region.Map();
-  if (!map.IsValid()) {
-    ReleaseJob(METAFILE_MAP_ERROR);
-    std::move(callback).Run(false);
-    return;
-  }
-
-  data_ = std::string(static_cast<const char*>(map.memory()), map.size());
-  headless_jobs_.erase(entry);
-  std::move(callback).Run(true);
-  ReleaseJob(PRINT_SUCCESS);
 }
 
 void PrintViewManagerElectron::Reset() {

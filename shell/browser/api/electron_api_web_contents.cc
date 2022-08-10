@@ -150,7 +150,7 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-#include "ui/views/linux_ui/linux_ui.h"
+#include "ui/linux/linux_ui.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
@@ -395,7 +395,7 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
   if (system_value)
     return *system_value;
 #elif BUILDFLAG(IS_LINUX)
-  if (auto* linux_ui = views::LinuxUI::instance())
+  if (auto* linux_ui = ui::LinuxUi::instance())
     return linux_ui->GetCursorBlinkInterval();
 #elif BUILDFLAG(IS_WIN)
   const auto system_msec = ::GetCaretBlinkTime();
@@ -637,6 +637,7 @@ WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
     case extensions::mojom::ViewType::kBackgroundContents:
     case extensions::mojom::ViewType::kExtensionGuest:
     case extensions::mojom::ViewType::kTabContents:
+    case extensions::mojom::ViewType::kOffscreenDocument:
     case extensions::mojom::ViewType::kInvalid:
       return WebContents::Type::kRemote;
   }
@@ -674,10 +675,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
 
-  absl::optional<std::string> user_agent_override =
-      GetBrowserContext()->GetUserAgentOverride();
-  if (user_agent_override)
-    SetUserAgent(*user_agent_override);
+  SetUserAgent(GetBrowserContext()->GetUserAgent());
+
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
@@ -883,10 +882,7 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  absl::optional<std::string> user_agent_override =
-      GetBrowserContext()->GetUserAgentOverride();
-  if (user_agent_override)
-    SetUserAgent(*user_agent_override);
+  SetUserAgent(GetBrowserContext()->GetUserAgent());
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;
@@ -1331,6 +1327,8 @@ void WebContents::OnEnterFullscreenModeForTab(
     return;
   }
 
+  owner_window()->set_fullscreen_transition_type(
+      NativeWindow::FullScreenTransitionType::HTML);
   exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
       requesting_frame, options.display_id);
 
@@ -3541,12 +3539,15 @@ void WebContents::EnumerateDirectory(
 
 bool WebContents::IsFullscreenForTabOrPending(
     const content::WebContents* source) {
-  bool transition_fs = owner_window()
-                           ? owner_window()->fullscreen_transition_state() !=
-                                 NativeWindow::FullScreenTransitionState::NONE
-                           : false;
+  if (!owner_window())
+    return html_fullscreen_;
 
-  return html_fullscreen_ || transition_fs;
+  bool in_transition = owner_window()->fullscreen_transition_state() !=
+                       NativeWindow::FullScreenTransitionState::NONE;
+  bool is_html_transition = owner_window()->fullscreen_transition_type() ==
+                            NativeWindow::FullScreenTransitionType::HTML;
+
+  return html_fullscreen_ || (in_transition && is_html_transition);
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {

@@ -63,6 +63,7 @@ async function main () {
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
     '-fPIC',
+    '-D_LIBCPP_ABI_NAMESPACE=Cr',
     ...platformFlags
   ].join(' ');
 

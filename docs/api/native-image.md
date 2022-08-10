@@ -149,7 +149,7 @@ console.log(image)
 * `options` Object
   * `width` Integer
   * `height` Integer
-  * `scaleFactor` Double (optional) - Defaults to 1.0.
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
 
 Returns `NativeImage`
 
@@ -162,7 +162,7 @@ pixel data returned by `toBitmap()`. The specific format is platform-dependent.
 * `options` Object (optional)
   * `width` Integer (optional) - Required for bitmap buffers.
   * `height` Integer (optional) - Required for bitmap buffers.
-  * `scaleFactor` Double (optional) - Defaults to 1.0.
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
 
 Returns `NativeImage`
 
@@ -225,7 +225,7 @@ The following methods are available on instances of the `NativeImage` class:
 #### `image.toPNG([options])`
 
 * `options` Object (optional)
-  * `scaleFactor` Double (optional) - Defaults to 1.0.
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded data.
 
@@ -238,7 +238,7 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded d
 #### `image.toBitmap([options])`
 
 * `options` Object (optional)
-  * `scaleFactor` Double (optional) - Defaults to 1.0.
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
@@ -246,14 +246,14 @@ data.
 #### `image.toDataURL([options])`
 
 * `options` Object (optional)
-  * `scaleFactor` Double (optional) - Defaults to 1.0.
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
 
 Returns `string` - The data URL of the image.
 
 #### `image.getBitmap([options])`
 
 * `options` Object (optional)
-  * `scaleFactor` Double (optional) - Defaults to 1.0.
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's raw bitmap pixel data.
 
@@ -276,7 +276,7 @@ Returns `boolean` - Whether the image is empty.
 
 #### `image.getSize([scaleFactor])`
 
-* `scaleFactor` Double (optional) - Defaults to 1.0.
+* `scaleFactor` Number (optional) - Defaults to 1.0.
 
 Returns [`Size`](structures/size.md).
 
@@ -317,20 +317,20 @@ will be preserved in the resized image.
 
 #### `image.getAspectRatio([scaleFactor])`
 
-* `scaleFactor` Double (optional) - Defaults to 1.0.
+* `scaleFactor` Number (optional) - Defaults to 1.0.
 
-Returns `Float` - The image's aspect ratio.
+Returns `Number` - The image's aspect ratio.
 
 If `scaleFactor` is passed, this will return the aspect ratio corresponding to the image representation most closely matching the passed value.
 
 #### `image.getScaleFactors()`
 
-Returns `Float[]` - An array of all scale factors corresponding to representations for a given nativeImage.
+Returns `Number[]` - An array of all scale factors corresponding to representations for a given nativeImage.
 
 #### `image.addRepresentation(options)`
 
 * `options` Object
-  * `scaleFactor` Double - The scale factor to add the image representation for.
+  * `scaleFactor` Number (optional) - The scale factor to add the image representation for.
   * `width` Integer (optional) - Defaults to 0. Required if a bitmap buffer
     is specified as `buffer`.
   * `height` Integer (optional) - Defaults to 0. Required if a bitmap buffer

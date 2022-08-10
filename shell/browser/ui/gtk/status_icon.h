@@ -13,12 +13,12 @@
 
 #include "base/strings/string_util.h"
 #include "ui/gfx/image/image_skia.h"
-#include "ui/views/linux_ui/status_icon_linux.h"
+#include "ui/linux/status_icon_linux.h"
 
 namespace electron::gtkui {
 
 bool IsStatusIconSupported();
-std::unique_ptr<views::StatusIconLinux> CreateLinuxStatusIcon(
+std::unique_ptr<ui::StatusIconLinux> CreateLinuxStatusIcon(
     const gfx::ImageSkia& image,
     const std::u16string& tool_tip,
     const char* id_prefix);

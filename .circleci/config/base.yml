@@ -346,7 +346,7 @@ step-wait-for-goma: &step-wait-for-goma
           sleep 5
       done
       echo "Goma ready"
-    no_output_timeout: 2m
+    no_output_timeout: 5m
 
 step-restore-brew-cache: &step-restore-brew-cache
   restore_cache:
@@ -990,7 +990,7 @@ step-ts-compile: &step-ts-compile
       do
         out="${f:29}"
         if [ "$out" != "base.js" ]; then
-          node script/yarn webpack --config $f --output-filename=$out --output-path=./.tmp --env.mode=development
+          node script/yarn webpack --config $f --output-filename=$out --output-path=./.tmp --env mode=development
         fi
       done
 
@@ -1006,9 +1006,17 @@ steps-electron-gn-check: &steps-electron-gn-check
     - *step-generate-deps-hash
     - *step-touch-sync-done
     - maybe-restore-portaled-src-cache
-    - *step-wait-for-goma
-    - *step-gn-gen-default
-    - *step-gn-check
+    - run:
+        name: Ensure src checkout worked
+        command: |
+          if [ ! -d "src/third_party/blink" ]; then
+            echo src cache was not restored for an unknown reason
+            exit 1
+          fi
+    - run:
+        name: Wipe Electron
+        command: rm -rf src/electron
+    - *step-checkout-electron
 
 steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-change
   steps:
