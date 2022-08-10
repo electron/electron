@@ -163,6 +163,15 @@ describe('webFrameMain module', () => {
       expect(await getUrl(webFrame.frames[0])).to.equal(fileUrl('frame-with-frame.html'));
       expect(await getUrl(webFrame.frames[0].frames[0])).to.equal(fileUrl('frame.html'));
     });
+
+    it('can resolve promise', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame.html'));
+      const webFrame = w.webContents.mainFrame;
+      const p = () => webFrame.executeJavaScript('new Promise(resolve => setTimeout(resolve(42), 2000));');
+      const result = await p();
+      expect(result).to.equal(42);
+    });
   });
 
   describe('WebFrame.reload', () => {
