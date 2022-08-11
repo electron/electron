@@ -35,6 +35,8 @@ def mkdir_p(path):
 
 def main(dump_syms, binary, out_dir, stamp_file, dsym_file=None):
   args = [dump_syms]
+  if sys.platform in ['win32', 'cygwin', 'msys']:
+    args += ['--pe']
   if dsym_file:
     args += ["-g", dsym_file]
   args += [binary]
