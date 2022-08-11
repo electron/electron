@@ -2414,6 +2414,50 @@ describe('navigator.serial', () => {
       expect(grantedPorts).to.not.be.empty();
     }
   });
+
+  it('supports port.forget()', async () => {
+    let forgottenPortFromEvent = {};
+    let havePorts = false;
+
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      if (portList.length > 0) {
+        havePorts = true;
+        callback(portList[0].portId);
+      } else {
+        callback('');
+      }
+    });
+
+    w.webContents.session.on('serial-port-revoked', (event, details) => {
+      forgottenPortFromEvent = details.port;
+    });
+
+    await getPorts();
+    if (havePorts) {
+      const grantedPorts = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
+      if (grantedPorts.length > 0) {
+        const forgottenPort = await w.webContents.executeJavaScript(`
+          navigator.serial.getPorts().then(async(ports) => {
+            const portInfo = await ports[0].getInfo();
+            await ports[0].forget();
+            if (portInfo.usbVendorId && portInfo.usbProductId) {
+              return {
+                vendorId: '' + portInfo.usbVendorId,
+                productId: '' + portInfo.usbProductId
+              }
+            } else {
+              return {};
+            }
+          })
+        `);
+        const grantedPorts2 = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
+        expect(grantedPorts2.length).to.be.lessThan(grantedPorts.length);
+        if (forgottenPort.vendorId && forgottenPort.productId) {
+          expect(forgottenPortFromEvent).to.include(forgottenPort);
+        }
+      }
+    }
+  });
 });
 
 describe('navigator.clipboard', () => {
