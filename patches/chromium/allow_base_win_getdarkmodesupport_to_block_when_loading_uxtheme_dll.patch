@@ -8,37 +8,89 @@ Fixes a DCHECK-on-launch on Windows.
 Should be upstreamed.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 5455aa07547f753b83dd59c173834034d0673ae7..45521ddc8d5fbcfc352828b7205dada224ec749e 100644
+index 5455aa07547f753b83dd59c173834034d0673ae7..07a172d59f5392e8eb0c5ce7160e56ed5d47a4c0 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
-@@ -382,6 +382,10 @@ class BooleanWithStack;
+@@ -12,6 +12,7 @@
+ #include "base/dcheck_is_on.h"
+ #include "base/gtest_prod_util.h"
+ #include "base/location.h"
++#include "base/win/windows_types.h"
+ #include "build/build_config.h"
+ 
+ // -----------------------------------------------------------------------------
+@@ -382,6 +383,11 @@ class BooleanWithStack;
  
  bool PathProviderWin(int, FilePath*);
  
 +namespace win {
 +class DarkModeSupport;
++HMODULE InitializeDarkModeSupport();
 +}
 +
  #if DCHECK_IS_ON()
  // NOT_TAIL_CALLED if dcheck-is-on so it's always evident who irrevocably
  // altered the allowance (dcheck-builds will provide the setter's stack on
-@@ -498,6 +502,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -498,6 +504,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend bool chromeos::system::IsCoreSchedulingAvailable();
    friend int chromeos::system::NumberOfPhysicalCores();
    friend bool disk_cache::CleanupDirectorySync(const base::FilePath&);
-+  friend win::DarkModeSupport& win::GetDarkModeSupport();
++  friend HMODULE win::InitializeDarkModeSupport();
  
    ScopedAllowBlocking(const Location& from_here = Location::Current());
    ~ScopedAllowBlocking();
 diff --git a/base/win/dark_mode_support.cc b/base/win/dark_mode_support.cc
-index d15d069b2505e90f2e0c1d85b97440e328e3cbc5..91c248be233c3543a94a4d90bec29f047cf7dcba 100644
+index d15d069b2505e90f2e0c1d85b97440e328e3cbc5..aef07d70dff3f9e13b729bde5a8cd0a942733103 100644
 --- a/base/win/dark_mode_support.cc
 +++ b/base/win/dark_mode_support.cc
-@@ -61,6 +61,7 @@ const DarkModeSupport& GetDarkModeSupport() {
+@@ -8,6 +8,7 @@
+ 
+ #include "base/native_library.h"
+ #include "base/no_destructor.h"
++#include "base/threading/thread_restrictions.h"
+ #include "base/win/windows_version.h"
+ 
+ namespace {
+@@ -61,7 +62,7 @@ const DarkModeSupport& GetDarkModeSupport() {
          // Dark mode only works on WIN10_RS5 and up.
          if (os_info->version() >= base::win::Version::WIN10_RS5) {
            base::NativeLibraryLoadError error;
-+          base::ScopedAllowBlocking allow_blocking;
-           HMODULE ux_theme_lib = base::PinSystemLibrary(L"uxtheme.dll", &error);
+-          HMODULE ux_theme_lib = base::PinSystemLibrary(L"uxtheme.dll", &error);
++          HMODULE ux_theme_lib = base::win::InitializeDarkModeSupport();
            DCHECK(!error.code);
            if (os_info->version() >= base::win::Version::WIN10_19H1) {
+             dark_mode_support.set_preferred_app_mode =
+@@ -91,6 +92,17 @@ const DarkModeSupport& GetDarkModeSupport() {
+ 
+ namespace base::win {
+ 
++// This is extracted as a standalone function in order
++// to be friend with base::ScopedAllowBlocking.
++HMODULE InitializeDarkModeSupport() {
++  base::NativeLibraryLoadError error;
++  base::ScopedAllowBlocking allow_blocking;
++  HMODULE ux_theme_lib = base::PinSystemLibrary(L"uxtheme.dll", &error);
++
++  DCHECK(!error.code);
++  return ux_theme_lib;
++}
++
+ bool IsDarkModeAvailable() {
+   auto& dark_mode_support = GetDarkModeSupport();
+   return (dark_mode_support.allow_dark_mode_for_app ||
+diff --git a/base/win/dark_mode_support.h b/base/win/dark_mode_support.h
+index 732704f088029b6da3fa95d51be4b22fa6fa1d8c..8046f47ac6fbbd5f5d8fefb3ca128efb50918323 100644
+--- a/base/win/dark_mode_support.h
++++ b/base/win/dark_mode_support.h
+@@ -8,7 +8,11 @@
+ #include "base/base_export.h"
+ #include "base/win/windows_types.h"
+ 
++
+ namespace base::win {
++// This is extracted as a standalone function in order
++// to be friend with base::ScopedAllowBlocking.
++BASE_EXPORT HMODULE InitializeDarkModeSupport();
+ 
+ // Returns true if this version of Windows supports dark mode.
+ BASE_EXPORT bool IsDarkModeAvailable();
