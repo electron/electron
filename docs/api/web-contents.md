@@ -1568,6 +1568,8 @@ Opens the devtools.
 When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
 explicitly passing an empty `mode` can force using last used dock state.
 
+On Windows, if Windows Control Overlay is enabled, Devtools will be opened with `mode: 'detach'`.
+
 #### `contents.closeDevTools()`
 
 Closes the devtools.
