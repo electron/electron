@@ -31,8 +31,7 @@ class NodeService : public node::mojom::NodeService {
 
   // mojom::NodeService implementation:
   void Initialize(node::mojom::NodeServiceParamsPtr params) override;
-  void ReceivePostMessage(const std::string& channel,
-                          blink::TransferableMessage message) override;
+  void ReceivePostMessage(blink::TransferableMessage message) override;
 
  private:
   bool initialized_ = false;

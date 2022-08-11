@@ -99,12 +99,6 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
     return;
 
   blink::TransferableMessage transferable_message;
-  std::string channel;
-  if (!args->GetNext(&channel)) {
-    args->ThrowTypeError("Expected at least one argument to postMessage");
-    return;
-  }
-
   v8::Local<v8::Value> message_value;
   if (args->GetNext(&message_value)) {
     if (!electron::SerializeV8Value(args->isolate(), message_value,
@@ -130,8 +124,7 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
   if (threw_exception)
     return;
 
-  node_service_remote_->ReceivePostMessage(channel,
-                                           std::move(transferable_message));
+  node_service_remote_->ReceivePostMessage(std::move(transferable_message));
 }
 
 int UtilityProcessWrapper::Kill(int signal) const {

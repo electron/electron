@@ -100,8 +100,8 @@ export default class UtilityProcess extends EventEmitter {
     if (this._handle === null) {
       return;
     }
-    if (Array.isArray(args[2])) {
-      args[2] = args[2].map((o: any) => o instanceof MessagePortMain ? o._internalPort : o);
+    if (Array.isArray(args[1])) {
+      args[1] = args[1].map((o: any) => o instanceof MessagePortMain ? o._internalPort : o);
     }
     return this._handle.postMessage(...args);
   }

@@ -96,20 +96,35 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   node_bindings_->StartPolling();
 }
 
-void NodeService::ReceivePostMessage(const std::string& channel,
-                                     blink::TransferableMessage message) {
+void NodeService::ReceivePostMessage(blink::TransferableMessage message) {
   v8::Isolate* isolate = js_env_->isolate();
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  auto binding_key = gin::ConvertToV8(isolate, "messagechannel")
+                         ->ToString(context)
+                         .ToLocalChecked();
+  auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
+  auto global_object = context->Global();
+  v8::Local<v8::Value> value;
+  if (!global_object->GetPrivate(context, private_binding_key).ToLocal(&value))
+    return;
+  if (value.IsEmpty() || !value->IsObject())
+    return;
+  auto binding = value->ToObject(context).ToLocalChecked();
+
   auto wrapped_ports =
       MessagePort::EntanglePorts(isolate, std::move(message.ports));
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
-
   auto event =
       gin::DataObjectBuilder(isolate).Set("data", message_value).Build();
 
-  gin_helper::EmitEvent(isolate, node_env_->env()->process_object(),
-                        "-ipc-ports", event, channel, std::move(wrapped_ports));
+  std::vector<v8::Local<v8::Value>> args{
+      gin::ConvertToV8(isolate, event),
+      gin::ConvertToV8(isolate, std::move(wrapped_ports))};
+  v8::MicrotasksScope::PerformCheckpoint(isolate);
+  std::ignore = node::MakeCallback(isolate, binding, "didReceiveMessage",
+                                   args.size(), args.data(), {0, 0});
 }
 
 }  // namespace electron

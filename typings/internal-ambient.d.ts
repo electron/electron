@@ -169,9 +169,9 @@ declare namespace NodeJS {
     on(eventName: 'download-progress', listener: (event: any, current: number) => void): this;
   }
 
-  interface MessagePortEvent {
-    data: any;
-    ports: Electron.MessagePortMain[];
+  interface ParentPort extends EventEmitter {
+    postMessage(message: any): void;
+    on(eventName: 'message', listener: (event: any, ports: any[]) => void): this;
   }
 
   interface Process {
@@ -253,7 +253,6 @@ declare namespace NodeJS {
     // Additional events
     once(event: 'document-start', listener: () => any): this;
     once(event: 'document-end', listener: () => any): this;
-    emit(channel: string, event: MessagePortEvent): this;
 
     // Additional properties
     _firstFileName?: string;

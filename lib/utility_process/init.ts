@@ -1,5 +1,8 @@
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
+import * as events from 'events';
 const Module = require('module');
+const { EventEmitter } = events;
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 // We modified the original process.argv to let node.js load the init.js,
 // we need to restore it here.
@@ -11,9 +14,25 @@ require('../common/reset-search-paths');
 // Import common settings.
 require('@electron/internal/common/init');
 
-process.on('-ipc-ports' as any, function (event: any, channel: string, ports: any[]) {
-  event.ports = ports.map(p => new MessagePortMain(p));
-  process.emit(channel, event);
+const parentPort: NodeJS.ParentPort = new EventEmitter() as any;
+
+v8Util.setHiddenValue(global, 'messagechannel', {
+  didReceiveMessage (event: any, ports: any[]) {
+    event.ports = ports.map(p => new MessagePortMain(p));
+    (parentPort as events.EventEmitter).emit('message', event);
+  }
+});
+
+let _parentPort = parentPort;
+Object.defineProperty(process, 'parentPort', {
+  get () {
+    return _parentPort;
+  },
+  set (value) {
+    _parentPort = value;
+  },
+  enumerable: false,
+  configurable: true
 });
 
 // Finally load entry script.

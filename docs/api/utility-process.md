@@ -32,9 +32,8 @@ Process: [Main](../glossary.md#main-process)<br />
 
 ### Instance Methods
 
-#### `child.postMessage(channel, message, [transfer])`
+#### `child.postMessage(message, [transfer])`
 
-* `channel` string
 * `message` any
 * `transfer` MessagePortMain[] (optional)
 
@@ -47,10 +46,10 @@ For example:
 // Main process
 const { port1, port2 } = new MessageChannelMain()
 const child = new UtilityProcess(path.join(__dirname, 'test.js'))
-child.postMessage('port', { message: 'hello' }, [port1])
+child.postMessage({ message: 'hello' }, [port1])
 
 // Child process
-process.on('port', (e, msg) => {
+process.parentPort.once('message', (e) => {
   const [port] = e.ports
   // ...
 })
