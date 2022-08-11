@@ -8,7 +8,7 @@ Fixes a DCHECK-on-launch on Windows.
 Should be upstreamed.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 5455aa07547f753b83dd59c173834034d0673ae7..a642eb99c3396359578909f50182adf52c2525be 100644
+index 5455aa07547f753b83dd59c173834034d0673ae7..a59b21b58b5d6a6bbeb9e13214a7021a4c70698a 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -382,6 +382,11 @@ class BooleanWithStack;
@@ -27,7 +27,7 @@ index 5455aa07547f753b83dd59c173834034d0673ae7..a642eb99c3396359578909f50182adf5
    friend bool chromeos::system::IsCoreSchedulingAvailable();
    friend int chromeos::system::NumberOfPhysicalCores();
    friend bool disk_cache::CleanupDirectorySync(const base::FilePath&);
-+  friend DarkModeSupport& win::GetDarkModeSupport();
++  friend win::DarkModeSupport& win::GetDarkModeSupport();
  
    ScopedAllowBlocking(const Location& from_here = Location::Current());
    ~ScopedAllowBlocking();
