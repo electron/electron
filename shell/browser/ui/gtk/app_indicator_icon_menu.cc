@@ -51,21 +51,14 @@ void AppIndicatorIconMenu::UpdateClickActionReplacementMenuItem(
   } else {
     click_action_replacement_menu_item_added_ = true;
 
-    // If |menu_model_| is non empty, add a separator to separate the
-    // "click action replacement menu item" from the other menu items.
-    if (menu_model_ && menu_model_->GetItemCount() > 0) {
-      GtkWidget* menu_item = gtk_separator_menu_item_new();
-      gtk_widget_show(menu_item);
-      gtk_menu_shell_prepend(GTK_MENU_SHELL(gtk_menu_), menu_item);
-    }
-
+    // create a hidden menu item that will be activated from libappindicator on
+    // tray icon click
     GtkWidget* menu_item = gtk_menu_item_new_with_mnemonic(label);
     g_object_set_data(G_OBJECT(menu_item), "click-action-item",
                       GINT_TO_POINTER(1));
     g_signal_connect(menu_item, "activate",
                      G_CALLBACK(OnClickActionReplacementMenuItemActivatedThunk),
                      this);
-    gtk_widget_show(menu_item);
     gtk_menu_shell_prepend(GTK_MENU_SHELL(gtk_menu_), menu_item);
   }
 }

@@ -62,7 +62,7 @@ void TrayIconGtk::OnClick() {
 }
 
 bool TrayIconGtk::HasClickAction() {
-  return false;
+  return true;
 }
 
 // static
