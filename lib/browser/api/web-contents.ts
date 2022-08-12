@@ -618,9 +618,9 @@ WebContents.prototype._init = function () {
   this.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
     addSenderFrameToEvent(event);
     event.ports = ports.map(p => new MessagePortMain(p));
-    ipc.emit(channel, event, message);
     const maybeWebFrame = webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
     maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, message);
+    ipc.emit(channel, event, message);
     ipcMain.emit(channel, event, message);
   });
 
