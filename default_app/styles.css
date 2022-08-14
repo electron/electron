@@ -1,5 +1,5 @@
 body {
-  color: #86a5b1;
+  color: #2d424b;
   background-color: #2f3241;
   font-family: Roboto, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Oxygen", "Ubuntu", "Cantarell", "Open Sans", sans-serif;
   margin: 0;
@@ -9,7 +9,7 @@ body {
 
 .container {
   margin: 15px 30px;
-  background-color: #2f3241;
+  background-color: #412f32;
   flex: 1;
   display: flex;
   flex-direction: column;
