@@ -76,6 +76,8 @@ static_library("chrome") {
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.h",
+    "//chrome/browser/win/titlebar_config.cc",
+    "//chrome/browser/win/titlebar_config.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
   ]
