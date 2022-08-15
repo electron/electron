@@ -151,10 +151,13 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
                  blink::mojom::JavaScriptExecutionResultType type,
                  base::Value value) {
                 if (type ==
-                    blink::mojom::JavaScriptExecutionResultType::kSuccess)
+                    blink::mojom::JavaScriptExecutionResultType::kSuccess) {
                   promise.Resolve(value);
-                else
-                  promise.Resolve(base::Value());
+                } else {
+                  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+                  v8::HandleScope scope(isolate);
+                  promise.Reject(gin::ConvertToV8(isolate, value));
+                }
               },
               std::move(promise)));
 
