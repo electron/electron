@@ -149,9 +149,10 @@ export async function repeatedly<T> (
 }
 
 async function makeRemoteContext (opts?: any) {
-  const { webPreferences, ...rest } = opts ?? {};
+  const { webPreferences, setup, url = 'about:blank', ...rest } = opts ?? {};
   const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, ...webPreferences }, ...rest });
-  await w.loadURL('about:blank');
+  await w.loadURL(url.toString());
+  if (setup) await w.webContents.executeJavaScript(setup);
   return w;
 }
 
@@ -179,6 +180,7 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
         const chai_1 = require('chai')
+        chai_1.use(require('chai-as-promised'))
         chai_1.use(require('dirty-chai'))
         await (${fn})(...${JSON.stringify(args ?? [])})
         return {ok: true};

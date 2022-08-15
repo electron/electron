@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
@@ -3080,7 +3080,7 @@ describe('BrowserWindow module', () => {
         expect(argv).to.include('--enable-sandbox');
       });
 
-      it('should open windows with the options configured via new-window event listeners', async () => {
+      it('should open windows with the options configured via setWindowOpenHandler handlers', async () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -3169,30 +3169,6 @@ describe('BrowserWindow module', () => {
           w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'webcontents-events' });
           await done;
         });
-      });
-
-      it('supports calling preventDefault on new-window events', (done) => {
-        const w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            sandbox: true
-          }
-        });
-        const initialWebContents = webContents.getAllWebContents().map((i) => i.id);
-        w.webContents.once('new-window', (e) => {
-          e.preventDefault();
-          // We need to give it some time so the windows get properly disposed (at least on OSX).
-          setTimeout(() => {
-            const currentWebContents = webContents.getAllWebContents().map((i) => i.id);
-            try {
-              expect(currentWebContents).to.deep.equal(initialWebContents);
-              done();
-            } catch (error) {
-              done(e);
-            }
-          }, 100);
-        });
-        w.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
       });
 
       it('validates process APIs access in sandboxed renderer', async () => {
@@ -3350,7 +3326,7 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'));
         await webviewLoaded;
       });
-      it('should open windows with the options configured via new-window event listeners', async () => {
+      it('should open windows with the options configured via setWindowOpenHandler handlers', async () => {
         const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
@@ -3717,94 +3693,6 @@ describe('BrowserWindow module', () => {
       } finally {
         ipcMain.removeAllListeners('pong');
       }
-    });
-  });
-
-  describe('new-window event', () => {
-    afterEach(closeAllWindows);
-
-    it('emits when window.open is called', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-      w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-        e.preventDefault();
-        try {
-          expect(url).to.equal('http://host/');
-          expect(frameName).to.equal('host');
-          expect((options as any)['this-is-not-a-standard-feature']).to.equal(true);
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
-    });
-
-    it('emits when window.open is called with no webPreferences', (done) => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.once('new-window', function (e, url, frameName, disposition, options) {
-        e.preventDefault();
-        try {
-          expect(url).to.equal('http://host/');
-          expect(frameName).to.equal('host');
-          expect((options as any)['this-is-not-a-standard-feature']).to.equal(true);
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
-    });
-
-    it('emits when link with target is called', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-      w.webContents.once('new-window', (e, url, frameName) => {
-        e.preventDefault();
-        try {
-          expect(url).to.equal('http://host/');
-          expect(frameName).to.equal('target');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadFile(path.join(fixtures, 'pages', 'target-name.html'));
-    });
-
-    it('includes all properties', async () => {
-      const w = new BrowserWindow({ show: false });
-
-      const p = new Promise<{
-        url: string,
-        frameName: string,
-        disposition: string,
-        options: BrowserWindowConstructorOptions,
-        additionalFeatures: string[],
-        referrer: Electron.Referrer,
-        postBody: Electron.PostBody
-      }>((resolve) => {
-        w.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures, referrer, postBody) => {
-          e.preventDefault();
-          resolve({ url, frameName, disposition, options, additionalFeatures, referrer, postBody });
-        });
-      });
-      w.loadURL(`data:text/html,${encodeURIComponent(`
-        <form target="_blank" method="POST" id="form" action="http://example.com/test">
-          <input type="text" name="post-test-key" value="post-test-value"></input>
-        </form>
-        <script>form.submit()</script>
-      `)}`);
-      const { url, frameName, disposition, options, additionalFeatures, referrer, postBody } = await p;
-      expect(url).to.equal('http://example.com/test');
-      expect(frameName).to.equal('');
-      expect(disposition).to.equal('foreground-tab');
-      expect(options).to.be.an('object').not.null();
-      expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
-      expect(referrer.url).to.equal('');
-      expect(additionalFeatures).to.deep.equal([]);
-      expect(postBody.data).to.have.length(1);
-      expect(postBody.data[0].type).to.equal('rawData');
-      expect((postBody.data[0] as any).bytes).to.deep.equal(Buffer.from('post-test-key=post-test-value'));
-      expect(postBody.contentType).to.equal('application/x-www-form-urlencoded');
     });
   });
 
@@ -5255,7 +5143,8 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('contextIsolation option with and without sandbox option', () => {
+  // TODO (jkleinsc) renable these tests on mas arm64
+  ifdescribe(!process.mas || process.arch !== 'arm64')('contextIsolation option with and without sandbox option', () => {
     const expectedContextData = {
       preloadContext: {
         preloadProperty: 'number',

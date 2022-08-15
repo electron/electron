@@ -395,7 +395,7 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
     this.on('change', changeListener);
 
     const escapeItemListener = (item: Electron.TouchBarItemType | null) => {
-      window._setEscapeTouchBarItem(item != null ? item : {});
+      window._setEscapeTouchBarItem(item ?? {});
     };
     this.on('escape-item-change', escapeItemListener);
 

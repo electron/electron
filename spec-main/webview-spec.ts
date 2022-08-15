@@ -3,12 +3,14 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, delay, defer, itremote, useRemoteContext } from './spec-helpers';
+import { ifit, ifdescribe, delay, defer, itremote, useRemoteContext } from './spec-helpers';
 import { expect } from 'chai';
 import * as http from 'http';
 import { AddressInfo } from 'net';
+import * as auth from 'basic-auth';
 
 declare let WebView: any;
+const features = process._linkedBinding('electron_common_features');
 
 async function loadWebView (w: WebContents, attributes: Record<string, string>, opts?: {openDevTools?: boolean}): Promise<void> {
   const { openDevTools } = {
@@ -666,31 +668,6 @@ describe('<webview> tag', function () {
           'Blocked a frame with origin "file://" from accessing a cross-origin frame.';
 
       expect(content).to.equal(expectedContent);
-    });
-
-    it('emits a new-window event', async () => {
-      // Don't wait for loading to finish.
-      const attributes = {
-        allowpopups: 'on',
-        nodeintegration: 'on',
-        webpreferences: 'contextIsolation=no',
-        src: `file://${fixtures}/pages/window-open.html`
-      };
-      const { url, frameName } = await w.webContents.executeJavaScript(`
-        new Promise((resolve, reject) => {
-          const webview = document.createElement('webview')
-          for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
-            webview.setAttribute(k, v)
-          }
-          document.body.appendChild(webview)
-          webview.addEventListener('new-window', (e) => {
-            resolve({url: e.url, frameName: e.frameName})
-          })
-        })
-      `);
-
-      expect(url).to.equal('http://host/');
-      expect(frameName).to.equal('host');
     });
 
     it('emits a browser-window-created event', async () => {
@@ -1435,28 +1412,6 @@ describe('<webview> tag', function () {
     });
     after(closeAllWindows);
 
-    describe('new-window event', () => {
-      it('emits when window.open is called', async () => {
-        const { url, frameName } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/window-open.html`,
-          allowpopups: 'true'
-        }, 'new-window');
-
-        expect(url).to.equal('http://host/');
-        expect(frameName).to.equal('host');
-      });
-
-      it('emits when link with target is called', async () => {
-        const { url, frameName } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/target-name.html`,
-          allowpopups: 'true'
-        }, 'new-window');
-
-        expect(url).to.equal('http://host/');
-        expect(frameName).to.equal('target');
-      });
-    });
-
     describe('ipc-message event', () => {
       it('emits when guest sends an ipc message to browser', async () => {
         const { frameId, channel, args } = await loadWebViewAndWaitForEvent(w, {
@@ -1745,6 +1700,423 @@ describe('<webview> tag', function () {
 
         expect(message).to.equal('undefined');
       });
+    });
+
+    describe('media-started-playing and media-paused events', () => {
+      it('emits when audio starts and stops playing', async function () {
+        if (!await w.executeJavaScript('document.createElement(\'audio\').canPlayType(\'audio/wav\')')) { return this.skip(); }
+
+        await loadWebView(w, { src: blankPageUrl });
+
+        // With the new autoplay policy, audio elements must be unmuted
+        // see https://goo.gl/xX8pDD.
+        await w.executeJavaScript(`new Promise(resolve => {
+          webview.executeJavaScript(\`
+            const audio = document.createElement("audio")
+            audio.src = "../assets/tone.wav"
+            document.body.appendChild(audio);
+            audio.play()
+          \`, true)
+          webview.addEventListener('media-started-playing', () => resolve(), {once: true})
+        })`);
+
+        await w.executeJavaScript(`new Promise(resolve => {
+          webview.executeJavaScript(\`
+            document.querySelector("audio").pause()
+          \`, true)
+          webview.addEventListener('media-paused', () => resolve(), {once: true})
+        })`);
+      });
+    });
+  });
+
+  describe('methods', () => {
+    let w: WebContents;
+    before(async () => {
+      const window = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      w = window.webContents;
+    });
+    afterEach(async () => {
+      await w.executeJavaScript(`{
+        document.querySelectorAll('webview').forEach(el => el.remove())
+      }`);
+    });
+    after(closeAllWindows);
+
+    describe('<webview>.reload()', () => {
+      it('should emit beforeunload handler', async () => {
+        await loadWebView(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: `file://${fixtures}/pages/beforeunload-false.html`
+        });
+
+        // Event handler has to be added before reload.
+        const channel = await w.executeJavaScript(`new Promise(resolve => {
+          webview.addEventListener('ipc-message', e => resolve(e.channel))
+          webview.reload();
+        })`);
+
+        expect(channel).to.equal('onbeforeunload');
+      });
+    });
+
+    describe('<webview>.goForward()', () => {
+      useRemoteContext({ webPreferences: { webviewTag: true } });
+      itremote('should work after a replaced history entry', async (fixtures: string) => {
+        const webview = new WebView();
+
+        webview.setAttribute('nodeintegration', 'on');
+        webview.setAttribute('webpreferences', 'contextIsolation=no');
+        webview.src = `file://${fixtures}/pages/history-replace.html`;
+        document.body.appendChild(webview);
+
+        {
+          const [e] = await Promise.all([
+            new Promise<any>(resolve => webview.addEventListener('ipc-message', resolve, { once: true })),
+            new Promise<void>(resolve => webview.addEventListener('did-stop-loading', resolve, { once: true }))
+          ]);
+          expect(e.channel).to.equal('history');
+          expect(e.args[0]).to.equal(1);
+          expect(webview.canGoBack()).to.be.false();
+          expect(webview.canGoForward()).to.be.false();
+        }
+
+        webview.src = `file://${fixtures}/pages/base-page.html`;
+
+        await new Promise<void>(resolve => webview.addEventListener('did-stop-loading', resolve, { once: true }));
+
+        expect(webview.canGoBack()).to.be.true();
+        expect(webview.canGoForward()).to.be.false();
+
+        webview.goBack();
+
+        {
+          const [e] = await Promise.all([
+            new Promise<any>(resolve => webview.addEventListener('ipc-message', resolve, { once: true })),
+            new Promise<void>(resolve => webview.addEventListener('did-stop-loading', resolve, { once: true }))
+          ]);
+          expect(e.channel).to.equal('history');
+          expect(e.args[0]).to.equal(2);
+          expect(webview.canGoBack()).to.be.false();
+          expect(webview.canGoForward()).to.be.true();
+        }
+
+        webview.goForward();
+
+        await new Promise<void>(resolve => webview.addEventListener('did-stop-loading', resolve, { once: true }));
+
+        expect(webview.canGoBack()).to.be.true();
+        expect(webview.canGoForward()).to.be.false();
+      }, [fixtures]);
+    });
+
+    describe('<webview>.clearHistory()', () => {
+      it('should clear the navigation history', async () => {
+        await loadWebView(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: blankPageUrl
+        });
+
+        // Navigation must be triggered by a user gesture to make canGoBack() return true
+        await w.executeJavaScript('webview.executeJavaScript(`history.pushState(null, "", "foo.html")`, true)');
+
+        expect(await w.executeJavaScript('webview.canGoBack()')).to.be.true();
+
+        await w.executeJavaScript('webview.clearHistory()');
+        expect(await w.executeJavaScript('webview.canGoBack()')).to.be.false();
+      });
+    });
+
+    describe('executeJavaScript', () => {
+      it('can return the result of the executed script', async () => {
+        await loadWebView(w, {
+          src: 'about:blank'
+        });
+
+        const jsScript = "'4'+2";
+        const expectedResult = '42';
+
+        const result = await w.executeJavaScript(`webview.executeJavaScript(${JSON.stringify(jsScript)})`);
+        expect(result).to.equal(expectedResult);
+      });
+    });
+
+    it('supports inserting CSS', async () => {
+      await loadWebView(w, { src: `file://${fixtures}/pages/base-page.html` });
+      await w.executeJavaScript('webview.insertCSS(\'body { background-repeat: round; }\')');
+      const result = await w.executeJavaScript('webview.executeJavaScript(\'window.getComputedStyle(document.body).getPropertyValue("background-repeat")\')');
+      expect(result).to.equal('round');
+    });
+
+    it('supports removing inserted CSS', async () => {
+      await loadWebView(w, { src: `file://${fixtures}/pages/base-page.html` });
+      const key = await w.executeJavaScript('webview.insertCSS(\'body { background-repeat: round; }\')');
+      await w.executeJavaScript(`webview.removeInsertedCSS(${JSON.stringify(key)})`);
+      const result = await w.executeJavaScript('webview.executeJavaScript(\'window.getComputedStyle(document.body).getPropertyValue("background-repeat")\')');
+      expect(result).to.equal('repeat');
+    });
+
+    describe('sendInputEvent', () => {
+      it('can send keyboard event', async () => {
+        await loadWebViewAndWaitForEvent(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: `file://${fixtures}/pages/onkeyup.html`
+        }, 'dom-ready');
+
+        const waitForIpcMessage = w.executeJavaScript('new Promise(resolve => webview.addEventListener("ipc-message", e => resolve({...e})), {once: true})');
+        w.executeJavaScript(`webview.sendInputEvent({
+          type: 'keyup',
+          keyCode: 'c',
+          modifiers: ['shift']
+        })`);
+
+        const { channel, args } = await waitForIpcMessage;
+        expect(channel).to.equal('keyup');
+        expect(args).to.deep.equal(['C', 'KeyC', 67, true, false]);
+      });
+
+      it('can send mouse event', async () => {
+        await loadWebViewAndWaitForEvent(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: `file://${fixtures}/pages/onmouseup.html`
+        }, 'dom-ready');
+
+        const waitForIpcMessage = w.executeJavaScript('new Promise(resolve => webview.addEventListener("ipc-message", e => resolve({...e})), {once: true})');
+        w.executeJavaScript(`webview.sendInputEvent({
+          type: 'mouseup',
+          modifiers: ['ctrl'],
+          x: 10,
+          y: 20
+        })`);
+
+        const { channel, args } = await waitForIpcMessage;
+        expect(channel).to.equal('mouseup');
+        expect(args).to.deep.equal([10, 20, false, true]);
+      });
+    });
+
+    describe('<webview>.getWebContentsId', () => {
+      it('can return the WebContents ID', async () => {
+        await loadWebView(w, { src: 'about:blank' });
+
+        expect(await w.executeJavaScript('webview.getWebContentsId()')).to.be.a('number');
+      });
+    });
+
+    ifdescribe(features.isPrintingEnabled())('<webview>.printToPDF()', () => {
+      it('rejects on incorrectly typed parameters', async () => {
+        const badTypes = {
+          landscape: [],
+          displayHeaderFooter: '123',
+          printBackground: 2,
+          scale: 'not-a-number',
+          pageSize: 'IAmAPageSize',
+          margins: 'terrible',
+          pageRanges: { oops: 'im-not-the-right-key' },
+          headerTemplate: [1, 2, 3],
+          footerTemplate: [4, 5, 6],
+          preferCSSPageSize: 'no'
+        };
+
+        // These will hard crash in Chromium unless we type-check
+        for (const [key, value] of Object.entries(badTypes)) {
+          const param = { [key]: value };
+
+          const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
+          await loadWebView(w, { src });
+          await expect(w.executeJavaScript(`webview.printToPDF(${JSON.stringify(param)})`)).to.eventually.be.rejected();
+        }
+      });
+
+      it('can print to PDF', async () => {
+        const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
+        await loadWebView(w, { src });
+
+        const data = await w.executeJavaScript('webview.printToPDF({})');
+        expect(data).to.be.an.instanceof(Uint8Array).that.is.not.empty();
+      });
+    });
+
+    describe('DOM events', () => {
+      /*
+      let div;
+
+      beforeEach(() => {
+        div = document.createElement('div');
+        div.style.width = '100px';
+        div.style.height = '10px';
+        div.style.overflow = 'hidden';
+        webview.style.height = '100%';
+        webview.style.width = '100%';
+      });
+
+      afterEach(() => {
+        if (div != null) div.remove();
+      });
+      */
+
+      for (const [description, sandbox] of [
+        ['without sandbox', false] as const,
+        ['with sandbox', true] as const
+      ]) {
+        describe(description, () => {
+        // TODO(nornagon): disabled during chromium roll 2019-06-11 due to a
+        // 'ResizeObserver loop limit exceeded' error on Windows
+        /*
+          xit('emits resize events', async () => {
+            const firstResizeSignal = waitForEvent(webview, 'resize');
+            const domReadySignal = waitForEvent(webview, 'dom-ready');
+
+            webview.src = `file://${fixtures}/pages/a.html`;
+            webview.webpreferences = `sandbox=${sandbox ? 'yes' : 'no'}`;
+            div.appendChild(webview);
+            document.body.appendChild(div);
+
+            const firstResizeEvent = await firstResizeSignal;
+            expect(firstResizeEvent.target).to.equal(webview);
+            expect(firstResizeEvent.newWidth).to.equal(100);
+            expect(firstResizeEvent.newHeight).to.equal(10);
+
+            await domReadySignal;
+
+            const secondResizeSignal = waitForEvent(webview, 'resize');
+
+            const newWidth = 1234;
+            const newHeight = 789;
+            div.style.width = `${newWidth}px`;
+            div.style.height = `${newHeight}px`;
+
+            const secondResizeEvent = await secondResizeSignal;
+            expect(secondResizeEvent.target).to.equal(webview);
+            expect(secondResizeEvent.newWidth).to.equal(newWidth);
+            expect(secondResizeEvent.newHeight).to.equal(newHeight);
+          });
+          */
+
+          it('emits focus event', async () => {
+            await loadWebViewAndWaitForEvent(w, {
+              src: `file://${fixtures}/pages/a.html`,
+              webpreferences: `sandbox=${sandbox ? 'yes' : 'no'}`
+            }, 'dom-ready');
+
+            // If this test fails, check if webview.focus() still works.
+            await w.executeJavaScript(`new Promise(resolve => {
+              webview.addEventListener('focus', () => resolve(), {once: true});
+              webview.focus();
+            })`);
+          });
+        });
+      }
+    });
+
+    // TODO(miniak): figure out why this is failing on windows
+    ifdescribe(process.platform !== 'win32')('<webview>.capturePage()', () => {
+      it('returns a Promise with a NativeImage', async () => {
+        const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
+        await loadWebViewAndWaitForEvent(w, { src }, 'did-stop-loading');
+
+        // Retry a few times due to flake.
+        for (let i = 0; i < 5; i++) {
+          try {
+            const image = await w.executeJavaScript('webview.capturePage()');
+            const imgBuffer = image.toPNG();
+
+            // Check the 25th byte in the PNG.
+            // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
+            expect(imgBuffer[25]).to.equal(6);
+            return;
+          } catch (e) {
+            /* drop the error */
+          }
+        }
+        expect(false).to.be.true('could not successfully capture the page');
+      });
+    });
+
+    // FIXME(zcbenz): Disabled because of moving to OOPIF webview.
+    xdescribe('setDevToolsWebContents() API', () => {
+      /*
+      it('sets webContents of webview as devtools', async () => {
+        const webview2 = new WebView();
+        loadWebView(webview2);
+
+        // Setup an event handler for further usage.
+        const waitForDomReady = waitForEvent(webview2, 'dom-ready');
+
+        loadWebView(webview, { src: 'about:blank' });
+        await waitForEvent(webview, 'dom-ready');
+        webview.getWebContents().setDevToolsWebContents(webview2.getWebContents());
+        webview.getWebContents().openDevTools();
+
+        await waitForDomReady;
+
+        // Its WebContents should be a DevTools.
+        const devtools = webview2.getWebContents();
+        expect(devtools.getURL().startsWith('devtools://devtools')).to.be.true();
+
+        const name = await devtools.executeJavaScript('InspectorFrontendHost.constructor.name');
+        document.body.removeChild(webview2);
+
+        expect(name).to.be.equal('InspectorFrontendHostImpl');
+      });
+      */
+    });
+  });
+
+  describe('basic auth', () => {
+    let w: WebContents;
+    before(async () => {
+      const window = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      w = window.webContents;
+    });
+    afterEach(async () => {
+      await w.executeJavaScript(`{
+        document.querySelectorAll('webview').forEach(el => el.remove())
+      }`);
+    });
+    after(closeAllWindows);
+
+    it('should authenticate with correct credentials', async () => {
+      const message = 'Authenticated';
+      const server = http.createServer((req, res) => {
+        const credentials = auth(req)!;
+        if (credentials.name === 'test' && credentials.pass === 'test') {
+          res.end(message);
+        } else {
+          res.end('failed');
+        }
+      });
+      defer(() => {
+        server.close();
+      });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const port = (server.address() as AddressInfo).port;
+      const e = await loadWebViewAndWaitForEvent(w, {
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
+        src: `file://${fixtures}/pages/basic-auth.html?port=${port}`
+      }, 'ipc-message');
+      expect(e.channel).to.equal(message);
     });
   });
 });
