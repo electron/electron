@@ -13,6 +13,10 @@ Follow the guidelines below for building **Electron itself** on macOS, for the p
 * [node.js](https://nodejs.org) (external)
 * Python >= 3.7
 
+### Arm64-specific prerequisites
+* Rosetta 2
+  * this can be installed by using the softwareupdate command line tool.
+  * `$ softwareupdate --install-rosetta`
 ## Building Electron
 
 See [Build Instructions: GN](build-instructions-gn.md).
