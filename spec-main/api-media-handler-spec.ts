@@ -24,7 +24,8 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
     server.close();
   });
 
-  it('works when calling getDisplayMedia', async () => {
+  it('works when calling getDisplayMedia', async function () {
+    if ((await desktopCapturer.getSources({ types: ['screen'] })).length === 0) { return this.skip(); }
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
     let mediaRequest: any = null;
