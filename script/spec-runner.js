@@ -37,7 +37,7 @@ const runners = new Map([
   ['native', { description: 'Native specs', run: runNativeElectronTests }]
 ]);
 
-const specHashPath = path.resolve(__dirname, '../spec-main/.hash');
+const specHashPath = path.resolve(__dirname, '../spec/.hash');
 
 let runnersToRun = null;
 if (args.runners !== undefined) {
@@ -58,7 +58,7 @@ async function main () {
       (lastSpecInstallHash !== currentSpecInstallHash);
 
   if (somethingChanged) {
-    await installSpecModules(path.resolve(__dirname, '..', 'spec-main'));
+    await installSpecModules(path.resolve(__dirname, '..', 'spec'));
     await getSpecHash().then(saveSpecHash);
   }
 
@@ -208,7 +208,7 @@ async function runNativeElectronTests () {
 }
 
 async function runMainProcessElectronTests () {
-  await runTests('spec-main', 'main');
+  await runTests('spec', 'main');
 }
 
 async function installSpecModules (dir) {
@@ -242,15 +242,15 @@ function getSpecHash () {
   return Promise.all([
     (async () => {
       const hasher = crypto.createHash('SHA256');
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')));
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')));
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')));
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')));
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')));
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')));
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')));
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../script/spec-runner.js')));
       return hasher.digest('hex');
     })(),
     (async () => {
-      const specNodeModulesPath = path.resolve(__dirname, '../spec-main/node_modules');
+      const specNodeModulesPath = path.resolve(__dirname, '../spec/node_modules');
       if (!fs.existsSync(specNodeModulesPath)) {
         return null;
       }

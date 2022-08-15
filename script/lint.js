@@ -23,10 +23,10 @@ process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
-  ['spec-main', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
-  ['spec-main', 'ts-smoke', 'electron', 'main.ts'],
-  ['spec-main', 'ts-smoke', 'electron', 'renderer.ts'],
-  ['spec-main', 'ts-smoke', 'runner.js']
+  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
+  ['spec', 'ts-smoke', 'electron', 'main.ts'],
+  ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
+  ['spec', 'ts-smoke', 'runner.js']
 ].map(tokens => path.join(ELECTRON_ROOT, ...tokens)));
 
 const IS_WINDOWS = process.platform === 'win32';
@@ -113,8 +113,8 @@ const LINTERS = [{
   }
 }, {
   key: 'javascript',
-  roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec', 'spec-main'],
-  ignoreRoots: ['spec/node_modules', 'spec-main/node_modules'],
+  roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
+  ignoreRoots: ['spec/node_modules', 'spec/node_modules'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: async (opts, filenames) => {
     const eslint = new ESLint({

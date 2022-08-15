@@ -28,7 +28,7 @@ you have set `process.env.ELECTRON_OUT_DIR`. Without these set, Electron will fa
 to perform some pre-testing steps.
 
 To run all unit tests, run `npm run test`. The unit tests are an Electron
-app (surprise!) that can be found in the `spec-main` folder. Note that it has
+app (surprise!) that can be found in the `spec` folder. Note that it has
 its own `package.json` and that its dependencies are therefore not defined
 in the top-level `package.json`.
 

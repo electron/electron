@@ -14,7 +14,7 @@ PROJECT_NAME = get_electron_branding()['project_name']
 PRODUCT_NAME = get_electron_branding()['product_name']
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 SNAPSHOT_SOURCE = os.path.join(
-    SOURCE_ROOT, 'spec-main', 'fixtures', 'testsnap.js')
+    SOURCE_ROOT, 'spec', 'fixtures', 'testsnap.js')
 
 def main():
   args = parse_args()
@@ -53,7 +53,7 @@ def main():
         for bin_file in generated_bin_files:
           shutil.copy2(bin_file, app_path)
 
-      test_path = os.path.join(SOURCE_ROOT, 'spec-main', 'fixtures', \
+      test_path = os.path.join(SOURCE_ROOT, 'spec', 'fixtures', \
                                'snapshot-items-available')
 
       if sys.platform == 'darwin':

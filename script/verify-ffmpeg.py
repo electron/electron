@@ -41,7 +41,7 @@ def main():
 
   returncode = 0
   try:
-    test_path = os.path.join(SOURCE_ROOT, 'spec-main', 'fixtures',
+    test_path = os.path.join(SOURCE_ROOT, 'spec', 'fixtures',
         'no-proprietary-codecs.js')
     env = dict(os.environ)
     env['ELECTRON_ENABLE_STACK_DUMPING'] = 'true'
