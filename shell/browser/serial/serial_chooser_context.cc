@@ -103,6 +103,8 @@ void SerialChooserContext::GrantPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
     content::RenderFrameHost* render_frame_host) {
+  port_info_.insert({port.token, port.Clone()});
+
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
   return permission_manager->GrantDevicePermission(
@@ -190,6 +192,9 @@ base::WeakPtr<SerialChooserContext> SerialChooserContext::AsWeakPtr() {
 }
 
 void SerialChooserContext::OnPortAdded(device::mojom::SerialPortInfoPtr port) {
+  if (!base::Contains(port_info_, port->token))
+    port_info_.insert({port->token, port->Clone()});
+
   for (auto& observer : port_observer_list_)
     observer.OnPortAdded(*port);
 }
@@ -198,6 +203,8 @@ void SerialChooserContext::OnPortRemoved(
     device::mojom::SerialPortInfoPtr port) {
   for (auto& observer : port_observer_list_)
     observer.OnPortRemoved(*port);
+
+  port_info_.erase(port->token);
 }
 
 void SerialChooserContext::EnsurePortManagerConnection() {
@@ -218,6 +225,15 @@ void SerialChooserContext::SetUpPortManagerConnection(
                      base::Unretained(this)));
 
   port_manager_->SetClient(client_receiver_.BindNewPipeAndPassRemote());
+  port_manager_->GetDevices(base::BindOnce(&SerialChooserContext::OnGetDevices,
+                                           weak_factory_.GetWeakPtr()));
+}
+
+void SerialChooserContext::OnGetDevices(
+    std::vector<device::mojom::SerialPortInfoPtr> ports) {
+  for (auto& port : ports)
+    port_info_.insert({port->token, std::move(port)});
+  is_initialized_ = true;
 }
 
 void SerialChooserContext::OnPortManagerConnectionError() {

@@ -98,7 +98,6 @@ auto_filenames = {
     "docs/api/structures/mime-typed-buffer.md",
     "docs/api/structures/mouse-input-event.md",
     "docs/api/structures/mouse-wheel-input-event.md",
-    "docs/api/structures/new-window-web-contents-event.md",
     "docs/api/structures/notification-action.md",
     "docs/api/structures/notification-response.md",
     "docs/api/structures/payment-discount.md",
@@ -137,7 +136,6 @@ auto_filenames = {
   ]
 
   sandbox_bundle_deps = [
-    "lib/common/api/deprecate.ts",
     "lib/common/api/native-image.ts",
     "lib/common/define-properties.ts",
     "lib/common/ipc-messages.ts",
@@ -239,11 +237,11 @@ auto_filenames = {
     "lib/browser/rpc-server.ts",
     "lib/browser/web-view-events.ts",
     "lib/common/api/clipboard.ts",
-    "lib/common/api/deprecate.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
     "lib/common/define-properties.ts",
+    "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/reset-search-paths.ts",
@@ -260,7 +258,6 @@ auto_filenames = {
 
   renderer_bundle_deps = [
     "lib/common/api/clipboard.ts",
-    "lib/common/api/deprecate.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
@@ -299,7 +296,6 @@ auto_filenames = {
 
   worker_bundle_deps = [
     "lib/common/api/clipboard.ts",
-    "lib/common/api/deprecate.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
