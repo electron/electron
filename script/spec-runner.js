@@ -152,10 +152,6 @@ const specFilter = (file) => {
   }
 };
 
-async function runTests (specDir, testName) {
-  await runTestUsingElectron(specDir, testName);
-}
-
 async function runNativeElectronTests () {
   let testTargets = require('./native-test-targets.json');
   const outDir = `out/${utils.getOutDir()}`;
@@ -208,7 +204,7 @@ async function runNativeElectronTests () {
 }
 
 async function runMainProcessElectronTests () {
-  await runTests('spec', 'main');
+  await runTestUsingElectron('spec', 'main');
 }
 
 async function installSpecModules (dir) {
