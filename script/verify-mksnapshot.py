@@ -13,8 +13,7 @@ from lib.util import get_electron_branding, rm_rf, scoped_cwd
 PROJECT_NAME = get_electron_branding()['project_name']
 PRODUCT_NAME = get_electron_branding()['product_name']
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-SNAPSHOT_SOURCE = os.path.join(
-    SOURCE_ROOT, 'spec', 'fixtures', 'testsnap.js')
+SNAPSHOT_SOURCE = os.path.join(SOURCE_ROOT, 'spec', 'fixtures', 'testsnap.js')
 
 def main():
   args = parse_args()
