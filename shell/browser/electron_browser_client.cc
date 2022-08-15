@@ -103,6 +103,7 @@
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
@@ -1839,6 +1840,15 @@ content::HidDelegate* ElectronBrowserClient::GetHidDelegate() {
   if (!hid_delegate_)
     hid_delegate_ = std::make_unique<ElectronHidDelegate>();
   return hid_delegate_.get();
+}
+
+content::WebAuthenticationDelegate*
+ElectronBrowserClient::GetWebAuthenticationDelegate() {
+  if (!web_authentication_delegate_) {
+    web_authentication_delegate_ =
+        std::make_unique<ElectronWebAuthenticationDelegate>();
+  }
+  return web_authentication_delegate_.get();
 }
 
 }  // namespace electron
