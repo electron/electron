@@ -9,7 +9,7 @@ import * as streamJson from 'stream-json';
 import { ignore as streamJsonIgnore } from 'stream-json/filters/Ignore';
 import { streamArray as streamJsonStreamArray } from 'stream-json/streamers/StreamArray';
 
-import { chunkFilenames } from './lib/utils';
+const { chunkFilenames } = require('./lib/utils');
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 const LLVM_BIN = path.resolve(
