@@ -144,6 +144,7 @@ do_not_reduce_page_size_from_64k_to_4k_on_linux_arm64.patch
 cherry-pick-94a8bdafc8c6.patch
 fix_mac_build_with_enable_plugins_false.patch
 fix_windows_build_with_enable_plugins_false.patch
+m104_background_fetch_passing.patch
 cherry-pick-c643d18a078d.patch
 merge_104_speculative_fix_for_isvalidcodepointinindex_range_crash.patch
 cherry-pick-60d8559e150a.patch
