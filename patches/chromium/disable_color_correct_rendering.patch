@@ -260,6 +260,19 @@ index 09f72f1fbd7b782c5bf52245482b358103f0c243..80d9fd40efed1edc90e7bdf1db534acb
      switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
      sandbox::policy::switches::kNoSandbox,
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+index 396b2983f403b0684f952a5fbd2d0abf947328f0..35c44065ba8980c06bb35e64aa33cc5b3f290953 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+@@ -6194,7 +6194,7 @@ void WebGLRenderingContextBase::TexImageHelperImageBitmap(
+                                      : SkColorSpace::MakeSRGB();
+   const bool needs_color_conversion =
+       !SkColorSpace::Equals(unpack_color_space.get(), image_color_space.get());
+-  if (needs_color_conversion) {
++  if (needs_color_conversion && unpack_color_space) {
+     image = image->ConvertToColorSpace(unpack_color_space,
+                                        image->GetSkColorInfo().colorType());
+     if (!image) {
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 index 648f25d99884b99f49e26cd9f280a8a6ae63e1c7..e42f8ba89070477b06777c7a0c37d30c8c5e4ed1 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
