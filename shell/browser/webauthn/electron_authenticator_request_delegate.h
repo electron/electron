@@ -8,6 +8,7 @@
 #include "content/public/browser/authenticator_request_client_delegate.h"
 
 namespace electron {
+
 // ElectronWebAuthenticationDelegate is the //Electron layer implementation of
 // content::WebAuthenticationDelegate.
 // Based on Chrome browser class ChromeWebAuthenticationDelegate
