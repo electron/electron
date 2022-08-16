@@ -11,10 +11,10 @@ and in turn, avoid showing a frame at startup
 for frameless applications.
 
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index 431d19f2543a9011de76b941982603ff98afa041..32e07e0c9686e6942a40c4d4775a03068cfd33b5 100644
+index 3375d6c3629235413362c4ed3d8c5a0eb53e23cd..8f4002ef6f5aa9b2cd8c1c911806772518d71f4b 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
-@@ -323,6 +323,10 @@ class VIEWS_EXPORT WidgetDelegate {
+@@ -328,6 +328,10 @@ class VIEWS_EXPORT WidgetDelegate {
    // be cycled through with keyboard focus.
    virtual void GetAccessiblePanes(std::vector<View*>* panes) {}
  
