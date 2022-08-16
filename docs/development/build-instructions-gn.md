@@ -299,21 +299,4 @@ If `e` is not recognized despite running `npm i -g @electron/build-tools`, ie:
 Error: Cannot find module '/Users/<user>/.electron_build_tools/src/e'
 ```
 
-ensure that Node is installed through [nvm](https://github.com/nvm-sh/nvm), rather than through the [website](https://nodejs.org/en/download/)
-
-### Certificates fail to verify
-
-installing [`certifi`](https://pypi.org/project/certifi/) will fix the following error:
-
-```sh
-________ running 'python3 src/tools/clang/scripts/update.py' in '/Users/<user>/electron'
-Downloading https://commondatastorage.googleapis.com/chromium-browser-clang/Mac_arm64/clang-llvmorg-15-init-15652-g89a99ec9-1.tgz
-<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:997)>
-Retrying in 5 s ...
-Downloading https://commondatastorage.googleapis.com/chromium-browser-clang/Mac_arm64/clang-llvmorg-15-init-15652-g89a99ec9-1.tgz
-<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:997)>
-Retrying in 10 s ...
-Downloading https://commondatastorage.googleapis.com/chromium-browser-clang/Mac_arm64/clang-llvmorg-15-init-15652-g89a99ec9-1.tgz
-<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:997)>
-Retrying in 20 s ...
-```
+We recommend installing Node through [nvm](https://github.com/nvm-sh/nvm). This allows for easier Node version management, and is often a fix for missing `e` modules.
