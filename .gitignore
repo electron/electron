@@ -35,7 +35,7 @@ electron-api.json
 electron.d.ts
 
 # Spec hash calculation
-spec/.hash
+spec-main/.hash
 
 # Eslint Cache
 .eslintcache*
@@ -53,4 +53,4 @@ ts-gen
 # Used to accelerate builds after sync
 patches/mtime-cache.json
 
-spec/fixtures/logo.png
+spec-main/fixtures/logo.png

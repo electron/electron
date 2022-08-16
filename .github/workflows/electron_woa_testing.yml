@@ -117,21 +117,6 @@ jobs:
         MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
         MOCHA_REPORTER: mocha-multi-reporters
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
-    - name: Run Electron Remote based tests
-      if: ${{ success() || failure() }}
-      run: |
-        cd src
-        set npm_config_nodedir=%cd%\out\Default\gen\node_headers
-        set npm_config_arch=arm64
-        cd electron
-        node script/yarn test --runners=remote --enable-logging --disable-features=CalculateNativeWinOcclusion
-      env:
-        ELECTRON_OUT_DIR: Default
-        IGNORE_YARN_INSTALL_ERROR: 1
-        ELECTRON_TEST_RESULTS_DIR: junit
-        MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
-        MOCHA_REPORTER: mocha-multi-reporters
-        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
     - name: Verify ffmpeg
       run: |
         cd src

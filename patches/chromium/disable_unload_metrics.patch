@@ -15,8 +15,8 @@ Error message:
 ptype: expected 'browser' to equal 'renderer'
 Error stack trace:
 AssertionError: ptype: expected 'browser' to equal 'renderer'
-    at checkCrash (electron\spec-main\api-crash-reporter-spec.ts:39:35)
-    at Context.<anonymous> (electron\spec-main\api-crash-reporter-spec.ts:154:7)
+    at checkCrash (electron\spec\api-crash-reporter-spec.ts:39:35)
+    at Context.<anonymous> (electron\spec\api-crash-reporter-spec.ts:154:7)
     at runMicrotasks (<anonymous>)
     at processTicksAndRejections (internal/process/task_queues.js:93:5)
 
