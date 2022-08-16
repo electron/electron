@@ -1077,9 +1077,6 @@ steps-tests: &steps-tests
           cd src
 
           # Check if test results exist and are not empty.
-          if [ ! -s "junit/test-results-remote.xml" ]; then
-            exit 1
-          fi
           if [ ! -s "junit/test-results-main.xml" ]; then
             exit 1
           fi
