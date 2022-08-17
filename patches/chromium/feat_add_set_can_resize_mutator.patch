@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Zhao <7199958+rzhao271@users.noreply.github.com>
+Date: Tue, 2 Aug 2022 09:30:36 -0700
+Subject: feat: Add set_can_resize mutator
+
+Adds a set_can_resize mutator to WidgetDelegate that
+doesn't emit the OnSizeConstraintsChanged event.
+This way, we can call set_can_resize from Electron before
+the widget is initialized to set the value earlier,
+and in turn, avoid showing a frame at startup
+for frameless applications.
+
+diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
+index 8176aa0ac84b82a342713e6d36c4cc9d34b2f34f..c586f9e410fdff944f9af749bb31b20d248f8c58 100644
+--- a/ui/views/widget/widget_delegate.h
++++ b/ui/views/widget/widget_delegate.h
+@@ -331,6 +331,10 @@ class VIEWS_EXPORT WidgetDelegate {
+   // be cycled through with keyboard focus.
+   virtual void GetAccessiblePanes(std::vector<View*>* panes) {}
+ 
++  // A setter for the can_resize parameter that doesn't
++  // emit any events.
++  void set_can_resize(bool can_resize) { params_.can_resize = can_resize; }
++
+   // Setters for data parameters of the WidgetDelegate. If you use these
+   // setters, there is no need to override the corresponding virtual getters.
+   void SetAccessibleRole(ax::mojom::Role role);
