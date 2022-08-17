@@ -702,18 +702,18 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 
 * `handler` Function | null
   * `request` Object
-    * `frame` [WebFrameMain](web-frame-main.md) - frame that is requesting access to media.
-    * `securityOrigin` String - origin of the page making the request.
+    * `frame` [WebFrameMain](web-frame-main.md) - Frame that is requesting access to media.
+    * `securityOrigin` String - Origin of the page making the request.
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
-    * `userGesture` Boolean - whether a user gesture was active when this request was triggered.
+    * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
   * `callback` Function
     * `streams` Object
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
-        * `id` String - the id of the stream being granted. This will usually
+        * `id` String - The id of the stream being granted. This will usually
           come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
           object.
-        * `name` String - the name of the stream being granted. This will
+        * `name` String - The name of the stream being granted. This will
           usually come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
           object.
       * `audio` String | [WebFrameMain](web-frame-main.md) (optional) - If
