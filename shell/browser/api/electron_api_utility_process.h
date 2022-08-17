@@ -32,11 +32,16 @@ namespace electron {
 
 namespace api {
 
+namespace {
+class PipeReaderBase;
+}
+
 class UtilityProcessWrapper
     : public gin::Wrappable<UtilityProcessWrapper>,
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper> {
  public:
+  enum ReaderType { STDOUT, STDERR };
   ~UtilityProcessWrapper() override;
   static gin::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
 
@@ -49,9 +54,16 @@ class UtilityProcessWrapper
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+#if BUILDFLAG(IS_POSIX)
+  void HandleMessage(ReaderType type, std::vector<uint8_t> message);
+  void ResumeReading(PipeReaderBase* pipe_io);
+  void ShutdownReader(ReaderType type);
+#endif
+
  private:
   UtilityProcessWrapper(node::mojom::NodeServiceParamsPtr params,
                         std::u16string display_name,
+                        std::vector<std::string> stdio,
                         bool use_plugin_helper);
   void OnServiceProcessLaunched(const base::Process& process);
 
@@ -61,6 +73,10 @@ class UtilityProcessWrapper
 
   base::ProcessId pid_ = base::kNullProcessId;
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
+#if BUILDFLAG(IS_POSIX)
+  std::unique_ptr<PipeReaderBase> stdout_reader_;
+  std::unique_ptr<PipeReaderBase> stderr_reader_;
+#endif
   base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
 };
 

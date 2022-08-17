@@ -20,6 +20,13 @@ Process: [Main](../glossary.md#main-process)<br />
 * `options` Object (optional)
   * `env` Object - Environment key-value pairs. Default is `process.env`.
   * `execArgv` string[] - List of string arguments passed to the executable. Default is `process.execArgv`.
+  * `stdio` (string[] | string) - Child's stdout and stderr configuration. Default is `pipe`.
+    String value can be one of `pipe`, `ignore`, `inherit`, for more details on these values you can refer to
+    [stdio][] documentation from Node.js. Currently this option does not allow configuring
+    stdin and is always set to `ignore`. For example, the supported values will be processed as following:
+    * `pipe`: equivalent to ['ignore', 'pipe', 'pipe'] (the default)
+    * `ignore`: equivalent to 'ignore', 'ignore', 'ignore']
+    * `inherit`: equivalent to ['ignore', 'inherit', 'inherit']
   * `serviceName` string - Name of the process that will appear in `name` property of
     [`child-process-gone` event of `app`](app.md#event-child-process-gone).
     Default is `node.mojom.NodeService`.
@@ -69,8 +76,29 @@ if kill succeeds, and false otherwise.
 
 #### `child.pid`
 
-A `Integer` representing the process identifier (PID) of the child process.
+A `Integer | undefined` representing the process identifier (PID) of the child process.
 If the child process fails to spawn due to errors, then the value is `undefined`.
+
+#### `child.stdout`
+
+A `NodeJS.ReadableStream | null | undefined` that represents the child process's stdout.
+If the child was spawned with options.stdio[1] set to anything other than 'pipe', then this will be `null`.
+The property will be `undefined` if the child process could not be successfully spawned.
+
+```js
+// Main process
+const { port1, port2 } = new MessageChannelMain()
+const child = new UtilityProcess(path.join(__dirname, 'test.js'))
+child.stdout.on('data', (data) => {
+  console.log(`Received chunk ${data}`)
+})
+```
+
+#### `child.stderr`
+
+A `NodeJS.ReadableStream | null | undefined` that represents the child process's stderr.
+If the child was spawned with options.stdio[2] set to anything other than 'pipe', then this will be `null`.
+The property will be `undefined` if the child process could not be successfully spawned.
 
 ### Instance Events
 
@@ -90,3 +118,4 @@ For other abnormal exit cases listen to the [`child-process-gone` event of `app`
 
 [`child_process.fork`]: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processforkmodulepath-args-options
 [Services API]: https://chromium.googlesource.com/chromium/src/+/master/docs/mojo_and_services.md
+[stdio]: https://nodejs.org/dist/latest/docs/api/child_process.html#optionsstdio

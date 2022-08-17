@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { Readable } from 'stream';
 import * as path from 'path';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { createProcessWrapper } = process._linkedBinding('electron_browser_utility_process');
@@ -39,8 +40,39 @@ function sanitizeKillSignal (signal: string | number): number {
   }
 }
 
+class IOReadable extends Readable {
+  _shouldPush: boolean = false;
+  _data: (Buffer | null)[] = [];
+  _resume: (() => void) | null = null;
+
+  _storeInternalData (chunk: Buffer | null, resume: (() => void) | null) {
+    this._resume = resume;
+    this._data.push(chunk);
+    this._pushInternalData();
+  }
+
+  _pushInternalData () {
+    while (this._shouldPush && this._data.length > 0) {
+      const chunk = this._data.shift();
+      this._shouldPush = this.push(chunk);
+    }
+    if (this._shouldPush && this._resume) {
+      const resume = this._resume;
+      this._resume = null;
+      resume();
+    }
+  }
+
+  _read () {
+    this._shouldPush = true;
+    this._pushInternalData();
+  }
+}
+
 export default class UtilityProcess extends EventEmitter {
-  _handle: any
+  _handle: any;
+  _stdout: IOReadable | null | undefined = new IOReadable();
+  _stderr: IOReadable | null | undefined = new IOReadable();
   constructor (modulePath: string, args: string[] = [], options: Electron.UtilityProcessConstructorOptions) {
     super();
     let relativeEntryPath = null;
@@ -78,11 +110,46 @@ export default class UtilityProcess extends EventEmitter {
       }
     }
 
+    if (typeof options.stdio === 'string') {
+      const stdio : Array<'pipe' | 'ignore' | 'inherit'> = [];
+      switch (options.stdio) {
+        case 'inherit':
+        case 'ignore':
+          this._stdout = null;
+          this._stderr = null;
+          // falls through
+        case 'pipe':
+          stdio.push('ignore', options.stdio, options.stdio);
+          break;
+        default:
+          throw new Error('stdio must be of the following values: inherit, pipe, ignore');
+      }
+      options.stdio = stdio;
+    } else if (Array.isArray(options.stdio)) {
+      if (options.stdio.length >= 3) {
+        if (options.stdio[0] !== 'ignore') {
+          throw new Error('stdin value other than ignore is not supported.');
+        }
+        if (options.stdio[1] === 'ignore' || options.stdio[1] === 'inherit') {
+          this._stdout = null;
+        }
+        if (options.stdio[2] === 'ignore' || options.stdio[2] === 'inherit') {
+          this._stderr = null;
+        }
+      } else {
+        throw new Error('configuration missing for stdin, stdout or stderr.');
+      }
+    }
+
     this._handle = createProcessWrapper({ modulePath, args, ...options });
     this._handle.emit = (channel: string, ...args: any[]) => {
       if (channel === 'exit') {
         this.emit('exit', ...args);
         this._handle = null;
+      } else if (channel === 'stdout') {
+        this._stdout!._storeInternalData(Buffer.from(args[1]), args[2]);
+      } else if (channel === 'stderr') {
+        this._stderr!._storeInternalData(Buffer.from(args[1]), args[2]);
       } else {
         this.emit(channel, ...args);
       }
@@ -94,6 +161,22 @@ export default class UtilityProcess extends EventEmitter {
       return undefined;
     }
     return this._handle.pid;
+  }
+
+  get stdout () {
+    if (this._handle === null) {
+      this._stdout = null;
+      return undefined;
+    }
+    return this._stdout;
+  }
+
+  get stderr () {
+    if (this._handle === null) {
+      this._stderr = null;
+      return undefined;
+    }
+    return this._stderr;
   }
 
   postMessage (...args: any[]) {
