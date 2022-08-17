@@ -210,7 +210,7 @@ void Menu::Clear() {
 }
 
 int Menu::GetIndexOfCommandId(int command_id) const {
-  return model_->GetIndexOfCommandId(command_id);
+  return model_->GetIndexOfCommandId(command_id).value_or(-1);
 }
 
 int Menu::GetItemCount() const {

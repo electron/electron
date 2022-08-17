@@ -661,6 +661,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/buildtools/third_party/libc++
       - src/buildtools/third_party/libc++abi
       - src/out/Default/obj/buildtools/third_party
+      - src/v8/tools/builtins-pgo
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
