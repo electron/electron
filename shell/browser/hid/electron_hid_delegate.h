@@ -46,7 +46,8 @@ class ElectronHidDelegate : public content::HidDelegate,
       content::BrowserContext* browser_context) override;
   void AddObserver(content::BrowserContext* browser_context,
                    content::HidDelegate::Observer* observer) override;
-  void RemoveObserver(content::HidDelegate::Observer* observer) override;
+  void RemoveObserver(content::BrowserContext* browser_context,
+                      content::HidDelegate::Observer* observer) override;
   const device::mojom::HidDeviceInfo* GetDeviceInfo(
       content::BrowserContext* browser_context,
       const std::string& guid) override;

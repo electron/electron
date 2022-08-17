@@ -15,38 +15,65 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 7d9068b87eee4dbc3435ed6f67285d428dc85f52..c0b8c6e5b49390b8a87d6a9d19605f6b6a1c3562 100644
+index c254b045494936eca14ce947e1c2de3327820aa2..63c9b9681fcc4e1e9a9590d59d74349bb8aee3b1 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -59,7 +59,8 @@ IsolateHolder::IsolateHolder(
+@@ -73,7 +73,8 @@ IsolateHolder::IsolateHolder(
      IsolateType isolate_type,
      IsolateCreationMode isolate_creation_mode,
      v8::CreateHistogramCallback create_histogram_callback,
 -    v8::AddHistogramSampleCallback add_histogram_sample_callback)
 +    v8::AddHistogramSampleCallback add_histogram_sample_callback,
 +    v8::Isolate* isolate)
+     : IsolateHolder(task_runner,
+                     access_mode,
+                     isolate_type,
+@@ -81,14 +82,16 @@ IsolateHolder::IsolateHolder(
+                                              atomics_wait_mode,
+                                              create_histogram_callback,
+                                              add_histogram_sample_callback),
+-                    isolate_creation_mode) {}
++                    isolate_creation_mode,
++                    isolate) {}
+ 
+ IsolateHolder::IsolateHolder(
+     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+     AccessMode access_mode,
+     IsolateType isolate_type,
+     std::unique_ptr<v8::Isolate::CreateParams> params,
+-    IsolateCreationMode isolate_creation_mode)
++    IsolateCreationMode isolate_creation_mode,
++    v8::Isolate* isolate)
      : access_mode_(access_mode), isolate_type_(isolate_type) {
    CHECK(Initialized())
        << "You need to invoke gin::IsolateHolder::Initialize first";
-@@ -70,7 +71,7 @@ IsolateHolder::IsolateHolder(
-   v8::ArrayBuffer::Allocator* allocator = g_array_buffer_allocator;
+@@ -99,7 +102,7 @@ IsolateHolder::IsolateHolder(
+   v8::ArrayBuffer::Allocator* allocator = params->array_buffer_allocator;
    DCHECK(allocator);
  
 -  isolate_ = v8::Isolate::Allocate();
 +  isolate_ = isolate ? isolate : v8::Isolate::Allocate();
    isolate_data_ = std::make_unique<PerIsolateData>(isolate_, allocator,
                                                     access_mode_, task_runner);
-   if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
+   //  TODO(https://crbug.com/1347092): Refactor such that caller need not
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 4efc13c79ae742fa1925d064318627452ba852b2..978c0d144370162e65038cf8a2e125fbfd0f7ebf 100644
+index 78af701cb06f6cb1bdd9829b2fcc46c8d63f5c4f..4a36f4826f9df765c664a819eb4e3679fbecb104 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -82,7 +82,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -83,13 +83,15 @@ class GIN_EXPORT IsolateHolder {
        IsolateType isolate_type,
        IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
        v8::CreateHistogramCallback create_histogram_callback = nullptr,
 -      v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr);
 +      v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr,
++      v8::Isolate* isolate = nullptr);
+   IsolateHolder(
+       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+       AccessMode access_mode,
+       IsolateType isolate_type,
+       std::unique_ptr<v8::Isolate::CreateParams> params,
+-      IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal);
++      IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
 +      v8::Isolate* isolate = nullptr);
    IsolateHolder(const IsolateHolder&) = delete;
    IsolateHolder& operator=(const IsolateHolder&) = delete;
