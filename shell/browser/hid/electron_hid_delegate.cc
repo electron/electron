@@ -109,7 +109,6 @@ void ElectronHidDelegate::AddObserver(content::BrowserContext* browser_context,
 void ElectronHidDelegate::RemoveObserver(
     content::BrowserContext* browser_context,
     content::HidDelegate::Observer* observer) {
-  // DCHECK(base::Contains(observations_, browser_context));
   observer_list_.RemoveObserver(observer);
 }
 
