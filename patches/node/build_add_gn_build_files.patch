@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..9e34a074cfa7dec61c4e11821ba5f1969f393dfb
+index 0000000000000000000000000000000000000000..3ae9b93649bb404fbf04dea52ecaa7d664ff03ee
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,403 @@
+@@ -0,0 +1,440 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -53,6 +53,26 @@ index 0000000000000000000000000000000000000000..9e34a074cfa7dec61c4e11821ba5f196
 +
 +  # Allows embedders to override the NODE_MODULE_VERSION define
 +  node_module_version = ""
++
++  # Allows downstream packagers (eg. Linux distributions) to build Electron against system shared libraries.
++  use_system_cares = false
++  use_system_nghttp2 = false
++  use_system_llhttp = false
++  use_system_histogram = false
++}
++
++if (is_linux) {
++ import("//build/config/linux/pkg_config.gni")
++ if (use_system_cares) {
++  pkg_config("cares") {
++    packages = [ "libcares" ]
++  }
++ }
++ if (use_system_nghttp2) {
++  pkg_config("nghttp2") {
++    packages = [ "libnghttp2" ]
++  }
++ }
 +}
 +
 +assert(!node_use_dtrace, "node_use_dtrace not supported in GN")
@@ -204,17 +224,23 @@ index 0000000000000000000000000000000000000000..9e34a074cfa7dec61c4e11821ba5f196
 +component("node_lib") {
 +  deps = [
 +    ":node_js2c",
-+    "deps/cares",
-+    "deps/histogram",
 +    "deps/googletest:gtest",
-+    "deps/llhttp",
-+    "deps/nghttp2",
 +    "deps/uvwasi",
 +    "//third_party/zlib",
 +    "//third_party/brotli:dec",
 +    "//third_party/brotli:enc",
 +    "//v8:v8_libplatform",
 +  ]
++  if (use_system_cares) {
++    configs += [ ":cares" ]
++  } else {
++    deps += [ "deps/cares" ]
++  }
++  if (use_system_nghttp2) {
++    configs += [ ":nghttp2" ]
++  } else {
++    deps += [ "deps/nghttp2" ]
++  }
 +  public_deps = [
 +    "deps/uv",
 +    "//electron:electron_js2c",
@@ -224,6 +250,17 @@ index 0000000000000000000000000000000000000000..9e34a074cfa7dec61c4e11821ba5f196
 +  public_configs = [ ":node_lib_config" ]
 +  include_dirs = [ "src" ]
 +  libs = []
++  if (use_system_llhttp) {
++    libs += [ "llhttp" ]
++  } else {
++    deps += [ "deps/llhttp" ]
++  }
++  if (use_system_histogram) {
++    libs += [ "hdr_histogram" ]
++    include_dirs += [ "/usr/include/hdr" ]
++  } else {
++    deps += [ "deps/histogram" ]
++  }
 +  frameworks = []
 +  cflags_cc = [
 +    "-Wno-deprecated-declarations",
