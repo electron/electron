@@ -1497,9 +1497,6 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
       std::move(proxied_receiver), std::move(target_factory_remote),
       std::move(header_client_receiver), type);
 
-  if (bypass_redirect_checks)
-    *bypass_redirect_checks = true;
-
   return true;
 }
 
