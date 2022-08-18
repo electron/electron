@@ -23,7 +23,7 @@ async function checkIfDocOnlyChange () {
             pullRequestNumber = prsForBranch.data[0].number;
           } else {
             // If there are 0 PRs or more than one PR on a branch, just assume that this is more than a doc change
-            process.exit(1);
+            process.exit(0);
           }
         }
       }

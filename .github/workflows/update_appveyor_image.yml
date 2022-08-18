@@ -1,0 +1,59 @@
+name: Update AppVeyor Image
+
+# TODO: Setting this to on push for testing purposes
+# Reset to the normal daily cron for PR
+# on:
+#   schedule:
+#   - cron: '0 8 * * 2' # runs 8:00 every Tuesday (see https://crontab.guru)
+on:
+  push:    
+    branches: ['appveyor-bake-jobs']
+
+jobs:
+  bake-appveyor-image:
+    name: Bake AppVeyor Image
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Yarn install
+      run: |
+        node script/yarn.js install --frozen-lockfile
+    - name: Set Repo for Commit
+      run: git config --global --add safe.directory $GITHUB_WORKSPACE
+    - name: Check AppVeyor Image
+      env:
+        APPVEYOR_TOKEN: ${{ secrets.APPVEYOR_TOKEN }}
+      run: |
+        node ./script/prepare-appveyor
+        if [ -f ./image_version.txt ]; then
+          echo "APPVEYOR_IMAGE_VERSION="$(cat image_version.txt)"" >> $GITHUB_ENV
+          rm image_version.txt
+        fi
+    - name: (Optionally) Update Appveyor Image
+      if: ${{ env.APPVEYOR_IMAGE_VERSION }}
+      uses: mikefarah/yq@v4.27.2
+      with:
+        cmd: yq '.image = "${{ env.APPVEYOR_IMAGE_VERSION }}"' "appveyor.yml" > "appveyor2.yml"
+    - name: (Optionally) Generate Commit Diff
+      if: ${{ env.APPVEYOR_IMAGE_VERSION }}
+      run: |
+        diff -B appveyor.yml appveyor2.yml > appveyor.diff || true
+        patch -f appveyor.yml < appveyor.diff
+        rm appveyor2.yml appveyor.diff
+    - name: (Optionally) Commit and Pull Request
+      if: ${{ env.APPVEYOR_IMAGE_VERSION }}
+      uses: peter-evans/create-pull-request@v4
+      with:
+        token: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+        commit-message: 'build: update appveyor image to latest version'
+        committer: GitHub <noreply@github.com>
+        author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+        signoff: false
+        branch: bump-appveyor-image
+        delete-branch: true
+        title: 'build: update appveyor image to latest version'
+        body: |
+          This PR updates appveyor.yml to the latest baked image, ${{ env.APPVEYOR_IMAGE_VERSION }}.

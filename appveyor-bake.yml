@@ -1,0 +1,93 @@
+# The config is used to bake appveyor images, not for running CI jobs.
+# The config expects the following environment variables to be set:
+#  - "GN_CONFIG" Build type. One of {'testing', 'release'}.
+#  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
+#      e.g. 'target_cpu="x86"' to build for a 32bit platform.
+#      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
+#      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordningly
+#      if you pass a custom value for 'target_cpu'.
+#  - "APPVEYOR_BAKE_IMAGE" e.g. 'electron-99.0.4767.0'. Name of the image to be baked.
+#      Typically named after the Chromium version on which the image is built.
+#      This can be set dynamically in the prepare-appveyor script.
+
+version: 1.0.{build}
+build_cloud: electronhq-16-core
+image: Windows_Default_Appveyor
+environment:
+  GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
+  ELECTRON_OUT_DIR: Default
+  ELECTRON_ENABLE_STACK_DUMPING: 1
+  MOCHA_REPORTER: mocha-multi-reporters
+  MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
+  GOMA_FALLBACK_ON_AUTH_FAILURE: true
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+  PYTHONIOENCODING: UTF-8
+build_script:
+  - ps: echo "Building $env:GN_CONFIG build"
+  - git config --global core.longpaths true
+  - cd ..
+  - mkdir src
+  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
+  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
+  - update_depot_tools.bat
+  - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
+  - src\electron\script\setup-win-for-dev.bat
+  - ps: >-
+      if (Test-Path 'env:RAW_GOMA_AUTH') {
+        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
+        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
+      }
+  - git clone https://github.com/electron/build-tools.git
+  - cd build-tools
+  - npm install
+  - mkdir third_party
+  - ps: >-
+      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
+  - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
+  - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
+  - cd ..
+  - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
+  - ps: >-
+      if (Test-Path 'env:RAW_GOMA_AUTH') {
+        $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
+        if ($goma_login -eq 'Login as Fermi Planck') {
+          Write-warning "Goma authentication is correct";
+        } else {
+          Write-warning "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token.";
+          $host.SetShouldExit(1)
+        }
+      }
+  - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
+  - ps: >-
+      $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
+  - >-
+      gclient config
+      --name "src\electron"
+      --unmanaged
+      %GCLIENT_EXTRA_ARGS%
+      "https://github.com/electron/electron"
+  - ps: cd src\electron
+  - ps: node script\generate-deps-hash.js
+  - ps: $depshash = Get-Content .\.depshash -Raw
+  - ps: $zipfile = "Z:\$depshash.7z"
+  - ps: Copy-Item -path .\.depshash -destination ..\.depshash
+  - ps: cd ..\..
+  - ps: >-
+      if ($env:TARGET_ARCH -ne 'ia32') {
+        # only save on x64/woa to avoid contention saving
+        $env:SAVE_GCLIENT_SRC="true"
+      }
+  - gclient sync --with_branch_heads --with_tags --nohooks
+on_image_bake:
+  - ps: >-
+      echo "Baking image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
+  - ps: Remove-Item -Recurse -Force $pwd\depot_tools
+  - ps: Remove-Item -Recurse -Force $pwd\src\electron
+# Uncomment these lines to enable RDP
+#on_finish:
+#  - ps: >-
+#      if ($env:TARGET_ARCH -eq 'x64') {
+#        echo "SETTING BAKE IMAGE"
+#        $env:APPVEYOR_RDP_PASSWORD = "electron"
+#        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#      }
