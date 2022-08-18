@@ -14,6 +14,31 @@ function createWindow () {
     } 
   })
 
+  mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
+    const response = {}
+  
+    switch (details.pairingKind) {
+      case 'confirm': {
+        response.confirmed = confirm(`Do you want to connect to device ${details.deviceId}`)
+        break
+      }
+      case 'confirmPin': {
+        response.confirmed = confirm(`Does the pin ${details.pin} match the pin displayed on device ${details.deviceId}?`)
+        break
+      }
+      case 'providePin': {
+        const pin = prompt(`Please provide a pin for ${details.deviceId}`)
+        if (pin) {
+          response.pin = pin
+          response.confirmed = true
+        } else {
+          response.confirmed = false
+        }
+      }
+    }
+    callback(response)
+  })  
+
   mainWindow.loadFile('index.html')
 }
 

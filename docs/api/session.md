@@ -823,6 +823,68 @@ app.whenReady().then(() => {
 })
 ```
 
+#### `ses.setBluetoothPairingHandler(handler)` _Windows_ _Linux_
+
+* `handler` Function | null
+  * `details` Object
+    * `deviceId` string
+    * `pairingKind` string - The type of pairing prompt being requested.
+      One of the following values:
+      * `confirm`
+        This prompt is requesting confirmation that the bluetooth device should
+        be paired.
+      * `confirmPin`
+        This prompt is requesting confirmation that the provided pin matches the
+        pin displayed on the device.
+      * `providePin`
+        This prompt is requesting that a pin be provided for the device.
+    * `frame` [WebFrameMain](web-frame-main.md)
+    * `pin` string - If the `pairingKind` is `confirmPin`, this value will be
+      the pin value to verify.
+  * `callback` Function
+    * `response` Object
+      * `confirmed` boolean - `false` should be passed in if the dialog is canceled.
+        If the `pairingKind` is `confirm` or `confirmPin`, this value should indicate
+        if the pairing is confirmed.  If the `pairingKind` is `providePin` the value
+        should be `true` when a value is provided.
+      * `pin` string | null (optional) - When the `pairingKind` is `providePin`
+        this value should be the required pin for the bluetooth device.
+
+Sets the handler which can be used to respond when a bluetooth device requires
+a response to pairing.  This handler allows developers to handle devices that
+require additional validation for pairing.
+To clear the handler, call `setBluetoothPairingHandler(null)`.
+
+```javascript
+
+const { session } = require('electron')
+
+session.defaultSession.setBluetoothPairingHandler((details, callback) => {
+  const response = {}
+
+  switch (details.pairingKind) {
+    case 'confirm': {
+      response.confirmed = confirm(`Do you want to connect to device ${details.deviceId}`)
+      break
+    }
+    case 'confirmPin': {
+      response.confirmed = confirm(`Does the pin ${details.pin} match the pin displayed on device ${details.deviceId}?`)
+      break
+    }
+    case 'providePin': {
+      const pin = prompt(`Please provide a pin for ${details.deviceId}`)
+      if (pin) {
+        response.pin = pin
+        response.confirmed = true
+      } else {
+        response.confirmed = false
+      }
+    }
+  }
+  callback(response)
+})
+```
+
 #### `ses.clearHostResolverCache()`
 
 Returns `Promise<void>` - Resolves when the operation is complete.
