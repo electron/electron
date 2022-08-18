@@ -617,15 +617,14 @@ The usage is the same with [the `login` event of `app`](app.md#event-login).
 Returns:
 
 * `event` Event
-* `details` Object
-  * `messageText` string - Dialog message text.
-  * `defaultPromptText` string - Default prompt input text.
-  * `dialogType` string - 'alert' | 'confirm' | 'prompt'
+* `dialogDetails` [MessageDialogDetails](structures/message-dialog-details.md) | [PromptDialogDetails](structures/prompt-dialog-details.md)
 * `callback` Function
   * `success` boolean - Indicates whether the dialog was closed successfully (OK) or not (Cancel).
   * `result` string - The response string when accepting a prompt dialog.
 
 Emitted when `webContents` wants to show javascript dialog alert, confirm or prompt.
+The type of a particular dialog can be checked with the `dialogDetails.type` property.
+You can use `dialogDetails.frameProcessId` and `dialogDetails.frameRoutingId` to construct a `webFrame` by calling `webFrameMain.fromId()`.
 
 Calling `event.preventDefault()` indicates that the dialog request is handled by the user.
 If you call `event.preventDefault()` make sure to call `callback()` afterwards.

@@ -71,7 +71,7 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
           .Then(base::BindOnce(
               [](bool& callback_called) { callback_called = true; },
               std::ref(callback_called)));
-  
+
   bool default_prevented =
       EmitEvent(web_contents, rfh, dialog_type, message_text,
                 default_prompt_text, std::move(split_callback.first));
@@ -167,19 +167,19 @@ bool ElectronJavaScriptDialogManager::EmitEvent(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto details = gin::Dictionary::CreateEmpty(isolate);
-  details.Set("messageText", message_text);
-  details.Set("defaultPromptText", default_prompt_text);
+  details.Set("message", message_text);
   details.Set("frameProcessId", rfh->GetProcess()->GetID());
   details.Set("frameRoutingId", rfh->GetRoutingID());
 
   if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT)
-    details.Set("dialogType", "alert");
+    details.Set("type", "alert");
   else if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM)
-    details.Set("dialogType", "confirm");
-  else if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_PROMPT)
-    details.Set("dialogType", "prompt");
-  else
-    details.Set("dialogType", "");
+    details.Set("type", "confirm");
+  else if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_PROMPT) {
+    details.Set("type", "prompt");
+    details.Set("defaultValue", default_prompt_text);
+  } else
+    details.Set("type", "");
 
   auto* api_web_contents = api::WebContents::From(web_contents);
   if (!api_web_contents)
