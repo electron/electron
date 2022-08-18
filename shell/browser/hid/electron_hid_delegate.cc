@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/containers/contains.h"
 #include "chrome/common/chrome_features.h"
 #include "content/public/browser/web_contents.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
@@ -106,6 +107,7 @@ void ElectronHidDelegate::AddObserver(content::BrowserContext* browser_context,
 }
 
 void ElectronHidDelegate::RemoveObserver(
+    content::BrowserContext* browser_context,
     content::HidDelegate::Observer* observer) {
   observer_list_.RemoveObserver(observer);
 }

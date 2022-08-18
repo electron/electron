@@ -8,10 +8,10 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index 50c01fb42bc1a7350fae4773f1b549355c6cdc25..ab49a67e3b20cd240f532cfbf868533bb1f293d8 100644
+index 1fbb58152c19193d480b437aea123abdd61c24fe..2b7e305d643aa2e0afef4c578688897c3a8832bf 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -511,13 +511,15 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+@@ -500,13 +500,15 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
    return nullptr;
  }
  
@@ -31,10 +31,10 @@ index 50c01fb42bc1a7350fae4773f1b549355c6cdc25..ab49a67e3b20cd240f532cfbf868533b
  }
  
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index 5206acf475346f50e0f31b7432d9b93afc3a8ad0..9f2b3cca2337b4528f9451c2fdec7c67021c949f 100644
+index e73bbdf28fba1f5b96d326dd7b0fd9aaa33ba221..5a537c8f6291909392824d62fc04209ad662d59a 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
-@@ -93,7 +93,7 @@ class GtkUi : public ui::LinuxUi {
+@@ -94,7 +94,7 @@ class GtkUi : public ui::LinuxUiBase {
    bool PreferDarkTheme() const override;
    bool AnimationsEnabled() const override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
@@ -43,7 +43,7 @@ index 5206acf475346f50e0f31b7432d9b93afc3a8ad0..9f2b3cca2337b4528f9451c2fdec7c67
    base::flat_map<std::string, std::string> GetKeyboardLayoutMap() override;
    std::string GetCursorThemeName() override;
    int GetCursorThemeSize() override;
-@@ -197,6 +197,8 @@ class GtkUi : public ui::LinuxUi {
+@@ -199,6 +199,8 @@ class GtkUi : public ui::LinuxUiBase {
    // while Chrome is running.
    std::unique_ptr<ui::WindowFrameProvider> solid_frame_provider_;
    std::unique_ptr<ui::WindowFrameProvider> transparent_frame_provider_;
@@ -139,7 +139,7 @@ index e4dbdad327eb77994ffd7f068c67336a19897915..d3ae0636455489a7c7443df85cb76995
    // In GTK4, there's no way to obtain the frame thickness from CSS values
    // directly, so we must determine it experimentally based on the drawn
 diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
-index da0f7c33a260f8d98a73c126def30944589001df..a2999a6dcea30a9e468f974301b3a4f03dcb8aeb 100644
+index 8370c1cb3f8c3532d94e1265242cbf2397920480..2e0105ba8782dfe0a3ac169850734032c8ab071c 100644
 --- a/ui/gtk/window_frame_provider_gtk.h
 +++ b/ui/gtk/window_frame_provider_gtk.h
 @@ -14,7 +14,7 @@ namespace gtk {
@@ -162,10 +162,10 @@ index da0f7c33a260f8d98a73c126def30944589001df..a2999a6dcea30a9e468f974301b3a4f0
  
  }  // namespace gtk
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index 0cd8a0e101de186e11ead65526c7f0abc60c6577..7db580ce04a407877ca4108ec087120cdb9ce2ad 100644
+index dee97740309e29c29d9c9c6c757455cddc817dbb..e5b71cd2b5e9e6252fe13c54bb54e26365347e2a 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
-@@ -176,7 +176,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUi
+@@ -175,7 +175,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUi {
    // if transparency is unsupported and the frame should be rendered opaque.
    // The returned object is not owned by the caller and will remain alive until
    // the process ends.

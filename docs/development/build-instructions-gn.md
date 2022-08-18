@@ -281,9 +281,22 @@ $ cd electron
 $ gclient sync -f
 ```
 
+This may also happen if you have checked out a branch (as opposed to having a detached head) in `electron/src/`
+or some other dependency’s repository. If that is the case, a `git checkout --detach HEAD` in the appropriate repository should do the trick.
+
 ### I'm being asked for a username/password for chromium-internal.googlesource.com
 
 If you see a prompt for `Username for 'https://chrome-internal.googlesource.com':` when running `gclient sync` on Windows, it's probably because the `DEPOT_TOOLS_WIN_TOOLCHAIN` environment variable is not set to 0. Open `Control Panel` → `System and Security` → `System` → `Advanced system settings` and add a system variable
 `DEPOT_TOOLS_WIN_TOOLCHAIN` with value `0`.  This tells `depot_tools` to use
 your locally installed version of Visual Studio (by default, `depot_tools` will
 try to download a Google-internal version that only Googlers have access to).
+
+### `e` Module not found
+
+If `e` is not recognized despite running `npm i -g @electron/build-tools`, ie:
+
+```sh
+Error: Cannot find module '/Users/<user>/.electron_build_tools/src/e'
+```
+
+We recommend installing Node through [nvm](https://github.com/nvm-sh/nvm). This allows for easier Node version management, and is often a fix for missing `e` modules.

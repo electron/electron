@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "include": [
-    "spec-main",
+    "spec",
     "typings"
   ]
 }
