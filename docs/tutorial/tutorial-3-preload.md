@@ -185,7 +185,8 @@ loading the HTML file so that the handler is guaranteed to be ready before
 you send out the `invoke` call from the renderer.
 
 ```js {1,11} title="main.js"
-const { ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -194,10 +195,14 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
-  })
-  ipcMain.handle('ping', () => 'pong')
-  win.loadFile('index.html')
-}
+  });
+  ipcMain.handle('ping', () => 'pong');
+  win.loadFile('index.html');
+};
+app.whenReady().then(() => {
+  createWindow();
+});
+
 ```
 
 Once you have the sender and receiver set up, you can now send messages from the renderer
