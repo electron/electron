@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sunny Sachanandani <sunnyps@chromium.org>
+Date: Mon, 1 Aug 2022 21:59:00 +0000
+Subject: gpu: Evict invalid Dawn DXGI external images
+
+After https://crrev.com/c/3752055, Dawn DXGI external images are keyed
+on the WGPUDevice that created them. This CL keeps the external image
+map from growing unbounded by evicting invalid images based on IsValid()
+method added in https://dawn-review.googlesource.com/c/dawn/+/95860
+
+(cherry picked from commit 631f4771509e93d6b6a748e84651b52bab4f94ec)
+
+Bug: dawn:576, chromium:1338470
+Change-Id: Ic481a1a91dd4fba7792bccf3a4f7559779aa098a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3759543
+Reviewed-by: Austin Eng <enga@chromium.org>
+Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1023851}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3795692
+Auto-Submit: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Austin Eng <enga@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5112@{#1335}
+Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
+
+diff --git a/gpu/command_buffer/service/shared_image_backing_d3d.cc b/gpu/command_buffer/service/shared_image_backing_d3d.cc
+index c76f6888cc6cb13acafea72a7ecfc31d3367d8de..a8ccfa4152afc281762c2d319cd7d40ceec73c59 100644
+--- a/gpu/command_buffer/service/shared_image_backing_d3d.cc
++++ b/gpu/command_buffer/service/shared_image_backing_d3d.cc
+@@ -641,6 +641,10 @@ SharedImageBackingD3D::ProduceDawn(SharedImageManager* manager,
+   texture_descriptor.nextInChain =
+       reinterpret_cast<WGPUChainedStruct*>(&internalDesc);
+ 
++  // Evict invalid external images e.g. due to their device being destroyed.
++  base::EraseIf(dawn_external_images_,
++                [](const auto& kv) { return !kv.second->IsValid(); });
++
+   // Persistently open the shared handle by caching it on this backing.
+   auto it = dawn_external_images_.find(device);
+   dawn::native::d3d12::ExternalImageDXGI* external_image_ptr = nullptr;
+@@ -667,6 +671,7 @@ SharedImageBackingD3D::ProduceDawn(SharedImageManager* manager,
+     external_image_ptr = it->second.get();
+   }
+   DCHECK(external_image_ptr);
++  DCHECK(external_image_ptr->IsValid());
+   return std::make_unique<SharedImageRepresentationDawnD3D>(
+       manager, this, tracker, device, external_image_ptr);
+ #else
