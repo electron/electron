@@ -15,26 +15,25 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 13bbeaac938b27446d5b62eb92ca761487db5fef..4cfe57a6356bbc2492f59957a0dfcf63052b7ee8 100644
+index 71eb2eda28d4d..d6755ecd752ef 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
-@@ -93,11 +93,14 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -92,10 +92,13 @@ void MediaStreamDevicesController::RequestPermissions(
  
    std::vector<blink::PermissionType> permission_types;
  
 +#if 0
-   permissions::PermissionManager* permission_manager =
-       permissions::PermissionsClient::Get()->GetPermissionManager(
-           web_contents->GetBrowserContext());
+   content::PermissionController* permission_controller =
+       web_contents->GetBrowserContext()->GetPermissionController();
 +#endif
  
    if (controller->ShouldRequestAudio()) {
 +#if 0
-     permissions::PermissionResult permission_status =
-         permission_manager->GetPermissionStatusForCurrentDocument(
-             ContentSettingsType::MEDIASTREAM_MIC, rfh);
-@@ -109,10 +112,12 @@ void MediaStreamDevicesController::RequestPermissions(
-           permissions::PermissionStatusSource::FEATURE_POLICY);
+     content::PermissionResult permission_status =
+         permission_controller->GetPermissionResultForCurrentDocument(
+             blink::PermissionType::AUDIO_CAPTURE, rfh);
+@@ -106,10 +109,12 @@ void MediaStreamDevicesController::RequestPermissions(
+                               content::PermissionStatusSource::FEATURE_POLICY);
        return;
      }
 +#endif
@@ -43,26 +42,26 @@ index 13bbeaac938b27446d5b62eb92ca761487db5fef..4cfe57a6356bbc2492f59957a0dfcf63
    }
    if (controller->ShouldRequestVideo()) {
 +#if 0
-     permissions::PermissionResult permission_status =
-         permission_manager->GetPermissionStatusForCurrentDocument(
-             ContentSettingsType::MEDIASTREAM_CAMERA, rfh);
-@@ -124,6 +129,7 @@ void MediaStreamDevicesController::RequestPermissions(
-           permissions::PermissionStatusSource::FEATURE_POLICY);
+     content::PermissionResult permission_status =
+         permission_controller->GetPermissionResultForCurrentDocument(
+             blink::PermissionType::VIDEO_CAPTURE, rfh);
+@@ -120,6 +125,7 @@ void MediaStreamDevicesController::RequestPermissions(
+                               content::PermissionStatusSource::FEATURE_POLICY);
        return;
      }
 +#endif
  
      permission_types.push_back(blink::PermissionType::VIDEO_CAPTURE);
  
-@@ -135,6 +141,7 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -131,6 +137,7 @@ void MediaStreamDevicesController::RequestPermissions(
      // pan-tilt-zoom permission and there are suitable PTZ capable devices
      // available.
      if (request.request_pan_tilt_zoom_permission && has_pan_tilt_zoom_camera) {
 +#if 0
        permission_status =
-           permission_manager->GetPermissionStatusForCurrentDocument(
-               ContentSettingsType::CAMERA_PAN_TILT_ZOOM, rfh);
-@@ -144,6 +151,7 @@ void MediaStreamDevicesController::RequestPermissions(
+           permission_controller->GetPermissionResultForCurrentDocument(
+               blink::PermissionType::CAMERA_PAN_TILT_ZOOM, rfh);
+@@ -140,6 +147,7 @@ void MediaStreamDevicesController::RequestPermissions(
          controller->RunCallback(/*blocked_by_permissions_policy=*/false);
          return;
        }
@@ -70,19 +69,20 @@ index 13bbeaac938b27446d5b62eb92ca761487db5fef..4cfe57a6356bbc2492f59957a0dfcf63
  
        permission_types.push_back(blink::PermissionType::CAMERA_PAN_TILT_ZOOM);
      }
-@@ -417,6 +425,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
-   if (rfh->GetLastCommittedOrigin().GetURL() != request_.security_origin) {
+@@ -426,6 +434,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      return false;
    }
+ 
 +#if 0
-   permissions::PermissionResult result =
-       permissions::PermissionsClient::Get()
-           ->GetPermissionManager(web_contents_->GetBrowserContext())
-@@ -425,6 +434,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
-     DCHECK_EQ(CONTENT_SETTING_BLOCK, result.content_setting);
+   // TODO(raymes): This function wouldn't be needed if
+   // PermissionManager::RequestPermissions returned a denial reason.
+   content::PermissionResult result =
+@@ -436,6 +445,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+     DCHECK_EQ(blink::mojom::PermissionStatus::DENIED, result.status);
      return true;
    }
 +#endif
    return false;
  }
  
+
