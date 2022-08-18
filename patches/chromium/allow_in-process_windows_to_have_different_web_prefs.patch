@@ -32,7 +32,7 @@ index e5c9ebda8156c1a7c32f7eb0661dff40f022c264..8840d4be4b49b27dfb257866f6a074ef
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index a910d7b53a1346797f0e2bd030dff7ff84a834b8..4847c7587484eb02b8d7f532be53e499517a95fb 100644
+index cfd107cf7257b5c0c2482baba8964e1d2508fc8b..6a2e25a3d7700df9c59952ff19c9ce62d391005c 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -149,6 +149,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -56,7 +56,7 @@ index a910d7b53a1346797f0e2bd030dff7ff84a834b8..4847c7587484eb02b8d7f532be53e499
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 33ca0140e9434f37c67386973f1ebf460222691c..220551e3be0ae9275714f80758671eeac87b0cca 100644
+index adbb4f0de4d787ac7710de06de2bf3b32dc6491f..c68a71ca2e272874420d309f2154cf89cf99b7ec 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -67,7 +67,7 @@ index 33ca0140e9434f37c67386973f1ebf460222691c..220551e3be0ae9275714f80758671eea
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -157,6 +158,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -159,6 +160,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;
@@ -88,7 +88,7 @@ index 33ca0140e9434f37c67386973f1ebf460222691c..220551e3be0ae9275714f80758671eea
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index d4c86ca871c796c3179a0fe099de0b3082ebf46e..0b438a894c37826c19bdac1b1474a50a4afe8e4f 100644
+index fa2db0ccc2d9f72aa4976816548df31f83c2ef54..ab896b217be1f8695c6d05414252a37c8086369d 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -99,7 +99,7 @@ index d4c86ca871c796c3179a0fe099de0b3082ebf46e..0b438a894c37826c19bdac1b1474a50a
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -433,6 +434,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -438,6 +439,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.stylus_handwriting_enabled;
    }
  
@@ -153,7 +153,7 @@ index d4c86ca871c796c3179a0fe099de0b3082ebf46e..0b438a894c37826c19bdac1b1474a50a
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 4638c6cf8f3834bb3dc5f98347069f1211cb7332..8cf8845375809f239998b1db256622c2ce5b1e58 100644
+index 656ed9364bc7b5874273797f3587d5d74f2c6bdb..e8e990b10890cca95ecc8927222e622eee8b888f 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";
@@ -164,7 +164,7 @@ index 4638c6cf8f3834bb3dc5f98347069f1211cb7332..8cf8845375809f239998b1db256622c2
  
  enum PointerType {
    kPointerNone                              = 1,             // 1 << 0
-@@ -209,6 +210,19 @@ struct WebPreferences {
+@@ -210,6 +211,19 @@ struct WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;

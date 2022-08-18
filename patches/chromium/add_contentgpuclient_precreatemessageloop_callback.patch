@@ -10,7 +10,7 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index d435206f773dd..a0856c214d962 100644
+index d435206f773dd30086ae81868412bc28029935d8..a0856c214d962199a2e51c7bd14f0f676d35507e 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
 @@ -239,6 +239,10 @@ int GpuMain(MainFunctionParams parameters) {
@@ -33,7 +33,7 @@ index d435206f773dd..a0856c214d962 100644
      client->PostSandboxInitialized();
    }
 diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
-index a5d868b9e409c..9abe1cf5b2cc8 100644
+index a5d868b9e409c986bc85dfd71bb0363b5fa22145..9abe1cf5b2cc8ce60387ddf81b7c13aff9c178c4 100644
 --- a/content/public/gpu/content_gpu_client.h
 +++ b/content/public/gpu/content_gpu_client.h
 @@ -29,6 +29,10 @@ class CONTENT_EXPORT ContentGpuClient {

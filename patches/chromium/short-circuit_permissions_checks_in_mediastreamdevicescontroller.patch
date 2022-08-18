@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 71eb2eda28d4d..d6755ecd752ef 100644
+index 71eb2eda28d4d0d5dd9a1ad37309dd27caa69ccf..d6755ecd752ef18a9cf289765cfa44375ea115d7 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -92,10 +92,13 @@ void MediaStreamDevicesController::RequestPermissions(
@@ -85,4 +85,3 @@ index 71eb2eda28d4d..d6755ecd752ef 100644
    return false;
  }
  
-

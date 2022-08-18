@@ -14,10 +14,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 115dab63efa4b90f37609a9a0a363ad75a0ff582..324232704f0bc0db6c20031cc0a2217b35667c3d 100644
+index e4803106d187c4080efa426b6571650e745bc2b1..1239c41b86272520e7a67f24a5545f32ac2f13c0 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6579,6 +6579,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -6566,6 +6566,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  

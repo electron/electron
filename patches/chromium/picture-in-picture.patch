@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-index be17e30aa8312..d5c3988af5be1 100644
+index be17e30aa831282c4be52e788d67993d47eba5df..d5c3988af5be1d9e89330eb5c5195f9b94d13ffc 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 @@ -15,15 +15,19 @@
@@ -101,7 +101,7 @@ index be17e30aa8312..d5c3988af5be1 100644
    web_view->SetWebContents(pip_contents);
  
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.h b/chrome/browser/ui/views/overlay/document_overlay_window_views.h
-index b2b178ccadce8..603d82a461c4c 100644
+index b2b178ccadce82f8d4ec8e5a6dafe1c67bcecd74..603d82a461c4c443ac26c85a46fbd866a42237e6 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.h
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.h
 @@ -56,7 +56,6 @@ class DocumentOverlayWindowViews : public OverlayWindowViews,
@@ -113,7 +113,7 @@ index b2b178ccadce8..603d82a461c4c 100644
    // OverlayWindowViews
    bool ControlsHitTestContainsPoint(const gfx::Point& point) override;
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 590d247e1136b..453c358d210d4 100644
+index 590d247e1136b9ac5f766a613e8d91916eb0dda4..453c358d210d48d21a237654143439f2065e98fe 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -14,9 +14,11 @@
@@ -138,7 +138,7 @@ index 590d247e1136b..453c358d210d4 100644
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 9ce062e48c356..08c27dc6f54c9 100644
+index 9ce062e48c356f2ac23feb97c31aabcac8610942..08c27dc6f54c9216098d29b6a5331483722517d2 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -15,9 +15,11 @@

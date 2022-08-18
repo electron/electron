@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 33264a4ec00f67345bccbd59c042235a65fdded1..3e0ac81d77b3943a3021381e96f55059e4289a9b 100644
+index f42edc973ece87ae10f38dec6bd5e53f0bd0d47d..f7f4c4add050c491a14b35c4389e5ebfae110c8e 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -130,6 +130,11 @@
@@ -139,7 +139,7 @@ index 33264a4ec00f67345bccbd59c042235a65fdded1..3e0ac81d77b3943a3021381e96f55059
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index fe906c8374fee5a4afdd193b8d4a2462c28ce835..07e6cb535bdc9fdc03ae8a115cc3b50d16d2c9b9 100644
+index 0d6063bdad3b010921ca3e99f51963035853b11a..d7fdbf2c8626b482bb46691d09d83954ccc4e39d 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -104,6 +104,7 @@ class URLMatcher;
@@ -169,7 +169,7 @@ index fe906c8374fee5a4afdd193b8d4a2462c28ce835..07e6cb535bdc9fdc03ae8a115cc3b50d
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 99cd0107ab918600970055a542cb753b24264cba..bc63400c5143f13fa8108bc431e08e83725d3b0b 100644
+index d911012bde3ead83b8354d402f469f9e2f9b706a..94a04364887c2605fcb85373dc67c9b2f4afde05 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -283,6 +283,17 @@ struct NetworkContextFilePaths {
