@@ -51,7 +51,7 @@ but can only import a subset of Electron and Node's built-in modules:
 
 In addition, the preload script also polyfills certain Node.js primitives as globals:
 
-* [`Buffer`](https://nodejs.org/api/Buffer.html)
+* [`Buffer`](https://nodejs.org/api/buffer.html)
 * [`process`](../api/process.md)
 * [`clearImmediate`](https://nodejs.org/api/timers.html#timers_clearimmediate_immediate)
 * [`setImmediate`](https://nodejs.org/api/timers.html#timers_setimmediate_callback_args)
