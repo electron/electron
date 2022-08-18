@@ -1,7 +1,7 @@
-From 61dd910ea71f667e82f5d3906e674b8f206bc370 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sunny Sachanandani <sunnyps@chromium.org>
 Date: Thu, 21 Jul 2022 22:14:14 +0000
-Subject: [PATCH] [m104] gpu: Cache ExternalImageDXGI per WGPUDevice for correctness
+Subject: gpu: Cache ExternalImageDXGI per WGPUDevice for correctness
 
 After crrev.com/c/dawn/95860, WGPUDevice destruction will invalidate
 ExternalImageDXGI's internal resources so for correctness it will be
@@ -22,13 +22,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3781070
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/5112@{#1103}
 Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
----
 
 diff --git a/gpu/command_buffer/service/shared_image_backing_d3d.cc b/gpu/command_buffer/service/shared_image_backing_d3d.cc
-index 4e1058e7..47dca6c 100644
+index 0b2477bfc7b8932e876751aa659161c0ef8bd02c..c76f6888cc6cb13acafea72a7ecfc31d3367d8de 100644
 --- a/gpu/command_buffer/service/shared_image_backing_d3d.cc
 +++ b/gpu/command_buffer/service/shared_image_backing_d3d.cc
-@@ -399,9 +399,8 @@
+@@ -396,9 +396,8 @@ SharedImageBackingD3D::~SharedImageBackingD3D() {
    dxgi_shared_handle_state_.reset();
    swap_chain_.Reset();
    d3d11_texture_.Reset();
@@ -39,7 +38,7 @@ index 4e1058e7..47dca6c 100644
  #endif  // BUILDFLAG(USE_DAWN)
  }
  
-@@ -646,7 +645,9 @@
+@@ -643,7 +642,9 @@ SharedImageBackingD3D::ProduceDawn(SharedImageManager* manager,
        reinterpret_cast<WGPUChainedStruct*>(&internalDesc);
  
    // Persistently open the shared handle by caching it on this backing.
@@ -50,7 +49,7 @@ index 4e1058e7..47dca6c 100644
      DCHECK(dxgi_shared_handle_state_);
      const HANDLE shared_handle = dxgi_shared_handle_state_->GetSharedHandle();
      DCHECK(base::win::HandleTraits::IsHandleValid(shared_handle));
-@@ -656,17 +657,21 @@
+@@ -653,17 +654,21 @@ SharedImageBackingD3D::ProduceDawn(SharedImageManager* manager,
      externalImageDesc.cTextureDescriptor = &texture_descriptor;
      externalImageDesc.sharedHandle = shared_handle;
  
@@ -58,11 +57,12 @@ index 4e1058e7..47dca6c 100644
 -        device, &externalImageDesc);
 -
 -    if (!external_image_) {
+-      DLOG(ERROR) << "Failed to create external image";
 +    std::unique_ptr<dawn::native::d3d12::ExternalImageDXGI> external_image =
 +        dawn::native::d3d12::ExternalImageDXGI::Create(device,
 +                                                       &externalImageDesc);
 +    if (!external_image) {
-       LOG(ERROR) << "Failed to create external image";
++      LOG(ERROR) << "Failed to create external image";
        return nullptr;
      }
 +    external_image_ptr = external_image.get();
@@ -79,10 +79,10 @@ index 4e1058e7..47dca6c 100644
    return nullptr;
  #endif  // BUILDFLAG(USE_DAWN)
 diff --git a/gpu/command_buffer/service/shared_image_backing_d3d.h b/gpu/command_buffer/service/shared_image_backing_d3d.h
-index ae1873e5..de1e806 100644
+index ae1873e5cc7009e4e6568701247e3eacd402606b..de1e80690b2cfcfe005b956b60d4d900266dc6c6 100644
 --- a/gpu/command_buffer/service/shared_image_backing_d3d.h
 +++ b/gpu/command_buffer/service/shared_image_backing_d3d.h
-@@ -197,10 +197,12 @@
+@@ -197,10 +197,12 @@ class GPU_GLES2_EXPORT SharedImageBackingD3D
    // Set if this backing corresponds to the back buffer of |swap_chain_|.
    const bool is_back_buffer_;
  
