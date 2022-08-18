@@ -48,19 +48,18 @@ clone_folder: C:\projects\src\electron
 matrix:
   fast_finish: true
 
-# configuration common for all jobs
-init:
-  - ps: >-
-      if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-        Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-      }
-
 for:
 
   -
     matrix:
       only:
         - job_name: Build
+
+    init:
+    - ps: >-
+        if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+          Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+        }
 
     build_script:
     - ps: |
@@ -249,6 +248,9 @@ for:
     - ps: |
         if ($env:RUN_TESTS -ne 'true') {
           Write-warning "Skipping tests for $env:APPVEYOR_PROJECT_NAME"; Exit-AppveyorBuild
+        }
+        if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+          Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
         }
     build_script:
     - ps: |
