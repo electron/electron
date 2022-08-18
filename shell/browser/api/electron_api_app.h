@@ -264,6 +264,9 @@ class App : public ElectronBrowserClient::Delegate,
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
+#if BUILDFLAG(IS_POSIX)
+  bool watch_singleton_socket_on_ready_ = false;
+#endif
 };
 
 }  // namespace api
