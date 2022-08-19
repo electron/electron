@@ -13,7 +13,7 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 5a64220aaf1309832dc0ad543e353de67fe0a779..55a2a78ce166a65cd11b26e0aa31968f6a10bec8 100644
+index 9de82e5422428d6419a24401e0479fbd19a15147..a30b3aae436bbe762ada1bdae69ef83127f0144b 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,7 @@
@@ -53,7 +53,7 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..55a2a78ce166a65cd11b26e0aa31968f
    ~ProcessSingleton();
  
    // Notify another process, if available. Otherwise sets ourselves as the
-@@ -177,7 +181,10 @@ class ProcessSingleton {
+@@ -178,7 +182,10 @@ class ProcessSingleton {
  #endif
  
   private:
@@ -65,7 +65,7 @@ index 5a64220aaf1309832dc0ad543e353de67fe0a779..55a2a78ce166a65cd11b26e0aa31968f
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 2de07460462632680f9b16a019744527dcee5125..f7e7edd645f212750704d45a2967f584fab81b35 100644
+index b1721c7034cd082edd2d155b172b8f3aa8d67566..e9419a0b4de2f39730f9478914b307b3bdb45459 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -607,6 +607,7 @@ class ProcessSingleton::LinuxWatcher
@@ -143,10 +143,10 @@ index 2de07460462632680f9b16a019744527dcee5125..f7e7edd645f212750704d45a2967f584
      const NotificationCallback& notification_callback)
      : notification_callback_(notification_callback),
 +      additional_data_(additional_data),
-       current_pid_(base::GetCurrentProcId()),
-       watcher_(new LinuxWatcher(this)) {
+       current_pid_(base::GetCurrentProcId()) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -897,7 +922,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+   lock_path_ = user_data_dir.Append(chrome::kSingletonLockFilename);
+@@ -896,7 +921,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -156,7 +156,7 @@ index 2de07460462632680f9b16a019744527dcee5125..f7e7edd645f212750704d45a2967f584
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -907,11 +933,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -906,11 +932,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -179,7 +179,7 @@ index 2de07460462632680f9b16a019744527dcee5125..f7e7edd645f212750704d45a2967f584
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 0c87fc8ccb4511904f19b76ae5e03a5df6664391..c34d4fe10781e6b9286a43176f7312da4e815caf 100644
+index c375a587abd3d575b5c75a0863b01c9611e8287c..33948d69a4a3bf098187b1c383821d1d67be5818 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -80,10 +80,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
