@@ -40,6 +40,10 @@
 #include "base/posix/eintr_wrapper.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include "base/win/windows_types.h"
+#endif
+
 namespace electron {
 
 base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>&
@@ -102,10 +106,16 @@ class PipeIOBase {
 
 class PipeReaderBase : public PipeIOBase {
  public:
-  PipeReaderBase(const char* thread_name, int read_fd)
+  PipeReaderBase(const char* thread_name,
+#if BUILDFLAG(IS_WIN)
+                 HANDLE read_handle
+#else
+                 int read_fd
+#endif
+                 )
       : PipeIOBase(thread_name) {
 #if BUILDFLAG(IS_WIN)
-    read_handle_ = reinterpret_cast<HANDLE>(_get_osfhandle(read_fd));
+    read_handle_ = read_handle;
 #else
     read_fd_ = read_fd;
 #endif
@@ -193,9 +203,15 @@ class PipeReaderBase : public PipeIOBase {
 class StdoutPipeReader : public PipeReaderBase {
  public:
   StdoutPipeReader(base::WeakPtr<UtilityProcessWrapper> utility_process_wrapper,
+#if BUILDFLAG(IS_WIN)
+                   HANDLE read_handle)
+      : PipeReaderBase("UtilityProcessStdoutReadThread", read_handle),
+#else
                    int read_fd)
       : PipeReaderBase("UtilityProcessStdoutReadThread", read_fd),
-        utility_process_wrapper_(std::move(utility_process_wrapper)) {}
+#endif
+        utility_process_wrapper_(std::move(utility_process_wrapper)) {
+  }
 
  private:
   void HandleMessage(std::vector<uint8_t> message) override {
@@ -219,9 +235,15 @@ class StdoutPipeReader : public PipeReaderBase {
 class StderrPipeReader : public PipeReaderBase {
  public:
   StderrPipeReader(base::WeakPtr<UtilityProcessWrapper> utility_process_wrapper,
+#if BUILDFLAG(IS_WIN)
+                   HANDLE read_handle)
+      : PipeReaderBase("UtilityProcessStderrReadThread", read_handle),
+#else
                    int read_fd)
       : PipeReaderBase("UtilityProcessStderrReadThread", read_fd),
-        utility_process_wrapper_(std::move(utility_process_wrapper)) {}
+#endif
+        utility_process_wrapper_(std::move(utility_process_wrapper)) {
+  }
 
  private:
   void HandleMessage(std::vector<uint8_t> message) override {
@@ -254,7 +276,63 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     bool use_plugin_helper) {
   DCHECK(!node_service_remote_.is_bound());
 
-#if BUILDFLAG(IS_POSIX)
+#if BUILDFLAG(IS_WIN)
+  base::win::ScopedHandle stdout_write(nullptr);
+  base::win::ScopedHandle stderr_write(nullptr);
+  if (stdio[1] == "pipe") {
+    HANDLE read = nullptr;
+    HANDLE write = nullptr;
+    if (!::CreatePipe(&read, &write, nullptr, 0)) {
+      LOG(ERROR) << "stdout pipe creation failed";
+      return;
+    }
+    stdout_write.Set(write);
+    stdout_reader_ =
+        std::make_unique<StdoutPipeReader>(weak_factory_.GetWeakPtr(), read);
+    if (!stdout_reader_->Start()) {
+      LOG(ERROR) << "stdout output watcher thread failed to start.";
+      PipeIOBase::Shutdown(std::move(stdout_reader_));
+      CloseHandle(write);
+      return;
+    }
+  } else if (stdio[1] == "ignore") {
+    HANDLE handle = CreateFileW(
+        L"NUL", FILE_GENERIC_WRITE | FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) {
+      LOG(ERROR) << "stdout failed to create null handle";
+      return;
+    }
+    stdout_write.Set(handle);
+  }
+
+  if (stdio[2] == "pipe") {
+    HANDLE read = nullptr;
+    HANDLE write = nullptr;
+    if (!::CreatePipe(&read, &write, nullptr, 0)) {
+      LOG(ERROR) << "stderr pipe creation failed";
+      return;
+    }
+    stderr_write.Set(write);
+    stderr_reader_ =
+        std::make_unique<StderrPipeReader>(weak_factory_.GetWeakPtr(), read);
+    if (!stderr_reader_->Start()) {
+      LOG(ERROR) << "stderr output watcher thread failed to start.";
+      PipeIOBase::Shutdown(std::move(stderr_reader_));
+      CloseHandle(write);
+      return;
+    }
+  } else if (stdio[2] == "ignore") {
+    HANDLE handle =
+        CreateFileW(L"NUL", FILE_GENERIC_WRITE | FILE_READ_ATTRIBUTES,
+                    FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) {
+      LOG(ERROR) << "stderr failed to create null handle";
+      return;
+    }
+    stderr_write.Set(handle);
+  }
+#elif BUILDFLAG(IS_POSIX)
   base::FileHandleMappingVector fds_to_remap;
   if (stdio[1] == "pipe") {
     int stdout_pipe_fd[2];
@@ -266,7 +344,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     stdout_reader_ = std::make_unique<StdoutPipeReader>(
         weak_factory_.GetWeakPtr(), stdout_pipe_fd[0]);
     if (!stdout_reader_->Start()) {
-      LOG(ERROR) << "stderr output watcher thread failed to start.";
+      LOG(ERROR) << "stdout output watcher thread failed to start.";
       PipeIOBase::Shutdown(std::move(stdout_reader_));
       IGNORE_EINTR(close(stdout_pipe_fd[1]));
       return;
@@ -315,7 +393,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                                ? std::u16string(u"Node Service")
                                : display_name)
           .WithExtraCommandLineSwitches(params->exec_args)
-#if BUILDFLAG(IS_POSIX)
+#if BUILDFLAG(IS_WIN)
+          .WithStdoutHandle(std::move(stdout_write))
+          .WithStderrHandle(std::move(stderr_write))
+#elif BUILDFLAG(IS_POSIX)
           .WithAdditionalFds(std::move(fds_to_remap))
 #endif
 #if BUILDFLAG(IS_MAC)
@@ -334,12 +415,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
-#if BUILDFLAG(IS_POSIX)
   if (stdout_reader_.get())
     PipeIOBase::Shutdown(std::move(stdout_reader_));
   if (stderr_reader_.get())
     PipeIOBase::Shutdown(std::move(stderr_reader_));
-#endif
 };
 
 void UtilityProcessWrapper::OnServiceProcessLaunched(
@@ -408,7 +487,6 @@ v8::Local<v8::Value> UtilityProcessWrapper::GetOSProcessId(
   return gin::ConvertToV8(isolate, pid_);
 }
 
-#if BUILDFLAG(IS_POSIX)
 void UtilityProcessWrapper::HandleMessage(ReaderType type,
                                           std::vector<uint8_t> message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -440,7 +518,6 @@ void UtilityProcessWrapper::ShutdownReader(ReaderType type) {
     PipeIOBase::Shutdown(std::move(stderr_reader_));
   }
 }
-#endif
 
 // static
 gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
