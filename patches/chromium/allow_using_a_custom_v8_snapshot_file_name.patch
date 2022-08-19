@@ -8,7 +8,7 @@ to have multiple v8 snapshots loaded in different contexts by passing `custom-v8
 via the command line.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index f19e32fd33ff0ce8f44ecec76e4583273f43b231..e24a23704d93b5209323677c50a66e7f38ebb29b 100644
+index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..542ac3d594aaafaddaa9df4b63a82884113cb8a1 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -232,6 +232,11 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
@@ -24,10 +24,10 @@ index f19e32fd33ff0ce8f44ecec76e4583273f43b231..e24a23704d93b5209323677c50a66e7f
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
 diff --git a/content/public/common/content_switches.cc b/content/public/common/content_switches.cc
-index a60146c49d70419227ecc3b09365f472ee5a56ed..06d86901658b575d43b353c88a42e47d617693a2 100644
+index 402bd199572ba9d066c10470459c906535d9635b..74252a0dad3af3a3362200e79567802e51664829 100644
 --- a/content/public/common/content_switches.cc
 +++ b/content/public/common/content_switches.cc
-@@ -617,6 +617,8 @@ const char kProcessPerTab[]                 = "process-per-tab";
+@@ -618,6 +618,8 @@ const char kProcessPerTab[]                 = "process-per-tab";
  // renderer or plugin host.  If it's empty, it's the browser.
  const char kProcessType[]                   = "type";
  
@@ -37,7 +37,7 @@ index a60146c49d70419227ecc3b09365f472ee5a56ed..06d86901658b575d43b353c88a42e47d
  // affects HTTP and HTTPS requests. ARC-apps use only HTTP proxy server with the
  // highest priority.
 diff --git a/content/public/common/content_switches.h b/content/public/common/content_switches.h
-index ccc81e32a1a6a3cf90f2c716848d47857045a0c7..6ede3fcc07f83b499578c633408519fc57c979ef 100644
+index f33a35c1e86be9a50fd060bb8fb59aa44bd76da1..f1148f8da2fa67d23f0a2e3d3c5983cb5eb61e8a 100644
 --- a/content/public/common/content_switches.h
 +++ b/content/public/common/content_switches.h
 @@ -182,6 +182,7 @@ extern const char kPpapiStartupDialog[];
@@ -49,10 +49,10 @@ index ccc81e32a1a6a3cf90f2c716848d47857045a0c7..6ede3fcc07f83b499578c633408519fc
  CONTENT_EXPORT extern const char kPullToRefresh[];
  CONTENT_EXPORT extern const char kQuotaChangeEventInterval[];
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 1b41c6ad5681ee85250b27cb9d221995ca1e4b7f..988167eb608c6bfbcda71702f31d6cc3e77e0adb 100644
+index 952b3ba6247935053d9a080bced30e3b3c640dd4..d097b845e9fc356ce3ba7c518aa0b79cf52b9c5b 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -511,8 +511,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -490,8 +490,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -62,7 +62,7 @@ index 1b41c6ad5681ee85250b27cb9d221995ca1e4b7f..988167eb608c6bfbcda71702f31d6cc3
    if (g_mapped_snapshot) {
      // TODO(crbug.com/802962): Confirm not loading different type of snapshot
      // files in a process.
-@@ -521,10 +520,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -500,10 +499,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =
