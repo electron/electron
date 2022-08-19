@@ -386,9 +386,7 @@ void NodeBindings::Initialize() {
   SetNodeCliFlags();
 
   auto env = base::Environment::Create();
-  if (browser_env_ != BrowserEnvironment::kUtility) {
-    SetNodeOptions(env.get());
-  }
+  SetNodeOptions(env.get());
 
   std::vector<std::string> argv = {"electron"};
   std::vector<std::string> exec_argv;
