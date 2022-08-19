@@ -16,12 +16,6 @@ This patch adds a few changes to the Chromium code:
    implementation, along with a parameter `is_app_sandboxed` in the
    constructor, to handle the case when the primary app is run with
    admin permissions.
-4. It adds an `OnBrowserReady` function to allow
-   `requestSingleInstanceLock` to start listening to the socket later
-   in the posix implementation. This function is necessary, because
-   otherwise, users calling `requestSingleInstanceLock` create a
-   `ProcessSingleton` instance that tries to connect to the socket
-   before the browser thread is ready.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
 index 7cd82d27a741f194da5d0b3fcfd9c15c8ea1fa5c..9de82e5422428d6419a24401e0479fbd19a15147 100644
