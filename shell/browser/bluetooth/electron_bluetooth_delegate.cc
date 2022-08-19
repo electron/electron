@@ -134,7 +134,8 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
     content::RenderFrameHost* frame,
     const std::u16string& device_identifier,
     PairPromptCallback callback,
-    PairingKind pairing_kind) {
+    PairingKind pairing_kind,
+    const absl::optional<std::u16string>& pin) {
   NOTIMPLEMENTED();
   std::move(callback).Run(BluetoothDelegate::PairPromptResult(
       BluetoothDelegate::PairPromptStatus::kCancelled));

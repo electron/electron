@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Tue, 9 Aug 2022 12:35:36 -0500
+Subject: add electron deps to license credits file
+
+Ensure that licenses for the dependencies introduced by Electron
+are included in `LICENSES.chromium.html`
+
+diff --git a/tools/licenses.py b/tools/licenses.py
+index a58dbf44370baabbfa2986c734c96a210cc16f1d..1d6934460f788ab76275710e727fb062f5c92b5b 100755
+--- a/tools/licenses.py
++++ b/tools/licenses.py
+@@ -347,6 +347,32 @@ SPECIAL_CASES = {
+         "License File":
+         "/third_party/swiftshader/third_party/SPIRV-Headers/LICENSE",
+     },
++
++    os.path.join('third_party', 'electron_node'): {
++        "Name": "Node.js",
++        "URL": "https://github.com/nodejs/node",
++        "License": "MIT",
++        "License File": "/third_party/electron_node/LICENSE",
++    },
++    os.path.join('third_party', 'squirrel.mac'): {
++        "Name": "Squirrel",
++        "URL": "https://github.com/Squirrel/Squirrel.Mac",
++        "License": "MIT",
++        "License File": "/third_party/squirrel.mac/LICENSE",
++    },
++    os.path.join('third_party', 'squirrel.mac', 'vendor', 'mantle'): {
++        "Name": "Mantle",
++        "URL": "https://github.com/Mantle/Mantle",
++        "License": "MIT",
++        "License File": "/third_party/squirrel.mac/vendor/mantle/LICENSE.md",
++    },
++    os.path.join('third_party', 'squirrel.mac', 'vendor', 'ReactiveObjC'): {
++        "Name": "ReactiveObjC",
++        "URL": "https://github.com/ReactiveCocoa/ReactiveObjC",
++        "License": "MIT",
++        "License File":
++        "/third_party/squirrel.mac/vendor/ReactiveObjC/LICENSE.md",
++    },
+ }
+ 
+ # Special value for 'License File' field used to indicate that the license file

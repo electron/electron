@@ -143,7 +143,7 @@ ElectronMenuModel* ModelForMenuItem(DbusmenuMenuitem* item) {
       g_object_get_data(G_OBJECT(item), "model"));
 }
 
-bool GetMenuItemID(DbusmenuMenuitem* item, int* id) {
+bool GetMenuItemID(DbusmenuMenuitem* item, size_t* id) {
   gpointer id_ptr = g_object_get_data(G_OBJECT(item), "menu-id");
   if (id_ptr != nullptr) {
     *id = GPOINTER_TO_INT(id_ptr) - 1;
@@ -162,7 +162,7 @@ void SetMenuItemID(DbusmenuMenuitem* item, int id) {
 
 std::string GetMenuModelStatus(ElectronMenuModel* model) {
   std::string ret;
-  for (int i = 0; i < model->GetItemCount(); ++i) {
+  for (size_t i = 0; i < model->GetItemCount(); ++i) {
     int status = model->GetTypeAt(i) | (model->IsVisibleAt(i) << 3) |
                  (model->IsEnabledAt(i) << 4) |
                  (model->IsItemCheckedAt(i) << 5);
@@ -231,7 +231,7 @@ void GlobalMenuBarX11::OnWindowUnmapped() {
 
 void GlobalMenuBarX11::BuildMenuFromModel(ElectronMenuModel* model,
                                           DbusmenuMenuitem* parent) {
-  for (int i = 0; i < model->GetItemCount(); ++i) {
+  for (size_t i = 0; i < model->GetItemCount(); ++i) {
     DbusmenuMenuitem* item = menuitem_new();
     menuitem_property_set_bool(item, kPropertyVisible, model->IsVisibleAt(i));
 
@@ -309,14 +309,14 @@ void GlobalMenuBarX11::RegisterAccelerator(DbusmenuMenuitem* item,
 
 void GlobalMenuBarX11::OnItemActivated(DbusmenuMenuitem* item,
                                        unsigned int timestamp) {
-  int id;
+  size_t id;
   ElectronMenuModel* model = ModelForMenuItem(item);
   if (model && GetMenuItemID(item, &id))
     model->ActivatedAt(id, 0);
 }
 
 void GlobalMenuBarX11::OnSubMenuShow(DbusmenuMenuitem* item) {
-  int id;
+  size_t id;
   ElectronMenuModel* model = ModelForMenuItem(item);
   if (!model || !GetMenuItemID(item, &id))
     return;

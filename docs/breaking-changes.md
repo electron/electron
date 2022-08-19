@@ -12,6 +12,24 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (22.0)
+
+### Removed: WebContents `new-window` event
+
+The `new-window` event of WebContents has been removed. It is replaced by [`webContents.setWindowOpenHandler()`](api/web-contents.md#contentssetwindowopenhandlerhandler).
+
+```js
+// Removed in Electron 21
+webContents.on('new-window', (event) => {
+  event.preventDefault()
+})
+
+// Replace with
+webContents.setWindowOpenHandler((details) => {
+  return { action: 'deny' }
+})
+```
+
 ## Planned Breaking API Changes (20.0)
 
 ### Behavior Changed: V8 Memory Cage enabled

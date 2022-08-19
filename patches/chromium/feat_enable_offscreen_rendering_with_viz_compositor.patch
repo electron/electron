@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 267af5f85d4036e144ad9829922dcd3ac62b8a31..a658a43a12f5597a7bea094471191d040fc3d6c2 100644
+index 90e1c4adeab61374adf9da5708497ea32a46c7f5..b812a22802c7c425ab259dfe5681cafe6ad758c8 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -134,6 +134,8 @@ viz_component("service") {
@@ -94,7 +94,7 @@ index 267af5f85d4036e144ad9829922dcd3ac62b8a31..a658a43a12f5597a7bea094471191d04
      "display_embedder/software_output_surface.h",
      "display_embedder/vsync_parameter_listener.cc",
 diff --git a/components/viz/service/display_embedder/output_surface_provider.h b/components/viz/service/display_embedder/output_surface_provider.h
-index 2e9453c18f2f6623d31b477aa856152ddacc3e23..93b6080135c08bc9d4cf7020f4fcb15c06a01a60 100644
+index 18ea9142343e68dfa64c5e81269dbc80e55c1277..c76c4bcd3b30230753be51d87eabffa93a107b6e 100644
 --- a/components/viz/service/display_embedder/output_surface_provider.h
 +++ b/components/viz/service/display_embedder/output_surface_provider.h
 @@ -38,7 +38,8 @@ class OutputSurfaceProvider {
@@ -108,7 +108,7 @@ index 2e9453c18f2f6623d31b477aa856152ddacc3e23..93b6080135c08bc9d4cf7020f4fcb15c
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index c019d729f29440e44d9dd47ff62d3f8fa1ee19a8..8f589394b12cff75df9708310c5f891664674c28 100644
+index d6ffe3a759fbde3fbb0f86fda9a07c63d50ff73a..4854bca8e1d3117534e4bf02ea8ebf5b2e6ea70c 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,12 +23,14 @@
@@ -119,9 +119,9 @@ index c019d729f29440e44d9dd47ff62d3f8fa1ee19a8..8f589394b12cff75df9708310c5f8916
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
  #include "gpu/command_buffer/client/shared_memory_limits.h"
+ #include "gpu/command_buffer/service/scheduler_sequence.h"
  #include "gpu/config/gpu_finch_features.h"
  #include "gpu/ipc/common/surface_handle.h"
- #include "gpu/ipc/scheduler_sequence.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
  #include "ui/base/ui_base_switches.h"
  
@@ -502,7 +502,7 @@ index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef2
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 8eeb87e2322821ac52e4bc0000cb777d69515a2c..5a7d1501aed1f01b1b67ae156cfb927ee696f83b 100644
+index 4e150f1fc12884d92b11605b6f39ec4a1d720b99..569b4e2277c758f628e528b80917f0f1e65f76d8 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -84,7 +84,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -516,7 +516,7 @@ index 8eeb87e2322821ac52e4bc0000cb777d69515a2c..5a7d1501aed1f01b1b67ae156cfb927e
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 0e3af0f9280abe8560393325b400ad2543ed0556..7fe490e55a4bb8a183d0d241188ea15a44347245 100644
+index 4a9cf8ff4a94ecda70e3d0f8d1b9d18687e4aa87..27a7adcf524e33819b372213285bfccb1f3924ba 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -381,8 +381,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -549,13 +549,13 @@ index b2f873919d68633103d115d7d9550a098c1a254c..8e38831a6df15d37e5fb87d63613b7db
  
    // Notifies that a swap has occurred and provides information about the pixel
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 3c495dfe499e1bae90fa0d576d5f58f1300c17fa..678700882d379f528ee1d77819b063cfdcdad036 100644
+index 2534c06b9de7de9b6353c81016ae0fa8609effd3..e5edff80fcdd969c0854641a6e67af12b80138dc 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -32,6 +32,7 @@ struct RootCompositorFrameSinkParams {
+@@ -31,6 +31,7 @@ struct RootCompositorFrameSinkParams {
+   bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;
-   bool use_preferred_interval_for_video = false;
 +  bool offscreen = false;
  
    [EnableIf=is_android]

@@ -97,6 +97,7 @@ class SerialChooserContext : public KeyedService,
   void EnsurePortManagerConnection();
   void SetUpPortManagerConnection(
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
+  void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
   void OnPortManagerConnectionError();
   void RevokeObjectPermissionInternal(const url::Origin& origin,
                                       const base::Value& object,

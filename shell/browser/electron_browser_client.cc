@@ -1487,9 +1487,6 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
       std::move(proxied_receiver), std::move(target_factory_remote),
       std::move(header_client_receiver), type);
 
-  if (bypass_redirect_checks)
-    *bypass_redirect_checks = true;
-
   return true;
 }
 
@@ -1539,8 +1536,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
                                           sandbox::mojom::Sandbox sandbox_type,
                                           ChildSpawnFlags flags) {
-  // Allow crashpad to communicate via named pipe.
-  sandbox::ResultCode result = policy->AddRule(
+  sandbox::ResultCode result = policy->GetConfig()->AddRule(
       sandbox::SubSystem::kFiles, sandbox::Semantics::kFilesAllowAny,
       L"\\??\\pipe\\crashpad_*");
   if (result != sandbox::SBOX_ALL_OK)
