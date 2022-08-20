@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_EVENT_EMITTER_H_
-#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_EVENT_EMITTER_H_
+#ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_EVENT_EMITTER_H_
+#define ELECTRON_SHELL_COMMON_API_ELECTRON_API_EVENT_EMITTER_H_
 
 namespace v8 {
 template <typename T>
@@ -18,4 +18,4 @@ v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate);
 
 }  // namespace electron
 
-#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_EVENT_EMITTER_H_
+#endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_EVENT_EMITTER_H_

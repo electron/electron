@@ -176,6 +176,9 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
+    _linkedBinding(name: 'electron_common_event_emitter'): {
+      setEventEmitterPrototype(prototype: Object): void;
+    };
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
@@ -199,9 +202,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_event'): {
       createWithSender(sender: Electron.WebContents): Electron.Event;
       createEmpty(): Electron.Event;
-    };
-    _linkedBinding(name: 'electron_browser_event_emitter'): {
-      setEventEmitterPrototype(prototype: Object): void;
     };
     _linkedBinding(name: 'electron_browser_global_shortcut'): { globalShortcut: Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };

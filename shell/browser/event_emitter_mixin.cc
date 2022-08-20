@@ -5,7 +5,7 @@
 #include "shell/browser/event_emitter_mixin.h"
 
 #include "gin/public/wrapper_info.h"
-#include "shell/browser/api/electron_api_event_emitter.h"
+#include "shell/common/api/electron_api_event_emitter.h"
 
 namespace gin_helper::internal {
 

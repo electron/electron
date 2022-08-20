@@ -51,7 +51,6 @@
   V(electron_browser_crash_reporter)     \
   V(electron_browser_dialog)             \
   V(electron_browser_event)              \
-  V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
   V(electron_browser_in_app_purchase)    \
   V(electron_browser_menu)               \
@@ -80,6 +79,7 @@
   V(electron_common_clipboard)           \
   V(electron_common_command_line)        \
   V(electron_common_environment)         \
+  V(electron_common_event_emitter)       \
   V(electron_common_features)            \
   V(electron_common_native_image)        \
   V(electron_common_shell)               \

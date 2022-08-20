@@ -16,7 +16,7 @@ require('../common/reset-search-paths');
 // Import common settings.
 require('@electron/internal/common/init');
 
-process._linkedBinding('electron_browser_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
+process._linkedBinding('electron_common_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
 // Don't quit on fatal error.
 process.on('uncaughtException', function (error) {
