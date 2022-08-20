@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events';
+
 import { ipcRenderer } from 'electron/renderer';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 
@@ -5,6 +7,9 @@ import type * as webViewInitModule from '@electron/internal/renderer/web-view/we
 import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
 import type * as webFrameInitModule from '@electron/internal/renderer/web-frame-init';
 import type * as securityWarningsModule from '@electron/internal/renderer/security-warnings';
+
+// Must be set prior to linking electron_renderer_web_frame
+process._linkedBinding('electron_common_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 const v8Util = process._linkedBinding('electron_common_v8_util');

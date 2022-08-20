@@ -25,9 +25,9 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 #include "shell/common/gin_helper/promise.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)

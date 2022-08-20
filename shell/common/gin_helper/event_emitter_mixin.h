@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
-#define ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_
 
 #include <utility>
 
 #include "gin/object_template_builder.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event_emitter.h"
 
 namespace gin_helper {
@@ -28,7 +27,7 @@ class EventEmitterMixin {
   // Returns true if event.preventDefault() was called during processing.
   template <typename... Args>
   bool Emit(base::StringPiece name, Args&&... args) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
@@ -43,7 +42,7 @@ class EventEmitterMixin {
   bool EmitCustomEvent(base::StringPiece name,
                        v8::Local<v8::Object> custom_event,
                        Args&&... args) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
@@ -94,4 +93,4 @@ class EventEmitterMixin {
 
 }  // namespace gin_helper
 
-#endif  // ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_

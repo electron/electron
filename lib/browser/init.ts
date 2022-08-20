@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -15,8 +14,6 @@ require('../common/reset-search-paths');
 
 // Import common settings.
 require('@electron/internal/common/init');
-
-process._linkedBinding('electron_common_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
 // Don't quit on fatal error.
 process.on('uncaughtException', function (error) {

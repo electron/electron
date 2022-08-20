@@ -18,7 +18,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
-#include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 #include "url/gurl.h"
 #include "v8/include/v8.h"
 

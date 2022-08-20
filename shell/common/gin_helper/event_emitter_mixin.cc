@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 
 #include "gin/public/wrapper_info.h"
 #include "shell/common/api/electron_api_event_emitter.h"
