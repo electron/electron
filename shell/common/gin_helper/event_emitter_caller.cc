@@ -18,24 +18,28 @@ v8::MaybeLocal<v8::Value> MakeCallback(
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
   v8::Local<v8::Value> function_value;
-  if (!obj->Get(context, method).ToLocal(&function_value)) {
+  if (!obj->Get(context, method).ToLocal(&function_value) ||
+      !function_value->IsFunction())
     return v8::Boolean::New(isolate, false);
-  }
-  if (!function_value->IsFunction()) {
-    return v8::Boolean::New(isolate, false);
-  }
 
   v8::Local<v8::Function> function = function_value.As<v8::Function>();
+  v8::MaybeLocal<v8::Value> func_result;
 
   v8::TryCatch try_catch(isolate);
+  try_catch.SetVerbose(true);  // Display error in console.
 
-  v8::MaybeLocal<v8::Value> func_result =
-      function->Call(context, obj, argv->size(), argv->data());
+  func_result = function->Call(context, obj, argv->size(), argv->data());
 
-  if (func_result.IsEmpty()) {
-    // *error_message = FormatExceptionMessage(context, try_catch.Message());
+  if (try_catch.HasCaught()) {
+    // Trigger uncaught error dialog when running Node in the main process.
+    if (node::Environment::GetCurrent(context)) {
+      node::errors::TriggerUncaughtException(isolate, try_catch);
+    }
     return v8::Boolean::New(isolate, false);
   }
+
+  if (func_result.IsEmpty())
+    return v8::Boolean::New(isolate, false);
 
   return func_result;
 }
@@ -48,11 +52,11 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                         v8::Local<v8::Object> obj,
                                         const char* method,
                                         ValueVector* args) {
-  // Perform microtask checkpoint after running JavaScript.
-  gin_helper::MicrotasksScope microtasks_scope(isolate, true);
-
+  // Use creation context to avoid crash when calling from multiple worlds.
   v8::Local<v8::Context> context = obj->GetCreationContextChecked();
 
+  // Perform microtask checkpoint after running JavaScript.
+  gin_helper::MicrotasksScope microtasks_scope(isolate, true);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
 
