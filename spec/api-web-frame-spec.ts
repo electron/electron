@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as path from 'path';
 import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
 import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
+import { defer, executeJsHelper } from './spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -190,6 +190,39 @@ describe('webFrame module', () => {
       it('executeJavaScript(InIsolatedWorld) can be used without a callback', async () => {
         expect(await w.executeJavaScript('webFrame.executeJavaScript(\'1 + 1\')')).to.equal(2);
         expect(await w.executeJavaScript('webFrame.executeJavaScriptInIsolatedWorld(999, [{code: \'1 + 1\'}])')).to.equal(2);
+      });
+    });
+  });
+
+  describe('script-context-created event', function () {
+    const prefPermutations: Partial<Electron.WebPreferences>[] = [
+      { sandbox: true, contextIsolation: true },
+      { sandbox: true, contextIsolation: false },
+      { sandbox: false, contextIsolation: true },
+      { sandbox: false, contextIsolation: false },
+      { sandbox: false, contextIsolation: true, nodeIntegration: true },
+      { sandbox: false, contextIsolation: false, nodeIntegration: true }
+    ];
+
+    prefPermutations.forEach(webPrefs => {
+      it(`emits after isolated context is created when ${JSON.stringify(webPrefs)}`, async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            ...webPrefs,
+            preload: path.join(fixtures, 'pages', 'electron-global-preload.js')
+          }
+        });
+        defer(() => w.close());
+        await w.loadURL('about:blank');
+        const executeJavaScript = webPrefs.contextIsolation ? executeJsHelper.inPreloadWorld : executeJsHelper.inMainWorld;
+        const worldId = await executeJavaScript(w.webContents, () =>
+          new Promise(resolve => {
+            electron.webFrame.once('script-context-created', (_e, worldId) => resolve(worldId));
+            electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
+          })
+        );
+        expect(worldId).to.equal(123);
       });
     });
   });

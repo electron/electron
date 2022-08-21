@@ -191,3 +191,17 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
     if (!ok) { throw new AssertionError(message); }
   });
 }
+
+export const executeJsHelper = {
+  inIsolatedWorld (webContents: Electron.WebContents, worldId: number, code: string | Function, userGesture?: boolean): ReturnType<Electron.WebContents['executeJavaScript']> {
+    return webContents.executeJavaScriptInIsolatedWorld(worldId, [{
+      code: typeof code === 'string' ? code : `(${code.toString()})();`
+    }], userGesture);
+  },
+  inPreloadWorld (webContents: Electron.WebContents, code: string | Function, userGesture?: boolean): ReturnType<Electron.WebContents['executeJavaScript']> {
+    return executeJsHelper.inIsolatedWorld(webContents, 999, code, userGesture);
+  },
+  inMainWorld (webContents: Electron.WebContents, code: string | Function, userGesture?: boolean): ReturnType<Electron.WebContents['executeJavaScript']> {
+    return executeJsHelper.inIsolatedWorld(webContents, 0, code, userGesture);
+  }
+};
