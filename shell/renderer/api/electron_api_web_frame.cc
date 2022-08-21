@@ -26,6 +26,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -316,6 +317,7 @@ class SpellCheckerHolder final : public content::RenderFrameObserver {
 }  // namespace
 
 class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
+                         public gin_helper::EventEmitterMixin<WebFrameRenderer>,
                          public content::RenderFrameObserver {
  public:
   static gin::WrapperInfo kWrapperInfo;
@@ -334,7 +336,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   // gin::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<WebFrameRenderer>::GetObjectTemplateBuilder(isolate)
+    return gin_helper::EventEmitterMixin<
+               WebFrameRenderer>::GetObjectTemplateBuilder(isolate)
         .SetMethod("getWebFrameId", &WebFrameRenderer::GetWebFrameId)
         .SetMethod("setName", &WebFrameRenderer::SetName)
         .SetMethod("setZoomLevel", &WebFrameRenderer::SetZoomLevel)
@@ -380,6 +383,13 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   const char* GetTypeName() override { return "WebFrameRenderer"; }
 
   void OnDestruct() override {}
+
+  // Avoid using DidCreateScriptContext since it crashes if an exception is
+  // thrown in the event emitter callback.
+  void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
+                                     int32_t world_id) override {
+    Emit("script-context-created", world_id);
+  }
 
  private:
   bool MaybeGetRenderFrame(v8::Isolate* isolate,
