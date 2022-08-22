@@ -19,6 +19,18 @@
 #include "shell/common/electron_constants.h"
 
 int main(int argc, char* argv[]) {
+  bool use_custom_v8_snapshot_file_name =
+      electron::fuses::IsLoadV8SnapshotFromCustomPathEnabled();
+  int new_argc = argc + (use_custom_v8_snapshot_file_name ? 1 : 0);
+  char* new_argv[new_argc];
+  for (int i = 0; i < argc; i++) {
+    new_argv[i] = argv[i];
+  }
+  if (use_custom_v8_snapshot_file_name) {
+    new_argv[new_argc - 1] = const_cast<char*>(
+        "--custom-v8-snapshot-file-name=custom_v8_context_snapshot.bin");
+  }
+
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
@@ -27,15 +39,15 @@ int main(int argc, char* argv[]) {
       indicator[0] != '\0') {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
-    return electron::NodeMain(argc, argv);
+    return electron::NodeMain(new_argc, new_argv);
   }
 #endif
 
   electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);
-  electron::ElectronCommandLine::Init(argc, argv);
-  params.argc = argc;
-  params.argv = const_cast<const char**>(argv);
+  electron::ElectronCommandLine::Init(new_argc, new_argv);
+  params.argc = new_argc;
+  params.argv = const_cast<const char**>(new_argv);
   base::CommandLine::Init(params.argc, params.argv);
   // TODO(https://crbug.com/1176772): Remove when Chrome Linux is fully migrated
   // to Crashpad.

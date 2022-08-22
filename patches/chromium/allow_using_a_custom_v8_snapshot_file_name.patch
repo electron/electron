@@ -8,15 +8,17 @@ to have multiple v8 snapshots loaded in different contexts by passing `custom-v8
 via the command line.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..542ac3d594aaafaddaa9df4b63a82884113cb8a1 100644
+index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..b08d658b093b6b70cd4abadee138bc1f76416f27 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -232,6 +232,11 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+@@ -232,6 +232,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
  
  void LoadV8SnapshotFile(const base::CommandLine& command_line) {
    const gin::V8SnapshotFileType snapshot_type = GetSnapshotType(command_line);
++  const std::string& process_type =
++      command_line.GetSwitchValueASCII(switches::kProcessType);
 +  const std::string& custom_v8_snapshot_file_name = command_line.GetSwitchValueASCII(switches::kCustomV8SnapshotFileName);
-+  if (!custom_v8_snapshot_file_name.empty()) {
++  if (process_type.empty() && !custom_v8_snapshot_file_name.empty()) {
 +    gin::V8Initializer::LoadV8SnapshotFromFileName(&*custom_v8_snapshot_file_name.begin(), snapshot_type);
 +    return;
 +  }
