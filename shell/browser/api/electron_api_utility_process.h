@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_UTILITY_PROCESS_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_UTILITY_PROCESS_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -30,11 +31,9 @@ class Process;
 
 namespace electron {
 
-namespace api {
-
-namespace {
 class PipeReaderBase;
-}
+
+namespace api {
 
 class UtilityProcessWrapper
     : public gin::Wrappable<UtilityProcessWrapper>,

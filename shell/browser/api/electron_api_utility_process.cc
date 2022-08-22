@@ -26,7 +26,7 @@
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "net/server/http_connection.h"
+#include "net/server/http_connection.h"  // nogncheck TODO(deepak1556): Remove dependency on this header.
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -53,10 +53,6 @@ GetAllUtilityProcessWrappers() {
       s_all_utility_process_wrappers;
   return *s_all_utility_process_wrappers;
 }
-
-namespace api {
-
-namespace {
 
 // Pipe reader logic is derived from content::DevToolsPipeHandler.
 class PipeIOBase {
@@ -202,12 +198,13 @@ class PipeReaderBase : public PipeIOBase {
 
 class StdoutPipeReader : public PipeReaderBase {
  public:
-  StdoutPipeReader(base::WeakPtr<UtilityProcessWrapper> utility_process_wrapper,
+  StdoutPipeReader(
+      base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper,
 #if BUILDFLAG(IS_WIN)
-                   HANDLE read_handle)
+      HANDLE read_handle)
       : PipeReaderBase("UtilityProcessStdoutReadThread", read_handle),
 #else
-                   int read_fd)
+      int read_fd)
       : PipeReaderBase("UtilityProcessStdoutReadThread", read_fd),
 #endif
         utility_process_wrapper_(std::move(utility_process_wrapper)) {
@@ -216,30 +213,33 @@ class StdoutPipeReader : public PipeReaderBase {
  private:
   void HandleMessage(std::vector<uint8_t> message) override {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&UtilityProcessWrapper::HandleMessage,
-                                  utility_process_wrapper_,
-                                  UtilityProcessWrapper::ReaderType::STDOUT,
-                                  std::move(message)));
+        FROM_HERE,
+        base::BindOnce(&api::UtilityProcessWrapper::HandleMessage,
+                       utility_process_wrapper_,
+                       api::UtilityProcessWrapper::ReaderType::STDOUT,
+                       std::move(message)));
   }
 
   void ShutdownReader() override {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&UtilityProcessWrapper::ShutdownReader,
-                                  utility_process_wrapper_,
-                                  UtilityProcessWrapper::ReaderType::STDOUT));
+        FROM_HERE,
+        base::BindOnce(&api::UtilityProcessWrapper::ShutdownReader,
+                       utility_process_wrapper_,
+                       api::UtilityProcessWrapper::ReaderType::STDOUT));
   }
 
-  base::WeakPtr<UtilityProcessWrapper> utility_process_wrapper_;
+  base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper_;
 };
 
 class StderrPipeReader : public PipeReaderBase {
  public:
-  StderrPipeReader(base::WeakPtr<UtilityProcessWrapper> utility_process_wrapper,
+  StderrPipeReader(
+      base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper,
 #if BUILDFLAG(IS_WIN)
-                   HANDLE read_handle)
+      HANDLE read_handle)
       : PipeReaderBase("UtilityProcessStderrReadThread", read_handle),
 #else
-                   int read_fd)
+      int read_fd)
       : PipeReaderBase("UtilityProcessStderrReadThread", read_fd),
 #endif
         utility_process_wrapper_(std::move(utility_process_wrapper)) {
@@ -248,23 +248,25 @@ class StderrPipeReader : public PipeReaderBase {
  private:
   void HandleMessage(std::vector<uint8_t> message) override {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&UtilityProcessWrapper::HandleMessage,
-                                  utility_process_wrapper_,
-                                  UtilityProcessWrapper::ReaderType::STDERR,
-                                  std::move(message)));
+        FROM_HERE,
+        base::BindOnce(&api::UtilityProcessWrapper::HandleMessage,
+                       utility_process_wrapper_,
+                       api::UtilityProcessWrapper::ReaderType::STDERR,
+                       std::move(message)));
   }
 
   void ShutdownReader() override {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&UtilityProcessWrapper::ShutdownReader,
-                                  utility_process_wrapper_,
-                                  UtilityProcessWrapper::ReaderType::STDERR));
+        FROM_HERE,
+        base::BindOnce(&api::UtilityProcessWrapper::ShutdownReader,
+                       utility_process_wrapper_,
+                       api::UtilityProcessWrapper::ReaderType::STDERR));
   }
 
-  base::WeakPtr<UtilityProcessWrapper> utility_process_wrapper_;
+  base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper_;
 };
 
-}  // namespace
+namespace api {
 
 gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
@@ -419,7 +421,7 @@ UtilityProcessWrapper::~UtilityProcessWrapper() {
     PipeIOBase::Shutdown(std::move(stdout_reader_));
   if (stderr_reader_.get())
     PipeIOBase::Shutdown(std::move(stderr_reader_));
-};
+}
 
 void UtilityProcessWrapper::OnServiceProcessLaunched(
     const base::Process& process) {

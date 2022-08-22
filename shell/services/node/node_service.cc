@@ -5,6 +5,7 @@
 #include "shell/services/node/node_service.h"
 
 #include <utility>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/environment.h"
