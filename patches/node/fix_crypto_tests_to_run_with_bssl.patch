@@ -971,21 +971,21 @@ diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webc
 index ee48a61f4ac8f5e8e4cec96eb03d75cb1c45f56a..5108bbf7499f29bafffda76f3c5270aae0271b44 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
 +++ b/test/parallel/test-webcrypto-derivekey.js
-@@ -48,6 +48,7 @@ const { internalBinding } = require('internal/test/binding');
+@@ -46,6 +46,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
    test('P-521').then(common.mustCall());
  }
  
 +/*
- // Test HKDF bit derivation
+ // Test HKDF key derivation
  {
    async function test(pass, info, salt, hash, expected) {
-@@ -84,6 +85,7 @@ const { internalBinding } = require('internal/test/binding');
+@@ -82,6 +83,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
  
    tests.then(common.mustCall());
  }
 +*/
  
- // Test PBKDF2 bit derivation
+ // Test PBKDF2 key derivation
  {
 diff --git a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
 index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa389a0469 100644
@@ -1000,26 +1000,6 @@ index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa
      });
  }
  
-diff --git a/test/parallel/test-webcrypto-export-import-rsa.js b/test/parallel/test-webcrypto-export-import-rsa.js
-index ab7aa77394ac9989514b7a184900092bd6753996..b0104ac45867a923a8c651e01e8c6975a62f7c61 100644
---- a/test/parallel/test-webcrypto-export-import-rsa.js
-+++ b/test/parallel/test-webcrypto-export-import-rsa.js
-@@ -481,6 +481,7 @@ const testVectors = [
-   await Promise.all(variations);
- })().then(common.mustCall());
- 
-+/*
- {
-   const publicPem = fixtures.readKey('rsa_pss_public_2048.pem', 'ascii');
-   const privatePem = fixtures.readKey('rsa_pss_private_2048.pem', 'ascii');
-@@ -522,6 +523,7 @@ const testVectors = [
-     assert.strictEqual(jwk.alg, 'PS256');
-   })().then(common.mustCall());
- }
-+*/
- 
- {
-   const ecPublic = crypto.createPublicKey(
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c0d407dbe 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
