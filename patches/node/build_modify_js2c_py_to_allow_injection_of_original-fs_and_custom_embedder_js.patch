@@ -14,19 +14,21 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/lib/internal/fs/watchers.js b/lib/internal/fs/watchers.js
-index b45af42d12ff7df8a9e125e87f51af3456811c23..c84ff7feb07aebf656ada7e37d812d9d8a81300f 100644
+index 7b820e70df1613a9f5565d6221b71354ff059560..405bda5d83c3312909439082ef69e8f266e53c2e 100644
 --- a/lib/internal/fs/watchers.js
 +++ b/lib/internal/fs/watchers.js
-@@ -290,10 +290,12 @@ function emitCloseNT(self) {
+@@ -290,11 +290,13 @@ function emitCloseNT(self) {
  
  // Legacy alias on the C++ wrapper object. This is not public API, so we may
  // want to runtime-deprecate it at some point. There's no hurry, though.
 -ObjectDefineProperty(FSEvent.prototype, 'owner', {
+-  __proto__: null,
 -  get() { return this[owner_symbol]; },
 -  set(v) { return this[owner_symbol] = v; }
 -});
 +if (!'owner' in FSEvent.prototype) {
 +  ObjectDefineProperty(FSEvent.prototype, 'owner', {
++    __proto__: null,
 +    get() { return this[owner_symbol]; },
 +    set(v) { return this[owner_symbol] = v; }
 +  });
