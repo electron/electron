@@ -635,7 +635,7 @@ step-electron-publish: &step-electron-publish
       cd src/electron
       if [ "$UPLOAD_TO_STORAGE" == "1" ]; then
         echo 'Uploading Electron release distribution to Azure'
-        script/release/uploaders/upload.py --verbose --UPLOAD_TO_STORAGE
+        script/release/uploaders/upload.py --verbose --upload_to_storage
       else
         echo 'Uploading Electron release distribution to GitHub releases'
         script/release/uploaders/upload.py --verbose
