@@ -40,7 +40,7 @@ index 97b017f66e2395ca90fc7562b9043579911ddc62..1d21462c8cf63ddbbf9e3b785b553a31
      at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
      at node:internal/main/run_main_module:*:*
 diff --git a/test/message/error_aggregateTwoErrors.out b/test/message/error_aggregateTwoErrors.out
-index d1dc13eacc303cc52003bd5820e7eeec8d48822b..eb85c92e63c850bbf8fbbe2c1600e783e0cd6066 100644
+index 02e8738d47f57af4c457c15a0c3acfe0a1783078..d82704d95c2df6df36261c1494625b73c6507293 100644
 --- a/test/message/error_aggregateTwoErrors.out
 +++ b/test/message/error_aggregateTwoErrors.out
 @@ -4,9 +4,9 @@ throw aggregateTwoErrors(err, originalError);
@@ -54,7 +54,32 @@ index d1dc13eacc303cc52003bd5820e7eeec8d48822b..eb85c92e63c850bbf8fbbe2c1600e783
 +    at Module._load (node:internal/modules/cjs/loader:*:*)
      at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
      at node:internal/main/run_main_module:*:* {
-   code: 'ERR0'
+   code: 'ERR0',
+@@ -14,9 +14,9 @@ AggregateError: original
+     Error: original
+         at Object.<anonymous> (*test*message*error_aggregateTwoErrors.js:*:*)
+         at Module._compile (node:internal/modules/cjs/loader:*:*)
+-        at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++        at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+         at Module.load (node:internal/modules/cjs/loader:*:*)
+-        at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++        at Module._load (node:internal/modules/cjs/loader:*:*)
+         at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+         at node:internal/main/run_main_module:*:* {
+       code: 'ERR0'
+@@ -24,9 +24,9 @@ AggregateError: original
+     Error: second error
+         at Object.<anonymous> (*test*message*error_aggregateTwoErrors.js:*:*)
+         at Module._compile (node:internal/modules/cjs/loader:*:*)
+-        at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++        at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+         at Module.load (node:internal/modules/cjs/loader:*:*)
+-        at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++        at Module._load (node:internal/modules/cjs/loader:*:*)
+         at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+         at node:internal/main/run_main_module:*:* {
+       code: 'ERR1'
+
 diff --git a/test/message/error_exit.out b/test/message/error_exit.out
 index 2ef95b535dafe7b0a918b8d6a844e4c4a617818d..dc5e6e7d28cef3a23ca7ba2cfb1435cad55e2aeb 100644
 --- a/test/message/error_exit.out
