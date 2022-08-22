@@ -55,17 +55,22 @@ index a5aa39c23c1708ac27564a1a77a9f05fc07791e2..630a3400e74f20b1dbee17027c7dbe86
  }
  
  const char* GetServerName(SSL* ssl) {
-@@ -210,7 +214,10 @@ const char* GetServerName(SSL* ssl) {
+@@ -213,9 +213,12 @@ const char* GetServerName(SSL* ssl) {
+   return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
  }
  
- bool SetGroups(SecureContext* sc, const char* groups) {
+-bool SetGroups(SecureContext* sc, const char* groups) {
+-  return SSL_CTX_set1_groups_list(sc->ctx().get(), groups) == 1;
+-}
++ bool SetGroups(SecureContext* sc, const char* groups) {
 +#ifndef OPENSSL_IS_BORINGSSL
-   return SSL_CTX_set1_groups_list(**sc, groups) == 1;
++   return SSL_CTX_set1_groups_list(sc->ctx().get(), groups) == 1;
 +#endif
-+  return SSL_CTX_set1_curves_list(**sc, groups) == 1;
- }
++  return SSL_CTX_set1_curves_list(sc->ctx().get(), groups) == 1;
++ }
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
+   const char* code = "UNSPECIFIED";
 @@ -1101,14 +1108,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
