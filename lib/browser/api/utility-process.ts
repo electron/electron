@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { Readable } from 'stream';
 import * as path from 'path';
+import { app } from 'electron/main';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { createProcessWrapper } = process._linkedBinding('electron_browser_utility_process');
 
@@ -73,7 +74,7 @@ export default class UtilityProcess extends EventEmitter {
   _handle: any;
   _stdout: IOReadable | null | undefined = new IOReadable();
   _stderr: IOReadable | null | undefined = new IOReadable();
-  constructor (modulePath: string, args: string[] = [], options: Electron.UtilityProcessConstructorOptions) {
+  constructor (modulePath: string, args?: string[], options?: Electron.UtilityProcessConstructorOptions) {
     super();
     let relativeEntryPath = null;
 
@@ -85,7 +86,7 @@ export default class UtilityProcess extends EventEmitter {
       relativeEntryPath = path.relative(process.resourcesPath, modulePath);
     }
 
-    if (!relativeEntryPath) {
+    if (app.isPackaged && relativeEntryPath && relativeEntryPath.startsWith('..')) {
       throw new Error('Cannot load entry script from outisde the application.');
     }
 
@@ -96,45 +97,57 @@ export default class UtilityProcess extends EventEmitter {
       args = [];
     }
 
-    options = { ...options };
+    if (options == null) {
+      options = Object.create({});
+    } else {
+      options = { ...options };
+    }
 
-    if (options.execArgv == null) {
-      options.execArgv = [];
-    } else if (!Array.isArray(options.execArgv)) {
+    if (options!.execArgv == null) {
+      options!.execArgv = process.execArgv;
+    } else if (!Array.isArray(options!.execArgv)) {
       throw new Error('execArgv must be an array of strings.');
     }
 
-    if (options.serviceName != null) {
-      if (typeof options.serviceName !== 'string') {
-        throw new Error('displayName must be a string.');
+    if (options!.env == null) {
+      options!.env = { ...process.env };
+    }
+
+    if (options!.serviceName != null) {
+      if (typeof options!.serviceName !== 'string') {
+        throw new Error('serviceName must be a string.');
       }
     }
 
-    if (typeof options.stdio === 'string') {
+    if (typeof options!.stdio === 'string') {
       const stdio : Array<'pipe' | 'ignore' | 'inherit'> = [];
-      switch (options.stdio) {
+      switch (options!.stdio) {
         case 'inherit':
         case 'ignore':
           this._stdout = null;
           this._stderr = null;
           // falls through
         case 'pipe':
-          stdio.push('ignore', options.stdio, options.stdio);
+          stdio.push('ignore', options!.stdio, options!.stdio);
           break;
         default:
           throw new Error('stdio must be of the following values: inherit, pipe, ignore');
       }
-      options.stdio = stdio;
-    } else if (Array.isArray(options.stdio)) {
-      if (options.stdio.length >= 3) {
-        if (options.stdio[0] !== 'ignore') {
+      options!.stdio = stdio;
+    } else if (Array.isArray(options!.stdio)) {
+      if (options!.stdio.length >= 3) {
+        if (options!.stdio[0] !== 'ignore') {
           throw new Error('stdin value other than ignore is not supported.');
         }
-        if (options.stdio[1] === 'ignore' || options.stdio[1] === 'inherit') {
+        if (options!.stdio[1] === 'ignore' || options!.stdio[1] === 'inherit') {
           this._stdout = null;
+        } else if (options!.stdio[1] !== 'pipe') {
+          throw new Error('stdout configuration must be of the following values: inherit, pipe, ignore');
         }
-        if (options.stdio[2] === 'ignore' || options.stdio[2] === 'inherit') {
+        if (options!.stdio[2] === 'ignore' || options!.stdio[2] === 'inherit') {
           this._stderr = null;
+        } else if (options!.stdio[2] !== 'pipe') {
+          throw new Error('stderr configuration must be of the following values: inherit, pipe, ignore');
         }
       } else {
         throw new Error('configuration missing for stdin, stdout or stderr.');
@@ -146,6 +159,14 @@ export default class UtilityProcess extends EventEmitter {
       if (channel === 'exit') {
         this.emit('exit', ...args);
         this._handle = null;
+        if (this._stdout) {
+          this._stdout.removeAllListeners();
+          this._stdout = null;
+        }
+        if (this._stderr) {
+          this._stderr.removeAllListeners();
+          this._stderr = null;
+        }
       } else if (channel === 'stdout') {
         this._stdout!._storeInternalData(Buffer.from(args[1]), args[2]);
       } else if (channel === 'stderr') {
@@ -165,7 +186,6 @@ export default class UtilityProcess extends EventEmitter {
 
   get stdout () {
     if (this._handle === null) {
-      this._stdout = null;
       return undefined;
     }
     return this._stdout;
@@ -173,7 +193,6 @@ export default class UtilityProcess extends EventEmitter {
 
   get stderr () {
     if (this._handle === null) {
-      this._stderr = null;
       return undefined;
     }
     return this._stderr;

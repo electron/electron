@@ -18,16 +18,16 @@ Process: [Main](../glossary.md#main-process)<br />
 * `args` string[] (optional) - List of string arguments that will be available as `process.argv`
   in the child process.
 * `options` Object (optional)
-  * `env` Object - Environment key-value pairs. Default is `process.env`.
-  * `execArgv` string[] - List of string arguments passed to the executable. Default is `process.execArgv`.
-  * `stdio` (string[] | string) - Child's stdout and stderr configuration. Default is `pipe`.
+  * `env` Object (optional) - Environment key-value pairs. Default is `process.env`.
+  * `execArgv` string[] (optional) - List of string arguments passed to the executable. Default is `process.execArgv`.
+  * `stdio` (string[] | string) (optional) - Child's stdout and stderr configuration. Default is `pipe`.
     String value can be one of `pipe`, `ignore`, `inherit`, for more details on these values you can refer to
     [stdio][] documentation from Node.js. Currently this option does not allow configuring
     stdin and is always set to `ignore`. For example, the supported values will be processed as following:
     * `pipe`: equivalent to ['ignore', 'pipe', 'pipe'] (the default)
     * `ignore`: equivalent to 'ignore', 'ignore', 'ignore']
     * `inherit`: equivalent to ['ignore', 'inherit', 'inherit']
-  * `serviceName` string - Name of the process that will appear in `name` property of
+  * `serviceName` string (optional) - Name of the process that will appear in `name` property of
     [`child-process-gone` event of `app`](app.md#event-child-process-gone).
     Default is `node.mojom.NodeService`.
   * `allowLoadingUnsignedLibraries` boolean (optional) _macOS_ - With this flag, the utility process will be
