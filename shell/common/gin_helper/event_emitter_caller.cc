@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/event_emitter_caller.h"
 
+#include "base/logging.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_includes.h"
@@ -19,8 +20,14 @@ v8::MaybeLocal<v8::Value> MakeCallback(
 
   v8::Local<v8::Value> function_value;
   if (!obj->Get(context, method).ToLocal(&function_value) ||
-      !function_value->IsFunction())
+      !function_value->IsFunction()) {
+    std::string method_name;
+    if (!method.IsEmpty() &&
+        gin::ConvertFromV8(isolate, method, &method_name)) {
+      LOG(ERROR) << "MakeCallback: " << method_name << " is not a function";
+    }
     return v8::Boolean::New(isolate, false);
+  }
 
   v8::Local<v8::Function> function = function_value.As<v8::Function>();
   v8::MaybeLocal<v8::Value> func_result;
