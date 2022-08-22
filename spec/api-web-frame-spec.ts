@@ -225,5 +225,30 @@ describe('webFrame module', () => {
         expect(worldId).to.equal(123);
       });
     });
+
+    // TODO: WebFrameRenderer.prototype is losing EventEmitter upon navigation,
+    // possibly due to context being destroyed? 'setEventEmitterPrototype'
+    // assigns a v8::Global which should be persisted through navigation...
+    it.skip('can emit following page navigation', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'pages', 'electron-global-preload.js')
+        }
+      });
+      defer(() => w.close());
+      await w.loadURL('about:blank');
+      await w.loadURL('about:blank');
+      const worldId = await executeJsHelper.inPreloadWorld(w.webContents, function testFunction () {
+        return new Promise(resolve => {
+          // resolve(typeof electron.webFrame.on);
+          electron.webFrame.once('script-context-created', (_e, worldId) => resolve(worldId));
+          electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
+        });
+      });
+      expect(worldId).to.equal(123);
+    });
   });
 });
