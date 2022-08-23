@@ -12,10 +12,10 @@ This patch can be removed as soon as Node.js updates to a version of V8
 containing the above CL.
 
 diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
-index 586698129680cef29595c39e77c7d1c186f3d60a..43a3d9dd5907af6aa11b902b01f6ef7539768fbb 100644
+index 12f20ed1c9d386122dd20fdd84a7a0c9b9079ee1..14552eeb493e8eb5b7c05c531b9628d8bcb13aae 100644
 --- a/test/parallel/test-v8-serdes.js
 +++ b/test/parallel/test-v8-serdes.js
-@@ -155,7 +155,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
+@@ -163,7 +163,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
  }
  
  {
@@ -24,7 +24,7 @@ index 586698129680cef29595c39e77c7d1c186f3d60a..43a3d9dd5907af6aa11b902b01f6ef75
  
    const des = new v8.DefaultDeserializer(buf);
    des.readHeader();
-@@ -166,7 +166,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
+@@ -174,7 +174,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
    ser.writeValue(des.readValue());
  
    assert.deepStrictEqual(buf, ser.releaseBuffer());

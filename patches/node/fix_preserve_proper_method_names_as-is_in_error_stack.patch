@@ -79,7 +79,6 @@ index 02e8738d47f57af4c457c15a0c3acfe0a1783078..d82704d95c2df6df36261c1494625b73
          at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
          at node:internal/main/run_main_module:*:* {
        code: 'ERR1'
-
 diff --git a/test/message/error_exit.out b/test/message/error_exit.out
 index 2ef95b535dafe7b0a918b8d6a844e4c4a617818d..dc5e6e7d28cef3a23ca7ba2cfb1435cad55e2aeb 100644
 --- a/test/message/error_exit.out

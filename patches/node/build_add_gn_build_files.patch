@@ -1871,7 +1871,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 0f1a9b52cccba1e54150494a7ee5b28961a8d59d..bb68b2dfef4a693d8a1d0fe056fe696254d12d09 100644
+index d79d640b693993ee9db938e857e34629410ca1e4..f7571a5e669c539bfdce14b18acdb778f8570383 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1998,10 +1998,10 @@ index 0000000000000000000000000000000000000000..2a92eccfa582df361f2a889c0d9b32c1
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 8a050dfa7c8b771ceb30fd2b74dc47f3de96834c..ad3bee1660de26d3502c6247f23b091171a6416c 100755
+index a6d1f8b3caa8e24148b1930ea109508f8e612735..c80c1b8202ba59bd63340baca36df8bca5e1f81d 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -172,17 +172,72 @@ def files(action):
+@@ -202,17 +202,72 @@ def files(action):
  def headers(action):
    def wanted_v8_headers(files_arg, dest):
      v8_headers = [
@@ -2084,7 +2084,7 @@ index 8a050dfa7c8b771ceb30fd2b74dc47f3de96834c..ad3bee1660de26d3502c6247f23b0911
      files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
  
-@@ -209,7 +264,7 @@ def headers(action):
+@@ -239,7 +294,7 @@ def headers(action):
    if sys.platform.startswith('aix'):
      action(['out/Release/node.exp'], 'include/node/')
  

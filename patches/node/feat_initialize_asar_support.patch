@@ -28,4 +28,3 @@ index 337b95133bc94e395229211c9a00a055b279fcc9..25a8464e4833ff4655db2fe37f4bd482
  module.exports = {
    refreshRuntimeOptions,
    patchProcessObject,
-

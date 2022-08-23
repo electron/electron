@@ -21,7 +21,6 @@ index eab99c9b0e2fb387ef9a716396e41c7fc93e93bc..f33e85415e3a8d5df073acbf03aed527
      await cli.waitForPrompt();
      await cli.command('sb("alive.js", 3)');
      await cli.waitFor(/break/);
-
 diff --git a/test/sequential/test-debugger-pid.js b/test/sequential/test-debugger-pid.js
 index 0056113ecaecd3a176ee9539b7fda0132ef59963..3228d0ecc220b5c8c8034fea0dce20f8c38ac68c 100644
 --- a/test/sequential/test-debugger-pid.js
