@@ -161,4 +161,4 @@ Notice that just setting the background in the CSS does not have the desired eff
 [indexed-db]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
 [message-port]: https://developer.mozilla.org/en-US/docs/Web/API/MessagePort
 [browser-window]: api/browser-window.md
-[subpixel rendering example]: images/subpixel-rendering-screenshot.gif
+[subpixel rendering example]: https://github.com/electron/electron/raw/main/docs/images/subpixel-rendering-screenshot.gif
