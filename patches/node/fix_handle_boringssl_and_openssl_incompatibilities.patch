@@ -300,6 +300,19 @@ index 58a5d88d7a10def618170550246fbf50685ac0a4..77af0661dbd056a38a8d7599b9e4f067
  }
  }  // namespace
  
+diff --git a/src/node_metadata.cc b/src/node_metadata.cc
+index 46d9be0dfcfdcf778ebaf0337517b7da3f68bc9b..435762f7df47459dc4e6e73a7c3d2376184bebcf 100644
+--- a/src/node_metadata.cc
++++ b/src/node_metadata.cc
+@@ -9,7 +9,7 @@
+ #include "v8.h"
+ #include "zlib.h"
+ 
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
+ #include <openssl/opensslv.h>
+ #endif  // HAVE_OPENSSL
+ 
 diff --git a/src/node_metadata.h b/src/node_metadata.h
 index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e324183b42be2 100644
 --- a/src/node_metadata.h
@@ -312,4 +325,30 @@ index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e3241
 +#if 0
  #include <openssl/crypto.h>
  #endif  // HAVE_OPENSSL
+ 
+diff --git a/src/node_options.cc b/src/node_options.cc
+index b82100b6907891063a37023e6ad21f79fffade1e..d78005d41bebff4e8729400cf08ab67d27098448 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -5,7 +5,7 @@
+ #include "node_binding.h"
+ #include "node_external_reference.h"
+ #include "node_internals.h"
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
+ #include "openssl/opensslv.h"
+ #endif
+ 
+diff --git a/src/node_options.h b/src/node_options.h
+index 32e68086502f3eebe2dbe232b198d663db951125..cb4b6215ffbace04ecd4ad694ae00493847a7324 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -11,7 +11,7 @@
+ #include "node_mutex.h"
+ #include "util.h"
+ 
+-#if HAVE_OPENSSL
++#if 0
+ #include "openssl/opensslv.h"
+ #endif
  
