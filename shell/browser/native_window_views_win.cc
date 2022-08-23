@@ -413,6 +413,8 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       // multiple times for one resize because of the SetWindowPlacement call.
       if (w_param == SIZE_MAXIMIZED &&
           last_window_state_ != ui::SHOW_STATE_MAXIMIZED) {
+        if (last_window_state_ == ui::SHOW_STATE_MINIMIZED)
+          NotifyWindowRestore();
         last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
         NotifyWindowMaximize();
         ResetWindowControls();
