@@ -111,19 +111,43 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
         request.video_type ==
             blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE ||
         request.audio_type ==
-            blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE)
+            blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE) {
       HandleUserMediaRequest(request, std::move(callback));
-    else if (request.video_type ==
-                 blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE ||
-             request.audio_type ==
-                 blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE)
+    } else if (request.video_type ==
+                   blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE ||
+               request.audio_type ==
+                   blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
       webrtc::MediaStreamDevicesController::RequestPermissions(
           request, MediaCaptureDevicesDispatcher::GetInstance(),
           base::BindOnce(&OnMediaStreamRequestResponse, std::move(callback)));
-    else
+    } else if (request.video_type ==
+                   blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE ||
+               request.video_type == blink::mojom::MediaStreamType::
+                                         DISPLAY_VIDEO_CAPTURE_THIS_TAB ||
+               request.video_type ==
+                   blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_SET ||
+               request.audio_type ==
+                   blink::mojom::MediaStreamType::DISPLAY_AUDIO_CAPTURE) {
+      content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+          request.render_process_id, request.render_frame_id);
+      if (!rfh)
+        return;
+
+      content::BrowserContext* browser_context = rfh->GetBrowserContext();
+      ElectronBrowserContext* electron_browser_context =
+          static_cast<ElectronBrowserContext*>(browser_context);
+      auto split_callback = base::SplitOnceCallback(std::move(callback));
+      if (electron_browser_context->ChooseDisplayMediaDevice(
+              request, std::move(split_callback.second)))
+        return;
+      std::move(split_callback.first)
+          .Run(blink::mojom::StreamDevicesSet(),
+               blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+    } else {
       std::move(callback).Run(
           blink::mojom::StreamDevicesSet(),
           blink::mojom::MediaStreamRequestResult::NOT_SUPPORTED, nullptr);
+    }
   } else {
     std::move(callback).Run(
         blink::mojom::StreamDevicesSet(),

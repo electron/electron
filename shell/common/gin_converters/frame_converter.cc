@@ -27,6 +27,19 @@ v8::Local<v8::Value> Converter<content::RenderFrameHost*>::ToV8(
 }
 
 // static
+bool Converter<content::RenderFrameHost*>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    content::RenderFrameHost** out) {
+  electron::api::WebFrameMain* web_frame_main = nullptr;
+  if (!ConvertFromV8(isolate, val, &web_frame_main))
+    return false;
+  *out = web_frame_main->render_frame_host();
+
+  return true;
+}
+
+// static
 v8::Local<v8::Value>
 Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::ToV8(
     v8::Isolate* isolate,

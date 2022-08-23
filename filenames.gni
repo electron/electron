@@ -579,6 +579,8 @@ filenames = {
     "shell/common/gin_converters/hid_device_info_converter.h",
     "shell/common/gin_converters/image_converter.cc",
     "shell/common/gin_converters/image_converter.h",
+    "shell/common/gin_converters/media_converter.cc",
+    "shell/common/gin_converters/media_converter.h",
     "shell/common/gin_converters/message_box_converter.cc",
     "shell/common/gin_converters/message_box_converter.h",
     "shell/common/gin_converters/native_window_converter.h",
