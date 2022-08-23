@@ -1450,6 +1450,11 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
+          it('does not go fullscreen if roundedCorners are enabled', async () => {
+            w = new BrowserWindow({ frame: false, roundedCorners: false, fullscreen: true });
+            expect(w.fullScreen).to.be.false();
+          });
+
           it('can be changed', () => {
             w.fullScreen = false;
             expect(w.fullScreen).to.be.false();
