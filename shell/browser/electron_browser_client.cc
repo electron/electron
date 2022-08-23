@@ -34,6 +34,7 @@
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
+#include "content/browser/renderer_host/frame_tree_node.h"
 #include "content/browser/site_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_ppapi_host.h"
@@ -987,7 +988,7 @@ void ElectronBrowserClient::WebNotificationAllowed(
     return;
   }
   permission_helper->RequestWebNotificationPermission(
-      base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
+      rfh, base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
 }
 
 void ElectronBrowserClient::RenderProcessHostDestroyed(
@@ -1022,6 +1023,7 @@ void OnOpenExternal(const GURL& escaped_url, bool allowed) {
 
 void HandleExternalProtocolInUI(
     const GURL& url,
+    int frame_tree_node_id,
     content::WebContents::OnceGetter web_contents_getter,
     bool has_user_gesture) {
   content::WebContents* web_contents = std::move(web_contents_getter).Run();
@@ -1033,10 +1035,15 @@ void HandleExternalProtocolInUI(
   if (!permission_helper)
     return;
 
+  content::FrameTreeNode* node =
+      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
+  if (!node)
+    return;
+
   GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
-  permission_helper->RequestOpenExternalPermission(std::move(callback),
-                                                   has_user_gesture, url);
+  permission_helper->RequestOpenExternalPermission(
+      node->current_frame_host(), std::move(callback), has_user_gesture, url);
 }
 
 bool ElectronBrowserClient::HandleExternalProtocol(
@@ -1054,7 +1061,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
-      base::BindOnce(&HandleExternalProtocolInUI, url,
+      base::BindOnce(&HandleExternalProtocolInUI, url, frame_tree_node_id,
                      std::move(web_contents_getter), has_user_gesture));
   return true;
 }
