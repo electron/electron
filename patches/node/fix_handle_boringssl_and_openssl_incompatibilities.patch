@@ -16,6 +16,20 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39138
 - https://github.com/nodejs/node/pull/39136
 
+diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
+index 6c663a2b21d0a29708700d0e19b8e30fa696a1d0..1e4ff83faec60887e8169e612ac1a956130d7e4a 100644
+--- a/src/crypto/crypto_cipher.cc
++++ b/src/crypto/crypto_cipher.cc
+@@ -25,7 +25,8 @@ using v8::Value;
+ namespace crypto {
+ namespace {
+ bool IsSupportedAuthenticatedMode(const EVP_CIPHER* cipher) {
+-  switch (EVP_CIPHER_mode(cipher)) {
++  const int mode = EVP_CIPHER_mode(cipher);
++  switch (mode) {
+   case EVP_CIPH_CCM_MODE:
+   case EVP_CIPH_GCM_MODE:
+ #ifndef OPENSSL_NO_OCB
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index ed1aea868d8385b6411103c614f4d12688c8cb30..4864d7cd6a310f31bfdda399996bd2c47977667a 100644
 --- a/src/crypto/crypto_common.cc
