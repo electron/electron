@@ -107,6 +107,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
+#include "shell/common/gin_converters/absl_converter.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -1106,14 +1107,25 @@ void WebContents::Close(absl::optional<gin_helper::Dictionary> options) {
   }
 }
 
-bool WebContents::DidAddMessageToConsole(
-    content::WebContents* source,
+void WebContents::OnDidAddMessageToConsole(
+    content::RenderFrameHost* source_frame,
     blink::mojom::ConsoleMessageLevel level,
     const std::u16string& message,
     int32_t line_no,
-    const std::u16string& source_id) {
-  return Emit("console-message", static_cast<int32_t>(level), message, line_no,
-              source_id);
+    const std::u16string& source_id,
+    const absl::optional<std::u16string>& untrusted_stack_trace) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
+  details.SetGetter("frame", source_frame);
+  details.Set("level", static_cast<int32_t>(level));
+  details.Set("message", message);
+  details.Set("lineNumber", line_no);
+  details.Set("sourceId", source_id);
+  details.Set("untrustedStackTrace", untrusted_stack_trace);
+
+  Emit("console-message", static_cast<int32_t>(level), message, line_no,
+       source_id, details);
 }
 
 void WebContents::OnCreateWindow(

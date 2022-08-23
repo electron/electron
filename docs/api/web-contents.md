@@ -935,10 +935,17 @@ Emitted when a `<webview>` has been attached to this web contents.
 Returns:
 
 * `event` Event
-* `level` Integer - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
-* `message` string - The actual console message
-* `line` Integer - The line number of the source that triggered this console message
-* `sourceId` string
+* `_` never - deprecated parameter
+* `__` never - deprecated parameter
+* `___` never - deprecated parameter
+* `____` never - deprecated parameter
+* `details` Object
+  * `frame` WebFrameMain - The frame that logged the message
+  * `level` Integer - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
+  * `message` string - The actual console message
+  * `lineNumber` Integer - The line number of the source that triggered this console message
+  * `sourceId` String - Url the log message came from, can be the empty string
+  * `untrustedStackTrace` String | undefined - Undefined in most cases, optionally present for exceptions that are logged
 
 Emitted when the associated window logs a console message.
 
