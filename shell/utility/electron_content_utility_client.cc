@@ -94,7 +94,7 @@ void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
   // interfaces to the BinderMap.
   if (!utility_process_running_elevated_) {
 #if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
-    binders->Add(
+    binders->Add<printing::mojom::PdfToEmfConverterFactory>(
         base::BindRepeating(printing::PdfToEmfConverterFactory::Create),
         base::ThreadTaskRunnerHandle::Get());
 #endif

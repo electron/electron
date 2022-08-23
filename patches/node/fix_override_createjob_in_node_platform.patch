@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Tue, 2 Aug 2022 12:52:02 -0700
+Subject: fix: override createjob in node_platform
+
+This CL changed Platform::CreateJob to an abstract method:
+https://chromium-review.googlesource.com/c/v8/v8/+/3779694
+This patch adds an override for NodePlatform::CreateJob, using
+the same parameters as PostJob.
+
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index 5be79694fef65c9290f1b46d2657581dea16f543..e10caa9f6e39ec5b255acd9bc6b7f8efc77221d9 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -523,6 +523,12 @@ std::unique_ptr<v8::JobHandle> NodePlatform::PostJob(v8::TaskPriority priority,
+       this, priority, std::move(job_task), NumberOfWorkerThreads());
+ }
+ 
++std::unique_ptr<v8::JobHandle> NodePlatform::CreateJob(v8::TaskPriority priority,
++                                       std::unique_ptr<v8::JobTask> job_task) {
++  return v8::platform::NewDefaultJobHandle(
++      this, priority, std::move(job_task), NumberOfWorkerThreads());
++}
++
+ bool NodePlatform::IdleTasksEnabled(Isolate* isolate) {
+   return ForIsolate(isolate)->IdleTasksEnabled();
+ }
+diff --git a/src/node_platform.h b/src/node_platform.h
+index 4a05f3bba58c8e875d0ab67f292589edbb3b812b..b8a956c286a5ea88b8b520322e04b4e4e16a2591 100644
+--- a/src/node_platform.h
++++ b/src/node_platform.h
+@@ -158,6 +158,9 @@ class NodePlatform : public MultiIsolatePlatform {
+   std::unique_ptr<v8::JobHandle> PostJob(
+       v8::TaskPriority priority,
+       std::unique_ptr<v8::JobTask> job_task) override;
++  std::unique_ptr<v8::JobHandle> CreateJob(
++      v8::TaskPriority priority,
++      std::unique_ptr<v8::JobTask> job_task) override;
+ 
+   void RegisterIsolate(v8::Isolate* isolate, uv_loop_t* loop) override;
+   void RegisterIsolate(v8::Isolate* isolate,

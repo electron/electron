@@ -635,7 +635,7 @@ step-electron-publish: &step-electron-publish
       cd src/electron
       if [ "$UPLOAD_TO_STORAGE" == "1" ]; then
         echo 'Uploading Electron release distribution to Azure'
-        script/release/uploaders/upload.py --verbose --UPLOAD_TO_STORAGE
+        script/release/uploaders/upload.py --verbose --upload_to_storage
       else
         echo 'Uploading Electron release distribution to GitHub releases'
         script/release/uploaders/upload.py --verbose
@@ -661,6 +661,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/buildtools/third_party/libc++
       - src/buildtools/third_party/libc++abi
       - src/out/Default/obj/buildtools/third_party
+      - src/v8/tools/builtins-pgo
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -1060,18 +1061,15 @@ steps-tests: &steps-tests
             export MOCHA_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
-            (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
           else
             if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
               export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
               (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
-              (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging)
             else
               if [ "$TARGET_ARCH" == "ia32" ]; then
                 npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
               fi
               (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split --split-by=timings))
-              (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split --split-by=timings))
             fi
           fi
     - run:
@@ -1080,9 +1078,6 @@ steps-tests: &steps-tests
           cd src
 
           # Check if test results exist and are not empty.
-          if [ ! -s "junit/test-results-remote.xml" ]; then
-            exit 1
-          fi
           if [ ! -s "junit/test-results-main.xml" ]; then
             exit 1
           fi

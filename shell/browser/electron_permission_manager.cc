@@ -339,9 +339,16 @@ blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
     blink::PermissionType permission,
     content::RenderFrameHost* render_frame_host) {
-  return GetPermissionStatus(
-      permission, render_frame_host->GetLastCommittedOrigin().GetURL(),
-      content::PermissionUtil::GetLastCommittedOriginAsURL(render_frame_host));
+  base::Value::Dict details;
+  details.Set("embeddingOrigin",
+              content::PermissionUtil::GetLastCommittedOriginAsURL(
+                  render_frame_host->GetMainFrame())
+                  .spec());
+  bool granted = CheckPermissionWithDetails(
+      permission, render_frame_host,
+      render_frame_host->GetLastCommittedOrigin().GetURL(), std::move(details));
+  return granted ? blink::mojom::PermissionStatus::GRANTED
+                 : blink::mojom::PermissionStatus::DENIED;
 }
 
 blink::mojom::PermissionStatus

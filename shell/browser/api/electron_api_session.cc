@@ -52,6 +52,7 @@
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"
@@ -65,6 +66,7 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -73,6 +75,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "third_party/blink/public/common/storage_key/storage_key.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -643,6 +646,22 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionCheckHandler(handler);
 }
 
+void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
+                                            v8::Local<v8::Value> val) {
+  if (val->IsNull()) {
+    browser_context_->SetDisplayMediaRequestHandler(
+        DisplayMediaRequestHandler());
+    return;
+  }
+  DisplayMediaRequestHandler handler;
+  if (!gin::ConvertFromV8(isolate, val, &handler)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Display media request handler must be null or a function");
+    return;
+  }
+  browser_context_->SetDisplayMediaRequestHandler(handler);
+}
+
 void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
                                          gin::Arguments* args) {
   ElectronPermissionManager::DeviceCheckHandler handler;
@@ -1198,6 +1217,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
+      .SetMethod("setDisplayMediaRequestHandler",
+                 &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)

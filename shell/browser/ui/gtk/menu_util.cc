@@ -150,7 +150,7 @@ void ExecuteCommand(ui::MenuModel* model, int id) {
 
   if (event && event->type == GDK_BUTTON_RELEASE)
     event_flags = EventFlagsFromGdkState(event->button.state);
-  model->ActivatedAt(id, event_flags);
+  model->ActivatedAt(static_cast<int>(id), event_flags);
 
   if (event)
     gdk_event_free(event);
@@ -163,7 +163,7 @@ void BuildSubmenuFromModel(ui::MenuModel* model,
                            void* this_ptr) {
   std::map<int, GtkWidget*> radio_groups;
   GtkWidget* menu_item = nullptr;
-  for (int i = 0; i < model->GetItemCount(); ++i) {
+  for (size_t i = 0; i < model->GetItemCount(); ++i) {
     std::string label = ui::ConvertAcceleratorsFromWindowsStyle(
         base::UTF16ToUTF8(model->GetLabelAt(i)));
 

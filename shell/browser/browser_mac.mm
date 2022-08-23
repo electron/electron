@@ -321,43 +321,6 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   return settings;
 }
 
-// Some logic here copied from GetLoginItemForApp in base/mac/mac_util.mm
-void RemoveFromLoginItems() {
-#pragma clang diagnostic push  // https://crbug.com/1154377
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  base::ScopedCFTypeRef<LSSharedFileListRef> login_items(
-      LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL));
-  if (!login_items.get()) {
-    LOG(ERROR) << "Couldn't get a Login Items list.";
-    return;
-  }
-
-  base::scoped_nsobject<NSArray> login_items_array(
-      base::mac::CFToNSCast(LSSharedFileListCopySnapshot(login_items, NULL)));
-  NSURL* url = [NSURL fileURLWithPath:[base::mac::MainBundle() bundlePath]];
-  for (id login_item in login_items_array.get()) {
-    LSSharedFileListItemRef item =
-        reinterpret_cast<LSSharedFileListItemRef>(login_item);
-
-    // kLSSharedFileListDoNotMountVolumes is used so that we don't trigger
-    // mounting when it's not expected by a user. Just listing the login
-    // items should not cause any side-effects.
-    base::ScopedCFTypeRef<CFErrorRef> error;
-    base::ScopedCFTypeRef<CFURLRef> item_url_ref(
-        LSSharedFileListItemCopyResolvedURL(
-            item, kLSSharedFileListDoNotMountVolumes, error.InitializeInto()));
-
-    if (!error && item_url_ref) {
-      base::ScopedCFTypeRef<CFURLRef> item_url(item_url_ref);
-      if (CFEqual(item_url, url)) {
-        LSSharedFileListItemRemove(login_items, item);
-        return;
-      }
-    }
-  }
-#pragma clang diagnostic pop
-}
-
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 #if defined(MAS_BUILD)
   if (!platform_util::SetLoginItemEnabled(settings.open_at_login)) {
@@ -367,7 +330,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   if (settings.open_at_login) {
     base::mac::AddToLoginItems(settings.open_as_hidden);
   } else {
-    RemoveFromLoginItems();
+    base::mac::RemoveFromLoginItems();
   }
 #endif
 }

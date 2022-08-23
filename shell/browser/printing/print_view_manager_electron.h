@@ -26,17 +26,17 @@ class PrintViewManagerElectron
       public content::WebContentsUserData<PrintViewManagerElectron> {
  public:
   enum PrintResult {
-    PRINT_SUCCESS,
-    PRINTING_FAILED,
-    INVALID_PRINTER_SETTINGS,
-    INVALID_MEMORY_HANDLE,
-    METAFILE_MAP_ERROR,
-    METAFILE_INVALID_HEADER,
-    METAFILE_GET_DATA_ERROR,
-    SIMULTANEOUS_PRINT_ACTIVE,
-    PAGE_RANGE_SYNTAX_ERROR,
-    PAGE_RANGE_INVALID_RANGE,
-    PAGE_COUNT_EXCEEDED,
+    kPrintSuccess,
+    kPrintFailure,
+    kInvalidPrinterSettings,
+    kInvalidMemoryHandle,
+    kMetafileMapError,
+    kMetafileInvalidHeader,
+    kMetafileGetDataError,
+    kSimultaneousPrintActive,
+    kPageRangeSyntaxError,
+    kPageRangeInvalidRange,
+    kPageCountExceeded,
   };
 
   using PrintToPDFCallback =
@@ -91,8 +91,8 @@ class PrintViewManagerElectron
                       CheckForCancelCallback callback) override;
 #endif
 
+  void FailJob(PrintResult result);
   void Reset();
-  void ReleaseJob(PrintResult result);
 
   raw_ptr<content::RenderFrameHost> printing_rfh_ = nullptr;
   PrintToPDFCallback callback_;

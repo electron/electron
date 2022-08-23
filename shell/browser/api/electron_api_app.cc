@@ -715,8 +715,9 @@ void App::OnFinishLaunching(base::Value::Dict launch_info) {
 
 void App::OnPreMainMessageLoopRun() {
   content::BrowserChildProcessObserver::Add(this);
-  if (process_singleton_) {
-    process_singleton_->OnBrowserReady();
+  if (process_singleton_ && watch_singleton_socket_on_ready_) {
+    process_singleton_->StartWatching();
+    watch_singleton_socket_on_ready_ = false;
   }
 }
 
@@ -1124,15 +1125,20 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 #endif
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+      if (content::BrowserThread::IsThreadInitialized(
+              content::BrowserThread::IO)) {
+        process_singleton_->StartWatching();
+      } else {
+        watch_singleton_socket_on_ready_ = true;
+      }
+      return true;
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
       process_singleton_.reset();
       return false;
     }
-    case ProcessSingleton::NotifyResult::PROCESS_NONE:
-    default:  // Shouldn't be needed, but VS warns if it is not there.
-      return true;
   }
 }
 
