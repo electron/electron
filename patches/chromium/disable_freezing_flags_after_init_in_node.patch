@@ -15,7 +15,7 @@ at some point be an API to "unfreeze" the flags, or we may be able to refactor
 node initialization to not update flags after V8 initialization.
 
 diff --git a/content/renderer/render_process_impl.cc b/content/renderer/render_process_impl.cc
-index 02b4f803369202a81f2d54f3b35aef04be13dfa2..04a8d29ba210313076eacf5074ed86402160c0c3 100644
+index 207cda4b937282a3a719e4285f21066b4d1322f6..4367002caa2b3fd5885204a16f1802f67cde3ebc 100644
 --- a/content/renderer/render_process_impl.cc
 +++ b/content/renderer/render_process_impl.cc
 @@ -222,7 +222,8 @@ RenderProcessImpl::RenderProcessImpl()

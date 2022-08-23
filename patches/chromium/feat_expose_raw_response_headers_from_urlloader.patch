@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index c8e468f41930dc8e31533e086d72743e12d134f1..5b54e21568019b108d92c28086b8d73db98fc704 100644
+index 7e02d8c952d2228a39d1fd1fa5a36859e2ea9ab9..1cfa83a0d0d0fa3fec3f92faa94aece678f83552 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -233,6 +233,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
+@@ -234,6 +234,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
           do_not_prompt_for_login == request.do_not_prompt_for_login &&
           is_outermost_main_frame == request.is_outermost_main_frame &&
           transition_type == request.transition_type &&
@@ -29,10 +29,10 @@ index c8e468f41930dc8e31533e086d72743e12d134f1..5b54e21568019b108d92c28086b8d73d
           upgrade_if_insecure == request.upgrade_if_insecure &&
           is_revalidating == request.is_revalidating &&
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 9af8605aaab177daf89524680cb88455fcb48d04..9c851c96588342b245b24fed51d9241f8da7ffcc 100644
+index 10d7912016a57e413e7f6056697028bbc5a4e0e6..f22a212ca8dc3f95373e23d22689c896720b7ee0 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -158,6 +158,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
+@@ -159,6 +159,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
    bool do_not_prompt_for_login = false;
    bool is_outermost_main_frame = false;
    int transition_type = 0;
@@ -103,10 +103,10 @@ index 3d2bcc3e81eb42f645fa4e8b1425cb5c54cfd3a1..4cdbe0e38609abfd0b0b5856deb8b2dd
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 6805b5f3976f60e0cc72634f71bcb21879ffbde1..4d60c127bec00859ed523ca652336239ab71ae00 100644
+index bc7e0a4b2ae29ac40765a9339248d42d4d31713b..2e01e4898fd17cc96fab8c2a06d4d6aeacaf22f2 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -603,6 +603,7 @@ URLLoader::URLLoader(
+@@ -606,6 +606,7 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
        per_factory_corb_state_(context.GetMutableCorbState()),
@@ -114,7 +114,7 @@ index 6805b5f3976f60e0cc72634f71bcb21879ffbde1..4d60c127bec00859ed523ca652336239
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -792,7 +793,7 @@ URLLoader::URLLoader(
+@@ -795,7 +796,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 6805b5f3976f60e0cc72634f71bcb21879ffbde1..4d60c127bec00859ed523ca652336239
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1541,6 +1542,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1545,6 +1546,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -144,7 +144,7 @@ index 6805b5f3976f60e0cc72634f71bcb21879ffbde1..4d60c127bec00859ed523ca652336239
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 158eaacb1bf69afad16107491851dab750df9606..eff061c729bed4b8f3b41699f66d087416b08f47 100644
+index 7a1d7fe570c3b3d94d1dbcfdda2b965323ce5e95..9bc4eb1a1f300529308a2f120b4bc676b11acfbe 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -518,6 +518,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

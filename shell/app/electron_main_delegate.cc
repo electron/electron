@@ -240,7 +240,7 @@ const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
 const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
     std::size(kNonWildcardDomainNonPortSchemes);
 
-bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
+absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
 #if BUILDFLAG(IS_WIN)
@@ -318,7 +318,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   content_client_ = std::make_unique<ElectronContentClient>();
   SetContentClient(content_client_.get());
 
-  return false;
+  return absl::nullopt;
 }
 
 void ElectronMainDelegate::PreSandboxStartup() {
@@ -411,7 +411,7 @@ void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
 #endif
 }
 
-void ElectronMainDelegate::PreBrowserMain() {
+absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
@@ -419,6 +419,7 @@ void ElectronMainDelegate::PreBrowserMain() {
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
+  return absl::nullopt;
 }
 
 content::ContentBrowserClient*

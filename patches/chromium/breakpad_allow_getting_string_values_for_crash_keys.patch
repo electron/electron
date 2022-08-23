@@ -13,7 +13,7 @@ on linux. If removing this patch doesn't cause a compile failure, it's
 fine to delete!
 
 diff --git a/components/crash/core/common/crash_key.h b/components/crash/core/common/crash_key.h
-index c0771b00922c1f21ec9dba726c5c7cd51c267d69..d731c7bf168c4b8df0a46da40c9164b4ac6239f3 100644
+index bf88c1180ee507c97e2613d4aba12a8e87fcfcd3..fae2b77315784f9167c0fcf4cc5330520c14b862 100644
 --- a/components/crash/core/common/crash_key.h
 +++ b/components/crash/core/common/crash_key.h
 @@ -219,6 +219,10 @@ class CrashKeyStringCombined : public internal::CrashKeyStringCombinedImpl {

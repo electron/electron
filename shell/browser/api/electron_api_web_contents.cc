@@ -2859,7 +2859,7 @@ void WebContents::OnPDFCreated(
     gin_helper::Promise<v8::Local<v8::Value>> promise,
     PrintViewManagerElectron::PrintResult print_result,
     scoped_refptr<base::RefCountedMemory> data) {
-  if (print_result != PrintViewManagerElectron::PrintResult::PRINT_SUCCESS) {
+  if (print_result != PrintViewManagerElectron::PrintResult::kPrintSuccess) {
     promise.RejectWithErrorMessage(
         "Failed to generate PDF: " +
         PrintViewManagerElectron::PrintResultToString(print_result));
