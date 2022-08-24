@@ -275,6 +275,21 @@ index 3eb76ecbbef31cd224e27001b825bce210f4e170..1babe95e398c61cdd3a4e1fd82fe418e
 -    at Function.Module._load (node:internal/modules/cjs/loader:*)
 +    at Module._load (node:internal/modules/cjs/loader:*)
      at Module.require (node:internal/modules/cjs/loader:*)
+diff --git a/test/message/source_map_eval.out b/test/message/source_map_eval.out
+index 7cfd7c84fe65793cf01ee374506e18978774d730..533dbc6efc179c2d4cea844335e2863bf5741ad3 100644
+--- a/test/message/source_map_eval.out
++++ b/test/message/source_map_eval.out
+@@ -3,8 +3,8 @@ ReferenceError: alert is not defined
+     at eval (*tabs.coffee:1:14)
+     at Object.<anonymous> (*source_map_eval.js:8:1)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*)
+     at node:internal/main/run_main_module:*
 diff --git a/test/message/source_map_reference_error_tabs.out b/test/message/source_map_reference_error_tabs.out
 index bce1b5f8911d4b34d3165d7a4bc5195cbe29211d..d56ef13b20bf9ca333e8806e3905059583c1f991 100644
 --- a/test/message/source_map_reference_error_tabs.out
