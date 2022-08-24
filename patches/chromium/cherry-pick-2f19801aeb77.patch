@@ -1,0 +1,310 @@
+From 2f19801aeb77b140609594c6418d67cf6c2a7195 Mon Sep 17 00:00:00 2001
+From: sbingler <bingler@chromium.org>
+Date: Tue, 16 Aug 2022 15:54:47 +0000
+Subject: [PATCH] [M102-LTS] Don't allow cookies with hidden cookie prefixes
+
+M102 merge issues:
+  Build failures in the unit tests because the interface of
+  CreateUnsafeCookieForTesting changed
+
+Prevent the creation of any cookies that have an empty name field and
+whose value impersonates a cookie name prefix.
+
+This will also delete any previously stored cookies that meet the
+conditions by causing them to fail their IsCanonical() check.
+
+(cherry picked from commit f9580905b45edb8dfe7da6cd5f26421ab2b5c285)
+(cherry picked from commit e118b7e282002908b0135a2107fec25cedc4436e)
+
+Bug: 1345193
+Change-Id: I7e1adef3391bb7caee183204bb609cd63bcdaea7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3782906
+Commit-Queue: Steven Bingler <bingler@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1028000}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3816934
+Owners-Override: Michael Ershov <miersh@google.com>
+Reviewed-by: Michael Ershov <miersh@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/5005@{#1305}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+---
+
+diff --git a/net/cookies/canonical_cookie.cc b/net/cookies/canonical_cookie.cc
+index 053f760..d0120b1 100644
+--- a/net/cookies/canonical_cookie.cc
++++ b/net/cookies/canonical_cookie.cc
+@@ -56,6 +56,7 @@
+ #include "base/metrics/histogram_macros.h"
+ #include "base/strings/strcat.h"
+ #include "base/strings/string_number_conversions.h"
++#include "base/strings/string_piece.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/stringprintf.h"
+ #include "net/base/features.h"
+@@ -558,6 +559,11 @@
+   CookiePrefix prefix = GetCookiePrefix(parsed_cookie.Name());
+   bool is_cookie_prefix_valid = IsCookiePrefixValid(prefix, url, parsed_cookie);
+   RecordCookiePrefixMetrics(prefix, is_cookie_prefix_valid);
++
++  if (parsed_cookie.Name() == "") {
++    is_cookie_prefix_valid = !HasHiddenPrefixName(parsed_cookie.Value());
++  }
++
+   if (!is_cookie_prefix_valid) {
+     DVLOG(net::cookie_util::kVlogSetCookies)
+         << "Create() failed because the cookie violated prefix rules.";
+@@ -768,6 +774,11 @@
+         net::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX);
+   }
+ 
++  if (name == "" && HasHiddenPrefixName(value)) {
++    status->AddExclusionReason(
++        net::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX);
++  }
++
+   if (!IsCookieSamePartyValid(same_party, secure, same_site)) {
+     status->AddExclusionReason(
+         net::CookieInclusionStatus::EXCLUDE_INVALID_SAMEPARTY);
+@@ -1472,6 +1483,9 @@
+     return false;
+   }
+ 
++  if (name_ == "" && HasHiddenPrefixName(value_))
++    return false;
++
+   if (!IsCookieSamePartyValid(same_party_, secure_, same_site_))
+     return false;
+ 
+@@ -1594,6 +1608,40 @@
+   }
+ }
+ 
++// static
++bool CanonicalCookie::HasHiddenPrefixName(
++    const base::StringPiece cookie_value) {
++  // Skip BWS as defined by HTTPSEM as SP or HTAB (0x20 or 0x9).
++  base::StringPiece value_without_BWS =
++      base::TrimString(cookie_value, " \t", base::TRIM_LEADING);
++
++  const base::StringPiece host_prefix = "__Host-";
++
++  // Compare the value to the host_prefix.
++  if (base::StartsWith(value_without_BWS, host_prefix)) {
++    // The prefix matches, now check if the value string contains a subsequent
++    // '='.
++    if (value_without_BWS.find_first_of('=', host_prefix.size()) !=
++        base::StringPiece::npos) {
++      // This value contains a hidden prefix name.
++      return true;
++    }
++    return false;
++  }
++
++  // Do a similar check for the secure prefix
++  const base::StringPiece secure_prefix = "__Secure-";
++
++  if (base::StartsWith(value_without_BWS, secure_prefix)) {
++    if (value_without_BWS.find_first_of('=', secure_prefix.size()) !=
++        base::StringPiece::npos) {
++      return true;
++    }
++  }
++
++  return false;
++}
++
+ bool CanonicalCookie::IsRecentlyCreated(base::TimeDelta age_threshold) const {
+   return (base::Time::Now() - creation_date_) <= age_threshold;
+ }
+diff --git a/net/cookies/canonical_cookie.h b/net/cookies/canonical_cookie.h
+index 19acf0a..0283553 100644
+--- a/net/cookies/canonical_cookie.h
++++ b/net/cookies/canonical_cookie.h
+@@ -11,6 +11,7 @@
+ #include <vector>
+ 
+ #include "base/gtest_prod_util.h"
++#include "base/strings/string_piece.h"
+ #include "base/time/time.h"
+ #include "net/base/net_export.h"
+ #include "net/cookies/cookie_access_result.h"
+@@ -421,6 +422,7 @@
+ 
+  private:
+   FRIEND_TEST_ALL_PREFIXES(CanonicalCookieTest, TestPrefixHistograms);
++  FRIEND_TEST_ALL_PREFIXES(CanonicalCookieTest, TestHasHiddenPrefixName);
+ 
+   // This constructor does not validate or canonicalize their inputs;
+   // the resulting CanonicalCookies should not be relied on to be canonical
+@@ -484,6 +486,9 @@
+   CookieEffectiveSameSite GetEffectiveSameSite(
+       CookieAccessSemantics access_semantics) const;
+ 
++  // Checks for values that could be misinterpreted as a cookie name prefix.
++  static bool HasHiddenPrefixName(const base::StringPiece cookie_value);
++
+   // Returns whether the cookie was created at most |age_threshold| ago.
+   bool IsRecentlyCreated(base::TimeDelta age_threshold) const;
+ 
+diff --git a/net/cookies/canonical_cookie_unittest.cc b/net/cookies/canonical_cookie_unittest.cc
+index 7d8a015..da01a78 100644
+--- a/net/cookies/canonical_cookie_unittest.cc
++++ b/net/cookies/canonical_cookie_unittest.cc
+@@ -2348,6 +2348,18 @@
+       absl::nullopt /* cookie_partition_key */, &status));
+   EXPECT_TRUE(status.HasExactlyExclusionReasonsForTesting(
+       {CookieInclusionStatus::EXCLUDE_INVALID_PREFIX}));
++
++  // Hidden __Secure- prefixes should be rejected.
++  EXPECT_FALSE(CanonicalCookie::Create(
++      https_url, "=__Secure-A=B; Secure", creation_time, server_time,
++      absl::nullopt /* cookie_partition_key */, &status));
++  EXPECT_TRUE(status.HasExactlyExclusionReasonsForTesting(
++      {CookieInclusionStatus::EXCLUDE_INVALID_PREFIX}));
++
++  // While tricky, this isn't considered hidden and is fine.
++  EXPECT_TRUE(CanonicalCookie::Create(
++      https_url, "A=__Secure-A=B; Secure", creation_time, server_time,
++      absl::nullopt /* cookie_partition_key */));
+ }
+ 
+ TEST(CanonicalCookieTest, HostCookiePrefix) {
+@@ -2432,6 +2444,18 @@
+   EXPECT_TRUE(CanonicalCookie::Create(
+       https_url, "__HostA=B; Domain=" + domain + "; Secure;", creation_time,
+       server_time, absl::nullopt /* cookie_partition_key */));
++
++  // Hidden __Host- prefixes should be rejected.
++  EXPECT_FALSE(CanonicalCookie::Create(
++      https_url, "=__Host-A=B; Path=/; Secure;", creation_time, server_time,
++      absl::nullopt /* cookie_partition_key */, &status));
++  EXPECT_TRUE(status.HasExactlyExclusionReasonsForTesting(
++      {CookieInclusionStatus::EXCLUDE_INVALID_PREFIX}));
++
++  // While tricky, this isn't considered hidden and is fine.
++  EXPECT_TRUE(CanonicalCookie::Create(
++      https_url, "A=__Host-A=B; Path=/; Secure;", creation_time, server_time,
++      absl::nullopt /* cookie_partition_key */));
+ }
+ 
+ TEST(CanonicalCookieTest, CanCreateSecureCookiesFromAnyScheme) {
+@@ -2874,6 +2898,31 @@
+                    CookiePartitionKey::FromURLForTesting(
+                        GURL("https://toplevelsite.com")))
+                    ->IsCanonical());
++
++  // Hidden cookie prefixes.
++  EXPECT_FALSE(CanonicalCookie::CreateUnsafeCookieForTesting(
++                   "", "__Secure-a=b", "x.y", "/", base::Time(), base::Time(),
++                   base::Time(), true, false, CookieSameSite::NO_RESTRICTION,
++                   COOKIE_PRIORITY_LOW, false)
++                   ->IsCanonical());
++
++  EXPECT_FALSE(CanonicalCookie::CreateUnsafeCookieForTesting(
++                   "", "__Host-a=b", "x.y", "/", base::Time(), base::Time(),
++                   base::Time(), true, false, CookieSameSite::NO_RESTRICTION,
++                   COOKIE_PRIORITY_LOW, false)
++                   ->IsCanonical());
++
++  EXPECT_TRUE(CanonicalCookie::CreateUnsafeCookieForTesting(
++                  "a", "__Secure-a=b", "x.y", "/", base::Time(), base::Time(),
++                  base::Time(), true, false, CookieSameSite::NO_RESTRICTION,
++                  COOKIE_PRIORITY_LOW, false)
++                  ->IsCanonical());
++
++  EXPECT_TRUE(CanonicalCookie::CreateUnsafeCookieForTesting(
++                  "a", "__Host-a=b", "x.y", "/", base::Time(), base::Time(),
++                  base::Time(), true, false, CookieSameSite::NO_RESTRICTION,
++                  COOKIE_PRIORITY_LOW, false)
++                  ->IsCanonical());
+ }
+ 
+ TEST(CanonicalCookieTest, TestSetCreationDate) {
+@@ -3525,6 +3574,39 @@
+       false /*same_party*/, absl::nullopt /*partition_key*/, &status));
+   EXPECT_TRUE(status.IsInclude());
+ 
++  // Cookies with hidden prefixes should be rejected.
++
++  EXPECT_FALSE(CanonicalCookie::CreateSanitizedCookie(
++      GURL("https://www.foo.com"), "", "__Host-A=B", "", "/", two_hours_ago,
++      one_hour_from_now, one_hour_ago, true, false,
++      CookieSameSite::NO_RESTRICTION, CookiePriority::COOKIE_PRIORITY_DEFAULT,
++      false /*same_party*/, absl::nullopt /*partition_key*/, &status));
++  EXPECT_TRUE(status.HasExactlyExclusionReasonsForTesting(
++      {CookieInclusionStatus::EXCLUDE_INVALID_PREFIX}));
++
++  EXPECT_FALSE(CanonicalCookie::CreateSanitizedCookie(
++      GURL("https://www.foo.com"), "", "__Secure-A=B", "", "/", two_hours_ago,
++      one_hour_from_now, one_hour_ago, true, false,
++      CookieSameSite::NO_RESTRICTION, CookiePriority::COOKIE_PRIORITY_DEFAULT,
++      false /*same_party*/, absl::nullopt /*partition_key*/, &status));
++  EXPECT_TRUE(status.HasExactlyExclusionReasonsForTesting(
++      {CookieInclusionStatus::EXCLUDE_INVALID_PREFIX}));
++
++  // While tricky, this aren't considered hidden prefixes and should succeed.
++  EXPECT_TRUE(CanonicalCookie::CreateSanitizedCookie(
++      GURL("https://www.foo.com"), "A", "__Host-A=B", "", "/", two_hours_ago,
++      one_hour_from_now, one_hour_ago, true, false,
++      CookieSameSite::NO_RESTRICTION, CookiePriority::COOKIE_PRIORITY_DEFAULT,
++      false /*same_party*/, absl::nullopt /*partition_key*/, &status));
++  EXPECT_TRUE(status.IsInclude());
++
++  EXPECT_TRUE(CanonicalCookie::CreateSanitizedCookie(
++      GURL("https://www.foo.com"), "A", "__Secure-A=B", "", "/", two_hours_ago,
++      one_hour_from_now, one_hour_ago, true, false,
++      CookieSameSite::NO_RESTRICTION, CookiePriority::COOKIE_PRIORITY_DEFAULT,
++      false /*same_party*/, absl::nullopt /*partition_key*/, &status));
++  EXPECT_TRUE(status.IsInclude());
++
+   // SameParty attribute requires Secure and forbids SameSite=Strict.
+   EXPECT_TRUE(CanonicalCookie::CreateSanitizedCookie(
+       GURL("https://www.foo.com"), "A", "B", ".www.foo.com", "/", two_hours_ago,
+@@ -5114,4 +5196,47 @@
+   histograms.ExpectBucketCount(kFromStorageWithValidLengthHistogram, kValid, 1);
+ }
+ 
++TEST(CanonicalCookieTest, TestHasHiddenPrefixName) {
++  const struct {
++    const char* value;
++    bool result;
++  } kTestCases[] = {
++      {"", false},
++      {"  ", false},
++      {"foobar=", false},
++      {"foo=bar", false},
++      {" \t ", false},
++      {"\t", false},
++      {"__Secure-abc", false},
++      {"__Secur=e-abc", false},
++      {"__Secureabc", false},
++      {"__Host-abc", false},
++      {"__Hos=t-abc", false},
++      {"_Host", false},
++      {"   __Secure-abc", false},
++      {"\t__Host-", false},
++      {"a__Host-abc=123", false},
++      {"a__Secure-abc=123", false},
++      {"__Host-abc=", true},
++      {"__Host-abc=123", true},
++      {" __Host-abc=123", true},
++      {"    __Host-abc=", true},
++      {"\t\t\t\t\t__Host-abc=123", true},
++      {"\t __Host-abc=", true},
++      {"__Secure-abc=", true},
++      {"__Secure-abc=123", true},
++      {" __Secure-abc=123", true},
++      {"    __Secure-abc=", true},
++      {"\t\t\t\t\t__Secure-abc=123", true},
++      {"\t __Secure-abc=", true},
++      {"__Secure-abc=123=d=4=fg=", true},
++  };
++
++  for (auto test_case : kTestCases) {
++    EXPECT_EQ(CanonicalCookie::HasHiddenPrefixName(test_case.value),
++              test_case.result)
++        << test_case.value << " failed check";
++  }
++}
++
+ }  // namespace net
