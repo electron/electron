@@ -413,8 +413,6 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return Promise.resolve(archive.stat(filePath) !== false);
   };
 
-  console.log(fs);
-
   const { existsSync } = fs;
   fs.existsSync = (pathArgument: string) => {
     const pathInfo = splitPath(pathArgument);

@@ -948,7 +948,7 @@ index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f2
  
  const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
-index 442423954b10b2ee1696eb7db56eaa4c88492122..93bdf4d33e440d2506605473f9f8611a548ae48b 100644
+index 442423954b10b2ee1696eb7db56eaa4c88492122..c65610245e7e328d5e844afc48f8f685c49be3b7 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
 +++ b/test/parallel/test-webcrypto-derivebits.js
 @@ -37,6 +37,7 @@ const { subtle } = require('crypto').webcrypto;
@@ -967,8 +967,21 @@ index 442423954b10b2ee1696eb7db56eaa4c88492122..93bdf4d33e440d2506605473f9f8611a
  
  // Test PBKDF2 bit derivation
  {
+@@ -101,6 +103,7 @@ const { subtle } = require('crypto').webcrypto;
+   tests.then(common.mustCall());
+ }
+ 
++/*
+ // Test X25519 and X448 bit derivation
+ {
+   async function test(name) {
+@@ -126,3 +129,4 @@ const { subtle } = require('crypto').webcrypto;
+   test('X25519').then(common.mustCall());
+   test('X448').then(common.mustCall());
+ }
++*/
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
-index f8eb996000ec899abafbfd558f4f49bad2c69c9a..4c68dbf42f965e02e224af4dfb4368b717c7fec7 100644
+index f8eb996000ec899abafbfd558f4f49bad2c69c9a..0bf5c7811eeccff6194d8df41887df0a86a53823 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
 +++ b/test/parallel/test-webcrypto-derivekey.js
 @@ -46,6 +46,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
@@ -987,6 +1000,19 @@ index f8eb996000ec899abafbfd558f4f49bad2c69c9a..4c68dbf42f965e02e224af4dfb4368b7
  
  // Test PBKDF2 key derivation
  {
+@@ -151,6 +153,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+   })().then(common.mustCall());
+ }
+ 
++/*
+ // Test X25519 and X448 key derivation
+ {
+   async function test(name) {
+@@ -185,3 +188,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+   test('X25519').then(common.mustCall());
+   test('X448').then(common.mustCall());
+ }
++*/
 diff --git a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
 index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa389a0469 100644
 --- a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
@@ -1000,6 +1026,23 @@ index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa
      });
  }
  
+diff --git a/test/parallel/test-webcrypto-sign-verify.js b/test/parallel/test-webcrypto-sign-verify.js
+index 6c6b15781549a4b37781bf0b8014054dc5d8c746..142d41b169c836201660d78c19383f3ffc469407 100644
+--- a/test/parallel/test-webcrypto-sign-verify.js
++++ b/test/parallel/test-webcrypto-sign-verify.js
+@@ -105,6 +105,7 @@ const { subtle } = require('crypto').webcrypto;
+   test('hello world').then(common.mustCall());
+ }
+ 
++/*
+ // Test Sign/Verify Ed25519
+ {
+   async function test(data) {
+@@ -144,3 +145,4 @@ const { subtle } = require('crypto').webcrypto;
+ 
+   test('hello world').then(common.mustCall());
+ }
++*/
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c0d407dbe 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
