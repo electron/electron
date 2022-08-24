@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Fri, 19 Aug 2022 10:04:11 +0000
+Subject: Don't re-lock DisplayLocks during forced unlock
+
+When a DisplayLock is unlocked via ForceUnlockIfNeeded, subsequent
+updates to the DisplayLock can cause it to become locked again which is
+problematic.
+
+This patch prevents the DisplayLock from being locked again until the
+next frame.
+
+(cherry picked from commit ab55fe05c2c37693afe5021aa637fb2d7491eb6d)
+
+Fixed: 1338135
+Change-Id: I07790658e25ea9fe2f4e8de154e3a58e7e08892b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3751710
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1028405}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3817524
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Owners-Override: Michael Ershov <miersh@google.com>
+Reviewed-by: Michael Ershov <miersh@google.com>
+Cr-Commit-Position: refs/branch-heads/5005@{#1317}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_context.cc b/third_party/blink/renderer/core/display_lock/display_lock_context.cc
+index 9ee62c8a7e672e08cada386acb621f3051bd665a..ec16b15be8aa815e519335299665b5901e1efd74 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_context.cc
++++ b/third_party/blink/renderer/core/display_lock/display_lock_context.cc
+@@ -977,6 +977,9 @@ bool DisplayLockContext::ForceUnlockIfNeeded() {
+               layout_invalidation_reason::kDisplayLock);
+         }
+       }
++      // If we forced unlock, then we need to prevent subsequent calls to
++      // Lock() until the next frame.
++      SetRequestedState(EContentVisibility::kVisible);
+     }
+     return true;
+   }
+diff --git a/third_party/blink/web_tests/external/wpt/fullscreen/crashtests/content-visibility-crash.html b/third_party/blink/web_tests/external/wpt/fullscreen/crashtests/content-visibility-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..63111d03e3fab4673ec4d14cff6ad5737fd4f39c
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/fullscreen/crashtests/content-visibility-crash.html
+@@ -0,0 +1,31 @@
++<!DOCTYPE html>
++<html class=test-wait>
++<link rel=author href="mailto:m.cooolie@gmail.com">
++<link rel=author href="mailto:jarhar@chromium.org">
++<link rel=help href="https://bugs.chromium.org/p/chromium/issues/detail?id=1338135">
++<script src="/resources/testdriver.js"></script>
++<script src="/resources/testdriver-vendor.js"></script>
++<body>
++<script>
++async function crash() {
++  const col = document.createElement("col");
++  document.body.appendChild(col);
++
++  let fullscreenPromise = null;
++  await test_driver.bless('open fullscreen', () => {
++    fullscreenPromise = col.requestFullscreen({navigationUI: 'hide'});
++  });
++  await fullscreenPromise;
++
++  const a = document.createElement("a");
++  document.body.appendChild(a);
++
++  document.body.style.all = 'unset';
++  document.body.style.contentVisibility = 'hidden';
++
++  a.offsetParent;
++
++  document.documentElement.classList.remove('test-wait');
++}
++crash();
++</script>
