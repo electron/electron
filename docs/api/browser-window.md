@@ -618,7 +618,7 @@ Returns:
 * `event` Event
 * `isAlwaysOnTop` boolean
 
-Emitted when the window is set or unset to show always on top of other windows.
+Emitted when the window is set or unset to show always on top of other windows. This is a test do not merge.
 
 #### Event: 'app-command' _Windows_ _Linux_
 
