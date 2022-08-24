@@ -1,6 +1,6 @@
 # Breaking Changes
 
-Breaking changes will be documented here, and deprecation warnings added to JS code where possible, at least [one major version](tutorial/electron-versioning.md#semver) before the change is made.
+Breaking changes will be documented here, and deprecation warnings added to JS code where possible, at least [one major version](tutorial/electron-versioning.md#semver) before the change is made.  This is a test that should not be merged
 
 ### Types of Breaking Changes
 
