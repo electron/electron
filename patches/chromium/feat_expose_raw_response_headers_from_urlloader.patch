@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 7e02d8c952d2228a39d1fd1fa5a36859e2ea9ab9..1cfa83a0d0d0fa3fec3f92faa94aece678f83552 100644
+index 3d3427931d59931c57e468c0aa171f723e0113a9..e8302aa83337f2be07b9bc5b4190bafe1606ef90 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -234,6 +234,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
@@ -29,7 +29,7 @@ index 7e02d8c952d2228a39d1fd1fa5a36859e2ea9ab9..1cfa83a0d0d0fa3fec3f92faa94aece6
           upgrade_if_insecure == request.upgrade_if_insecure &&
           is_revalidating == request.is_revalidating &&
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 10d7912016a57e413e7f6056697028bbc5a4e0e6..f22a212ca8dc3f95373e23d22689c896720b7ee0 100644
+index 6623b4438baf94b467de9906aaf5ae05cceca97d..b33078da87989e0cad7ca815830e76438681beac 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -159,6 +159,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
@@ -41,7 +41,7 @@ index 10d7912016a57e413e7f6056697028bbc5a4e0e6..f22a212ca8dc3f95373e23d22689c896
    bool upgrade_if_insecure = false;
    bool is_revalidating = false;
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 10295a165e2131b7cd5bff996f36f2214db7a125..2d1bb21bf5813125397a93d368de031b11bb4bbb 100644
+index 545e9c12c86286c418e9130658408514e235b22e..0accecf835f397757200891fd5e0317373359894 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
 @@ -209,6 +209,7 @@ bool StructTraits<
@@ -53,7 +53,7 @@ index 10295a165e2131b7cd5bff996f36f2214db7a125..2d1bb21bf5813125397a93d368de031b
    out->upgrade_if_insecure = data.upgrade_if_insecure();
    out->is_revalidating = data.is_revalidating();
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index b4f785570ffab62087ef9be3d18cecb6c747fa38..f6ff5ebc9808e230ed358203c5d0024c676bcd85 100644
+index 1c69fdc00a97a69b7ad066fab49f83265f790c28..3f97bd11fff21fdf2a62b434e30cbe6cb506468d 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -269,6 +269,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -67,7 +67,7 @@ index b4f785570ffab62087ef9be3d18cecb6c747fa38..f6ff5ebc9808e230ed358203c5d0024c
      return request.previews_state;
    }
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 05cc03e830d2805d6d572a38e2606de0f346b6bd..75b8da2f1141dffa34d01e84e339b791fdd60664 100644
+index bc2d669339b7c4736610a3fa0b0082ed74792ef9..ee9063a3c4ed87b11883dae6407c14dcbfa37403 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -312,6 +312,9 @@ struct URLRequest {
@@ -103,7 +103,7 @@ index 3d2bcc3e81eb42f645fa4e8b1425cb5c54cfd3a1..4cdbe0e38609abfd0b0b5856deb8b2dd
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index bc7e0a4b2ae29ac40765a9339248d42d4d31713b..2e01e4898fd17cc96fab8c2a06d4d6aeacaf22f2 100644
+index 2e8a874bf93e03e7c194dc13555eead6fe1fcafa..5b28db971f8feebd36965ccafe8b1b957b3f1ede 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -606,6 +606,7 @@ URLLoader::URLLoader(
@@ -123,7 +123,7 @@ index bc7e0a4b2ae29ac40765a9339248d42d4d31713b..2e01e4898fd17cc96fab8c2a06d4d6ae
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1545,6 +1546,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1555,6 +1556,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
