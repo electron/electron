@@ -7,11 +7,14 @@ async function checkIfDocOnlyChange () {
     try {
       let pullRequestNumber = args.prNumber;
       if (!pullRequestNumber || isNaN(pullRequestNumber)) {
+        console.log('NO pullRequestNumber provided');
         if (args.prURL) {
+          console.log(`NO pullRequestNumber provided; have PR URL: ${args.prURL}`);
           // CircleCI doesn't provide the PR number for branch builds, but it does provide the PR URL
           const pullRequestParts = args.prURL.split('/');
           pullRequestNumber = pullRequestParts[pullRequestParts.length - 1];
         } else if (args.prBranch) {
+          console.log(`NO pullRequestNumber provided; have PR branch ${args.prBranch}`);
           // AppVeyor doesn't provide a PR number for branch builds - figure it out from the branch
           const prsForBranch = await octokit.pulls.list({
             owner: 'electron',
@@ -21,7 +24,9 @@ async function checkIfDocOnlyChange () {
           });
           if (prsForBranch.data.length === 1) {
             pullRequestNumber = prsForBranch.data[0].number;
+            console.log(`Got pull request number: ${pullRequestNumber}`);
           } else {
+            console.log('DID NOT get pull request number because prsForBranch data is: ', prsForBranch.data);
             // If there are 0 PRs or more than one PR on a branch, just assume that this is more than a doc change
             process.exit(1);
           }
