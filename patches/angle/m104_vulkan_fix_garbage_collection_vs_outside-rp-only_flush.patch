@@ -1,0 +1,287 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 4 Aug 2022 12:28:12 -0400
+Subject: M104: Vulkan: Fix garbage collection vs outside-RP-only flush
+
+In https://chromium-review.googlesource.com/c/angle/angle/+/3379231, an
+optimization was implemented such that the excessive recorded texture
+uploads would get flushed early and submitted.  This caused a
+use-after-free bug in the following situation:
+
+* Draw with pipeline A
+* Delete A <--- this puts A in the Context garbage list
+* Upload a lot of data
+
+At this point, the flush threshold could pass and the commands recorded
+outside of the render pass up to this point would be submitted.
+Associated with this submission was the current garbage, including
+pipeline A.  However, the render pass that uses pipeline A is still not
+submitted.
+
+Now if after some time the render pass is still open, but the "completed
+commands" are checked (another set of uploads causing another
+submission, a query status check, etc), the garbage can be cleaned up.
+
+When the render pass closes next and is submitted, the implementation
+attempts to use the pipeline, which is already deleted.
+
+In this change, outside-render-pass-only submissions no longer reference
+the current garbage.  This has the side effect that the temporary
+buffers used for uploading texture data won't be released early.  A
+future optimization may want to separate the garbage list in ContextVk
+to render pass and outside render pass garbage.
+
+Bug: chromium:1337538
+Change-Id: Ibfc11f2b0d166b0c325fced725f23d6b9328ff98
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3821371
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index 90ecf42b2cc22cee5b74296d7a2f73b77f9a0f2c..41c06dc42810d6c55565686c87adf20367024f05 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -2614,14 +2614,16 @@ void ContextVk::addOverlayUsedBuffersCount(vk::CommandBufferHelperCommon *comman
+     }
+ }
+ 
+-angle::Result ContextVk::submitFrame(const vk::Semaphore *signalSemaphore, Serial *submitSerialOut)
++angle::Result ContextVk::submitFrame(const vk::Semaphore *signalSemaphore,
++                                     Submit submission,
++                                     Serial *submitSerialOut)
+ {
+     getShareGroupVk()->acquireResourceUseList(
+         std::move(mOutsideRenderPassCommands->getResourceUseList()));
+     getShareGroupVk()->acquireResourceUseList(std::move(mResourceUseList));
+     getShareGroupVk()->acquireResourceUseList(std::move(mRenderPassCommands->getResourceUseList()));
+ 
+-    ANGLE_TRY(submitCommands(signalSemaphore, submitSerialOut));
++    ANGLE_TRY(submitCommands(signalSemaphore, submission, submitSerialOut));
+ 
+     onRenderPassFinished(RenderPassClosureReason::AlreadySpecifiedElsewhere);
+     return angle::Result::Continue;
+@@ -2633,10 +2635,11 @@ angle::Result ContextVk::submitFrameOutsideCommandBufferOnly(Serial *submitSeria
+     getShareGroupVk()->acquireResourceUseList(
+         std::move(mOutsideRenderPassCommands->getResourceUseList()));
+ 
+-    return submitCommands(nullptr, submitSerialOut);
++    return submitCommands(nullptr, Submit::OutsideRenderPassCommandsOnly, submitSerialOut);
+ }
+ 
+ angle::Result ContextVk::submitCommands(const vk::Semaphore *signalSemaphore,
++                                        Submit submission,
+                                         Serial *submitSerialOut)
+ {
+     if (mCurrentWindowSurface)
+@@ -2655,10 +2658,18 @@ angle::Result ContextVk::submitCommands(const vk::Semaphore *signalSemaphore,
+         dumpCommandStreamDiagnostics();
+     }
+ 
++    // Clean up garbage only when submitting all commands.  Otherwise there may be garbage
++    // associated with commands that are not yet flushed.
++    vk::GarbageList garbage;
++    if (submission == Submit::AllCommands)
++    {
++        garbage = std::move(mCurrentGarbage);
++    }
++
+     ANGLE_TRY(mRenderer->submitFrame(this, hasProtectedContent(), mContextPriority,
+                                      std::move(mWaitSemaphores),
+                                      std::move(mWaitSemaphoreStageMasks), signalSemaphore,
+-                                     std::move(mCurrentGarbage), &mCommandPools, submitSerialOut));
++                                     std::move(garbage), &mCommandPools, submitSerialOut));
+ 
+     getShareGroupVk()->releaseResourceUseLists(*submitSerialOut);
+     // Now that we have processed resourceUseList, some of pending garbage may no longer pending
+@@ -6128,7 +6139,7 @@ angle::Result ContextVk::flushAndGetSerial(const vk::Semaphore *signalSemaphore,
+         mHasInFlightStreamedVertexBuffers.reset();
+     }
+ 
+-    ANGLE_TRY(submitFrame(signalSemaphore, submitSerialOut));
++    ANGLE_TRY(submitFrame(signalSemaphore, Submit::AllCommands, submitSerialOut));
+ 
+     resetPerFramePerfCounters();
+ 
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.h b/src/libANGLE/renderer/vulkan/ContextVk.h
+index 6c6a3797c6e9a387abf13442613088bd5f4341ec..8ed00be4eb19fea01bb2ada65d2c05ad1d3284f4 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.h
++++ b/src/libANGLE/renderer/vulkan/ContextVk.h
+@@ -1078,9 +1078,19 @@ class ContextVk : public ContextImpl, public vk::Context, public MultisampleText
+ 
+     void writeAtomicCounterBufferDriverUniformOffsets(uint32_t *offsetsOut, size_t offsetsSize);
+ 
+-    angle::Result submitFrame(const vk::Semaphore *signalSemaphore, Serial *submitSerialOut);
++    enum class Submit
++    {
++        OutsideRenderPassCommandsOnly,
++        AllCommands,
++    };
++
++    angle::Result submitFrame(const vk::Semaphore *signalSemaphore,
++                              Submit submission,
++                              Serial *submitSerialOut);
+     angle::Result submitFrameOutsideCommandBufferOnly(Serial *submitSerialOut);
+-    angle::Result submitCommands(const vk::Semaphore *signalSemaphore, Serial *submitSerialOut);
++    angle::Result submitCommands(const vk::Semaphore *signalSemaphore,
++                                 Submit submission,
++                                 Serial *submitSerialOut);
+ 
+     angle::Result synchronizeCpuGpuTime();
+     angle::Result traceGpuEventImpl(vk::OutsideRenderPassCommandBuffer *commandBuffer,
+diff --git a/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp b/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
+index a5021e3248933815e3ac43cc0477671109befb1e..1a4e35592d0573991cc54136c80a9299714162a4 100644
+--- a/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
++++ b/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
+@@ -18,6 +18,7 @@
+ #include "test_utils/gl_raii.h"
+ #include "util/random_utils.h"
+ #include "util/shader_utils.h"
++#include "util/test_utils.h"
+ 
+ using namespace angle;
+ 
+@@ -561,22 +562,21 @@ TEST_P(VulkanPerformanceCounterTest, NewTextureDoesNotBreakRenderPass)
+ TEST_P(VulkanPerformanceCounterTest, SubmittingOutsideCommandBufferDoesNotBreakRenderPass)
+ {
+     initANGLEFeatures();
+-    // http://anglebug.com/6354
+ 
+-    size_t kMaxBufferToImageCopySize     = 1 << 28;
+-    uint32_t kNumSubmits                 = 2;
+-    uint32_t expectedRenderPassCount     = getPerfCounters().renderPasses + 1;
+-    uint32_t expectedSubmitCommandsCount = getPerfCounters().submittedCommands + kNumSubmits;
++    constexpr size_t kMaxBufferToImageCopySize     = 1 << 28;
++    constexpr uint32_t kNumSubmits                 = 2;
++    uint32_t expectedRenderPassCount               = getPerfCounters().renderPasses + 1;
++    uint32_t expectedSubmitCommandsCount           = getPerfCounters().submittedCommands + kNumSubmits;
+ 
+     // Step 1: Set up a simple 2D texture.
+     GLTexture texture;
+-    GLsizei texDim         = 256;
+-    uint32_t pixelSizeRGBA = 4;
+-    uint32_t textureSize   = texDim * texDim * pixelSizeRGBA;
+-    std::vector<GLColor> kInitialData(texDim * texDim, GLColor::green);
++    constexpr GLsizei kTexDim         = 256;
++    constexpr uint32_t kPixelSizeRGBA = 4;
++    constexpr uint32_t kTextureSize   = kTexDim * kTexDim * kPixelSizeRGBA;
++    std::vector<GLColor> kInitialData(kTexDim * kTexDim, GLColor::green);
+ 
+     glBindTexture(GL_TEXTURE_2D, texture);
+-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texDim, texDim, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kTexDim, kTexDim, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                  kInitialData.data());
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+@@ -603,13 +603,12 @@ TEST_P(VulkanPerformanceCounterTest, SubmittingOutsideCommandBufferDoesNotBreakR
+ 
+     // Step 2: Load a new 2D Texture multiple times with the same Program and Framebuffer. The total
+     // size of the loaded textures must exceed the threshold to submit the outside command buffer.
+-    auto maxLoadCount =
+-        static_cast<size_t>((kMaxBufferToImageCopySize / textureSize) * kNumSubmits + 1);
+-    for (size_t loadCount = 0; loadCount < maxLoadCount; loadCount++)
++    constexpr size_t kMaxLoadCount = kMaxBufferToImageCopySize / kTextureSize * kNumSubmits + 1;
++    for (size_t loadCount = 0; loadCount < kMaxLoadCount; loadCount++)
+     {
+         GLTexture newTexture;
+         glBindTexture(GL_TEXTURE_2D, newTexture);
+-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texDim, texDim, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kTexDim, kTexDim, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                      kInitialData.data());
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+@@ -623,6 +622,96 @@ TEST_P(VulkanPerformanceCounterTest, SubmittingOutsideCommandBufferDoesNotBreakR
+     EXPECT_EQ(getPerfCounters().submittedCommands, expectedSubmitCommandsCount);
+ }
+ 
++// Tests that submitting the outside command buffer due to texture upload size does not result in
++// garbage collection of render pass resources..
++TEST_P(VulkanPerformanceCounterTest, SubmittingOutsideCommandBufferDoesNotCollectRenderPassGarbage)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_disjoint_timer_query"));
++
++    initANGLEFeatures();
++
++    uint64_t expectedRenderPassCount = getPerfCounters().renderPasses + 1;
++    uint64_t submitCommandsCount     = getPerfCounters().vkQueueSubmitCallsTotal;
++
++    // Set up a simple 2D texture.
++    GLTexture texture;
++    constexpr GLsizei kTexDim = 256;
++    std::vector<GLColor> kInitialData(kTexDim * kTexDim, GLColor::green);
++
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kTexDim, kTexDim, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitialData.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    auto quadVerts = GetQuadVertices();
++
++    GLBuffer vertexBuffer;
++    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
++    glBufferData(GL_ARRAY_BUFFER, quadVerts.size() * sizeof(quadVerts[0]), quadVerts.data(),
++                 GL_STATIC_DRAW);
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++    glUseProgram(program);
++
++    GLint posLoc = glGetAttribLocation(program, essl1_shaders::PositionAttrib());
++    ASSERT_NE(-1, posLoc);
++
++    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glEnableVertexAttribArray(posLoc);
++    ASSERT_GL_NO_ERROR();
++
++    // Issue a timestamp query, just for the sake of using it as a means of knowing when a
++    // submission is finished.  In the Vulkan backend, querying the status of the query results in a
++    // check of completed submissions, at which point associated garbage is also destroyed.
++    GLQuery query;
++    glQueryCounterEXT(query, GL_TIMESTAMP_EXT);
++
++    // Issue a draw call, and delete the program
++    glDrawArrays(GL_TRIANGLES, 0, 6);
++    ASSERT_GL_NO_ERROR();
++    program.reset();
++
++    ANGLE_GL_PROGRAM(program2, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++    glUseProgram(program2);
++    ASSERT_EQ(posLoc, glGetAttribLocation(program2, essl1_shaders::PositionAttrib()));
++
++    // Issue uploads until there's an implicit submission
++    while (getPerfCounters().vkQueueSubmitCallsTotal == submitCommandsCount)
++    {
++        GLTexture newTexture;
++        glBindTexture(GL_TEXTURE_2D, newTexture);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kTexDim, kTexDim, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     kInitialData.data());
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++        glDrawArrays(GL_TRIANGLES, 0, 6);
++        ASSERT_GL_NO_ERROR();
++    }
++
++    ++submitCommandsCount;
++    EXPECT_EQ(getPerfCounters().vkQueueSubmitCallsTotal, submitCommandsCount);
++
++    // Busy wait until the query results are available.
++    GLuint ready = GL_FALSE;
++    while (ready == GL_FALSE)
++    {
++        angle::Sleep(0);
++        glGetQueryObjectuivEXT(query, GL_QUERY_RESULT_AVAILABLE_EXT, &ready);
++    }
++
++    // At this point, the render pass should still not be submitted, and the pipeline that is
++    // deleted should still not be garbage collected.  Submit the commands and ensure there is no
++    // crash.
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ++submitCommandsCount;
++
++    // Verify counters.
++    EXPECT_EQ(getPerfCounters().renderPasses, expectedRenderPassCount);
++    EXPECT_EQ(getPerfCounters().vkQueueSubmitCallsTotal, submitCommandsCount);
++}
++
+ // Tests that RGB texture should not break renderpass.
+ TEST_P(VulkanPerformanceCounterTest, SampleFromRGBTextureDoesNotBreakRenderPass)
+ {
