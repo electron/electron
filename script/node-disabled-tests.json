@@ -94,6 +94,7 @@
   "parallel/test-trace-events-file-pattern",
   "parallel/test-trace-events-fs-sync",
   "parallel/test-trace-events-metadata",
+  "parallel/test-trace-events-net",
   "parallel/test-trace-events-none",
   "parallel/test-trace-events-process-exit",
   "parallel/test-trace-events-promises",
