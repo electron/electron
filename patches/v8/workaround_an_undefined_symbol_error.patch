@@ -12,10 +12,10 @@ By moving some functions out of the the arm64-assembler header file,
 this error no longer seems to happen.
 
 diff --git a/src/codegen/arm64/assembler-arm64.cc b/src/codegen/arm64/assembler-arm64.cc
-index 90f7c3797acf659a65b2eeea933a3362b339359c..bc9ba459550f99f8e3e07b146ce931a6d10c6c1e 100644
+index a0d25b77bfe8ef4f945efa82fd53feeefb48ab20..025c07703269a3c235757bb2ac9508bd4c3c2910 100644
 --- a/src/codegen/arm64/assembler-arm64.cc
 +++ b/src/codegen/arm64/assembler-arm64.cc
-@@ -3609,6 +3609,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
+@@ -3606,6 +3606,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
         ImmMoveWide(static_cast<int>(imm)) | ShiftMoveWide(shift));
  }
  
@@ -39,7 +39,7 @@ index 90f7c3797acf659a65b2eeea933a3362b339359c..bc9ba459550f99f8e3e07b146ce931a6
                         const Operand& operand, FlagsUpdate S, AddSubOp op) {
    DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
 diff --git a/src/codegen/arm64/assembler-arm64.h b/src/codegen/arm64/assembler-arm64.h
-index f0d6f583a30e37935ad2f68cf44d0b4136e27e2d..dd15f23242a9b5d8a5a1e95875902dc9ca4a7618 100644
+index c1f082c1b0b650bc7bf89d23e173f92b4a36e228..740c50630e41d4f5c5efe5cebe80aaef645fdc39 100644
 --- a/src/codegen/arm64/assembler-arm64.h
 +++ b/src/codegen/arm64/assembler-arm64.h
 @@ -2119,11 +2119,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {

@@ -6,7 +6,7 @@ Subject: Revert "[runtime] DHCECK terminating exception in Microtasks"
 This reverts commit bccb536c98181e8a6e9cf0b6342311adbbf61aca.
 
 diff --git a/src/builtins/builtins-microtask-queue-gen.cc b/src/builtins/builtins-microtask-queue-gen.cc
-index ca4b1dc557f573bfcde200201cbd2f05e3c6b530..9edc8ce00c524a63cb23911a474f1904af5d71f7 100644
+index f58636fee555d782e18b7521c0c4f28ed60b3a52..6b0c63b34ff09f70cb9a4fe419f3b9bb0adf6790 100644
 --- a/src/builtins/builtins-microtask-queue-gen.cc
 +++ b/src/builtins/builtins-microtask-queue-gen.cc
 @@ -118,7 +118,6 @@ void MicrotaskQueueBuiltinsAssembler::PrepareForContext(
@@ -18,7 +18,7 @@ index ca4b1dc557f573bfcde200201cbd2f05e3c6b530..9edc8ce00c524a63cb23911a474f1904
    StoreRoot(RootIndex::kCurrentMicrotask, microtask);
    TNode<IntPtrT> saved_entered_context_count = GetEnteredContextCount();
 diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
-index 9965e5df9ba31d273f9cd5a8f0e2c5ea72f93f0c..fb6ed2a3e6dc38a11dd1590d9f7cf21ddf5ddf3c 100644
+index 25a9976bd6e4ca084293d8de621b447b9eb850f7..889c14a71d5b4682b26d546c640a5e2b38bcc9e0 100644
 --- a/src/codegen/code-stub-assembler.cc
 +++ b/src/codegen/code-stub-assembler.cc
 @@ -6139,12 +6139,6 @@ void CodeStubAssembler::SetPendingMessage(TNode<HeapObject> message) {
@@ -35,7 +35,7 @@ index 9965e5df9ba31d273f9cd5a8f0e2c5ea72f93f0c..fb6ed2a3e6dc38a11dd1590d9f7cf21d
                                                    int type) {
    return Word32Equal(instance_type, Int32Constant(type));
 diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
-index 875fa5203978dc198abafca0878533fea22512ad..b64457cc42db522a80be9017176183663e4a7dfe 100644
+index 526abf2e64da1da2c3535f43758f6105fb47f6d7..1e778475fc9ad1193487c02a622c690a0fd2d95a 100644
 --- a/src/codegen/code-stub-assembler.h
 +++ b/src/codegen/code-stub-assembler.h
 @@ -2538,7 +2538,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
