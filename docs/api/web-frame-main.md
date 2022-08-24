@@ -169,6 +169,13 @@ convenient when `nodeIntegrationInSubFrames` is not enabled.
 
 A `string` representing the current URL of the frame.
 
+#### `frame.origin` _Readonly_
+
+A `string` representing the current origin of the frame. This may be different
+from the URL. For instance, if the frame is a child window opened to
+`about:blank`, then `frame.origin` will return the parent frame's origin, while
+`frame.url` will return the empty string.
+
 #### `frame.top` _Readonly_
 
 A `WebFrameMain | null` representing top frame in the frame hierarchy to which `frame`
