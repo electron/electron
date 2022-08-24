@@ -290,7 +290,7 @@ for:
         }
     - ps: 7z x -y -osrc\out\ffmpeg ffmpeg.zip
     - ps: 7z x -y -osrc node_headers.zip
-    - ps: 7z x -y -osrc\v8\tools\builtins-pgo builtins-pgo.zip
+    - ps: 7z x -y -osrc builtins-pgo.zip
 
     test_script:
       # Workaround for https://github.com/appveyor/ci/issues/2420
