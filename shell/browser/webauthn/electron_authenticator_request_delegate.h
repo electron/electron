@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_BROWSER_WEBAUTHN_AUTHENTICATOR_REQUEST_DELEGATE_H_
-#define ELECTRON_BROWSER_WEBAUTHN_AUTHENTICATOR_REQUEST_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_DELEGATE_H_
 
 #include "content/public/browser/authenticator_request_client_delegate.h"
 
@@ -20,4 +20,4 @@ class ElectronWebAuthenticationDelegate
 };
 
 }  // namespace electron
-#endif
+#endif  // ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_DELEGATE_H_
