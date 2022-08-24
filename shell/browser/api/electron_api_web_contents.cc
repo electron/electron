@@ -1394,11 +1394,6 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
   return true;
 }
 
-bool WebContents::OnGoToEntryOffset(int offset) {
-  GoToOffset(offset);
-  return false;
-}
-
 void WebContents::FindReply(content::WebContents* web_contents,
                             int request_id,
                             int number_of_matches,
