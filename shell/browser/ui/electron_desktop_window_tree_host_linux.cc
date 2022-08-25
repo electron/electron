@@ -95,6 +95,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
       break;
     case ui::PlatformWindowState::kUnknown:
     case ui::PlatformWindowState::kNormal:
+    case ui::PlatformWindowState::kSnappedPrimary:
+    case ui::PlatformWindowState::kSnappedSecondary:
       break;
   }
   switch (new_state) {
@@ -109,6 +111,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
       break;
     case ui::PlatformWindowState::kUnknown:
     case ui::PlatformWindowState::kNormal:
+    case ui::PlatformWindowState::kSnappedPrimary:
+    case ui::PlatformWindowState::kSnappedSecondary:
       break;
   }
   window_state_ = new_state;
