@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 26 Jul 2022 21:07:04 -0400
+Subject: M104: Vulkan: Fix xfb buffer redefine to smaller size
+
+In 89e11878b275b15735eaf273ababfa6fd43a2e3d, a use-after-free bug was
+fixed where glBufferData redefined a buffer, leading to a change in
+storage.  This was only tested for the case where the new buffer was
+larger than the old buffer.
+
+When the new buffer is smaller however, another issue remains where the
+buffer size as cached by the transform feedback object used the old
+object's size.  This is worked around in this change, with a fix for the
+real issue (that the buffer state is updated after calling into the
+backend instead of before) coming up.
+
+Bug: chromium:1345042
+Change-Id: I7bafd51b6203a419e5ef123da26b9e1eaf079bf1
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3812556
+Reviewed-by: Ian Elliott <ianelliott@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/BufferVk.cpp b/src/libANGLE/renderer/vulkan/BufferVk.cpp
+index 5763ce4150d056761bb8c9833e5a5ac9bbf00d6b..b6a1ecbe22faaf782e851a05ca21fc202a1d8969 100644
+--- a/src/libANGLE/renderer/vulkan/BufferVk.cpp
++++ b/src/libANGLE/renderer/vulkan/BufferVk.cpp
+@@ -819,6 +819,7 @@ angle::Result BufferVk::updateBuffer(ContextVk *contextVk,
+     }
+     return angle::Result::Continue;
+ }
++
+ angle::Result BufferVk::directUpdate(ContextVk *contextVk,
+                                      const uint8_t *data,
+                                      size_t size,
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index be3c7a3aaf994e4cea4360de0cdf3b45606d596b..8434096a8e73e99217e105192e0379ad1128dede 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -747,7 +747,8 @@ ContextVk::ContextVk(const gl::State &state, gl::ErrorSet *errorSet, RendererVk
+                   DIRTY_BIT_INDEX_BUFFER,    DIRTY_BIT_SHADER_RESOURCES,
+                   DIRTY_BIT_DESCRIPTOR_SETS, DIRTY_BIT_DRIVER_UNIFORMS_BINDING,
+                   DIRTY_BIT_VIEWPORT,        DIRTY_BIT_SCISSOR};
+-    if (getFeatures().supportsTransformFeedbackExtension.enabled)
++    if (getFeatures().supportsTransformFeedbackExtension.enabled ||
++        getFeatures().emulateTransformFeedback.enabled)
+     {
+         mNewGraphicsCommandBufferDirtyBits.set(DIRTY_BIT_TRANSFORM_FEEDBACK_BUFFERS);
+     }
+diff --git a/src/libANGLE/renderer/vulkan/TransformFeedbackVk.cpp b/src/libANGLE/renderer/vulkan/TransformFeedbackVk.cpp
+index 919f5ed531b3e00ef432a05420e897ed82b62a25..e39c32317d91f21414edb18cc1de3256970cd5dd 100644
+--- a/src/libANGLE/renderer/vulkan/TransformFeedbackVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TransformFeedbackVk.cpp
+@@ -357,7 +357,8 @@ void TransformFeedbackVk::onSubjectStateChange(angle::SubjectIndex index,
+         ASSERT(bufferVk->isBufferValid());
+         mBufferHelpers[index] = &bufferVk->getBuffer();
+         mBufferOffsets[index] = binding.getOffset() + mBufferHelpers[index]->getOffset();
+-        mBufferSizes[index]   = gl::GetBoundBufferAvailableSize(binding);
++        mBufferSizes[index]   = std::min<VkDeviceSize>(gl::GetBoundBufferAvailableSize(binding),
++                                                     mBufferHelpers[index]->getSize());
+         mBufferObserverBindings[index].bind(bufferVk);
+ 
+         mXFBBuffersDesc.updateTransformFeedbackBuffer(
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 086a1cf08d42ed9754e729c724daae9b07ff9e71..238bd9026ef0a1665abd9d7e3125df97888bbbe1 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -150,6 +150,7 @@
+ 6643 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackQueryPausedDrawThenResume/* = SKIP
+ 6643 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackPausedDrawThenResume/* = SKIP
+ 6738 MAC AMD OPENGL : Texture3DTestES3.PixelUnpackStateTex* = SKIP
++7530 MAC NVIDIA OPENGL : TransformFeedbackTest.RenderOnceChangeXfbBufferRenderAgain/* = SKIP
+ 
+ // Failures from Transform Feedback Enablement. Passes on BigSur
+ 6407 MAC NVIDIA METAL : TransformFeedbackTest.OptimizedVaryings/ES3_Metal = SKIP
+diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
+index c0e37781ce8b4f274b62deddddebe2879c4f6512..7588b78f856a14773d17e6da42aabcf55245822b 100644
+--- a/src/tests/gl_tests/TransformFeedbackTest.cpp
++++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
+@@ -403,7 +403,6 @@ TEST_P(TransformFeedbackTest, RecordAndDraw)
+ // Test that transform feedback can cover multiple render passes.
+ TEST_P(TransformFeedbackTest, SpanMultipleRenderPasses)
+ {
+-
+     // TODO(anglebug.com/4533) This fails after the upgrade to the 26.20.100.7870 driver.
+     ANGLE_SKIP_TEST_IF(IsWindows() && IsIntel() && IsVulkan());
+ 
+@@ -4016,6 +4015,36 @@ TEST_P(TransformFeedbackTest, DeletePausedTransformFeedbackBuffer)
+     glDrawArrays(GL_POINTS, 0, 1);
+ }
+ 
++// Test that redefining the transform feedback buffer and starting a new render pass works.
++TEST_P(TransformFeedbackTest, RenderOnceChangeXfbBufferRenderAgain)
++{
++    std::vector<std::string> tfVaryings;
++    tfVaryings.push_back("gl_Position");
++    ANGLE_GL_PROGRAM_TRANSFORM_FEEDBACK(drawColor, essl3_shaders::vs::Simple(),
++                                        essl3_shaders::fs::Red(), tfVaryings,
++                                        GL_INTERLEAVED_ATTRIBS);
++
++    GLBuffer buffer;
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buffer);
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 10'000'000, nullptr, GL_DYNAMIC_READ);
++
++    glUseProgram(drawColor);
++    glBeginTransformFeedback(GL_TRIANGLES);
++
++    drawQuad(drawColor, essl3_shaders::PositionAttrib(), 0.5f);
++
++    // Break the render pass
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Redefine the transform feedback buffer
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 40, nullptr, GL_DYNAMIC_READ);
++
++    // Start a new render pass
++    drawQuad(drawColor, essl3_shaders::PositionAttrib(), 0.5f);
++
++    glEndTransformFeedback();
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TransformFeedbackTest);
+ ANGLE_INSTANTIATE_TEST_ES3(TransformFeedbackTest);
+ 
