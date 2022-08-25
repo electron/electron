@@ -186,7 +186,10 @@ export class SrcAttribute extends WebViewAttribute {
       opts.userAgent = useragent;
     }
 
-    (this.webViewImpl.webviewNode as Electron.WebviewTag).loadURL(this.getValue(), opts);
+    (this.webViewImpl.webviewNode as Electron.WebviewTag).loadURL(this.getValue(), opts)
+      .catch(err => {
+        console.error('Unexpected error while loading URL', err);
+      });;
   }
 }
 
