@@ -149,4 +149,5 @@ cherry-pick-c643d18a078d.patch
 merge_104_speculative_fix_for_isvalidcodepointinindex_range_crash.patch
 cherry-pick-60d8559e150a.patch
 cherry-pick-54e32332750c.patch
+cherry-pick-2f19801aeb77.patch
 cherry-pick-96306321286a.patch
