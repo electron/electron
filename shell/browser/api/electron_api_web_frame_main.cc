@@ -124,16 +124,16 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Optional userGesture parameter
-  bool user_gesture;
+  bool user_gesture = false;
+  int32_t world_id = content::ISOLATED_WORLD_ID_GLOBAL;
   if (!args->PeekNext().IsEmpty()) {
     if (args->PeekNext()->IsBoolean()) {
       args->GetNext(&user_gesture);
+      args->GetNext(&world_id);
     } else {
       args->ThrowTypeError("userGesture must be a boolean");
       return handle;
     }
-  } else {
-    user_gesture = false;
   }
 
   if (render_frame_disposed_) {
@@ -144,8 +144,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
 
   static_cast<content::RenderFrameHostImpl*>(render_frame_)
       ->ExecuteJavaScriptForTests(
-          code, user_gesture, true /* resolve_promises */,
-          content::ISOLATED_WORLD_ID_GLOBAL,
+          code, user_gesture, true /* resolve_promises */, world_id,
           base::BindOnce(
               [](gin_helper::Promise<base::Value> promise,
                  blink::mojom::JavaScriptExecutionResultType type,

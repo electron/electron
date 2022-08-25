@@ -636,7 +636,7 @@ void RendererClientBase::AllowGuestViewElementDefinition(
 
   render_frame->GetWebFrame()->RequestExecuteV8Function(
       context->GetCreationContextChecked(), register_cb, v8::Null(isolate), 0,
-      nullptr, nullptr);
+      nullptr, base::NullCallback());
 }
 
 }  // namespace electron
