@@ -232,7 +232,7 @@ how to meet the Mac App Store requirements.
 
 ### Upload
 
-[Apple Transporter](apple-transporter) should be used to upload the signed app to App Store
+[Apple Transporter][apple-transporter] should be used to upload the signed app to App Store
 Connect for processing, making sure you have [created a record][create-record]
 before uploading.
 
