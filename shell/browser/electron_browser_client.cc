@@ -1061,7 +1061,9 @@ bool ElectronBrowserClient::HandleExternalProtocol(
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&HandleExternalProtocolInUI, url,
-                     initiator_document->GetWeakDocumentPtr(),
+                     initiator_document
+                         ? initiator_document->GetWeakDocumentPtr()
+                         : content::WeakDocumentPtr(),
                      std::move(web_contents_getter), has_user_gesture));
   return true;
 }
