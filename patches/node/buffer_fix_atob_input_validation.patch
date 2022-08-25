@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 23 Aug 2022 11:13:45 +0200
+Subject: buffer: fix `atob` input validation
+
+This patch combines:
+
+* https://github.com/nodejs/node/pull/42539
+* https://github.com/nodejs/node/pull/42662
+
+To bring the Node.js implementation of atob into alignment with the
+WHATWG spec.
+
+diff --git a/lib/buffer.js b/lib/buffer.js
+index 57d6cddbaa2e6bdd846a667897588dea18daeb42..7602d4049e9bb1c09440bc3af09ad5ad9c768308 100644
+--- a/lib/buffer.js
++++ b/lib/buffer.js
+@@ -23,8 +23,10 @@
+ 
+ const {
+   Array,
++  ArrayFrom,
+   ArrayIsArray,
+   ArrayPrototypeForEach,
++  ArrayPrototypeIndexOf,
+   MathFloor,
+   MathMin,
+   MathTrunc,
+@@ -1231,8 +1233,25 @@ function btoa(input) {
+   return buf.toString('base64');
+ }
+ 
+-const kBase64Digits =
+-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
++// Refs: https://infra.spec.whatwg.org/#forgiving-base64-decode
++const kForgivingBase64AllowedChars = [
++  // ASCII whitespace
++  // Refs: https://infra.spec.whatwg.org/#ascii-whitespace
++  0x09, 0x0A, 0x0C, 0x0D, 0x20,
++
++  // Uppercase letters
++  ...ArrayFrom({ length: 26 }, (_, i) => StringPrototypeCharCodeAt('A') + i),
++
++  // Lowercase letters
++  ...ArrayFrom({ length: 26 }, (_, i) => StringPrototypeCharCodeAt('a') + i),
++
++  // Decimal digits
++  ...ArrayFrom({ length: 10 }, (_, i) => StringPrototypeCharCodeAt('0') + i),
++
++  0x2B, // +
++  0x2F, // /
++  0x3D, // =
++];
+ 
+ function atob(input) {
+   // The implementation here has not been performance optimized in any way and
+@@ -1241,11 +1260,31 @@ function atob(input) {
+   if (arguments.length === 0) {
+     throw new ERR_MISSING_ARGS('input');
+   }
++
+   input = `${input}`;
++  let nonAsciiWhitespaceCharCount = 0;
++
+   for (let n = 0; n < input.length; n++) {
+-    if (!kBase64Digits.includes(input[n]))
++    const index = ArrayPrototypeIndexOf(
++      kForgivingBase64AllowedChars,
++      StringPrototypeCharCodeAt(input, n));
++
++    if (index > 4) {
++      // The first 5 elements of `kForgivingBase64AllowedChars` are
++      // ASCII whitespace char codes.
++      nonAsciiWhitespaceCharCount++;
++    } else if (index === -1) {
+       throw lazyDOMException('Invalid character', 'InvalidCharacterError');
++    }
+   }
++
++  // See #3 - https://infra.spec.whatwg.org/#forgiving-base64
++  if (nonAsciiWhitespaceCharCount % 4 === 1) {
++    throw lazyDOMException(
++      'The string to be decoded is not correctly encoded.',
++      'InvalidCharacterError');
++  }
++
+   return Buffer.from(input, 'base64').toString('latin1');
+ }
+ 
