@@ -32,7 +32,7 @@ index 9c9cee78d890f5cc13d8762aa03de9dcf9c00abf..ceb065822984cf44bd4319fb97cb7e4d
                                       const uint8_t *data,
                                       size_t size,
 diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
-index 90ecf42b2cc22cee5b74296d7a2f73b77f9a0f2c..f733ac42186606f38698660bd73b05862da48993 100644
+index 41c06dc42810d6c55565686c87adf20367024f05..1319bf771339210dcb9a3e0ccd0936112c746582 100644
 --- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
 @@ -799,7 +799,8 @@ ContextVk::ContextVk(const gl::State &state, gl::ErrorSet *errorSet, RendererVk
