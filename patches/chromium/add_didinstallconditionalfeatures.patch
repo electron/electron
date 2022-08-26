@@ -23,10 +23,10 @@ index 7d169540590b83924766b1d423dc1bc46ab35250..f5bbb6ab26bd714d667236071a2eb0a5
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d70f6df69aa604972755d1cfe0cfcd2b0369f68c..b13165a2b0d8a8674d3035b31ba6303b2e1a5297 100644
+index 5a36eb6eed3175e1debb79744fcaf16228111f81..ee542e38d0b44df073586f779c0cccb4d6151d79 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4345,6 +4345,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4356,6 +4356,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index d70f6df69aa604972755d1cfe0cfcd2b0369f68c..b13165a2b0d8a8674d3035b31ba6303b
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index c8e822502d1b18c701a303024c3cba7e434d7829..89a048fbdaec8a8ea184790b78b0c63cfda7d171 100644
+index 06fd7fd8c1afd0b2586d90d81d7efebe564ff7d7..c41e63f848374c2211d7af8177e2e88a4606ba52 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -588,6 +588,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -592,6 +592,8 @@ class CONTENT_EXPORT RenderFrameImpl
                            uint32_t ng_call_count) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;

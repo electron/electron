@@ -6,7 +6,7 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
-index 6e1ed6b05b9358a46c796ac175a6556703477a1f..f138d6dc153694c2c3fbb8c98d9557e5bab8214e 100644
+index ce1d8d490c34b7a1f7f539dac401be4a4eafdde6..a40d91b1135f2baf0b5d654b7175107180048163 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
 @@ -53,6 +53,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
@@ -21,7 +21,7 @@ index 6e1ed6b05b9358a46c796ac175a6556703477a1f..f138d6dc153694c2c3fbb8c98d9557e5
  ImageModel SimpleMenuModel::Delegate::GetIconForCommandId(
      int command_id) const {
    return ImageModel();
-@@ -311,6 +316,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
+@@ -310,6 +315,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
    MenuItemsChanged();
  }
  
@@ -33,7 +33,7 @@ index 6e1ed6b05b9358a46c796ac175a6556703477a1f..f138d6dc153694c2c3fbb8c98d9557e5
  void SimpleMenuModel::SetMinorText(size_t index,
                                     const std::u16string& minor_text) {
    items_[ValidateItemIndex(index)].minor_text = minor_text;
-@@ -404,6 +414,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
+@@ -403,6 +413,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
    return items_[ValidateItemIndex(index)].label;
  }
  

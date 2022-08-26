@@ -24,10 +24,10 @@ This patch adds a few changes to the Chromium code:
    before the browser thread is ready.
 
 diff --git a/chrome/browser/chrome_browser_main.cc b/chrome/browser/chrome_browser_main.cc
-index c29925908862930061f63e9f02d614b8a8a7980d..5ce3a8dd6366093ac5d09bab8b1774b8771faea8 100644
+index 78a278ae864e9c9c5a1573319fe370f3326923f1..25786db2f2c0525bee395fe8a86434bb30670da9 100644
 --- a/chrome/browser/chrome_browser_main.cc
 +++ b/chrome/browser/chrome_browser_main.cc
-@@ -1421,7 +1421,6 @@ int ChromeBrowserMainParts::PreMainMessageLoopRunImpl() {
+@@ -1424,7 +1424,6 @@ int ChromeBrowserMainParts::PreMainMessageLoopRunImpl() {
    switch (notify_result_) {
      case ProcessSingleton::PROCESS_NONE:
        // No process already running, fall through to starting a new one.
