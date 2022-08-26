@@ -49,6 +49,7 @@
 #include "content/public/browser/tts_controller.h"
 #include "content/public/browser/tts_platform.h"
 #include "content/public/browser/url_loader_request_interceptor.h"
+#include "content/public/browser/weak_document_ptr.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -997,7 +998,7 @@ void ElectronBrowserClient::WebNotificationAllowed(
     return;
   }
   permission_helper->RequestWebNotificationPermission(
-      base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
+      rfh, base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
 }
 
 void ElectronBrowserClient::RenderProcessHostDestroyed(
@@ -1032,6 +1033,7 @@ void OnOpenExternal(const GURL& escaped_url, bool allowed) {
 
 void HandleExternalProtocolInUI(
     const GURL& url,
+    content::WeakDocumentPtr document_ptr,
     content::WebContents::OnceGetter web_contents_getter,
     bool has_user_gesture) {
   content::WebContents* web_contents = std::move(web_contents_getter).Run();
@@ -1043,9 +1045,18 @@ void HandleExternalProtocolInUI(
   if (!permission_helper)
     return;
 
+  content::RenderFrameHost* rfh = document_ptr.AsRenderFrameHostIfValid();
+  if (!rfh) {
+    // If the render frame host is not valid it means it was a top level
+    // navigation and the frame has already been disposed of.  In this case we
+    // take the current main frame and declare it responsible for the
+    // transition.
+    rfh = web_contents->GetMainFrame();
+  }
+
   GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
-  permission_helper->RequestOpenExternalPermission(std::move(callback),
+  permission_helper->RequestOpenExternalPermission(rfh, std::move(callback),
                                                    has_user_gesture, url);
 }
 
@@ -1065,6 +1076,9 @@ bool ElectronBrowserClient::HandleExternalProtocol(
   base::PostTask(
       FROM_HERE, {BrowserThread::UI},
       base::BindOnce(&HandleExternalProtocolInUI, url,
+                     initiator_document
+                         ? initiator_document->GetWeakDocumentPtr()
+                         : content::WeakDocumentPtr(),
                      std::move(web_contents_getter), has_user_gesture));
   return true;
 }
