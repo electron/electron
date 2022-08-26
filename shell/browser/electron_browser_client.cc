@@ -1036,8 +1036,13 @@ void HandleExternalProtocolInUI(
     return;
 
   content::RenderFrameHost* rfh = document_ptr.AsRenderFrameHostIfValid();
-  if (!rfh)
-    return;
+  if (!rfh) {
+    // If the render frame host is not valid it means it was a top level
+    // navigation and the frame has already been disposed of.  In this case we
+    // take the current main frame and declare it responsible for the
+    // transition.
+    rfh = web_contents->GetPrimaryMainFrame();
+  }
 
   GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
