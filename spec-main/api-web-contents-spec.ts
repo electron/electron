@@ -326,6 +326,7 @@ describe('webContents module', () => {
 
   describe('loadURL() promise API', () => {
     let w: BrowserWindow;
+
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
@@ -355,6 +356,35 @@ describe('webContents module', () => {
     it('rejects when navigation is cancelled due to a bad scheme', async () => {
       await expect(w.loadURL('bad-scheme://foo')).to.eventually.be.rejected()
         .and.have.property('code', 'ERR_FAILED');
+    });
+
+    it('does not crash when loading a new URL with emulation settings set', async () => {
+      const setEmulation = async () => {
+        if (w.webContents) {
+          w.webContents.debugger.attach('1.3');
+
+          const deviceMetrics = {
+            width: 700,
+            height: 600,
+            deviceScaleFactor: 2,
+            mobile: true,
+            dontSetVisibleSize: true
+          };
+          await w.webContents.debugger.sendCommand(
+            'Emulation.setDeviceMetricsOverride',
+            deviceMetrics
+          );
+        }
+      };
+
+      try {
+        await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        await setEmulation();
+        await w.loadURL('data:text/html,<h1>HELLO</h1>');
+        await setEmulation();
+      } catch (e) {
+        expect((e as Error).message).to.match(/Debugger is already attached to the target/);
+      }
     });
 
     it('sets appropriate error information on rejection', async () => {
