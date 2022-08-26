@@ -8,8 +8,6 @@ This allows developers to take their app from source code to their end users' ma
 
 ## Getting started
 
-We recommend following through the cumulative Electron [tutorials] to develop, build, package and publish your first Electron app. If you have already developed an app on your machine and want to start on forge-specific steps, start from [step 5] of the tutorial.
-
 The [Electron Forge Docs] contain detailed information that can assist you through the process
 of taking your application from source code to your end users' machines.
 This process contains several subtasks, including:
@@ -17,6 +15,8 @@ This process contains several subtasks, including:
 * Packaging your application [(package)]
 * Generating distributable files for each OS [(make)], and,
 * Publishing these files to online platforms to download [(publish)].
+
+We recommend following through the cumulative Electron [tutorials] to develop, build, package and publish your first Electron app. If you have already developed an app on your machine and want to start on forge-specific steps, start from [step 5] of the tutorial.
 
 ## Getting help
 
