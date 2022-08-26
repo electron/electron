@@ -10,7 +10,7 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index d435206f773dd30086ae81868412bc28029935d8..b03966e55f036332efd01b948f64bb2d6bc39829 100644
+index d435206f773dd30086ae81868412bc28029935d8..a0856c214d962199a2e51c7bd14f0f676d35507e 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
 @@ -239,6 +239,10 @@ int GpuMain(MainFunctionParams parameters) {
@@ -24,6 +24,14 @@ index d435206f773dd30086ae81868412bc28029935d8..b03966e55f036332efd01b948f64bb2d
    // We are experiencing what appear to be memory-stomp issues in the GPU
    // process. These issues seem to be impacting the task executor and listeners
    // registered to it. Create the task executor on the heap to guard against
+@@ -323,7 +327,6 @@ int GpuMain(MainFunctionParams parameters) {
+       const_cast<base::CommandLine*>(&command_line), gpu_preferences);
+   const bool dead_on_arrival = !init_success;
+ 
+-  auto* client = GetContentClient()->gpu();
+   if (client) {
+     client->PostSandboxInitialized();
+   }
 diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
 index a5d868b9e409c986bc85dfd71bb0363b5fa22145..9abe1cf5b2cc8ce60387ddf81b7c13aff9c178c4 100644
 --- a/content/public/gpu/content_gpu_client.h
