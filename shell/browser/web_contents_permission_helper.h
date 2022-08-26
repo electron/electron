@@ -33,7 +33,8 @@ class WebContentsPermissionHelper
   };
 
   // Asynchronous Requests
-  void RequestFullscreenPermission(base::OnceCallback<void(bool)> callback);
+  void RequestFullscreenPermission(content::RenderFrameHost* requesting_frame,
+                                   base::OnceCallback<void(bool)> callback);
   void RequestMediaAccessPermission(const content::MediaStreamRequest& request,
                                     content::MediaResponseCallback callback);
   void RequestPointerLockPermission(
@@ -42,8 +43,10 @@ class WebContentsPermissionHelper
       base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
           callback);
   void RequestWebNotificationPermission(
+      content::RenderFrameHost* requesting_frame,
       base::OnceCallback<void(bool)> callback);
-  void RequestOpenExternalPermission(base::OnceCallback<void(bool)> callback,
+  void RequestOpenExternalPermission(content::RenderFrameHost* requesting_frame,
+                                     base::OnceCallback<void(bool)> callback,
                                      bool user_gesture,
                                      const GURL& url);
 
@@ -56,7 +59,8 @@ class WebContentsPermissionHelper
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
   friend class content::WebContentsUserData<WebContentsPermissionHelper>;
 
-  void RequestPermission(blink::PermissionType permission,
+  void RequestPermission(content::RenderFrameHost* requesting_frame,
+                         blink::PermissionType permission,
                          base::OnceCallback<void(bool)> callback,
                          bool user_gesture = false,
                          const base::DictionaryValue* details = nullptr);
