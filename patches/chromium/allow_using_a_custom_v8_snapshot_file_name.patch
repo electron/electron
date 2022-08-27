@@ -8,48 +8,76 @@ to have multiple v8 snapshots loaded in different contexts by passing `custom-v8
 via the command line.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..b08d658b093b6b70cd4abadee138bc1f76416f27 100644
+index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..c58d76fc7e20893100af147fd231cd006e78bf5a 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -232,6 +232,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+@@ -230,8 +230,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
  
- void LoadV8SnapshotFile(const base::CommandLine& command_line) {
+ #endif
+ 
+-void LoadV8SnapshotFile(const base::CommandLine& command_line) {
++void LoadV8SnapshotFile(const raw_ptr<ContentMainDelegate> delegate, const base::CommandLine& command_line) {
    const gin::V8SnapshotFileType snapshot_type = GetSnapshotType(command_line);
-+  const std::string& process_type =
-+      command_line.GetSwitchValueASCII(switches::kProcessType);
-+  const std::string& custom_v8_snapshot_file_name = command_line.GetSwitchValueASCII(switches::kCustomV8SnapshotFileName);
-+  if (process_type.empty() && !custom_v8_snapshot_file_name.empty()) {
-+    gin::V8Initializer::LoadV8SnapshotFromFileName(&*custom_v8_snapshot_file_name.begin(), snapshot_type);
++  const char *custom_v8_snapshot_file_name = delegate->GetCustomV8SnapshotFilename();
++  if (custom_v8_snapshot_file_name != nullptr) {
++    gin::V8Initializer::LoadV8SnapshotFromFileName(custom_v8_snapshot_file_name, snapshot_type);
 +    return;
 +  }
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-diff --git a/content/public/common/content_switches.cc b/content/public/common/content_switches.cc
-index 402bd199572ba9d066c10470459c906535d9635b..74252a0dad3af3a3362200e79567802e51664829 100644
---- a/content/public/common/content_switches.cc
-+++ b/content/public/common/content_switches.cc
-@@ -618,6 +618,8 @@ const char kProcessPerTab[]                 = "process-per-tab";
- // renderer or plugin host.  If it's empty, it's the browser.
- const char kProcessType[]                   = "type";
+@@ -260,11 +265,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
-+const char kCustomV8SnapshotFileName[]      = "custom-v8-snapshot-file-name";
+ #endif  // V8_USE_EXTERNAL_STARTUP_DATA
+ 
+-void LoadV8SnapshotIfNeeded(const base::CommandLine& command_line,
++void LoadV8SnapshotIfNeeded(const raw_ptr<ContentMainDelegate> delegate,
++                            const base::CommandLine& command_line,
+                             const std::string& process_type) {
+ #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
+   if (ShouldLoadV8Snapshot(command_line, process_type))
+-    LoadV8SnapshotFile(command_line);
++    LoadV8SnapshotFile(delegate, command_line);
+ #endif  // V8_USE_EXTERNAL_STARTUP_DATA
+ }
+ 
+@@ -918,7 +924,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+     return TerminateForFatalInitializationError();
+ #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
+ 
+-  LoadV8SnapshotIfNeeded(command_line, process_type);
++  LoadV8SnapshotIfNeeded(delegate_, command_line, process_type);
+ 
+   blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
+       base::BindRepeating([]() -> blink::OriginTrialPolicy* {
+diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
+index 148b1ebe67eee851b5a9a3e054e09fee5a185354..10a1d5ce17a16e0686ffad184d24bf72a1f68ba5 100644
+--- a/content/public/app/content_main_delegate.cc
++++ b/content/public/app/content_main_delegate.cc
+@@ -64,6 +64,10 @@ absl::optional<int> ContentMainDelegate::PostEarlyInitialization(
+   return absl::nullopt;
+ }
+ 
++char* ContentMainDelegate::GetCustomV8SnapshotFilename() {
++  return nullptr;
++}
 +
- // Uses a specified proxy server, overrides system settings. This switch only
- // affects HTTP and HTTPS requests. ARC-apps use only HTTP proxy server with the
- // highest priority.
-diff --git a/content/public/common/content_switches.h b/content/public/common/content_switches.h
-index f33a35c1e86be9a50fd060bb8fb59aa44bd76da1..f1148f8da2fa67d23f0a2e3d3c5983cb5eb61e8a 100644
---- a/content/public/common/content_switches.h
-+++ b/content/public/common/content_switches.h
-@@ -182,6 +182,7 @@ extern const char kPpapiStartupDialog[];
- CONTENT_EXPORT extern const char kProcessPerSite[];
- CONTENT_EXPORT extern const char kProcessPerTab[];
- CONTENT_EXPORT extern const char kProcessType[];
-+CONTENT_EXPORT extern const char kCustomV8SnapshotFileName[];
- CONTENT_EXPORT extern const char kProxyServer[];
- CONTENT_EXPORT extern const char kPullToRefresh[];
- CONTENT_EXPORT extern const char kQuotaChangeEventInterval[];
+ ContentClient* ContentMainDelegate::CreateContentClient() {
+   return new ContentClient();
+ }
+diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
+index f40146c4ed20e63dd09450e43c26736171f02ed4..f0cecef37eb71c675630d84e783bccd14969b722 100644
+--- a/content/public/app/content_main_delegate.h
++++ b/content/public/app/content_main_delegate.h
+@@ -154,6 +154,8 @@ class CONTENT_EXPORT ContentMainDelegate {
+   virtual bool ShouldHandleConsoleControlEvents();
+ #endif
+ 
++  virtual char* GetCustomV8SnapshotFilename();
++
+  protected:
+   friend class ContentClientCreator;
+   friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
 index 952b3ba6247935053d9a080bced30e3b3c640dd4..d097b845e9fc356ce3ba7c518aa0b79cf52b9c5b 100644
 --- a/gin/v8_initializer.cc

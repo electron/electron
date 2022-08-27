@@ -30,6 +30,8 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   ElectronMainDelegate(const ElectronMainDelegate&) = delete;
   ElectronMainDelegate& operator=(const ElectronMainDelegate&) = delete;
 
+  char* GetCustomV8SnapshotFilename() override;
+
  protected:
   // content::ContentMainDelegate:
   absl::optional<int> BasicStartupComplete() override;

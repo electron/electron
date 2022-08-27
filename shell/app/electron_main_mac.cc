@@ -28,26 +28,13 @@ namespace {
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  bool use_custom_v8_snapshot_file_name =
-      electron::fuses::IsLoadV8SnapshotFromCustomPathEnabled();
-  int new_argc = argc + (use_custom_v8_snapshot_file_name ? 1 : 0);
-  char* new_argv[new_argc];
-  for (int i = 0; i < argc; i++) {
-    new_argv[i] = argv[i];
-  }
-  if (use_custom_v8_snapshot_file_name) {
-    new_argv[new_argc - 1] = const_cast<char*>(
-        "--custom-v8-snapshot-file-name=custom_v8_context_snapshot.bin");
-  }
-
   partition_alloc::EarlyMallocZoneRegistration();
   FixStdioStreams();
-  fprintf(stderr, "main 1\n");
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
   if (electron::fuses::IsRunAsNodeEnabled() &&
       IsEnvSet("ELECTRON_RUN_AS_NODE")) {
-    return ElectronInitializeICUandStartNode(new_argc, new_argv);
+    return ElectronInitializeICUandStartNode(argc, argv);
   }
 #endif
 
@@ -66,8 +53,8 @@ int main(int argc, char* argv[]) {
     abort();
   }
   sandbox::SeatbeltExecServer::CreateFromArgumentsResult seatbelt =
-      sandbox::SeatbeltExecServer::CreateFromArguments(exec_path.get(),
-                                                       new_argc, new_argv);
+      sandbox::SeatbeltExecServer::CreateFromArguments(exec_path.get(), argc,
+                                                       argv);
   if (seatbelt.sandbox_required) {
     if (!seatbelt.server) {
       fprintf(stderr, "Failed to create seatbelt sandbox server.\n");
@@ -80,5 +67,5 @@ int main(int argc, char* argv[]) {
   }
 #endif  // defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
 
-  return ElectronMain(new_argc, new_argv);
+  return ElectronMain(argc, argv);
 }
