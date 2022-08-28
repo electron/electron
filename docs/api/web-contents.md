@@ -1096,10 +1096,10 @@ contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1"
   })
 ```
 
-#### `contents.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture])`
+#### `contents.executeJavaScriptInIsolatedWorld(worldId, code[, userGesture])`
 
 * `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature.  You can provide any integer here.
-* `scripts` [WebSource[]](structures/web-source.md)
+* `code` string
 * `userGesture` boolean (optional) - Default is `false`.
 
 Returns `Promise<any>` - A promise that resolves with the result of the executed code
