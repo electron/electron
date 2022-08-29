@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 26 Aug 2022 11:24:27 +0200
+Subject: fix: revert EmulationHandler update functions to early return
+
+Our debugger class (a subclass of ontent::DevToolsAgentHostClient) isn't
+aware of those changes unless we hook RenderFrameHostChanged. If we
+don't do this, some navigation lifecycle events
+{loadingFinished, dataReceived} emitted by the renderer are lost. We
+disconnect and reconnect the webcontents to the DevToolsAgentHost to
+prevent this from happening.
+
+As of https://chromium-review.googlesource.com/c/chromium/src/+/3758294
+this results in a DCHECK, since DevToolsAgentHost::DisconnectWebContents
+results in a call to UpdateDeviceEmulationState and host_ is nullptr. To
+fix this, we revert those state update calls to early returns.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856525
+
+diff --git a/content/browser/devtools/protocol/emulation_handler.cc b/content/browser/devtools/protocol/emulation_handler.cc
+index 84736afeb21d1deec0f4032ef6f3304075d8fffb..d023bb7b5a34c5c055d3d7cc5dc3e04ef43bcc3b 100644
+--- a/content/browser/devtools/protocol/emulation_handler.cc
++++ b/content/browser/devtools/protocol/emulation_handler.cc
+@@ -565,7 +565,9 @@ WebContentsImpl* EmulationHandler::GetWebContents() {
+ }
+ 
+ void EmulationHandler::UpdateTouchEventEmulationState() {
+-  DCHECK(host_);
++  if (!host_)
++    return;
++
+   // We only have a single TouchEmulator for all frames, so let the main frame's
+   // EmulationHandler enable/disable it.
+   DCHECK(!host_->GetParentOrOuterDocument());
+@@ -585,7 +587,9 @@ void EmulationHandler::UpdateTouchEventEmulationState() {
+ }
+ 
+ void EmulationHandler::UpdateDeviceEmulationState() {
+-  DCHECK(host_);
++  if (!host_)
++    return;
++
+   // Device emulation only happens on the outermost main frame.
+   DCHECK(!host_->GetParentOrOuterDocument());
+ 
