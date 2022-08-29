@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/display/screen.h"
 
 using views::MenuRunner;
