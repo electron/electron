@@ -39,9 +39,6 @@ void MenuViews::PopupAt(BaseWindow* window,
 
   int flags = MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS;
 
-  // Don't emit unresponsive event when showing menu.
-  electron::UnresponsiveSuppressor suppressor;
-
   // Make sure the Menu object would not be garbage-collected until the callback
   // has run.
   base::OnceClosure callback_with_ref = BindSelfToClosure(std::move(callback));
