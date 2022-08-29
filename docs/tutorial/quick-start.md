@@ -57,6 +57,7 @@ Your `package.json` file should look something like this:
   "name": "my-electron-app",
   "version": "1.0.0",
   "description": "Hello World!",
+  // notice that the js may named as 'index.js' inited by yarn or npm with the default configuration
   "main": "main.js",
   "author": "Jane Doe",
   "license": "MIT"
