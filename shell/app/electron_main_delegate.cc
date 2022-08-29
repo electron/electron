@@ -423,7 +423,7 @@ absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
   return absl::nullopt;
 }
 
-char* ElectronMainDelegate::GetCustomV8SnapshotFilename() {
+base::StringPiece ElectronMainDelegate::GetCustomV8SnapshotFilename() {
   const base::CommandLine* command_line =
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
@@ -432,7 +432,7 @@ char* ElectronMainDelegate::GetCustomV8SnapshotFilename() {
       process_type.empty() &&
       electron::fuses::IsLoadV8SnapshotFromCustomPathEnabled();
   if (use_custom_v8_snapshot_file_name) {
-    return const_cast<char*>("custom_v8_context_snapshot.bin");
+    return "custom_v8_context_snapshot.bin";
   }
   return ContentMainDelegate::GetCustomV8SnapshotFilename();
 }
