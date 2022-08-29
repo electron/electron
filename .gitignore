@@ -35,13 +35,13 @@ electron-api.json
 electron.d.ts
 
 # Spec hash calculation
-spec-main/.hash
+spec/.hash
 
 # Eslint Cache
 .eslintcache*
 
 # Generated native addon files
-/spec-main/fixtures/native-addon/echo/build/
+/spec/fixtures/native-addon/echo/build/
 
 # If someone runs tsc this is where stuff will end up
 ts-gen
@@ -53,4 +53,4 @@ ts-gen
 # Used to accelerate builds after sync
 patches/mtime-cache.json
 
-spec-main/fixtures/logo.png
+spec/fixtures/logo.png
