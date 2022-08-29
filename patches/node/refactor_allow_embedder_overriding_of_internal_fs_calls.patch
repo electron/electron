@@ -7,7 +7,7 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index dfae7675e16a6a81e40c69d85004fc841cadf738..8c31d0202b70ec9784b4289a175a62fd9fd85f8c 100644
+index 67cbdb9db09ca78f859032696c86f128bad64c46..376680f015d09a2cf3ce62de1fdeb9c5ed4c300b 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -66,6 +66,10 @@ setupBuffer();
@@ -22,7 +22,7 @@ index dfae7675e16a6a81e40c69d85004fc841cadf738..8c31d0202b70ec9784b4289a175a62fd
  const nativeModule = internalBinding('native_module');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 200c352cfd7321c47f37776589cfca397cad5d25..5195ff2da0496f2bfb9112d336c38040f662087b 100644
+index a65094ec21b0f40ab562608a9eeb36c5626cda31..3a536aab1bdeea6829d76d6af48fdefe0e08908d 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -86,7 +86,7 @@ const fs = require('fs');
