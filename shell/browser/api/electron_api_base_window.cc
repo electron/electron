@@ -329,6 +329,10 @@ void BaseWindow::Close() {
   window_->Close();
 }
 
+bool BaseWindow::IsClosed() {
+  return window_->IsClosed();
+}
+
 void BaseWindow::Focus() {
   window_->Focus(true);
 }
@@ -1216,6 +1220,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFullScreenable", &BaseWindow::IsFullScreenable)
       .SetMethod("setClosable", &BaseWindow::SetClosable)
       .SetMethod("isClosable", &BaseWindow::IsClosable)
+      .SetMethod("isClosed", &BaseWindow::IsClosed)
       .SetMethod("setAlwaysOnTop", &BaseWindow::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &BaseWindow::IsAlwaysOnTop)
       .SetMethod("center", &BaseWindow::Center)

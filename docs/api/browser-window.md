@@ -1869,6 +1869,10 @@ removed in future Electron releases.
 On a Window with Window Controls Overlay already enabled, this method updates
 the style of the title bar overlay.
 
+#### `win.isClosed()`
+
+Returns `boolean` - true if the window has been closed.
+
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
