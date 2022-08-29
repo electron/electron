@@ -47,7 +47,7 @@ are the different categories and what you can expect on each one:
 - **Examples**: Quick references to add features to your Electron app.
 - **Development**: Miscellaneous development guides.
 - **Distribution**: Learn how to distribute your app to end users.
-- **Testing and debugging**: How to debug JavaScript, write tests, and other tools used
+- **Testing And Debugging**: How to debug JavaScript, write tests, and other tools used
   to create quality Electron applications.
 - **References**: Useful links to better understand how the Electron project works
   and is organized.
