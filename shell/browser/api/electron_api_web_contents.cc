@@ -1095,7 +1095,7 @@ void WebContents::AddNewContents(
     std::unique_ptr<content::WebContents> new_contents,
     const GURL& target_url,
     WindowOpenDisposition disposition,
-    const gfx::Rect& initial_rect,
+    const blink::mojom::WindowFeatures& window_features,
     bool user_gesture,
     bool* was_blocked) {
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents.get());
@@ -1117,9 +1117,10 @@ void WebContents::AddNewContents(
   }
 
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
-           initial_rect.x(), initial_rect.y(), initial_rect.width(),
-           initial_rect.height(), tracker->url, tracker->frame_name,
-           tracker->referrer, tracker->raw_features, tracker->body)) {
+           window_features.bounds.x(), window_features.bounds.y(),
+           window_features.bounds.width(), window_features.bounds.height(),
+           tracker->url, tracker->frame_name, tracker->referrer,
+           tracker->raw_features, tracker->body)) {
     api_web_contents->Destroy();
   }
 }
