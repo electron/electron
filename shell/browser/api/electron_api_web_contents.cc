@@ -1009,6 +1009,19 @@ void WebContents::Destroy() {
   }
 }
 
+void WebContents::Close(absl::optional<gin_helper::Dictionary> options) {
+  bool dispatch_beforeunload = false;
+  if (options)
+    options->Get("waitForBeforeUnload", &dispatch_beforeunload);
+  if (dispatch_beforeunload &&
+      web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
+    NotifyUserActivation();
+    web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
+  } else {
+    web_contents()->Close();
+  }
+}
+
 bool WebContents::DidAddMessageToConsole(
     content::WebContents* source,
     blink::mojom::ConsoleMessageLevel level,
@@ -1197,6 +1210,8 @@ void WebContents::CloseContents(content::WebContents* source) {
 
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
+
+  Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -3923,6 +3938,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
   // destroyable.
   return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("destroy", &WebContents::Destroy)
+      .SetMethod("close", &WebContents::Close)
       .SetMethod("getBackgroundThrottling",
                  &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",

@@ -926,6 +926,14 @@ Returns `string` - The title of the current web page.
 
 Returns `boolean` - Whether the web page is destroyed.
 
+#### `contents.close([opts])`
+
+* `opts` Object (optional)
+  * `waitForBeforeUnload` boolean - if true, fire the `beforeunload` event
+    before closing the page.
+
+Closes the page, as if the web content had called `window.close()`.
+
 #### `contents.focus()`
 
 Focuses the web page.

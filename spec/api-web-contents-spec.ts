@@ -2132,4 +2132,70 @@ describe('webContents module', () => {
       expect(params.y).to.be.a('number');
     });
   });
+
+  describe('close() method', () => {
+    afterEach(closeAllWindows);
+
+    it('closes when close() is called', async () => {
+      const w = (webContents as any).create() as WebContents;
+      const destroyed = emittedOnce(w, 'destroyed');
+      w.close();
+      await destroyed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+
+    it('closes when close() is called after loading a page', async () => {
+      const w = (webContents as any).create() as WebContents;
+      await w.loadURL('about:blank');
+      const destroyed = emittedOnce(w, 'destroyed');
+      w.close();
+      await destroyed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+
+    it('can be GCed before loading a page', async () => {
+      const v8Util = process._linkedBinding('electron_common_v8_util');
+      let registry: FinalizationRegistry<unknown> | null = null;
+      const cleanedUp = new Promise<number>(resolve => {
+        registry = new FinalizationRegistry(resolve as any);
+      });
+      (() => {
+        const w = (webContents as any).create() as WebContents;
+        registry!.register(w, 42);
+      })();
+      const i = setInterval(() => v8Util.requestGarbageCollectionForTesting(), 100);
+      defer(() => clearInterval(i));
+      expect(await cleanedUp).to.equal(42);
+    });
+
+    it('causes its parent browserwindow to be closed', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const closed = emittedOnce(w, 'closed');
+      w.webContents.close();
+      await closed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+
+    it('ignores beforeunload if waitForBeforeUnload not specified', async () => {
+      const w = (webContents as any).create() as WebContents;
+      await w.loadURL('about:blank');
+      await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
+      w.on('will-prevent-unload', () => { throw new Error('unexpected will-prevent-unload'); });
+      const destroyed = emittedOnce(w, 'destroyed');
+      w.close();
+      await destroyed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+
+    it('runs beforeunload if waitForBeforeUnload is specified', async () => {
+      const w = (webContents as any).create() as WebContents;
+      await w.loadURL('about:blank');
+      await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
+      const willPreventUnload = emittedOnce(w, 'will-prevent-unload');
+      w.close({ waitForBeforeUnload: true });
+      await willPreventUnload;
+      expect(w.isDestroyed()).to.be.false();
+    });
+  });
 });
