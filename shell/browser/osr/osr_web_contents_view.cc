@@ -217,4 +217,6 @@ OffScreenRenderWidgetHostView* OffScreenWebContentsView::GetView() const {
   return nullptr;
 }
 
+void OffScreenWebContentsView::FullscreenStateChanged(bool is_fullscreen) {}
+
 }  // namespace electron
