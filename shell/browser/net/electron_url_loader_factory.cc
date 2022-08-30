@@ -566,7 +566,8 @@ void ElectronURLLoaderFactory::StartLoadingStream(
     //
     // Note that We must submit a empty body otherwise NetworkService would
     // crash.
-    client_remote->OnReceiveResponse(std::move(head), std::move(consumer));
+    client_remote->OnReceiveResponse(std::move(head), std::move(consumer),
+                                     absl::nullopt);
     producer.reset();  // The data pipe is empty.
     client_remote->OnComplete(network::URLLoaderCompletionStatus(net::OK));
     return;
@@ -613,7 +614,8 @@ void ElectronURLLoaderFactory::SendContents(
     return;
   }
 
-  client_remote->OnReceiveResponse(std::move(head), std::move(consumer));
+  client_remote->OnReceiveResponse(std::move(head), std::move(consumer),
+                                   absl::nullopt);
 
   auto write_data = std::make_unique<WriteData>();
   write_data->client = std::move(client_remote);
