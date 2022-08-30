@@ -217,7 +217,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
 
   tabs::Tab tab;
 
-  tab.id = std::make_unique<int>(tab_id);
+  tab.id = tab_id;
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
@@ -502,8 +502,7 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   tabs::Tab tab;
 
   auto* api_web_contents = electron::api::WebContents::From(web_contents_);
-  tab.id =
-      std::make_unique<int>(api_web_contents ? api_web_contents->ID() : -1);
+  tab.id = (api_web_contents ? api_web_contents->ID() : -1);
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
