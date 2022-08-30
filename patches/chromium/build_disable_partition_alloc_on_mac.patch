@@ -8,16 +8,16 @@ a child process. This patch disables partition alloc for mac,
 and can be removed when the crash in fork is resolved.
 Related issue: https://github.com/electron/electron/issues/32718
 
-diff --git a/base/allocator/allocator.gni b/base/allocator/allocator.gni
-index 674def40cfdc83432d0f3ced8ab3f570dc9e8b1b..96e5e5e145715218724f93041060df60d709839a 100644
---- a/base/allocator/allocator.gni
-+++ b/base/allocator/allocator.gni
-@@ -20,7 +20,7 @@ _disable_partition_alloc = is_component_build || (is_win && is_debug)
+diff --git a/build_overrides/partition_alloc.gni b/build_overrides/partition_alloc.gni
+index 0e929071b34d1f29cfb8ae81f6a530c4880e0271..de1dca8fc5aa1fb2791d6e104d8f49588d49504b 100644
+--- a/build_overrides/partition_alloc.gni
++++ b/build_overrides/partition_alloc.gni
+@@ -40,7 +40,7 @@ _disable_partition_alloc = is_component_build || (is_win && is_debug)
  
  # - NaCl: No plans to support it.
  # - iOS: not done yet.
 -_is_partition_alloc_platform = !is_nacl && !is_ios
 +_is_partition_alloc_platform = !is_nacl && !is_ios && !is_mac
  
- # Under Windows Debug the allocator shim is not compatible with CRT.
+ # Under Windows debug build, the allocator shim is not compatible with CRT.
  #     NaCl in particular does seem to link some binaries statically

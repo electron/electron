@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 3d3427931d59931c57e468c0aa171f723e0113a9..e8302aa83337f2be07b9bc5b4190bafe1606ef90 100644
+index cda43d3792af175a68899ef0f707d858b9a1aee1..63cab7f07ab1c93f6cd931005d1d88fe42cfa303 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -234,6 +234,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
+@@ -235,6 +235,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
           do_not_prompt_for_login == request.do_not_prompt_for_login &&
           is_outermost_main_frame == request.is_outermost_main_frame &&
           transition_type == request.transition_type &&
@@ -103,7 +103,7 @@ index 3d2bcc3e81eb42f645fa4e8b1425cb5c54cfd3a1..4cdbe0e38609abfd0b0b5856deb8b2dd
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 2e8a874bf93e03e7c194dc13555eead6fe1fcafa..5b28db971f8feebd36965ccafe8b1b957b3f1ede 100644
+index 292ef6b963a61606fc0e8b9f3566c84d1001277a..399f9cb81cc62b019e750094b1139eb1d9c3aacd 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -606,6 +606,7 @@ URLLoader::URLLoader(

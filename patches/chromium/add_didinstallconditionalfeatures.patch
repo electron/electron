@@ -123,7 +123,7 @@ index c974fa2f7c7f9c2aa5f075ec4aeb887d0b104453..b4ed9b2fadcfad7676387045b8581eb8
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index a2d7e97958d378dc5d37524f2f5516205c010749..e3f605938b3eea7f1c4dfac8e3c25014ebd15476 100644
+index ab49ca504ff002f293e61dcb53ca853980677052..368254298f928235fb2b63a34c13b290f077b0af 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -367,6 +367,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

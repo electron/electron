@@ -78,7 +78,7 @@ index 20db1f61b391f7b154071f24e91fd0925e3e0df2..4816ac66d1eebe0823844b07b146707d
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 41fb02d532190e82d50286e2733a6c3627bf25c8..f19bb5dcb69233733125029d8f997f7343d7e04b 100644
+index 51c7c7a7d79a47704f0c69c8ecadab2213586b52..25cc8e35b1fa426c60acecbaf677b1de72a3fed8 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -129,7 +129,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
@@ -133,7 +133,7 @@ index 424fae79eb1c93f1fac293ae8fdeb6d067f523cc..6a2f074ad981deb15b46bd91b6d7eb5d
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 18ad9b07e8d6ce33e4f5497aed48269ea49e2b9e..161aefa1d91923be35046dfe735071c687710deb 100644
+index 47eaf5d48f7acc2ee05a07f79a2fa457c50d88d8..0947bc416a00ac23c1d26fdc85baf28e634f419e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2075,8 +2075,9 @@ void RenderProcessHostImpl::CreateNotificationService(
