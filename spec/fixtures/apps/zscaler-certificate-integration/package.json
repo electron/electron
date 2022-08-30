@@ -1,0 +1,4 @@
+{
+  "name": "electron-zscaler-certificate-integration-test",
+  "main": "main.js"
+}
