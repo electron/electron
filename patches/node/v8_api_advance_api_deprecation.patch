@@ -7,7 +7,7 @@ Refs https://chromium-review.googlesource.com/c/v8/v8/+/3702449
 Should be upstreamed.
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 2c36a0b132cf1b21595ac39619b99d316ad81d9e..3dfea77eab2ff880508eda95a5dff80a6564251f 100644
+index f708933d8bd6a6dc6741d6af22665b37c56e333a..d029f4e44347bc026d0dff45403227da202020a3 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -217,7 +217,8 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
