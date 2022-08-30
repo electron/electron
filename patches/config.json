@@ -19,7 +19,5 @@
 
   "src/electron/patches/Mantle": "src/third_party/squirrel.mac/vendor/Mantle",
 
-  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
-
-  "src/electron/patches/lss": "src/third_party/lss"
+  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC"
 }
