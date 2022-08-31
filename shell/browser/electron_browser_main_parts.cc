@@ -83,7 +83,6 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "base/win/dark_mode_support.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/display/win/dpi.h"
 #include "ui/gfx/system_fonts_win.h"
@@ -442,11 +441,6 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckServiceFactory::GetInstance();
-#endif
-
-#if BUILDFLAG(IS_WIN)
-  // access ui native theme here to prevent blocking calls later
-  base::win::AllowDarkModeForApp(true);
 #endif
 
   content::WebUIControllerFactory::RegisterFactory(
