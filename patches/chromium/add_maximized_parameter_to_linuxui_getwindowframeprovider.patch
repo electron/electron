@@ -8,10 +8,10 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index 1a6a3db3ed1ab51190c4044bc6e11a23ff3bafd2..ab22aa64cc6dfeeccfe135e9c00723fcc8d21fb2 100644
+index 7d1c3407ff408fbbb0d123323af09fb9e46e5453..90c93d2826739df07fb1accc48cd83810dea8dee 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -500,13 +500,15 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+@@ -504,13 +504,15 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
    return nullptr;
  }
  
@@ -31,10 +31,10 @@ index 1a6a3db3ed1ab51190c4044bc6e11a23ff3bafd2..ab22aa64cc6dfeeccfe135e9c00723fc
  }
  
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index e73bbdf28fba1f5b96d326dd7b0fd9aaa33ba221..5a537c8f6291909392824d62fc04209ad662d59a 100644
+index 3bf62d4de0ce141db60bab5356839d20543b3026..ca0f0bc3270b9b3ad793cd48b95a61bd7965b458 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
-@@ -94,7 +94,7 @@ class GtkUi : public ui::LinuxUiBase {
+@@ -95,7 +95,7 @@ class GtkUi : public ui::LinuxUi {
    bool PreferDarkTheme() const override;
    bool AnimationsEnabled() const override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
@@ -43,7 +43,7 @@ index e73bbdf28fba1f5b96d326dd7b0fd9aaa33ba221..5a537c8f6291909392824d62fc04209a
    base::flat_map<std::string, std::string> GetKeyboardLayoutMap() override;
    std::string GetCursorThemeName() override;
    int GetCursorThemeSize() override;
-@@ -199,6 +199,8 @@ class GtkUi : public ui::LinuxUiBase {
+@@ -199,6 +199,8 @@ class GtkUi : public ui::LinuxUi {
    // while Chrome is running.
    std::unique_ptr<ui::WindowFrameProvider> solid_frame_provider_;
    std::unique_ptr<ui::WindowFrameProvider> transparent_frame_provider_;
@@ -162,10 +162,10 @@ index 8370c1cb3f8c3532d94e1265242cbf2397920480..2e0105ba8782dfe0a3ac169850734032
  
  }  // namespace gtk
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index dee97740309e29c29d9c9c6c757455cddc817dbb..e5b71cd2b5e9e6252fe13c54bb54e26365347e2a 100644
+index e177923484a1be740170a65c2b3067f04e949995..68f217d316f15129f66e74f14851613dbb24970e 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
-@@ -175,7 +175,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUi {
+@@ -171,7 +171,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUi {
    // if transparency is unsupported and the frame should be rendered opaque.
    // The returned object is not owned by the caller and will remain alive until
    // the process ends.
