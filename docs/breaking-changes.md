@@ -30,6 +30,55 @@ webContents.setWindowOpenHandler((details) => {
 })
 ```
 
+### Removed: BrowserWindow `scroll-touch-*` events
+
+The `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge` events on
+BrowserWindow have been removed.
+
+```js
+// Removed in Electron 22.0
+win.on('scroll-touch-begin', scrollTouchBegin)
+win.on('scroll-touch-edge', scrollTouchEdge)
+win.on('scroll-touch-end', scrollTouchEnd)
+
+// Replace with
+win.webContents.on('input-event', (_, event) => {
+  if (event.type === 'gesturescrollbegin') {
+    scrollTouchBegin()
+  } else if (event.type === 'gesturescrollupdate') {
+    scrollTouchEdge()
+  } else if (event.type === 'gesturescrollend') {
+    scrollTouchEnd()
+  }
+})
+```
+
+## Planned Breaking API Changes (21.0)
+
+### Deprecated: BrowserWindow `scroll-touch-*` events
+
+The `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge` events on
+BrowserWindow are deprecated. Instead, use the newly available `input-event`
+event on WebContents.
+
+```js
+// Deprecated
+win.on('scroll-touch-begin', scrollTouchBegin)
+win.on('scroll-touch-edge', scrollTouchEdge)
+win.on('scroll-touch-end', scrollTouchEnd)
+
+// Replace with
+win.webContents.on('input-event', (_, event) => {
+  if (event.type === 'gesturescrollbegin') {
+    scrollTouchBegin()
+  } else if (event.type === 'gesturescrollupdate') {
+    scrollTouchEdge()
+  } else if (event.type === 'gesturescrollend') {
+    scrollTouchEnd()
+  }
+})
+```
+
 ## Planned Breaking API Changes (20.0)
 
 ### Behavior Changed: V8 Memory Cage enabled

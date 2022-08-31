@@ -652,15 +652,15 @@ The following app commands are explicitly supported on Linux:
 * `browser-backward`
 * `browser-forward`
 
-#### Event: 'scroll-touch-begin' _macOS_
+#### Event: 'scroll-touch-begin' _macOS_ _Deprecated_
 
 Emitted when scroll wheel event phase has begun.
 
-#### Event: 'scroll-touch-end' _macOS_
+#### Event: 'scroll-touch-end' _macOS_ _Deprecated_
 
 Emitted when scroll wheel event phase has ended.
 
-#### Event: 'scroll-touch-edge' _macOS_
+#### Event: 'scroll-touch-edge' _macOS_ _Deprecated_
 
 Emitted when scroll wheel event phase filed upon reaching the edge of element.
 

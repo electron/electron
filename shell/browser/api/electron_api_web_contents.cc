@@ -816,6 +816,12 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
   double zoom_factor;
   if (options.Get(options::kZoomFactor, &zoom_factor))
     zoom_controller_->SetDefaultZoomFactor(zoom_factor);
+
+  // Nothing to do with ZoomController, but this function gets called in all
+  // init cases!
+  content::RenderViewHost* host = web_contents->GetRenderViewHost();
+  if (host)
+    host->GetWidget()->AddInputEventObserver(this);
 }
 
 void WebContents::InitWithSessionAndOptions(
@@ -1671,6 +1677,14 @@ void WebContents::OnWebContentsLostFocus(
   Emit("blur");
 }
 
+void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
+                                        content::RenderViewHost* new_host) {
+  if (old_host)
+    old_host->GetWidget()->RemoveInputEventObserver(this);
+  if (new_host)
+    new_host->GetWidget()->AddInputEventObserver(this);
+}
+
 void WebContents::DOMContentLoaded(
     content::RenderFrameHost* render_frame_host) {
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
@@ -2059,6 +2073,9 @@ void WebContents::WebContentsDestroyed() {
   // Clear the pointer stored in wrapper.
   if (GetAllWebContents().Lookup(id_))
     GetAllWebContents().Remove(id_);
+  content::RenderViewHost* host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->GetWidget()->RemoveInputEventObserver(this);
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> wrapper;
@@ -3446,6 +3463,10 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   web_preferences->SetImageAnimationPolicy(new_policy);
   web_contents()->OnWebPreferencesChanged();
+}
+
+void WebContents::OnInputEvent(const blink::WebInputEvent& event) {
+  Emit("input-event", event);
 }
 
 v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {

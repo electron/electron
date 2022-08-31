@@ -603,16 +603,6 @@ void NativeWindow::NotifyWindowEnterFullScreen() {
     observer.OnWindowEnterFullScreen();
 }
 
-void NativeWindow::NotifyWindowScrollTouchBegin() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowScrollTouchBegin();
-}
-
-void NativeWindow::NotifyWindowScrollTouchEnd() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowScrollTouchEnd();
-}
-
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowSwipe(direction);

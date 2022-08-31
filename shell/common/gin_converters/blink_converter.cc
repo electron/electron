@@ -11,6 +11,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
+#include "gin/data_object_builder.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -56,43 +57,73 @@ struct Converter<char16_t> {
   }
 };
 
-template <>
-struct Converter<blink::WebInputEvent::Type> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     blink::WebInputEvent::Type* out) {
-    std::string type = base::ToLowerASCII(gin::V8ToString(isolate, val));
-    if (type == "mousedown")
-      *out = blink::WebInputEvent::Type::kMouseDown;
-    else if (type == "mouseup")
-      *out = blink::WebInputEvent::Type::kMouseUp;
-    else if (type == "mousemove")
-      *out = blink::WebInputEvent::Type::kMouseMove;
-    else if (type == "mouseenter")
-      *out = blink::WebInputEvent::Type::kMouseEnter;
-    else if (type == "mouseleave")
-      *out = blink::WebInputEvent::Type::kMouseLeave;
-    else if (type == "contextmenu")
-      *out = blink::WebInputEvent::Type::kContextMenu;
-    else if (type == "mousewheel")
-      *out = blink::WebInputEvent::Type::kMouseWheel;
-    else if (type == "keydown")
-      *out = blink::WebInputEvent::Type::kRawKeyDown;
-    else if (type == "keyup")
-      *out = blink::WebInputEvent::Type::kKeyUp;
-    else if (type == "char")
-      *out = blink::WebInputEvent::Type::kChar;
-    else if (type == "touchstart")
-      *out = blink::WebInputEvent::Type::kTouchStart;
-    else if (type == "touchmove")
-      *out = blink::WebInputEvent::Type::kTouchMove;
-    else if (type == "touchend")
-      *out = blink::WebInputEvent::Type::kTouchEnd;
-    else if (type == "touchcancel")
-      *out = blink::WebInputEvent::Type::kTouchCancel;
-    return true;
+#define BLINK_EVENT_TYPES()                                  \
+  CASE_TYPE(kUndefined, "undefined")                         \
+  CASE_TYPE(kMouseDown, "mousedown")                         \
+  CASE_TYPE(kMouseUp, "mouseup")                             \
+  CASE_TYPE(kMouseMove, "mousemove")                         \
+  CASE_TYPE(kMouseEnter, "mouseenter")                       \
+  CASE_TYPE(kMouseLeave, "mouseleave")                       \
+  CASE_TYPE(kContextMenu, "contextmenu")                     \
+  CASE_TYPE(kMouseWheel, "mousewheel")                       \
+  CASE_TYPE(kRawKeyDown, "rawkeydown")                       \
+  CASE_TYPE(kKeyDown, "keydown")                             \
+  CASE_TYPE(kKeyUp, "keyup")                                 \
+  CASE_TYPE(kChar, "char")                                   \
+  CASE_TYPE(kGestureScrollBegin, "gesturescrollbegin")       \
+  CASE_TYPE(kGestureScrollEnd, "gesturescrollend")           \
+  CASE_TYPE(kGestureScrollUpdate, "gesturescrollupdate")     \
+  CASE_TYPE(kGestureFlingStart, "gestureflingstart")         \
+  CASE_TYPE(kGestureFlingCancel, "gestureflingcancel")       \
+  CASE_TYPE(kGesturePinchBegin, "gesturepinchbegin")         \
+  CASE_TYPE(kGesturePinchEnd, "gesturepinchend")             \
+  CASE_TYPE(kGesturePinchUpdate, "gesturepinchupdate")       \
+  CASE_TYPE(kGestureTapDown, "gesturetapdown")               \
+  CASE_TYPE(kGestureShowPress, "gestureshowpress")           \
+  CASE_TYPE(kGestureTap, "gesturetap")                       \
+  CASE_TYPE(kGestureTapCancel, "gesturetapcancel")           \
+  CASE_TYPE(kGestureShortPress, "gestureshortpress")         \
+  CASE_TYPE(kGestureLongPress, "gesturelongpress")           \
+  CASE_TYPE(kGestureLongTap, "gesturelongtap")               \
+  CASE_TYPE(kGestureTwoFingerTap, "gesturetwofingertap")     \
+  CASE_TYPE(kGestureTapUnconfirmed, "gesturetapunconfirmed") \
+  CASE_TYPE(kGestureDoubleTap, "gesturedoubletap")           \
+  CASE_TYPE(kTouchStart, "touchstart")                       \
+  CASE_TYPE(kTouchMove, "touchmove")                         \
+  CASE_TYPE(kTouchEnd, "touchend")                           \
+  CASE_TYPE(kTouchCancel, "touchcancel")                     \
+  CASE_TYPE(kTouchScrollStarted, "touchscrollstarted")       \
+  CASE_TYPE(kPointerDown, "pointerdown")                     \
+  CASE_TYPE(kPointerUp, "pointerup")                         \
+  CASE_TYPE(kPointerMove, "pointermove")                     \
+  CASE_TYPE(kPointerRawUpdate, "pointerrawupdate")           \
+  CASE_TYPE(kPointerCancel, "pointercancel")                 \
+  CASE_TYPE(kPointerCausedUaAction, "pointercauseduaaction")
+
+bool Converter<blink::WebInputEvent::Type>::FromV8(
+    v8::Isolate* isolate,
+    v8::Handle<v8::Value> val,
+    blink::WebInputEvent::Type* out) {
+  std::string type = base::ToLowerASCII(gin::V8ToString(isolate, val));
+#define CASE_TYPE(event_type, js_name)             \
+  if (type == js_name) {                           \
+    *out = blink::WebInputEvent::Type::event_type; \
+    return true;                                   \
   }
-};
+  BLINK_EVENT_TYPES()
+#undef CASE_TYPE
+  return false;
+}
+
+v8::Local<v8::Value> Converter<blink::WebInputEvent::Type>::ToV8(
+    v8::Isolate* isolate,
+    const blink::WebInputEvent::Type& in) {
+#define CASE_TYPE(event_type, js_name)         \
+  case blink::WebInputEvent::Type::event_type: \
+    return StringToV8(isolate, js_name);
+  switch (in) { BLINK_EVENT_TYPES() }
+#undef CASE_TYPE
+}
 
 template <>
 struct Converter<blink::WebMouseEvent::Button> {
@@ -205,6 +236,19 @@ bool Converter<blink::WebInputEvent>::FromV8(v8::Isolate* isolate,
     out->SetModifiers(VectorToBitArray(modifiers));
   out->SetTimeStamp(base::TimeTicks::Now());
   return true;
+}
+
+v8::Local<v8::Value> Converter<blink::WebInputEvent>::ToV8(
+    v8::Isolate* isolate,
+    const blink::WebInputEvent& in) {
+  if (blink::WebInputEvent::IsKeyboardEventType(in.GetType()))
+    return gin::ConvertToV8(isolate,
+                            *static_cast<const blink::WebKeyboardEvent*>(&in));
+  return gin::DataObjectBuilder(isolate)
+      .Set("type", in.GetType())
+      .Set("modifiers", ModifiersToArray(in.GetModifiers()))
+      .Set("_modifiers", in.GetModifiers())
+      .Build();
 }
 
 bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,

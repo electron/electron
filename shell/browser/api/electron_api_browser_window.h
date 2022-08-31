@@ -17,7 +17,6 @@
 namespace electron::api {
 
 class BrowserWindow : public BaseWindow,
-                      public content::RenderWidgetHost::InputEventObserver,
                       public content::WebContentsObserver,
                       public ExtendedWebContentsObserver {
  public:
@@ -43,12 +42,7 @@ class BrowserWindow : public BaseWindow,
   BrowserWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BrowserWindow() override;
 
-  // content::RenderWidgetHost::InputEventObserver:
-  void OnInputEvent(const blink::WebInputEvent& event) override;
-
   // content::WebContentsObserver:
-  void RenderViewHostChanged(content::RenderViewHost* old_host,
-                             content::RenderViewHost* new_host) override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;

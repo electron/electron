@@ -107,10 +107,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Associate with BrowserWindow.
   web_contents->SetOwnerWindow(window());
 
-  auto* host = web_contents->web_contents()->GetRenderViewHost();
-  if (host)
-    host->GetWidget()->AddInputEventObserver(this);
-
   InitWithArgs(args);
 
   // Install the content view after BaseWindow's JS code is initialized.
@@ -129,33 +125,10 @@ BrowserWindow::~BrowserWindow() {
   if (api_web_contents_) {
     // Cleanup the observers if user destroyed this instance directly instead of
     // gracefully closing content::WebContents.
-    auto* host = web_contents()->GetRenderViewHost();
-    if (host)
-      host->GetWidget()->RemoveInputEventObserver(this);
     api_web_contents_->RemoveObserver(this);
     // Destroy the WebContents.
     OnCloseContents();
   }
-}
-
-void BrowserWindow::OnInputEvent(const blink::WebInputEvent& event) {
-  switch (event.GetType()) {
-    case blink::WebInputEvent::Type::kGestureScrollBegin:
-    case blink::WebInputEvent::Type::kGestureScrollUpdate:
-    case blink::WebInputEvent::Type::kGestureScrollEnd:
-      Emit("scroll-touch-edge");
-      break;
-    default:
-      break;
-  }
-}
-
-void BrowserWindow::RenderViewHostChanged(content::RenderViewHost* old_host,
-                                          content::RenderViewHost* new_host) {
-  if (old_host)
-    old_host->GetWidget()->RemoveInputEventObserver(this);
-  if (new_host)
-    new_host->GetWidget()->AddInputEventObserver(this);
 }
 
 void BrowserWindow::RenderFrameCreated(
