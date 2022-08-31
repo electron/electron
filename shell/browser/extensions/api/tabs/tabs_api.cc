@@ -189,7 +189,7 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
 
   bool bypass_cache = false;
   if (params->reload_properties.get() &&
-      params->reload_properties->bypass_cache.get()) {
+      params->reload_properties->bypass_cache) {
     bypass_cache = *params->reload_properties->bypass_cache;
   }
 
@@ -288,8 +288,8 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
       contents->GetZoomController()->zoom_mode();
   tabs::ZoomSettings zoom_settings;
   ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
-  zoom_settings.default_zoom_factor = std::make_unique<double>(
-      blink::PageZoomLevelToZoomFactor(zoom_controller->GetDefaultZoomLevel()));
+  zoom_settings.default_zoom_factor =
+      blink::PageZoomLevelToZoomFactor(zoom_controller->GetDefaultZoomLevel());
 
   return RespondNow(
       ArgumentList(tabs::GetZoomSettings::Results::Create(zoom_settings)));
@@ -444,7 +444,7 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
       return RespondNow(Error(std::move(error)));
   }
 
-  if (params->update_properties.muted.get()) {
+  if (params->update_properties.muted) {
     contents->SetAudioMuted(*params->update_properties.muted);
   }
 
