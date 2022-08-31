@@ -1000,12 +1000,8 @@ void WebContents::Destroy() {
     DeleteThisIfAlive();
   } else {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(
-                       [](base::WeakPtr<WebContents> contents) {
-                         if (contents)
-                           contents->DeleteThisIfAlive();
-                       },
-                       GetWeakPtr()));
+        FROM_HERE,
+        base::BindOnce(&WebContents::DeleteThisIfAlive, GetWeakPtr()));
   }
 }
 
