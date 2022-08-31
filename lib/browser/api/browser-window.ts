@@ -47,17 +47,17 @@ BrowserWindow.prototype._init = function (this: BWT) {
 
   const warn = deprecate.warnOnceMessage('\'scroll-touch-{begin,end,edge}\' are deprecated and will be removed. Please use the WebContents \'input-event\' event instead.');
   this.webContents.on('input-event', (_, e) => {
-    if (e.type === 'gesturescrollbegin') {
+    if (e.type === 'gestureScrollBegin') {
       if (this.listenerCount('scroll-touch-begin') !== 0) {
         warn();
         this.emit('scroll-touch-begin');
       }
-    } else if (e.type === 'gesturescrollupdate') {
+    } else if (e.type === 'gestureScrollUpdate') {
       if (this.listenerCount('scroll-touch-edge') !== 0) {
         warn();
         this.emit('scroll-touch-edge');
       }
-    } else if (e.type === 'gesturescrollend') {
+    } else if (e.type === 'gestureScrollEnd') {
       if (this.listenerCount('scroll-touch-end') !== 0) {
         warn();
         this.emit('scroll-touch-end');

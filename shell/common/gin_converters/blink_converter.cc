@@ -59,56 +59,56 @@ struct Converter<char16_t> {
 
 #define BLINK_EVENT_TYPES()                                  \
   CASE_TYPE(kUndefined, "undefined")                         \
-  CASE_TYPE(kMouseDown, "mousedown")                         \
-  CASE_TYPE(kMouseUp, "mouseup")                             \
-  CASE_TYPE(kMouseMove, "mousemove")                         \
-  CASE_TYPE(kMouseEnter, "mouseenter")                       \
-  CASE_TYPE(kMouseLeave, "mouseleave")                       \
-  CASE_TYPE(kContextMenu, "contextmenu")                     \
-  CASE_TYPE(kMouseWheel, "mousewheel")                       \
-  CASE_TYPE(kRawKeyDown, "rawkeydown")                       \
-  CASE_TYPE(kKeyDown, "keydown")                             \
-  CASE_TYPE(kKeyUp, "keyup")                                 \
+  CASE_TYPE(kMouseDown, "mouseDown")                         \
+  CASE_TYPE(kMouseUp, "mouseUp")                             \
+  CASE_TYPE(kMouseMove, "mouseMove")                         \
+  CASE_TYPE(kMouseEnter, "mouseEnter")                       \
+  CASE_TYPE(kMouseLeave, "mouseLeave")                       \
+  CASE_TYPE(kContextMenu, "contextMenu")                     \
+  CASE_TYPE(kMouseWheel, "mouseWheel")                       \
+  CASE_TYPE(kRawKeyDown, "rawKeyDown")                       \
+  CASE_TYPE(kKeyDown, "keyDown")                             \
+  CASE_TYPE(kKeyUp, "keyUp")                                 \
   CASE_TYPE(kChar, "char")                                   \
-  CASE_TYPE(kGestureScrollBegin, "gesturescrollbegin")       \
-  CASE_TYPE(kGestureScrollEnd, "gesturescrollend")           \
-  CASE_TYPE(kGestureScrollUpdate, "gesturescrollupdate")     \
-  CASE_TYPE(kGestureFlingStart, "gestureflingstart")         \
-  CASE_TYPE(kGestureFlingCancel, "gestureflingcancel")       \
-  CASE_TYPE(kGesturePinchBegin, "gesturepinchbegin")         \
-  CASE_TYPE(kGesturePinchEnd, "gesturepinchend")             \
-  CASE_TYPE(kGesturePinchUpdate, "gesturepinchupdate")       \
-  CASE_TYPE(kGestureTapDown, "gesturetapdown")               \
-  CASE_TYPE(kGestureShowPress, "gestureshowpress")           \
-  CASE_TYPE(kGestureTap, "gesturetap")                       \
-  CASE_TYPE(kGestureTapCancel, "gesturetapcancel")           \
-  CASE_TYPE(kGestureShortPress, "gestureshortpress")         \
-  CASE_TYPE(kGestureLongPress, "gesturelongpress")           \
-  CASE_TYPE(kGestureLongTap, "gesturelongtap")               \
-  CASE_TYPE(kGestureTwoFingerTap, "gesturetwofingertap")     \
-  CASE_TYPE(kGestureTapUnconfirmed, "gesturetapunconfirmed") \
-  CASE_TYPE(kGestureDoubleTap, "gesturedoubletap")           \
-  CASE_TYPE(kTouchStart, "touchstart")                       \
-  CASE_TYPE(kTouchMove, "touchmove")                         \
-  CASE_TYPE(kTouchEnd, "touchend")                           \
-  CASE_TYPE(kTouchCancel, "touchcancel")                     \
-  CASE_TYPE(kTouchScrollStarted, "touchscrollstarted")       \
-  CASE_TYPE(kPointerDown, "pointerdown")                     \
-  CASE_TYPE(kPointerUp, "pointerup")                         \
-  CASE_TYPE(kPointerMove, "pointermove")                     \
-  CASE_TYPE(kPointerRawUpdate, "pointerrawupdate")           \
-  CASE_TYPE(kPointerCancel, "pointercancel")                 \
-  CASE_TYPE(kPointerCausedUaAction, "pointercauseduaaction")
+  CASE_TYPE(kGestureScrollBegin, "gestureScrollBegin")       \
+  CASE_TYPE(kGestureScrollEnd, "gestureScrollEnd")           \
+  CASE_TYPE(kGestureScrollUpdate, "gestureScrollUpdate")     \
+  CASE_TYPE(kGestureFlingStart, "gestureFlingStart")         \
+  CASE_TYPE(kGestureFlingCancel, "gestureFlingCancel")       \
+  CASE_TYPE(kGesturePinchBegin, "gesturePinchBegin")         \
+  CASE_TYPE(kGesturePinchEnd, "gesturePinchEnd")             \
+  CASE_TYPE(kGesturePinchUpdate, "gesturePinchUpdate")       \
+  CASE_TYPE(kGestureTapDown, "gestureTapDown")               \
+  CASE_TYPE(kGestureShowPress, "gestureShowPress")           \
+  CASE_TYPE(kGestureTap, "gestureTap")                       \
+  CASE_TYPE(kGestureTapCancel, "gestureTapCancel")           \
+  CASE_TYPE(kGestureShortPress, "gestureShortPress")         \
+  CASE_TYPE(kGestureLongPress, "gestureLongPress")           \
+  CASE_TYPE(kGestureLongTap, "gestureLongTap")               \
+  CASE_TYPE(kGestureTwoFingerTap, "gestureTwoFingerTap")     \
+  CASE_TYPE(kGestureTapUnconfirmed, "gestureTapUnconfirmed") \
+  CASE_TYPE(kGestureDoubleTap, "gestureDoubleTap")           \
+  CASE_TYPE(kTouchStart, "touchStart")                       \
+  CASE_TYPE(kTouchMove, "touchMove")                         \
+  CASE_TYPE(kTouchEnd, "touchEnd")                           \
+  CASE_TYPE(kTouchCancel, "touchCancel")                     \
+  CASE_TYPE(kTouchScrollStarted, "touchScrollStarted")       \
+  CASE_TYPE(kPointerDown, "pointerDown")                     \
+  CASE_TYPE(kPointerUp, "pointerUp")                         \
+  CASE_TYPE(kPointerMove, "pointerMove")                     \
+  CASE_TYPE(kPointerRawUpdate, "pointerRawUpdate")           \
+  CASE_TYPE(kPointerCancel, "pointerCancel")                 \
+  CASE_TYPE(kPointerCausedUaAction, "pointerCausedUaAction")
 
 bool Converter<blink::WebInputEvent::Type>::FromV8(
     v8::Isolate* isolate,
     v8::Handle<v8::Value> val,
     blink::WebInputEvent::Type* out) {
-  std::string type = base::ToLowerASCII(gin::V8ToString(isolate, val));
-#define CASE_TYPE(event_type, js_name)             \
-  if (type == js_name) {                           \
-    *out = blink::WebInputEvent::Type::event_type; \
-    return true;                                   \
+  std::string type = gin::V8ToString(isolate, val);
+#define CASE_TYPE(event_type, js_name)                   \
+  if (base::EqualsCaseInsensitiveASCII(type, js_name)) { \
+    *out = blink::WebInputEvent::Type::event_type;       \
+    return true;                                         \
   }
   BLINK_EVENT_TYPES()
 #undef CASE_TYPE
