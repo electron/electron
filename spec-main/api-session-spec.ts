@@ -4,7 +4,7 @@ import * as https from 'https';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ChildProcess from 'child_process';
-import { app, session, BrowserWindow, net, ipcMain, Session } from 'electron/main';
+import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
 import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './window-helpers';
@@ -1040,6 +1040,90 @@ describe('session module', () => {
 
       const [, name] = await result;
       expect(name).to.deep.equal('SecurityError');
+    });
+  });
+
+  describe('ses.setPermissionCheckHandler(handler)', () => {
+    afterEach(closeAllWindows);
+    it('details provides requestingURL for mainFrame', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler'
+        }
+      });
+      const ses = w.webContents.session;
+      const loadUrl = 'https://myfakesite/';
+      let handlerDetails : Electron.PermissionCheckHandlerHandlerDetails;
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb('<html><script>console.log(\'test\');</script></html>');
+      });
+
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+        if (permission === 'clipboard-read') {
+          handlerDetails = details;
+          return true;
+        }
+        return false;
+      });
+
+      const readClipboardPermission: any = () => {
+        return w.webContents.executeJavaScript(`
+          navigator.permissions.query({name: 'clipboard-read'})
+              .then(permission => permission.state).catch(err => err.message);
+        `, true);
+      };
+
+      await w.loadURL(loadUrl);
+      const state = await readClipboardPermission();
+      expect(state).to.equal('granted');
+      expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
+    });
+
+    it('details provides requestingURL for cross origin subFrame', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler'
+        }
+      });
+      const ses = w.webContents.session;
+      const loadUrl = 'https://myfakesite/';
+      let handlerDetails : Electron.PermissionCheckHandlerHandlerDetails;
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb('<html><script>console.log(\'test\');</script></html>');
+      });
+
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+        if (permission === 'clipboard-read') {
+          handlerDetails = details;
+          return true;
+        }
+        return false;
+      });
+
+      const readClipboardPermission: any = (frame: WebFrameMain) => {
+        return frame.executeJavaScript(`
+          navigator.permissions.query({name: 'clipboard-read'})
+              .then(permission => permission.state).catch(err => err.message);
+        `, true);
+      };
+
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+      w.webContents.executeJavaScript(`
+        var iframe = document.createElement('iframe');
+        iframe.src = '${loadUrl}';
+        document.body.appendChild(iframe);
+        null;
+      `);
+      const [,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-finish-load');
+      const state = await readClipboardPermission(webFrameMain.fromId(frameProcessId, frameRoutingId));
+      expect(state).to.equal('granted');
+      expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
+      expect(handlerDetails!.isMainFrame).to.be.false();
+      expect(handlerDetails!.embeddingOrigin).to.equal('file:///');
     });
   });
 

@@ -44,14 +44,14 @@ are the different categories and what you can expect on each one:
   application.
 - **Processes in Electron**: In-depth reference on Electron processes and how to work with them.
 - **Best Practices**: Important checklists to keep in mind when developing an Electron app.
-- **How-To Examples**: Quick references to add features to your Electron app.
+- **Examples**: Quick references to add features to your Electron app.
 - **Development**: Miscellaneous development guides.
 - **Distribution**: Learn how to distribute your app to end users.
-- **Testing and debugging**: How to debug JavaScript, write tests, and other tools used
+- **Testing And Debugging**: How to debug JavaScript, write tests, and other tools used
   to create quality Electron applications.
-- **Resources**: Useful links to better understand how the Electron project works
+- **References**: Useful links to better understand how the Electron project works
   and is organized.
-- **Contributing to Electron**: Compiling Electron and making contributions can be daunting.
+- **Contributing**: Compiling Electron and making contributions can be daunting.
   We try to make it easier in this section.
 
 ## Getting help

@@ -370,9 +370,11 @@ describe('app module', () => {
       server!.once('error', error => done(error));
       server!.on('connection', client => {
         client.once('data', data => {
-          if (String(data) === 'false' && state === 'none') {
+          if (String(data) === '--first' && state === 'none') {
             state = 'first-launch';
-          } else if (String(data) === 'true' && state === 'first-launch') {
+          } else if (String(data) === '--second' && state === 'first-launch') {
+            state = 'second-launch';
+          } else if (String(data) === '--third' && state === 'second-launch') {
             done();
           } else {
             done(`Unexpected state: "${state}", data: "${data}"`);
@@ -381,7 +383,7 @@ describe('app module', () => {
       });
 
       const appPath = path.join(fixturesPath, 'api', 'relaunch');
-      const child = cp.spawn(process.execPath, [appPath]);
+      const child = cp.spawn(process.execPath, [appPath, '--first']);
       child.stdout.on('data', (c) => console.log(c.toString()));
       child.stderr.on('data', (c) => console.log(c.toString()));
       child.on('exit', (code, signal) => {

@@ -1450,6 +1450,11 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
+          it('does not go fullscreen if roundedCorners are enabled', async () => {
+            w = new BrowserWindow({ frame: false, roundedCorners: false, fullscreen: true });
+            expect(w.fullScreen).to.be.false();
+          });
+
           it('can be changed', () => {
             w.fullScreen = false;
             expect(w.fullScreen).to.be.false();
@@ -4956,6 +4961,23 @@ describe('BrowserWindow module', () => {
         await leaveFullScreen;
       });
 
+      it('should be able to load a URL while transitioning to fullscreen', async () => {
+        const w = new BrowserWindow({ fullscreen: true });
+        w.loadFile(path.join(fixtures, 'pages', 'c.html'));
+
+        const load = emittedOnce(w.webContents, 'did-finish-load');
+        const enterFS = emittedOnce(w, 'enter-full-screen');
+
+        await Promise.all([enterFS, load]);
+        expect(w.fullScreen).to.be.true();
+
+        await delay();
+
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+      });
+
       it('can be changed with setFullScreen method', async () => {
         const w = new BrowserWindow();
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
@@ -5240,7 +5262,8 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('contextIsolation option with and without sandbox option', () => {
+  // TODO (jkleinsc) renable these tests on mas arm64
+  ifdescribe(!process.mas || process.arch !== 'arm64')('contextIsolation option with and without sandbox option', () => {
     const expectedContextData = {
       preloadContext: {
         preloadProperty: 'number',
