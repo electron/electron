@@ -395,31 +395,33 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   }
 }
 
-void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
+void BrowserWindow::SetBrowserView(
+    absl::optional<gin::Handle<BrowserView>> browser_view) {
   BaseWindow::ResetBrowserViews();
-  BaseWindow::AddBrowserView(value);
+  if (browser_view)
+    BaseWindow::AddBrowserView(*browser_view);
 #if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
-void BrowserWindow::AddBrowserView(v8::Local<v8::Value> value) {
-  BaseWindow::AddBrowserView(value);
+void BrowserWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
+  BaseWindow::AddBrowserView(browser_view);
 #if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
-void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
-  BaseWindow::RemoveBrowserView(value);
+void BrowserWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
+  BaseWindow::RemoveBrowserView(browser_view);
 #if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
-void BrowserWindow::SetTopBrowserView(v8::Local<v8::Value> value,
+void BrowserWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                                       gin_helper::Arguments* args) {
-  BaseWindow::SetTopBrowserView(value, args);
+  BaseWindow::SetTopBrowserView(browser_view, args);
 #if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
