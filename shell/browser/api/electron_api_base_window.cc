@@ -761,8 +761,8 @@ void BaseWindow::SetBrowserView(
 }
 
 void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto get_that_view = browser_views_.find(browser_view->ID());
-  if (get_that_view == browser_views_.end()) {
+  auto iter = browser_views_.find(browser_view->ID());
+  if (iter == browser_views_.end()) {
     // If we're reparenting a BrowserView, ensure that it's detached from
     // its previous owner window.
     BaseWindow* owner_window = browser_view->owner_window();
@@ -778,21 +778,20 @@ void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
 }
 
 void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto get_that_view = browser_views_.find(browser_view->ID());
-  if (get_that_view != browser_views_.end()) {
+  auto iter = browser_views_.find(browser_view->ID());
+  if (iter != browser_views_.end()) {
     window_->RemoveBrowserView(browser_view->view());
     browser_view->SetOwnerWindow(nullptr);
-    (*get_that_view).second.Reset();
-    browser_views_.erase(get_that_view);
+    iter->second.Reset();
+    browser_views_.erase(iter);
   }
 }
 
 void BaseWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                                    gin_helper::Arguments* args) {
-  auto* owner_window = browser_view->owner_window();
-  auto get_that_view = browser_views_.find(browser_view->ID());
-  if (get_that_view == browser_views_.end() ||
-      (owner_window && owner_window != this)) {
+  BaseWindow* owner_window = browser_view->owner_window();
+  auto iter = browser_views_.find(browser_view->ID());
+  if (iter == browser_views_.end() || (owner_window && owner_window != this)) {
     args->ThrowError("Given BrowserView is not attached to the window");
     return;
   }
