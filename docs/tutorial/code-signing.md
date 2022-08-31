@@ -47,7 +47,7 @@ notarizing your app:
 Electron's ecosystem favors configuration and freedom, so there are multiple
 ways to get your application signed and notarized.
 
-### Using Electron Forge (recommended)
+### Using Electron Forge
 
 If you're using Electron's favorite build tool, getting your application signed
 and notarized requires a few additions to your configuration. [Forge](https://electronforge.io) is a
@@ -128,7 +128,7 @@ Your certificate password should be a **secret**. Do not share it publicly or
 commit it to your source code.
 :::
 
-### Using Electron Forge (recommended)
+### Using Electron Forge
 
 Electron's favorite build tool lets you sign your `Squirrel.Windows` and `WiX MSI` installers with a few additions to your configuration. Detailed instructions on how to configure your application can be found in the [Electron Forge Code Signing Tutorial](https://www.electronforge.io/guides/code-signing-macOS).
 
