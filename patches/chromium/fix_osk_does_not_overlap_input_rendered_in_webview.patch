@@ -62,7 +62,7 @@ index fe70c30f83e72d63e38760b5535af79e2a7056e5..d2f30d23a673eacd2cf9d06a9f7347dd
    if (!frame_connector_)
      return true;
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.h b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-index 457dabe428e84230b2e831e9281feee06e7c8e76..94e564300f0131e4897318a365d0913487eac66e 100644
+index 457dabe428e84230b2e831e9281feee06e7c8e76..b767996df15f4725b545f89d58594a7fb9f5ffd5 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.h
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.h
 @@ -25,6 +25,7 @@
@@ -88,7 +88,7 @@ index 457dabe428e84230b2e831e9281feee06e7c8e76..94e564300f0131e4897318a365d09134
    RenderWidgetHostViewBase* GetRootRenderWidgetHostView() const;
  
 +  void OnKeyboardVisible(const gfx::Rect& rect) override;
-+  void OnKeyboardHidden() override; 
++  void OnKeyboardHidden() override;
 +
   protected:
    friend class RenderWidgetHostView;
