@@ -220,10 +220,10 @@ void ElectronBrowserContext::InitPrefs() {
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  auto* current_dictionaries =
-      prefs()->Get(spellcheck::prefs::kSpellCheckDictionaries);
+  base::Value::List current_dictionaries =
+      prefs()->GetValueList(spellcheck::prefs::kSpellCheckDictionaries).Clone();
   // No configured dictionaries, the default will be en-US
-  if (current_dictionaries->GetListDeprecated().empty()) {
+  if (current_dictionaries.empty()) {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
