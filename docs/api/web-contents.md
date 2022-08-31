@@ -130,10 +130,6 @@ Corresponds to the points in time when the spinner of the tab stopped spinning.
 
 #### Event: 'dom-ready'
 
-Returns:
-
-* `event` Event
-
 Emitted when the document in the top-level frame is loaded.
 
 #### Event: 'page-title-updated'
@@ -155,6 +151,18 @@ Returns:
 * `favicons` string[] - Array of URLs.
 
 Emitted when page receives favicon urls.
+
+#### Event: 'content-bounds-updated'
+
+Returns:
+
+* `event` Event
+* `bounds` [Rectangle](structures/rectangle.md) - requested new content bounds
+
+Emitted when the page calls `window.moveTo`, `window.resizeTo` or related APIs.
+
+By default, this will move the window. To prevent that behavior, call
+`event.preventDefault()`.
 
 #### Event: 'did-create-window'
 

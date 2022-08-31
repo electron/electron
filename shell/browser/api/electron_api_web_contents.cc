@@ -1182,8 +1182,9 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnSetContentBounds(rect);
+  if (!Emit("content-bounds-updated", rect))
+    for (ExtendedWebContentsObserver& observer : observers_)
+      observer.OnSetContentBounds(rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
