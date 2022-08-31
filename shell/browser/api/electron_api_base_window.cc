@@ -766,7 +766,9 @@ void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
     // If we're reparenting a BrowserView, ensure that it's detached from
     // its previous owner window.
     BaseWindow* owner_window = browser_view->owner_window();
-    if (owner_window && owner_window != this) {
+    if (owner_window) {
+      // iter == browser_views_.end() should imply owner_window != this.
+      DCHECK_NE(owner_window, this);
       owner_window->RemoveBrowserView(browser_view);
       browser_view->SetOwnerWindow(nullptr);
     }
