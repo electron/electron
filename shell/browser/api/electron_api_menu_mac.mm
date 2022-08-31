@@ -14,7 +14,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/native_window.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/keyboard_util.h"
 #include "shell/common/node_includes.h"
 
@@ -156,7 +155,6 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   base::mac::ScopedSendingEvent sendingEventScoper;
 
   // Don't emit unresponsive event when showing menu.
-  electron::UnresponsiveSuppressor suppressor;
   [menu popUpMenuPositioningItem:item atLocation:position inView:view];
 }
 
