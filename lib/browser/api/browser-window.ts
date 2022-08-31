@@ -1,4 +1,5 @@
 import { BaseWindow, WebContents, Event, BrowserView, TouchBar } from 'electron/main';
+import * as deprecate from '@electron/internal/common/deprecate';
 import type { BrowserWindow as BWT } from 'electron/main';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
@@ -93,72 +94,31 @@ BrowserWindow.prototype.setTouchBar = function (touchBar) {
 
 // Forwarded to webContents:
 
-BrowserWindow.prototype.loadURL = function (...args) {
-  return this.webContents.loadURL(...args);
-};
+const deprecatedMethods = [
+  'loadURL',
+  'getURL',
+  'loadFile',
+  'reload',
+  'send',
+  'openDevTools',
+  'closeDevTools',
+  'isDevToolsOpened',
+  'isDevToolsFocused',
+  'toggleDevTools',
+  'inspectElement',
+  'inspectSharedWorker',
+  'inspectServiceWorker',
+  'showDefinitionForSelection',
+  'capturePage',
+  'getBackgroundThrottling',
+  'setBackgroundThrottling'
+];
 
-BrowserWindow.prototype.getURL = function () {
-  return this.webContents.getURL();
-};
-
-BrowserWindow.prototype.loadFile = function (...args) {
-  return this.webContents.loadFile(...args);
-};
-
-BrowserWindow.prototype.reload = function (...args) {
-  return this.webContents.reload(...args);
-};
-
-BrowserWindow.prototype.send = function (...args) {
-  return this.webContents.send(...args);
-};
-
-BrowserWindow.prototype.openDevTools = function (...args) {
-  return this.webContents.openDevTools(...args);
-};
-
-BrowserWindow.prototype.closeDevTools = function () {
-  return this.webContents.closeDevTools();
-};
-
-BrowserWindow.prototype.isDevToolsOpened = function () {
-  return this.webContents.isDevToolsOpened();
-};
-
-BrowserWindow.prototype.isDevToolsFocused = function () {
-  return this.webContents.isDevToolsFocused();
-};
-
-BrowserWindow.prototype.toggleDevTools = function () {
-  return this.webContents.toggleDevTools();
-};
-
-BrowserWindow.prototype.inspectElement = function (...args) {
-  return this.webContents.inspectElement(...args);
-};
-
-BrowserWindow.prototype.inspectSharedWorker = function () {
-  return this.webContents.inspectSharedWorker();
-};
-
-BrowserWindow.prototype.inspectServiceWorker = function () {
-  return this.webContents.inspectServiceWorker();
-};
-
-BrowserWindow.prototype.showDefinitionForSelection = function () {
-  return this.webContents.showDefinitionForSelection();
-};
-
-BrowserWindow.prototype.capturePage = function (...args) {
-  return this.webContents.capturePage(...args);
-};
-
-BrowserWindow.prototype.getBackgroundThrottling = function () {
-  return this.webContents.getBackgroundThrottling();
-};
-
-BrowserWindow.prototype.setBackgroundThrottling = function (allowed: boolean) {
-  return this.webContents.setBackgroundThrottling(allowed);
-};
+for (const method of deprecatedMethods as (keyof Electron.BrowserWindow)[]) {
+  (BrowserWindow.prototype[method] as any) = function (this: Electron.BrowserWindow, ...args: any[]) {
+    deprecate.warn(`browserWindow.${method}`, `browserWindow.webContents.${method}`);
+    return (this.webContents[method as keyof Electron.WebContents] as any)(...args);
+  };
+}
 
 module.exports = BrowserWindow;

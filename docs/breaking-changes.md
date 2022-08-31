@@ -14,6 +14,24 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (22.0)
 
+### Deprecated: `BrowserWindow` APIs
+
+The following APIs have been deprecated:
+
+* `browserWindow.loadURL`
+* `browserWindow.loadFile`
+* `browserWindow.reload`
+* `browserWindow.showDefinitionForSelection`
+* `browserWindow.capturePage`
+
+Use the webContents APIs instead:
+
+* `browserWindow.webContents.loadURL`
+* `browserWindow.webContents.loadFile`
+* `browserWindow.webContents.reload`
+* `browserWindow.webContents.showDefinitionForSelection`
+* `browserWindow.webContents.capturePage`
+
 ### Removed: WebContents `new-window` event
 
 The `new-window` event of WebContents has been removed. It is replaced by [`webContents.setWindowOpenHandler()`](api/web-contents.md#contentssetwindowopenhandlerhandler).
