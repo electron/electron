@@ -129,7 +129,7 @@ index 490ae92717b71128f932822c8c63688b4b41fe48..8a32beefa78d56186d5bbf8f0e8ea222
  void VirtualKeyboardControllerWin::ShowVirtualKeyboard() {
 diff --git a/content/browser/renderer_host/virtual_keyboard_notifier.cc b/content/browser/renderer_host/virtual_keyboard_notifier.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..0b0617b39ac49e496867085bc43521f6f8fccae0
+index 0000000000000000000000000000000000000000..58370a939acb20adcc8c6d543520be4c18752ddd
 --- /dev/null
 +++ b/content/browser/renderer_host/virtual_keyboard_notifier.cc
 @@ -0,0 +1,49 @@
@@ -145,9 +145,9 @@ index 0000000000000000000000000000000000000000..0b0617b39ac49e496867085bc43521f6
 +
 +bool VirtualKeyboardNotifier::AddObserver(Observer* observer) {
 +  if (observers_.find(observer) != observers_.end()) {
-+    LOG_WARNING("Adding observer to VirtualKeyboardNotifier that is already present."
++    LOG(WARNING) << "Adding observer to VirtualKeyboardNotifier that is already present."
 +      "Please make sure you have code that removes an observer"
-+      "and/or you do not add observer more than once.");
++      "and/or you do not add observer more than once.";
 +    return false;
 +  }
 +
@@ -173,9 +173,9 @@ index 0000000000000000000000000000000000000000..0b0617b39ac49e496867085bc43521f6
 +
 +VirtualKeyboardNotifier::~VirtualKeyboardNotifier() {
 +  if (!observers_.empty()) {
-+    LOG_WARNING("Not all observers were removed from VirtualKeyboardNotifier "
++    LOG(WARNING) << "Not all observers were removed from VirtualKeyboardNotifier "
 +      "before its destruction. Please make sure you call RemoveObserver "
-+      "on observer's destruction and make sure that observer is destructable at all.");
++      "on observer's destruction and make sure that observer is destructable at all.";
 +  }
 +}
 +
