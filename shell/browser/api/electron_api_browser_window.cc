@@ -170,17 +170,6 @@ void BrowserWindow::RenderFrameCreated(
     impl->owner_delegate()->SetBackgroundOpaque(false);
 }
 
-void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
-  if (window()->IsClosed() || window()->IsVisible())
-    return;
-
-  // When there is a non-empty first paint, resize the RenderWidget to force
-  // Chromium to draw.
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  view->Show();
-  view->SetSize(window()->GetContentSize());
-}
-
 void BrowserWindow::BeforeUnloadDialogCancelled() {
   WindowList::WindowCloseCancelled(window());
   // Cancel unresponsive event when window close is cancelled.
