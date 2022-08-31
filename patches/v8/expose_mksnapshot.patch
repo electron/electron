@@ -6,10 +6,10 @@ Subject: expose_mksnapshot.patch
 Needed in order to target mksnapshot for mksnapshot zip.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 070febad7b424ee8821327e258997c86de8cad69..89d33857311b9a169c0c09f5d2f6edc9990fc3a7 100644
+index 9f1270ba971e74498dbe300d9ae6b50674756254..2f05c242709a822703abae58f434e30e15389907 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -6151,7 +6151,6 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -6175,7 +6175,6 @@ if (current_toolchain == v8_generator_toolchain) {
  
  if (current_toolchain == v8_snapshot_toolchain) {
    v8_executable("mksnapshot") {
