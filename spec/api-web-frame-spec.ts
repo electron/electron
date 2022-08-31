@@ -23,8 +23,7 @@ describe('webFrame module', () => {
     expect(wasSafe).to.equal(true);
   });
 
-  // TODO: Fix error support
-  it.skip('can use executeJavaScript and catch conversion errors', async () => {
+  it('can use executeJavaScript and catch conversion errors', async () => {
     const w = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -158,8 +157,7 @@ describe('webFrame module', () => {
         expect(result).to.equal(2);
       });
 
-      // TODO: Fix error support
-      it.skip('executeJavaScript() yields errors via a promise and a sync callback', async () => {
+      it('executeJavaScript() yields errors via a promise and a sync callback', async () => {
         const { callbackResult, callbackError, error } = await w.executeJavaScript(`new Promise(resolve => {
           let callbackResult, callbackError;
           childFrame
@@ -174,8 +172,7 @@ describe('webFrame module', () => {
         expect(error).to.be.an('error');
       });
 
-      // TODO: Fix error support
-      it.skip('executeJavaScriptInIsolatedWorld() yields errors via a promise and a sync callback', async () => {
+      it('executeJavaScriptInIsolatedWorld() yields errors via a promise and a sync callback', async () => {
         const { callbackResult, callbackError, error } = await w.executeJavaScript(`new Promise(resolve => {
           let callbackResult, callbackError;
           childFrame

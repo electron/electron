@@ -258,7 +258,7 @@ describe('webContents module', () => {
       it('rejects the returned promise with an error if an Error.prototype is thrown', async () => {
         for (const error of errorTypes) {
           await expect(w.webContents.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`))
-            .to.eventually.be.rejectedWith(/Error/);
+            .to.eventually.be.rejectedWith(error);
         }
       });
     });
@@ -316,13 +316,11 @@ describe('webContents module', () => {
     });
 
     it('resolves the returned promise with the result', async () => {
-      await w.webContents.executeJavaScriptInIsolatedWorld(999, 'window.X = 123');
-      const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, 'window.X');
+      await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
+      const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X' }]);
       const mainWorldResult = await w.webContents.executeJavaScript('window.X');
       expect(isolatedResult).to.equal(123);
-      // Side-effect of convertion from
-      // V8ValueConverterImpl::ToV8ValueImpl.
-      expect(mainWorldResult).to.equal(null);
+      expect(mainWorldResult).to.equal(undefined);
     });
   });
 
