@@ -6,18 +6,18 @@ Subject: feat: initialize asar support
 This patch initializes asar support in Node.js.
 
 diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
-index 8de57a5666131ff0c9f7ad844498e1bd3c357a70..b184a0d9ae3434af746be269495e9e4c80c58091 100644
+index 337b95133bc94e395229211c9a00a055b279fcc9..25a8464e4833ff4655db2fe37f4bd482dc147865 100644
 --- a/lib/internal/bootstrap/pre_execution.js
 +++ b/lib/internal/bootstrap/pre_execution.js
-@@ -84,6 +84,7 @@ function prepareMainThreadExecution(expandArgv1 = false) {
+@@ -94,6 +94,7 @@ function prepareMainThreadExecution(expandArgv1 = false,
    assert(!CJSLoader.hasLoadedAnyUserCJSModule);
    loadPreloadModules();
    initializeFrozenIntrinsics();
 +  setupAsarSupport();
  }
  
- function patchProcessObject(expandArgv1) {
-@@ -540,6 +541,10 @@ function loadPreloadModules() {
+ function refreshRuntimeOptions() {
+@@ -584,6 +585,10 @@ function loadPreloadModules() {
    }
  }
  
@@ -26,5 +26,5 @@ index 8de57a5666131ff0c9f7ad844498e1bd3c357a70..b184a0d9ae3434af746be269495e9e4c
 +}
 +
  module.exports = {
+   refreshRuntimeOptions,
    patchProcessObject,
-   setupCoverageHooks,
