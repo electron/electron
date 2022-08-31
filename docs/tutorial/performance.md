@@ -432,3 +432,16 @@ As of writing this article, the popular choices include [Webpack][webpack],
 [parcel]: https://parceljs.org/
 [rollup]: https://rollupjs.org/
 [vscode-first-second]: https://www.youtube.com/watch?v=r0OeHRUCCb4
+
+
+### 8. Call `Menu.setApplicationMenu(null)` when you do not need a default menu
+
+A outlined in https://github.com/electron/electron/issues/35512, you can prevent Electron from installing the default menu.
+
+#### Why?
+
+If you build your own menu or use a frameless window without menu, this saves some time by preventing Electron from installing a default menu.
+
+#### How?
+
+Call `Menu.setApplicationMenu(null)` before `app.on("ready")`.
