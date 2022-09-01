@@ -1,0 +1,46 @@
+From 51daffbf5cd816b951bdfa5b7e0b01cb953b40f5 Mon Sep 17 00:00:00 2001
+From: Yutaka Hirano <yhirano@chromium.org>
+Date: Mon, 04 Jul 2022 11:48:20 +0000
+Subject: [PATCH] Fix UAF on network::URLLoader
+
+network::URLLoader::SetUpUpload calls NotifyCompleted asynchronously,
+as it can be called in the constructor and we don't want to run
+NotifyCompleted in the constructor.
+
+The problem is that it attaches a raw pointer to the method, which leads to a use-after-free problem if the URLLoader is destructed before
+NotifyCompleted is called.
+
+Use weak pointers instead of raw pointers to avoid the problem.
+
+Bug: 1340253
+Change-Id: Iacb1e772bf7a8e3de4a7bb9de342fea9ba0f3f3c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3740150
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1020539}
+---
+
+diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
+index 89acc579..54f5037 100644
+--- a/services/network/url_loader.cc
++++ b/services/network/url_loader.cc
+@@ -950,8 +950,8 @@
+     // initializing before getting deleted.
+     base::SequencedTaskRunnerHandle::Get()->PostTask(
+         FROM_HERE,
+-        base::BindOnce(&URLLoader::NotifyCompleted, base::Unretained(this),
+-                       net::ERR_ACCESS_DENIED));
++        base::BindOnce(&URLLoader::NotifyCompleted,
++                       weak_ptr_factory_.GetWeakPtr(), net::ERR_ACCESS_DENIED));
+     return;
+   }
+   url_request_->LogBlockedBy("Opening Files");
+@@ -970,7 +970,7 @@
+     // initializing before getting deleted.
+     base::SequencedTaskRunnerHandle::Get()->PostTask(
+         FROM_HERE, base::BindOnce(&URLLoader::NotifyCompleted,
+-                                  base::Unretained(this), error_code));
++                                  weak_ptr_factory_.GetWeakPtr(), error_code));
+     return;
+   }
+   scoped_refptr<base::SequencedTaskRunner> task_runner =
