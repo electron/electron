@@ -262,9 +262,21 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
   auto* view = iwc_view->GetNativeView().GetNativeNSView();
   auto* superview = view.superview;
   const auto superview_height = superview ? superview.frame.size.height : 0;
+
+  // We need to use the content rect to calculate the titlebar height if the
+  // superview is an framed NSWindow, otherwise it will be offset incorrectly by
+  // the height of the titlebar.
+  auto titlebar_height = 0;
+  if (auto* win = [superview window]) {
+    const auto content_rect_height =
+        [win contentRectForFrameRect:superview.frame].size.height;
+    titlebar_height = superview_height - content_rect_height;
+  }
+
+  auto new_height =
+      superview_height - bounds.y() - bounds.height() + titlebar_height;
   view.frame =
-      NSMakeRect(bounds.x(), superview_height - bounds.y() - bounds.height(),
-                 bounds.width(), bounds.height());
+      NSMakeRect(bounds.x(), new_height, bounds.width(), bounds.height());
 
   // Ensure draggable regions are properly updated to reflect new bounds.
   UpdateDraggableRegions(draggable_regions_);
@@ -275,12 +287,23 @@ gfx::Rect NativeBrowserViewMac::GetBounds() {
   if (!iwc_view)
     return gfx::Rect();
   NSView* view = iwc_view->GetNativeView().GetNativeNSView();
-  const int superview_height =
-      (view.superview) ? view.superview.frame.size.height : 0;
-  return gfx::Rect(
-      view.frame.origin.x,
-      superview_height - view.frame.origin.y - view.frame.size.height,
-      view.frame.size.width, view.frame.size.height);
+  auto* superview = view.superview;
+  const int superview_height = superview ? superview.frame.size.height : 0;
+
+  // We need to use the content rect to calculate the titlebar height if the
+  // superview is an framed NSWindow, otherwise it will be offset incorrectly by
+  // the height of the titlebar.
+  auto titlebar_height = 0;
+  if (auto* win = [superview window]) {
+    const auto content_rect_height =
+        [win contentRectForFrameRect:superview.frame].size.height;
+    titlebar_height = superview_height - content_rect_height;
+  }
+
+  auto new_height = superview_height - view.frame.origin.y -
+                    view.frame.size.height + titlebar_height;
+  return gfx::Rect(view.frame.origin.x, new_height, view.frame.size.width,
+                   view.frame.size.height);
 }
 
 void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {

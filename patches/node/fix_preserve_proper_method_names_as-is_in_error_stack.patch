@@ -40,7 +40,7 @@ index 97b017f66e2395ca90fc7562b9043579911ddc62..1d21462c8cf63ddbbf9e3b785b553a31
      at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
      at node:internal/main/run_main_module:*:*
 diff --git a/test/message/error_aggregateTwoErrors.out b/test/message/error_aggregateTwoErrors.out
-index d1dc13eacc303cc52003bd5820e7eeec8d48822b..eb85c92e63c850bbf8fbbe2c1600e783e0cd6066 100644
+index 02e8738d47f57af4c457c15a0c3acfe0a1783078..d82704d95c2df6df36261c1494625b73c6507293 100644
 --- a/test/message/error_aggregateTwoErrors.out
 +++ b/test/message/error_aggregateTwoErrors.out
 @@ -4,9 +4,9 @@ throw aggregateTwoErrors(err, originalError);
@@ -54,7 +54,31 @@ index d1dc13eacc303cc52003bd5820e7eeec8d48822b..eb85c92e63c850bbf8fbbe2c1600e783
 +    at Module._load (node:internal/modules/cjs/loader:*:*)
      at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
      at node:internal/main/run_main_module:*:* {
-   code: 'ERR0'
+   code: 'ERR0',
+@@ -14,9 +14,9 @@ AggregateError: original
+     Error: original
+         at Object.<anonymous> (*test*message*error_aggregateTwoErrors.js:*:*)
+         at Module._compile (node:internal/modules/cjs/loader:*:*)
+-        at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++        at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+         at Module.load (node:internal/modules/cjs/loader:*:*)
+-        at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++        at Module._load (node:internal/modules/cjs/loader:*:*)
+         at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+         at node:internal/main/run_main_module:*:* {
+       code: 'ERR0'
+@@ -24,9 +24,9 @@ AggregateError: original
+     Error: second error
+         at Object.<anonymous> (*test*message*error_aggregateTwoErrors.js:*:*)
+         at Module._compile (node:internal/modules/cjs/loader:*:*)
+-        at Object.Module._extensions..js (node:internal/modules/cjs/loader:*:*)
++        at Module._extensions..js (node:internal/modules/cjs/loader:*:*)
+         at Module.load (node:internal/modules/cjs/loader:*:*)
+-        at Function.Module._load (node:internal/modules/cjs/loader:*:*)
++        at Module._load (node:internal/modules/cjs/loader:*:*)
+         at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*:*)
+         at node:internal/main/run_main_module:*:* {
+       code: 'ERR1'
 diff --git a/test/message/error_exit.out b/test/message/error_exit.out
 index 2ef95b535dafe7b0a918b8d6a844e4c4a617818d..dc5e6e7d28cef3a23ca7ba2cfb1435cad55e2aeb 100644
 --- a/test/message/error_exit.out
@@ -251,6 +275,21 @@ index 3eb76ecbbef31cd224e27001b825bce210f4e170..1babe95e398c61cdd3a4e1fd82fe418e
 -    at Function.Module._load (node:internal/modules/cjs/loader:*)
 +    at Module._load (node:internal/modules/cjs/loader:*)
      at Module.require (node:internal/modules/cjs/loader:*)
+diff --git a/test/message/source_map_eval.out b/test/message/source_map_eval.out
+index 7cfd7c84fe65793cf01ee374506e18978774d730..533dbc6efc179c2d4cea844335e2863bf5741ad3 100644
+--- a/test/message/source_map_eval.out
++++ b/test/message/source_map_eval.out
+@@ -3,8 +3,8 @@ ReferenceError: alert is not defined
+     at eval (*tabs.coffee:1:14)
+     at Object.<anonymous> (*source_map_eval.js:8:1)
+     at Module._compile (node:internal/modules/cjs/loader:*)
+-    at Object.Module._extensions..js (node:internal/modules/cjs/loader:*)
++    at Module._extensions..js (node:internal/modules/cjs/loader:*)
+     at Module.load (node:internal/modules/cjs/loader:*)
+-    at Function.Module._load (node:internal/modules/cjs/loader:*)
++    at Module._load (node:internal/modules/cjs/loader:*)
+     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:*)
+     at node:internal/main/run_main_module:*
 diff --git a/test/message/source_map_reference_error_tabs.out b/test/message/source_map_reference_error_tabs.out
 index bce1b5f8911d4b34d3165d7a4bc5195cbe29211d..d56ef13b20bf9ca333e8806e3905059583c1f991 100644
 --- a/test/message/source_map_reference_error_tabs.out

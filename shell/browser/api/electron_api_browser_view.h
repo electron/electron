@@ -31,6 +31,7 @@ class Dictionary;
 namespace electron::api {
 
 class WebContents;
+class BaseWindow;
 
 class BrowserView : public gin::Wrappable<BrowserView>,
                     public gin_helper::Constructible<BrowserView>,
@@ -51,9 +52,9 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   WebContents* web_contents() const { return api_web_contents_; }
   NativeBrowserView* view() const { return view_.get(); }
 
-  NativeWindow* owner_window() const { return owner_window_.get(); }
+  BaseWindow* owner_window() const { return owner_window_.get(); }
 
-  void SetOwnerWindow(NativeWindow* window);
+  void SetOwnerWindow(BaseWindow* window);
 
   int32_t ID() const { return id_; }
 
@@ -83,7 +84,7 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   class WebContents* api_web_contents_ = nullptr;
 
   std::unique_ptr<NativeBrowserView> view_;
-  base::WeakPtr<NativeWindow> owner_window_;
+  base::WeakPtr<BaseWindow> owner_window_;
 
   int32_t id_;
 };
