@@ -1,7 +1,7 @@
-From 2083e894852cfd18bd913a91eea23f59046e6c39 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anton Bikineev <bikineev@chromium.org>
 Date: Sun, 10 Jul 2022 22:17:03 +0000
-Subject: [PATCH] Fix heap-overflow in blink::TableLayoutAlgorithmAuto::InsertSpanCell
+Subject: Fix heap-overflow in blink::TableLayoutAlgorithmAuto::InsertSpanCell
 
 The CL fixes size confusion between Member<> and raw pointers.
 
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3751138
 Reviewed-by: Kentaro Hara <haraken@chromium.org>
 Commit-Queue: Anton Bikineev <bikineev@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1022529}
----
 
 diff --git a/third_party/blink/renderer/core/layout/table_layout_algorithm_auto.cc b/third_party/blink/renderer/core/layout/table_layout_algorithm_auto.cc
-index 1e1575c..1a4a06a 100644
+index 1e1575cf47027584a9d06d7c5f6046fa15990b10..1a4a06a4761c52b8dd9ae9052b7c51b9236694a5 100644
 --- a/third_party/blink/renderer/core/layout/table_layout_algorithm_auto.cc
 +++ b/third_party/blink/renderer/core/layout/table_layout_algorithm_auto.cc
-@@ -673,7 +673,7 @@
+@@ -673,7 +673,7 @@ void TableLayoutAlgorithmAuto::InsertSpanCell(LayoutTableCell* cell) {
           span > span_cells_[pos]->ColSpan())
      pos++;
    memmove(span_cells_.data() + pos + 1, span_cells_.data() + pos,
