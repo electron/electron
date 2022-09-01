@@ -13,7 +13,6 @@
 #include "content/public/common/color_parser.h"
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/native_browser_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -133,7 +132,7 @@ BrowserWindow::~BrowserWindow() {
       host->GetWidget()->RemoveInputEventObserver(this);
     api_web_contents_->RemoveObserver(this);
     // Destroy the WebContents.
-    OnCloseContents();
+    api_web_contents_->Destroy();
   }
 }
 
@@ -177,11 +176,6 @@ void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
 void BrowserWindow::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   CloseImmediately();
-}
-
-void BrowserWindow::OnCloseContents() {
-  BaseWindow::ResetBrowserViews();
-  api_web_contents_->Destroy();
 }
 
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
@@ -297,13 +291,8 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 
 void BrowserWindow::OnWindowResize() {
 #if BUILDFLAG(IS_MAC)
-  if (!draggable_regions_.empty()) {
+  if (!draggable_regions_.empty())
     UpdateDraggableRegions(draggable_regions_);
-  } else {
-    for (NativeBrowserView* view : window_->browser_views()) {
-      view->UpdateDraggableRegions(view->GetDraggableRegions());
-    }
-  }
 #endif
   BaseWindow::OnWindowResize();
 }
@@ -369,45 +358,6 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
       web_preferences->SetBackgroundColor(ParseCSSColor(color_name));
     }
   }
-}
-
-void BrowserWindow::SetBrowserView(
-    absl::optional<gin::Handle<BrowserView>> browser_view) {
-  BaseWindow::ResetBrowserViews();
-  if (browser_view)
-    BaseWindow::AddBrowserView(*browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  BaseWindow::AddBrowserView(browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
-  BaseWindow::RemoveBrowserView(browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                                      gin_helper::Arguments* args) {
-  BaseWindow::SetTopBrowserView(browser_view, args);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::ResetBrowserViews() {
-  BaseWindow::ResetBrowserViews();
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
 }
 
 void BrowserWindow::OnDevToolsResized() {

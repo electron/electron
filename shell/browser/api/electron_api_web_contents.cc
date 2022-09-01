@@ -318,9 +318,6 @@ struct Converter<electron::api::WebContents::Type> {
       case Type::kBrowserWindow:
         type = "window";
         break;
-      case Type::kBrowserView:
-        type = "browserView";
-        break;
       case Type::kRemote:
         type = "remote";
         break;
@@ -345,8 +342,6 @@ struct Converter<electron::api::WebContents::Type> {
       return false;
     if (type == "backgroundPage") {
       *out = Type::kBackgroundPage;
-    } else if (type == "browserView") {
-      *out = Type::kBrowserView;
     } else if (type == "webview") {
       *out = Type::kWebView;
 #if BUILDFLAG(ENABLE_OSR)
@@ -739,10 +734,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
-  // BrowserViews are not attached to a window initially so they should start
-  // off as hidden. This is also important for compositor recycling. See:
-  // https://github.com/electron/electron/pull/21372
-  bool initially_shown = type_ != Type::kBrowserView;
+  bool initially_shown = true;
   options.Get(options::kShow, &initially_shown);
 
   // Obtain the session.
@@ -1169,8 +1161,7 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
-  if (type_ == Type::kBrowserWindow || type_ == Type::kOffScreen ||
-      type_ == Type::kBrowserView)
+  if (type_ == Type::kBrowserWindow || type_ == Type::kOffScreen)
     *proceed_to_fire_unload = proceed;
   else
     *proceed_to_fire_unload = true;
@@ -1491,7 +1482,7 @@ void WebContents::HandleNewRenderFrame(
     absl::optional<SkColor> maybe_color = web_preferences->GetBackgroundColor();
     web_contents()->SetPageBaseBackgroundColor(maybe_color);
 
-    bool guest = IsGuest() || type_ == Type::kBrowserView;
+    bool guest = IsGuest();
     SkColor color =
         maybe_color.value_or(guest ? SK_ColorTRANSPARENT : SK_ColorWHITE);
     SetBackgroundColor(rwhv, color);

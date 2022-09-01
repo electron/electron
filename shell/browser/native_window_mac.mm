@@ -23,7 +23,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 #include "shell/browser/ui/cocoa/electron_ns_window_delegate.h"
@@ -1206,70 +1205,6 @@ void NativeWindowMac::SetFocusable(bool focusable) {
 
 bool NativeWindowMac::IsFocusable() {
   return ![window_ disableKeyOrMainWindow];
-}
-
-void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  add_browser_view(view);
-  if (view->GetInspectableWebContentsView()) {
-    auto* native_view = view->GetInspectableWebContentsView()
-                            ->GetNativeView()
-                            .GetNativeNSView();
-    [[window_ contentView] addSubview:native_view
-                           positioned:NSWindowAbove
-                           relativeTo:nil];
-    native_view.hidden = NO;
-  }
-
-  [CATransaction commit];
-}
-
-void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  if (view->GetInspectableWebContentsView())
-    [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
-        removeFromSuperview];
-  remove_browser_view(view);
-
-  [CATransaction commit];
-}
-
-void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
-  if (!view) {
-    [CATransaction commit];
-    return;
-  }
-
-  remove_browser_view(view);
-  add_browser_view(view);
-  if (view->GetInspectableWebContentsView()) {
-    auto* native_view = view->GetInspectableWebContentsView()
-                            ->GetNativeView()
-                            .GetNativeNSView();
-    [[window_ contentView] addSubview:native_view
-                           positioned:NSWindowAbove
-                           relativeTo:nil];
-    native_view.hidden = NO;
-  }
-
-  [CATransaction commit];
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {

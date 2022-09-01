@@ -56,7 +56,6 @@ class BrowserWindow : public BaseWindow,
   void WebContentsDestroyed() override;
 
   // ExtendedWebContentsObserver:
-  void OnCloseContents() override;
   void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) override;
   void OnSetContentBounds(const gfx::Rect& rect) override;
@@ -80,13 +79,6 @@ class BrowserWindow : public BaseWindow,
   void Focus() override;
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;
-  void SetBrowserView(
-      absl::optional<gin::Handle<BrowserView>> browser_view) override;
-  void AddBrowserView(gin::Handle<BrowserView> browser_view) override;
-  void RemoveBrowserView(gin::Handle<BrowserView> browser_view) override;
-  void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                         gin_helper::Arguments* args) override;
-  void ResetBrowserViews() override;
   void OnWindowShow() override;
   void OnWindowHide() override;
 

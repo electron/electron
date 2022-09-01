@@ -22,7 +22,6 @@
 namespace electron::api {
 
 class View;
-class BrowserView;
 
 class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                    public NativeWindowObserver {
@@ -174,14 +173,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void RemoveMenu();
   void SetParentWindow(v8::Local<v8::Value> value, gin_helper::Arguments* args);
-  virtual void SetBrowserView(
-      absl::optional<gin::Handle<BrowserView>> browser_view);
-  virtual void AddBrowserView(gin::Handle<BrowserView> browser_view);
-  virtual void RemoveBrowserView(gin::Handle<BrowserView> browser_view);
-  virtual void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                                 gin_helper::Arguments* args);
-  virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
-  virtual void ResetBrowserViews();
   std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
   void SetProgressBar(double progress, gin_helper::Arguments* args);
@@ -222,7 +213,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   v8::Local<v8::Value> GetContentView() const;
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
-  v8::Local<v8::Value> GetBrowserView(gin_helper::Arguments* args) const;
   bool IsModal() const;
 
   // Extra APIs added in JS.
@@ -249,9 +239,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   // Helpers.
 
-  // Remove BrowserView.
-  void ResetBrowserView();
-
   // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
 
@@ -269,7 +256,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   v8::Global<v8::Value> content_view_;
-  std::map<int32_t, v8::Global<v8::Value>> browser_views_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;

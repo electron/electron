@@ -79,8 +79,8 @@ will be able to execute native code on the user's machine.
 Under no circumstances should you load and execute remote code with
 Node.js integration enabled. Instead, use only local files (packaged together
 with your application) to execute Node.js code. To display remote content, use
-the [`<webview>`][webview-tag] tag or [`BrowserView`][browser-view], make sure
-to disable the `nodeIntegration` and enable `contextIsolation`.
+the [`<webview>`][webview-tag] tag and make sure to disable the
+`nodeIntegration` and enable `contextIsolation`.
 :::
 
 :::info Electron security warnings
@@ -167,11 +167,10 @@ This recommendation is the default behavior in Electron since 5.0.0.
 :::
 
 It is paramount that you do not enable Node.js integration in any renderer
-([`BrowserWindow`][browser-window], [`BrowserView`][browser-view], or
-[`<webview>`][webview-tag]) that loads remote content. The goal is to limit the
-powers you grant to remote content, thus making it dramatically more difficult
-for an attacker to harm your users should they gain the ability to execute
-JavaScript on your website.
+([`BrowserWindow`][browser-window] or [`<webview>`][webview-tag]) that loads
+remote content. The goal is to limit the powers you grant to remote content,
+thus making it dramatically more difficult for an attacker to harm your users
+should they gain the ability to execute JavaScript on your website.
 
 After this, you can grant additional permissions for specific hosts. For example,
 if you are opening a BrowserWindow pointed at `https://example.com/`, you can
@@ -306,9 +305,8 @@ This recommendation is Electron's default.
 :::
 
 You may have already guessed that disabling the `webSecurity` property on a
-renderer process ([`BrowserWindow`][browser-window],
-[`BrowserView`][browser-view], or [`<webview>`][webview-tag]) disables crucial
-security features.
+renderer process ([`BrowserWindow`][browser-window], or
+[`<webview>`][webview-tag]) disables crucial security features.
 
 Do not disable `webSecurity` in production applications.
 
@@ -761,7 +759,6 @@ function validateSender(frame) {
 
 [breaking-changes]: ../breaking-changes.md
 [browser-window]: ../api/browser-window.md
-[browser-view]: ../api/browser-view.md
 [webview-tag]: ../api/webview-tag.md
 [web-contents]: ../api/web-contents.md
 [window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandlerhandler

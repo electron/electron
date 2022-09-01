@@ -45,7 +45,6 @@ class PersistentDictionary;
 namespace electron {
 
 class ElectronMenuModel;
-class NativeBrowserView;
 
 #if BUILDFLAG(IS_MAC)
 typedef NSView* NativeWindowHandle;
@@ -174,9 +173,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsFocusable();
   virtual void SetMenu(ElectronMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
-  virtual void AddBrowserView(NativeBrowserView* browser_view) = 0;
-  virtual void RemoveBrowserView(NativeBrowserView* browser_view) = 0;
-  virtual void SetTopBrowserView(NativeBrowserView* browser_view) = 0;
   virtual content::DesktopMediaID GetDesktopMediaID() const = 0;
   virtual gfx::NativeView GetNativeView() const = 0;
   virtual gfx::NativeWindow GetNativeWindow() const = 0;
@@ -365,8 +361,6 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
 
-  std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
-
   int32_t window_id() const { return next_id_; }
 
  protected:
@@ -378,14 +372,6 @@ class NativeWindow : public base::SupportsUserData,
   std::u16string GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
-
-  void add_browser_view(NativeBrowserView* browser_view) {
-    browser_views_.push_back(browser_view);
-  }
-  void remove_browser_view(NativeBrowserView* browser_view) {
-    browser_views_.remove_if(
-        [&browser_view](NativeBrowserView* n) { return (n == browser_view); });
-  }
 
   // The boolean parsing of the "titleBarOverlay" option
   bool titlebar_overlay_ = false;
@@ -446,9 +432,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Is this a modal window.
   bool is_modal_ = false;
-
-  // The browser view layer.
-  std::list<NativeBrowserView*> browser_views_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;

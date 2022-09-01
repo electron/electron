@@ -5,8 +5,8 @@
 Electron's `webview` tag is based on [Chromium's `webview`][chrome-webview], which
 is undergoing dramatic architectural changes. This impacts the stability of `webviews`,
 including rendering, navigation, and event routing. We currently recommend to not
-use the `webview` tag and to consider alternatives, like `iframe`, [Electron's `BrowserView`](browser-view.md),
-or an architecture that avoids embedded content altogether.
+use the `webview` tag and to consider alternatives, like `iframe` or an
+architecture that avoids embedded content altogether.
 
 ## Enabling
 

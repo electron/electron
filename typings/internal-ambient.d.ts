@@ -182,7 +182,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
     _linkedBinding(name: 'electron_browser_app'): { app: Electron.App, App: Function };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
-    _linkedBinding(name: 'electron_browser_browser_view'): { BrowserView: typeof Electron.BrowserView };
     _linkedBinding(name: 'electron_browser_crash_reporter'): Omit<Electron.CrashReporter, 'start'> & {
       start(submitUrl: string,
         uploadToServer: boolean,

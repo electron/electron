@@ -10,7 +10,6 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/mac/scoped_nsobject.h"
-#include "shell/browser/native_browser_view.h"
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -71,15 +70,6 @@ void BrowserWindow::UpdateDraggableRegions(
   } else {
     drag_exclude_rects = CalculateNonDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
-  }
-
-  // Draggable regions on BrowserViews are independent from those of
-  // BrowserWindows, so if a BrowserView with different draggable regions than
-  // the BrowserWindow it belongs to is superimposed on top of that window, the
-  // draggable regions of the BrowserView take precedence over those of the
-  // BrowserWindow.
-  for (NativeBrowserView* view : window_->browser_views()) {
-    view->UpdateDraggableRegions(view->GetDraggableRegions());
   }
 
   // Create and add a ControlRegionView for each region that needs to be

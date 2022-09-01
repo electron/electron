@@ -96,7 +96,7 @@ declare namespace Electron {
   interface WebPreferences {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
-    type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
+    type?: 'backgroundPage' | 'window' | 'remote' | 'webview' | 'offscreen';
   }
 
   interface Menu {
@@ -147,9 +147,10 @@ declare namespace Electron {
     _throw(error: Error | string): void;
   }
 
-  class View {}
 
   // Experimental views API
+  /*
+  class View {}
   class BaseWindow {
     constructor(args: {show: boolean})
     setContentView(view: View): void
@@ -162,6 +163,12 @@ declare namespace Electron {
   class WebContentsView {
     constructor(options: BrowserWindowConstructorOptions)
   }
+  namespace Main {
+    class BaseWindow extends Electron.BaseWindow {}
+    class View extends Electron.View {}
+    class WebContentsView extends Electron.WebContentsView {}
+  }
+  */
 
   // Deprecated / undocumented BrowserWindow methods
   interface BrowserWindow {
@@ -179,11 +186,6 @@ declare namespace Electron {
     setBackgroundThrottling(allowed: boolean): void;
   }
 
-  namespace Main {
-    class BaseWindow extends Electron.BaseWindow {}
-    class View extends Electron.View {}
-    class WebContentsView extends Electron.WebContentsView {}
-  }
 }
 
 declare namespace ElectronInternal {

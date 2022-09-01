@@ -132,11 +132,6 @@ Setting this variable is the same as passing `--log-file`
 on the command line. For more info, see `--log-file` in [command-line
 switches](./command-line-switches.md#--log-filepath).
 
-### `ELECTRON_DEBUG_DRAG_REGIONS`
-
-Adds coloration to draggable regions on [`BrowserView`](./browser-view.md)s on macOS - draggable regions will be colored
-green and non-draggable regions will be colored red to aid debugging.
-
 ### `ELECTRON_DEBUG_NOTIFICATIONS`
 
 Adds extra logs to [`Notification`](./notification.md) lifecycles on macOS to aid in debugging. Extra logging will be displayed when new Notifications are created or activated. They will also be displayed when common actions are taken: a notification is shown, dismissed, its button is clicked, or it is replied to.

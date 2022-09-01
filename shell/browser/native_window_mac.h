@@ -105,9 +105,6 @@ class NativeWindowMac : public NativeWindow,
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
-  void AddBrowserView(NativeBrowserView* browser_view) override;
-  void RemoveBrowserView(NativeBrowserView* browser_view) override;
-  void SetTopBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
   content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::NativeView GetNativeView() const override;

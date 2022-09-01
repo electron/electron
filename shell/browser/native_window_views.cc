@@ -18,7 +18,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/native_browser_view_views.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -1273,50 +1272,6 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 }
 
-void NativeWindowViews::AddBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
-    return;
-  }
-
-  add_browser_view(view);
-  if (view->GetInspectableWebContentsView())
-    content_view()->AddChildView(
-        view->GetInspectableWebContentsView()->GetView());
-}
-
-void NativeWindowViews::RemoveBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
-    return;
-  }
-
-  if (view->GetInspectableWebContentsView())
-    content_view()->RemoveChildView(
-        view->GetInspectableWebContentsView()->GetView());
-  remove_browser_view(view);
-}
-
-void NativeWindowViews::SetTopBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
-    return;
-  }
-
-  remove_browser_view(view);
-  add_browser_view(view);
-
-  if (view->GetInspectableWebContentsView())
-    content_view()->ReorderChildView(
-        view->GetInspectableWebContentsView()->GetView(), -1);
-}
-
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
@@ -1567,11 +1522,6 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   if (widget_size_ != new_bounds.size()) {
     int width_delta = new_bounds.width() - widget_size_.width();
     int height_delta = new_bounds.height() - widget_size_.height();
-    for (NativeBrowserView* item : browser_views()) {
-      auto* native_view = static_cast<NativeBrowserViewViews*>(item);
-      native_view->SetAutoResizeProportions(widget_size_);
-      native_view->AutoResize(new_bounds, width_delta, height_delta);
-    }
 
     NotifyWindowResize();
     widget_size_ = new_bounds.size();
@@ -1615,16 +1565,6 @@ views::View* NativeWindowViews::GetContentsView() {
 bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     gfx::NativeView child,
     const gfx::Point& location) {
-  // App window should claim mouse events that fall within any BrowserViews'
-  // draggable region.
-  for (auto* view : browser_views()) {
-    auto* native_view = static_cast<NativeBrowserViewViews*>(view);
-    auto* view_draggable_region = native_view->draggable_region();
-    if (view_draggable_region &&
-        view_draggable_region->contains(location.x(), location.y()))
-      return false;
-  }
-
   // App window should claim mouse events that fall within the draggable region.
   if (draggable_region() &&
       draggable_region()->contains(location.x(), location.y()))

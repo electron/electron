@@ -109,7 +109,6 @@ class WebContents : public ExclusiveAccessContext,
   enum class Type {
     kBackgroundPage,  // An extension background page.
     kBrowserWindow,   // Used by BrowserWindow.
-    kBrowserView,     // Used by BrowserView.
     kRemote,          // Thin wrap around an existing WebContents.
     kWebView,         // Used by <webview>.
     kOffScreen,       // Used for offscreen rendering

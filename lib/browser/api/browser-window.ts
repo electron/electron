@@ -1,4 +1,4 @@
-import { BaseWindow, WebContents, Event, BrowserView, TouchBar } from 'electron/main';
+import { BaseWindow, WebContents, Event, TouchBar } from 'electron/main';
 import type { BrowserWindow as BWT } from 'electron/main';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
@@ -6,7 +6,7 @@ Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
 
 BrowserWindow.prototype._init = function (this: BWT) {
   // Call parent class's _init.
-  BaseWindow.prototype._init.call(this);
+  (BaseWindow.prototype as any)._init.call(this);
 
   // Avoid recursive require.
   const { app } = require('electron');
@@ -26,6 +26,34 @@ BrowserWindow.prototype._init = function (this: BWT) {
   });
   this.on('focus', (event: Event) => {
     app.emit('browser-window-focus', event, this);
+  });
+
+  let unresponsiveEvent: any = null;
+  const emitUnresponsiveEvent = () => {
+    unresponsiveEvent = null;
+    if (!this.isDestroyed() && this.isEnabled()) { this.emit('unresponsive'); }
+  };
+  this.webContents.on('unresponsive', () => {
+    if (!unresponsiveEvent) { unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 50); }
+  });
+  this.webContents.on('responsive', () => {
+    if (unresponsiveEvent) {
+      clearTimeout(unresponsiveEvent);
+      unresponsiveEvent = null;
+    }
+    this.emit('responsive');
+  });
+  this.on('close', (e) => {
+    e.preventDefault();
+    if (!this.webContents || this.webContents.isDestroyed()) return;
+
+    if (!unresponsiveEvent) { unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 5000); }
+
+    this.webContents.close({ waitForBeforeUnload: true });
+  });
+  this.webContents.on('destroyed', () => {
+    clearTimeout(unresponsiveEvent);
+    unresponsiveEvent = null;
   });
 
   // Subscribe to visibilityState changes and pass to renderer process.
@@ -81,10 +109,6 @@ BrowserWindow.getFocusedWindow = () => {
 
 BrowserWindow.fromWebContents = (webContents: WebContents) => {
   return webContents.getOwnerBrowserWindow();
-};
-
-BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
-  return BrowserWindow.fromWebContents(browserView.webContents);
 };
 
 BrowserWindow.prototype.setTouchBar = function (touchBar) {

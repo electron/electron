@@ -10,7 +10,6 @@
 
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
-#include "shell/browser/api/electron_api_browser_view.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -161,7 +160,6 @@ void BaseWindow::OnWindowClosed() {
   Emit("closed");
 
   RemoveFromParentChildWindows();
-  BaseWindow::ResetBrowserViews();
 
   // Destroy the native class when window is closed.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
@@ -315,7 +313,6 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 #endif
 
 void BaseWindow::SetContentView(gin::Handle<View> view) {
-  ResetBrowserViews();
   content_view_.Reset(isolate(), view.ToV8());
   window_->SetContentView(view->view());
 }
@@ -753,54 +750,6 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
   }
 }
 
-void BaseWindow::SetBrowserView(
-    absl::optional<gin::Handle<BrowserView>> browser_view) {
-  ResetBrowserViews();
-  if (browser_view)
-    AddBrowserView(*browser_view);
-}
-
-void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = browser_views_.find(browser_view->ID());
-  if (iter == browser_views_.end()) {
-    // If we're reparenting a BrowserView, ensure that it's detached from
-    // its previous owner window.
-    BaseWindow* owner_window = browser_view->owner_window();
-    if (owner_window) {
-      // iter == browser_views_.end() should imply owner_window != this.
-      DCHECK_NE(owner_window, this);
-      owner_window->RemoveBrowserView(browser_view);
-      browser_view->SetOwnerWindow(nullptr);
-    }
-
-    window_->AddBrowserView(browser_view->view());
-    browser_view->SetOwnerWindow(this);
-    browser_views_[browser_view->ID()].Reset(isolate(), browser_view.ToV8());
-  }
-}
-
-void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = browser_views_.find(browser_view->ID());
-  if (iter != browser_views_.end()) {
-    window_->RemoveBrowserView(browser_view->view());
-    browser_view->SetOwnerWindow(nullptr);
-    iter->second.Reset();
-    browser_views_.erase(iter);
-  }
-}
-
-void BaseWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                                   gin_helper::Arguments* args) {
-  BaseWindow* owner_window = browser_view->owner_window();
-  auto iter = browser_views_.find(browser_view->ID());
-  if (iter == browser_views_.end() || (owner_window && owner_window != this)) {
-    args->ThrowError("Given BrowserView is not attached to the window");
-    return;
-  }
-
-  window_->SetTopBrowserView(browser_view->view());
-}
-
 std::string BaseWindow::GetMediaSourceId() const {
   return window_->GetDesktopMediaID().ToString();
 }
@@ -985,31 +934,6 @@ std::vector<v8::Local<v8::Object>> BaseWindow::GetChildWindows() const {
   return child_windows_.Values(isolate());
 }
 
-v8::Local<v8::Value> BaseWindow::GetBrowserView(
-    gin_helper::Arguments* args) const {
-  if (browser_views_.empty()) {
-    return v8::Null(isolate());
-  } else if (browser_views_.size() == 1) {
-    auto first_view = browser_views_.begin();
-    return v8::Local<v8::Value>::New(isolate(), (*first_view).second);
-  } else {
-    args->ThrowError(
-        "BrowserWindow have multiple BrowserViews, "
-        "Use getBrowserViews() instead");
-    return v8::Null(isolate());
-  }
-}
-
-std::vector<v8::Local<v8::Value>> BaseWindow::GetBrowserViews() const {
-  std::vector<v8::Local<v8::Value>> ret;
-
-  for (auto const& views_iter : browser_views_) {
-    ret.push_back(v8::Local<v8::Value>::New(isolate(), views_iter.second));
-  }
-
-  return ret;
-}
-
 bool BaseWindow::IsModal() const {
   return window_->is_modal();
 }
@@ -1105,30 +1029,6 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 
 int32_t BaseWindow::GetID() const {
   return weak_map_id();
-}
-
-void BaseWindow::ResetBrowserViews() {
-  v8::HandleScope scope(isolate());
-
-  for (auto& item : browser_views_) {
-    gin::Handle<BrowserView> browser_view;
-    if (gin::ConvertFromV8(isolate(),
-                           v8::Local<v8::Value>::New(isolate(), item.second),
-                           &browser_view) &&
-        !browser_view.IsEmpty()) {
-      // There's a chance that the BrowserView may have been reparented - only
-      // reset if the owner window is *this* window.
-      BaseWindow* owner_window = browser_view->owner_window();
-      DCHECK_EQ(owner_window, this);
-      browser_view->SetOwnerWindow(nullptr);
-      window_->RemoveBrowserView(browser_view->view());
-      browser_view->SetOwnerWindow(nullptr);
-    }
-
-    item.second.Reset();
-  }
-
-  browser_views_.clear();
 }
 
 void BaseWindow::RemoveFromParentChildWindows() {
@@ -1241,10 +1141,6 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMenu", &BaseWindow::SetMenu)
       .SetMethod("removeMenu", &BaseWindow::RemoveMenu)
       .SetMethod("setParentWindow", &BaseWindow::SetParentWindow)
-      .SetMethod("setBrowserView", &BaseWindow::SetBrowserView)
-      .SetMethod("addBrowserView", &BaseWindow::AddBrowserView)
-      .SetMethod("removeBrowserView", &BaseWindow::RemoveBrowserView)
-      .SetMethod("setTopBrowserView", &BaseWindow::SetTopBrowserView)
       .SetMethod("getMediaSourceId", &BaseWindow::GetMediaSourceId)
       .SetMethod("getNativeWindowHandle", &BaseWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &BaseWindow::SetProgressBar)
@@ -1292,8 +1188,6 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getContentView", &BaseWindow::GetContentView)
       .SetMethod("getParentWindow", &BaseWindow::GetParentWindow)
       .SetMethod("getChildWindows", &BaseWindow::GetChildWindows)
-      .SetMethod("getBrowserView", &BaseWindow::GetBrowserView)
-      .SetMethod("getBrowserViews", &BaseWindow::GetBrowserViews)
       .SetMethod("isModal", &BaseWindow::IsModal)
       .SetMethod("setThumbarButtons", &BaseWindow::SetThumbarButtons)
 #if defined(TOOLKIT_VIEWS)
