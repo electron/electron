@@ -1,9 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: drh <>
 Date: Wed, 20 Jul 2022 17:01:18 +0000
-Subject: =?UTF-8?q?Simplify=20the=20logic=20that=20converts=20the=20"1"=20?=
- =?UTF-8?q?expression=20in=20"ORDER=20BY=201"=20into=20a=0Acopy=20of=20the?=
- =?UTF-8?q?=20expression=20that=20defines=20the=20first=20output=20column.?=
+Subject: Simplify the logic that converts the "1" expression in "ORDER BY 1"
+ into a copy of the expression that defines the first output column.
 
 FossilOrigin-Name: 449935914c3f64e37bbfb9842e868927222fa3d5315c123a32818e67fcfbbf60
 
