@@ -156,10 +156,7 @@ static_library("chrome") {
     "//services/strings",
   ]
 
-  deps = [
-    "//chrome/browser:resource_prefetch_predictor_proto",
-    "//components/optimization_guide/proto:optimization_guide_proto",
-  ]
+  deps = [ "//chrome/browser:resource_prefetch_predictor_proto" ]
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
