@@ -1,5 +1,9 @@
-#ifndef ELECTRON_SHELL_BROWSER_RENDERER_HOST_VIRTUAL_KEYBOARD_NOTIFIER_H_
-#define ELECTRON_SHELL_BROWSER_RENDERER_HOST_VIRTUAL_KEYBOARD_NOTIFIER_H_
+// Copyright (c) 2022 Microsoft. All rights reserved.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef ELECTRON_SHELL_BROWSER_VIRTUAL_KEYBOARD_NOTIFIER_H_
+#define ELECTRON_SHELL_BROWSER_VIRTUAL_KEYBOARD_NOTIFIER_H_
 
 #include <unordered_set>
 
@@ -41,4 +45,4 @@ class VirtualKeyboardNotifier {
 
 }  // namespace electron
 
-#endif  // ELECTRON_SHELL_BROWSER_RENDERER_HOST_VIRTUAL_KEYBOARD_NOTIFIER_H_
+#endif  // ELECTRON_SHELL_BROWSER_VIRTUAL_KEYBOARD_NOTIFIER_H_
