@@ -1,7 +1,7 @@
-From 51daffbf5cd816b951bdfa5b7e0b01cb953b40f5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yutaka Hirano <yhirano@chromium.org>
-Date: Mon, 04 Jul 2022 11:48:20 +0000
-Subject: [PATCH] Fix UAF on network::URLLoader
+Date: Mon, 4 Jul 2022 11:48:20 +0000
+Subject: Fix UAF on network::URLLoader
 
 network::URLLoader::SetUpUpload calls NotifyCompleted asynchronously,
 as it can be called in the constructor and we don't want to run
@@ -18,13 +18,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3740150
 Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
 Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1020539}
----
 
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 89acc579..54f5037 100644
+index 62201fd4f11ce500b3a9d82fffe7776bf8a15eb0..433edfd8be00d912ffe482283d0e0d1b093b8039 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -950,8 +950,8 @@
+@@ -989,8 +989,8 @@ void URLLoader::OpenFilesForUpload(const ResourceRequest& request) {
      // initializing before getting deleted.
      base::SequencedTaskRunnerHandle::Get()->PostTask(
          FROM_HERE,
@@ -35,7 +34,7 @@ index 89acc579..54f5037 100644
      return;
    }
    url_request_->LogBlockedBy("Opening Files");
-@@ -970,7 +970,7 @@
+@@ -1009,7 +1009,7 @@ void URLLoader::SetUpUpload(const ResourceRequest& request,
      // initializing before getting deleted.
      base::SequencedTaskRunnerHandle::Get()->PostTask(
          FROM_HERE, base::BindOnce(&URLLoader::NotifyCompleted,
