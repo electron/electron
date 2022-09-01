@@ -1,7 +1,8 @@
-From d74d2b9f00c7cbc49dfc35d07cb685bfd28444bc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Zakhar Voit <voit@google.com>
 Date: Wed, 24 Aug 2022 10:59:16 +0000
-Subject: [PATCH] [M102-LTS] Ensure mouse lock widget pointers are cleared in WebContents destructor
+Subject: Ensure mouse lock widget pointers are cleared in WebContents
+ destructor
 
 Requesting mouse/pointer lock (e.g., via requestPointerLock() from JS)
 results in setting mouse_lock_widget_ to point to the
@@ -50,13 +51,12 @@ Commit-Queue: Zakhar Voit <voit@google.com>
 Reviewed-by: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/5005@{#1320}
 Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
----
 
 diff --git a/chrome/browser/apps/guest_view/web_view_interactive_browsertest.cc b/chrome/browser/apps/guest_view/web_view_interactive_browsertest.cc
-index 2a6d2ab..b9465c3 100644
+index eabc5f0ff26468ce557e7eff5e7d1108eb84887a..e078b7f461b21c498e5d60b150978f34cb3c7ad2 100644
 --- a/chrome/browser/apps/guest_view/web_view_interactive_browsertest.cc
 +++ b/chrome/browser/apps/guest_view/web_view_interactive_browsertest.cc
-@@ -1490,6 +1490,40 @@
+@@ -1490,6 +1490,40 @@ IN_PROC_BROWSER_TEST_F(WebViewInteractiveTest, MAYBE_KeyboardFocusWindowCycle) {
    ASSERT_TRUE(next_step_listener.WaitUntilSatisfied());
  }
  
@@ -99,7 +99,7 @@ index 2a6d2ab..b9465c3 100644
  // verify this, a <webview> with an <input> inside is loaded. Then the <input>
 diff --git a/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.html b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.html
 new file mode 100644
-index 0000000..936af1b4
+index 0000000000000000000000000000000000000000..936af1b4ef367a72dbc9c689d119019a10856f42
 --- /dev/null
 +++ b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.html
 @@ -0,0 +1,10 @@
@@ -115,7 +115,7 @@ index 0000000..936af1b4
 +</html>
 diff --git a/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.js b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.js
 new file mode 100644
-index 0000000..c851df9d
+index 0000000000000000000000000000000000000000..c851df9d0ffce8ec432902fb2cd0a3b6ef5047c8
 --- /dev/null
 +++ b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.js
 @@ -0,0 +1,22 @@
@@ -143,7 +143,7 @@ index 0000000..c851df9d
 +};
 diff --git a/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/manifest.json b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/manifest.json
 new file mode 100644
-index 0000000..ec20c5a
+index 0000000000000000000000000000000000000000..ec20c5a50fa78de2e1891a595096a183d6ef7223
 --- /dev/null
 +++ b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/manifest.json
 @@ -0,0 +1,13 @@
@@ -162,7 +162,7 @@ index 0000000..ec20c5a
 +}
 diff --git a/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/test.js b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/test.js
 new file mode 100644
-index 0000000..2b2b9c2
+index 0000000000000000000000000000000000000000..2b2b9c232e594f7d5d21f2ce1150518a86f92f0a
 --- /dev/null
 +++ b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/test.js
 @@ -0,0 +1,7 @@
@@ -174,10 +174,10 @@ index 0000000..2b2b9c2
 +  chrome.app.window.create('main.html', {}, function () {});
 +});
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 335e701..27d6e13 100644
+index cbcad21d8e320c6019cc7fbf31bd1c2aac5d03d8..8120b63d4d2ea000a9b9ad2e784ef0fe7effbf94 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -1048,10 +1048,22 @@
+@@ -1023,10 +1023,22 @@ WebContentsImpl::~WebContentsImpl() {
      outermost->SetAsFocusedWebContentsIfNecessary();
    }
  
@@ -202,10 +202,10 @@ index 335e701..27d6e13 100644
      widget->DetachDelegate();
    created_widgets_.clear();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 7ad2648..408e891 100644
+index fad1663512cf30b270289ecfa9c336b08fe67836..84fd84944cb587729a472f7f630d3ec1c4b1dab6 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1313,6 +1313,10 @@
+@@ -1318,6 +1318,10 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    bool CancelPrerendering(FrameTreeNode* frame_tree_node,
                            PrerenderHost::FinalStatus final_status);
  
@@ -217,10 +217,10 @@ index 7ad2648..408e891 100644
    using FrameTreeIterationCallback = base::RepeatingCallback<void(FrameTree*)>;
    using RenderViewHostIterationCallback =
 diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
-index ee42975..e484665 100644
+index 7d158699fc826ba81fe0a271605c3076b01a7590..0614592e1ac848d5d79657ba0524def297055051 100644
 --- a/content/public/test/browser_test_utils.cc
 +++ b/content/public/test/browser_test_utils.cc
-@@ -2353,6 +2353,11 @@
+@@ -2353,6 +2353,11 @@ RenderWidgetHost* GetKeyboardLockWidget(WebContents* web_contents) {
    return static_cast<WebContentsImpl*>(web_contents)->GetKeyboardLockWidget();
  }
  
@@ -233,10 +233,10 @@ index ee42975..e484665 100644
                           absl::optional<base::flat_set<ui::DomCode>> codes) {
    DCHECK(!codes.has_value() || !codes.value().empty());
 diff --git a/content/public/test/browser_test_utils.h b/content/public/test/browser_test_utils.h
-index 5867aa3..13313786 100644
+index f6b2bc3b00cb457e070d92e102692fe2423fe3ed..c74c3336a64d58f2b1ca5c971ff4102776ee57b2 100644
 --- a/content/public/test/browser_test_utils.h
 +++ b/content/public/test/browser_test_utils.h
-@@ -1063,6 +1063,9 @@
+@@ -1062,6 +1062,9 @@ void UiaGetPropertyValueVtArrayVtUnknownValidate(
  // Returns the RenderWidgetHost that holds the keyboard lock.
  RenderWidgetHost* GetKeyboardLockWidget(WebContents* web_contents);
  
