@@ -959,6 +959,12 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  if (web_contents()) {
+    content::RenderViewHost* host = web_contents()->GetRenderViewHost();
+    if (host)
+      host->GetWidget()->RemoveInputEventObserver(this);
+  }
+
   if (!inspectable_web_contents_) {
     WebContentsDestroyed();
     return;
@@ -2073,9 +2079,6 @@ void WebContents::WebContentsDestroyed() {
   // Clear the pointer stored in wrapper.
   if (GetAllWebContents().Lookup(id_))
     GetAllWebContents().Remove(id_);
-  content::RenderViewHost* host = web_contents()->GetRenderViewHost();
-  if (host)
-    host->GetWidget()->RemoveInputEventObserver(this);
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> wrapper;
