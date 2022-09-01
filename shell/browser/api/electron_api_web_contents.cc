@@ -1285,6 +1285,7 @@ void WebContents::UpdateExclusiveAccessExitBubbleContent(
     const GURL& url,
     ExclusiveAccessBubbleType bubble_type,
     ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+    bool notify_download,
     bool force_update) {}
 
 void WebContents::OnExclusiveAccessUserInput() {}
