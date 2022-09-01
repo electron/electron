@@ -1,7 +1,10 @@
-From c0a5a7d5006ddde7375fd46c1b50d3144d7c6339 Mon Sep 17 00:00:00 2001
-From: Marja Hölttä <marja@chromium.org>
-Date: Tue, 05 Jul 2022 10:01:42 +0200
-Subject: [PATCH] [M102-LTS][rab/gsab] Fix flag mismatch in serialized data
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Tue, 5 Jul 2022 10:01:42 +0200
+Subject: Fix flag mismatch in serialized data
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 (cherry picked from commit 3483b970eb1c35f96b2b605cfaf6ca25dc9b6ab9)
 
@@ -21,13 +24,12 @@ Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
 Cr-Commit-Position: refs/branch-heads/10.2@{#29}
 Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
 Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
----
 
 diff --git a/src/objects/value-serializer.cc b/src/objects/value-serializer.cc
-index 911ee9a..44603cc 100644
+index 179c47ca4903bf9cbce5a3f78eb18ef8ffc9d48b..94655f46e33b737c37c2cb3a03f9e0f385cdd454 100644
 --- a/src/objects/value-serializer.cc
 +++ b/src/objects/value-serializer.cc
-@@ -64,6 +64,17 @@
+@@ -63,6 +63,17 @@ static const uint32_t kLatestVersion = 15;
  static_assert(kLatestVersion == v8::CurrentValueSerializerFormatVersion(),
                "Exported format version must match latest version.");
  
@@ -45,7 +47,7 @@ index 911ee9a..44603cc 100644
  template <typename T>
  static size_t BytesNeededForVarint(T value) {
    static_assert(std::is_integral<T>::value && std::is_unsigned<T>::value,
-@@ -922,6 +933,8 @@
+@@ -923,6 +934,8 @@ Maybe<bool> ValueSerializer::WriteJSArrayBuffer(
    if (byte_length > std::numeric_limits<uint32_t>::max()) {
      return ThrowDataCloneError(MessageTemplate::kDataCloneError, array_buffer);
    }
@@ -54,7 +56,7 @@ index 911ee9a..44603cc 100644
    WriteTag(SerializationTag::kArrayBuffer);
    WriteVarint<uint32_t>(byte_length);
    WriteRawBytes(array_buffer->backing_store(), byte_length);
-@@ -950,7 +963,10 @@
+@@ -951,7 +964,10 @@ Maybe<bool> ValueSerializer::WriteJSArrayBufferView(JSArrayBufferView view) {
    WriteVarint(static_cast<uint8_t>(tag));
    WriteVarint(static_cast<uint32_t>(view.byte_offset()));
    WriteVarint(static_cast<uint32_t>(view.byte_length()));
@@ -66,7 +68,7 @@ index 911ee9a..44603cc 100644
    return ThrowIfOutOfMemory();
  }
  
-@@ -1979,7 +1995,7 @@
+@@ -1948,7 +1964,7 @@ MaybeHandle<JSArrayBuffer> ValueDeserializer::ReadTransferredJSArrayBuffer() {
  
  MaybeHandle<JSArrayBufferView> ValueDeserializer::ReadJSArrayBufferView(
      Handle<JSArrayBuffer> buffer) {
@@ -75,7 +77,7 @@ index 911ee9a..44603cc 100644
    uint8_t tag = 0;
    uint32_t byte_offset = 0;
    uint32_t byte_length = 0;
-@@ -2004,7 +2020,9 @@
+@@ -1972,7 +1988,9 @@ MaybeHandle<JSArrayBufferView> ValueDeserializer::ReadJSArrayBufferView(
        Handle<JSDataView> data_view =
            isolate_->factory()->NewJSDataView(buffer, byte_offset, byte_length);
        AddObjectWithID(id, data_view);
@@ -86,7 +88,7 @@ index 911ee9a..44603cc 100644
        return data_view;
      }
  #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype) \
-@@ -2021,11 +2039,39 @@
+@@ -1989,11 +2007,39 @@ MaybeHandle<JSArrayBufferView> ValueDeserializer::ReadJSArrayBufferView(
    }
    Handle<JSTypedArray> typed_array = isolate_->factory()->NewJSTypedArray(
        external_array_type, buffer, byte_offset, byte_length / element_size);
@@ -125,13 +127,13 @@ index 911ee9a..44603cc 100644
 +}
 +
  MaybeHandle<Object> ValueDeserializer::ReadJSError() {
-   uint32_t id = next_id_++;
- 
+   Handle<Object> message = isolate_->factory()->undefined_value();
+   Handle<Object> options = isolate_->factory()->undefined_value();
 diff --git a/src/objects/value-serializer.h b/src/objects/value-serializer.h
-index d6804e0..b07274a 100644
+index a3ab32b2cd556ee676a1adc565496c35ba1cfe4b..4b780caf3dbf8a940bdf877f78c0b5f912b4b9e7 100644
 --- a/src/objects/value-serializer.h
 +++ b/src/objects/value-serializer.h
-@@ -295,6 +295,9 @@
+@@ -291,6 +291,9 @@ class ValueDeserializer {
        V8_WARN_UNUSED_RESULT;
    MaybeHandle<JSArrayBufferView> ReadJSArrayBufferView(
        Handle<JSArrayBuffer> buffer) V8_WARN_UNUSED_RESULT;
@@ -143,7 +145,7 @@ index d6804e0..b07274a 100644
    MaybeHandle<JSObject> ReadWasmModuleTransfer() V8_WARN_UNUSED_RESULT;
 diff --git a/test/mjsunit/rab-gsab-valueserializer.js b/test/mjsunit/rab-gsab-valueserializer.js
 new file mode 100644
-index 0000000..f523648
+index 0000000000000000000000000000000000000000..f523648095f2508680c3c63591364e52909e1d6c
 --- /dev/null
 +++ b/test/mjsunit/rab-gsab-valueserializer.js
 @@ -0,0 +1,17 @@
