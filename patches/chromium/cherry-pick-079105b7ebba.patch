@@ -1,7 +1,7 @@
-From 079105b7ebba1f27e0c6a868f3e770b2805062c9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yuki Shiino <yukishiino@chromium.org>
 Date: Tue, 23 Aug 2022 09:18:50 +0000
-Subject: [PATCH] bindings: Add argument type checks to ObservableArray<T>
+Subject: bindings: Add argument type checks to ObservableArray<T>
 
 Performs type checks for arguments of trap functions and throws
 a TypeError if a type is wrong.
@@ -18,13 +18,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1036005}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3849901
 Cr-Commit-Position: refs/branch-heads/5112@{#1514}
 Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
----
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_handler.h b/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_handler.h
-index 1b31781..4b17428 100644
+index 1b31781f4b445b2dab7967b1137c28de50455623..4b17428992c66fad9f7eee1e2956f4218017fb8f 100644
 --- a/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_handler.h
 +++ b/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_handler.h
-@@ -54,13 +54,17 @@
+@@ -54,13 +54,17 @@ class ObservableArrayExoticObjectHandler {
        const v8::FunctionCallbackInfo<v8::Value>& info) {
      v8::Isolate* isolate = info.GetIsolate();
      v8::Local<v8::Context> current_context = isolate->GetCurrentContext();
@@ -48,7 +47,7 @@ index 1b31781..4b17428 100644
  
      V8PropertyDescriptorBag desc_bag;
      V8ObjectToPropertyDescriptor(isolate, v8_desc_obj, desc_bag,
-@@ -112,9 +116,7 @@
+@@ -112,9 +116,7 @@ class ObservableArrayExoticObjectHandler {
          desc.set_configurable(desc_bag.configurable);
        if (desc_bag.has_enumerable)
          desc.set_enumerable(desc_bag.enumerable);
@@ -59,7 +58,7 @@ index 1b31781..4b17428 100644
                 .To(&is_defined)) {
          return;
        }
-@@ -124,9 +126,7 @@
+@@ -124,9 +126,7 @@ class ObservableArrayExoticObjectHandler {
          desc.set_configurable(desc_bag.configurable);
        if (desc_bag.has_enumerable)
          desc.set_enumerable(desc_bag.enumerable);
@@ -70,7 +69,7 @@ index 1b31781..4b17428 100644
                 .To(&is_defined)) {
          return;
        }
-@@ -139,9 +139,16 @@
+@@ -139,9 +139,16 @@ class ObservableArrayExoticObjectHandler {
        const v8::FunctionCallbackInfo<v8::Value>& info) {
      v8::Isolate* isolate = info.GetIsolate();
      v8::Local<v8::Context> current_context = isolate->GetCurrentContext();
@@ -89,7 +88,7 @@ index 1b31781..4b17428 100644
  
      if (v8_property->IsString()) {
        v8::Local<v8::Uint32> v8_index;
-@@ -154,7 +161,7 @@
+@@ -154,7 +161,7 @@ class ObservableArrayExoticObjectHandler {
          ScriptState* script_state = ScriptState::From(current_context);
          ExceptionState exception_state(
              isolate, ExceptionContext::Context::kIndexedPropertyDelete,
@@ -98,7 +97,7 @@ index 1b31781..4b17428 100644
          if (!RunDeleteAlgorithm(script_state, backing_list, index,
                                  exception_state)) {
            return;
-@@ -181,9 +188,16 @@
+@@ -181,9 +188,16 @@ class ObservableArrayExoticObjectHandler {
    static void TrapGet(const v8::FunctionCallbackInfo<v8::Value>& info) {
      v8::Isolate* isolate = info.GetIsolate();
      v8::Local<v8::Context> current_context = isolate->GetCurrentContext();
@@ -117,7 +116,7 @@ index 1b31781..4b17428 100644
  
      if (v8_property->IsString()) {
        v8::Local<v8::Uint32> v8_index;
-@@ -221,9 +235,17 @@
+@@ -221,9 +235,17 @@ class ObservableArrayExoticObjectHandler {
        const v8::FunctionCallbackInfo<v8::Value>& info) {
      v8::Isolate* isolate = info.GetIsolate();
      v8::Local<v8::Context> current_context = isolate->GetCurrentContext();
@@ -137,7 +136,7 @@ index 1b31781..4b17428 100644
  
      if (v8_property->IsString()) {
        v8::Local<v8::Uint32> v8_index;
-@@ -258,9 +280,7 @@
+@@ -258,9 +280,7 @@ class ObservableArrayExoticObjectHandler {
      }
  
      v8::Local<v8::Value> v8_value;
@@ -148,7 +147,7 @@ index 1b31781..4b17428 100644
               .ToLocal(&v8_value)) {
        return;
      }
-@@ -271,9 +291,16 @@
+@@ -271,9 +291,16 @@ class ObservableArrayExoticObjectHandler {
    static void TrapHas(const v8::FunctionCallbackInfo<v8::Value>& info) {
      v8::Isolate* isolate = info.GetIsolate();
      v8::Local<v8::Context> current_context = isolate->GetCurrentContext();
@@ -167,7 +166,7 @@ index 1b31781..4b17428 100644
  
      if (v8_property->IsString()) {
        v8::Local<v8::Uint32> v8_index;
-@@ -300,8 +327,15 @@
+@@ -300,8 +327,15 @@ class ObservableArrayExoticObjectHandler {
    static void TrapOwnKeys(const v8::FunctionCallbackInfo<v8::Value>& info) {
      v8::Isolate* isolate = info.GetIsolate();
      v8::Local<v8::Context> current_context = isolate->GetCurrentContext();
@@ -184,7 +183,7 @@ index 1b31781..4b17428 100644
  
      // 2. Let length be handler.[[BackingList]]'s size.
      // 3. Let keys be an empty list.
-@@ -357,17 +391,24 @@
+@@ -357,17 +391,24 @@ class ObservableArrayExoticObjectHandler {
    static void TrapSet(const v8::FunctionCallbackInfo<v8::Value>& info) {
      v8::Isolate* isolate = info.GetIsolate();
      v8::Local<v8::Context> current_context = isolate->GetCurrentContext();
@@ -212,7 +211,7 @@ index 1b31781..4b17428 100644
          uint32_t index = v8_index->Value();
          bool result =
              DoSetTheIndexedValue(isolate, current_context, backing_list, index,
-@@ -380,7 +421,7 @@
+@@ -380,7 +421,7 @@ class ObservableArrayExoticObjectHandler {
                V8AtomicString(isolate, "length"))) {
          ExceptionState exception_state(
              isolate, ExceptionContext::Context::kAttributeSet,
@@ -221,7 +220,7 @@ index 1b31781..4b17428 100644
          bool result = DoSetTheLength(isolate, current_context, backing_list,
                                       v8_value, exception_state);
          V8SetReturnValue(info, result);
-@@ -431,11 +472,11 @@
+@@ -431,11 +472,11 @@ class ObservableArrayExoticObjectHandler {
    }
  
   private:
@@ -237,10 +236,10 @@ index 1b31781..4b17428 100644
    }
  
 diff --git a/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.cc b/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.cc
-index 8672414..88c2adf5 100644
+index 8672414aba480c4af3b7431e6db071a03d61569e..88c2adf501a3a3088c635c8d24215fbce787b3e5 100644
 --- a/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.cc
-@@ -42,7 +42,7 @@
+@@ -42,7 +42,7 @@ const WrapperTypeInfo& ObservableArrayExoticObjectImpl::wrapper_type_info_ =
  
  // static
  bindings::ObservableArrayBase*
@@ -249,7 +248,7 @@ index 8672414..88c2adf5 100644
      v8::Isolate* isolate,
      v8::Local<v8::Array> v8_proxy_target) {
    // See the implementation comment in ObservableArrayExoticObjectImpl::Wrap.
-@@ -50,6 +50,8 @@
+@@ -50,6 +50,8 @@ ObservableArrayExoticObjectImpl::ProxyTargetToObservableArrayBase(
        V8PrivateProperty::GetSymbol(isolate, kV8ProxyTargetToV8WrapperKey);
    v8::Local<v8::Value> backing_list_wrapper =
        private_property.GetOrUndefined(v8_proxy_target).ToLocalChecked();
@@ -259,10 +258,10 @@ index 8672414..88c2adf5 100644
    return ToScriptWrappable(backing_list_wrapper.As<v8::Object>())
        ->ToImpl<bindings::ObservableArrayBase>();
 diff --git a/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.h b/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.h
-index 4d262a4..8c56428 100644
+index 4d262a4981c1404d9b403b0fcf4ec9d71e109bea..8c56428c40e5b0d246b45c741f8bdcbfdcfb23ee 100644
 --- a/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.h
 +++ b/third_party/blink/renderer/bindings/core/v8/observable_array_exotic_object_impl.h
-@@ -22,7 +22,7 @@
+@@ -22,7 +22,7 @@ class CORE_EXPORT ObservableArrayExoticObjectImpl final
   public:
    // Returns the backing list object extracted from the proxy target object
    // of type JS Array.
