@@ -49,7 +49,6 @@ class BrowserWindow : public BaseWindow,
   // content::WebContentsObserver:
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
-  void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
@@ -89,7 +88,6 @@ class BrowserWindow : public BaseWindow,
   void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                          gin_helper::Arguments* args) override;
   void ResetBrowserViews() override;
-  void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) override;
   void OnWindowShow() override;
   void OnWindowHide() override;
 

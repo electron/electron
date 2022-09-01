@@ -158,18 +158,6 @@ void BrowserWindow::RenderViewHostChanged(content::RenderViewHost* old_host,
     new_host->GetWidget()->AddInputEventObserver(this);
 }
 
-void BrowserWindow::RenderFrameCreated(
-    content::RenderFrameHost* render_frame_host) {
-  if (!window()->transparent())
-    return;
-
-  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_frame_host->GetProcess()->GetID(),
-      render_frame_host->GetRoutingID());
-  if (impl)
-    impl->owner_delegate()->SetBackgroundOpaque(false);
-}
-
 void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
   if (window()->IsClosed() || window()->IsVisible())
     return;
@@ -436,23 +424,6 @@ void BrowserWindow::ResetBrowserViews() {
 
 void BrowserWindow::OnDevToolsResized() {
   UpdateDraggableRegions(draggable_regions_);
-}
-
-void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
-                                v8::Local<v8::Value> value) {
-  std::string type = gin::V8ToString(isolate, value);
-
-  auto* render_view_host = web_contents()->GetRenderViewHost();
-  if (render_view_host) {
-    auto* impl = content::RenderWidgetHostImpl::FromID(
-        render_view_host->GetProcess()->GetID(),
-        render_view_host->GetRoutingID());
-    if (impl)
-      impl->owner_delegate()->SetBackgroundOpaque(
-          type.empty() ? !window_->transparent() : false);
-  }
-
-  BaseWindow::SetVibrancy(isolate, value);
 }
 
 void BrowserWindow::FocusOnWebView() {
