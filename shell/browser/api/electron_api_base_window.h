@@ -22,6 +22,7 @@
 namespace electron::api {
 
 class View;
+class BrowserView;
 
 class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                    public NativeWindowObserver {
@@ -171,10 +172,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void RemoveMenu();
   void SetParentWindow(v8::Local<v8::Value> value, gin_helper::Arguments* args);
-  virtual void SetBrowserView(v8::Local<v8::Value> value);
-  virtual void AddBrowserView(v8::Local<v8::Value> value);
-  virtual void RemoveBrowserView(v8::Local<v8::Value> value);
-  virtual void SetTopBrowserView(v8::Local<v8::Value> value,
+  virtual void SetBrowserView(
+      absl::optional<gin::Handle<BrowserView>> browser_view);
+  virtual void AddBrowserView(gin::Handle<BrowserView> browser_view);
+  virtual void RemoveBrowserView(gin::Handle<BrowserView> browser_view);
+  virtual void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                                  gin_helper::Arguments* args);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
