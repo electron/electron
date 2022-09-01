@@ -10,9 +10,10 @@ VirtualKeyboardNotifier* VirtualKeyboardNotifier::GetInstance() {
 
 bool VirtualKeyboardNotifier::AddObserver(Observer* observer) {
   if (observers_.find(observer) != observers_.end()) {
-    LOG(WARNING) << "Adding observer to VirtualKeyboardNotifier that is already present."
-      "Please make sure you have code that removes an observer"
-      "and/or you do not add observer more than once.";
+    LOG(WARNING)
+        << "Adding observer to VirtualKeyboardNotifier that is already present."
+           "Please make sure you have code that removes an observer"
+           "and/or you do not add observer more than once.";
     return false;
   }
 
@@ -38,12 +39,13 @@ void VirtualKeyboardNotifier::NotifyKeyboardHidden() {
 
 VirtualKeyboardNotifier::~VirtualKeyboardNotifier() {
   if (!observers_.empty()) {
-    LOG(WARNING) << "Not all observers were removed from VirtualKeyboardNotifier "
-      "before its destruction. Please make sure you call RemoveObserver "
-      "on observer's destruction and make sure that observer is destructable at all.";
+    LOG(WARNING)
+        << "Not all observers were removed from VirtualKeyboardNotifier "
+           "before its destruction. Please make sure you call RemoveObserver "
+           "on observer's destruction and make sure that observer is destructable at all.";
   }
 }
 
 VirtualKeyboardNotifier::VirtualKeyboardNotifier() = default;
 
-}
+}  // namespace electron
