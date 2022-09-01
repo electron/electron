@@ -1,0 +1,248 @@
+From d74d2b9f00c7cbc49dfc35d07cb685bfd28444bc Mon Sep 17 00:00:00 2001
+From: Zakhar Voit <voit@google.com>
+Date: Wed, 24 Aug 2022 10:59:16 +0000
+Subject: [PATCH] [M102-LTS] Ensure mouse lock widget pointers are cleared in WebContents destructor
+
+Requesting mouse/pointer lock (e.g., via requestPointerLock() from JS)
+results in setting mouse_lock_widget_ to point to the
+RenderWidgetHost that has the mouse lock, in both the widget's
+WebContents and all its outer WebContents.  When a WebContents is
+destroyed, it normally checks if it has an active mouse lock widget
+and calls RejectMouseLockOrUnlockIfNecessary() if so. This usually
+results in calling LostMouseLock(), which will clear
+mouse_lock_widget_ in both the WebContents being destroyed and all its
+ancestor WebContents.  However, there's a time window where this
+doesn't work with <webview>, where a mouse lock request in the guest
+has to go up to the embedder to asynchronously ask it for the
+corresponding permission before it can be granted.  If the embedder
+ends up destroying the <webview> guest while the guest's mouse lock
+request is pending (prior to responding to that request), it could end
+up with a stale mouse_lock_widget_ pointer, since
+RejectMouseLockOrUnlockIfNecessary() follows a different path for
+pending requests and doesn't clear those pointers.  Sadly, the
+RenderWidgetHost destruction is also not going to trigger clearing
+these pointers as it normally does, since ~WebContentsImpl clears
+delegate_ pointers for all of its widgets before destroying them,
+causing ~RenderWidgetHostImpl::Destroy() to not call
+WebContentsImpl::RenderWidgetDeleted(), which normally does this.
+
+This CL ensures that all mouse_lock_widget_ pointers are cleared on
+the entire WebContents chain in the WebContentsImpl destructor. In the
+future, we could also investigate not setting mouse_lock_widget_
+before we actually decide that a mouse lock request should proceed,
+and removing the current implementation's dependency on that behavior.
+
+(cherry picked from commit 8380553a222cbc2c537ab67fc96e50f611ba4560)
+
+(cherry picked from commit 859cf771d8364577cce49da5520b0e4b44ebb5a9)
+
+Bug: 1346245
+Change-Id: Iaf1fec400ca47d7cb20c21ce145dc041317a7db6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3823606
+Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/main@{#1034481}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3838431
+Cr-Original-Commit-Position: refs/branch-heads/5112@{#1498}
+Cr-Original-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3848803
+Owners-Override: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Zakhar Voit <voit@google.com>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/5005@{#1320}
+Cr-Branched-From: 5b4d9450fee01f821b6400e947b3839727643a71-refs/heads/main@{#992738}
+---
+
+diff --git a/chrome/browser/apps/guest_view/web_view_interactive_browsertest.cc b/chrome/browser/apps/guest_view/web_view_interactive_browsertest.cc
+index 2a6d2ab..b9465c3 100644
+--- a/chrome/browser/apps/guest_view/web_view_interactive_browsertest.cc
++++ b/chrome/browser/apps/guest_view/web_view_interactive_browsertest.cc
+@@ -1490,6 +1490,40 @@
+   ASSERT_TRUE(next_step_listener.WaitUntilSatisfied());
+ }
+ 
++// Ensure that destroying a <webview> with a pending mouse lock request doesn't
++// leave a stale mouse lock widget pointer in the embedder WebContents. See
++// https://crbug.com/1346245.
++IN_PROC_BROWSER_TEST_F(WebViewInteractiveTest,
++                       DestroyGuestWithPendingPointerLock) {
++  LoadAndLaunchPlatformApp("web_view/pointer_lock_pending",
++                           "WebViewTest.LAUNCHED");
++
++  content::WebContents* embedder_web_contents = GetFirstAppWindowWebContents();
++  content::WebContents* guest_web_contents =
++      GetGuestViewManager()->WaitForSingleGuestCreated();
++
++  // The embedder is configured to remove the <webview> as soon as it receives
++  // the pointer lock permission request from the guest, without responding to
++  // it.  Hence, have the guest request pointer lock and wait for its
++  // destruction.
++  content::RenderFrameDeletedObserver observer(
++      guest_web_contents->GetMainFrame());
++  EXPECT_TRUE(content::ExecuteScript(
++      guest_web_contents,
++      "document.querySelector('div').requestPointerLock()"));
++  observer.WaitUntilDeleted();
++
++  // The embedder WebContents shouldn't have a mouse lock widget.
++  EXPECT_FALSE(GetMouseLockWidget(embedder_web_contents));
++
++  // Close the embedder app and ensure that this doesn't crash, which used to
++  // be the case if the mouse lock widget (now destroyed) hadn't been cleared
++  // in the embedder.
++  content::WebContentsDestroyedWatcher destroyed_watcher(embedder_web_contents);
++  CloseAppWindow(GetFirstAppWindow());
++  destroyed_watcher.Wait();
++}
++
+ #if BUILDFLAG(IS_MAC)
+ // This test verifies that replacement range for IME works with <webview>s. To
+ // verify this, a <webview> with an <input> inside is loaded. Then the <input>
+diff --git a/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.html b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.html
+new file mode 100644
+index 0000000..936af1b4
+--- /dev/null
++++ b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.html
+@@ -0,0 +1,10 @@
++<!--
++ * Copyright 2022 The Chromium Authors. All rights reserved.  Use of this
++ * source code is governed by a BSD-style license that can be found in the
++ * LICENSE file.
++-->
++<html>
++<body>
++  <script src="main.js"></script>
++</body>
++</html>
+diff --git a/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.js b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.js
+new file mode 100644
+index 0000000..c851df9d
+--- /dev/null
++++ b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/main.js
+@@ -0,0 +1,22 @@
++// Copyright 2022 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++onload = function() {
++  var webview = document.createElement('webview');
++
++  webview.addEventListener('permissionrequest', (e) => {
++    if (e.permission != 'pointerLock') {
++      console.log('Received unexpected permission request: ' + e.permission);
++      e.chrome.test.sendMessage('WebViewTest.FAILURE');
++    }
++    webview.parentNode.removeChild(webview);
++  });
++
++  webview.addEventListener('loadstop', (e) => {
++    chrome.test.sendMessage('WebViewTest.LAUNCHED');
++  });
++
++  webview.src = 'data:text/html,<html><body><div></div></body></html>';
++  document.body.appendChild(webview);
++};
+diff --git a/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/manifest.json b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/manifest.json
+new file mode 100644
+index 0000000..ec20c5a
+--- /dev/null
++++ b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/manifest.json
+@@ -0,0 +1,13 @@
++{
++  "name": "<webview> pointer lock test.",
++  "manifest_version": 2,
++  "version": "1",
++  "permissions": [
++    "webview"
++  ],
++  "app": {
++    "background": {
++      "scripts": ["test.js"]
++    }
++  }
++}
+diff --git a/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/test.js b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/test.js
+new file mode 100644
+index 0000000..2b2b9c2
+--- /dev/null
++++ b/chrome/test/data/extensions/platform_apps/web_view/pointer_lock_pending/test.js
+@@ -0,0 +1,7 @@
++// Copyright 2022 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++chrome.app.runtime.onLaunched.addListener(function() {
++  chrome.app.window.create('main.html', {}, function () {});
++});
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 335e701..27d6e13 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -1048,10 +1048,22 @@
+     outermost->SetAsFocusedWebContentsIfNecessary();
+   }
+ 
+-  if (mouse_lock_widget_)
++  if (mouse_lock_widget_) {
+     mouse_lock_widget_->RejectMouseLockOrUnlockIfNecessary(
+         blink::mojom::PointerLockResult::kElementDestroyed);
+ 
++    // Normally, the call above clears mouse_lock_widget_ pointers on the
++    // entire WebContents chain, since it results in calling LostMouseLock()
++    // when the mouse lock is already active. However, this doesn't work for
++    // <webview> guests if the mouse lock request is still pending while the
++    // <webview> is destroyed. Hence, ensure that all mouse lock widget
++    // pointers are cleared. See https://crbug.com/1346245.
++    for (WebContentsImpl* current = this; current;
++         current = current->GetOuterWebContents()) {
++      current->mouse_lock_widget_ = nullptr;
++    }
++  }
++
+   for (RenderWidgetHostImpl* widget : created_widgets_)
+     widget->DetachDelegate();
+   created_widgets_.clear();
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index 7ad2648..408e891 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1313,6 +1313,10 @@
+   bool CancelPrerendering(FrameTreeNode* frame_tree_node,
+                           PrerenderHost::FinalStatus final_status);
+ 
++  RenderWidgetHost* mouse_lock_widget_for_testing() {
++    return mouse_lock_widget_;
++  }
++
+  private:
+   using FrameTreeIterationCallback = base::RepeatingCallback<void(FrameTree*)>;
+   using RenderViewHostIterationCallback =
+diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
+index ee42975..e484665 100644
+--- a/content/public/test/browser_test_utils.cc
++++ b/content/public/test/browser_test_utils.cc
+@@ -2353,6 +2353,11 @@
+   return static_cast<WebContentsImpl*>(web_contents)->GetKeyboardLockWidget();
+ }
+ 
++RenderWidgetHost* GetMouseLockWidget(WebContents* web_contents) {
++  return static_cast<WebContentsImpl*>(web_contents)
++      ->mouse_lock_widget_for_testing();
++}
++
+ bool RequestKeyboardLock(WebContents* web_contents,
+                          absl::optional<base::flat_set<ui::DomCode>> codes) {
+   DCHECK(!codes.has_value() || !codes.value().empty());
+diff --git a/content/public/test/browser_test_utils.h b/content/public/test/browser_test_utils.h
+index 5867aa3..13313786 100644
+--- a/content/public/test/browser_test_utils.h
++++ b/content/public/test/browser_test_utils.h
+@@ -1063,6 +1063,9 @@
+ // Returns the RenderWidgetHost that holds the keyboard lock.
+ RenderWidgetHost* GetKeyboardLockWidget(WebContents* web_contents);
+ 
++// Returns the RenderWidgetHost that holds the mouse lock.
++RenderWidgetHost* GetMouseLockWidget(WebContents* web_contents);
++
+ // Allows tests to drive keyboard lock functionality without requiring access
+ // to the RenderWidgetHostImpl header or setting up an HTTP test server.
+ // |codes| represents the set of keys to lock.  If |codes| has no value, then
