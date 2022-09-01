@@ -24,7 +24,7 @@ index 88f9e4dd05d8efdabbbdd044f5e09e844ced3d55..c254b045494936eca14ce947e1c2de33
    g_reference_table = reference_table;
    g_fatal_error_callback = fatal_error_callback;
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index d7739924bc3c3daec848db52730bd60c72ff2d8a..78af701cb06f6cb1bdd9829b2fcc46c8d63f5c4f 100644
+index 617819d15c30bafab4fd1afc8368463018b3792d..f8e5d0246b92fd2f1316313e13ccda7ef6c57495 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -109,7 +109,8 @@ class GIN_EXPORT IsolateHolder {

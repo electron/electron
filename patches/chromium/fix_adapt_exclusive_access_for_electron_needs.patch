@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 8106b5ceec5b6b3ca01d14308a351e63eac809c1..5758757980879a9c1810c4de44f228860688d442 100644
+index e05527c70cfaf3254a7318734b3947902b5b39de..328391453dda2125e172940947d6a88794141e66 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -17,12 +17,16 @@
@@ -52,17 +52,21 @@ index 8106b5ceec5b6b3ca01d14308a351e63eac809c1..5758757980879a9c1810c4de44f22886
  
    // Keep the current state. |SetTabWithExclusiveAccess| may change the return
    // value of |IsWindowFullscreenForTabOrPending|.
-@@ -237,7 +243,9 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -237,11 +243,13 @@ void FullscreenController::EnterFullscreenModeForTab(
  }
  
  void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
 +#if 0
-   popunder_preventer_.reset();
+   // Reset the popunder preventer after the window exits content fullscreen.
+   // This activates any popup windows that were created while fullscreen.
+   base::ScopedClosureRunner reset_popunder_preventer(
+       base::BindOnce(&std::unique_ptr<PopunderPreventer>::reset,
+                      base::Unretained(&popunder_preventer_), nullptr));
 +#endif
  
    if (MaybeToggleFullscreenWithinTab(web_contents, false)) {
      // During tab capture of fullscreen-within-tab views, the browser window
-@@ -292,11 +300,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -296,11 +304,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
@@ -76,7 +80,7 @@ index 8106b5ceec5b6b3ca01d14308a351e63eac809c1..5758757980879a9c1810c4de44f22886
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -465,18 +475,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -469,18 +479,17 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -100,7 +104,7 @@ index 8106b5ceec5b6b3ca01d14308a351e63eac809c1..5758757980879a9c1810c4de44f22886
    if (option == TAB) {
      url = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -509,6 +518,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -513,6 +522,7 @@ void FullscreenController::EnterFullscreenModeInternal(
      if (!extension_caused_fullscreen_.is_empty())
        url = extension_caused_fullscreen_;
    }
@@ -108,7 +112,7 @@ index 8106b5ceec5b6b3ca01d14308a351e63eac809c1..5758757980879a9c1810c4de44f22886
  
    if (option == BROWSER)
      base::RecordAction(base::UserMetricsAction("ToggleFullscreen"));
-@@ -536,12 +546,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -540,12 +550,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
    RecordExitingUMA();
    toggled_into_fullscreen_ = false;
    started_fullscreen_transition_ = true;
