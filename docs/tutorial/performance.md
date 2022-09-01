@@ -419,6 +419,23 @@ environment that needs to handle both Node.js and browser environments.
 As of writing this article, the popular choices include [Webpack][webpack],
 [Parcel][parcel], and [rollup.js][rollup].
 
+### 8. Call `Menu.setApplicationMenu(null)` when you do not need a default menu
+
+Electron will set a default menu on startup with some standard entries. But 
+there are reasons your application might want to change that and it will
+benefit startup performance.
+
+#### Why?
+
+If you build your own menu or use a frameless window without native menu, 
+you should tell Electron early enough to not setup the default menu.
+
+#### How?
+
+Call `Menu.setApplicationMenu(null)` before `app.on("ready")`. This will
+prevent Electron from setting a default menu. See also https://github.com/electron/electron/issues/35512
+for a related discussion.
+
 [security]: ./security.md
 [chrome-devtools-tutorial]: https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/
 [worker-threads]: https://nodejs.org/api/worker_threads.html
@@ -432,16 +449,3 @@ As of writing this article, the popular choices include [Webpack][webpack],
 [parcel]: https://parceljs.org/
 [rollup]: https://rollupjs.org/
 [vscode-first-second]: https://www.youtube.com/watch?v=r0OeHRUCCb4
-
-
-### 8. Call `Menu.setApplicationMenu(null)` when you do not need a default menu
-
-A outlined in https://github.com/electron/electron/issues/35512, you can prevent Electron from installing the default menu.
-
-#### Why?
-
-If you build your own menu or use a frameless window without menu, this saves some time by preventing Electron from installing a default menu.
-
-#### How?
-
-Call `Menu.setApplicationMenu(null)` before `app.on("ready")`.
