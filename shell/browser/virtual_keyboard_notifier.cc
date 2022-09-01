@@ -42,7 +42,8 @@ VirtualKeyboardNotifier::~VirtualKeyboardNotifier() {
     LOG(WARNING)
         << "Not all observers were removed from VirtualKeyboardNotifier "
            "before its destruction. Please make sure you call RemoveObserver "
-           "on observer's destruction and make sure that observer is destructable at all.";
+           "on observer's destruction and make sure that observer is "
+           "destructable at all.";
   }
 }
 

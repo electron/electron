@@ -39,6 +39,6 @@ class VirtualKeyboardNotifier {
   std::unordered_set<Observer*> observers_;
 };
 
-}
+}  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_RENDERER_HOST_VIRTUAL_KEYBOARD_NOTIFIER_H_
