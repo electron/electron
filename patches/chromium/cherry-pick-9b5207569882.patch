@@ -1,7 +1,7 @@
-From 9b5207569882e59cc81f11fb364753569211dc48 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Wed, 31 Aug 2022 15:39:45 +0000
-Subject: [PATCH] Mojo: Validate response message type
+Subject: Mojo: Validate response message type
 
 Ensures that a response message is actually the type expected by the
 original request.
@@ -12,13 +12,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3864274
 Reviewed-by: Robert Sesek <rsesek@chromium.org>
 Commit-Queue: Ken Rockot <rockot@google.com>
 Cr-Commit-Position: refs/heads/main@{#1041553}
----
 
 diff --git a/mojo/public/cpp/bindings/interface_endpoint_client.h b/mojo/public/cpp/bindings/interface_endpoint_client.h
-index 0ebbc94..cd79a5e 100644
+index 01cba995429b0accc21986aba0e3de17d013ee95..d3a1ab3a13a6662239ec28f99e5865afa54356b3 100644
 --- a/mojo/public/cpp/bindings/interface_endpoint_client.h
 +++ b/mojo/public/cpp/bindings/interface_endpoint_client.h
-@@ -221,20 +221,32 @@
+@@ -222,20 +222,32 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) InterfaceEndpointClient
    void ForgetAsyncRequest(uint64_t request_id);
  
   private:
@@ -57,10 +56,10 @@ index 0ebbc94..cd79a5e 100644
  
      // Points to a stack-allocated variable.
 diff --git a/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc b/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
-index 3fd4822..a142f72 100644
+index b9db8f31a42b956c6125852cf162dc524d5308e6..6e87db197c603d8ac44b591f2cd70023217dcbe2 100644
 --- a/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
 +++ b/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
-@@ -30,6 +30,7 @@
+@@ -28,6 +28,7 @@
  #include "mojo/public/cpp/bindings/sync_call_restrictions.h"
  #include "mojo/public/cpp/bindings/sync_event_watcher.h"
  #include "mojo/public/cpp/bindings/thread_safe_proxy.h"
@@ -68,7 +67,7 @@ index 3fd4822..a142f72 100644
  #include "third_party/perfetto/protos/perfetto/trace/track_event/chrome_mojo_event_info.pbzero.h"
  
  namespace mojo {
-@@ -316,9 +317,27 @@
+@@ -314,9 +315,27 @@ class ResponderThunk : public MessageReceiverWithStatus {
  
  // ----------------------------------------------------------------------------
  
@@ -97,7 +96,7 @@ index 3fd4822..a142f72 100644
  
  InterfaceEndpointClient::SyncResponseInfo::~SyncResponseInfo() {}
  
-@@ -606,6 +625,7 @@
+@@ -604,6 +623,7 @@ bool InterfaceEndpointClient::SendMessageWithResponder(
    // message before calling |SendMessage()| below.
  #endif
  
@@ -105,7 +104,7 @@ index 3fd4822..a142f72 100644
    const bool is_sync = message->has_flag(Message::kFlagIsSync);
    const bool exclusive_wait = message->has_flag(Message::kFlagNoInterrupt);
    if (!controller_->SendMessage(message))
-@@ -622,7 +642,8 @@
+@@ -620,7 +640,8 @@ bool InterfaceEndpointClient::SendMessageWithResponder(
        controller_->RegisterExternalSyncWaiter(request_id);
      }
      base::AutoLock lock(async_responders_lock_);
@@ -115,7 +114,7 @@ index 3fd4822..a142f72 100644
      return true;
    }
  
-@@ -630,7 +651,8 @@
+@@ -628,7 +649,8 @@ bool InterfaceEndpointClient::SendMessageWithResponder(
  
    bool response_received = false;
    sync_responses_.insert(std::make_pair(
@@ -125,7 +124,7 @@ index 3fd4822..a142f72 100644
  
    base::WeakPtr<InterfaceEndpointClient> weak_self =
        weak_ptr_factory_.GetWeakPtr();
-@@ -814,13 +836,13 @@
+@@ -806,13 +828,13 @@ void InterfaceEndpointClient::ResetFromAnotherSequenceUnsafe() {
  }
  
  void InterfaceEndpointClient::ForgetAsyncRequest(uint64_t request_id) {
@@ -141,7 +140,7 @@ index 3fd4822..a142f72 100644
      async_responders_.erase(it);
    }
  }
-@@ -912,6 +934,10 @@
+@@ -893,6 +915,10 @@ bool InterfaceEndpointClient::HandleValidatedMessage(Message* message) {
          return false;
  
        if (it->second) {
@@ -152,7 +151,7 @@ index 3fd4822..a142f72 100644
          it->second->response = std::move(*message);
          *it->second->response_received = true;
          return true;
-@@ -922,18 +948,22 @@
+@@ -903,18 +929,22 @@ bool InterfaceEndpointClient::HandleValidatedMessage(Message* message) {
        sync_responses_.erase(it);
      }
  
