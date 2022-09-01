@@ -69,8 +69,8 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
 
     base::Value::Dict* error = dict.FindDict("error");
     if (error) {
-      std::string* message = error->FindString("message");
-      promise.RejectWithErrorMessage(message ? *message : "");
+      std::string* error_message = error->FindString("message");
+      promise.RejectWithErrorMessage(error_message ? *error_message : "");
     } else {
       base::Value::Dict* result = dict.FindDict("result");
       promise.Resolve(result ? std::move(*result) : base::Value::Dict());

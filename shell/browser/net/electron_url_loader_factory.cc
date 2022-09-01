@@ -410,15 +410,15 @@ void ElectronURLLoaderFactory::StartLoading(
                          dict);
       break;
     case ProtocolType::kFree:
-      ProtocolType type;
-      if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
+      ProtocolType protocol_type;
+      if (!gin::ConvertFromV8(args->isolate(), response, &protocol_type)) {
         OnComplete(std::move(client), request_id,
                    network::URLLoaderCompletionStatus(net::ERR_FAILED));
         return;
       }
       StartLoading(std::move(loader), request_id, options, request,
                    std::move(client), traffic_annotation,
-                   std::move(target_factory), type, args);
+                   std::move(target_factory), protocol_type, args);
       break;
   }
 }
