@@ -50,7 +50,6 @@ class BrowserWindow : public BaseWindow,
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
-  void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
   void OnRendererResponsive(
