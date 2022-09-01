@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ayu Ishii <ayui@chromium.org>
+Date: Fri, 15 Jul 2022 13:20:47 +0000
+Subject: When applying the omit-ORDER-BY optimization, defer deleting the AST
+ of the deleted ORDER BY clause until after code generation ends.
+
+FossilOrigin-Name: b88d6c4b814ec4166ec50f32a2f10d7857df05414c0048c1234ab290a273e50c
+(cherry picked from commit 9dde91f61386e4fc53eb95b6cbd26bf30521225f)
+Bug: 1343348
+Change-Id: Id677f72166c00a05f95c25438230f4b1d40f4d4d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/deps/sqlite/+/3764026
+Reviewed-by: Austin Sullivan <asully@chromium.org>
+Commit-Queue: Ayu Ishii <ayui@chromium.org>
+Reviewed-by: Joshua Bell <jsbell@chromium.org>
+
+diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
+index 081f682bf9c3d97230b91e0cc59d0da24dd2524d..f534c68ed4816ae536798a0827b464fccaee88a3 100644
+--- a/amalgamation/sqlite3.c
++++ b/amalgamation/sqlite3.c
+@@ -454,7 +454,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.38.5"
+ #define SQLITE_VERSION_NUMBER 3038005
+-#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407d9fe"
++#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407alt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -140775,7 +140775,9 @@ SQLITE_PRIVATE int sqlite3Select(
+     ){
+       SELECTTRACE(0x100,pParse,p,
+                 ("omit superfluous ORDER BY on %r FROM-clause subquery\n",i+1));
+-      sqlite3ExprListDelete(db, pSub->pOrderBy);
++      sqlite3ParserAddCleanup(pParse,
++         (void(*)(sqlite3*,void*))sqlite3ExprListDelete,
++         pSub->pOrderBy);
+       pSub->pOrderBy = 0;
+     }
+ 
+diff --git a/amalgamation/sqlite3.h b/amalgamation/sqlite3.h
+index de393da9dccc430bde8ad1d5e4ed94e9913a4dc1..4ef161c20403dfc7f71e9b081a3dff8b1c615506 100644
+--- a/amalgamation/sqlite3.h
++++ b/amalgamation/sqlite3.h
+@@ -148,7 +148,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.38.5"
+ #define SQLITE_VERSION_NUMBER 3038005
+-#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407d9fe"
++#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407alt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
+index eb8d7d5cd438af3b2bb844ee2939338282090aa3..b405e1e2cf0e7cc03886a21684893eb7e04d4dfc 100644
+--- a/amalgamation_dev/sqlite3.c
++++ b/amalgamation_dev/sqlite3.c
+@@ -454,7 +454,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.38.5"
+ #define SQLITE_VERSION_NUMBER 3038005
+-#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407d9fe"
++#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407alt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -140788,7 +140788,9 @@ SQLITE_PRIVATE int sqlite3Select(
+     ){
+       SELECTTRACE(0x100,pParse,p,
+                 ("omit superfluous ORDER BY on %r FROM-clause subquery\n",i+1));
+-      sqlite3ExprListDelete(db, pSub->pOrderBy);
++      sqlite3ParserAddCleanup(pParse,
++         (void(*)(sqlite3*,void*))sqlite3ExprListDelete,
++         pSub->pOrderBy);
+       pSub->pOrderBy = 0;
+     }
+ 
+diff --git a/amalgamation_dev/sqlite3.h b/amalgamation_dev/sqlite3.h
+index de393da9dccc430bde8ad1d5e4ed94e9913a4dc1..4ef161c20403dfc7f71e9b081a3dff8b1c615506 100644
+--- a/amalgamation_dev/sqlite3.h
++++ b/amalgamation_dev/sqlite3.h
+@@ -148,7 +148,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.38.5"
+ #define SQLITE_VERSION_NUMBER 3038005
+-#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407d9fe"
++#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407alt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/src/select.c b/src/select.c
+index d6d6097401a748bf1b8268deb8a66daf23f4ea7c..ad7635f76c29c7a7206920947f9ea21626faf0ab 100644
+--- a/src/select.c
++++ b/src/select.c
+@@ -6518,7 +6518,9 @@ int sqlite3Select(
+     ){
+       SELECTTRACE(0x100,pParse,p,
+                 ("omit superfluous ORDER BY on %r FROM-clause subquery\n",i+1));
+-      sqlite3ExprListDelete(db, pSub->pOrderBy);
++      sqlite3ParserAddCleanup(pParse,
++         (void(*)(sqlite3*,void*))sqlite3ExprListDelete,
++         pSub->pOrderBy);
+       pSub->pOrderBy = 0;
+     }
+ 
