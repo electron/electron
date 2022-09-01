@@ -30,3 +30,7 @@ Objects created with `new View` have the following instance methods:
 #### `view.addChildView(view)`
 
 * `view` View - child view to add.
+
+#### `view.setBounds(bounds)`
+
+* `bounds` [Rectangle](structures/rectangle.md) - new bounds of the view.

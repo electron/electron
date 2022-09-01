@@ -24,6 +24,8 @@ class View : public gin_helper::Wrappable<View> {
 #if BUILDFLAG(ENABLE_VIEWS_API)
   void AddChildView(gin::Handle<View> child);
   void AddChildViewAt(gin::Handle<View> child, size_t index);
+
+  void SetBounds(const gfx::Rect& bounds);
 #endif
 
   views::View* view() const { return view_; }

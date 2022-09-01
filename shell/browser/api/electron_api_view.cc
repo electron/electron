@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_view.h"
 
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -33,6 +34,10 @@ void View::AddChildViewAt(gin::Handle<View> child, size_t index) {
                        isolate(), child->GetWrapper());  // v8::Global(args...)
   view()->AddChildViewAt(child->view(), index);
 }
+
+void View::SetBounds(const gfx::Rect& bounds) {
+  view()->SetBoundsRect(bounds);
+}
 #endif
 
 // static
@@ -49,7 +54,8 @@ void View::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_VIEWS_API)
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("addChildView", &View::AddChildView)
-      .SetMethod("addChildViewAt", &View::AddChildViewAt);
+      .SetMethod("addChildViewAt", &View::AddChildViewAt)
+      .SetMethod("setBounds", &View::SetBounds);
 #endif
 }
 
