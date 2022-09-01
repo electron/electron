@@ -10,21 +10,8 @@ observer to VirtualKeyboardNotifier and got notified everytime virtual
 keyabord appears/disappears. RenderWidgetHostViewChildFrame sets insets
 that allow input to be visible above virtual keyboard.
 
-diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 47edb94bd9078364fb03f35849b389a6b2992922..c6420dcd4627b8e0d78194d1016a8bab211ec636 100644
---- a/content/browser/BUILD.gn
-+++ b/content/browser/BUILD.gn
-@@ -1819,6 +1819,8 @@ source_set("browser") {
-     "renderer_host/ui_events_helper.h",
-     "renderer_host/visible_time_request_trigger.cc",
-     "renderer_host/visible_time_request_trigger.h",
-+    "renderer_host/virtual_keyboard_notifier.cc",
-+    "renderer_host/virtual_keyboard_notifier.h",
-     "resource_context_impl.cc",
-     "resource_context_impl.h",
-     "resource_coordinator_service.cc",
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.cc b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-index fe70c30f83e72d63e38760b5535af79e2a7056e5..d2f30d23a673eacd2cf9d06a9f7347dd55903079 100644
+index fe70c30f83e72d63e38760b5535af79e2a7056e5..446d977d70e43e89fb98818e66d9cd4872ce0683 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
 @@ -69,9 +69,17 @@ RenderWidgetHostViewChildFrame::RenderWidgetHostViewChildFrame(
@@ -32,13 +19,13 @@ index fe70c30f83e72d63e38760b5535af79e2a7056e5..d2f30d23a673eacd2cf9d06a9f7347dd
        frame_sink_id_, "RenderWidgetHostViewChildFrame");
    host()->render_frame_metadata_provider()->AddObserver(this);
 +
-+  if (VirtualKeyboardNotifier* virtual_keyboard_notifier = VirtualKeyboardNotifier::GetInstance()) {
++  if (electron::VirtualKeyboardNotifier* virtual_keyboard_notifier = electron::VirtualKeyboardNotifier::GetInstance()) {
 +    virtual_keyboard_notifier->AddObserver(this);
 +  }
  }
  
  RenderWidgetHostViewChildFrame::~RenderWidgetHostViewChildFrame() {
-+  if (VirtualKeyboardNotifier* virtual_keyboard_notifier = VirtualKeyboardNotifier::GetInstance()) {
++  if (electron::VirtualKeyboardNotifier* virtual_keyboard_notifier = electron::VirtualKeyboardNotifier::GetInstance()) {
 +    virtual_keyboard_notifier->RemoveObserver(this);
 +  }
 +
@@ -62,24 +49,24 @@ index fe70c30f83e72d63e38760b5535af79e2a7056e5..d2f30d23a673eacd2cf9d06a9f7347dd
    if (!frame_connector_)
      return true;
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.h b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-index 457dabe428e84230b2e831e9281feee06e7c8e76..b767996df15f4725b545f89d58594a7fb9f5ffd5 100644
+index 457dabe428e84230b2e831e9281feee06e7c8e76..f4b1c92fa9cf13ef3714ca220cb234c006d15f04 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.h
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-@@ -25,6 +25,7 @@
- #include "content/browser/compositor/image_transport_factory.h"
- #include "content/browser/renderer_host/event_with_latency_info.h"
+@@ -27,6 +27,7 @@
  #include "content/browser/renderer_host/render_widget_host_view_base.h"
-+#include "content/browser/renderer_host/virtual_keyboard_notifier.h"
  #include "content/common/content_export.h"
  #include "content/public/browser/touch_selection_controller_client_manager.h"
++#include "electron/shell/browser/virtual_keyboard_notifier.h"
  #include "services/viz/public/mojom/compositing/compositor_frame_sink.mojom.h"
+ #include "third_party/blink/public/common/widget/visual_properties.h"
+ #include "third_party/blink/public/mojom/frame/intrinsic_sizing_info.mojom-forward.h"
 @@ -58,7 +59,8 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
      : public RenderWidgetHostViewBase,
        public TouchSelectionControllerClientManager::Observer,
        public RenderFrameMetadataProvider::Observer,
 -      public viz::HostFrameSinkClient {
 +      public viz::HostFrameSinkClient,
-+      public VirtualKeyboardNotifier::Observer {
++      public electron::VirtualKeyboardNotifier::Observer {
   public:
    // TODO(crbug.com/1182855): Pass multi-screen info from the parent.
    static RenderWidgetHostViewChildFrame* Create(
@@ -94,14 +81,14 @@ index 457dabe428e84230b2e831e9281feee06e7c8e76..b767996df15f4725b545f89d58594a7f
    friend class RenderWidgetHostView;
    friend class RenderWidgetHostViewChildFrameTest;
 diff --git a/content/browser/renderer_host/virtual_keyboard_controller_win.cc b/content/browser/renderer_host/virtual_keyboard_controller_win.cc
-index 490ae92717b71128f932822c8c63688b4b41fe48..8a32beefa78d56186d5bbf8f0e8ea22272aa4890 100644
+index 490ae92717b71128f932822c8c63688b4b41fe48..d78253c253da78e451e25a308a6c4e676c1f849d 100644
 --- a/content/browser/renderer_host/virtual_keyboard_controller_win.cc
 +++ b/content/browser/renderer_host/virtual_keyboard_controller_win.cc
 @@ -6,6 +6,7 @@
  
  #include "base/trace_event/trace_event.h"
  #include "content/browser/renderer_host/render_widget_host_view_aura.h"
-+#include "content/browser/renderer_host/virtual_keyboard_notifier.h"
++#include "electron/shell/browser/virtual_keyboard_notifier.h"
  #include "ui/base/ime/input_method.h"
  #include "ui/base/ime/mojom/text_input_state.mojom.h"
  #include "ui/base/ime/virtual_keyboard_controller.h"
@@ -110,7 +97,7 @@ index 490ae92717b71128f932822c8c63688b4b41fe48..8a32beefa78d56186d5bbf8f0e8ea222
      host_view_->NotifyVirtualKeyboardOverlayRect(keyboard_rect);
    }
 +
-+  if (VirtualKeyboardNotifier* virtual_keyboard_notifier = VirtualKeyboardNotifier::GetInstance()) {
++  if (electron::VirtualKeyboardNotifier* virtual_keyboard_notifier = electron::VirtualKeyboardNotifier::GetInstance()) {
 +    virtual_keyboard_notifier->NotifyKeyboardVisible(keyboard_rect);
 +  }
  }
@@ -121,116 +108,9 @@ index 490ae92717b71128f932822c8c63688b4b41fe48..8a32beefa78d56186d5bbf8f0e8ea222
      host_view_->NotifyVirtualKeyboardOverlayRect(gfx::Rect());
    }
 +
-+  if (VirtualKeyboardNotifier* virtual_keyboard_notifier = VirtualKeyboardNotifier::GetInstance()) {
++  if (electron::VirtualKeyboardNotifier* virtual_keyboard_notifier = electron::VirtualKeyboardNotifier::GetInstance()) {
 +    virtual_keyboard_notifier->NotifyKeyboardHidden();
 +  }
  }
  
  void VirtualKeyboardControllerWin::ShowVirtualKeyboard() {
-diff --git a/content/browser/renderer_host/virtual_keyboard_notifier.cc b/content/browser/renderer_host/virtual_keyboard_notifier.cc
-new file mode 100644
-index 0000000000000000000000000000000000000000..58370a939acb20adcc8c6d543520be4c18752ddd
---- /dev/null
-+++ b/content/browser/renderer_host/virtual_keyboard_notifier.cc
-@@ -0,0 +1,49 @@
-+#include "content/browser/renderer_host/virtual_keyboard_notifier.h"
-+
-+#include "base/logging.h"
-+
-+namespace content {
-+
-+VirtualKeyboardNotifier* VirtualKeyboardNotifier::GetInstance() {
-+  return base::Singleton<VirtualKeyboardNotifier>::get();
-+}
-+
-+bool VirtualKeyboardNotifier::AddObserver(Observer* observer) {
-+  if (observers_.find(observer) != observers_.end()) {
-+    LOG(WARNING) << "Adding observer to VirtualKeyboardNotifier that is already present."
-+      "Please make sure you have code that removes an observer"
-+      "and/or you do not add observer more than once.";
-+    return false;
-+  }
-+
-+  observers_.insert(observer);
-+  return true;
-+}
-+
-+void VirtualKeyboardNotifier::RemoveObserver(Observer* observer) {
-+  observers_.erase(observer);
-+}
-+
-+void VirtualKeyboardNotifier::NotifyKeyboardVisible(const gfx::Rect& rect) {
-+  for (Observer* observer : observers_) {
-+    observer->OnKeyboardVisible(rect);
-+  }
-+}
-+
-+void VirtualKeyboardNotifier::NotifyKeyboardHidden() {
-+  for (Observer* observer : observers_) {
-+    observer->OnKeyboardHidden();
-+  }
-+}
-+
-+VirtualKeyboardNotifier::~VirtualKeyboardNotifier() {
-+  if (!observers_.empty()) {
-+    LOG(WARNING) << "Not all observers were removed from VirtualKeyboardNotifier "
-+      "before its destruction. Please make sure you call RemoveObserver "
-+      "on observer's destruction and make sure that observer is destructable at all.";
-+  }
-+}
-+
-+VirtualKeyboardNotifier::VirtualKeyboardNotifier() = default;
-+
-+}
-\ No newline at end of file
-diff --git a/content/browser/renderer_host/virtual_keyboard_notifier.h b/content/browser/renderer_host/virtual_keyboard_notifier.h
-new file mode 100644
-index 0000000000000000000000000000000000000000..4e8f587f9402edf70997509a1052bb2dbaf9b402
---- /dev/null
-+++ b/content/browser/renderer_host/virtual_keyboard_notifier.h
-@@ -0,0 +1,44 @@
-+#ifndef CONTENT_BROWSER_RENDERER_HOST_VIRTUAL_KEYBOARD_NOTIFIER_H_
-+#define CONTENT_BROWSER_RENDERER_HOST_VIRTUAL_KEYBOARD_NOTIFIER_H_
-+
-+#include <unordered_set>
-+
-+#include "base/memory/singleton.h"
-+
-+namespace gfx {
-+class Rect;
-+}
-+
-+namespace content {
-+
-+class VirtualKeyboardNotifier {
-+ public:
-+  class Observer {
-+   public:
-+    virtual void OnKeyboardVisible(const gfx::Rect& rect) = 0;
-+    virtual void OnKeyboardHidden() = 0;
-+  };
-+
-+  static VirtualKeyboardNotifier* GetInstance();
-+
-+  bool AddObserver(Observer* observer);
-+  void RemoveObserver(Observer* observer);
-+
-+  void NotifyKeyboardVisible(const gfx::Rect& rect);
-+  void NotifyKeyboardHidden();
-+
-+  virtual ~VirtualKeyboardNotifier();
-+
-+  VirtualKeyboardNotifier(const VirtualKeyboardNotifier&) = delete;
-+  VirtualKeyboardNotifier& operator=(const VirtualKeyboardNotifier&) = delete;
-+
-+ private:
-+  VirtualKeyboardNotifier();
-+  friend struct base::DefaultSingletonTraits<VirtualKeyboardNotifier>;
-+
-+  std::unordered_set<Observer*> observers_;
-+};
-+
-+}
-+
-+#endif  // CONTENT_BROWSER_RENDERER_HOST_VIRTUAL_KEYBOARD_NOTIFIER_H_
-\ No newline at end of file
