@@ -48,3 +48,4 @@ src_fix_ssize_t_error_from_nghttp2_h.patch
 v8_api_advance_api_deprecation.patch
 enable_-wunqualified-std-cast-call.patch
 fixup_for_error_declaration_shadows_a_local_variable.patch
+fixup_for_wc_98-compat-extra-semi.patch
