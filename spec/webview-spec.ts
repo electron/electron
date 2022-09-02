@@ -1500,21 +1500,30 @@ describe('<webview> tag', function () {
 
       it('emits when a link within an iframe, which leads to outside of the page, is loaded', async () => {
         await loadWebView(w, {
-          src: `file://${fixtures}/pages/webview-will-navigate.html`
+          src: `file://${fixtures}/pages/webview-will-navigate-in-frame.html`,
+          nodeIntegration: ''
         });
 
-        let hasFrameNavigatedOnce = false; 
-        const navigationEvents = await emittedUntil(w, 'will-frame-navigate', (details: any) => {
-          if (details.isMainFrame) return false;
-          if (hasFrameNavigatedOnce) return true;
+        const { url, frameProcessId, frameRoutingId } = await w.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            let hasFrameNavigatedOnce = false;
+            const webview = document.getElementById('webview');
+            webview.addEventListener('will-frame-navigate', ({url, isMainFrame, frameProcessId, frameRoutingId}) => {
+              if (isMainFrame) return;
+              if (hasFrameNavigatedOnce) resolve({
+                url,
+                isMainFrame,
+                frameProcessId,
+                frameRoutingId,
+              });
 
-          // First navigation is the initial iframe load within the <webview>
-          expect(details.url.endsWith('webview-will-navigate.html')).to.be.true();
-          hasFrameNavigatedOnce = true;
-          return false;
-        });
+              // First navigation is the initial iframe load within the <webview>
+              hasFrameNavigatedOnce = true;
+            });
+            webview.executeJavaScript('loadSubframe()');
+          });
+        `);
 
-        const { url, frameProcessId, frameRoutingId } = navigationEvents[navigationEvents.length-1];
         expect(url).to.equal('http://host/');
         expect(frameProcessId).to.be.a('number');
         expect(frameRoutingId).to.be.a('number');
