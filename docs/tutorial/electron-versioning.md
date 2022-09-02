@@ -22,7 +22,7 @@ There are several major changes from our 1.x strategy outlined below. Each chang
 2. Introduction of semver-compliant `-beta` tags
 3. Introduction of [conventional commit messages](https://conventionalcommits.org/)
 4. Well-defined stabilization branches
-5. The `main` branch is versionless; only stabilization branches contain version information
+5. The `main` branch is version less; only stabilization branches contain version information
 
 We will cover in detail how git branching works, how npm tagging works, what developers should expect to see, and how one can backport changes.
 
@@ -143,7 +143,7 @@ The `electron/electron` repository also enforces squash merging, so you only nee
 
 ## Historical versioning (Electron 1.X)
 
-Electron versions *< 2.0* did not conform to the [SemVer](https://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Teams, Skype, VS Code, and GitHub Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
+Electron versions _< 2.0_ did not conform to the [SemVer](https://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Teams, Skype, VS Code, and GitHub Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
 
 Here is an example of the 1.x strategy:
 
