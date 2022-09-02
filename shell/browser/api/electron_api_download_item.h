@@ -18,9 +18,7 @@
 
 class GURL;
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class DownloadItem : public gin::Wrappable<DownloadItem>,
                      public gin_helper::Pinnable<DownloadItem>,
@@ -87,8 +85,6 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   base::WeakPtrFactory<DownloadItem> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_

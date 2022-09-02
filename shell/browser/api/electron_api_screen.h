@@ -19,9 +19,7 @@ class Rect;
 class Screen;
 }  // namespace gfx
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Screen : public gin::Wrappable<Screen>,
                public gin_helper::EventEmitterMixin<Screen>,
@@ -58,8 +56,6 @@ class Screen : public gin::Wrappable<Screen>,
   display::Screen* screen_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SCREEN_H_

@@ -13,9 +13,7 @@
 
 using base::scoped_nsobject;
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class MenuMac : public Menu {
  protected:
@@ -50,8 +48,6 @@ class MenuMac : public Menu {
   base::WeakPtrFactory<MenuMac> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_

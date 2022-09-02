@@ -24,9 +24,7 @@
 #include "ui/display/win/screen_win.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -166,9 +164,7 @@ const char* Screen::GetTypeName() {
   return "Screen";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
@@ -185,4 +181,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_screen, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_screen, Initialize)

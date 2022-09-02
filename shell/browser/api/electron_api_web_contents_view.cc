@@ -19,9 +19,7 @@
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin::Handle<WebContents> web_contents)
@@ -105,9 +103,7 @@ void WebContentsView::BuildPrototype(
       .SetProperty("webContents", &WebContentsView::GetWebContents);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

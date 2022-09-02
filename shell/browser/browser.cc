@@ -184,7 +184,7 @@ void Browser::WillFinishLaunching() {
     observer.OnWillFinishLaunching();
 }
 
-void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
+void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::FilePath user_data;
@@ -196,7 +196,7 @@ void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
     ready_promise_->Resolve();
   }
   for (BrowserObserver& observer : observers_)
-    observer.OnFinishLaunching(launch_info);
+    observer.OnFinishLaunching(launch_info.Clone());
 }
 
 v8::Local<v8::Value> Browser::WhenReady(v8::Isolate* isolate) {

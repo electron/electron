@@ -13,6 +13,7 @@
 #include "shell/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
 
 #include <windowsx.h>
+#include <algorithm>
 #include <utility>
 
 #include "base/check.h"
@@ -238,7 +239,7 @@ void DesktopNotificationController::AnimateAll() {
       it = stable_partition(it, it2, is_alive);
 
       // purge the dead items
-      for_each(it, it2, [this](auto&& inst) { DestroyToast(&inst); });
+      std::for_each(it, it2, [this](auto&& inst) { DestroyToast(&inst); });
 
       if (it2 == instances_.end()) {
         instances_.erase(it, it2);

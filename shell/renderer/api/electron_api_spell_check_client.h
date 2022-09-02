@@ -23,9 +23,7 @@ struct WebTextCheckingResult;
 class WebTextCheckingCompletion;
 }  // namespace blink
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                          public blink::WebTextCheckClient,
@@ -109,8 +107,6 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   v8::Global<v8::Function> spell_check_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_RENDERER_API_ELECTRON_API_SPELL_CHECK_CLIENT_H_

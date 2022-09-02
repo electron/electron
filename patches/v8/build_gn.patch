@@ -9,10 +9,10 @@ necessary for native modules to load.
 Also, some fixes relating to mksnapshot on ARM.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 44b4f154b416eb9b145d2abe89f3e92d507cea77..8e8e20fcbda71ec98e949d3e5c582b30dfe67e06 100644
+index 0c1a72dfd2a3cb95004de7b32fc35ac982c5f927..f359ea10d6e83f94b698d9d728147944ea566018 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -608,7 +608,7 @@ config("internal_config") {
+@@ -650,7 +650,7 @@ config("internal_config") {
      ":cppgc_header_features",
    ]
  
@@ -21,7 +21,7 @@ index 44b4f154b416eb9b145d2abe89f3e92d507cea77..8e8e20fcbda71ec98e949d3e5c582b30
      defines += [ "BUILDING_V8_SHARED" ]
    }
  
-@@ -5876,7 +5876,7 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -6124,7 +6124,7 @@ if (current_toolchain == v8_generator_toolchain) {
        "src/interpreter/bytecodes.h",
      ]
  
@@ -30,12 +30,3 @@ index 44b4f154b416eb9b145d2abe89f3e92d507cea77..8e8e20fcbda71ec98e949d3e5c582b30
  
      deps = [
        ":v8_libbase",
-@@ -5914,6 +5914,8 @@ if (current_toolchain == v8_snapshot_toolchain) {
- 
-     configs = [ ":internal_config" ]
- 
-+    configs += [ "//electron/build/config:build_time_executable" ]
-+
-     deps = [
-       ":v8_base_without_compiler",
-       ":v8_compiler_for_mksnapshot",

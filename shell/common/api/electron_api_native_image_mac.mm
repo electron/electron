@@ -23,9 +23,7 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_operations.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 NSData* bufferFromNSImage(NSImage* image) {
   CGImageRef ref = [image CGImageForProposedRect:nil context:nil hints:nil];
@@ -183,6 +181,4 @@ bool NativeImage::IsTemplateImage() {
   return [image_.AsNSImage() isTemplate];
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

@@ -96,7 +96,7 @@ class App : public ElectronBrowserClient::Delegate,
   void OnOpenURL(const std::string& url) override;
   void OnActivate(bool has_visible_windows) override;
   void OnWillFinishLaunching() override;
-  void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
+  void OnFinishLaunching(base::Value::Dict launch_info) override;
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
   void OnPreCreateThreads() override;
@@ -107,15 +107,13 @@ class App : public ElectronBrowserClient::Delegate,
                                        const std::string& error) override;
   void OnContinueUserActivity(bool* prevent_default,
                               const std::string& type,
-                              const base::DictionaryValue& user_info,
-                              const base::DictionaryValue& details) override;
-  void OnUserActivityWasContinued(
-      const std::string& type,
-      const base::DictionaryValue& user_info) override;
-  void OnUpdateUserActivityState(
-      bool* prevent_default,
-      const std::string& type,
-      const base::DictionaryValue& user_info) override;
+                              base::Value::Dict user_info,
+                              base::Value::Dict details) override;
+  void OnUserActivityWasContinued(const std::string& type,
+                                  base::Value::Dict user_info) override;
+  void OnUpdateUserActivityState(bool* prevent_default,
+                                 const std::string& type,
+                                 base::Value::Dict user_info) override;
   void OnNewWindowForTab() override;
   void OnDidBecomeActive() override;
 #endif
@@ -266,6 +264,7 @@ class App : public ElectronBrowserClient::Delegate,
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
+  bool watch_singleton_socket_on_ready_ = false;
 };
 
 }  // namespace api

@@ -9,7 +9,7 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 4ed2558351e37dde0eb35b6eb32f442346ff2490..3933fa761768b5a45891bfef4c2c2123b92fc276 100644
+index 6aa864db880408bf7021ac58673f4d8d489426b4..1fa85302da7a64abc42fd9558ddbcaf68b387517 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -113,6 +113,7 @@ void SetUploadURL(const std::string& url) {
@@ -21,10 +21,10 @@ index 4ed2558351e37dde0eb35b6eb32f442346ff2490..3933fa761768b5a45891bfef4c2c2123
  uint64_t g_process_start_time = 0;
  pid_t g_pid = 0;
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 82b7f241e26184240260d0b6287ded159681e15b..abbb267f6a40de0cdf4d09700f9dd444a575fbdf 100644
+index 463f92a6e547006a46119f52203482dd6695a84a..34e6f087613d76947ae463fda2b107fad6ec14e9 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
-@@ -141,6 +141,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
+@@ -145,6 +145,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
    return false;
  }
  
@@ -43,7 +43,7 @@ index 82b7f241e26184240260d0b6287ded159681e15b..abbb267f6a40de0cdf4d09700f9dd444
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 24e53fa62c2c4a11494ad3d43f0c5a806930fcdd..9b691baa6cc90cc3f9ada307c43f44c4353e2487 100644
+index 2532e99f00b39777cd9640c76704f7430d39502e..323e039e4591a4099b187f7a0097b4ee8be11a9f 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@
@@ -54,7 +54,7 @@ index 24e53fa62c2c4a11494ad3d43f0c5a806930fcdd..9b691baa6cc90cc3f9ada307c43f44c4
  #include <string>
  
  #include "build/build_config.h"
-@@ -146,6 +147,19 @@ class CrashReporterClient {
+@@ -151,6 +152,19 @@ class CrashReporterClient {
    // that case, |breakpad_enabled| is set to the value enforced by policies.
    virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
  
@@ -75,7 +75,7 @@ index 24e53fa62c2c4a11494ad3d43f0c5a806930fcdd..9b691baa6cc90cc3f9ada307c43f44c4
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index 32e2038e15adae14aa218a353f074cd6654bdc16..72bec9c08d7ec50257a86b0ee7173864d879d7d9 100644
+index 7159bea91a25700f0cb36c48cab62fe2d616b3bd..9bcc5ae7e870c27c3533534c06daa890de5a4816 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
 @@ -170,6 +170,7 @@ bool PlatformCrashpadInitialization(
@@ -97,9 +97,9 @@ index 32e2038e15adae14aa218a353f074cd6654bdc16..72bec9c08d7ec50257a86b0ee7173864
 +      arguments.push_back("--no-upload-gzip");
 +    }
 +
-     bool result =
-         client.StartHandler(handler_path, *database_path, metrics_path, url,
-                             annotations, arguments, false, false);
+     CHECK(client.StartHandler(handler_path, *database_path, metrics_path, url,
+                               annotations, arguments, false, false));
+   } else {
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
 index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a59bf46b96 100644
 --- a/components/crash/core/app/crashpad_mac.mm
@@ -128,10 +128,10 @@ index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a5
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index d2354b84f3a184ad53571518198055a0a91cbc25..c05529257dda2acf0fa588d49e2b902736d9b02f 100644
+index ad401a7711ceff58abacb99a03fda258fccd12a0..de04f4df602e3a0b20af045111faf8a7bf8e9e28 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
-@@ -88,6 +88,7 @@ bool PlatformCrashpadInitialization(
+@@ -91,6 +91,7 @@ bool PlatformCrashpadInitialization(
  
      std::map<std::string, std::string> process_annotations;
      GetPlatformCrashpadAnnotations(&process_annotations);
@@ -139,7 +139,7 @@ index d2354b84f3a184ad53571518198055a0a91cbc25..c05529257dda2acf0fa588d49e2b9027
  
      std::string url = crash_reporter_client->GetUploadUrl();
  
-@@ -126,6 +127,13 @@ bool PlatformCrashpadInitialization(
+@@ -129,6 +130,13 @@ bool PlatformCrashpadInitialization(
  
      std::vector<std::string> arguments(start_arguments);
  

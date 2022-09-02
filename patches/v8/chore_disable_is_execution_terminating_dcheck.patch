@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 31 May 2022 19:58:01 +0200
+Subject: chore: disable is_execution_terminating DCHECK
+
+This causes a slew of crashes in Node.js.
+
+Upstream issue opened at https://github.com/nodejs/node-v8/issues/227.
+
+diff --git a/src/api/api-macros.h b/src/api/api-macros.h
+index 149dd0555a69be576fd1eb97aa79b8aedafcac04..233e6d2ac511c4a7fa45d47bb7448beead52faf1 100644
+--- a/src/api/api-macros.h
++++ b/src/api/api-macros.h
+@@ -97,8 +97,6 @@
+ 
+ // Lightweight version for APIs that don't require an active context.
+ #define DCHECK_NO_SCRIPT_NO_EXCEPTION(i_isolate)             \
+-  /* Embedders should never enter V8 after terminating it */ \
+-  DCHECK(!i_isolate->is_execution_terminating());            \
+   DCHECK_NO_SCRIPT_NO_EXCEPTION_MAYBE_TEARDOWN(i_isolate)
+ 
+ #define ENTER_V8_NO_SCRIPT_NO_EXCEPTION(i_isolate) \
+diff --git a/src/execution/microtask-queue.cc b/src/execution/microtask-queue.cc
+index f47228f80b6a2b9e89afd50e6f67eba1185c0dd6..8adf3a9159b947f4fa567317d05cf0b9f204c862 100644
+--- a/src/execution/microtask-queue.cc
++++ b/src/execution/microtask-queue.cc
+@@ -179,7 +179,7 @@ int MicrotaskQueue::RunMicrotasks(Isolate* isolate) {
+ 
+   if (isolate->is_execution_terminating()) {
+     DCHECK(isolate->has_scheduled_exception());
+-    DCHECK(maybe_result.is_null());
++    // DCHECK(maybe_result.is_null());
+     delete[] ring_buffer_;
+     ring_buffer_ = nullptr;
+     capacity_ = 0;

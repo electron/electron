@@ -33,24 +33,27 @@ class ElectronHidDelegate : public content::HidDelegate,
       std::vector<blink::mojom::HidDeviceFilterPtr> filters,
       std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
       content::HidChooser::Callback callback) override;
-  bool CanRequestDevicePermission(
-      content::RenderFrameHost* render_frame_host) override;
-  bool HasDevicePermission(content::RenderFrameHost* render_frame_host,
+  bool CanRequestDevicePermission(content::BrowserContext* browser_context,
+                                  const url::Origin& origin) override;
+  bool HasDevicePermission(content::BrowserContext* browser_context,
+                           const url::Origin& origin,
                            const device::mojom::HidDeviceInfo& device) override;
   void RevokeDevicePermission(
-      content::RenderFrameHost* render_frame_host,
+      content::BrowserContext* browser_context,
+      const url::Origin& origin,
       const device::mojom::HidDeviceInfo& device) override;
   device::mojom::HidManager* GetHidManager(
-      content::RenderFrameHost* render_frame_host) override;
-  void AddObserver(content::RenderFrameHost* render_frame_host,
+      content::BrowserContext* browser_context) override;
+  void AddObserver(content::BrowserContext* browser_context,
                    content::HidDelegate::Observer* observer) override;
-  void RemoveObserver(content::RenderFrameHost* render_frame_host,
+  void RemoveObserver(content::BrowserContext* browser_context,
                       content::HidDelegate::Observer* observer) override;
   const device::mojom::HidDeviceInfo* GetDeviceInfo(
-      content::RenderFrameHost* render_frame_host,
+      content::BrowserContext* browser_context,
       const std::string& guid) override;
-  bool IsFidoAllowedForOrigin(content::RenderFrameHost* render_frame_host,
+  bool IsFidoAllowedForOrigin(content::BrowserContext* browser_context,
                               const url::Origin& origin) override;
+  bool IsServiceWorkerAllowedForOrigin(const url::Origin& origin) override;
 
   // HidChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::HidDeviceInfo&) override;

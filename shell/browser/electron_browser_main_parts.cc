@@ -17,6 +17,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/key_storage_config_linux.h"
@@ -76,12 +77,13 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
+#include "ui/linux/linux_ui.h"
+#include "ui/linux/linux_ui_factory.h"
 #include "ui/ozone/public/ozone_platform.h"
-#include "ui/views/linux_ui/linux_ui.h"
-#include "ui/views/linux_ui/linux_ui_factory.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include "base/win/dark_mode_support.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/display/win/dpi.h"
 #include "ui/gfx/system_fonts_win.h"
@@ -217,8 +219,15 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   HandleSIGCHLD();
 #endif
 #if BUILDFLAG(IS_LINUX)
+  DetectOzonePlatform();
   ui::OzonePlatform::PreEarlyInitialization();
 #endif
+#if BUILDFLAG(IS_MAC)
+  screen_ = std::make_unique<display::ScopedNativeScreen>();
+#endif
+
+  ui::ColorProviderManager::Get().AppendColorProviderInitializer(
+      base::BindRepeating(AddChromeColorMixers));
 
   return GetExitCode();
 }
@@ -274,14 +283,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {
-#if defined(USE_AURA)
-  screen_ = views::CreateDesktopScreen();
-  display::Screen::SetScreenInstance(screen_.get());
-#if BUILDFLAG(IS_LINUX)
-  views::LinuxUI::instance()->UpdateDeviceScaleFactor();
-#endif
-#endif
-
   if (!views::LayoutProvider::Get())
     layout_provider_ = std::make_unique<views::LayoutProvider>();
 
@@ -311,6 +312,14 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 
   // Load resources bundle according to locale.
   std::string loaded_locale = LoadResourceBundle(locale);
+
+#if defined(USE_AURA)
+  // NB: must be called _after_ locale resource bundle is loaded,
+  // because ui lib makes use of it in X11
+  if (!display::Screen::GetScreen()) {
+    screen_ = views::CreateDesktopScreen();
+  }
+#endif
 
   // Initialize the app locale.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
@@ -365,14 +374,17 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
-  auto linux_ui = CreateLinuxUi();
-  DCHECK(ui::LinuxInputMethodContextFactory::instance());
+  auto linux_ui = ui::CreateLinuxUi();
 
   // Try loading gtk symbols used by Electron.
   electron::InitializeElectron_gtk(gtk::GetLibGtk());
   if (!electron::IsElectron_gtkInitialized()) {
     electron::UninitializeElectron_gtk();
   }
+
+  electron::InitializeElectron_gdk_pixbuf(gtk::GetLibGdkPixbuf());
+  CHECK(electron::IsElectron_gdk_pixbufInitialized())
+      << "Failed to initialize libgdk_pixbuf-2.0.so.0";
 
   // Chromium does not respect GTK dark theme setting, but they may change
   // in future and this code might be no longer needed. Check the Chromium
@@ -383,7 +395,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
-  views::LinuxUI::SetInstance(std::move(linux_ui));
+  ui::LinuxUi::SetInstance(std::move(linux_ui));
 
   // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
   // implementation). Start observing them once it's initialized.
@@ -432,6 +444,11 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   SpellcheckServiceFactory::GetInstance();
 #endif
 
+#if BUILDFLAG(IS_WIN)
+  // access ui native theme here to prevent blocking calls later
+  base::win::AllowDarkModeForApp(true);
+#endif
+
   content::WebUIControllerFactory::RegisterFactory(
       ElectronWebUIControllerFactory::GetInstance());
 
@@ -452,7 +469,7 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 #if !BUILDFLAG(IS_MAC)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
-  Browser::Get()->DidFinishLaunching(base::DictionaryValue());
+  Browser::Get()->DidFinishLaunching(base::Value::Dict());
 #endif
 
   // Notify observers that main thread message loop was initialized.

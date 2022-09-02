@@ -15,7 +15,6 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
-#include "content/public/renderer/render_view.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
@@ -496,9 +495,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     const auto& prefs = render_frame->GetBlinkPreferences();
 
-    if (pref_name == options::kPreloadScripts) {
-      return gin::ConvertToV8(isolate, prefs.preloads);
-    } else if (pref_name == "isWebView") {
+    if (pref_name == "isWebView") {
       // FIXME(zcbenz): For child windows opened with window.open('') from
       // webview, the WebPreferences is inherited from webview and the value
       // of |is_webview| is wrong.
@@ -511,24 +508,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     } else if (pref_name == options::kHiddenPage) {
       // NOTE: hiddenPage is internal-only.
       return gin::ConvertToV8(isolate, prefs.hidden_page);
-    } else if (pref_name == options::kOffscreen) {
-      return gin::ConvertToV8(isolate, prefs.offscreen);
-    } else if (pref_name == options::kPreloadScript) {
-      return gin::ConvertToV8(isolate, prefs.preload.value());
     } else if (pref_name == options::kNodeIntegration) {
       return gin::ConvertToV8(isolate, prefs.node_integration);
-    } else if (pref_name == options::kNodeIntegrationInWorker) {
-      return gin::ConvertToV8(isolate, prefs.node_integration_in_worker);
-    } else if (pref_name == options::kNodeIntegrationInSubFrames) {
-      return gin::ConvertToV8(isolate, true);
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-    } else if (pref_name == options::kSpellcheck) {
-      return gin::ConvertToV8(isolate, prefs.enable_spellcheck);
-#endif
-    } else if (pref_name == options::kPlugins) {
-      return gin::ConvertToV8(isolate, prefs.enable_plugins);
-    } else if (pref_name == options::kEnableWebSQL) {
-      return gin::ConvertToV8(isolate, prefs.enable_websql);
     } else if (pref_name == options::kWebviewTag) {
       return gin::ConvertToV8(isolate, prefs.webview_tag);
     }

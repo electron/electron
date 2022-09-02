@@ -176,7 +176,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 
   // By default the window has a default maximum size that prevents it
   // from being resized larger than the screen, so we should only set this
-  // if th user has passed in values.
+  // if the user has passed in values.
   if (have_max_height || have_max_width || !max_size.IsEmpty())
     size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
 
@@ -658,9 +658,8 @@ void NativeWindow::NotifyWindowExecuteAppCommand(const std::string& command) {
     observer.OnExecuteAppCommand(command);
 }
 
-void NativeWindow::NotifyTouchBarItemInteraction(
-    const std::string& item_id,
-    const base::DictionaryValue& details) {
+void NativeWindow::NotifyTouchBarItemInteraction(const std::string& item_id,
+                                                 base::Value::Dict details) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnTouchBarItemResult(item_id, details);
 }
@@ -716,6 +715,17 @@ void NativeWindow::SetAccessibleTitle(const std::string& title) {
 
 std::string NativeWindow::GetAccessibleTitle() {
   return base::UTF16ToUTF8(accessible_title_);
+}
+
+void NativeWindow::HandlePendingFullscreenTransitions() {
+  if (pending_transitions_.empty()) {
+    set_fullscreen_transition_type(FullScreenTransitionType::NONE);
+    return;
+  }
+
+  bool next_transition = pending_transitions_.front();
+  pending_transitions_.pop();
+  SetFullScreen(next_transition);
 }
 
 // static

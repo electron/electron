@@ -60,9 +60,9 @@ app.whenReady().then(() => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(`file://${__dirname}/index.html`)
-  mainWindow.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greateRefferer' })
-  mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greateRefferer' })
-  mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greateRefferer', postData: [{ type: 'rawData', bytes: Buffer.from([123]) }] })
+  mainWindow.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greatReferrer' })
+  mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greatReferrer' })
+  mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greatReferrer', postData: [{ type: 'rawData', bytes: Buffer.from([123]) }] })
 
   mainWindow.webContents.openDevTools()
   mainWindow.webContents.toggleDevTools()
@@ -86,10 +86,11 @@ app.whenReady().then(() => {
   mainWindow.webContents.print()
 
   mainWindow.webContents.printToPDF({
-    marginsType: 1,
-    pageSize: 'A3',
+    margins: {
+      top: 1
+    },
     printBackground: true,
-    printSelectionOnly: true,
+    pageRanges: '1-3',
     landscape: true
   }).then((data: Buffer) => console.log(data))
 
@@ -512,7 +513,7 @@ dialog.showOpenDialog(win3, {
 const ret = globalShortcut.register('ctrl+x', () => {
   console.log('ctrl+x is pressed')
 })
-if (!ret) { console.log('registerion fails') }
+if (!ret) { console.log('registration fails') }
 
 // Check whether a shortcut is registered.
 console.log(globalShortcut.isRegistered('ctrl+x'))
@@ -939,7 +940,7 @@ app.whenReady().then(() => {
 
   appIcon.displayBalloon({
     title: 'Hello World!',
-    content: 'This the the balloon content.',
+    content: 'This is the balloon content.',
     iconType: 'error',
     icon: 'path/to/icon',
     respectQuietTime: true,

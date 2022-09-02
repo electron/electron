@@ -246,7 +246,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `trafficLightPosition` [Point](structures/point.md) (optional) _macOS_ -
     Set a custom position for the traffic light buttons in frameless windows.
   * `roundedCorners` boolean (optional) _macOS_ - Whether frameless window
-    should have rounded corners on macOS. Default is `true`.
+    should have rounded corners on macOS. Default is `true`. Setting this property
+    to `false` will prevent the window from being fullscreenable.
   * `fullscreenWindowTitle` boolean (optional) _macOS_ _Deprecated_ - Shows
     the title in the title bar in full screen mode on macOS for `hiddenInset`
     titleBarStyle. Default is `false`.
@@ -425,13 +426,17 @@ Possible values are:
 
 * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
   `notification`.
-* On macOS, possible types are `desktop`, `textured`.
+* On macOS, possible types are `desktop`, `textured`, `panel`.
   * The `textured` type adds metal gradient appearance
-    (`NSTexturedBackgroundWindowMask`).
+    (`NSWindowStyleMaskTexturedBackground`).
   * The `desktop` type places the window at the desktop background window level
     (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive
     input sparingly.
+  * The `panel` type enables the window to float on top of full-screened apps
+    by adding the `NSWindowStyleMaskNonactivatingPanel` style mask,normally
+    reserved for NSPanel, at runtime. Also, the window will appear on all
+    spaces (desktops).
 * On Windows, possible type is `toolbar`.
 
 ### Instance Events
@@ -1319,7 +1324,7 @@ win.setSheetOffset(toolbarRect.height)
 
 Starts or stops flashing the window to attract user's attention.
 
-#### `win.setSkipTaskbar(skip)`
+#### `win.setSkipTaskbar(skip)` _macOS_ _Windows_
 
 * `skip` boolean
 

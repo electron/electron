@@ -117,7 +117,7 @@ void PrintPreviewMessageHandler::DidPrepareDocumentForPreview(
     auto* focused_frame = web_contents_->GetFocusedFrame();
     auto* rfh = focused_frame && focused_frame->HasSelection()
                     ? focused_frame
-                    : web_contents_->GetMainFrame();
+                    : web_contents_->GetPrimaryMainFrame();
 
     client->DoPrepareForDocumentToPdf(
         document_cookie, rfh,
@@ -179,7 +179,7 @@ void PrintPreviewMessageHandler::DidPreviewPage(
     auto* focused_frame = web_contents_->GetFocusedFrame();
     auto* rfh = focused_frame && focused_frame->HasSelection()
                     ? focused_frame
-                    : web_contents_->GetMainFrame();
+                    : web_contents_->GetPrimaryMainFrame();
 
     // Use utility process to convert skia metafile to pdf.
     client->DoCompositePageToPdf(
@@ -217,7 +217,7 @@ void PrintPreviewMessageHandler::PrintToPDF(
   auto* focused_frame = web_contents_->GetFocusedFrame();
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
-                  : web_contents_->GetMainFrame();
+                  : web_contents_->GetPrimaryMainFrame();
 
   if (!print_render_frame_.is_bound()) {
     rfh->GetRemoteAssociatedInterfaces()->GetInterface(&print_render_frame_);
@@ -226,7 +226,7 @@ void PrintPreviewMessageHandler::PrintToPDF(
     print_render_frame_->SetPrintPreviewUI(
         receiver_.BindNewEndpointAndPassRemote());
   }
-  print_render_frame_->PrintPreview(options.Clone());
+  print_render_frame_->PrintPreview(options.GetDict().Clone());
 }
 
 gin_helper::Promise<v8::Local<v8::Value>>

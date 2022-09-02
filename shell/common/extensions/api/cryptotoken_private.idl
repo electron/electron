@@ -19,7 +19,7 @@ namespace cryptotokenPrivate {
     DOMString appId;
     // The origin of the caller.
     DOMString origin;
-    // Identifies the tab in which the registration is occuring so that any
+    // Identifies the tab in which the registration is occurring so that any
     // permissions prompt is correctly located.
     long tabId;
   };

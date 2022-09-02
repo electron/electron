@@ -11,6 +11,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
+#include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/common/electron_constants.h"
 #include "ui/display/display.h"
 #include "ui/display/win/screen_win.h"
@@ -412,8 +413,11 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       // multiple times for one resize because of the SetWindowPlacement call.
       if (w_param == SIZE_MAXIMIZED &&
           last_window_state_ != ui::SHOW_STATE_MAXIMIZED) {
+        if (last_window_state_ == ui::SHOW_STATE_MINIMIZED)
+          NotifyWindowRestore();
         last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
         NotifyWindowMaximize();
+        ResetWindowControls();
       } else if (w_param == SIZE_MINIMIZED &&
                  last_window_state_ != ui::SHOW_STATE_MINIMIZED) {
         last_window_state_ = ui::SHOW_STATE_MINIMIZED;
@@ -421,7 +425,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       }
       break;
     }
-    case SIZE_RESTORED:
+    case SIZE_RESTORED: {
       switch (last_window_state_) {
         case ui::SHOW_STATE_MAXIMIZED:
           last_window_state_ = ui::SHOW_STATE_NORMAL;
@@ -439,7 +443,20 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
         default:
           break;
       }
+      ResetWindowControls();
       break;
+    }
+  }
+}
+
+void NativeWindowViews::ResetWindowControls() {
+  // If a given window was minimized and has since been
+  // unminimized (restored/maximized), ensure the WCO buttons
+  // are reset to their default unpressed state.
+  auto* ncv = widget()->non_client_view();
+  if (IsWindowControlsOverlayEnabled() && ncv) {
+    auto* frame_view = static_cast<WinFrameView*>(ncv->frame_view());
+    frame_view->caption_button_container()->ResetWindowControls();
   }
 }
 

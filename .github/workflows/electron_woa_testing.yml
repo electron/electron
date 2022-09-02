@@ -1,0 +1,163 @@
+name: Electron WOA Testing
+
+on:
+  push:    
+    branches: '**'
+  workflow_dispatch:
+    inputs:
+      appveyor_job_id:
+        description: 'Job Id of Appveyor WOA job to test'
+        type: text
+        required: true
+
+jobs:
+  electron-woa-init:
+    if: ${{ github.event_name == 'push' && github.repository == 'electron/electron' }}
+    runs-on: ubuntu-latest
+    steps:
+        - name: Dummy step for push event
+          run: |
+            echo "This job is a needed initialization step for Electron WOA testing.  Another test result will appear once the electron-woa-testing build is done."
+
+  electron-woa-testing:    
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'electron/electron' }}    
+    runs-on: [self-hosted, woa]  
+    permissions:
+      checks: write
+      pull-requests: write
+    steps:
+    - uses: LouisBrunner/checks-action@v1.1.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: electron-woa-testing
+        status: in_progress
+        details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}    
+        output: |
+          {"summary":"Test In Progress","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}        
+    - name: Clean Workspace
+      run: |
+        Remove-Item * -Recurse -Force
+      shell: powershell
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        path: src\electron
+        fetch-depth: 0
+    - name: Yarn install
+      run: |
+        cd src\electron
+        node script/yarn.js install --frozen-lockfile
+    - name: Download and extract dist.zip for test
+      run: |
+        $localArtifactPath = "$pwd\dist.zip"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/dist.zip"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+        & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\Default -y $localArtifactPath
+      shell: powershell
+    - name: Download and extract native test executables for test
+      run: |
+        $localArtifactPath = "src\out\Default\shell_browser_ui_unittests.exe"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/shell_browser_ui_unittests.exe"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+      shell: powershell
+    - name: Download and extract ffmpeg.zip for test
+      run: |
+        $localArtifactPath = "$pwd\ffmpeg.zip"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/ffmpeg.zip"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+        & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -osrc\out\ffmpeg $localArtifactPath
+      shell: powershell
+    - name: Download node headers for test
+      run: |
+        $localArtifactPath = "src\node_headers.zip"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/node_headers.zip"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+        cd src
+        & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y node_headers.zip
+      shell: powershell
+    - name: Download electron.lib for test
+      run: |
+        $localArtifactPath = "src\out\Default\electron.lib"
+        $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/electron.lib"
+        Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+      shell: powershell
+    # Uncomment the following block if pdb files are needed to debug issues
+    # - name: Download pdb files for detailed stacktraces
+    #   if: ${{ github.event_name == 'workflow_dispatch' }}
+    #   run: |
+    #     try {
+    #       $localArtifactPath = "src\pdb.zip"
+    #       $serverArtifactPath = "https://ci.appveyor.com/api/buildjobs/${{ inputs.appveyor_job_id }}/artifacts/pdb.zip"
+    #       Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer ${{ secrets.APPVEYOR_TOKEN }}" }
+    #       cd src
+    #       & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y pdb.zip
+    #     } catch {
+    #       Write-Host "There was an exception encountered while downloading pdb files:" $_.Exception.Message
+    #     } finally {
+    #       $global:LASTEXITCODE = 0
+    #     }
+    #   shell: powershell
+    - name: Setup node headers
+      run: |
+        New-Item src\out\Default\gen\node_headers\Release -Type directory
+        Copy-Item -path src\out\Default\electron.lib -destination src\out\Default\gen\node_headers\Release\node.lib
+      shell: powershell
+    - name: Run Electron Main process tests
+      run: |
+        cd src
+        set npm_config_nodedir=%cd%\out\Default\gen\node_headers
+        set npm_config_arch=arm64
+        cd electron
+        node script/yarn test --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion  
+      env:
+        ELECTRON_ENABLE_STACK_DUMPING: true
+        ELECTRON_OUT_DIR: Default
+        IGNORE_YARN_INSTALL_ERROR: 1
+        ELECTRON_TEST_RESULTS_DIR: junit
+        MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
+        MOCHA_REPORTER: mocha-multi-reporters
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+    - name: Verify ffmpeg
+      run: |
+        cd src
+        echo "Verifying non proprietary ffmpeg"
+        python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
+      shell: cmd
+    - name: Kill processes left running from last test run
+      if: ${{ always() }}
+      run: |
+        Get-Process | Where Name -Like "electron*" | Stop-Process
+        Get-Process | Where Name -Like "msedge*" | Stop-Process
+      shell: powershell
+    - name: Delete user app data directories
+      if: ${{ always() }}
+      run: |
+        Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
+      shell: powershell
+    - uses: LouisBrunner/checks-action@v1.1.1
+      if: ${{ success() }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: electron-woa-testing
+        conclusion: "${{ job.status }}"
+        details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        output: |
+          {"summary":"${{ job.status }}","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+    - uses: LouisBrunner/checks-action@v1.1.1
+      if: ${{ success() }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: electron-woa-testing
+        conclusion: "${{ job.status }}"
+        details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        output: |
+          {"summary":"Job Succeeded","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}          
+    - uses: LouisBrunner/checks-action@v1.1.1
+      if: ${{ ! success() }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: electron-woa-testing
+        conclusion: "${{ job.status }}"
+        details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        output: |
+          {"summary":"Job Failed","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}                    

@@ -13,7 +13,7 @@ This patch can be removed when enable_print_content_analysis can be more
 easily enabled or disabled by default with buildflags.
 
 diff --git a/printing/buildflags/buildflags.gni b/printing/buildflags/buildflags.gni
-index 559ac76d4e4b9d9c1824c4da186a6b0f7619fcca..72855e0c5fadb286b67144b34ff71f45e1434c73 100644
+index 1d2b24adbb39215531bbe189d6191dba026d4f68..88b7962836cfe93a59d1569245f4815f22be355e 100644
 --- a/printing/buildflags/buildflags.gni
 +++ b/printing/buildflags/buildflags.gni
 @@ -36,8 +36,7 @@ declare_args() {

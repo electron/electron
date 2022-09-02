@@ -12,9 +12,7 @@
 #include "shell/common/gin_helper/wrappable.h"
 #include "ui/views/view.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class View : public gin_helper::Wrappable<View> {
  public:
@@ -49,8 +47,6 @@ class View : public gin_helper::Wrappable<View> {
   views::View* view_ = nullptr;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_

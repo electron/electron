@@ -10,9 +10,7 @@
 #include "ui/gfx/image/image.h"
 #include "ui/views/controls/image_view.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class ImageView : public View {
  public:
@@ -32,8 +30,6 @@ class ImageView : public View {
   }
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_VIEWS_ELECTRON_API_IMAGE_VIEW_H_

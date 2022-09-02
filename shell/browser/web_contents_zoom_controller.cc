@@ -46,7 +46,7 @@ void WebContentsZoomController::SetEmbedderZoomController(
 }
 
 void WebContentsZoomController::SetZoomLevel(double level) {
-  if (!web_contents()->GetMainFrame()->IsRenderFrameLive() ||
+  if (!web_contents()->GetPrimaryMainFrame()->IsRenderFrameLive() ||
       blink::PageZoomValuesEqual(GetZoomLevel(), level) ||
       zoom_mode_ == ZoomMode::kDisabled)
     return;

@@ -66,7 +66,6 @@ declare namespace Electron {
     _callWindowOpenHandler(event: any, details: Electron.HandlerDetails): {browserWindowConstructorOptions: Electron.BrowserWindowConstructorOptions | null, outlivesOpener: boolean};
     _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
     _send(internal: boolean, channel: string, args: any): boolean;
-    _sendToFrameInternal(frameId: number | [number, number], channel: string, ...args: any[]): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
@@ -81,7 +80,6 @@ declare namespace Electron {
     attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
     detachFromOuterFrame(): void;
     setEmbedder(embedder: Electron.WebContents): void;
-    attachParams?: { instanceId: number; src: string, opts: LoadURLOptions };
     viewInstanceId: number;
   }
 
@@ -149,12 +147,6 @@ declare namespace Electron {
     _throw(error: Error | string): void;
   }
 
-  const deprecate: ElectronInternal.DeprecationUtil;
-
-  namespace Main {
-    const deprecate: ElectronInternal.DeprecationUtil;
-  }
-
   class View {}
 
   // Experimental views API
@@ -195,21 +187,6 @@ declare namespace Electron {
 }
 
 declare namespace ElectronInternal {
-  type DeprecationHandler = (message: string) => void;
-  interface DeprecationUtil {
-    warnOnce(oldName: string, newName?: string): () => void;
-    setHandler(handler: DeprecationHandler | null): void;
-    getHandler(): DeprecationHandler | null;
-    warn(oldName: string, newName: string): void;
-    log(message: string): void;
-    removeFunction<T extends Function>(fn: T, removedName: string): T;
-    renameFunction<T extends Function>(fn: T, newName: string): T;
-    event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
-    removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K, onlyForValues?: any[]): T;
-    renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
-    moveAPI<T extends Function>(fn: T, oldUsage: string, newUsage: string): T;
-  }
-
   interface DesktopCapturer {
     startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
     _onerror?: (error: string) => void;
@@ -262,6 +239,11 @@ declare namespace ElectronInternal {
     height_microns: number,
     width_microns: number,
     is_default?: 'true',
+  }
+
+  type PageSize = {
+    width: number,
+    height: number,
   }
 
   type ModuleLoader = () => any;

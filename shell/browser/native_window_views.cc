@@ -51,6 +51,7 @@
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/native_frame_view.h"
+#include "shell/common/platform_util.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 
@@ -271,6 +272,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // Set WM_CLASS.
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
+  // Set Wayland application ID.
+  params.wayland_app_id = platform_util::GetXdgAppId();
 
   auto* native_widget = new views::DesktopNativeWidgetAura(widget());
   params.native_widget = native_widget;
@@ -278,7 +281,24 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       new ElectronDesktopWindowTreeHostLinux(this, native_widget);
 #endif
 
+  // Ref https://github.com/electron/electron/issues/30760
+  // Set the can_resize param before initializing the widget.
+  // When resizable_ is true, this causes the WS_THICKFRAME style
+  // to be passed into CreateWindowEx and SetWindowLong calls in
+  // WindowImpl::Init and HwndMessageHandler::SizeConstraintsChanged
+  // respectively. As a result, the Windows 7 frame doesn't show,
+  // but it isn't clear why this is the case.
+  // When resizable_ is false, WS_THICKFRAME is not passed into the
+  // SetWindowLong call, so the Windows 7 frame still shows.
+  // One workaround would be to call set_can_resize(true) here,
+  // and then move the SetCanResize(resizable_) call after the
+  // SetWindowLong call around line 365, but that's a much larger change.
+  set_can_resize(true);
   widget()->Init(std::move(params));
+
+  // When the workaround above is not needed anymore, only this
+  // call should be necessary.
+  // With the workaround in place, this call doesn't do anything.
   SetCanResize(resizable_);
 
   bool fullscreen = false;
@@ -300,14 +320,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
 #if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
-    // TODO(ckerr): remove in Electron v20.0.0
     // Before the window is mapped the SetWMSpecState can not work, so we have
     // to manually set the _NET_WM_STATE.
     std::vector<x11::Atom> state_atom_list;
-    bool skip_taskbar = false;
-    if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
-      state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
-    }
 
     // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
     if (fullscreen) {
@@ -494,6 +509,13 @@ void NativeWindowViews::Show() {
 #if defined(USE_OZONE)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
+#endif
+
+#if defined(USE_OZONE_PLATFORM_X11)
+  // On X11, setting Z order before showing the window doesn't take effect,
+  // so we have to call it again.
+  if (IsX11())
+    widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
 }
 
@@ -719,7 +741,6 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if BUILDFLAG(IS_WIN)
   if (is_moving_ || is_resizing_) {
     pending_bounds_change_ = bounds;
-    return;
   }
 #endif
 
@@ -876,6 +897,11 @@ bool NativeWindowViews::IsMovable() {
 void NativeWindowViews::SetMinimizable(bool minimizable) {
 #if BUILDFLAG(IS_WIN)
   FlipWindowStyle(GetAcceleratedWidget(), minimizable, WS_MINIMIZEBOX);
+  if (IsWindowControlsOverlayEnabled()) {
+    auto* frame_view =
+        static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
+    frame_view->caption_button_container()->UpdateButtons();
+  }
 #endif
   minimizable_ = minimizable;
 }
@@ -891,6 +917,11 @@ bool NativeWindowViews::IsMinimizable() {
 void NativeWindowViews::SetMaximizable(bool maximizable) {
 #if BUILDFLAG(IS_WIN)
   FlipWindowStyle(GetAcceleratedWidget(), maximizable, WS_MAXIMIZEBOX);
+  if (IsWindowControlsOverlayEnabled()) {
+    auto* frame_view =
+        static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
+    frame_view->caption_button_container()->UpdateButtons();
+  }
 #endif
   maximizable_ = maximizable;
 }
@@ -925,6 +956,11 @@ void NativeWindowViews::SetClosable(bool closable) {
     EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
   } else {
     EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+  }
+  if (IsWindowControlsOverlayEnabled()) {
+    auto* frame_view =
+        static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
+    frame_view->caption_button_container()->UpdateButtons();
   }
 #endif
 }
@@ -1021,10 +1057,6 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar->AddTab(GetAcceleratedWidget());
     taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
   }
-#elif defined(USE_OZONE_PLATFORM_X11)
-  if (IsX11())
-    SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
-                   x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
 #endif
 }
 
@@ -1517,7 +1549,7 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
     NativeWindow::NotifyWindowBlur();
   }
 
-  // Hide menu bar when window is blured.
+  // Hide menu bar when window is blurred.
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
     SetMenuBarVisibility(false);
 

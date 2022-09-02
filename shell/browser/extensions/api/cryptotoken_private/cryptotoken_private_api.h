@@ -14,8 +14,7 @@ class PrefRegistrySyncable;
 
 // Implementations for chrome.cryptotokenPrivate API functions.
 
-namespace extensions {
-namespace api {
+namespace extensions::api {
 
 // void CryptotokenRegisterProfilePrefs(
 //     user_prefs::PrefRegistrySyncable* registry);
@@ -80,7 +79,6 @@ class CryptotokenPrivateRecordSignRequestFunction : public ExtensionFunction {
   ResponseAction Run() override;
 };
 
-}  // namespace api
-}  // namespace extensions
+}  // namespace extensions::api
 
 #endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_

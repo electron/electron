@@ -152,9 +152,7 @@ void DeleteTempDirectory(const base::FilePath& dir_path) {
 
 }  // namespace
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 AppIndicatorIcon::AppIndicatorIcon(std::string id,
                                    const gfx::ImageSkia& image,
@@ -375,6 +373,4 @@ void AppIndicatorIcon::OnClickActionReplacementMenuItemActivated() {
     delegate()->OnClick();
 }
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui

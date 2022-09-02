@@ -45,9 +45,7 @@ struct Converter<electron::NotificationAction> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Notification::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -284,9 +282,7 @@ v8::Local<v8::ObjectTemplate> Notification::FillObjectTemplate(
       .Build();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
@@ -304,4 +300,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_notification, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_notification, Initialize)

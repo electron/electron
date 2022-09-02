@@ -32,7 +32,7 @@ void WebViewGuestDelegate::AttachToIframe(
   embedder_web_contents_ = embedder_web_contents;
 
   int embedder_process_id =
-      embedder_web_contents_->GetMainFrame()->GetProcess()->GetID();
+      embedder_web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID();
   auto* embedder_frame =
       content::RenderFrameHost::FromID(embedder_process_id, embedder_frame_id);
   DCHECK_EQ(embedder_web_contents_,
@@ -49,7 +49,10 @@ void WebViewGuestDelegate::AttachToIframe(
   // frame |embedder_frame| hosts the inner WebContents.
   embedder_web_contents_->AttachInnerWebContents(
       base::WrapUnique<content::WebContents>(guest_web_contents),
-      embedder_frame, false);
+      embedder_frame,
+      /*remote_frame=*/mojo::NullAssociatedRemote(),
+      /*remote_frame_host_receiver=*/mojo::NullAssociatedReceiver(),
+      /*is_full_page=*/false);
 
   ResetZoomController();
 

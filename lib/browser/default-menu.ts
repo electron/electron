@@ -31,7 +31,7 @@ export const setDefaultApplicationMenu = () => {
       {
         label: 'Community Discussions',
         click: async () => {
-          await shell.openExternal('https://discord.com/invite/APGC3k5yaH');
+          await shell.openExternal('https://discord.gg/electronjs');
         }
       },
       {

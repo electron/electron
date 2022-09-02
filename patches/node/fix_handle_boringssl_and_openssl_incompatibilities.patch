@@ -16,11 +16,25 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39138
 - https://github.com/nodejs/node/pull/39136
 
+diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
+index 6c663a2b21d0a29708700d0e19b8e30fa696a1d0..1e4ff83faec60887e8169e612ac1a956130d7e4a 100644
+--- a/src/crypto/crypto_cipher.cc
++++ b/src/crypto/crypto_cipher.cc
+@@ -25,7 +25,8 @@ using v8::Value;
+ namespace crypto {
+ namespace {
+ bool IsSupportedAuthenticatedMode(const EVP_CIPHER* cipher) {
+-  switch (EVP_CIPHER_mode(cipher)) {
++  const int mode = EVP_CIPHER_mode(cipher);
++  switch (mode) {
+   case EVP_CIPH_CCM_MODE:
+   case EVP_CIPH_GCM_MODE:
+ #ifndef OPENSSL_NO_OCB
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index a5aa39c23c1708ac27564a1a77a9f05fc07791e2..630a3400e74f20b1dbee17027c7dbe8688fed4b2 100644
+index ed1aea868d8385b6411103c614f4d12688c8cb30..4864d7cd6a310f31bfdda399996bd2c47977667a 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
-@@ -162,7 +162,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -166,7 +166,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    const unsigned char* buf;
    size_t len;
    size_t rem;
@@ -29,7 +43,7 @@ index a5aa39c23c1708ac27564a1a77a9f05fc07791e2..630a3400e74f20b1dbee17027c7dbe86
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -175,13 +175,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -179,13 +179,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    len = (buf[0] << 8) | buf[1];
    if (len + 2 != rem) return nullptr;
    return reinterpret_cast<const char*>(buf + 3);
@@ -46,7 +60,7 @@ index a5aa39c23c1708ac27564a1a77a9f05fc07791e2..630a3400e74f20b1dbee17027c7dbe86
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_server_name,
-@@ -203,6 +205,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+@@ -207,15 +209,20 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
    if (len + 2 > rem)
      return nullptr;
    return reinterpret_cast<const char*>(buf + 5);
@@ -55,18 +69,22 @@ index a5aa39c23c1708ac27564a1a77a9f05fc07791e2..630a3400e74f20b1dbee17027c7dbe86
  }
  
  const char* GetServerName(SSL* ssl) {
-@@ -210,7 +214,10 @@ const char* GetServerName(SSL* ssl) {
+   return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
  }
  
- bool SetGroups(SecureContext* sc, const char* groups) {
+-bool SetGroups(SecureContext* sc, const char* groups) {
+-  return SSL_CTX_set1_groups_list(sc->ctx().get(), groups) == 1;
+-}
++ bool SetGroups(SecureContext* sc, const char* groups) {
 +#ifndef OPENSSL_IS_BORINGSSL
-   return SSL_CTX_set1_groups_list(**sc, groups) == 1;
++   return SSL_CTX_set1_groups_list(sc->ctx().get(), groups) == 1;
 +#endif
-+  return SSL_CTX_set1_curves_list(**sc, groups) == 1;
- }
++  return SSL_CTX_set1_curves_list(sc->ctx().get(), groups) == 1;
++ }
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
-@@ -1101,14 +1108,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+   const char* code = "UNSPECIFIED";
+@@ -1103,14 +1110,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -86,10 +104,10 @@ index a5aa39c23c1708ac27564a1a77a9f05fc07791e2..630a3400e74f20b1dbee17027c7dbe86
      if (!Set(env->context(),
               obj,
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index b6ef5e5b1e004e663fbfd2578b82644cb53051e0..1d48ea6d022304b1e6a4f703fea790437edcc876 100644
+index c02e22bb542ff529e4d4fa32de63a07704b02b8e..38220d2e0d1a695f67bf7b9cb79a73fa199abeae 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -143,13 +143,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+@@ -139,13 +139,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
  bool DiffieHellman::Init(const char* p, int p_len, int g) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -105,7 +123,7 @@ index b6ef5e5b1e004e663fbfd2578b82644cb53051e0..1d48ea6d022304b1e6a4f703fea79043
      return false;
    }
    BIGNUM* bn_p =
-@@ -167,21 +165,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+@@ -163,21 +161,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -130,7 +148,7 @@ index b6ef5e5b1e004e663fbfd2578b82644cb53051e0..1d48ea6d022304b1e6a4f703fea79043
      return false;
    }
    BIGNUM* bn_p =
-@@ -501,16 +496,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -527,16 +522,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      if (!BN_set_word(bn_g.get(), params->params.generator) ||
          !DH_set0_pqg(dh.get(), prime, nullptr, bn_g.get()))
        return EVPKeyCtxPointer();
@@ -152,7 +170,7 @@ index b6ef5e5b1e004e663fbfd2578b82644cb53051e0..1d48ea6d022304b1e6a4f703fea79043
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -522,8 +521,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -548,8 +547,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
          EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0) {
        return EVPKeyCtxPointer();
      }
@@ -188,33 +206,11 @@ index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42
    if (EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0)
      return EVPKeyCtxPointer();
  
-diff --git a/src/crypto/crypto_hkdf.cc b/src/crypto/crypto_hkdf.cc
-index 0aa96ada47abe4b66fb616c665101278bbe0afb6..1e9a4863c5faea5f6b275483ca16f3a6e8dac25b 100644
---- a/src/crypto/crypto_hkdf.cc
-+++ b/src/crypto/crypto_hkdf.cc
-@@ -101,6 +101,7 @@ bool HKDFTraits::DeriveBits(
-     Environment* env,
-     const HKDFConfig& params,
-     ByteSource* out) {
-+#ifndef OPENSSL_IS_BORINGSSL
-   EVPKeyCtxPointer ctx =
-       EVPKeyCtxPointer(EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr));
-   if (!ctx ||
-@@ -132,6 +133,9 @@ bool HKDFTraits::DeriveBits(
- 
-   *out = std::move(buf);
-   return true;
-+#else
-+  return false;
-+#endif
- }
- 
- void HKDFConfig::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index fc88deb460314c2620d842ec30141bcd13109d60..c097ccfcffb1158317ba09e7c4beb725ccbab74f 100644
+index 648fda211c4305f0ce2f676159bd23e95b4844f8..147fe4a79bfa1e2063ab9ba2f16dda22f0c40e48 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
-@@ -150,7 +150,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
+@@ -147,7 +147,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
  
    params->bits = bits;
    params->safe = safe;
@@ -224,10 +220,10 @@ index fc88deb460314c2620d842ec30141bcd13109d60..c097ccfcffb1158317ba09e7c4beb725
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index ae4550e9fde8120c35409e495d5b763a95546509..188a7efe76df2a1aa2eb2746f4d748361bba4fb4 100644
+index bd732a70a8ffe6212e06dddb352ca75cb45b50d3..cd025663f58d386e3b7c47823a7d6cf1a230e6a8 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -621,10 +621,11 @@ Maybe<bool> GetRsaKeyDetail(
+@@ -626,10 +626,11 @@ Maybe<bool> GetRsaKeyDetail(
        }
  
        if (params->saltLength != nullptr) {
@@ -244,10 +240,10 @@ index ae4550e9fde8120c35409e495d5b763a95546509..188a7efe76df2a1aa2eb2746f4d74836
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba1e76ce0a 100644
+index 58a5d88d7a10def618170550246fbf50685ac0a4..77af0661dbd056a38a8d7599b9e4f067f6b79f64 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -508,24 +508,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -534,24 +534,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -269,10 +265,11 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
 -    V(ASYNC)                                                                  \
 -    V(KDF)                                                                    \
 -    V(SM2)                                                                    \
++    V(HKDF)                                                                    \
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -684,7 +674,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -710,7 +701,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -281,7 +278,7 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -696,7 +686,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -722,7 +713,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -290,7 +287,7 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -704,10 +694,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -730,10 +721,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -303,20 +300,19 @@ index e1ef170a9f17634d218492a2ce888c3a4365e097..8dffad89c80e0906780d1b26ba9a65ba
  }
  }  // namespace
  
-diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index c431159e6f77f8c86844bcadb86012b056d03372..0ce3a8f219a2952f660ff72a6ce36ee109add649 100644
---- a/src/crypto/crypto_util.h
-+++ b/src/crypto/crypto_util.h
-@@ -16,7 +16,9 @@
- #include <openssl/err.h>
- #include <openssl/evp.h>
- #include <openssl/ec.h>
-+#ifndef OPENSSL_IS_BORINGSSL
- #include <openssl/kdf.h>
-+#endif
- #include <openssl/rsa.h>
- #include <openssl/dsa.h>
- #include <openssl/ssl.h>
+diff --git a/src/node_metadata.cc b/src/node_metadata.cc
+index 46d9be0dfcfdcf778ebaf0337517b7da3f68bc9b..435762f7df47459dc4e6e73a7c3d2376184bebcf 100644
+--- a/src/node_metadata.cc
++++ b/src/node_metadata.cc
+@@ -9,7 +9,7 @@
+ #include "v8.h"
+ #include "zlib.h"
+ 
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
+ #include <openssl/opensslv.h>
+ #endif  // HAVE_OPENSSL
+ 
 diff --git a/src/node_metadata.h b/src/node_metadata.h
 index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e324183b42be2 100644
 --- a/src/node_metadata.h
@@ -329,4 +325,30 @@ index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e3241
 +#if 0
  #include <openssl/crypto.h>
  #endif  // HAVE_OPENSSL
+ 
+diff --git a/src/node_options.cc b/src/node_options.cc
+index b82100b6907891063a37023e6ad21f79fffade1e..d78005d41bebff4e8729400cf08ab67d27098448 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -5,7 +5,7 @@
+ #include "node_binding.h"
+ #include "node_external_reference.h"
+ #include "node_internals.h"
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
+ #include "openssl/opensslv.h"
+ #endif
+ 
+diff --git a/src/node_options.h b/src/node_options.h
+index 32e68086502f3eebe2dbe232b198d663db951125..cb4b6215ffbace04ecd4ad694ae00493847a7324 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -11,7 +11,7 @@
+ #include "node_mutex.h"
+ #include "util.h"
+ 
+-#if HAVE_OPENSSL
++#if 0
+ #include "openssl/opensslv.h"
+ #endif
  

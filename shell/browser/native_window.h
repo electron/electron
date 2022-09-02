@@ -7,6 +7,7 @@
 
 #include <list>
 #include <memory>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -303,7 +304,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowAlwaysOnTopChanged();
   void NotifyWindowExecuteAppCommand(const std::string& command);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
-                                     const base::DictionaryValue& details);
+                                     base::Value::Dict details);
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();
@@ -315,6 +316,27 @@ class NativeWindow : public base::SupportsUserData,
   void AddObserver(NativeWindowObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(NativeWindowObserver* obs) {
     observers_.RemoveObserver(obs);
+  }
+
+  // Handle fullscreen transitions.
+  void HandlePendingFullscreenTransitions();
+
+  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
+
+  void set_fullscreen_transition_state(FullScreenTransitionState state) {
+    fullscreen_transition_state_ = state;
+  }
+  FullScreenTransitionState fullscreen_transition_state() const {
+    return fullscreen_transition_state_;
+  }
+
+  enum class FullScreenTransitionType { HTML, NATIVE, NONE };
+
+  void set_fullscreen_transition_type(FullScreenTransitionType type) {
+    fullscreen_transition_type_ = type;
+  }
+  FullScreenTransitionType fullscreen_transition_type() const {
+    return fullscreen_transition_type_;
   }
 
   views::Widget* widget() const { return widget_.get(); }
@@ -374,6 +396,12 @@ class NativeWindow : public base::SupportsUserData,
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
+
+  std::queue<bool> pending_transitions_;
+  FullScreenTransitionState fullscreen_transition_state_ =
+      FullScreenTransitionState::NONE;
+  FullScreenTransitionType fullscreen_transition_type_ =
+      FullScreenTransitionType::NONE;
 
  private:
   std::unique_ptr<views::Widget> widget_;

@@ -16,9 +16,7 @@
 #include "shell/browser/ui/gtk/app_indicator_icon.h"
 #include "shell/browser/ui/gtk/gtk_status_icon.h"
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 namespace {
 
@@ -35,7 +33,7 @@ bool IsStatusIconSupported() {
 #endif
 }
 
-std::unique_ptr<views::StatusIconLinux> CreateLinuxStatusIcon(
+std::unique_ptr<ui::StatusIconLinux> CreateLinuxStatusIcon(
     const gfx::ImageSkia& image,
     const std::u16string& tool_tip,
     const char* id_prefix) {
@@ -55,6 +53,4 @@ std::unique_ptr<views::StatusIconLinux> CreateLinuxStatusIcon(
 #endif
 }
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui

@@ -9,14 +9,21 @@ const klaw = require('klaw');
 const minimist = require('minimist');
 const path = require('path');
 
+const { chunkFilenames } = require('./lib/utils');
+
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
 
+// Augment the PATH for this script so that we can find executables
+// in the depot_tools folder even if folks do not have an instance of
+// DEPOT_TOOLS in their path already
+process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
+
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
-  ['spec-main', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
+  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
   ['spec', 'ts-smoke', 'electron', 'main.ts'],
   ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
   ['spec', 'ts-smoke', 'runner.js']
@@ -25,10 +32,10 @@ const IGNORELIST = new Set([
 const IS_WINDOWS = process.platform === 'win32';
 
 function spawnAndCheckExitCode (cmd, args, opts) {
-  opts = Object.assign({ stdio: 'inherit' }, opts);
+  opts = { stdio: 'inherit', ...opts };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
   if (error) {
-    // the subsprocess failed or timed out
+    // the subprocess failed or timed out
     console.error(error);
     process.exit(1);
   }
@@ -44,7 +51,7 @@ function spawnAndCheckExitCode (cmd, args, opts) {
 }
 
 function cpplint (args) {
-  args.unshift(`--project_root=${SOURCE_ROOT}`);
+  args.unshift(`--root=${SOURCE_ROOT}`);
   const result = childProcess.spawnSync(IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py', args, { encoding: 'utf8', shell: true });
   // cpplint.py writes EVERYTHING to stderr, including status messages
   if (result.stderr) {
@@ -69,12 +76,11 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
   run: (opts, filenames) => {
-    if (opts.fix) {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames]);
-    } else {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames]);
+    const clangFormatFlags = opts.fix ? ['--fix'] : [];
+    for (const chunk of chunkFilenames(filenames)) {
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk]);
+      cpplint(chunk);
     }
-    cpplint(filenames);
   }
 }, {
   key: 'objc',
@@ -82,9 +88,9 @@ const LINTERS = [{
   test: filename => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
   run: (opts, filenames) => {
     if (opts.fix) {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames]);
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', '--fix', ...filenames]);
     } else {
-      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames]);
+      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...filenames]);
     }
     const filter = [
       '-readability/braces',
@@ -102,13 +108,13 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
     const args = ['--rcfile=' + rcfile, ...filenames];
-    const env = Object.assign({ PYTHONPATH: path.join(ELECTRON_ROOT, 'script') }, process.env);
+    const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
     spawnAndCheckExitCode('pylint-2.7', args, { env });
   }
 }, {
   key: 'javascript',
-  roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec', 'spec-main'],
-  ignoreRoots: ['spec/node_modules', 'spec-main/node_modules'],
+  roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
+  ignoreRoots: ['spec/node_modules'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: async (opts, filenames) => {
     const eslint = new ESLint({
@@ -142,10 +148,11 @@ const LINTERS = [{
   test: filename => filename.endsWith('.gn') || filename.endsWith('.gni'),
   run: (opts, filenames) => {
     const allOk = filenames.map(filename => {
-      const env = Object.assign({
+      const env = {
         CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
-        DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
-      }, process.env);
+        DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+        ...process.env
+      };
       // Users may not have depot_tools in PATH.
       env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
       const args = ['format', filename];
@@ -172,7 +179,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const patchesDir = path.resolve(__dirname, '../patches');
     const patchesConfig = path.resolve(patchesDir, 'config.json');
-    // If the config does not exist, that's a proiblem
+    // If the config does not exist, that's a problem
     if (!fs.existsSync(patchesConfig)) {
       process.exit(1);
     }

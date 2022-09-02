@@ -8,19 +8,18 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 6d51f6a77c21b60ab756dbf8d4961b351a2e2b07..c6dc3cebfb32489a5e50b850ed02a066bf3f258e 100644
+index e5c9ebda8156c1a7c32f7eb0661dff40f022c264..8840d4be4b49b27dfb257866f6a074efc34ff869 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -142,6 +142,20 @@ WebPreferences::WebPreferences()
-       fake_no_alloc_direct_call_for_testing_enabled(false),
+@@ -143,6 +143,19 @@ WebPreferences::WebPreferences()
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
+       stylus_handwriting_enabled(false),
 +      // Begin Electron-specific WebPreferences.
 +      context_isolation(false),
 +      is_webview(false),
 +      hidden_page(false),
 +      offscreen(false),
-+      preload(base::FilePath::StringType()),
 +      node_integration(false),
 +      node_integration_in_worker(false),
 +      node_integration_in_sub_frames(false),
@@ -33,24 +32,13 @@ index 6d51f6a77c21b60ab756dbf8d4961b351a2e2b07..c6dc3cebfb32489a5e50b850ed02a066
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index 187fd8d9818693262256d5cbddd5e02659ba903d..f166517f4e70ced310253539fb6197f6b3af559c 100644
+index a910d7b53a1346797f0e2bd030dff7ff84a834b8..4847c7587484eb02b8d7f532be53e499517a95fb 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -23,6 +23,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
-       !data.ReadCursiveFontFamilyMap(&out->cursive_font_family_map) ||
-       !data.ReadFantasyFontFamilyMap(&out->fantasy_font_family_map) ||
-       !data.ReadMathFontFamilyMap(&out->math_font_family_map) ||
-+      // Begin Electron-specific WebPreferences.
-+      !data.ReadPreloads(&out->preloads) ||
-+      !data.ReadPreload(&out->preload) ||
-+      // End Electron-specific WebPreferences.
-       !data.ReadLazyFrameLoadingDistanceThresholdsPx(
-           &out->lazy_frame_loading_distance_thresholds_px) ||
-       !data.ReadLazyImageLoadingDistanceThresholdsPx(
-@@ -148,6 +152,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
-       data.fake_no_alloc_direct_call_for_testing_enabled();
+@@ -149,6 +149,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
+   out->stylus_handwriting_enabled = data.stylus_handwriting_enabled();
 +  // Begin Electron-specific WebPreferences.
 +  out->context_isolation = data.context_isolation();
 +  out->is_webview = data.is_webview();
@@ -63,12 +51,12 @@ index 187fd8d9818693262256d5cbddd5e02659ba903d..f166517f4e70ced310253539fb6197f6
 +  out->enable_plugins = data.enable_plugins();
 +  out->enable_websql = data.enable_websql();
 +  out->webview_tag = data.webview_tag();
-+  // End Electron-specific WebPreferences.s
++  // End Electron-specific WebPreferences.
    out->cookie_enabled = data.cookie_enabled();
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 59947bfd3c042e5f7d3993967fece9b519f93472..368ec7fb398409cd6386269934eaffcce356793f 100644
+index 33ca0140e9434f37c67386973f1ebf460222691c..220551e3be0ae9275714f80758671eeac87b0cca 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -79,17 +67,15 @@ index 59947bfd3c042e5f7d3993967fece9b519f93472..368ec7fb398409cd6386269934eaffcc
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -154,6 +155,22 @@ struct BLINK_COMMON_EXPORT WebPreferences {
-   blink::mojom::V8CacheOptions v8_cache_options;
-   bool record_whole_document;
- 
+@@ -157,6 +158,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+   // If true, stylus handwriting recognition to text input will be available in
+   // editable input fields which are non-password type.
+   bool stylus_handwriting_enabled;
 +  // Begin Electron-specific WebPreferences.
-+  std::vector<base::FilePath> preloads;
 +  bool context_isolation;
 +  bool is_webview;
 +  bool hidden_page;
 +  bool offscreen;
-+  base::FilePath preload;
 +  bool node_integration;
 +  bool node_integration_in_worker;
 +  bool node_integration_in_sub_frames;
@@ -98,12 +84,11 @@ index 59947bfd3c042e5f7d3993967fece9b519f93472..368ec7fb398409cd6386269934eaffcc
 +  bool enable_websql;
 +  bool webview_tag;
 +  // End Electron-specific WebPreferences.
-+
+ 
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
-   // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index bd425a5869477de9095c6a41c683609d065b08c0..3a5d7450aa40e8a7614e83f316d3d0fb59583381 100644
+index d4c86ca871c796c3179a0fe099de0b3082ebf46e..0b438a894c37826c19bdac1b1474a50a4afe8e4f 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -114,15 +99,11 @@ index bd425a5869477de9095c6a41c683609d065b08c0..3a5d7450aa40e8a7614e83f316d3d0fb
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -428,6 +429,60 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
-     return r.record_whole_document;
+@@ -433,6 +434,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+     return r.stylus_handwriting_enabled;
    }
  
 +  // Begin Electron-specific WebPreferences.
-+  static const std::vector<base::FilePath>& preloads(const blink::web_pref::WebPreferences& r) {
-+    return r.preloads;
-+  }
-+
 +  static bool context_isolation(const blink::web_pref::WebPreferences& r) {
 +    return r.context_isolation;
 +  }
@@ -137,10 +118,6 @@ index bd425a5869477de9095c6a41c683609d065b08c0..3a5d7450aa40e8a7614e83f316d3d0fb
 +
 +  static bool offscreen(const blink::web_pref::WebPreferences& r) {
 +    return r.offscreen;
-+  }
-+
-+  static const base::FilePath& preload(const blink::web_pref::WebPreferences& r) {
-+    return r.preload;
 +  }
 +
 +  static bool node_integration(const blink::web_pref::WebPreferences& r) {
@@ -176,7 +153,7 @@ index bd425a5869477de9095c6a41c683609d065b08c0..3a5d7450aa40e8a7614e83f316d3d0fb
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 738ac646e075f7a37ba2a263c7799a755e63d3fb..80d6ae17d34ef5c7fd14e21c4e1ee3ed4ef9c5fe 100644
+index 4638c6cf8f3834bb3dc5f98347069f1211cb7332..8cf8845375809f239998b1db256622c2ce5b1e58 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";
@@ -187,17 +164,15 @@ index 738ac646e075f7a37ba2a263c7799a755e63d3fb..80d6ae17d34ef5c7fd14e21c4e1ee3ed
  
  enum PointerType {
    kPointerNone                              = 1,             // 1 << 0
-@@ -206,6 +207,22 @@ struct WebPreferences {
-   V8CacheOptions v8_cache_options;
-   bool record_whole_document;
- 
+@@ -209,6 +210,19 @@ struct WebPreferences {
+   // If true, stylus handwriting recognition to text input will be available in
+   // editable input fields which are non-password type.
+   bool stylus_handwriting_enabled;
 +  // Begin Electron-specific WebPreferences.
-+  array<mojo_base.mojom.FilePath> preloads;
 +  bool context_isolation;
 +  bool is_webview;
 +  bool hidden_page;
 +  bool offscreen;
-+  mojo_base.mojom.FilePath preload;
 +  bool node_integration;
 +  bool node_integration_in_worker;
 +  bool node_integration_in_sub_frames;
@@ -206,7 +181,6 @@ index 738ac646e075f7a37ba2a263c7799a755e63d3fb..80d6ae17d34ef5c7fd14e21c4e1ee3ed
 +  bool enable_websql;
 +  bool webview_tag;
 +  // End Electron-specific WebPreferences.
-+
+ 
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
-   // connected to the backing store, for instance if you wanted to be able to

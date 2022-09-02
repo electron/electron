@@ -176,8 +176,9 @@
   auto devToolsView = devToolsWebContents->GetNativeView().GetNativeNSView();
   if (!docked) {
     auto styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-                     NSMiniaturizableWindowMask | NSWindowStyleMaskResizable |
-                     NSTexturedBackgroundWindowMask |
+                     NSWindowStyleMaskMiniaturizable |
+                     NSWindowStyleMaskResizable |
+                     NSWindowStyleMaskTexturedBackground |
                      NSWindowStyleMaskUnifiedTitleAndToolbar;
     devtools_window_.reset([[EventDispatchingWindow alloc]
         initWithContentRect:NSMakeRect(0, 0, 800, 600)

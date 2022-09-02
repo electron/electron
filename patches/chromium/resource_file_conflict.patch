@@ -52,10 +52,10 @@ Some alternatives to this patch:
 None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 5c564fe889ca6621ff33d31d8d2fff93563093eb..99ab95668a7d3a31339b576b4a3a6038f39c2795 100644
+index 6042493f09bfefb8b0eaad16588acbae984a3dad..31d63709bd68819a439901823b6649e4328244f8 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1534,7 +1534,7 @@ if (is_chrome_branded && !is_android) {
+@@ -1546,7 +1546,7 @@ if (is_chrome_branded && !is_android) {
    }
  }
  
@@ -64,7 +64,7 @@ index 5c564fe889ca6621ff33d31d8d2fff93563093eb..99ab95668a7d3a31339b576b4a3a6038
    chrome_paks("packed_resources") {
      if (is_mac) {
        output_dir = "$root_gen_dir/repack"
-@@ -1563,6 +1563,12 @@ if (!is_android) {
+@@ -1575,6 +1575,12 @@ if (!is_android) {
    }
  }
  
@@ -75,5 +75,5 @@ index 5c564fe889ca6621ff33d31d8d2fff93563093eb..99ab95668a7d3a31339b576b4a3a6038
 +}
 +
  repack("unit_tests_pak") {
+   testonly = true
    sources = [ "$root_gen_dir/chrome/chrome_test_resources.pak" ]
-   output = "$root_out_dir/unit_tests.pak"

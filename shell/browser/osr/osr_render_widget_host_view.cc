@@ -82,19 +82,19 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   int button_flags = 0;
   switch (event.button) {
     case blink::WebMouseEvent::Button::kBack:
-      button_flags |= ui::EventFlags::EF_BACK_MOUSE_BUTTON;
+      button_flags |= ui::EF_BACK_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kForward:
-      button_flags |= ui::EventFlags::EF_FORWARD_MOUSE_BUTTON;
+      button_flags |= ui::EF_FORWARD_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kLeft:
-      button_flags |= ui::EventFlags::EF_LEFT_MOUSE_BUTTON;
+      button_flags |= ui::EF_LEFT_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kMiddle:
-      button_flags |= ui::EventFlags::EF_MIDDLE_MOUSE_BUTTON;
+      button_flags |= ui::EF_MIDDLE_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kRight:
-      button_flags |= ui::EventFlags::EF_RIGHT_MOUSE_BUTTON;
+      button_flags |= ui::EF_RIGHT_MOUSE_BUTTON;
       break;
     default:
       button_flags = 0;

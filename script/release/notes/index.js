@@ -133,7 +133,7 @@ const getPreviousPoint = async (point) => {
     console.log('error', error);
   }
 
-  // Otherwise, use the newest stable release that preceeds this branch.
+  // Otherwise, use the newest stable release that precedes this branch.
   // To reach that you may have to walk past >1 branch, e.g. to get past
   // 2-1-x which never had a stable release.
   let branch = currentBranch;
@@ -147,7 +147,7 @@ const getPreviousPoint = async (point) => {
   }
 };
 
-async function getReleaseNotes (range, newVersion) {
+async function getReleaseNotes (range, newVersion, unique) {
   const rangeList = range.split('..') || ['HEAD'];
   const to = rangeList.pop();
   const from = rangeList.pop() || (await getPreviousPoint(to));
@@ -158,7 +158,7 @@ async function getReleaseNotes (range, newVersion) {
 
   const notes = await notesGenerator.get(from, to, newVersion);
   const ret = {
-    text: notesGenerator.render(notes)
+    text: notesGenerator.render(notes, unique)
   };
 
   if (notes.unknown.length) {
@@ -170,7 +170,7 @@ async function getReleaseNotes (range, newVersion) {
 
 async function main () {
   const opts = minimist(process.argv.slice(2), {
-    boolean: ['help'],
+    boolean: ['help', 'unique'],
     string: ['version']
   });
   opts.range = opts._.shift();
@@ -179,13 +179,14 @@ async function main () {
     console.log(`
 easy usage: ${name} version
 
-full usage: ${name} [begin..]end [--version version]
+full usage: ${name} [begin..]end [--version version] [--unique]
 
  * 'begin' and 'end' are two git references -- tags, branches, etc --
    from which the release notes are generated.
  * if omitted, 'begin' defaults to the previous tag in end's branch.
  * if omitted, 'version' defaults to 'end'. Specifying a version is
    useful if you're making notes on a new version that isn't tagged yet.
+ * '--unique' omits changes that also landed in other branches.
 
 For example, these invocations are equivalent:
   ${process.argv[1]} v4.0.1
@@ -194,7 +195,7 @@ For example, these invocations are equivalent:
     return 0;
   }
 
-  const notes = await getReleaseNotes(opts.range, opts.version);
+  const notes = await getReleaseNotes(opts.range, opts.version, opts.unique);
   console.log(notes.text);
   if (notes.warning) {
     throw new Error(notes.warning);

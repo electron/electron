@@ -37,9 +37,7 @@ struct Converter<device::mojom::WakeLockType> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -126,9 +124,7 @@ gin::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
       .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

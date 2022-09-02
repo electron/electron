@@ -19,7 +19,7 @@ URLPipeLoader::URLPipeLoader(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::NetworkTrafficAnnotationTag& annotation,
-    base::DictionaryValue upload_data)
+    base::Value::Dict upload_data)
     : url_loader_(this, std::move(loader)), client_(std::move(client)) {
   url_loader_.set_disconnect_handler(base::BindOnce(
       &URLPipeLoader::NotifyComplete, base::Unretained(this), net::ERR_FAILED));
@@ -37,17 +37,17 @@ void URLPipeLoader::Start(
     scoped_refptr<network::SharedURLLoaderFactory> factory,
     std::unique_ptr<network::ResourceRequest> request,
     const net::NetworkTrafficAnnotationTag& annotation,
-    base::DictionaryValue upload_data) {
+    base::Value::Dict upload_data) {
   loader_ = network::SimpleURLLoader::Create(std::move(request), annotation);
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &URLPipeLoader::OnResponseStarted, weak_factory_.GetWeakPtr()));
 
   // TODO(zcbenz): The old protocol API only supports string as upload data,
   // we should seek to support more types in future.
-  std::string content_type, data;
-  if (upload_data.GetString("contentType", &content_type) &&
-      upload_data.GetString("data", &data))
-    loader_->AttachStringForUpload(data, content_type);
+  std::string* content_type = upload_data.FindString("contentType");
+  std::string* data = upload_data.FindString("data");
+  if (content_type && data)
+    loader_->AttachStringForUpload(*data, *content_type);
 
   loader_->DownloadAsStream(factory.get(), this);
 }
@@ -70,9 +70,7 @@ void URLPipeLoader::OnResponseStarted(
 
   producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
 
-  client_->OnReceiveResponse(response_head.Clone(),
-                             mojo::ScopedDataPipeConsumerHandle());
-  client_->OnStartLoadingResponseBody(std::move(consumer));
+  client_->OnReceiveResponse(response_head.Clone(), std::move(consumer));
 }
 
 void URLPipeLoader::OnWrite(base::OnceClosure resume, MojoResult result) {

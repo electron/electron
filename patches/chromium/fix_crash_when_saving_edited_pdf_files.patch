@@ -13,10 +13,10 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
-index 22f7a86817fe4a2dc39913db349e81d93eef4874..c9509d84e25fd88d6ef13933099d582561fe5660 100644
+index 940a00b9b9f992d4254fc74922c3d8b31772fa4e..b3373265a65a6b50276a09bfb54065521ad6eac4 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.ts
 +++ b/chrome/browser/resources/pdf/pdf_viewer.ts
-@@ -858,26 +858,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
+@@ -860,26 +860,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
@@ -48,7 +48,7 @@ index 22f7a86817fe4a2dc39913db349e81d93eef4874..c9509d84e25fd88d6ef13933099d5825
    }
  
    /**
-@@ -985,30 +971,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
+@@ -987,30 +973,12 @@ export class PDFViewerElement extends PDFViewerBaseElement {
        fileName = fileName + '.pdf';
      }
  
@@ -60,7 +60,7 @@ index 22f7a86817fe4a2dc39913db349e81d93eef4874..c9509d84e25fd88d6ef13933099d5825
 -        {
 -          type: 'saveFile',
 -          accepts: [{description: '*.pdf', extensions: ['pdf']}],
--          suggestedName: fileName
+-          suggestedName: fileName,
 -        },
 -        (entry?: FileSystemFileEntry) => {
 -          if (chrome.runtime.lastError) {

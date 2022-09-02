@@ -14,7 +14,7 @@ MenuModelAdapter::~MenuModelAdapter() = default;
 bool MenuModelAdapter::GetAccelerator(int id,
                                       ui::Accelerator* accelerator) const {
   ui::MenuModel* model = menu_model_;
-  int index = 0;
+  size_t index = 0;
   if (ui::MenuModel::GetModelAndIndexForCommandId(id, &model, &index)) {
     return static_cast<ElectronMenuModel*>(model)->GetAcceleratorAtWithParams(
         index, true, accelerator);

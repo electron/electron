@@ -59,9 +59,7 @@ struct Converter<electron::api::DesktopCapturer::Source> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo DesktopCapturer::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -217,9 +215,7 @@ const char* DesktopCapturer::GetTypeName() {
   return "DesktopCapturer";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

@@ -60,8 +60,8 @@ const splitPath = (archivePathOrBuffer: string | Buffer) => {
 // Convert asar archive's Stats object to fs's Stats object.
 let nextInode = 0;
 
-const uid = process.getuid != null ? process.getuid() : 0;
-const gid = process.getgid != null ? process.getgid() : 0;
+const uid = process.getuid?.() ?? 0;
+const gid = process.getgid?.() ?? 0;
 
 const fakeTime = new Date();
 
@@ -263,7 +263,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const { lstat } = fs;
-  fs.lstat = function (pathArgument: string, options: any, callback: any) {
+  fs.lstat = (pathArgument: string, options: any, callback: any) => {
     const pathInfo = splitPath(pathArgument);
     if (typeof options === 'function') {
       callback = options;
@@ -382,10 +382,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   fs.promises.realpath = util.promisify(fs.realpath.native);
 
-  const { exists } = fs;
-  fs.exists = (pathArgument: string, callback: any) => {
+  const { exists: nativeExists } = fs;
+  fs.exists = function exists (pathArgument: string, callback: any) {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return exists(pathArgument, callback);
+    if (!pathInfo.isAsar) return nativeExists(pathArgument, callback);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
@@ -399,9 +399,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     nextTick(callback, [pathExists]);
   };
 
-  fs.exists[util.promisify.custom] = (pathArgument: string) => {
+  fs.exists[util.promisify.custom] = function exists (pathArgument: string) {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return exists[util.promisify.custom](pathArgument);
+    if (!pathInfo.isAsar) return nativeExists[util.promisify.custom](pathArgument);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);

@@ -25,9 +25,7 @@ template <typename T>
 class Handle;
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Notification : public gin::Wrappable<Notification>,
                      public gin_helper::EventEmitterMixin<Notification>,
@@ -117,8 +115,6 @@ class Notification : public gin::Wrappable<Notification>,
   base::WeakPtr<electron::Notification> notification_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_

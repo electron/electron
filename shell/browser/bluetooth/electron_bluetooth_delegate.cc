@@ -47,14 +47,6 @@ ElectronBluetoothDelegate::ShowBluetoothScanningPrompt(
   return nullptr;
 }
 
-void ElectronBluetoothDelegate::ShowDeviceCredentialsPrompt(
-    content::RenderFrameHost* frame,
-    const std::u16string& device_identifier,
-    CredentialsCallback callback) {
-  // TODO(jkleinsc) implement this
-  std::move(callback).Run(DeviceCredentialsPromptResult::kCancelled, u"");
-}
-
 WebBluetoothDeviceId ElectronBluetoothDelegate::GetWebBluetoothDeviceId(
     RenderFrameHost* frame,
     const std::string& device_address) {
@@ -136,6 +128,17 @@ ElectronBluetoothDelegate::GetPermittedDevices(
   std::vector<blink::mojom::WebBluetoothDevicePtr> permitted_devices;
   NOTIMPLEMENTED();
   return permitted_devices;
+}
+
+void ElectronBluetoothDelegate::ShowDevicePairPrompt(
+    content::RenderFrameHost* frame,
+    const std::u16string& device_identifier,
+    PairPromptCallback callback,
+    PairingKind pairing_kind,
+    const absl::optional<std::u16string>& pin) {
+  NOTIMPLEMENTED();
+  std::move(callback).Run(BluetoothDelegate::PairPromptResult(
+      BluetoothDelegate::PairPromptStatus::kCancelled));
 }
 
 }  // namespace electron

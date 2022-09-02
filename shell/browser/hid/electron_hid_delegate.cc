@@ -8,19 +8,25 @@
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/containers/contains.h"
+#include "chrome/common/chrome_features.h"
 #include "content/public/browser/web_contents.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/browser/hid/hid_chooser_context_factory.h"
 #include "shell/browser/hid/hid_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
+
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+#include "extensions/common/constants.h"
+#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
 namespace {
 
 electron::HidChooserContext* GetChooserContext(
-    content::RenderFrameHost* frame) {
-  auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
-  auto* browser_context = web_contents->GetBrowserContext();
+    content::BrowserContext* browser_context) {
   return electron::HidChooserContextFactory::GetForBrowserContext(
       browser_context);
 }
@@ -38,8 +44,9 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
     std::vector<blink::mojom::HidDeviceFilterPtr> filters,
     std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
     content::HidChooser::Callback callback) {
-  electron::HidChooserContext* chooser_context =
-      GetChooserContext(render_frame_host);
+  DCHECK(render_frame_host);
+  auto* chooser_context =
+      GetChooserContext(render_frame_host->GetBrowserContext());
   if (!device_observation_.IsObserving())
     device_observation_.Observe(chooser_context);
 
@@ -58,65 +65,78 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 }
 
 bool ElectronHidDelegate::CanRequestDevicePermission(
-    content::RenderFrameHost* render_frame_host) {
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  auto* permission_helper =
-      WebContentsPermissionHelper::FromWebContents(web_contents);
-  return permission_helper->CheckHIDAccessPermission(
-      web_contents->GetMainFrame()->GetLastCommittedOrigin());
+    content::BrowserContext* browser_context,
+    const url::Origin& origin) {
+  base::Value::Dict details;
+  details.Set("securityOrigin", origin.GetURL().spec());
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context->GetPermissionControllerDelegate());
+  return permission_manager->CheckPermissionWithDetails(
+      static_cast<blink::PermissionType>(
+          WebContentsPermissionHelper::PermissionType::HID),
+      nullptr, origin.GetURL(), std::move(details));
 }
 
 bool ElectronHidDelegate::HasDevicePermission(
-    content::RenderFrameHost* render_frame_host,
+    content::BrowserContext* browser_context,
+    const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  auto* chooser_context = GetChooserContext(render_frame_host);
-  const auto& origin =
-      render_frame_host->GetMainFrame()->GetLastCommittedOrigin();
-  return chooser_context->HasDevicePermission(origin, device,
-                                              render_frame_host);
+  return GetChooserContext(browser_context)
+      ->HasDevicePermission(origin, device);
 }
 
 void ElectronHidDelegate::RevokeDevicePermission(
-    content::RenderFrameHost* render_frame_host,
+    content::BrowserContext* browser_context,
+    const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  // TODO(jkleinsc) implement this for
-  // https://chromium-review.googlesource.com/c/chromium/src/+/3297868
+  return GetChooserContext(browser_context)
+      ->RevokeDevicePermission(origin, device);
 }
 
 device::mojom::HidManager* ElectronHidDelegate::GetHidManager(
-    content::RenderFrameHost* render_frame_host) {
-  auto* chooser_context = GetChooserContext(render_frame_host);
-  return chooser_context->GetHidManager();
+    content::BrowserContext* browser_context) {
+  return GetChooserContext(browser_context)->GetHidManager();
 }
 
-void ElectronHidDelegate::AddObserver(
-    content::RenderFrameHost* render_frame_host,
-    Observer* observer) {
+void ElectronHidDelegate::AddObserver(content::BrowserContext* browser_context,
+                                      Observer* observer) {
   observer_list_.AddObserver(observer);
-  auto* chooser_context = GetChooserContext(render_frame_host);
+  auto* chooser_context = GetChooserContext(browser_context);
   if (!device_observation_.IsObserving())
     device_observation_.Observe(chooser_context);
 }
 
 void ElectronHidDelegate::RemoveObserver(
-    content::RenderFrameHost* render_frame_host,
+    content::BrowserContext* browser_context,
     content::HidDelegate::Observer* observer) {
   observer_list_.RemoveObserver(observer);
 }
 
 const device::mojom::HidDeviceInfo* ElectronHidDelegate::GetDeviceInfo(
-    content::RenderFrameHost* render_frame_host,
+    content::BrowserContext* browser_context,
     const std::string& guid) {
-  auto* chooser_context = GetChooserContext(render_frame_host);
+  auto* chooser_context = GetChooserContext(browser_context);
   return chooser_context->GetDeviceInfo(guid);
 }
 
 bool ElectronHidDelegate::IsFidoAllowedForOrigin(
-    content::RenderFrameHost* render_frame_host,
+    content::BrowserContext* browser_context,
     const url::Origin& origin) {
   return base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kDisableHidBlocklist);
+}
+
+bool ElectronHidDelegate::IsServiceWorkerAllowedForOrigin(
+    const url::Origin& origin) {
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  // WebHID is only available on extension service workers with feature flag
+  // enabled for now.
+  if (base::FeatureList::IsEnabled(
+          features::kEnableWebHidOnExtensionServiceWorker) &&
+      origin.scheme() == extensions::kExtensionScheme)
+    return true;
+#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+  return false;
 }
 
 void ElectronHidDelegate::OnDeviceAdded(

@@ -37,6 +37,7 @@
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
+#include "third_party/electron_node/src/debug_utils.h"
 
 #if !defined(MAS_BUILD)
 #include "shell/common/crash_keys.h"
@@ -55,13 +56,17 @@
   V(electron_browser_in_app_purchase)    \
   V(electron_browser_menu)               \
   V(electron_browser_message_port)       \
+  V(electron_browser_native_theme)       \
   V(electron_browser_net)                \
+  V(electron_browser_notification)       \
   V(electron_browser_power_monitor)      \
   V(electron_browser_power_save_blocker) \
   V(electron_browser_protocol)           \
   V(electron_browser_printing)           \
+  V(electron_browser_push_notifications) \
   V(electron_browser_safe_storage)       \
   V(electron_browser_session)            \
+  V(electron_browser_screen)             \
   V(electron_browser_system_preferences) \
   V(electron_browser_base_window)        \
   V(electron_browser_tray)               \
@@ -77,9 +82,6 @@
   V(electron_common_environment)         \
   V(electron_common_features)            \
   V(electron_common_native_image)        \
-  V(electron_common_native_theme)        \
-  V(electron_common_notification)        \
-  V(electron_common_screen)              \
   V(electron_common_shell)               \
   V(electron_common_v8_util)             \
   V(electron_renderer_context_bridge)    \
@@ -135,6 +137,7 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
       break;
 
   DCHECK_EQ(0, uv_loop_alive(loop));
+  node::CheckedUvLoopClose(loop);
 }
 
 bool g_is_initialized = false;

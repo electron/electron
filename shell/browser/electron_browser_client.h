@@ -82,6 +82,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::RenderFrameHost* render_frame_host,
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map) override;
   void RegisterBrowserInterfaceBindersForServiceWorker(
+      content::BrowserContext* browser_context,
       mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
           map) override;
 #if BUILDFLAG(IS_LINUX)
@@ -93,6 +94,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
+  blink::UserAgentMetadata GetUserAgentMetadata() override;
 
   content::SerialDelegate* GetSerialDelegate() override;
 

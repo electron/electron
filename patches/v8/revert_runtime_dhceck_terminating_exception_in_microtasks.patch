@@ -18,10 +18,10 @@ index ca4b1dc557f573bfcde200201cbd2f05e3c6b530..9edc8ce00c524a63cb23911a474f1904
    StoreRoot(RootIndex::kCurrentMicrotask, microtask);
    TNode<IntPtrT> saved_entered_context_count = GetEnteredContextCount();
 diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
-index d1f275afcc7f8c6adcb4c8abf9aea04b6492f38f..2b82b08a6f7cf1b7023bbdb897bfdab6bd48da5e 100644
+index fe435ad067837df7f1ebc971083b6585952903f5..34660673e239cbc49e749732e95d16c20982a675 100644
 --- a/src/codegen/code-stub-assembler.cc
 +++ b/src/codegen/code-stub-assembler.cc
-@@ -6170,12 +6170,6 @@ void CodeStubAssembler::SetPendingMessage(TNode<HeapObject> message) {
+@@ -6124,12 +6124,6 @@ void CodeStubAssembler::SetPendingMessage(TNode<HeapObject> message) {
    StoreFullTaggedNoWriteBarrier(pending_message, message);
  }
  
@@ -35,10 +35,10 @@ index d1f275afcc7f8c6adcb4c8abf9aea04b6492f38f..2b82b08a6f7cf1b7023bbdb897bfdab6
                                                    int type) {
    return Word32Equal(instance_type, Int32Constant(type));
 diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
-index 123795af961c81278b947c9e8f012158d61c49df..7ac8af40f442025735498651931ab97904af6ecb 100644
+index c4878044b149ec23f4ac9198f402ccc5114e219e..ba9be792cbcce3cbc85062daa524010dced2cfeb 100644
 --- a/src/codegen/code-stub-assembler.h
 +++ b/src/codegen/code-stub-assembler.h
-@@ -2522,7 +2522,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
+@@ -2533,7 +2533,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
  
    TNode<HeapObject> GetPendingMessage();
    void SetPendingMessage(TNode<HeapObject> message);
@@ -46,16 +46,3 @@ index 123795af961c81278b947c9e8f012158d61c49df..7ac8af40f442025735498651931ab979
  
    // Type checks.
    // Check whether the map is for an object with special properties, such as a
-diff --git a/src/execution/microtask-queue.cc b/src/execution/microtask-queue.cc
-index 2bea5d45bb0605877ad430882c914dddeb2c51c5..12a626900d0295be0b250cd6d4692ab4e329c681 100644
---- a/src/execution/microtask-queue.cc
-+++ b/src/execution/microtask-queue.cc
-@@ -179,8 +179,6 @@ int MicrotaskQueue::RunMicrotasks(Isolate* isolate) {
-                      processed_microtask_count);
-   }
- 
--  DCHECK_IMPLIES(isolate->has_scheduled_exception(),
--                 maybe_result.is_null() && maybe_exception.is_null());
-   // If execution is terminating, clean up and propagate that to TryCatch scope.
-   if (maybe_result.is_null() && maybe_exception.is_null()) {
-     delete[] ring_buffer_;

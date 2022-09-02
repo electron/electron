@@ -6,18 +6,23 @@ Subject: build: make libcxx_abi_unstable false for electron
 https://nornagon.medium.com/a-libc-odyssey-973e51649063
 
 diff --git a/build/config/c++/BUILD.gn b/build/config/c++/BUILD.gn
-index 046792ac275853bf109537589b911cfada44ed24..e43daeaa8f8c8e23eea99b3f8f5f48f92012bbc1 100644
+index 5d222aaccd15cbcdd413094e33bd48fd3798de8f..a2653637c2735b268dc4e6174536565d9add17bf 100644
 --- a/build/config/c++/BUILD.gn
 +++ b/build/config/c++/BUILD.gn
-@@ -8,6 +8,11 @@ assert(use_custom_libcxx, "should only be used if use_custom_libcxx is set")
- 
- libcxx_abi_unstable = true
- 
-+if (is_electron_build) {
-+  # This breaks native node modules
-+  libcxx_abi_unstable = false
-+}
+@@ -29,10 +29,12 @@ config("runtime_library") {
+   #    on Windows, the increase is great enough that we go above the 4GB size
+   #    limit for PDBs (https://crbug.com/1327710#c5). To fix this, we set
+   #    _LIBCPP_ABI_NAMESPACE to a shorter value.
+-  defines += [
+-    "_LIBCPP_ABI_NAMESPACE=Cr",
+-    "_LIBCPP_ABI_VERSION=2",
+-  ]
++  defines += [ "_LIBCPP_ABI_NAMESPACE=Cr" ]
 +
- # TODO(xiaohuic): https://crbug/917533 Crashes on internal ChromeOS build.
- # Do unconditionally once the underlying problem is fixed.
- if (is_chromeos_ash && is_chrome_branded) {
++  if (!is_electron_build) {
++    # This breaks native node modules
++    defines += [ "_LIBCPP_ABI_VERSION=2" ]
++  }
+ 
+   if (!libcxx_is_shared) {
+     # Don't leak any symbols on a static build.

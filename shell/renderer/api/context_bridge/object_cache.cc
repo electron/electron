@@ -8,11 +8,7 @@
 
 #include "shell/common/api/object_life_monitor.h"
 
-namespace electron {
-
-namespace api {
-
-namespace context_bridge {
+namespace electron::api::context_bridge {
 
 ObjectCache::ObjectCache() = default;
 ObjectCache::~ObjectCache() = default;
@@ -50,8 +46,4 @@ v8::MaybeLocal<v8::Value> ObjectCache::GetCachedProxiedObject(
   return v8::MaybeLocal<v8::Value>();
 }
 
-}  // namespace context_bridge
-
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api::context_bridge

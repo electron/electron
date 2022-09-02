@@ -46,17 +46,19 @@ extern const char kUsbDriverKey[];
 class SerialChooserContext : public KeyedService,
                              public device::mojom::SerialPortManagerClient {
  public:
-  using PortObserver = content::SerialDelegate::Observer;
+  class PortObserver : public content::SerialDelegate::Observer {
+   public:
+    // Called when the SerialChooserContext is shutting down. Observers must
+    // remove themselves before returning.
+    virtual void OnSerialChooserContextShutdown() = 0;
+  };
 
-  SerialChooserContext();
+  explicit SerialChooserContext(ElectronBrowserContext* context);
   ~SerialChooserContext() override;
 
   // disable copy
   SerialChooserContext(const SerialChooserContext&) = delete;
   SerialChooserContext& operator=(const SerialChooserContext&) = delete;
-
-  // ObjectPermissionContextBase::PermissionObserver:
-  void OnPermissionRevoked(const url::Origin& origin);
 
   // Serial-specific interface for granting and checking permissions.
   void GrantPortPermission(const url::Origin& origin,
@@ -95,6 +97,7 @@ class SerialChooserContext : public KeyedService,
   void EnsurePortManagerConnection();
   void SetUpPortManagerConnection(
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
+  void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
   void OnPortManagerConnectionError();
   void RevokeObjectPermissionInternal(const url::Origin& origin,
                                       const base::Value& object,
@@ -103,6 +106,8 @@ class SerialChooserContext : public KeyedService,
   mojo::Remote<device::mojom::SerialPortManager> port_manager_;
   mojo::Receiver<device::mojom::SerialPortManagerClient> client_receiver_{this};
   base::ObserverList<PortObserver> port_observer_list_;
+
+  ElectronBrowserContext* browser_context_;
 
   base::WeakPtrFactory<SerialChooserContext> weak_factory_{this};
 };

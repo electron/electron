@@ -142,7 +142,7 @@ Menu.prototype.insert = function (pos, item) {
   if (item.icon) this.setIcon(pos, item.icon);
   if (item.role) this.setRole(pos, item.role);
 
-  // Make menu accessable to items.
+  // Make menu accessible to items.
   item.overrideReadOnlyProperty('menu', this);
 
   // Remember the items.

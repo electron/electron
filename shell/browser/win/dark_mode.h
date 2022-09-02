@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Microsoft Inc. All rights reserved.
+// Copyright (c) 2022 Microsoft Inc. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
@@ -15,14 +15,11 @@
 
 #include "ui/native_theme/native_theme.h"
 
-namespace electron {
+namespace electron::win {
 
-namespace win {
+bool IsDarkModeSupported();
+void SetDarkModeForWindow(HWND hWnd);
 
-void SetDarkModeForWindow(HWND hWnd, ui::NativeTheme::ThemeSource theme_source);
-
-}  // namespace win
-
-}  // namespace electron
+}  // namespace electron::win
 
 #endif  // ELECTRON_SHELL_BROWSER_WIN_DARK_MODE_H_
