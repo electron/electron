@@ -173,12 +173,12 @@ class ScriptExecutionCallback {
     }
   }
 
-  void Completed(absl::optional<base::Value> result,
-                 base::TimeTicks start_time) {
+  void Completed(
+      const blink::WebVector<v8::Local<v8::Value>>& result) {
     v8::Isolate* isolate = promise_.isolate();
-    if (result) {
-      if (result->is_dict()) {
-        v8::Local<v8::Value> value = gin::ConvertToV8(isolate, result.value());
+    if (!result.empty()) {
+      if (!result[0].IsEmpty()) {
+        v8::Local<v8::Value> value = result[0];
         // Either the result was created in the same world as the caller
         // or the result is not an object and therefore does not have a
         // prototype chain to protect
@@ -649,10 +649,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
                          : blink::mojom::UserActivationOption::kDoNotActivate,
         blink::mojom::EvaluationTiming::kSynchronous,
         blink::mojom::LoadEventBlockingOption::kDoNotBlock,
+        base::NullCallback(),
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kAllow,
-        blink::mojom::WantResultOption::kWantResult,
+        blink::mojom::WantResultOption::kWantResultUnmodified,
         blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
@@ -730,10 +731,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
         script_execution_type, load_blocking_option,
+        base::NullCallback(),
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
-        blink::mojom::WantResultOption::kWantResult,
+        blink::mojom::WantResultOption::kWantResultUnmodified,
         blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
