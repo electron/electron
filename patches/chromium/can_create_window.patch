@@ -149,6 +149,21 @@ index 0274e3bb5cc62ce2c52be68a50b57c339fc5bba7..1ea3e1fdf067ea54ce54d31f494ac2bf
    // Notifies the delegate about the creation of a new WebContents. This
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
+diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
+index d70f6df69aa604972755d1cfe0cfcd2b0369f68c..8199122b2d759aa8b27affabe67b108fb9a16c38 100644
+--- a/content/renderer/render_frame_impl.cc
++++ b/content/renderer/render_frame_impl.cc
+@@ -6196,6 +6196,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+       /*openee_can_access_opener_origin=*/true,
+       !GetWebFrame()->IsAllowedToDownload(), GetWebFrame()->IsAdFrame());
+ 
++  params->raw_features = features.raw_features.Utf8(
++      WTF::UTF8ConversionMode::kStrictUTF8ConversionReplacingUnpairedSurrogatesWithFFFD);
++  params->body = GetRequestBodyForWebURLRequest(request);
++
+   // We preserve this information before sending the message since |params| is
+   // moved on send.
+   bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
 index 40b82385697d8721ef6da3d0c77544d6d0ca400c..3a2d5207fb2eeea4b016012b09c3668af8dc35b4 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
