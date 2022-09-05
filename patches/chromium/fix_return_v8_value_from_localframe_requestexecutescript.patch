@@ -19,19 +19,6 @@ index 4e98e8614b9d736c7443033cfeca91313c43346c..1f77ccb48cc1af0ffcbd66ef31ccf793
        blink::BackForwardCacheAware::kPossiblyDisallow,
        injector_->ExpectsResults(), injector_->ShouldWaitForPromise());
  }
-diff --git a/third_party/blink/public/mojom/script/script_evaluation_params.mojom b/third_party/blink/public/mojom/script/script_evaluation_params.mojom
-index 5bcef05982677f3170e0a40dd4fb0dcb15e65274..4da6bc7c4aac42a2e3b60859faa070d623625806 100644
---- a/third_party/blink/public/mojom/script/script_evaluation_params.mojom
-+++ b/third_party/blink/public/mojom/script/script_evaluation_params.mojom
-@@ -21,6 +21,8 @@ enum WantResultOption {
- 
-   // Same as above, with date and regexp allowed in V8ValueConverter.
-   kWantResultDateAndRegExpAllowed,
-+
-+  kWantResultUnmodified,
- };
- 
- enum PromiseResultOption {
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
 index 46df0f6e8eec383bdecfcb072f9a5ef47b1238c1..17cde747565586668afffafdc0bf12661cedfafa 100644
 --- a/third_party/blink/public/web/web_local_frame.h
@@ -123,7 +110,7 @@ index 39056ba90f6579f8d3c19b7cc0b341736eae7363..e73a1da750d34cadaecf9c524c7f247e
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index ccd8ef6ab3e92728f0222b37124413a6d99eab44..3d18b7d3df1b9e5f6f3794325f2a80369b4263d3 100644
+index ccd8ef6ab3e92728f0222b37124413a6d99eab44..32dadc48da4842f5f5ae1aede605a7332754004f 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 @@ -248,7 +248,7 @@ void PausableScriptExecutor::CreateAndRun(
@@ -177,14 +164,7 @@ index ccd8ef6ab3e92728f0222b37124413a6d99eab44..3d18b7d3df1b9e5f6f3794325f2a8036
        user_activation_option_(user_activation_option),
        blocking_option_(blocking_option),
        want_result_option_(want_result_option),
-@@ -419,12 +430,16 @@ void PausableScriptExecutor::HandleResults(
-         break;
- 
-       case mojom::blink::WantResultOption::kNoResult:
-+      case mojom::blink::WantResultOption::kWantResultUnmodified:
-         break;
-     }
- 
+@@ -425,6 +436,9 @@ void PausableScriptExecutor::HandleResults(
      std::move(callback_).Run(std::move(value), start_time_);
    }
  

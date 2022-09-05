@@ -173,8 +173,7 @@ class ScriptExecutionCallback {
     }
   }
 
-  void Completed(
-      const blink::WebVector<v8::Local<v8::Value>>& result) {
+  void Completed(const blink::WebVector<v8::Local<v8::Value>>& result) {
     v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
@@ -653,7 +652,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kAllow,
-        blink::mojom::WantResultOption::kWantResultUnmodified,
+        blink::mojom::WantResultOption::kWantResult,
         blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
@@ -730,12 +729,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         world_id, base::make_span(sources),
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
-        script_execution_type, load_blocking_option,
-        base::NullCallback(),
+        script_execution_type, load_blocking_option, base::NullCallback(),
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
-        blink::mojom::WantResultOption::kWantResultUnmodified,
+        blink::mojom::WantResultOption::kWantResult,
         blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
