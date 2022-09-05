@@ -560,19 +560,25 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
   }
 }
 
-void ExposeAPIInMainWorld(v8::Isolate* isolate,
-                          const std::string& key,
-                          v8::Local<v8::Value> api,
-                          gin_helper::Arguments* args) {
-  TRACE_EVENT1("electron", "ContextBridge::ExposeAPIInMainWorld", "key", key);
+void ExposeAPIInWorld(v8::Isolate* isolate,
+                      const int world_id,
+                      const std::string& key,
+                      v8::Local<v8::Value> api,
+                      gin_helper::Arguments* args) {
+  TRACE_EVENT2("electron", "ContextBridge::ExposeAPIInWorld", "key", key,
+               "worldId", world_id);
 
   auto* render_frame = GetRenderFrame(isolate->GetCurrentContext()->Global());
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
-  v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  gin_helper::Dictionary global(main_context->GetIsolate(),
-                                main_context->Global());
+
+  v8::Local<v8::Context> target_context =
+      world_id == 0 ? frame->MainWorldScriptContext()
+                    : frame->GetScriptContextFromWorldId(isolate, world_id);
+
+  gin_helper::Dictionary global(target_context->GetIsolate(),
+                                target_context->Global());
 
   if (global.Has(key)) {
     args->ThrowError(
@@ -581,15 +587,17 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     return;
   }
 
-  v8::Local<v8::Context> isolated_context = frame->GetScriptContextFromWorldId(
-      args->isolate(), WorldIDs::ISOLATED_WORLD_ID);
+  v8::Local<v8::Context> electron_isolated_context =
+      frame->GetScriptContextFromWorldId(args->isolate(),
+                                         WorldIDs::ISOLATED_WORLD_ID);
 
   {
     context_bridge::ObjectCache object_cache;
-    v8::Context::Scope main_context_scope(main_context);
+    v8::Context::Scope target_context_scope(target_context);
 
-    v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
-        isolated_context, main_context, api, &object_cache, false, 0);
+    v8::MaybeLocal<v8::Value> maybe_proxy =
+        PassValueToOtherContext(electron_isolated_context, target_context, api,
+                                &object_cache, false, 0);
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
@@ -600,7 +608,7 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     }
 
     if (proxy->IsObject() && !proxy->IsTypedArray() &&
-        !DeepFreeze(proxy.As<v8::Object>(), main_context))
+        !DeepFreeze(proxy.As<v8::Object>(), target_context))
       return;
 
     global.SetReadOnlyNonConfigurable(key, proxy);
@@ -716,7 +724,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("exposeAPIInMainWorld", &electron::api::ExposeAPIInMainWorld);
+  dict.SetMethod("exposeAPIInWorld", &electron::api::ExposeAPIInWorld);
   dict.SetMethod("_overrideGlobalValueFromIsolatedWorld",
                  &electron::api::OverrideGlobalValueFromIsolatedWorld);
   dict.SetMethod("_overrideGlobalPropertyFromIsolatedWorld",
