@@ -978,7 +978,7 @@ The built in spellchecker does not automatically detect what language a user is 
 spell checker to correctly check their words you must call this API with an array of language codes.  You can
 get the list of supported language codes with the `ses.availableSpellCheckerLanguages` property.
 
-**Note:** On macOS the OS spellchecker is used and will detect your language automatically.  This API will return whichever languages have been configured by the OS.
+**Note:** On macOS the OS spellchecker is used and will detect your language automatically.  This API is a no-op on macOS.
 
 #### `ses.getSpellCheckerLanguages()`
 
@@ -986,7 +986,7 @@ Returns `string[]` - An array of language codes the spellchecker is enabled for.
 will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
 setting with the current OS locale.  This setting is persisted across restarts.
 
-**Note:** On macOS the OS spellchecker is used and has its own list of languages.  This API is a no-op on macOS.
+**Note:** On macOS the OS spellchecker is used and has its own list of languages. On macOS, this API will return whichever languages have been configured by the OS.
 
 #### `ses.setSpellCheckerDictionaryDownloadURL(url)`
 
