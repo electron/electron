@@ -12,8 +12,10 @@ the GPU service and the network service.
 
 See Chromium's [Sandbox design document][sandbox] for more information.
 
-**As of Electron 20, all renderer and utility processes in Electron are sandboxed by default.**
-**As in Chromium, the main (browser) process is privileged and cannot be sandboxed.**
+Starting from Electron 20, the sandbox is enabled for renderer processes without any
+further configuration. If you want to disable the sandbox for a process, see the
+[Disabling the sandbox for a single process](#disabling-the-sandbox-for-a-single-process)
+section.
 
 ## Sandbox behaviour in Electron
 
@@ -68,14 +70,10 @@ privileged APIs to untrusted code running in the renderer process unless
 
 ## Configuring the sandbox
 
-It is possible to disable the renderer sandbox on a per-process basis.
-Theoretically, unsandboxed renderers are not a problem for desktop applications that
-only display trusted code, but they make Electron less secure than Chromium for
-displaying untrusted web content. However, even purportedly trusted code may be
-dangerous — there are countless attack vectors that malicious actors can use, from
-cross-site scripting to content injection to man-in-the-middle attacks on remotely loaded
-websites, just to name a few. For this reason, we recommend enabling renderer sandboxing
-for the vast majority of cases under an abundance of caution.
+For most apps, sandboxing is the best choice. In certain use cases that are incompatible with
+the sandbox (for instance, when using native node modules in the renderer),
+it is possible to disable the sandbox for specific processes. This comes with security
+risks, especially if any untrusted code or content is present in the unsandboxed process.
 
 ### Disabling the sandbox for a single process
 
