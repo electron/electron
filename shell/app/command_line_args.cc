@@ -33,7 +33,7 @@ bool IsUrlArg(const base::CommandLine::CharType* arg) {
     }
   }
 
-  return false;
+  return true;
 }
 
 }  // namespace
