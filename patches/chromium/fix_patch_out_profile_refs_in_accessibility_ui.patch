@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 28366584e6a3cc2655e5bc7417c4e52b9d0f4163..81a58abef2e6eac162695c955fb64d4b3ef91fe4 100644
+index 28366584e6a3cc2655e5bc7417c4e52b9d0f4163..46894c02ca15f7091f280b2960f2ec628c500e53 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -21,7 +21,10 @@
@@ -57,7 +57,7 @@ index 28366584e6a3cc2655e5bc7417c4e52b9d0f4163..81a58abef2e6eac162695c955fb64d4b
    data.Set(kViewsAccessibility, features::IsAccessibilityTreeForViewsEnabled());
  
 -  bool show_internal = pref->GetBoolean(prefs::kShowInternalAccessibilityTree);
-+  bool show_internal = true
++  bool show_internal = true;
    data.Set(kInternal, show_internal ? kOn : kOff);
  
    base::Value::List page_list;
