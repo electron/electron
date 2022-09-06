@@ -32,7 +32,7 @@ bool IsUrlArg(const base::CommandLine::CharType* arg) {
         break;
     }
   }
-
+  // The arg is not a url arg
   return false;
 }
 
