@@ -176,7 +176,7 @@ property.
 * `handler` Function
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `response` ProtocolResponse
+    * `response` [ProtocolResponse](structures/protocol-response.md)
 
 Returns `boolean` - Whether the protocol was successfully registered
 
