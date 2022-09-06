@@ -122,4 +122,3 @@ remove_default_window_title.patch
 add_electron_deps_to_license_credits_file.patch
 feat_add_set_can_resize_mutator.patch
 cherry-pick-51daffbf5cd8.patch
-cherry-pick-9b5207569882.patch
