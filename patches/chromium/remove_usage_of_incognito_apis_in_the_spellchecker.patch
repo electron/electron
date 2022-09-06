@@ -22,3 +22,23 @@ index f2bbec66cc2d83a391dff09046f2552581782ecc..a631da03d2c431d52886ef913d5bceca
    return profile_selections_.ApplyProfileSelection(profile);
 +#endif
  }
+diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
+index 0e5aa496024e94b236ef84b8ef93573df5e22ecd..b6df3dcbef3600d64206bb57cc488e56f0235e39 100644
+--- a/chrome/browser/profiles/profile_selections.cc
++++ b/chrome/browser/profiles/profile_selections.cc
+@@ -153,6 +153,7 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
+ 
+ ProfileSelection ProfileSelections::GetProfileSelection(
+     Profile* profile) const {
++#if 0
+   // Treat other off the record profiles as Incognito (primary otr) Profiles.
+   if (profile->IsRegularProfile() || profile->IsIncognitoProfile() ||
+       profile_metrics::GetBrowserProfileType(profile) ==
+@@ -194,6 +195,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   }
+ 
+   NOTREACHED();
++#endif
+   return ProfileSelection::kNone;
+ }
+ 
