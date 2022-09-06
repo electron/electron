@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 2abf5994405e8da2a04d1b23b75ccd3658398474..b06e8529bb8ca2fa6d7f0735531bbbf39da6af12 100644
+index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253f62e51bd 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -80,19 +80,27 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -80,6 +80,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -24,47 +24,12 @@ index 2abf5994405e8da2a04d1b23b75ccd3658398474..b06e8529bb8ca2fa6d7f0735531bbbf3
 +
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
--  if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
--    ret = UncheckedCalloc(size);
-+  if (*zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
-+    ret = allocator_->Allocate(size);
-   else
--    ret = UncheckedMalloc(size);
-+    ret = allocator_->AllocateUninitialized(size);
-   if (LIKELY(ret != nullptr))
-     total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
-   return ret;
- }
- 
- void* NodeArrayBufferAllocator::AllocateUninitialized(size_t size) {
--  void* ret = node::UncheckedMalloc(size);
-+  void* ret = allocator_->AllocateUninitialized(size);
-   if (LIKELY(ret != nullptr))
-     total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
-   return ret;
-@@ -100,7 +108,7 @@ void* NodeArrayBufferAllocator::AllocateUninitialized(size_t size) {
- 
- void* NodeArrayBufferAllocator::Reallocate(
-     void* data, size_t old_size, size_t size) {
--  void* ret = UncheckedRealloc<char>(static_cast<char*>(data), size);
-+  void* ret = allocator_->Reallocate(data, old_size, size);
-   if (LIKELY(ret != nullptr) || UNLIKELY(size == 0))
-     total_mem_usage_.fetch_add(size - old_size, std::memory_order_relaxed);
-   return ret;
-@@ -108,7 +116,7 @@ void* NodeArrayBufferAllocator::Reallocate(
- 
- void NodeArrayBufferAllocator::Free(void* data, size_t size) {
-   total_mem_usage_.fetch_sub(size, std::memory_order_relaxed);
--  free(data);
-+  allocator_->Free(data, size);
- }
- 
- DebuggingArrayBufferAllocator::~DebuggingArrayBufferAllocator() {
+   if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index f55e292fbbc75448b15dc9be0327ad2dedef49e0..7719574859637aecc98f8a4b00ba6ebca8280631 100644
+index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..c3584709c280a1eb8c9c4945b12ebf89245c54cc 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -318,10 +318,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -344,10 +344,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -101,7 +66,7 @@ index f55e292fbbc75448b15dc9be0327ad2dedef49e0..7719574859637aecc98f8a4b00ba6ebc
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -333,10 +358,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -359,10 +384,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -114,7 +79,7 @@ index f55e292fbbc75448b15dc9be0327ad2dedef49e0..7719574859637aecc98f8a4b00ba6ebc
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -666,6 +692,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
+@@ -692,6 +718,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
  }
  
  namespace {
@@ -131,7 +96,7 @@ index f55e292fbbc75448b15dc9be0327ad2dedef49e0..7719574859637aecc98f8a4b00ba6ebc
  // SecureBuffer uses openssl to allocate a Uint8Array using
  // OPENSSL_secure_malloc. Because we do not yet actually
  // make use of secure heap, this has the same semantics as
-@@ -693,6 +729,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -719,6 +755,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -140,10 +105,10 @@ index f55e292fbbc75448b15dc9be0327ad2dedef49e0..7719574859637aecc98f8a4b00ba6ebc
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index c431159e6f77f8c86844bcadb86012b056d03372..9f57ac58d826cb0aae422ddca54e2136618c4bfe 100644
+index 07ea8e44da3e54b8c24fd2d57b3922d6ddd35781..6d0d93b5b7c0bd1d8342e81024712df029d7e618 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -255,7 +255,7 @@ class ByteSource {
+@@ -254,7 +254,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -166,7 +131,7 @@ index c537a247f55ff070da1988fc8b7309b5692b5c18..59bfb597849cd5a94800d6c83b238ef7
      return ret;
  
 diff --git a/src/node_internals.h b/src/node_internals.h
-index d37be23cd63e82d4040777bd0e17ed449ec0b15b..eb84760593ff5fb5aa6a8104e8714099f24a67a0 100644
+index f7314c906e580664be445a8912030e17a3ac2fa4..99258ad0aa1e15ea1ba139fd0e83111e1436cc40 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -97,7 +97,9 @@ bool InitializePrimordials(v8::Local<v8::Context> context);
@@ -180,18 +145,15 @@ index d37be23cd63e82d4040777bd0e17ed449ec0b15b..eb84760593ff5fb5aa6a8104e8714099
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -116,8 +118,10 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -116,7 +118,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:
 -  uint32_t zero_fill_field_ = 1;  // Boolean but exposed as uint32 to JS land.
 +  uint32_t* zero_fill_field_ = nullptr;  // Boolean but exposed as uint32 to JS land.
    std::atomic<size_t> total_mem_usage_ {0};
-+
-+  std::unique_ptr<v8::ArrayBuffer::Allocator> allocator_{v8::ArrayBuffer::Allocator::NewDefaultAllocator()};
- };
  
- class DebuggingArrayBufferAllocator final : public NodeArrayBufferAllocator {
+   // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
 index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..92d5020f293c98c81d3891a82f7320629bf9f926 100644
 --- a/src/node_serdes.cc

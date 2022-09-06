@@ -10,7 +10,7 @@ Reviewed-By: Darshan Sen <raisinten@gmail.com>
 Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index aeb0d2cb37313bdbb00abe065c91362cac5dcb9a..1e049d7258d21c7d7049f393ecfa1b4f53325910 100644
+index b4b70ec1afd3eaa2489075156e7ccd7682ddd307..50ce8d510cb1a4299f3c161198ee6ed63fabc05f 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -46,7 +46,6 @@ using v8::PrimitiveArray;
@@ -21,7 +21,7 @@ index aeb0d2cb37313bdbb00abe065c91362cac5dcb9a..1e049d7258d21c7d7049f393ecfa1b4f
  using v8::String;
  using v8::UnboundModuleScript;
  using v8::Undefined;
-@@ -559,7 +558,8 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -553,7 +552,8 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
  
  static MaybeLocal<Promise> ImportModuleDynamically(
      Local<Context> context,
@@ -31,7 +31,7 @@ index aeb0d2cb37313bdbb00abe065c91362cac5dcb9a..1e049d7258d21c7d7049f393ecfa1b4f
      Local<String> specifier,
      Local<FixedArray> import_assertions) {
    Isolate* isolate = context->GetIsolate();
-@@ -574,7 +574,7 @@ static MaybeLocal<Promise> ImportModuleDynamically(
+@@ -568,7 +568,7 @@ static MaybeLocal<Promise> ImportModuleDynamically(
    Local<Function> import_callback =
      env->host_import_module_dynamically_callback();
  
@@ -40,7 +40,7 @@ index aeb0d2cb37313bdbb00abe065c91362cac5dcb9a..1e049d7258d21c7d7049f393ecfa1b4f
    if (options->Length() != HostDefinedOptions::kLength) {
      Local<Promise::Resolver> resolver;
      if (!Promise::Resolver::New(context).ToLocal(&resolver)) return {};
-@@ -588,11 +588,11 @@ static MaybeLocal<Promise> ImportModuleDynamically(
+@@ -582,11 +582,11 @@ static MaybeLocal<Promise> ImportModuleDynamically(
  
    Local<Value> object;
  
