@@ -635,7 +635,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `notifications` - Request notification creation and the ability to display them in the user's system tray.
     * `midi` - Request MIDI access in the `webmidi` API.
     * `midiSysex` - Request the use of system exclusive messages in the `webmidi` API.
-    * `pointerLock` - Request to directly interpret mouse movements as an input method. Click [here](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API) to know more.
+    * `pointerLock` - Request to directly interpret mouse movements as an input method. Click [here](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API) to know more. These requests always appear to originate from the main frame.
     * `fullscreen` - Request for the app to enter fullscreen mode.
     * `openExternal` - Request to open links in external applications.
     * `unknown` - An unrecognized permission request
@@ -697,6 +697,60 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
   return false // denied
 })
 ```
+
+#### `ses.setDisplayMediaRequestHandler(handler)`
+
+* `handler` Function | null
+  * `request` Object
+    * `frame` [WebFrameMain](web-frame-main.md) - Frame that is requesting access to media.
+    * `securityOrigin` String - Origin of the page making the request.
+    * `videoRequested` Boolean - true if the web content requested a video stream.
+    * `audioRequested` Boolean - true if the web content requested an audio stream.
+    * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
+  * `callback` Function
+    * `streams` Object
+      * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
+        * `id` String - The id of the stream being granted. This will usually
+          come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
+          object.
+        * `name` String - The name of the stream being granted. This will
+          usually come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
+          object.
+      * `audio` String | [WebFrameMain](web-frame-main.md) (optional) - If
+        a string is specified, can be `loopback` or `loopbackWithMute`.
+        Specifying a loopback device will capture system audio, and is
+        currently only supported on Windows. If a WebFrameMain is specified,
+        will capture audio from that frame.
+
+This handler will be called when web content requests access to display media
+via the `navigator.mediaDevices.getDisplayMedia` API. Use the
+[desktopCapturer](desktop-capturer.md) API to choose which stream(s) to grant
+access to.
+
+```javascript
+const { session, desktopCapturer } = require('electron')
+
+session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+  desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+    // Grant access to the first screen found.
+    callback({ video: sources[0] })
+  })
+})
+```
+
+Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
+will capture the video or audio stream from that frame.
+
+```javascript
+const { session } = require('electron')
+
+session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+  // Allow the tab to capture itself.
+  callback({ video: request.frame })
+})
+```
+
+Passing `null` instead of a function resets the handler to its default state.
 
 #### `ses.setDevicePermissionHandler(handler)`
 

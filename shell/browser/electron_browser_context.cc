@@ -31,8 +31,11 @@
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/browser/web_contents_media_capture_id.h"
+#include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -51,7 +54,10 @@
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/frame_converter.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/browser_context_keyed_service_factories.h"
@@ -410,6 +416,131 @@ void ElectronBrowserContext::SetSSLConfig(network::mojom::SSLConfigPtr config) {
 void ElectronBrowserContext::SetSSLConfigClient(
     mojo::Remote<network::mojom::SSLConfigClient> client) {
   ssl_config_client_ = std::move(client);
+}
+
+void ElectronBrowserContext::SetDisplayMediaRequestHandler(
+    DisplayMediaRequestHandler handler) {
+  display_media_request_handler_ = handler;
+}
+
+void ElectronBrowserContext::DisplayMediaDeviceChosen(
+    const content::MediaStreamRequest& request,
+    content::MediaResponseCallback callback,
+    gin::Arguments* args) {
+  blink::mojom::StreamDevicesSetPtr stream_devices_set =
+      blink::mojom::StreamDevicesSet::New();
+  v8::Local<v8::Value> result;
+  if (!args->GetNext(&result) || result->IsNullOrUndefined()) {
+    std::move(callback).Run(
+        blink::mojom::StreamDevicesSet(),
+        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    return;
+  }
+  gin_helper::Dictionary result_dict;
+  if (!gin::ConvertFromV8(args->isolate(), result, &result_dict)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowTypeError(
+            "Display Media Request streams callback must be called with null "
+            "or a valid object");
+    std::move(callback).Run(
+        blink::mojom::StreamDevicesSet(),
+        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    return;
+  }
+  stream_devices_set->stream_devices.emplace_back(
+      blink::mojom::StreamDevices::New());
+  blink::mojom::StreamDevices& devices = *stream_devices_set->stream_devices[0];
+  bool video_requested =
+      request.video_type != blink::mojom::MediaStreamType::NO_SERVICE;
+  bool audio_requested =
+      request.audio_type != blink::mojom::MediaStreamType::NO_SERVICE;
+  bool has_video = false;
+  if (video_requested && result_dict.Has("video")) {
+    gin_helper::Dictionary video_dict;
+    std::string id;
+    std::string name;
+    content::RenderFrameHost* rfh;
+    if (result_dict.Get("video", &video_dict) && video_dict.Get("id", &id) &&
+        video_dict.Get("name", &name)) {
+      devices.video_device =
+          blink::MediaStreamDevice(request.video_type, id, name);
+    } else if (result_dict.Get("video", &rfh)) {
+      devices.video_device = blink::MediaStreamDevice(
+          request.video_type,
+          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
+                                             rfh->GetRoutingID())
+              .ToString(),
+          base::UTF16ToUTF8(
+              content::WebContents::FromRenderFrameHost(rfh)->GetTitle()));
+    } else {
+      gin_helper::ErrorThrower(args->isolate())
+          .ThrowTypeError(
+              "video must be a WebFrameMain or DesktopCapturerSource");
+      std::move(callback).Run(
+          blink::mojom::StreamDevicesSet(),
+          blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+      return;
+    }
+    has_video = true;
+  }
+  if (audio_requested && result_dict.Has("audio")) {
+    gin_helper::Dictionary audio_dict;
+    std::string id;
+    std::string name;
+    content::RenderFrameHost* rfh;
+    // NB. this is not permitted by the documentation, but is left here as an
+    // "escape hatch" for providing an arbitrary name/id if needed in the
+    // future.
+    if (result_dict.Get("audio", &audio_dict) && audio_dict.Get("id", &id) &&
+        audio_dict.Get("name", &name)) {
+      devices.audio_device =
+          blink::MediaStreamDevice(request.audio_type, id, name);
+    } else if (result_dict.Get("audio", &rfh)) {
+      devices.audio_device = blink::MediaStreamDevice(
+          request.audio_type,
+          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
+                                             rfh->GetRoutingID(),
+                                             /* disable_local_echo= */ true)
+              .ToString(),
+          "Tab audio");
+    } else if (result_dict.Get("audio", &id)) {
+      devices.audio_device =
+          blink::MediaStreamDevice(request.audio_type, id, "System audio");
+    } else {
+      gin_helper::ErrorThrower(args->isolate())
+          .ThrowTypeError(
+              "audio must be a WebFrameMain, \"loopback\" or "
+              "\"loopbackWithMute\"");
+      std::move(callback).Run(
+          blink::mojom::StreamDevicesSet(),
+          blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+      return;
+    }
+  }
+
+  if ((video_requested && !has_video)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowTypeError(
+            "Video was requested, but no video stream was provided");
+    std::move(callback).Run(
+        blink::mojom::StreamDevicesSet(),
+        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    return;
+  }
+
+  std::move(callback).Run(*stream_devices_set,
+                          blink::mojom::MediaStreamRequestResult::OK, nullptr);
+}
+
+bool ElectronBrowserContext::ChooseDisplayMediaDevice(
+    const content::MediaStreamRequest& request,
+    content::MediaResponseCallback callback) {
+  if (!display_media_request_handler_)
+    return false;
+  DisplayMediaResponseCallbackJs callbackJs =
+      base::BindOnce(&DisplayMediaDeviceChosen, request, std::move(callback));
+  display_media_request_handler_.Run(request, std::move(callbackJs));
+  return true;
 }
 
 void ElectronBrowserContext::GrantDevicePermission(

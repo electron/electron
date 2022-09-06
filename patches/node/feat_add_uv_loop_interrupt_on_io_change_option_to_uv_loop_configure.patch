@@ -136,7 +136,7 @@ index 7cd3a2a954ff7d70e6ba7a6f7538648841bc54b2..f89b7158218be60ac10e61484a2d5e5e
  
  
 diff --git a/deps/uv/src/unix/loop.c b/deps/uv/src/unix/loop.c
-index a88e71c339351f2ebcdd6c3f933fc3b1122910ed..353143e5ebecae598425dc036f4458bb7c43bb0b 100644
+index a88e71c339351f2ebcdd6c3f933fc3b1122910ed..46fc03264b6cc1a3a4d8faf5ec5a754fc07c9b6d 100644
 --- a/deps/uv/src/unix/loop.c
 +++ b/deps/uv/src/unix/loop.c
 @@ -217,6 +217,11 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
@@ -151,7 +151,7 @@ index a88e71c339351f2ebcdd6c3f933fc3b1122910ed..353143e5ebecae598425dc036f4458bb
    if (option != UV_LOOP_BLOCK_SIGNAL)
      return UV_ENOSYS;
  
-@@ -226,3 +231,37 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
+@@ -226,3 +231,40 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
    loop->flags |= UV_LOOP_BLOCK_SIGPROF;
    return 0;
  }
@@ -181,6 +181,9 @@ index a88e71c339351f2ebcdd6c3f933fc3b1122910ed..353143e5ebecae598425dc036f4458bb
 +  while (r == -1 && errno == EINTR);
 +
 +  if (r == len)
++    return;
++
++  if (!uv_loop_alive(loop))
 +    return;
 +
 +  if (r == -1)
