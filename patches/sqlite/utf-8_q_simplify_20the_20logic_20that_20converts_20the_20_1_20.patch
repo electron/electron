@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: drh <>
+Date: Wed, 20 Jul 2022 17:01:18 +0000
+Subject: Simplify the logic that converts the "1" expression in "ORDER BY 1"
+ into a copy of the expression that defines the first output column.
+
+FossilOrigin-Name: 449935914c3f64e37bbfb9842e868927222fa3d5315c123a32818e67fcfbbf60
+
+diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
+index f8e53e4064d43192e6e1b6846573b37bf16c2279..c7f9ddb45fe5b8ec29b37406308df66797a2d7b7 100644
+--- a/amalgamation/sqlite3.c
++++ b/amalgamation/sqlite3.c
+@@ -454,7 +454,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.37.1"
+ #define SQLITE_VERSION_NUMBER 3037001
+-#define SQLITE_SOURCE_ID      "2021-12-30 15:30:28 378629bf2ea546f73eee84063c5358439a12f7300e433f18c9e1bddd948dea62"
++#define SQLITE_SOURCE_ID      "2021-12-30 15:30:28 378629bf2ea546f73eee84063c5358439a12f7300e433f18c9e1bddd948dalt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -99649,33 +99649,23 @@ static void resolveAlias(
+     sqlite3ExprDelete(db, pDup);
+     pDup = 0;
+   }else{
++    Expr temp;
+     incrAggFunctionDepth(pDup, nSubquery);
+     if( pExpr->op==TK_COLLATE ){
+       assert( !ExprHasProperty(pExpr, EP_IntValue) );
+       pDup = sqlite3ExprAddCollateString(pParse, pDup, pExpr->u.zToken);
+     }
+-
+-    /* Before calling sqlite3ExprDelete(), set the EP_Static flag. This
+-    ** prevents ExprDelete() from deleting the Expr structure itself,
+-    ** allowing it to be repopulated by the memcpy() on the following line.
+-    ** The pExpr->u.zToken might point into memory that will be freed by the
+-    ** sqlite3DbFree(db, pDup) on the last line of this block, so be sure to
+-    ** make a copy of the token before doing the sqlite3DbFree().
+-    */
+-    ExprSetProperty(pExpr, EP_Static);
+-    sqlite3ExprDelete(db, pExpr);
+-    memcpy(pExpr, pDup, sizeof(*pExpr));
+-    if( !ExprHasProperty(pExpr, EP_IntValue) && pExpr->u.zToken!=0 ){
+-      assert( (pExpr->flags & (EP_Reduced|EP_TokenOnly))==0 );
+-      pExpr->u.zToken = sqlite3DbStrDup(db, pExpr->u.zToken);
+-      pExpr->flags |= EP_MemToken;
+-    }
++    memcpy(&temp, pDup, sizeof(Expr));
++    memcpy(pDup, pExpr, sizeof(Expr));
++    memcpy(pExpr, &temp, sizeof(Expr));
+     if( ExprHasProperty(pExpr, EP_WinFunc) ){
+       if( ALWAYS(pExpr->y.pWin!=0) ){
+         pExpr->y.pWin->pOwner = pExpr;
+       }
+     }
+-    sqlite3DbFree(db, pDup);
++    sqlite3ParserAddCleanup(pParse,
++      (void(*)(sqlite3*,void*))sqlite3ExprDelete,
++      pDup);
+   }
+ }
+ 
+diff --git a/amalgamation/sqlite3.h b/amalgamation/sqlite3.h
+index 393e9d206cb4e7962f1e6b09bafe1637e5767e77..c3a73ace49206544a7595baca0e684eb428d1214 100644
+--- a/amalgamation/sqlite3.h
++++ b/amalgamation/sqlite3.h
+@@ -148,7 +148,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.37.1"
+ #define SQLITE_VERSION_NUMBER 3037001
+-#define SQLITE_SOURCE_ID      "2021-12-30 15:30:28 378629bf2ea546f73eee84063c5358439a12f7300e433f18c9e1bddd948dea62"
++#define SQLITE_SOURCE_ID      "2021-12-30 15:30:28 378629bf2ea546f73eee84063c5358439a12f7300e433f18c9e1bddd948dalt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
+index fba450a7346115aee428cf42afc58f27d473523e..b5c0c9e93abe5c16af86b8a4444b35c6880b2ba7 100644
+--- a/amalgamation_dev/sqlite3.c
++++ b/amalgamation_dev/sqlite3.c
+@@ -454,7 +454,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.37.1"
+ #define SQLITE_VERSION_NUMBER 3037001
+-#define SQLITE_SOURCE_ID      "2021-12-30 15:30:28 378629bf2ea546f73eee84063c5358439a12f7300e433f18c9e1bddd948dea62"
++#define SQLITE_SOURCE_ID      "2021-12-30 15:30:28 378629bf2ea546f73eee84063c5358439a12f7300e433f18c9e1bddd948dalt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -99662,33 +99662,23 @@ static void resolveAlias(
+     sqlite3ExprDelete(db, pDup);
+     pDup = 0;
+   }else{
++    Expr temp;
+     incrAggFunctionDepth(pDup, nSubquery);
+     if( pExpr->op==TK_COLLATE ){
+       assert( !ExprHasProperty(pExpr, EP_IntValue) );
+       pDup = sqlite3ExprAddCollateString(pParse, pDup, pExpr->u.zToken);
+     }
+-
+-    /* Before calling sqlite3ExprDelete(), set the EP_Static flag. This
+-    ** prevents ExprDelete() from deleting the Expr structure itself,
+-    ** allowing it to be repopulated by the memcpy() on the following line.
+-    ** The pExpr->u.zToken might point into memory that will be freed by the
+-    ** sqlite3DbFree(db, pDup) on the last line of this block, so be sure to
+-    ** make a copy of the token before doing the sqlite3DbFree().
+-    */
+-    ExprSetProperty(pExpr, EP_Static);
+-    sqlite3ExprDelete(db, pExpr);
+-    memcpy(pExpr, pDup, sizeof(*pExpr));
+-    if( !ExprHasProperty(pExpr, EP_IntValue) && pExpr->u.zToken!=0 ){
+-      assert( (pExpr->flags & (EP_Reduced|EP_TokenOnly))==0 );
+-      pExpr->u.zToken = sqlite3DbStrDup(db, pExpr->u.zToken);
+-      pExpr->flags |= EP_MemToken;
+-    }
++    memcpy(&temp, pDup, sizeof(Expr));
++    memcpy(pDup, pExpr, sizeof(Expr));
++    memcpy(pExpr, &temp, sizeof(Expr));
+     if( ExprHasProperty(pExpr, EP_WinFunc) ){
+       if( ALWAYS(pExpr->y.pWin!=0) ){
+         pExpr->y.pWin->pOwner = pExpr;
+       }
+     }
+-    sqlite3DbFree(db, pDup);
++    sqlite3ParserAddCleanup(pParse,
++      (void(*)(sqlite3*,void*))sqlite3ExprDelete,
++      pDup);
+   }
+ }
+ 
+diff --git a/amalgamation_dev/sqlite3.h b/amalgamation_dev/sqlite3.h
+index 393e9d206cb4e7962f1e6b09bafe1637e5767e77..c3a73ace49206544a7595baca0e684eb428d1214 100644
+--- a/amalgamation_dev/sqlite3.h
++++ b/amalgamation_dev/sqlite3.h
+@@ -148,7 +148,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.37.1"
+ #define SQLITE_VERSION_NUMBER 3037001
+-#define SQLITE_SOURCE_ID      "2021-12-30 15:30:28 378629bf2ea546f73eee84063c5358439a12f7300e433f18c9e1bddd948dea62"
++#define SQLITE_SOURCE_ID      "2021-12-30 15:30:28 378629bf2ea546f73eee84063c5358439a12f7300e433f18c9e1bddd948dalt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/src/resolve.c b/src/resolve.c
+index 27b260e059fc4536051e0b514a04a700145b2553..8052be3003d7cbcd496ccdacc761d66be2b3cbe4 100644
+--- a/src/resolve.c
++++ b/src/resolve.c
+@@ -85,33 +85,23 @@ static void resolveAlias(
+     sqlite3ExprDelete(db, pDup);
+     pDup = 0;
+   }else{
++    Expr temp;
+     incrAggFunctionDepth(pDup, nSubquery);
+     if( pExpr->op==TK_COLLATE ){
+       assert( !ExprHasProperty(pExpr, EP_IntValue) );
+       pDup = sqlite3ExprAddCollateString(pParse, pDup, pExpr->u.zToken);
+     }
+-
+-    /* Before calling sqlite3ExprDelete(), set the EP_Static flag. This 
+-    ** prevents ExprDelete() from deleting the Expr structure itself,
+-    ** allowing it to be repopulated by the memcpy() on the following line.
+-    ** The pExpr->u.zToken might point into memory that will be freed by the
+-    ** sqlite3DbFree(db, pDup) on the last line of this block, so be sure to
+-    ** make a copy of the token before doing the sqlite3DbFree().
+-    */
+-    ExprSetProperty(pExpr, EP_Static);
+-    sqlite3ExprDelete(db, pExpr);
+-    memcpy(pExpr, pDup, sizeof(*pExpr));
+-    if( !ExprHasProperty(pExpr, EP_IntValue) && pExpr->u.zToken!=0 ){
+-      assert( (pExpr->flags & (EP_Reduced|EP_TokenOnly))==0 );
+-      pExpr->u.zToken = sqlite3DbStrDup(db, pExpr->u.zToken);
+-      pExpr->flags |= EP_MemToken;
+-    }
++    memcpy(&temp, pDup, sizeof(Expr));
++    memcpy(pDup, pExpr, sizeof(Expr));
++    memcpy(pExpr, &temp, sizeof(Expr));
+     if( ExprHasProperty(pExpr, EP_WinFunc) ){
+       if( ALWAYS(pExpr->y.pWin!=0) ){
+         pExpr->y.pWin->pOwner = pExpr;
+       }
+     }
+-    sqlite3DbFree(db, pDup);
++    sqlite3ParserAddCleanup(pParse,
++      (void(*)(sqlite3*,void*))sqlite3ExprDelete,
++      pDup);
+   }
+ }
+ 
