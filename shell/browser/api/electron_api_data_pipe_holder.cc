@@ -88,8 +88,11 @@ class DataPipeReader {
     if (result == MOJO_RESULT_OK) {  // success
       remaining_size_ -= length;
       head_ += length;
-      if (remaining_size_ == 0)
+      if (remaining_size_ == 0) {
         OnSuccess();
+      } else {
+        handle_watcher_.ArmOrNotify();
+      }
     } else if (result == MOJO_RESULT_SHOULD_WAIT) {  // IO pending
       handle_watcher_.ArmOrNotify();
     } else {  // error
