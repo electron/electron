@@ -25,5 +25,7 @@
 
   "src/electron/patches/angle": "src/third_party/angle",
 
-  "src/electron/patches/pdfium": "src/third_party/pdfium"
+  "src/electron/patches/pdfium": "src/third_party/pdfium",
+
+  "src/electron/patches/sqlite": "src/third_party/sqlite/src"
 }
