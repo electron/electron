@@ -45,7 +45,6 @@
 #include "shell/browser/electron_download_manager_delegate.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
-#include "shell/browser/pref_store_delegate.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/special_storage_policy.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -111,6 +110,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::Value::Dict options)
     : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
+      in_memory_pref_store_(new ValueMapPrefStore),
       protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
@@ -210,10 +210,9 @@ void ElectronBrowserContext::InitPrefs() {
   language::LanguagePrefs::RegisterProfilePrefs(registry.get());
 #endif
 
-  prefs_ = prefs_factory.Create(
-      registry.get(),
-      std::make_unique<PrefStoreDelegate>(weak_factory_.GetWeakPtr()));
-  prefs_->UpdateCommandLinePrefStore(new ValueMapPrefStore);
+  prefs_ = prefs_factory.Create(registry.get());
+  prefs_->set_command_line_prefs(in_memory_pref_store());
+  prefs_->UpdateCommandLinePrefStore(in_memory_pref_store());
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   user_prefs::UserPrefs::Set(this, prefs_.get());

@@ -463,8 +463,6 @@ filenames = {
     "shell/browser/notifications/platform_notification_service.h",
     "shell/browser/plugins/plugin_utils.cc",
     "shell/browser/plugins/plugin_utils.h",
-    "shell/browser/pref_store_delegate.cc",
-    "shell/browser/pref_store_delegate.h",
     "shell/browser/protocol_registry.cc",
     "shell/browser/protocol_registry.h",
     "shell/browser/relauncher.cc",
