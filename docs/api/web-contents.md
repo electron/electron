@@ -936,6 +936,11 @@ Returns `boolean` - Whether the web page is destroyed.
 
 Closes the page, as if the web content had called `window.close()`.
 
+If the page is successfully closed (i.e. the unload is not prevented by the
+page, or `waitForBeforeUnload` is false or unspecified), the WebContents will
+be destroyed and no longer usable. The [`destroyed`](#event-destroyed) event
+will be emitted.
+
 #### `contents.focus()`
 
 Focuses the web page.
