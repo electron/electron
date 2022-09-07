@@ -107,8 +107,8 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
       renderer_client_(renderer_client) {
-  registry_.AddInterface(base::BindRepeating(&ElectronApiServiceImpl::BindTo,
-                                             base::Unretained(this)));
+  registry_.AddInterface<mojom::ElectronRenderer>(base::BindRepeating(
+      &ElectronApiServiceImpl::BindTo, base::Unretained(this)));
 }
 
 void ElectronApiServiceImpl::BindTo(

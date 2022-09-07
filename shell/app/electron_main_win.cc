@@ -21,6 +21,7 @@
 #include "base/i18n/icu_util.h"
 #include "base/process/launch.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/dark_mode_support.h"
 #include "base/win/windows_version.h"
 #include "components/browser_watcher/exit_code_watcher_win.h"
 #include "components/crash/core/app/crash_switches.h"
@@ -218,6 +219,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     }
     return crashpad_status;
   }
+
+#if BUILDFLAG(IS_WIN)
+  // access ui native theme here to prevent blocking calls later
+  base::win::AllowDarkModeForApp(true);
+#endif
 
 #if defined(ARCH_CPU_32_BITS)
   // Intentionally crash if converting to a fiber failed.

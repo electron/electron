@@ -17,6 +17,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/key_storage_config_linux.h"
@@ -82,7 +83,6 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "base/win/dark_mode_support.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/display/win/dpi.h"
 #include "ui/gfx/system_fonts_win.h"
@@ -224,6 +224,9 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 #if BUILDFLAG(IS_MAC)
   screen_ = std::make_unique<display::ScopedNativeScreen>();
 #endif
+
+  ui::ColorProviderManager::Get().AppendColorProviderInitializer(
+      base::BindRepeating(AddChromeColorMixers));
 
   return GetExitCode();
 }
@@ -370,7 +373,7 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
-  auto linux_ui = ui::CreateLinuxUi();
+  auto* linux_ui = ui::GetDefaultLinuxUi();
 
   // Try loading gtk symbols used by Electron.
   electron::InitializeElectron_gtk(gtk::GetLibGtk());
@@ -390,8 +393,8 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // Update the native theme when GTK theme changes. The GetNativeTheme
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
-  linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
-  ui::LinuxUi::SetInstance(std::move(linux_ui));
+  linux_ui->GetNativeTheme()->AddObserver(dark_theme_observer_.get());
+  ui::LinuxUi::SetInstance(linux_ui);
 
   // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
   // implementation). Start observing them once it's initialized.
@@ -438,11 +441,6 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckServiceFactory::GetInstance();
-#endif
-
-#if BUILDFLAG(IS_WIN)
-  // access ui native theme here to prevent blocking calls later
-  base::win::AllowDarkModeForApp(true);
 #endif
 
   content::WebUIControllerFactory::RegisterFactory(

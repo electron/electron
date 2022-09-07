@@ -126,10 +126,10 @@
     ora "^4.0.3"
     pretty-ms "^5.1.0"
 
-"@electron/typescript-definitions@^8.9.5":
-  version "8.9.5"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.5.tgz#e6cb08e0e7c9656e178b892eab50866a8a80bf7a"
-  integrity sha512-xDLFl6joGpA8c9cGSPWC3DFHyIGf9+OWZmDrPbGJW1URt6C1ukdQWKSmjb1Rttb94QQxBrGuUlSyz27IQgLFsw==
+"@electron/typescript-definitions@^8.9.6":
+  version "8.9.6"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.6.tgz#99575209b12ae00784190282e5b636a44f1beabc"
+  integrity sha512-Hlvzo0A5iuRFICOB/xIADKKc1axCA4G13vsCC5ZcG6VVvJPsmPrjr2/npb9Aebfzm4OUbdoPHS952lqPXFLFXQ==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
@@ -1087,9 +1087,9 @@ ansi-escapes@^4.2.1, ansi-escapes@^4.3.0:
     type-fest "^0.11.0"
 
 ansi-regex@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/ansi-regex/-/ansi-regex-4.1.0.tgz#8b9f8f08cf1acb843756a839ca8c7e3168c51997"
-  integrity sha512-1apePfXM1UOSqw0o9IiFAovVz9M5S1Dg+4TrDwfMewQ6p/rmMueb7tWZjQ1rx4Loy1ArBggoqGpfqqdI4rondg==
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/ansi-regex/-/ansi-regex-4.1.1.tgz#164daac87ab2d6f6db3a29875e2d1766582dabed"
+  integrity sha512-ILlv4k/3f6vfQ4OoP2AGvirOktlQ98ZEL1k9FaQjxa3L1abBgbuTDAdPOpvbGncC0BTVQrl+OM8xZGK6tWXt7g==
 
 ansi-regex@^5.0.0:
   version "5.0.0"

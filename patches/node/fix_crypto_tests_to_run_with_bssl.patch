@@ -31,7 +31,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a20
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0de416463 100644
+index 162b451c5b459c566980c7d3476b3df0cef72871..db59d7fb8b46b5a6d4c77de7b5c492408351816d 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -50,7 +50,9 @@ const errMessages = {
@@ -45,7 +45,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
      ['Use Cipheriv for counter mode of aes-192-gcm'],
      ['Use Cipheriv for counter mode of aes-192-ccm'],
      ['Use Cipheriv for counter mode of aes-192-ccm'],
-@@ -319,7 +321,9 @@ for (const test of TEST_CASES) {
+@@ -318,7 +320,9 @@ for (const test of TEST_CASES) {
  
  // Test that create(De|C)ipher(iv)? throws if the mode is CCM and an invalid
  // authentication tag length has been specified.
@@ -56,7 +56,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
    for (const authTagLength of [-1, true, false, NaN, 5.5]) {
      assert.throws(() => {
        crypto.createCipheriv('aes-256-ccm',
-@@ -407,6 +411,10 @@ for (const test of TEST_CASES) {
+@@ -406,6 +410,10 @@ for (const test of TEST_CASES) {
  // authentication tag has been specified.
  {
    for (const mode of ['ccm', 'ocb']) {
@@ -67,7 +67,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
      assert.throws(() => {
        crypto.createCipheriv(`aes-256-${mode}`,
                              'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
-@@ -441,7 +449,9 @@ for (const test of TEST_CASES) {
+@@ -440,7 +448,9 @@ for (const test of TEST_CASES) {
  }
  
  // Test that setAAD throws if an invalid plaintext length has been specified.
@@ -78,7 +78,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
    const cipher = crypto.createCipheriv('aes-256-ccm',
                                         'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
                                         'qkuZpJWCewa6S',
-@@ -462,7 +472,9 @@ for (const test of TEST_CASES) {
+@@ -461,7 +471,9 @@ for (const test of TEST_CASES) {
  }
  
  // Test that setAAD and update throw if the plaintext is too long.
@@ -89,7 +89,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
    for (const ivLength of [13, 12]) {
      const maxMessageSize = (1 << (8 * (15 - ivLength))) - 1;
      const key = 'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8';
-@@ -493,7 +505,9 @@ for (const test of TEST_CASES) {
+@@ -492,7 +504,9 @@ for (const test of TEST_CASES) {
  
  // Test that setAAD throws if the mode is CCM and the plaintext length has not
  // been specified.
@@ -100,7 +100,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
    assert.throws(() => {
      const cipher = crypto.createCipheriv('aes-256-ccm',
                                           'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
-@@ -518,7 +532,9 @@ for (const test of TEST_CASES) {
+@@ -517,7 +531,9 @@ for (const test of TEST_CASES) {
  }
  
  // Test that final() throws in CCM mode when no authentication tag is provided.
@@ -111,7 +111,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
    if (!common.hasFipsCrypto) {
      const key = Buffer.from('1ed2233fa2223ef5d7df08546049406c', 'hex');
      const iv = Buffer.from('7305220bca40d4c90e1791e9', 'hex');
-@@ -550,7 +566,9 @@ for (const test of TEST_CASES) {
+@@ -549,7 +565,9 @@ for (const test of TEST_CASES) {
  }
  
  // Test that an IV length of 11 does not overflow max_message_size_.
@@ -122,7 +122,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
    const key = 'x'.repeat(16);
    const iv = Buffer.from('112233445566778899aabb', 'hex');
    const options = { authTagLength: 8 };
-@@ -567,6 +585,10 @@ for (const test of TEST_CASES) {
+@@ -566,6 +584,10 @@ for (const test of TEST_CASES) {
    const iv = Buffer.from('0123456789ab', 'utf8');
  
    for (const mode of ['gcm', 'ocb']) {
@@ -133,7 +133,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
      for (const authTagLength of mode === 'gcm' ? [undefined, 8] : [8]) {
        const cipher = crypto.createCipheriv(`aes-128-${mode}`, key, iv, {
          authTagLength
-@@ -601,6 +623,10 @@ for (const test of TEST_CASES) {
+@@ -600,6 +622,10 @@ for (const test of TEST_CASES) {
    const opts = { authTagLength: 8 };
  
    for (const mode of ['gcm', 'ccm', 'ocb']) {
@@ -144,7 +144,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
      const cipher = crypto.createCipheriv(`aes-128-${mode}`, key, iv, opts);
      const ciphertext = Buffer.concat([cipher.update(plain), cipher.final()]);
      const tag = cipher.getAuthTag();
-@@ -623,7 +649,9 @@ for (const test of TEST_CASES) {
+@@ -622,7 +648,9 @@ for (const test of TEST_CASES) {
  // Test chacha20-poly1305 rejects invalid IV lengths of 13, 14, 15, and 16 (a
  // length of 17 or greater was already rejected).
  // - https://www.openssl.org/news/secadv/20190306.txt
@@ -155,7 +155,7 @@ index 3749895769ffc9947143aee9aeb126628262bc84..f769fc37dbd81d5a0219236921e0bcb0
    // Valid extracted from TEST_CASES, check that it detects IV tampering.
    const valid = {
      algo: 'chacha20-poly1305',
-@@ -669,6 +697,9 @@ for (const test of TEST_CASES) {
+@@ -667,6 +695,9 @@ for (const test of TEST_CASES) {
  
  {
    // CCM cipher without data should not crash, see https://github.com/nodejs/node/issues/38035.
@@ -538,10 +538,10 @@ index af2146982c7a3bf7bd7527f44e4b17a3b605026e..f6b91f675cfea367c608892dee078b56
    // Non-XOF hash functions should accept valid outputLength options as well.
    assert.strictEqual(crypto.createHash('sha224', { outputLength: 28 })
 diff --git a/test/parallel/test-crypto-hkdf.js b/test/parallel/test-crypto-hkdf.js
-index 16744201a935dcd25af4e0f446701b08fe08dd64..e7ef0b78a19fb755456d038fc676eedb2f71ff07 100644
+index 2d6689a486ddb6e42e53df2b1551af72dc5bc903..3b1a71e1396875c74e28ecbc058981c3c9d10a1f 100644
 --- a/test/parallel/test-crypto-hkdf.js
 +++ b/test/parallel/test-crypto-hkdf.js
-@@ -117,8 +117,6 @@ const algorithms = [
+@@ -122,8 +122,6 @@ const algorithms = [
    ['sha256', 'secret', 'salt', 'info', 10],
    ['sha512', 'secret', 'salt', '', 15],
  ];
@@ -948,10 +948,10 @@ index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f2
  
  const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
-index 95c38f454fbb939c9f74f25ec946d0c8e94e4c41..882c01fd812f5ed880fa3482ede92695ad505ff3 100644
+index 442423954b10b2ee1696eb7db56eaa4c88492122..c65610245e7e328d5e844afc48f8f685c49be3b7 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
 +++ b/test/parallel/test-webcrypto-derivebits.js
-@@ -39,6 +39,7 @@ const { internalBinding } = require('internal/test/binding');
+@@ -37,6 +37,7 @@ const { subtle } = require('crypto').webcrypto;
    test('P-521').then(common.mustCall());
  }
  
@@ -959,7 +959,7 @@ index 95c38f454fbb939c9f74f25ec946d0c8e94e4c41..882c01fd812f5ed880fa3482ede92695
  // Test HKDF bit derivation
  {
    async function test(pass, info, salt, hash, length, expected) {
-@@ -70,6 +71,7 @@ const { internalBinding } = require('internal/test/binding');
+@@ -68,6 +69,7 @@ const { subtle } = require('crypto').webcrypto;
  
    tests.then(common.mustCall());
  }
@@ -967,26 +967,52 @@ index 95c38f454fbb939c9f74f25ec946d0c8e94e4c41..882c01fd812f5ed880fa3482ede92695
  
  // Test PBKDF2 bit derivation
  {
+@@ -101,6 +103,7 @@ const { subtle } = require('crypto').webcrypto;
+   tests.then(common.mustCall());
+ }
+ 
++/*
+ // Test X25519 and X448 bit derivation
+ {
+   async function test(name) {
+@@ -126,3 +129,4 @@ const { subtle } = require('crypto').webcrypto;
+   test('X25519').then(common.mustCall());
+   test('X448').then(common.mustCall());
+ }
++*/
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
-index ee48a61f4ac8f5e8e4cec96eb03d75cb1c45f56a..5108bbf7499f29bafffda76f3c5270aae0271b44 100644
+index f8eb996000ec899abafbfd558f4f49bad2c69c9a..0bf5c7811eeccff6194d8df41887df0a86a53823 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
 +++ b/test/parallel/test-webcrypto-derivekey.js
-@@ -48,6 +48,7 @@ const { internalBinding } = require('internal/test/binding');
+@@ -46,6 +46,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
    test('P-521').then(common.mustCall());
  }
  
 +/*
- // Test HKDF bit derivation
+ // Test HKDF key derivation
  {
    async function test(pass, info, salt, hash, expected) {
-@@ -84,6 +85,7 @@ const { internalBinding } = require('internal/test/binding');
+@@ -82,6 +83,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
  
    tests.then(common.mustCall());
  }
 +*/
  
- // Test PBKDF2 bit derivation
+ // Test PBKDF2 key derivation
  {
+@@ -151,6 +153,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+   })().then(common.mustCall());
+ }
+ 
++/*
+ // Test X25519 and X448 key derivation
+ {
+   async function test(name) {
+@@ -185,3 +188,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+   test('X25519').then(common.mustCall());
+   test('X448').then(common.mustCall());
+ }
++*/
 diff --git a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
 index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa389a0469 100644
 --- a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
@@ -1000,26 +1026,23 @@ index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa
      });
  }
  
-diff --git a/test/parallel/test-webcrypto-export-import-rsa.js b/test/parallel/test-webcrypto-export-import-rsa.js
-index ab7aa77394ac9989514b7a184900092bd6753996..b0104ac45867a923a8c651e01e8c6975a62f7c61 100644
---- a/test/parallel/test-webcrypto-export-import-rsa.js
-+++ b/test/parallel/test-webcrypto-export-import-rsa.js
-@@ -481,6 +481,7 @@ const testVectors = [
-   await Promise.all(variations);
- })().then(common.mustCall());
+diff --git a/test/parallel/test-webcrypto-sign-verify.js b/test/parallel/test-webcrypto-sign-verify.js
+index 6c6b15781549a4b37781bf0b8014054dc5d8c746..142d41b169c836201660d78c19383f3ffc469407 100644
+--- a/test/parallel/test-webcrypto-sign-verify.js
++++ b/test/parallel/test-webcrypto-sign-verify.js
+@@ -105,6 +105,7 @@ const { subtle } = require('crypto').webcrypto;
+   test('hello world').then(common.mustCall());
+ }
  
 +/*
+ // Test Sign/Verify Ed25519
  {
-   const publicPem = fixtures.readKey('rsa_pss_public_2048.pem', 'ascii');
-   const privatePem = fixtures.readKey('rsa_pss_private_2048.pem', 'ascii');
-@@ -522,6 +523,7 @@ const testVectors = [
-     assert.strictEqual(jwk.alg, 'PS256');
-   })().then(common.mustCall());
+   async function test(data) {
+@@ -144,3 +145,4 @@ const { subtle } = require('crypto').webcrypto;
+ 
+   test('hello world').then(common.mustCall());
  }
 +*/
- 
- {
-   const ecPublic = crypto.createPublicKey(
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c0d407dbe 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js

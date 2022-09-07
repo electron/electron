@@ -55,6 +55,14 @@ static_library("chrome") {
     "//chrome/browser/process_singleton.h",
     "//chrome/browser/process_singleton_internal.cc",
     "//chrome/browser/process_singleton_internal.h",
+    "//chrome/browser/themes/browser_theme_pack.cc",
+    "//chrome/browser/themes/browser_theme_pack.h",
+    "//chrome/browser/themes/custom_theme_supplier.cc",
+    "//chrome/browser/themes/custom_theme_supplier.h",
+    "//chrome/browser/themes/theme_properties.cc",
+    "//chrome/browser/themes/theme_properties.h",
+    "//chrome/browser/ui/color/chrome_color_mixers.cc",
+    "//chrome/browser/ui/color/chrome_color_mixers.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.cc",
     "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h",
     "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc",
@@ -69,7 +77,11 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.h",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.cc",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
+    "//chrome/browser/ui/frame/window_frame_util.cc",
+    "//chrome/browser/ui/frame/window_frame_util.h",
     "//chrome/browser/ui/native_window_tracker.h",
+    "//chrome/browser/ui/ui_features.cc",
+    "//chrome/browser/ui/ui_features.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
@@ -110,6 +122,8 @@ static_library("chrome") {
       "//chrome/browser/ui/view_ids.h",
       "//chrome/browser/win/chrome_process_finder.cc",
       "//chrome/browser/win/chrome_process_finder.h",
+      "//chrome/browser/win/titlebar_config.cc",
+      "//chrome/browser/win/titlebar_config.h",
       "//chrome/browser/win/titlebar_config.h",
       "//chrome/child/v8_crashpad_support_win.cc",
       "//chrome/child/v8_crashpad_support_win.h",
@@ -131,6 +145,7 @@ static_library("chrome") {
 
   public_deps = [
     "//chrome/browser:dev_ui_browser_resources",
+    "//chrome/browser/ui/color:mixers",
     "//chrome/common",
     "//chrome/common:version_header",
     "//components/keyed_service/content",
@@ -141,10 +156,7 @@ static_library("chrome") {
     "//services/strings",
   ]
 
-  deps = [
-    "//chrome/browser:resource_prefetch_predictor_proto",
-    "//components/optimization_guide/proto:optimization_guide_proto",
-  ]
+  deps = [ "//chrome/browser:resource_prefetch_predictor_proto" ]
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
@@ -217,6 +229,8 @@ static_library("chrome") {
       "//chrome/browser/printing/printer_query.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
+      "//components/printing/browser/print_to_pdf/pdf_print_job.cc",
+      "//components/printing/browser/print_to_pdf/pdf_print_job.h",
       "//components/printing/browser/print_to_pdf/pdf_print_utils.cc",
       "//components/printing/browser/print_to_pdf/pdf_print_utils.h",
     ]
@@ -380,6 +394,10 @@ source_set("chrome_spellchecker") {
 
   if (enable_builtin_spellchecker) {
     sources += [
+      "//chrome/browser/profiles/profile_keyed_service_factory.cc",
+      "//chrome/browser/profiles/profile_keyed_service_factory.h",
+      "//chrome/browser/profiles/profile_selections.cc",
+      "//chrome/browser/profiles/profile_selections.h",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
       "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",

@@ -13,8 +13,10 @@
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
+#include "gin/arguments.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
@@ -38,6 +40,13 @@ class ElectronExtensionSystem;
 }
 #endif
 
+namespace v8 {
+template <typename T>
+class Local;
+class Isolate;
+class Value;
+}  // namespace v8
+
 namespace electron {
 
 using DevicePermissionMap =
@@ -50,6 +59,12 @@ class CookieChangeNotifier;
 class ResolveProxyHelper;
 class WebViewManager;
 class ProtocolRegistry;
+
+using DisplayMediaResponseCallbackJs =
+    base::OnceCallback<void(gin::Arguments* args)>;
+using DisplayMediaRequestHandler =
+    base::RepeatingCallback<void(const content::MediaStreamRequest&,
+                                 DisplayMediaResponseCallbackJs)>;
 
 class ElectronBrowserContext : public content::BrowserContext {
  public:
@@ -118,6 +133,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
       override;
   content::StorageNotificationService* GetStorageNotificationService() override;
+  content::ReduceAcceptLanguageControllerDelegate*
+  GetReduceAcceptLanguageControllerDelegate() override;
 
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
@@ -150,6 +167,10 @@ class ElectronBrowserContext : public content::BrowserContext {
   network::mojom::SSLConfigPtr GetSSLConfig();
   void SetSSLConfigClient(mojo::Remote<network::mojom::SSLConfigClient> client);
 
+  bool ChooseDisplayMediaDevice(const content::MediaStreamRequest& request,
+                                content::MediaResponseCallback callback);
+  void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler);
+
   ~ElectronBrowserContext() override;
 
   // Grants |origin| access to |device|.
@@ -175,6 +196,11 @@ class ElectronBrowserContext : public content::BrowserContext {
   ElectronBrowserContext(const std::string& partition,
                          bool in_memory,
                          base::Value::Dict options);
+
+  static void DisplayMediaDeviceChosen(
+      const content::MediaStreamRequest& request,
+      content::MediaResponseCallback callback,
+      gin::Arguments* args);
 
   // Initialize pref registry.
   void InitPrefs();
@@ -213,6 +239,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
+
+  DisplayMediaRequestHandler display_media_request_handler_;
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;
