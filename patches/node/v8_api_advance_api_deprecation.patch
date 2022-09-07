@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 26 Aug 2022 00:03:44 +0900
+Subject: v8: [api] Advance API deprecation
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/3702449
+Should be upstreamed.
+
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index f708933d8bd6a6dc6741d6af22665b37c56e333a..d029f4e44347bc026d0dff45403227da202020a3 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -217,7 +217,8 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+                        bool prevent_shutdown)
+       : delegate_(std::move(delegate)), prevent_shutdown_(prevent_shutdown),
+         retaining_context_(false) {
+-    session_ = inspector->connect(CONTEXT_GROUP_ID, this, StringView());
++    session_ = inspector->connect(
++        CONTEXT_GROUP_ID, this, StringView(),V8Inspector::kFullyTrusted);
+     node_dispatcher_ = std::make_unique<protocol::UberDispatcher>(this);
+     tracing_agent_ =
+         std::make_unique<protocol::TracingAgent>(env, main_thread_);

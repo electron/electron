@@ -6,7 +6,7 @@ Subject: Revert "[runtime] DHCECK terminating exception in Microtasks"
 This reverts commit bccb536c98181e8a6e9cf0b6342311adbbf61aca.
 
 diff --git a/src/builtins/builtins-microtask-queue-gen.cc b/src/builtins/builtins-microtask-queue-gen.cc
-index ca4b1dc557f573bfcde200201cbd2f05e3c6b530..9edc8ce00c524a63cb23911a474f1904af5d71f7 100644
+index f58636fee555d782e18b7521c0c4f28ed60b3a52..6b0c63b34ff09f70cb9a4fe419f3b9bb0adf6790 100644
 --- a/src/builtins/builtins-microtask-queue-gen.cc
 +++ b/src/builtins/builtins-microtask-queue-gen.cc
 @@ -118,7 +118,6 @@ void MicrotaskQueueBuiltinsAssembler::PrepareForContext(
@@ -18,10 +18,10 @@ index ca4b1dc557f573bfcde200201cbd2f05e3c6b530..9edc8ce00c524a63cb23911a474f1904
    StoreRoot(RootIndex::kCurrentMicrotask, microtask);
    TNode<IntPtrT> saved_entered_context_count = GetEnteredContextCount();
 diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
-index fe435ad067837df7f1ebc971083b6585952903f5..34660673e239cbc49e749732e95d16c20982a675 100644
+index 4d2b42a112c88ed163de3671b41fffb163583262..6616932710ce34446d82ef44294ff57d667375a8 100644
 --- a/src/codegen/code-stub-assembler.cc
 +++ b/src/codegen/code-stub-assembler.cc
-@@ -6124,12 +6124,6 @@ void CodeStubAssembler::SetPendingMessage(TNode<HeapObject> message) {
+@@ -6139,12 +6139,6 @@ void CodeStubAssembler::SetPendingMessage(TNode<HeapObject> message) {
    StoreFullTaggedNoWriteBarrier(pending_message, message);
  }
  
@@ -35,10 +35,10 @@ index fe435ad067837df7f1ebc971083b6585952903f5..34660673e239cbc49e749732e95d16c2
                                                    int type) {
    return Word32Equal(instance_type, Int32Constant(type));
 diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
-index c4878044b149ec23f4ac9198f402ccc5114e219e..ba9be792cbcce3cbc85062daa524010dced2cfeb 100644
+index 9c7e4f4eda805044c2787840f98ecc76862e9de9..cb00bf8d37a935bbef488eabeb958c414751a904 100644
 --- a/src/codegen/code-stub-assembler.h
 +++ b/src/codegen/code-stub-assembler.h
-@@ -2533,7 +2533,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
+@@ -2538,7 +2538,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
  
    TNode<HeapObject> GetPendingMessage();
    void SetPendingMessage(TNode<HeapObject> message);

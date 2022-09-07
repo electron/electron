@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/display/screen.h"
 
 using views::MenuRunner;
@@ -38,9 +37,6 @@ void MenuViews::PopupAt(BaseWindow* window,
   }
 
   int flags = MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS;
-
-  // Don't emit unresponsive event when showing menu.
-  electron::UnresponsiveSuppressor suppressor;
 
   // Make sure the Menu object would not be garbage-collected until the callback
   // has run.
