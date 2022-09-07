@@ -2197,5 +2197,16 @@ describe('webContents module', () => {
       await willPreventUnload;
       expect(w.isDestroyed()).to.be.false();
     });
+
+    it('overriding beforeunload prevention results in webcontents close', async () => {
+      const w = (webContents as any).create() as WebContents;
+      await w.loadURL('about:blank');
+      await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
+      w.once('will-prevent-unload', e => e.preventDefault());
+      const destroyed = emittedOnce(w, 'destroyed');
+      w.close({ waitForBeforeUnload: true });
+      await destroyed;
+      expect(w.isDestroyed()).to.be.true();
+    });
   });
 });

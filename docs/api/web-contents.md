@@ -930,7 +930,9 @@ Returns `boolean` - Whether the web page is destroyed.
 
 * `opts` Object (optional)
   * `waitForBeforeUnload` boolean - if true, fire the `beforeunload` event
-    before closing the page.
+    before closing the page. If the page prevents the unload, the WebContents
+    will not be closed. The [`will-prevent-unload`](#event-will-prevent-unload)
+    will be fired if the page requests prevention of unload.
 
 Closes the page, as if the web content had called `window.close()`.
 
