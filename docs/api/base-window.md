@@ -467,6 +467,10 @@ const win = new BaseWindow({ width: 800, height: 600 })
 
 A `Integer` property representing the unique ID of the window. Each ID is unique among all `BaseWindow` instances of the entire Electron application.
 
+#### `win.contentView`
+
+A `View` property for the content view of the window.
+
 #### `win.autoHideMenuBar`
 
 A `boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
@@ -587,6 +591,16 @@ Objects created with `new BaseWindow` have the following instance methods:
 
 **Note:** Some methods are only available on specific operating systems and are
 labeled as such.
+
+#### `win.setContentView(view)`
+
+* `view` [View](view.md)
+
+Sets the content view of the window.
+
+#### `win.getContentView()`
+
+Returns [View](view.md) - The content view of the window.
 
 #### `win.destroy()`
 

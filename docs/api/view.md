@@ -34,3 +34,11 @@ Objects created with `new View` have the following instance methods:
 #### `view.setBounds(bounds)`
 
 * `bounds` [Rectangle](structures/rectangle.md) - new bounds of the view.
+
+### Instance Properties
+
+Objects created with `new View` have the following properties:
+
+#### `view.children` _Readonly_
+
+A `View[]` property representing the child views of this view.

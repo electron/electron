@@ -94,6 +94,8 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
       options, parent.IsEmpty() ? nullptr : parent->window_.get()));
   window_->AddObserver(this);
 
+  SetContentView(View::Create(isolate));
+
 #if defined(TOOLKIT_VIEWS)
   v8::Local<v8::Value> icon;
   if (options.Get(options::kIcon, &icon)) {
@@ -313,7 +315,7 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 #endif
 
 void BaseWindow::SetContentView(gin::Handle<View> view) {
-  content_view_.Reset(isolate(), view.ToV8());
+  content_view_.Reset(JavascriptEnvironment::GetIsolate(), view.ToV8());
   window_->SetContentView(view->view());
 }
 
@@ -1186,6 +1188,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("previewFile", &BaseWindow::PreviewFile)
       .SetMethod("closeFilePreview", &BaseWindow::CloseFilePreview)
       .SetMethod("getContentView", &BaseWindow::GetContentView)
+      .SetProperty("contentView", &BaseWindow::GetContentView,
+                   &BaseWindow::SetContentView)
       .SetMethod("getParentWindow", &BaseWindow::GetParentWindow)
       .SetMethod("getChildWindows", &BaseWindow::GetChildWindows)
       .SetMethod("isModal", &BaseWindow::IsModal)

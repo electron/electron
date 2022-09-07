@@ -42,9 +42,7 @@ class WebContentsView : public View, public content::WebContentsObserver {
   void WebContentsDestroyed() override;
 
  private:
-  static gin_helper::WrappableBase* New(
-      gin_helper::Arguments* args,
-      const gin_helper::Dictionary& web_preferences);
+  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;

@@ -82,9 +82,10 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 }
 
 // static
-gin_helper::WrappableBase* WebContentsView::New(
-    gin_helper::Arguments* args,
-    const gin_helper::Dictionary& web_preferences) {
+gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
+  gin_helper::Dictionary web_preferences =
+      gin::Dictionary::CreateEmpty(args->isolate());
+  args->GetNext(&web_preferences);
   auto web_contents =
       WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
 

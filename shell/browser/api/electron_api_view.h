@@ -11,12 +11,17 @@
 #include "gin/handle.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "ui/views/view.h"
+#include "v8/include/v8-value.h"
 
 namespace electron::api {
 
 class View : public gin_helper::Wrappable<View> {
  public:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
+  static gin::Handle<View> Create(v8::Isolate* isolate);
+
+  // Return the cached constructor function.
+  static v8::Local<v8::Function> GetConstructor(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -26,6 +31,8 @@ class View : public gin_helper::Wrappable<View> {
   void AddChildViewAt(gin::Handle<View> child, size_t index);
 
   void SetBounds(const gfx::Rect& bounds);
+  void SetLayoutManager(v8::Isolate* isolate, v8::Local<v8::Object> value);
+  std::vector<v8::Local<v8::Value>> GetChildren();
 #endif
 
   views::View* view() const { return view_; }
