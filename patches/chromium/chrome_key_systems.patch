@@ -17,8 +17,8 @@ index 30da015cffeb945973d0045ce297467ab16d7db6..53e7bd0f7dbff8c620a5827abb3ba871
 +#if 0
  #include "chrome/renderer/chrome_render_thread_observer.h"
 +#endif
- #include "components/cdm/renderer/external_clear_key_key_system_properties.h"
- #include "components/cdm/renderer/widevine_key_system_properties.h"
+ #include "components/cdm/renderer/external_clear_key_key_system_info.h"
+ #include "components/cdm/renderer/widevine_key_system_info.h"
  #include "content/public/renderer/render_thread.h"
 @@ -235,12 +237,14 @@ SupportedCodecs GetSupportedCodecs(const media::CdmCapability& capability) {
  
