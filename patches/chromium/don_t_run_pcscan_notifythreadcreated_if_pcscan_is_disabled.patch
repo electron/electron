@@ -14,7 +14,7 @@ index 1e54559bd5f9a2ee889b921379d70c51e902502d..6797a076b612ad4ed6d5ce7d9868d944
    //
    // Lastly decommit empty slot spans and lastly try to discard unused pages at
    // the end of the remaining active slots.
--#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM
+-#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM && BUILDFLAG(STARSCAN)
 +#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM && defined(PA_ALLOW_PCSCAN)
    {
      using PCScan = internal::PCScan;
