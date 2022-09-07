@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index ca08deeb19f5fe9ee399ad809b24579fdaa10036..c68cf1eb0f9cdd2a8fe314237c1e790fe3690272 100644
+index ae9889508ed0f3f24f2a888ba8650ccdce72fa47..946b80af9cda553d0ee5328701f2b6c1f8a08e9d 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -85,6 +85,8 @@
@@ -27,7 +27,7 @@ index ca08deeb19f5fe9ee399ad809b24579fdaa10036..c68cf1eb0f9cdd2a8fe314237c1e790f
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -393,6 +396,11 @@
+@@ -397,6 +400,11 @@
            }],
          ],
        }],
@@ -40,10 +40,10 @@ index ca08deeb19f5fe9ee399ad809b24579fdaa10036..c68cf1eb0f9cdd2a8fe314237c1e790f
          'defines': [
            'V8_COMPRESS_POINTERS',
 diff --git a/configure.py b/configure.py
-index 426afed7cd0a3a403d4b753af0b25f55024d0f71..6ab1469c07298c9083a77d0211727a6fff37267e 100755
+index 08894bf3908916d1cb639810c5e1b2afae74ff4d..19cbde58df38009258db145c5f7dbe73b0dc5cdf 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1427,6 +1427,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1447,6 +1447,7 @@ def configure_library(lib, output, pkgname=None):
  
  
  def configure_v8(o):
@@ -52,7 +52,7 @@ index 426afed7cd0a3a403d4b753af0b25f55024d0f71..6ab1469c07298c9083a77d0211727a6f
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
    o['variables']['v8_enable_gdbjit'] = 1 if options.gdb else 0
 diff --git a/src/node.h b/src/node.h
-index 0b807cb25f9eb52b2100f0e2a7c25344790967cf..a41b09047d2c499a90225651a8324ad83a7712e3 100644
+index b6a26f8adf11959f94a00de0cbf9016fcc8707cb..38bbb20968772a4ba6bceddb04a83589f8582fc8 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

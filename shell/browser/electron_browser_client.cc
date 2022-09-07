@@ -49,6 +49,7 @@
 #include "content/public/browser/tts_controller.h"
 #include "content/public/browser/tts_platform.h"
 #include "content/public/browser/url_loader_request_interceptor.h"
+#include "content/public/browser/weak_document_ptr.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -987,7 +988,7 @@ void ElectronBrowserClient::WebNotificationAllowed(
     return;
   }
   permission_helper->RequestWebNotificationPermission(
-      base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
+      rfh, base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
 }
 
 void ElectronBrowserClient::RenderProcessHostDestroyed(
@@ -1022,6 +1023,7 @@ void OnOpenExternal(const GURL& escaped_url, bool allowed) {
 
 void HandleExternalProtocolInUI(
     const GURL& url,
+    content::WeakDocumentPtr document_ptr,
     content::WebContents::OnceGetter web_contents_getter,
     bool has_user_gesture) {
   content::WebContents* web_contents = std::move(web_contents_getter).Run();
@@ -1033,9 +1035,18 @@ void HandleExternalProtocolInUI(
   if (!permission_helper)
     return;
 
+  content::RenderFrameHost* rfh = document_ptr.AsRenderFrameHostIfValid();
+  if (!rfh) {
+    // If the render frame host is not valid it means it was a top level
+    // navigation and the frame has already been disposed of.  In this case we
+    // take the current main frame and declare it responsible for the
+    // transition.
+    rfh = web_contents->GetPrimaryMainFrame();
+  }
+
   GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
-  permission_helper->RequestOpenExternalPermission(std::move(callback),
+  permission_helper->RequestOpenExternalPermission(rfh, std::move(callback),
                                                    has_user_gesture, url);
 }
 
@@ -1055,6 +1066,9 @@ bool ElectronBrowserClient::HandleExternalProtocol(
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&HandleExternalProtocolInUI, url,
+                     initiator_document
+                         ? initiator_document->GetWeakDocumentPtr()
+                         : content::WeakDocumentPtr(),
                      std::move(web_contents_getter), has_user_gesture));
   return true;
 }
@@ -1558,56 +1572,61 @@ void ElectronBrowserClient::
     if (render_frame_host.GetFrameTreeNodeId() ==
             contents->GetPrimaryMainFrame()->GetFrameTreeNodeId() ||
         (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
-      associated_registry.AddInterface(base::BindRepeating(
-          [](content::RenderFrameHost* render_frame_host,
-             mojo::PendingAssociatedReceiver<electron::mojom::ElectronApiIPC>
-                 receiver) {
-            ElectronApiIPCHandlerImpl::Create(render_frame_host,
-                                              std::move(receiver));
-          },
-          &render_frame_host));
+      associated_registry.AddInterface<mojom::ElectronApiIPC>(
+          base::BindRepeating(
+              [](content::RenderFrameHost* render_frame_host,
+                 mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC>
+                     receiver) {
+                ElectronApiIPCHandlerImpl::Create(render_frame_host,
+                                                  std::move(receiver));
+              },
+              &render_frame_host));
     }
   }
 
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<
-             electron::mojom::ElectronWebContentsUtility> receiver) {
-        ElectronWebContentsUtilityHandlerImpl::Create(render_frame_host,
-                                                      std::move(receiver));
-      },
-      &render_frame_host));
+  associated_registry.AddInterface<mojom::ElectronWebContentsUtility>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<mojom::ElectronWebContentsUtility>
+                 receiver) {
+            ElectronWebContentsUtilityHandlerImpl::Create(render_frame_host,
+                                                          std::move(receiver));
+          },
+          &render_frame_host));
 
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
-             receiver) {
-        AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
-                                                  render_frame_host);
-      },
-      &render_frame_host));
+  associated_registry.AddInterface<mojom::ElectronAutofillDriver>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+                 receiver) {
+            AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
+                                                      render_frame_host);
+          },
+          &render_frame_host));
 #if BUILDFLAG(ENABLE_PRINTING)
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost>
-             receiver) {
-        PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
-                                                       render_frame_host);
-      },
-      &render_frame_host));
+  associated_registry.AddInterface<printing::mojom::PrintManagerHost>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost>
+                 receiver) {
+            PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
+                                                           render_frame_host);
+          },
+          &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_EXTENSIONS)
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>
-             receiver) {
-        extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
-            std::move(receiver), render_frame_host);
-      },
-      &render_frame_host));
+  associated_registry.AddInterface<extensions::mojom::LocalFrameHost>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>
+                 receiver) {
+            extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
+                std::move(receiver), render_frame_host);
+          },
+          &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  associated_registry.AddInterface(base::BindRepeating(
+  associated_registry.AddInterface<pdf::mojom::PdfService>(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
          mojo::PendingAssociatedReceiver<pdf::mojom::PdfService> receiver) {
         pdf::PDFWebContentsHelper::BindPdfService(std::move(receiver),
@@ -1683,9 +1702,10 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
     blink::AssociatedInterfaceRegistry* associated_registry,
     content::RenderProcessHost* render_process_host) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  associated_registry->AddInterface(base::BindRepeating(
-      &extensions::EventRouter::BindForRenderer, render_process_host->GetID()));
-  associated_registry->AddInterface(
+  associated_registry->AddInterface<extensions::mojom::EventRouter>(
+      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
+                          render_process_host->GetID()));
+  associated_registry->AddInterface<extensions::mojom::GuestView>(
       base::BindRepeating(&extensions::ExtensionsGuestView::CreateForExtensions,
                           render_process_host->GetID()));
 #endif

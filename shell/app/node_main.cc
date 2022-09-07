@@ -210,11 +210,11 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                       node::EnvironmentFlags::kHideConsoleWindows;
+      uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
+                           node::EnvironmentFlags::kHideConsoleWindows;
       env = node::CreateEnvironment(
           isolate_data, gin_env.context(), result.args, result.exec_args,
-          static_cast<node::EnvironmentFlags::Flags>(flags));
+          static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
       node::IsolateSettings is;

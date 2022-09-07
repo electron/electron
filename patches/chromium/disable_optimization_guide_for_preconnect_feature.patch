@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 1 Sep 2022 11:31:24 -0400
+Subject: disable optimization guide for preconnect feature
+
+The optimization guide component
+(https://source.chromium.org/chromium/chromium/src/+/main:components/optimization_guide/)
+is not enabled for Electron, but the preconnect feature uses the resource prefetch
+predictor code which includes this component.  This patch disables the optimization guide
+component code in the resource prefetch predictor code since it is unused and including
+it causes compilation problems on Windows.
+
+diff --git a/chrome/browser/predictors/resource_prefetch_predictor.cc b/chrome/browser/predictors/resource_prefetch_predictor.cc
+index c4b64a7812bac4534371887eb7e0a07ec9cab8ff..b827d69964d824540ea70f66c467e91be8391e6c 100644
+--- a/chrome/browser/predictors/resource_prefetch_predictor.cc
++++ b/chrome/browser/predictors/resource_prefetch_predictor.cc
+@@ -100,10 +100,12 @@ PreconnectPrediction& PreconnectPrediction::operator=(
+ PreconnectPrediction& PreconnectPrediction::operator=(
+     PreconnectPrediction&& other) = default;
+ 
++#if 0
+ OptimizationGuidePrediction::OptimizationGuidePrediction() = default;
+ OptimizationGuidePrediction::OptimizationGuidePrediction(
+     const OptimizationGuidePrediction& prediction) = default;
+ OptimizationGuidePrediction::~OptimizationGuidePrediction() = default;
++#endif
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+ // ResourcePrefetchPredictor static functions.
+diff --git a/chrome/browser/predictors/resource_prefetch_predictor.h b/chrome/browser/predictors/resource_prefetch_predictor.h
+index 53a23990019accc0504a25dae935c53348c7eaa7..ef6667ce8bbc062dbfb8d2e2cdb6886b3e994b76 100644
+--- a/chrome/browser/predictors/resource_prefetch_predictor.h
++++ b/chrome/browser/predictors/resource_prefetch_predictor.h
+@@ -26,7 +26,9 @@
+ #include "components/history/core/browser/history_service_observer.h"
+ #include "components/history/core/browser/history_types.h"
+ #include "components/keyed_service/core/keyed_service.h"
++#if 0
+ #include "components/optimization_guide/content/browser/optimization_guide_decider.h"
++#endif
+ #include "components/sqlite_proto/key_value_data.h"
+ #include "net/base/network_isolation_key.h"
+ #include "services/network/public/mojom/fetch_api.mojom-forward.h"
+@@ -110,6 +112,7 @@ struct PreconnectPrediction {
+   std::vector<PrefetchRequest> prefetch_requests;
+ };
+ 
++#if 0
+ // Stores a result of a prediction from the optimization guide.
+ struct OptimizationGuidePrediction {
+   OptimizationGuidePrediction();
+@@ -121,6 +124,7 @@ struct OptimizationGuidePrediction {
+   std::vector<GURL> predicted_subresources;
+   absl::optional<base::TimeTicks> optimization_guide_prediction_arrived;
+ };
++#endif
+ 
+ // Contains logic for learning what can be prefetched and for kicking off
+ // speculative prefetching.

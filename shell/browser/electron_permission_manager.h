@@ -73,16 +73,13 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                           const GURL& requesting_origin,
                           bool user_gesture,
                           StatusesCallback callback) override;
+
   void RequestPermissionsWithDetails(
       const std::vector<blink::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
       bool user_gesture,
       base::Value::Dict details,
       StatusesCallback callback);
-
-  blink::mojom::PermissionStatus GetPermissionStatusForCurrentDocument(
-      blink::PermissionType permission,
-      content::RenderFrameHost* render_frame_host) override;
 
   bool CheckPermissionWithDetails(blink::PermissionType permission,
                                   content::RenderFrameHost* render_frame_host,
@@ -124,6 +121,12 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       base::OnceCallback<
           void(const std::vector<blink::mojom::PermissionStatus>&)> callback)
       override;
+  content::PermissionResult GetPermissionResultForOriginWithoutContext(
+      blink::PermissionType permission,
+      const url::Origin& origin) override;
+  blink::mojom::PermissionStatus GetPermissionStatusForCurrentDocument(
+      blink::PermissionType permission,
+      content::RenderFrameHost* render_frame_host) override;
   blink::mojom::PermissionStatus GetPermissionStatusForWorker(
       blink::PermissionType permission,
       content::RenderProcessHost* render_process_host,
