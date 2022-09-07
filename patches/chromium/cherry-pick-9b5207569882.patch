@@ -56,7 +56,7 @@ index 0ebbc94ad51cca74fcebc357b5262229ae5c9d0e..cd79a5edb3f939623b874db36542ee65
  
      // Points to a stack-allocated variable.
 diff --git a/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc b/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
-index ded0d20ab193cfdaf36bd44c25719d7073c989fb..a6f41414b8918989662eb0a1dea773932631c8cc 100644
+index 34a041236d1851240cb8d8b2c0361ac4fcffab03..1830df7354d7dfa007cca97ddc346db0165098b7 100644
 --- a/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
 +++ b/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
 @@ -30,6 +30,7 @@
@@ -124,7 +124,7 @@ index ded0d20ab193cfdaf36bd44c25719d7073c989fb..a6f41414b8918989662eb0a1dea77393
  
    base::WeakPtr<InterfaceEndpointClient> weak_self =
        weak_ptr_factory_.GetWeakPtr();
-@@ -808,13 +830,13 @@ void InterfaceEndpointClient::ResetFromAnotherSequenceUnsafe() {
+@@ -814,13 +836,13 @@ void InterfaceEndpointClient::ResetFromAnotherSequenceUnsafe() {
  }
  
  void InterfaceEndpointClient::ForgetAsyncRequest(uint64_t request_id) {
@@ -140,7 +140,7 @@ index ded0d20ab193cfdaf36bd44c25719d7073c989fb..a6f41414b8918989662eb0a1dea77393
      async_responders_.erase(it);
    }
  }
-@@ -906,6 +928,10 @@ bool InterfaceEndpointClient::HandleValidatedMessage(Message* message) {
+@@ -922,6 +944,10 @@ bool InterfaceEndpointClient::HandleValidatedMessage(Message* message) {
          return false;
  
        if (it->second) {
@@ -151,7 +151,7 @@ index ded0d20ab193cfdaf36bd44c25719d7073c989fb..a6f41414b8918989662eb0a1dea77393
          it->second->response = std::move(*message);
          *it->second->response_received = true;
          return true;
-@@ -916,18 +942,22 @@ bool InterfaceEndpointClient::HandleValidatedMessage(Message* message) {
+@@ -932,18 +958,22 @@ bool InterfaceEndpointClient::HandleValidatedMessage(Message* message) {
        sync_responses_.erase(it);
      }
  

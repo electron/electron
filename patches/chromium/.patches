@@ -119,3 +119,4 @@ add_electron_deps_to_license_credits_file.patch
 feat_add_set_can_resize_mutator.patch
 fix_revert_emulationhandler_update_functions_to_early_return.patch
 cherry-pick-9b5207569882.patch
+fix_return_v8_value_from_localframe_requestexecutescript.patch
