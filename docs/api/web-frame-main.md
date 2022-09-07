@@ -79,13 +79,10 @@ Emitted when the document is loaded.
 
 ### Instance Methods
 
-#### `frame.executeJavaScript(code[, userGesture, worldId])`
+#### `frame.executeJavaScript(code[, userGesture])`
 
 * `code` string
 * `userGesture` boolean (optional) - Default is `false`.
-* `worldId` Integer (optional) - The ID of the world to run the javascript
-  in, `0` is the default main world (where content runs), `999` is the
-  world used by Electron's `contextIsolation` feature.
 
 Returns `Promise<unknown>` - A promise that resolves with the result of the executed
 code or is rejected if execution throws or results in a rejected promise.

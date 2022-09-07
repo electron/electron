@@ -652,7 +652,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kAllow,
-        blink::mojom::PromiseResultOption::kAwait);
+        blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
   }
@@ -732,7 +732,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
-        blink::mojom::PromiseResultOption::kAwait);
+        blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
   }
