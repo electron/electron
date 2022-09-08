@@ -100,7 +100,7 @@ bool GetRegistryDescriptionFromExtension(const std::string& file_ext,
 // Set up a filter for a Save/Open dialog, |ext_desc| as the text descriptions
 // of the |file_ext| types (optional), and (optionally) the default 'All Files'
 // view. The purpose of the filter is to show only files of a particular type in
-// a Windows Save/Open dialog box. The resulting filter is returned. The filter
+// a Windows Save/Open dialog box. The resulting filter is returned. The filters
 // created here are:
 //   1. only files that have 'file_ext' as their extension
 //   2. all files (only added if 'include_all_files' is true)
@@ -169,6 +169,10 @@ file_dialog::Filters FormatFilterForExtensions(
       base::ReplaceChars(desc, "*", base::StringPiece(), &desc);
     }
 
+    // Remove the preceeding '.' character from the extension.
+    size_t ext_index = ext.find_first_not_of('.');
+    if (ext_index != std::string::npos)
+      ext = ext.substr(ext_index);
     result.push_back({desc, {ext}});
   }
 
