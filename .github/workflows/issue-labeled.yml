@@ -8,7 +8,7 @@ jobs:
   issue-labeled:
     runs-on: ubuntu-latest
     steps:
-      - name: 🤔 Need Reproduce
+      - name: blocked/need-repro
         if: github.event.label.name == 'blocked/need-repro'
         uses: actions-cool/issues-helper@v3
         with:
