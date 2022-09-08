@@ -183,7 +183,7 @@ index d872796dee0dee4aa14c238f788b962b3f1c9311..4d5f74c18d773755d5d8f7223bc0d5c9
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index eb0aff29b2f4fd2b035ef96186fd58d976876b05..8a68a8885ec42715c9b9dab0f04d1b90eb9baa6e 100644
+index cbd8d46f180ae85f26ecdee634bcd604e5078800..aa2d83e84188facd1185791555b949e99788f9f4 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -885,7 +885,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
