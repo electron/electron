@@ -1,0 +1,18 @@
+name: Issue Close Require
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  issue-close-require:
+    runs-on: ubuntu-latest
+    steps:
+      - name: blocked/need-repro
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'close-issues'
+          labels: 'blocked/need-repro'
+          inactive-day: 10
+          body: |
+            We haven't gotten a response to our questions in our comment above. With only the information that is currently in the issue, we don't have enough information to take action. In this event, i'm going to go ahead and close this but can reopen should you follow up with more info!
