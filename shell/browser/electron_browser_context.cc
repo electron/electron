@@ -109,8 +109,8 @@ ElectronBrowserContext::browser_context_map() {
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::Value::Dict options)
-    : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
-      in_memory_pref_store_(new ValueMapPrefStore),
+    : in_memory_pref_store_(new ValueMapPrefStore),
+      storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
       protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
@@ -170,6 +170,7 @@ void ElectronBrowserContext::InitPrefs() {
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
   pref_store->ReadPrefs();  // Synchronous.
   prefs_factory.set_user_prefs(pref_store);
+  prefs_factory.set_command_line_prefs(in_memory_pref_store());
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!in_memory_) {
@@ -211,8 +212,6 @@ void ElectronBrowserContext::InitPrefs() {
 #endif
 
   prefs_ = prefs_factory.Create(registry.get());
-  prefs_->set_command_line_prefs(in_memory_pref_store());
-  prefs_->UpdateCommandLinePrefStore(in_memory_pref_store());
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   user_prefs::UserPrefs::Set(this, prefs_.get());
