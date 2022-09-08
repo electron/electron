@@ -46,11 +46,11 @@ ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);
     if (api_contents) {
       api::tabs::Tab tab;
-      tab.id = std::make_unique<int>(api_contents->ID());
+      tab.id = api_contents->ID();
       tab.url = std::make_unique<std::string>(api_contents->GetURL().spec());
       tab.title = std::make_unique<std::string>(
           base::UTF16ToUTF8(api_contents->GetTitle()));
-      tab.audible = std::make_unique<bool>(api_contents->IsCurrentlyAudible());
+      tab.audible = api_contents->IsCurrentlyAudible();
       return tab.ToValue();
     }
   }

@@ -26,7 +26,7 @@ index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..c3584709c280a1eb8c9c4945b12ebf89245c54cc 100644
+index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7becacaa28d 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -344,10 +344,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
@@ -38,7 +38,7 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..c3584709c280a1eb8c9c4945b12ebf89
    // It's ok for allocated_data_ to be nullptr but
    // only if size_ is zero.
    CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
-+#if defined(V8_SANDBOXED_POINTERS)
++#if defined(V8_ENABLE_SANDBOX)
 +  // When V8 sandboxed pointers are enabled, we have to copy into the memory
 +  // cage. We still want to ensure we erase the data on free though, so
 +  // provide a custom deleter that calls OPENSSL_cleanse.
@@ -70,7 +70,7 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..c3584709c280a1eb8c9c4945b12ebf89
    data_ = nullptr;
    size_ = 0;
    return ptr;
-+#endif  // defined(V8_SANDBOXED_POINTERS)
++#endif  // defined(V8_ENABLE_SANDBOX)
  }
  
  Local<ArrayBuffer> ByteSource::ToArrayBuffer(Environment* env) {
@@ -83,7 +83,7 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..c3584709c280a1eb8c9c4945b12ebf89
  }
  
  namespace {
-+#if defined(V8_SANDBOXED_POINTERS)
++#if defined(V8_ENABLE_SANDBOX)
 +// When V8 sandboxed pointers are enabled, the secure heap cannot be used as
 +// all ArrayBuffers must be allocated inside the V8 memory cage.
 +void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -100,7 +100,7 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..c3584709c280a1eb8c9c4945b12ebf89
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
-+#endif  // defined(V8_SANDBOXED_POINTERS)
++#endif  // defined(V8_ENABLE_SANDBOX)
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL

@@ -30,7 +30,7 @@ describe('BrowserView module', () => {
     w = null as any;
     await p;
 
-    if (view) {
+    if (view && view.webContents) {
       const p = emittedOnce(view.webContents, 'destroyed');
       (view.webContents as any).destroy();
       view = null as any;

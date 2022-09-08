@@ -8,7 +8,7 @@ Aligns common.gypi with the current build flag state of //v8.
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
 diff --git a/common.gypi b/common.gypi
-index 7224823f0df04da7a7626839f2205057d95155d2..1294df8d3a276ce575b71e899adc39aa1c53d0ec 100644
+index 7224823f0df04da7a7626839f2205057d95155d2..ae9889508ed0f3f24f2a888ba8650ccdce72fa47 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@
@@ -27,7 +27,7 @@ index 7224823f0df04da7a7626839f2205057d95155d2..1294df8d3a276ce575b71e899adc39aa
        }],
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
-@@ -398,9 +400,15 @@
+@@ -398,9 +400,14 @@
        ['v8_enable_pointer_compression == 1', {
          'defines': [
            'V8_COMPRESS_POINTERS',
@@ -38,7 +38,6 @@ index 7224823f0df04da7a7626839f2205057d95155d2..1294df8d3a276ce575b71e899adc39aa
 +      ['v8_enable_sandbox == 1', {
 +        'defines': [
 +          'V8_ENABLE_SANDBOX',
-+          'V8_SANDBOXED_POINTERS'
 +        ]
 +      }],
        ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {

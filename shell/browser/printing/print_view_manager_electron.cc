@@ -85,6 +85,8 @@ std::string PrintViewManagerElectron::PrintResultToString(PrintResult result) {
       return "Page range is invalid (start > end)";
     case kPageCountExceeded:
       return "Page range exceeds page count";
+    case kPrintingInProgress:
+      return "Page is already being printed";
     default:
       NOTREACHED();
       return "Unknown PrintResult";
@@ -143,6 +145,9 @@ void PrintViewManagerElectron::OnDidPrintWithParams(
         return;
       case printing::mojom::PrintFailureReason::kInvalidPageRange:
         FailJob(kPageCountExceeded);
+        return;
+      case printing::mojom::PrintFailureReason::kPrintingInProgress:
+        FailJob(kPrintingInProgress);
         return;
     }
   }
