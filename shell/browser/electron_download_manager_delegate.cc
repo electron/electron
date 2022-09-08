@@ -106,7 +106,7 @@ bool GetRegistryDescriptionFromExtension(const std::string& file_ext,
 // If a description is not provided for a file extension, it will be retrieved
 // from the registry. If the file extension does not exist in the registry, a
 // default description will be created (e.g. "qqq" yields "QQQ File").
-// Copied from ui/shell_dialogs/select_file_dialog_win.cc
+// Modified from ui/shell_dialogs/select_file_dialog_win.cc
 file_dialog::Filters FormatFilterForExtensions(
     const std::vector<std::string>& file_ext,
     const std::vector<std::string>& ext_desc,
