@@ -1036,8 +1036,8 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
-      ->Get(spellcheck::prefs::kSpellCheckDictionaries)
-      ->Clone();
+      ->GetValue(spellcheck::prefs::kSpellCheckDictionaries)
+      .Clone();
 }
 
 void Session::SetSpellCheckerLanguages(

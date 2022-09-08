@@ -253,6 +253,16 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
                  : blink::mojom::PermissionStatus::DENIED;
 }
 
+content::PermissionResult
+ElectronPermissionManager::GetPermissionResultForOriginWithoutContext(
+    blink::PermissionType permission,
+    const url::Origin& origin) {
+  blink::mojom::PermissionStatus status =
+      GetPermissionStatus(permission, origin.GetURL(), origin.GetURL());
+  return content::PermissionResult(
+      status, content::PermissionStatusSource::UNSPECIFIED);
+}
+
 ElectronPermissionManager::SubscriptionId
 ElectronPermissionManager::SubscribePermissionStatusChange(
     blink::PermissionType permission,

@@ -75,7 +75,7 @@ index 2532e99f00b39777cd9640c76704f7430d39502e..323e039e4591a4099b187f7a0097b4ee
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index 7159bea91a25700f0cb36c48cab62fe2d616b3bd..9bcc5ae7e870c27c3533534c06daa890de5a4816 100644
+index a80a792f1cb2c996b77443a3383663b4687ae044..2b1453353ce93632b378d4b25295b5cb14df9b2c 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
 @@ -170,6 +170,7 @@ bool PlatformCrashpadInitialization(
@@ -128,7 +128,7 @@ index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a5
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index ad401a7711ceff58abacb99a03fda258fccd12a0..de04f4df602e3a0b20af045111faf8a7bf8e9e28 100644
+index ae8801a7fc877241313de84a6ae0698d4f2adf69..9ae249bfe41da9743adc7f60d69be0f003ca31e2 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
 @@ -91,6 +91,7 @@ bool PlatformCrashpadInitialization(

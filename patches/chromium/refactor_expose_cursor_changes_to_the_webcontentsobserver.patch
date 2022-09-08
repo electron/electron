@@ -30,10 +30,10 @@ index bdad25cd2c823fa2125fc523c400479882735ae6..bf2ddb136274eb3e4e597ed3060aabca
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 25a80899f9ae533e2d84e99076696468cef6e56d..e8a3a0525bea6185f4d7ef94edc99d5e6f060787 100644
+index 47c25cf13a76de1c04624fff5e3773c05809b0a1..41c8d3beaef9a4fac41f2e7021f231a7b4a9c63c 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2075,6 +2075,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
+@@ -2078,6 +2078,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
  void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_)
      view_->UpdateCursor(WebCursor(cursor));
@@ -43,10 +43,10 @@ index 25a80899f9ae533e2d84e99076696468cef6e56d..e8a3a0525bea6185f4d7ef94edc99d5e
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9a0edcadef1bc60b035ca67df5082a7d06dd4436..a2f1f72a30f694d53f28d38d823341e7b4f008e1 100644
+index 62387a653bf7fc38eff14fa383d6cbb7b13bfe39..35264a5da11fb224d6cdf0b55e8b3b53d152aed6 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4593,6 +4593,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4603,6 +4603,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -59,10 +59,10 @@ index 9a0edcadef1bc60b035ca67df5082a7d06dd4436..a2f1f72a30f694d53f28d38d823341e7
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 3221d31d311c74f32f77fed34d53721017cac5e3..864c0a9b7072b6c3ac6584ed35a833dd6afb9e34 100644
+index 335ed04c3409651ac0a1fe5915f5aaae8884ab36..2439b0f25a1a1ce646d21c1aaefec6b59aac99be 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -967,6 +967,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -977,6 +977,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -71,7 +71,7 @@ index 3221d31d311c74f32f77fed34d53721017cac5e3..864c0a9b7072b6c3ac6584ed35a833dd
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index af8a777096c1202b3742d328c02e9e957389fc1e..3a3359865bcedecfa946d517dd50b299172958c9 100644
+index d48a0125d1ff5586ac3df3e4c7867a766528d94f..cf81127662b97afeaacbfc2af326a6d4c366013c 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -13,6 +13,7 @@
@@ -82,7 +82,7 @@ index af8a777096c1202b3742d328c02e9e957389fc1e..3a3359865bcedecfa946d517dd50b299
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/reload_type.h"
  #include "content/public/browser/render_frame_host.h"
-@@ -533,6 +534,9 @@ class CONTENT_EXPORT WebContentsObserver {
+@@ -542,6 +543,9 @@ class CONTENT_EXPORT WebContentsObserver {
    // Invoked when the primary main frame changes size.
    virtual void PrimaryMainFrameWasResized(bool width_changed) {}
  
