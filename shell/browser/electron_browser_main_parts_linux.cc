@@ -15,6 +15,9 @@
 #include "base/threading/thread_restrictions.h"
 #endif
 
+constexpr base::StringPiece kElectronOzonePlatformHint(
+    "ELECTRON_OZONE_PLATFORM_HINT");
+
 #if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
 
 constexpr char kPlatformWayland[] = "wayland";
@@ -115,17 +118,22 @@ std::string MaybeFixPlatformName(const std::string& ozone_platform_hint) {
 }  // namespace
 
 void ElectronBrowserMainParts::DetectOzonePlatform() {
+  auto env = base::Environment::Create();
+
   auto* const command_line = base::CommandLine::ForCurrentProcess();
   if (!command_line->HasSwitch(switches::kOzonePlatform)) {
-    const auto ozone_platform_hint =
+    auto ozone_platform_hint =
         command_line->GetSwitchValueASCII(switches::kOzonePlatformHint);
+    if (ozone_platform_hint.empty() &&
+        env->HasVar(kElectronOzonePlatformHint)) {
+      env->GetVar(kElectronOzonePlatformHint, &ozone_platform_hint);
+    }
     if (!ozone_platform_hint.empty()) {
       command_line->AppendSwitchASCII(
           switches::kOzonePlatform, MaybeFixPlatformName(ozone_platform_hint));
     }
   }
 
-  auto env = base::Environment::Create();
   std::string desktop_startup_id;
   if (env->GetVar("DESKTOP_STARTUP_ID", &desktop_startup_id))
     command_line->AppendSwitchASCII("desktop-startup-id", desktop_startup_id);
