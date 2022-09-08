@@ -2165,8 +2165,13 @@ describe('webContents module', () => {
         height: 100
       });
       await new Promise(setImmediate);
-      expect(w.getBounds().width).to.equal(100);
-      expect(w.getBounds().height).to.equal(100);
+      expect({
+        width: w.getBounds().width,
+        height: w.getBounds().height
+      }).to.deep.equal({
+        width: 100,
+        height: 100
+      });
     });
 
     it('does not change window bounds if cancelled', async () => {
