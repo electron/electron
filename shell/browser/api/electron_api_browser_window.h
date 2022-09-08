@@ -101,10 +101,6 @@ class BrowserWindow : public BaseWindow,
 #endif
 
  private:
-#if BUILDFLAG(IS_MAC)
-  void OverrideNSWindowContentView(InspectableWebContentsView* webView);
-#endif
-
   // Helpers.
 
   // Called when the window needs to update its draggable region.

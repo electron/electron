@@ -115,11 +115,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Install the content view after BaseWindow's JS code is initialized.
   SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
 
-#if BUILDFLAG(IS_MAC)
-  OverrideNSWindowContentView(
-      web_contents->inspectable_web_contents()->GetView());
-#endif
-
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
 }
