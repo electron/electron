@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 1 Sep 2022 21:55:57 -0400
+Subject: fixup for Wc++98-compat-extra-semi
+
+Wc++98-compat-extra-semi is turned on for Electron so this
+patch fixes that error in node.
+
+diff --git a/src/node_serdes.cc b/src/node_serdes.cc
+index 92d5020f293c98c81d3891a82f7320629bf9f926..2e815154ddbbd687e9c823cb7d42f11b7cb48000 100644
+--- a/src/node_serdes.cc
++++ b/src/node_serdes.cc
+@@ -32,7 +32,7 @@ namespace serdes {
+ v8::ArrayBuffer::Allocator* GetAllocator() {
+   static v8::ArrayBuffer::Allocator* allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+   return allocator;
+-};
++}
+ 
+ class SerializerContext : public BaseObject,
+                           public ValueSerializer::Delegate {

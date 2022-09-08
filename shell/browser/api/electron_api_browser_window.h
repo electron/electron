@@ -43,7 +43,6 @@ class BrowserWindow : public BaseWindow,
   ~BrowserWindow() override;
 
   // content::WebContentsObserver:
-  void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
   void OnRendererResponsive(

@@ -501,7 +501,7 @@ class WebContents : public ExclusiveAccessContext,
                       std::unique_ptr<content::WebContents> new_contents,
                       const GURL& target_url,
                       WindowOpenDisposition disposition,
-                      const gfx::Rect& initial_rect,
+                      const blink::mojom::WindowFeatures& window_features,
                       bool user_gesture,
                       bool* was_blocked) override;
   content::WebContents* OpenURLFromTab(
@@ -671,6 +671,7 @@ class WebContents : public ExclusiveAccessContext,
       const GURL& url,
       ExclusiveAccessBubbleType bubble_type,
       ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+      bool notify_download,
       bool force_update) override;
   void OnExclusiveAccessUserInput() override;
   content::WebContents* GetActiveWebContents() override;

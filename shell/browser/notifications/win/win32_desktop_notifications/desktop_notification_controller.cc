@@ -246,7 +246,7 @@ void DesktopNotificationController::AnimateAll() {
         break;
       }
 
-      it = move(it2);
+      it = std::move(it2);
     }
   }
 
@@ -280,12 +280,12 @@ DesktopNotificationController::AddNotification(std::u16string caption,
                                                HBITMAP image) {
   auto data = std::make_shared<NotificationData>();
   data->controller = this;
-  data->caption = move(caption);
-  data->body_text = move(body_text);
+  data->caption = std::move(caption);
+  data->body_text = std::move(body_text);
   data->image = CopyBitmap(image);
 
   // Enqueue new notification
-  Notification ret{*queue_.insert(queue_.end(), move(data))};
+  Notification ret{*queue_.insert(queue_.end(), std::move(data))};
   CheckQueue();
   return ret;
 }
@@ -311,7 +311,7 @@ void DesktopNotificationController::CloseNotification(
 
 void DesktopNotificationController::CheckQueue() {
   while (instances_.size() < instances_.capacity() && !queue_.empty()) {
-    CreateToast(move(queue_.front()));
+    CreateToast(std::move(queue_.front()));
     queue_.pop_front();
   }
 }
@@ -409,8 +409,8 @@ void DesktopNotificationController::Notification::Set(std::u16string caption,
   if (data_->image)
     DeleteBitmap(data_->image);
 
-  data_->caption = move(caption);
-  data_->body_text = move(body_text);
+  data_->caption = std::move(caption);
+  data_->body_text = std::move(body_text);
   data_->image = CopyBitmap(image);
 
   auto* hwnd = data_->controller->GetToast(data_.get());

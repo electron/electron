@@ -98,11 +98,11 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
     } else if (titlebar_overlay->IsObject()) {
       titlebar_overlay_ = true;
 
-      gin_helper::Dictionary titlebar_overlay =
+      gin_helper::Dictionary titlebar_overlay_dict =
           gin::Dictionary::CreateEmpty(options.isolate());
-      options.Get(options::ktitleBarOverlay, &titlebar_overlay);
+      options.Get(options::ktitleBarOverlay, &titlebar_overlay_dict);
       int height;
-      if (titlebar_overlay.Get(options::kOverlayHeight, &height))
+      if (titlebar_overlay_dict.Get(options::kOverlayHeight, &height))
         titlebar_overlay_height_ = height;
 
 #if !(BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC))

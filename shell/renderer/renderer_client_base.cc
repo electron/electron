@@ -322,10 +322,11 @@ void RendererClientBase::RenderFrameCreated(
 
   dispatcher->OnRenderFrameCreated(render_frame);
 
-  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(
-          &extensions::MimeHandlerViewContainerManager::BindReceiver,
-          render_frame->GetRoutingID()));
+  render_frame->GetAssociatedInterfaceRegistry()
+      ->AddInterface<extensions::mojom::MimeHandlerViewContainerManager>(
+          base::BindRepeating(
+              &extensions::MimeHandlerViewContainerManager::BindReceiver,
+              render_frame->GetRoutingID()));
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -635,7 +636,7 @@ void RendererClientBase::AllowGuestViewElementDefinition(
 
   render_frame->GetWebFrame()->RequestExecuteV8Function(
       context->GetCreationContextChecked(), register_cb, v8::Null(isolate), 0,
-      nullptr, nullptr);
+      nullptr, base::NullCallback());
 }
 
 }  // namespace electron

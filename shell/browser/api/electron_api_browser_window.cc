@@ -14,7 +14,6 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -129,17 +128,6 @@ BrowserWindow::~BrowserWindow() {
     // Destroy the WebContents.
     OnCloseContents();
   }
-}
-
-void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
-  if (window()->IsClosed() || window()->IsVisible())
-    return;
-
-  // When there is a non-empty first paint, resize the RenderWidget to force
-  // Chromium to draw.
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  view->Show();
-  view->SetSize(window()->GetContentSize());
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
@@ -490,8 +478,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
 
 void BrowserWindow::NotifyWindowUnresponsive() {
   window_unresponsive_closure_.Cancel();
-  if (!window_->IsClosed() && window_->IsEnabled() &&
-      !IsUnresponsiveEventSuppressed()) {
+  if (!window_->IsClosed() && window_->IsEnabled()) {
     Emit("unresponsive");
   }
 }
