@@ -8,7 +8,7 @@ to have multiple v8 snapshots loaded in different contexts by passing `custom-v8
 via the command line.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..ac615ba77696f9cb747418ec9a887b3f1ad32360 100644
+index 6242f0a0070b2b862f9fa5ed70825a16d6e270ef..58a0606060df1d0484d7ba32dafcf0a21c5f1621 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -37,6 +37,7 @@
@@ -19,7 +19,7 @@ index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..ac615ba77696f9cb747418ec9a887b3f
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/string_util.h"
  #include "base/task/thread_pool/thread_pool_instance.h"
-@@ -230,8 +231,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+@@ -232,8 +233,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
  
  #endif
  
@@ -34,7 +34,7 @@ index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..ac615ba77696f9cb747418ec9a887b3f
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -260,11 +266,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+@@ -262,11 +268,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  
@@ -49,7 +49,7 @@ index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..ac615ba77696f9cb747418ec9a887b3f
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -918,7 +925,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -925,7 +932,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -59,7 +59,7 @@ index ef51df5e85584329c9c02aa2b6b88ba9eadd1a31..ac615ba77696f9cb747418ec9a887b3f
    blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
        base::BindRepeating([]() -> blink::OriginTrialPolicy* {
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 148b1ebe67eee851b5a9a3e054e09fee5a185354..236f81bbb55d2b314608ad5f418513be2bc09e4b 100644
+index 5450eb6ba565164953b778f861d8fc75a06b6115..ffe1cbfb3a532d129dc6c265faf9da5e6770e20e 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -5,6 +5,7 @@
@@ -70,7 +70,7 @@ index 148b1ebe67eee851b5a9a3e054e09fee5a185354..236f81bbb55d2b314608ad5f418513be
  #include "build/build_config.h"
  #include "content/public/browser/content_browser_client.h"
  #include "content/public/common/content_client.h"
-@@ -64,6 +65,10 @@ absl::optional<int> ContentMainDelegate::PostEarlyInitialization(
+@@ -83,6 +84,10 @@ absl::optional<int> ContentMainDelegate::PostEarlyInitialization(
    return absl::nullopt;
  }
  
@@ -103,10 +103,10 @@ index f40146c4ed20e63dd09450e43c26736171f02ed4..5a89cbf6a3965b8deb69c1c151168116
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 952b3ba6247935053d9a080bced30e3b3c640dd4..fa391aa2239c8183a75162d2c6a7d72713a9c79e 100644
+index 5530d975303cc96701e4b70ffbcaf6e7c02bb016..edd9959cc0fd23711e19de4aee104199a8a3599e 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -490,8 +490,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -496,8 +496,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -116,7 +116,7 @@ index 952b3ba6247935053d9a080bced30e3b3c640dd4..fa391aa2239c8183a75162d2c6a7d727
    if (g_mapped_snapshot) {
      // TODO(crbug.com/802962): Confirm not loading different type of snapshot
      // files in a process.
-@@ -500,10 +499,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -506,10 +505,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =
