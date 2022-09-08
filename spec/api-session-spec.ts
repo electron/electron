@@ -529,50 +529,6 @@ describe('session module', () => {
     });
   });
 
-  describe('ses.getBlobData2()', () => {
-    const scheme = 'cors-blob';
-    const protocol = session.defaultSession.protocol;
-    const url = `${scheme}://host`;
-    after(async () => {
-      await protocol.unregisterProtocol(scheme);
-    });
-    afterEach(closeAllWindows);
-
-    it('returns blob data for uuid', (done) => {
-      const content = `<html>
-                       <script>
-                       let fd = new FormData();
-                       fd.append("data", new Blob(new Array(65_537).fill('a')));
-                       fetch('${url}', {method:'POST', body: fd });
-                       </script>
-                       </html>`;
-
-      protocol.registerStringProtocol(scheme, (request, callback) => {
-        try {
-          if (request.method === 'GET') {
-            callback({ data: content, mimeType: 'text/html' });
-          } else if (request.method === 'POST') {
-            const uuid = request.uploadData![1].blobUUID;
-            expect(uuid).to.be.a('string');
-            session.defaultSession.getBlobData(uuid!).then(result => {
-              try {
-                const data = new Array(65_537).fill('a');
-                expect(result.toString()).to.equal(data.join(''));
-                done();
-              } catch (e) {
-                done(e);
-              }
-            });
-          }
-        } catch (e) {
-          done(e);
-        }
-      });
-      const w = new BrowserWindow({ show: false });
-      w.loadURL(url);
-    });
-  });
-
   describe('ses.setCertificateVerifyProc(callback)', () => {
     let server: http.Server;
 
