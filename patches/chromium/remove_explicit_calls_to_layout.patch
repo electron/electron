@@ -74,10 +74,10 @@ index d0f1be1f6983a6624cf9bfe309b7d6ff130f769b..0f40257d5b61194d80b4bbe138f67adf
  int NativeAppWindowFrameViewMac::NonClientHitTest(const gfx::Point& point) {
    if (!bounds().Contains(point))
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index cf74f307a280629be71f05058784748897252c99..abb2020d7f8276c9b5077216ed5957d27260f46c 100644
+index be1323410552de0c1dc0281c33b85d16387f7420..6fdde818844b7345a69f59d7a7416652667fd2d7 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -603,6 +603,7 @@ component("views") {
+@@ -609,6 +609,7 @@ component("views") {
        "event_monitor_mac.h",
        "widget/native_widget_mac.h",
        "widget/widget_utils_mac.h",
@@ -85,7 +85,7 @@ index cf74f307a280629be71f05058784748897252c99..abb2020d7f8276c9b5077216ed5957d2
      ]
      sources += [
        "accessibility/ax_virtual_view_mac.mm",
-@@ -631,6 +632,7 @@ component("views") {
+@@ -637,6 +638,7 @@ component("views") {
        "views_touch_selection_controller_factory_mac.cc",
        "widget/native_widget_mac.mm",
        "widget/widget_utils_mac.mm",
@@ -94,10 +94,10 @@ index cf74f307a280629be71f05058784748897252c99..abb2020d7f8276c9b5077216ed5957d2
      public_deps += [ "//components/remote_cocoa/common:mojo" ]
      deps += [
 diff --git a/ui/views/widget/native_widget_mac.mm b/ui/views/widget/native_widget_mac.mm
-index 42b1de89f5b5515516c0eb8ab3566ba21cabba96..cb5dc03f2db43d1b80a5687f00d7b66ed199b070 100644
+index 1a13b49bf04e37c8e3f4c5664e453388b3c94b2e..dba4a0e5d0ed9ca97c73cf1e368254e9f85553c2 100644
 --- a/ui/views/widget/native_widget_mac.mm
 +++ b/ui/views/widget/native_widget_mac.mm
-@@ -42,7 +42,7 @@
+@@ -43,7 +43,7 @@
  #include "ui/views/widget/native_widget_delegate.h"
  #include "ui/views/widget/widget_aura_utils.h"
  #include "ui/views/widget/widget_delegate.h"
@@ -106,7 +106,7 @@ index 42b1de89f5b5515516c0eb8ab3566ba21cabba96..cb5dc03f2db43d1b80a5687f00d7b66e
  
  using remote_cocoa::mojom::WindowVisibilityState;
  
-@@ -256,7 +256,7 @@ void OnDidChangeFocus(View* focused_before, View* focused_now) override {
+@@ -267,7 +267,7 @@ void OnDidChangeFocus(View* focused_before, View* focused_now) override {
  
  std::unique_ptr<NonClientFrameView>
  NativeWidgetMac::CreateNonClientFrameView() {
@@ -129,10 +129,10 @@ index f0186dea710672507110d43471b0caadbdd4edaa..929ef9cfee0a9012021a522344741f5b
    EXPECT_TRUE(root_view->children()[1]->size().IsEmpty());
    View* const hidden_view = root_view->children()[1];
 diff --git a/ui/views/widget/widget_unittest.cc b/ui/views/widget/widget_unittest.cc
-index 3e49d8a9c99fa1152f601ce0c160c37fe5a98f0b..9b7c46afa010933c16098afb12f17fbab0ff38a9 100644
+index 6875e436ff130029eac055788ca8800f47b1d091..52a49f964c99071d1c3ab97dcf18e6b2501f65e5 100644
 --- a/ui/views/widget/widget_unittest.cc
 +++ b/ui/views/widget/widget_unittest.cc
-@@ -1649,7 +1649,8 @@ TEST_F(DesktopWidgetTest, TestViewWidthAfterMinimizingWidget) {
+@@ -1637,7 +1637,8 @@ TEST_F(DesktopWidgetTest, TestViewWidthAfterMinimizingWidget) {
    non_client_view->SetFrameView(
        std::make_unique<MinimumSizeFrameView>(widget.get()));
    // Setting the frame view doesn't do a layout, so force one.
