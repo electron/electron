@@ -49,8 +49,6 @@ class BrowserWindow : public BaseWindow,
   // content::WebContentsObserver:
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
-  void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
-  void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
   void OnRendererResponsive(
@@ -82,13 +80,13 @@ class BrowserWindow : public BaseWindow,
   void Focus() override;
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;
-  void SetBrowserView(v8::Local<v8::Value> value) override;
-  void AddBrowserView(v8::Local<v8::Value> value) override;
-  void RemoveBrowserView(v8::Local<v8::Value> value) override;
-  void SetTopBrowserView(v8::Local<v8::Value> value,
+  void SetBrowserView(
+      absl::optional<gin::Handle<BrowserView>> browser_view) override;
+  void AddBrowserView(gin::Handle<BrowserView> browser_view) override;
+  void RemoveBrowserView(gin::Handle<BrowserView> browser_view) override;
+  void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                          gin_helper::Arguments* args) override;
   void ResetBrowserViews() override;
-  void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) override;
   void OnWindowShow() override;
   void OnWindowHide() override;
 

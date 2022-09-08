@@ -156,10 +156,7 @@ static_library("chrome") {
     "//services/strings",
   ]
 
-  deps = [
-    "//chrome/browser:resource_prefetch_predictor_proto",
-    "//components/optimization_guide/proto:optimization_guide_proto",
-  ]
+  deps = [ "//chrome/browser:resource_prefetch_predictor_proto" ]
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
@@ -232,6 +229,8 @@ static_library("chrome") {
       "//chrome/browser/printing/printer_query.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
+      "//components/printing/browser/print_to_pdf/pdf_print_job.cc",
+      "//components/printing/browser/print_to_pdf/pdf_print_job.h",
       "//components/printing/browser/print_to_pdf/pdf_print_utils.cc",
       "//components/printing/browser/print_to_pdf/pdf_print_utils.h",
     ]
@@ -395,6 +394,10 @@ source_set("chrome_spellchecker") {
 
   if (enable_builtin_spellchecker) {
     sources += [
+      "//chrome/browser/profiles/profile_keyed_service_factory.cc",
+      "//chrome/browser/profiles/profile_keyed_service_factory.h",
+      "//chrome/browser/profiles/profile_selections.cc",
+      "//chrome/browser/profiles/profile_selections.h",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
       "//chrome/browser/spellchecker/spellcheck_custom_dictionary.cc",
