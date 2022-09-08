@@ -519,7 +519,8 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
           desc.Get("set", &setter);
 
           {
-            v8::Context::Scope destination_context_scope(destination_context);
+            v8::Context::Scope inner_destination_context_scope(
+                destination_context);
             v8::Local<v8::Value> getter_proxy;
             v8::Local<v8::Value> setter_proxy;
             if (!getter.IsEmpty()) {
@@ -537,9 +538,9 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
                 continue;
             }
 
-            v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
+            v8::PropertyDescriptor prop_desc(getter_proxy, setter_proxy);
             std::ignore = proxy.GetHandle()->DefineProperty(
-                destination_context, key.As<v8::Name>(), desc);
+                destination_context, key.As<v8::Name>(), prop_desc);
           }
           continue;
         }

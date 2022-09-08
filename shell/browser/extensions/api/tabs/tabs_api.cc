@@ -189,7 +189,7 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
 
   bool bypass_cache = false;
   if (params->reload_properties.get() &&
-      params->reload_properties->bypass_cache.get()) {
+      params->reload_properties->bypass_cache) {
     bypass_cache = *params->reload_properties->bypass_cache;
   }
 
@@ -217,12 +217,11 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
 
   tabs::Tab tab;
 
-  tab.id = std::make_unique<int>(tab_id);
+  tab.id = tab_id;
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
-  tab.url = std::make_unique<std::string>(
-      contents->web_contents()->GetLastCommittedURL().spec());
+  tab.url = contents->web_contents()->GetLastCommittedURL().spec();
 
   tab.active = contents->IsFocused();
 
@@ -288,8 +287,8 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
       contents->GetZoomController()->zoom_mode();
   tabs::ZoomSettings zoom_settings;
   ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
-  zoom_settings.default_zoom_factor = std::make_unique<double>(
-      blink::PageZoomLevelToZoomFactor(zoom_controller->GetDefaultZoomLevel()));
+  zoom_settings.default_zoom_factor =
+      blink::PageZoomLevelToZoomFactor(zoom_controller->GetDefaultZoomLevel());
 
   return RespondNow(
       ArgumentList(tabs::GetZoomSettings::Results::Create(zoom_settings)));
@@ -438,13 +437,13 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
 
   // Navigate the tab to a new location if the url is different.
   std::string error;
-  if (params->update_properties.url.get()) {
+  if (params->update_properties.url) {
     std::string updated_url = *params->update_properties.url;
     if (!UpdateURL(updated_url, tab_id, &error))
       return RespondNow(Error(std::move(error)));
   }
 
-  if (params->update_properties.muted.get()) {
+  if (params->update_properties.muted) {
     contents->SetAudioMuted(*params->update_properties.muted);
   }
 
@@ -502,13 +501,11 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   tabs::Tab tab;
 
   auto* api_web_contents = electron::api::WebContents::From(web_contents_);
-  tab.id =
-      std::make_unique<int>(api_web_contents ? api_web_contents->ID() : -1);
+  tab.id = (api_web_contents ? api_web_contents->ID() : -1);
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
-  tab.url = std::make_unique<std::string>(
-      web_contents_->GetLastCommittedURL().spec());
+  tab.url = web_contents_->GetLastCommittedURL().spec();
 
   return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
 }

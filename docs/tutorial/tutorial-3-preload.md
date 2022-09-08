@@ -38,7 +38,25 @@ called a **preload**.
 ## Augmenting the renderer with a preload script
 
 A BrowserWindow's preload script runs in a context that has access to both the HTML DOM
-and a Node.js environment. Preload scripts are injected before a web page loads in the renderer,
+and a limited subset of Node.js and Electron APIs.
+
+:::info Preload script sandboxing
+
+From Electron 20 onwards, preload scripts are **sandboxed** by default and no longer have access
+to a full Node.js environment. Practically, this means that you have a polyfilled `require`
+function that only has access to a limited set of APIs.
+
+| Available API      | Details                                                                                                                                                                                                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Electron modules   | Renderer process modules                                                                                                                                                                                                                                       |
+| Node.js modules    | [`events`](https://nodejs.org/api/events.html), [`timers`](https://nodejs.org/api/timers.html), [`url`](https://nodejs.org/api/url.html)                                                                                                                       |
+| Polyfilled globals | [`Buffer`](https://nodejs.org/api/buffer.html), [`process`](../api/process.md), [`clearImmediate`](https://nodejs.org/api/timers.html#timers_clearimmediate_immediate), [`setImmediate`](https://nodejs.org/api/timers.html#timers_setimmediate_callback_args) |
+
+For more information, check out the [Process Sandboxing](./sandbox.md) guide.
+
+:::
+
+Preload scripts are injected before a web page loads in the renderer,
 similar to a Chrome extension's [content scripts][content-script]. To add features to your renderer
 that require privileged access, you can define [global] objects through the
 [contextBridge][contextbridge] API.
@@ -185,7 +203,8 @@ loading the HTML file so that the handler is guaranteed to be ready before
 you send out the `invoke` call from the renderer.
 
 ```js {1,11} title="main.js"
-const { ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
+const path = require('path')
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -198,6 +217,7 @@ const createWindow = () => {
   ipcMain.handle('ping', () => 'pong')
   win.loadFile('index.html')
 }
+app.whenReady().then(createWindow)
 ```
 
 Once you have the sender and receiver set up, you can now send messages from the renderer

@@ -7,7 +7,7 @@ This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 2425ccd480f4b0f3ac3b9dddb5dbf90639fe515b..6f20e2edd880e34149668ece6e80e79b3da8dc66 100644
+index ca55966a41bfa455febb67b315cb308807036795..c9ca9aa56a9e4c66c4e7fd6c085e58299555a043 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -6,17 +6,21 @@

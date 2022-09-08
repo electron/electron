@@ -14,7 +14,6 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/gtk_util.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gtk/gtk_ui.h"    // nogncheck
@@ -222,7 +221,6 @@ class FileChooserDialog {
   void AddFilters(const Filters& filters);
 
   electron::NativeWindowViews* parent_;
-  electron::UnresponsiveSuppressor unresponsive_suppressor_;
 
   GtkFileChooser* dialog_;
   GtkWidget* preview_;

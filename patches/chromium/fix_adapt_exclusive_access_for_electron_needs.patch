@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 84d9b4d72662895042e523522c13ec477aebe868..c358a34447c8aa67a341a1e4df769dff118eed07 100644
+index 31f9403bf89095f8694aecc855c24d81be9261e7..1e82eaa7b45e1a1b04b132d752ae8252ee55ad1f 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -17,12 +17,16 @@
@@ -36,7 +36,7 @@ index 84d9b4d72662895042e523522c13ec477aebe868..c358a34447c8aa67a341a1e4df769dff
  #include "chrome/common/chrome_switches.h"
  #include "content/public/browser/navigation_details.h"
  #include "content/public/browser/navigation_entry.h"
-@@ -177,6 +181,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -181,6 +185,7 @@ void FullscreenController::EnterFullscreenModeForTab(
      return;
    }
  
@@ -44,7 +44,7 @@ index 84d9b4d72662895042e523522c13ec477aebe868..c358a34447c8aa67a341a1e4df769dff
    if (base::FeatureList::IsEnabled(
            blink::features::kWindowPlacementFullscreenCompanionWindow)) {
      if (!popunder_preventer_)
-@@ -184,6 +189,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -188,6 +193,7 @@ void FullscreenController::EnterFullscreenModeForTab(
      else
        popunder_preventer_->WillActivateWebContents(web_contents);
    }
@@ -52,17 +52,21 @@ index 84d9b4d72662895042e523522c13ec477aebe868..c358a34447c8aa67a341a1e4df769dff
  
    // Keep the current state. |SetTabWithExclusiveAccess| may change the return
    // value of |IsWindowFullscreenForTabOrPending|.
-@@ -233,7 +239,9 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -237,11 +243,13 @@ void FullscreenController::EnterFullscreenModeForTab(
  }
  
  void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
 +#if 0
-   popunder_preventer_.reset();
+   // Reset the popunder preventer after the window exits content fullscreen.
+   // This activates any popup windows that were created while fullscreen.
+   base::ScopedClosureRunner reset_popunder_preventer(
+       base::BindOnce(&std::unique_ptr<PopunderPreventer>::reset,
+                      base::Unretained(&popunder_preventer_), nullptr));
 +#endif
  
    if (MaybeToggleFullscreenWithinTab(web_contents, false)) {
      // During tab capture of fullscreen-within-tab views, the browser window
-@@ -288,11 +296,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -299,11 +307,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
@@ -76,7 +80,7 @@ index 84d9b4d72662895042e523522c13ec477aebe868..c358a34447c8aa67a341a1e4df769dff
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -460,18 +470,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -472,18 +482,17 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -100,7 +104,7 @@ index 84d9b4d72662895042e523522c13ec477aebe868..c358a34447c8aa67a341a1e4df769dff
    if (option == TAB) {
      url = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -498,6 +507,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -516,6 +525,7 @@ void FullscreenController::EnterFullscreenModeInternal(
      if (!extension_caused_fullscreen_.is_empty())
        url = extension_caused_fullscreen_;
    }
@@ -108,7 +112,7 @@ index 84d9b4d72662895042e523522c13ec477aebe868..c358a34447c8aa67a341a1e4df769dff
  
    if (option == BROWSER)
      base::RecordAction(base::UserMetricsAction("ToggleFullscreen"));
-@@ -525,12 +535,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -543,12 +553,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
    RecordExitingUMA();
    toggled_into_fullscreen_ = false;
    started_fullscreen_transition_ = true;

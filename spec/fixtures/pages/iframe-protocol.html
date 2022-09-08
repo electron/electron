@@ -1,0 +1,11 @@
+<body>
+  <iframe src="custom://base-page.html"></iframe>
+  <script>
+    const { ipcRenderer } = require('electron');
+    const iframe = document.querySelector('iframe');
+
+    iframe.addEventListener('load', () => {
+      ipcRenderer.send('loaded-iframe-custom-protocol');
+    });
+  </script>
+</body>
