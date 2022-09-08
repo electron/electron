@@ -1704,17 +1704,6 @@ void NativeWindowMac::UpdateDraggableRegions(
 std::unique_ptr<views::NonClientFrameView>
 NativeWindowMac::CreateNonClientFrameView(views::Widget* widget) {
   return std::make_unique<NativeAppWindowFrameViewMac>(widget, this);
-  /*
-    if (has_frame() && !has_client_frame()) {
-      return std::make_unique<NativeFrameView>(this, widget);
-    } else {
-      auto frame_view = has_frame() && has_client_frame()
-                            ? std::make_unique<ClientFrameViewLinux>()
-                            : std::make_unique<FramelessView>();
-      frame_view->Init(this, widget);
-      return frame_view;
-    }
-    */
 }
 
 bool NativeWindowMac::HasStyleMask(NSUInteger flag) const {

@@ -63,7 +63,6 @@ class BrowserWindow : public BaseWindow,
   void OnActivateContents() override;
   void OnPageTitleUpdated(const std::u16string& title,
                           bool explicit_set) override;
-  void OnDevToolsResized() override;
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
@@ -74,7 +73,6 @@ class BrowserWindow : public BaseWindow,
   // BaseWindow:
   void OnWindowBlur() override;
   void OnWindowFocus() override;
-  void OnWindowResize() override;
   void OnWindowLeaveFullScreen() override;
   void CloseImmediately() override;
   void Focus() override;
@@ -82,11 +80,6 @@ class BrowserWindow : public BaseWindow,
   void SetBackgroundColor(const std::string& color_name) override;
   void SetBrowserView(
       absl::optional<gin::Handle<BrowserView>> browser_view) override;
-  void AddBrowserView(gin::Handle<BrowserView> browser_view) override;
-  void RemoveBrowserView(gin::Handle<BrowserView> browser_view) override;
-  void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                         gin_helper::Arguments* args) override;
-  void ResetBrowserViews() override;
   void OnWindowShow() override;
   void OnWindowHide() override;
 

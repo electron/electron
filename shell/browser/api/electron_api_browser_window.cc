@@ -290,19 +290,6 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 #endif
 }
 
-void BrowserWindow::OnWindowResize() {
-#if BUILDFLAG(IS_MAC)
-  if (!draggable_regions_.empty()) {
-    UpdateDraggableRegions(draggable_regions_);
-  } else {
-    for (NativeBrowserView* view : window_->browser_views()) {
-      view->UpdateDraggableRegions(view->GetDraggableRegions());
-    }
-  }
-#endif
-  BaseWindow::OnWindowResize();
-}
-
 void BrowserWindow::OnWindowLeaveFullScreen() {
 #if BUILDFLAG(IS_MAC)
   if (web_contents()->IsFullscreen())
@@ -371,42 +358,6 @@ void BrowserWindow::SetBrowserView(
   BaseWindow::ResetBrowserViews();
   if (browser_view)
     BaseWindow::AddBrowserView(*browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  BaseWindow::AddBrowserView(browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
-  BaseWindow::RemoveBrowserView(browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                                      gin_helper::Arguments* args) {
-  BaseWindow::SetTopBrowserView(browser_view, args);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::ResetBrowserViews() {
-  BaseWindow::ResetBrowserViews();
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::OnDevToolsResized() {
-  UpdateDraggableRegions(draggable_regions_);
 }
 
 void BrowserWindow::FocusOnWebView() {
