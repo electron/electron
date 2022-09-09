@@ -162,7 +162,7 @@ void WinCaptionButtonContainer::UpdateButtons() {
   // The maximize button should only be enabled if the window is
   // maximizable *and* touch mode is disabled.
   const bool maximizable = frame_view_->window()->IsMaximizable();
-  maximize_button_->SetEnabled(!is_touch && maximizable);
+  maximize_button_->SetEnabled(!is_touch || !is_maximized);
 
   const bool closable = frame_view_->window()->IsClosable();
   close_button_->SetEnabled(closable);
