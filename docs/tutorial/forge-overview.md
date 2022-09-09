@@ -1,10 +1,7 @@
 # Distributing Apps With Electron Forge
 
-## Introduction to Electron Forge
-
 Electron Forge is a complete tool for creating, publishing, and installing modern Electron applications. Electron Forge unifies the existing (and well maintained) build tools for Electron development into a simple, easy to use package so
 that anyone can jump right in to Electron development.
-This allows developers to take their app from source code to their end users' machines.
 
 ## Getting started
 
@@ -16,12 +13,12 @@ This process contains several subtasks, including:
 * Generating distributable files for each OS [(make)], and,
 * Publishing these files to online platforms to download [(publish)].
 
-We recommend following through the cumulative Electron [tutorials] to develop, build, package and publish your first Electron app. If you have already developed an app on your machine and want to start on forge-specific steps, start from [step 5] of the tutorial.
+For beginners, we recommend following through the cumulative Electron [tutorial] to develop, build, package and publish your first Electron app. If you have already developed an app on your machine and want to start on Forge-specific steps, start from [step 5] of the tutorial.
 
 ## Getting help
 
 * If you need help with developing your app, our [community Discord server][discord] is a great place to get advice from other Electron app developers.
-* If you suspect you're running into a bug with the electron-forge package, please check the [GitHub issue tracker] to see if any existing issues match your problem. If not, feel free to fill out our bug report template and submit a new issue.
+* If you suspect you're running into a bug with Forge, please check the [GitHub issue tracker] to see if any existing issues match your problem. If not, feel free to fill out our bug report template and submit a new issue.
 
 [Electron Forge Docs]: https://www.electronforge.io/
 [step 5]: ./tutorial-5-packaging.md
@@ -30,4 +27,4 @@ We recommend following through the cumulative Electron [tutorials] to develop, b
 [(publish)]: https://www.electronforge.io/cli#publish
 [GitHub issue tracker]: https://github.com/electron-userland/electron-forge/issues
 [discord]: https://discord.gg/electronjs
-[tutorials]: https://www.electronjs.org/docs/latest/tutorial/tutorial-prerequisites
+[tutorial]: https://www.electronjs.org/docs/latest/tutorial/tutorial-prerequisites
