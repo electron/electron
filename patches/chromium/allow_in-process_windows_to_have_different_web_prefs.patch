@@ -8,10 +8,10 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index e5c9ebda8156c1a7c32f7eb0661dff40f022c264..8840d4be4b49b27dfb257866f6a074efc34ff869 100644
+index 645d50cd3d50581fa0d13d1dc67158b60b628327..4adc497c5959c7d499ebc82189b4c654c64f2a17 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -143,6 +143,19 @@ WebPreferences::WebPreferences()
+@@ -142,6 +142,19 @@ WebPreferences::WebPreferences()
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
        stylus_handwriting_enabled(false),
@@ -32,10 +32,10 @@ index e5c9ebda8156c1a7c32f7eb0661dff40f022c264..8840d4be4b49b27dfb257866f6a074ef
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index a910d7b53a1346797f0e2bd030dff7ff84a834b8..4847c7587484eb02b8d7f532be53e499517a95fb 100644
+index b71bd477dac6fb5dde6a5c68b0acb066bfa47c32..a1607db91e9c373691a526988d098695cb72cc0c 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -149,6 +149,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -148,6 +148,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
    out->stylus_handwriting_enabled = data.stylus_handwriting_enabled();
@@ -56,7 +56,7 @@ index a910d7b53a1346797f0e2bd030dff7ff84a834b8..4847c7587484eb02b8d7f532be53e499
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 33ca0140e9434f37c67386973f1ebf460222691c..220551e3be0ae9275714f80758671eeac87b0cca 100644
+index b8023168b7be3f74e376c7a22f3519defa4eb01d..56c8f4f96203e4c8c963afda7244bac261a8519a 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -67,7 +67,7 @@ index 33ca0140e9434f37c67386973f1ebf460222691c..220551e3be0ae9275714f80758671eea
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -157,6 +158,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -158,6 +159,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;
@@ -88,7 +88,7 @@ index 33ca0140e9434f37c67386973f1ebf460222691c..220551e3be0ae9275714f80758671eea
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index d4c86ca871c796c3179a0fe099de0b3082ebf46e..0b438a894c37826c19bdac1b1474a50a4afe8e4f 100644
+index 59571fe4cbf8a75b3fd62d31bbd3bf693e1003a2..c1ca3d5343c66402143dcb5c9b809361ec17b498 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -99,7 +99,7 @@ index d4c86ca871c796c3179a0fe099de0b3082ebf46e..0b438a894c37826c19bdac1b1474a50a
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -433,6 +434,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -434,6 +435,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.stylus_handwriting_enabled;
    }
  
@@ -153,7 +153,7 @@ index d4c86ca871c796c3179a0fe099de0b3082ebf46e..0b438a894c37826c19bdac1b1474a50a
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 4638c6cf8f3834bb3dc5f98347069f1211cb7332..8cf8845375809f239998b1db256622c2ce5b1e58 100644
+index 3cba12472e2856d43076e5f171486b32673156eb..fb2fbea01bbd9f5bc05663e80aaae84460204374 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";

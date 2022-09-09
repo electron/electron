@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 26 Aug 2022 00:10:16 +0900
+Subject: Enable -Wunqualified-std-cast-call
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/3825237
+Should be upstreamed.
+
+diff --git a/src/node_http2.cc b/src/node_http2.cc
+index 8df924a29028e2cfb31a22e72ee88887f790d777..c466fd8aecd6045841c2b39f707f747ee6f9fc6d 100644
+--- a/src/node_http2.cc
++++ b/src/node_http2.cc
+@@ -644,7 +644,7 @@ void Http2Stream::EmitStatistics() {
+           duration,
+           statistics_);
+ 
+-  env()->SetImmediate([entry = move(entry)](Environment* env) {
++  env()->SetImmediate([entry = std::move(entry)](Environment* env) {
+     if (HasHttp2Observer(env))
+       entry->Notify(env);
+   });
