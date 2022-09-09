@@ -19,7 +19,7 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index e0b308051be9b34ce26b65f6cd582beb7743662d..857d5eb211890b10e143f54662636f2ba522b698 100644
+index 4801b3abafb156d561d8bbc4526b91822de72143..2ff6e4232180ea6620d3d9b65f511b391c64f435 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -365,6 +365,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -65,10 +65,10 @@ index 8f80fb04990c3e2820dcbc9b89dc0255c9c49d30..f16af9a3e4027066cddbd5082998adc8
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index b5cff1fee2d14c02f2d67cf012b7ba24fc3a7a06..765c0882406fa0ab7ae3d0460ff9a9814f60db0a 100644
+index a4c6696c35c6d6560c725f818eec8c25dc714736..305b7873ee67c3dfb03c83b62cdd2b3759b963de 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -625,6 +625,8 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -626,6 +626,8 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}

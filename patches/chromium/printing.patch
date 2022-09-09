@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 90f92c53aea415aec1fd997d99d17ffc911811e4..c299bc4a8b2f483ff8607e5e89895158aef120dd 100644
+index 5396a2163add191edcd9d54da7974a5e75ee792e..77a6c439fdbf2444e4532579a0e97f5d8cce214a 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -984,7 +984,6 @@ if (is_win) {
@@ -796,10 +796,10 @@ index 66026548181a897c161d7202646f33fd8847ccb8..113a8165b5db6294087773e5a4b2f003
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 77deaa26319118b937d6b0c394c33e72c94232e3..70585fbf9d40581725f48d9d73a350ab0d3d4421 100644
+index ba3e4bc8a46d8936435a015cc8bbd7e83be08943..5c2979a98fa0b05067801a6dd3109f375681868d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2808,8 +2808,9 @@ source_set("browser") {
+@@ -2812,8 +2812,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

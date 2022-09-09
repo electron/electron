@@ -108,7 +108,7 @@ index 1318d5e04d5448d2b357454c3ce4207264288760..3b0324c35d5b18ed2e29264aae860c48
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 298cff90c9e082fa833bd60624892b7a9e29d1d0..b34eaef2a1337ba042c82aa57ddacf397e3cb769 100644
+index fc0083d2dcdf72a92cef4e1e830015341df4d65e..d8a82c7d06b58038f8b6a13fbdb31f96599f9e28 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1812,12 +1812,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -183,10 +183,10 @@ index ed23267cd9f28f4e02d8374177f0bb697547cc2a..a979719f75ab4c9b49775ec3df5eff13
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 1a6bbeea689901e23717d660e67f8d1abb21f799..85f7b42e7aadce3abcae9f9596403f9856771993 100644
+index 9d5265c5774c5e1196af3d0a66b796896676469c..40b9842bed30fd79252aa0fd19daa78e1c9baa5c 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-@@ -170,14 +170,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
+@@ -169,14 +169,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -246,10 +246,10 @@ index 58c032fe666591be0a72c350b752ad07326253f0..23c8aa67c698ee6208a89b36c38a5fd3
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 35264a5da11fb224d6cdf0b55e8b3b53d152aed6..a4eb64823fbc2fe3c381e850235f5a447194dfc5 100644
+index b48f62fb5ba99e7399e739d9d23346c48218c247..84b48011e5a9d5b890a26debce68d0efd3c013c4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3944,8 +3944,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3932,8 +3932,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -344,7 +344,7 @@ index 26dc86a7534d9296f1b1f772ec95f5313c61061c..925152a6c1fb645dfff5bd7238b620a8
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 2856966bbf411b0ec600107a374d79beec7bf821..c820a0a7d212959d74f2f0abc2839938ca47d9f0 100644
+index fbbd630fcc3c684c5f79a526e53e8240897d6f6b..ba0c18a6f6430cafefa21bf73717cd3f3b0fde94 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -413,8 +413,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
