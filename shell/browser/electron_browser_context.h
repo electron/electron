@@ -133,16 +133,15 @@ class ElectronBrowserContext : public content::BrowserContext {
   content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
       override;
   content::StorageNotificationService* GetStorageNotificationService() override;
+  content::ReduceAcceptLanguageControllerDelegate*
+  GetReduceAcceptLanguageControllerDelegate() override;
 
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
   }
   PrefService* prefs() const { return prefs_.get(); }
-  void set_in_memory_pref_store(ValueMapPrefStore* pref_store) {
-    in_memory_pref_store_ = pref_store;
-  }
   ValueMapPrefStore* in_memory_pref_store() const {
-    return in_memory_pref_store_;
+    return in_memory_pref_store_.get();
   }
   base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -207,8 +206,7 @@ class ElectronBrowserContext : public content::BrowserContext {
                        const base::Value* device_to_compare,
                        blink::PermissionType permission_type);
 
-  ValueMapPrefStore* in_memory_pref_store_ = nullptr;
-
+  scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
   std::unique_ptr<content::ResourceContext> resource_context_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
