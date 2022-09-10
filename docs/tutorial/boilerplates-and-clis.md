@@ -58,6 +58,9 @@ CT Lin's [`electron-react-boilerplate`](https://github.com/chentsulin/electron-r
 a look. It's quite popular in the community and uses `electron-builder`
 internally.
 
+## electron-vite-vue
+If you want to try Vite, [`electron-vite-vue`](https://github.com/electron-vite/electron-vite-vue) is a very friendly template to get started. Also it integrates `electron-builder`.
+
 ## Other Tools and Boilerplates
 
 The ["Awesome Electron" list](https://github.com/sindresorhus/awesome-electron#boilerplates) contains more tools and boilerplates
