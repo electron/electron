@@ -7,12 +7,12 @@
 
 #include <string>
 
+#include "base/values.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/zoom_level_delegate.h"
 
 namespace base {
-class DictionaryValue;
 class FilePath;
 }  // namespace base
 
@@ -45,8 +45,7 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   void InitHostZoomMap(content::HostZoomMap* host_zoom_map) override;
 
  private:
-  void ExtractPerHostZoomLevels(
-      const base::DictionaryValue* host_zoom_dictionary);
+  void ExtractPerHostZoomLevels(const base::Value::Dict& host_zoom_dictionary);
 
   // This is a callback function that receives notifications from HostZoomMap
   // when per-host zoom levels change. It is used to update the per-host
