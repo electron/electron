@@ -186,14 +186,15 @@ bool ElectronBundleMover::IsInApplicationsFolder(NSString* bundlePath) {
   // Check all the normal Application directories
   NSArray* applicationDirs = NSSearchPathForDirectoriesInDomains(
       NSApplicationDirectory, NSAllDomainsMask, true);
+  NSString* lcBundlePath = [bundlePath lowercaseString];
   for (NSString* appDir in applicationDirs) {
-    if ([bundlePath hasPrefix:appDir])
+    if ([lcBundlePath hasPrefix:[appDir lowercaseString]])
       return true;
   }
 
   // Also, handle the case that the user has some other Application directory
   // (perhaps on a separate data partition).
-  if ([[bundlePath pathComponents] containsObject:@"Applications"])
+  if ([[lcBundlePath pathComponents] containsObject:@"applications"])
     return true;
 
   return false;
