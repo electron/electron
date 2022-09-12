@@ -163,7 +163,7 @@ void WinCaptionButtonContainer::UpdateButtons() {
   // the maximize/restore button should be disabled, unless the window is not
   // maximized.
   const bool maximizable = frame_view_->window()->IsMaximizable();
-  maximize_button_->SetEnabled(!is_touch || !is_maximized);
+  maximize_button_->SetEnabled(!(is_touch && is_maximized) && maximizable);
 
   const bool closable = frame_view_->window()->IsClosable();
   close_button_->SetEnabled(closable);
