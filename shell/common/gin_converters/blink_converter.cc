@@ -320,10 +320,7 @@ v8::Local<v8::Value> Converter<blink::WebKeyboardEvent>::ToV8(
     const blink::WebKeyboardEvent& in) {
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
 
-  if (in.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
-    dict.Set("type", "keyDown");
-  else if (in.GetType() == blink::WebInputEvent::Type::kKeyUp)
-    dict.Set("type", "keyUp");
+  dict.Set("type", in.GetType());
   dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
   dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
                        static_cast<ui::DomCode>(in.dom_code)));
