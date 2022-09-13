@@ -595,8 +595,8 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
 std::map<std::string, std::string> GetAddedFileSystemPaths(
     content::WebContents* web_contents) {
   auto* pref_service = GetPrefService(web_contents);
-  const base::Value* file_system_paths_value =
-      pref_service->GetDictionary(prefs::kDevToolsFileSystemPaths);
+  const base::Value::Dict& file_system_paths_value =
+      pref_service->GetDict(prefs::kDevToolsFileSystemPaths);
   std::map<std::string, std::string> result;
   if (file_system_paths_value) {
     const base::DictionaryValue* file_system_paths_dict;
