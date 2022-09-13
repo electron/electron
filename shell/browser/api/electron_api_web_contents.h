@@ -534,7 +534,6 @@ class WebContents : public ExclusiveAccessContext,
       content::RenderWidgetHost* render_widget_host) override;
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
                          const content::ContextMenuParams& params) override;
-  bool OnGoToEntryOffset(int offset) override;
   void FindReply(content::WebContents* web_contents,
                  int request_id,
                  int number_of_matches,
@@ -665,6 +664,7 @@ class WebContents : public ExclusiveAccessContext,
       const GURL& url,
       ExclusiveAccessBubbleType bubble_type,
       ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+      bool notify_download,
       bool force_update) override;
   void OnExclusiveAccessUserInput() override;
   content::WebContents* GetActiveWebContents() override;

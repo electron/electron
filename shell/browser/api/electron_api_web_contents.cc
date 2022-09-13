@@ -1286,6 +1286,7 @@ void WebContents::UpdateExclusiveAccessExitBubbleContent(
     const GURL& url,
     ExclusiveAccessBubbleType bubble_type,
     ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+    bool notify_download,
     bool force_update) {}
 
 void WebContents::OnExclusiveAccessUserInput() {}
@@ -1378,11 +1379,6 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
   Emit("context-menu", std::make_pair(params, &render_frame_host));
 
   return true;
-}
-
-bool WebContents::OnGoToEntryOffset(int offset) {
-  GoToOffset(offset);
-  return false;
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,

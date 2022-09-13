@@ -389,6 +389,13 @@ ElectronBrowserContext::GetStorageNotificationService() {
   return nullptr;
 }
 
+content::ReduceAcceptLanguageControllerDelegate*
+ElectronBrowserContext::GetReduceAcceptLanguageControllerDelegate() {
+  // Needs implementation
+  // Refs https://chromium-review.googlesource.com/c/chromium/src/+/3687391
+  return nullptr;
+}
+
 ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
   if (!resolve_proxy_helper_) {
     resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
