@@ -111,8 +111,8 @@ Returns:
 * `event` Event
 * `code` number
 
-Emitted when the child process has a normal termination.
-For other abnormal exit cases listen to the [`child-process-gone` event of `app`](app.md#event-child-process-gone).
+Emitted after the child process ends. `code` contains the exit code for
+the process obtained from waitpid on posix, or GetExitCodeProcess on windows.
 
 #### Event: 'message'
 
