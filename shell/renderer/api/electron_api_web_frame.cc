@@ -23,6 +23,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
@@ -55,27 +56,6 @@
 #include "url/url_util.h"
 
 namespace gin {
-
-template <>
-struct Converter<blink::WebLocalFrame::ScriptExecutionType> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::WebLocalFrame::ScriptExecutionType* out) {
-    std::string execution_type;
-    if (!ConvertFromV8(isolate, val, &execution_type))
-      return false;
-    if (execution_type == "asynchronous") {
-      *out = blink::WebLocalFrame::kAsynchronous;
-    } else if (execution_type == "asynchronousBlockingOnload") {
-      *out = blink::WebLocalFrame::kAsynchronousBlockingOnload;
-    } else if (execution_type == "synchronous") {
-      *out = blink::WebLocalFrame::kSynchronous;
-    } else {
-      return false;
-    }
-    return true;
-  }
-};
 
 template <>
 struct Converter<blink::WebCssOrigin> {
@@ -132,7 +112,7 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
 
 #endif
 
-class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
+class ScriptExecutionCallback {
  public:
   // for compatibility with the older version of this, error is after result
   using CompletionCallback =
@@ -144,7 +124,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
       CompletionCallback callback)
       : promise_(std::move(promise)), callback_(std::move(callback)) {}
 
-  ~ScriptExecutionCallback() override = default;
+  ~ScriptExecutionCallback() = default;
 
   // disable copy
   ScriptExecutionCallback(const ScriptExecutionCallback&) = delete;
@@ -193,8 +173,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     }
   }
 
-  void Completed(
-      const blink::WebVector<v8::Local<v8::Value>>& result) override {
+  void Completed(const blink::WebVector<v8::Local<v8::Value>>& result) {
     v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
@@ -660,13 +639,21 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     ScriptExecutionCallback::CompletionCallback completion_callback;
     args->GetNext(&completion_callback);
 
+    auto* self = new ScriptExecutionCallback(std::move(promise),
+                                             std::move(completion_callback));
+
     render_frame->GetWebFrame()->RequestExecuteScript(
         blink::DOMWrapperWorld::kMainWorldId, base::make_span(&source, 1),
-        has_user_gesture, blink::WebLocalFrame::kSynchronous,
-        new ScriptExecutionCallback(std::move(promise),
-                                    std::move(completion_callback)),
+        has_user_gesture ? blink::mojom::UserActivationOption::kActivate
+                         : blink::mojom::UserActivationOption::kDoNotActivate,
+        blink::mojom::EvaluationTiming::kSynchronous,
+        blink::mojom::LoadEventBlockingOption::kDoNotBlock,
+        base::NullCallback(),
+        base::BindOnce(&ScriptExecutionCallback::Completed,
+                       base::Unretained(self)),
         blink::BackForwardCacheAware::kAllow,
-        blink::WebLocalFrame::PromiseBehavior::kDontWait);
+        blink::mojom::WantResultOption::kWantResult,
+        blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
   }
@@ -692,9 +679,19 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     bool has_user_gesture = false;
     args->GetNext(&has_user_gesture);
 
-    blink::WebLocalFrame::ScriptExecutionType scriptExecutionType =
-        blink::WebLocalFrame::kSynchronous;
-    args->GetNext(&scriptExecutionType);
+    blink::mojom::EvaluationTiming script_execution_type =
+        blink::mojom::EvaluationTiming::kSynchronous;
+    blink::mojom::LoadEventBlockingOption load_blocking_option =
+        blink::mojom::LoadEventBlockingOption::kDoNotBlock;
+    std::string execution_type;
+    args->GetNext(&execution_type);
+
+    if (execution_type == "asynchronous") {
+      script_execution_type = blink::mojom::EvaluationTiming::kAsynchronous;
+    } else if (execution_type == "asynchronousBlockingOnload") {
+      script_execution_type = blink::mojom::EvaluationTiming::kAsynchronous;
+      load_blocking_option = blink::mojom::LoadEventBlockingOption::kBlock;
+    }
 
     ScriptExecutionCallback::CompletionCallback completion_callback;
     args->GetNext(&completion_callback);
@@ -724,13 +721,20 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
                            blink::WebURL(GURL(url)));
     }
 
+    // Deletes itself.
+    auto* self = new ScriptExecutionCallback(std::move(promise),
+                                             std::move(completion_callback));
+
     render_frame->GetWebFrame()->RequestExecuteScript(
-        world_id, base::make_span(sources), has_user_gesture,
-        scriptExecutionType,
-        new ScriptExecutionCallback(std::move(promise),
-                                    std::move(completion_callback)),
+        world_id, base::make_span(sources),
+        has_user_gesture ? blink::mojom::UserActivationOption::kActivate
+                         : blink::mojom::UserActivationOption::kDoNotActivate,
+        script_execution_type, load_blocking_option, base::NullCallback(),
+        base::BindOnce(&ScriptExecutionCallback::Completed,
+                       base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
-        blink::WebLocalFrame::PromiseBehavior::kDontWait);
+        blink::mojom::WantResultOption::kWantResult,
+        blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
   }

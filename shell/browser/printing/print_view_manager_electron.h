@@ -37,6 +37,7 @@ class PrintViewManagerElectron
     kPageRangeSyntaxError,
     kPageRangeInvalidRange,
     kPageCountExceeded,
+    kPrintingInProgress
   };
 
   using PrintToPDFCallback =

@@ -44,7 +44,7 @@
 
 #if BUILDFLAG(ENABLE_PLUGINS)
 #include "content/public/browser/plugin_service.h"
-#include "content/public/common/pepper_plugin_info.h"
+#include "content/public/common/content_plugin_info.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "ppapi/shared_impl/ppapi_switches.h"  // nogncheck crbug.com/1125897
 #endif                                         // BUILDFLAG(ENABLE_PLUGINS)
@@ -106,11 +106,11 @@ bool IsWidevineAvailable(
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
-void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
+void ComputeBuiltInPlugins(std::vector<content::ContentPluginInfo>* plugins) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // TODO(upstream/thestig): Figure out how to make the PDF Viewer work without
   // this PPAPI plugin registration.
-  content::PepperPluginInfo pdf_info;
+  content::ContentPluginInfo pdf_info;
   pdf_info.is_internal = true;
   pdf_info.is_out_of_process = true;
   pdf_info.name = kPDFInternalPluginName;
@@ -217,8 +217,8 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
 #endif
 }
 
-void ElectronContentClient::AddPepperPlugins(
-    std::vector<content::PepperPluginInfo>* plugins) {
+void ElectronContentClient::AddPlugins(
+    std::vector<content::ContentPluginInfo>* plugins) {
 #if BUILDFLAG(ENABLE_PLUGINS)
   ComputeBuiltInPlugins(plugins);
 #endif  // BUILDFLAG(ENABLE_PLUGINS)

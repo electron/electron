@@ -100,7 +100,8 @@ void WebViewGuestDelegate::ResetZoomController() {
   }
 }
 
-content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
+std::unique_ptr<content::WebContents>
+WebViewGuestDelegate::CreateNewGuestWindow(
     const content::WebContents::CreateParams& create_params) {
   // Code below mirrors what content::WebContentsImpl::CreateNewWindow
   // does for non-guest sources
@@ -117,9 +118,10 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
             guest_contents_impl->GetRenderViewHost()->GetWidget());
     if (!create_params.initially_hidden)
       widget_view->Show();
-    return guest_contents_impl;
+    return base::WrapUnique(
+        static_cast<content::WebContentsImpl*>(guest_contents_impl));
   }
-  return guest_contents.release();
+  return guest_contents;
 }
 
 }  // namespace electron

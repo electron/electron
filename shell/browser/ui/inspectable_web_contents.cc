@@ -349,7 +349,8 @@ InspectableWebContents::InspectableWebContents(
       web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
       view_(CreateInspectableContentsView(this)) {
-  const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
+  const base::Value* bounds_dict =
+      &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
     devtools_bounds_ = DictionaryToRect(bounds_dict);
     // Sometimes the devtools window is out of screen or has too small size.

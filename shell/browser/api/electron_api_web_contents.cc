@@ -58,6 +58,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/referrer_type_converters.h"
+#include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -1000,12 +1001,8 @@ void WebContents::Destroy() {
     DeleteThisIfAlive();
   } else {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(
-                       [](base::WeakPtr<WebContents> contents) {
-                         if (contents)
-                           contents->DeleteThisIfAlive();
-                       },
-                       GetWeakPtr()));
+        FROM_HERE,
+        base::BindOnce(&WebContents::DeleteThisIfAlive, GetWeakPtr()));
   }
 }
 
@@ -1112,7 +1109,7 @@ void WebContents::AddNewContents(
     std::unique_ptr<content::WebContents> new_contents,
     const GURL& target_url,
     WindowOpenDisposition disposition,
-    const gfx::Rect& initial_rect,
+    const blink::mojom::WindowFeatures& window_features,
     bool user_gesture,
     bool* was_blocked) {
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents.get());
@@ -1134,9 +1131,10 @@ void WebContents::AddNewContents(
   }
 
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
-           initial_rect.x(), initial_rect.y(), initial_rect.width(),
-           initial_rect.height(), tracker->url, tracker->frame_name,
-           tracker->referrer, tracker->raw_features, tracker->body)) {
+           window_features.bounds.x(), window_features.bounds.y(),
+           window_features.bounds.width(), window_features.bounds.height(),
+           tracker->url, tracker->frame_name, tracker->referrer,
+           tracker->raw_features, tracker->body)) {
     api_web_contents->Destroy();
   }
 }
@@ -1195,8 +1193,9 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnSetContentBounds(rect);
+  if (!Emit("content-bounds-updated", rect))
+    for (ExtendedWebContentsObserver& observer : observers_)
+      observer.OnSetContentBounds(rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -1302,6 +1301,7 @@ void WebContents::UpdateExclusiveAccessExitBubbleContent(
     const GURL& url,
     ExclusiveAccessBubbleType bubble_type,
     ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+    bool notify_download,
     bool force_update) {}
 
 void WebContents::OnExclusiveAccessUserInput() {}
@@ -1394,11 +1394,6 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
   Emit("context-menu", std::make_pair(params, &render_frame_host));
 
   return true;
-}
-
-bool WebContents::OnGoToEntryOffset(int offset) {
-  GoToOffset(offset);
-  return false;
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,
@@ -2775,11 +2770,11 @@ void WebContents::Print(gin::Arguments* args) {
     for (auto& range : page_ranges) {
       int from, to;
       if (range.Get("from", &from) && range.Get("to", &to)) {
-        base::Value::Dict range;
+        base::Value::Dict range_dict;
         // Chromium uses 1-based page ranges, so increment each by 1.
-        range.Set(printing::kSettingPageRangeFrom, from + 1);
-        range.Set(printing::kSettingPageRangeTo, to + 1);
-        page_range_list.Append(std::move(range));
+        range_dict.Set(printing::kSettingPageRangeFrom, from + 1);
+        range_dict.Set(printing::kSettingPageRangeTo, to + 1);
+        page_range_list.Append(std::move(range_dict));
       } else {
         continue;
       }
