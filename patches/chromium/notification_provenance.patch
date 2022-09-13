@@ -91,10 +91,10 @@ index 41fb02d532190e82d50286e2733a6c3627bf25c8..f19bb5dcb69233733125029d8f997f73
          /*weak_document_ptr=*/WeakDocumentPtr(),
          notification_service_remote_.BindNewPipeAndPassReceiver());
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 61ac1d7760432bd1a4118c0929a35168a3e26f49..e2ce4aa910053b1a4fb52fcc1197943af95b02f6 100644
+index fdd74853b9b277d9b47fb99311349b66f70dfa11..06d1f5a8cc7f0ff12e4a7d66b435a19369af126b 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -282,6 +282,7 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -283,6 +283,7 @@ void PlatformNotificationContextImpl::Shutdown() {
  
  void PlatformNotificationContextImpl::CreateService(
      RenderProcessHost* render_process_host,
@@ -102,7 +102,7 @@ index 61ac1d7760432bd1a4118c0929a35168a3e26f49..e2ce4aa910053b1a4fb52fcc1197943a
      const url::Origin& origin,
      const GURL& document_url,
      const WeakDocumentPtr& weak_document_ptr,
-@@ -289,7 +290,8 @@ void PlatformNotificationContextImpl::CreateService(
+@@ -290,7 +291,8 @@ void PlatformNotificationContextImpl::CreateService(
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    services_.push_back(std::make_unique<BlinkNotificationServiceImpl>(
        this, browser_context_, service_worker_context_, render_process_host,
@@ -133,10 +133,10 @@ index 424fae79eb1c93f1fac293ae8fdeb6d067f523cc..6a2f074ad981deb15b46bd91b6d7eb5d
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index f4d1b2317145ecd14b58bd52cff9de0645b37044..d2fbb44deef7a63cc1f5296d338d518bccab6a7c 100644
+index 18ad9b07e8d6ce33e4f5497aed48269ea49e2b9e..161aefa1d91923be35046dfe735071c687710deb 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2073,8 +2073,9 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2075,8 +2075,9 @@ void RenderProcessHostImpl::CreateNotificationService(
    // For workers:
    if (render_frame_id == MSG_ROUTING_NONE) {
      storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -148,7 +148,7 @@ index f4d1b2317145ecd14b58bd52cff9de0645b37044..d2fbb44deef7a63cc1f5296d338d518b
      return;
    }
  
-@@ -2082,7 +2083,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2084,7 +2085,7 @@ void RenderProcessHostImpl::CreateNotificationService(
    RenderFrameHost* rfh = RenderFrameHost::FromID(GetID(), render_frame_id);
    CHECK(rfh);
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

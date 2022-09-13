@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Kallai <kadam@inf.u-szeged.hu>
+Date: Mon, 22 Aug 2022 20:35:17 +0000
+Subject: Fix the gn gen for components/segmentation_platform
+
+'optimization_guide_segmentation_handler' dependency only available if
+the 'build_with_tflite_lib' condition is set.
+
+Change-Id: I4d13e1f17caaaa744b3c95e425466cf851edf613
+
+Bug: 1355185
+Change-Id: I4d13e1f17caaaa744b3c95e425466cf851edf613
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3845194
+Reviewed-by: Siddhartha S <ssid@chromium.org>
+Commit-Queue: Siddhartha S <ssid@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1037919}
+(cherry picked from commit 9352250ae5e5589a7484873d7efe66d708ba6ad6)
+
+diff --git a/components/segmentation_platform/embedder/BUILD.gn b/components/segmentation_platform/embedder/BUILD.gn
+index 385ab7e469f4e0c02500295edc7f24cedaf0ac6b..9bbac1528bcf0c7c1589c4962bee0ff9c5febaf7 100644
+--- a/components/segmentation_platform/embedder/BUILD.gn
++++ b/components/segmentation_platform/embedder/BUILD.gn
+@@ -2,6 +2,8 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
++import("//components/optimization_guide/features.gni")
++
+ if (is_android) {
+   import("//build/config/android/config.gni")
+   import("//build/config/android/rules.gni")
+@@ -21,11 +23,14 @@ source_set("embedder") {
+     "//components/optimization_guide/core",
+     "//components/optimization_guide/core:features",
+     "//components/segmentation_platform/internal",
+-    "//components/segmentation_platform/internal:optimization_guide_segmentation_handler",
+     "//components/segmentation_platform/internal/proto",
+     "//components/segmentation_platform/public",
+     "//url",
+   ]
++
++  if (build_with_tflite_lib) {
++    deps += [ "//components/segmentation_platform/internal:optimization_guide_segmentation_handler" ]
++  }
+ }
+ 
+ source_set("unit_tests") {
