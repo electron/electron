@@ -53,6 +53,7 @@ class UtilityProcessWrapper
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  void ReceivePostMessage(blink::TransferableMessage message);
   void HandleMessage(ReaderType type, std::vector<uint8_t> message);
   void ResumeReading(PipeReaderBase* pipe_io);
   void ShutdownReader(ReaderType type);
@@ -65,7 +66,7 @@ class UtilityProcessWrapper
   void OnServiceProcessLaunched(const base::Process& process);
 
   void PostMessage(gin::Arguments* args);
-  int Kill(int signal) const;
+  bool Kill() const;
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
   base::ProcessId pid_ = base::kNullProcessId;

@@ -161,11 +161,9 @@ describe('UtilityProcess module', () => {
       const result = 'I will be echoed.';
       const child = new UtilityProcess(path.join(fixturesPath, 'post-message.js'));
       await emittedOnce(child, 'spawn');
-      const { port1, port2 } = new MessageChannelMain();
-      child.postMessage(result, [port2]);
-      port1.start();
-      const [e] = await emittedOnce(port1, 'message');
-      expect(e.data).to.equal(result);
+      child.postMessage(result);
+      const [, data] = await emittedOnce(child, 'message');
+      expect(data).to.equal(result);
       const exit = emittedOnce(child, 'exit');
       expect(child.kill()).to.be.true();
       await exit;
@@ -263,17 +261,13 @@ describe('UtilityProcess module', () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       // Create Message port pair for Renderer <-> Utility Process.
       const { port1: rendererPort, port2: childPort1 } = new MessageChannelMain();
-      // Create Message port pair for Utility Process <-> Main.
-      const { port1: mainPort, port2: childPort2 } = new MessageChannelMain();
       w.webContents.postMessage('port', result, [rendererPort]);
       // Send renderer and main channel port to utility process.
       const child = new UtilityProcess(path.join(fixturesPath, 'receive-message.js'));
       await emittedOnce(child, 'spawn');
-      child.postMessage('', [childPort1, childPort2]);
-      // Receive result from utility process.
-      mainPort.start();
-      const [e] = await emittedOnce(mainPort, 'message');
-      expect(e.data).to.equal(result);
+      child.postMessage('', [childPort1]);
+      const [, data] = await emittedOnce(child, 'message');
+      expect(data).to.equal(result);
       // Cleanup.
       const exit = emittedOnce(child, 'exit');
       expect(child.kill()).to.be.true();

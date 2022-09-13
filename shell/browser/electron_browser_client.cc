@@ -96,6 +96,7 @@
 #include "shell/browser/net/proxying_websocket.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/network_hints_handler_impl.h"
+#include "shell/browser/node_service_host_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
 #include "shell/browser/protocol_registry.h"
@@ -112,6 +113,7 @@
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/services/node/public/mojom/node_service.mojom.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -1653,6 +1655,15 @@ base::FilePath ElectronBrowserClient::GetFontLookupTableCacheDir() {
 bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;
+}
+
+void ElectronBrowserClient::BindUtilityHostReceiver(
+    mojo::GenericPendingReceiver receiver) {
+  if (auto r = receiver.As<node::mojom::NodeServiceHost>()) {
+    static base::NoDestructor<NodeServiceHostImpl> node_service_host;
+    node_service_host->BindReceiver(std::move(r));
+    return;
+  }
 }
 
 void ElectronBrowserClient::BindHostReceiverForRenderer(

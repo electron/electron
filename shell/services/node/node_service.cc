@@ -9,12 +9,15 @@
 
 #include "base/command_line.h"
 #include "base/environment.h"
+#include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/utility/utility_thread.h"
 #include "gin/data_object_builder.h"
 #include "gin/handle.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -33,6 +36,10 @@ NodeService::NodeService(
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
   if (receiver.is_valid())
     receiver_.Bind(std::move(receiver));
+  if (auto* thread = content::UtilityThread::Get()) {
+    thread->BindHostReceiver(
+        node_service_host_remote_.BindNewPipeAndPassReceiver());
+  }
 }
 
 NodeService::~NodeService() {
@@ -82,6 +89,9 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   // Add entry script to process object.
   gin_helper::Dictionary process(env->isolate(), env->process_object());
   process.SetReadOnly("_serviceStartupScript", params->script);
+  process.SetHidden("_postMessage",
+                    base::BindRepeating(&NodeService::PostMessage,
+                                        weak_factory_.GetWeakPtr()));
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);
@@ -95,6 +105,17 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   // Run entry script.
   node_bindings_->PrepareEmbedThread();
   node_bindings_->StartPolling();
+}
+
+void NodeService::PostMessage(v8::Local<v8::Value> message_value) {
+  if (!node_service_host_remote_)
+    return;
+
+  v8::Isolate* isolate = js_env_->isolate();
+  blink::TransferableMessage transferable_message;
+  electron::SerializeV8Value(isolate, message_value, &transferable_message);
+  node_service_host_remote_->ReceivePostMessage(
+      base::Process::Current().Pid(), std::move(transferable_message));
 }
 
 void NodeService::ReceivePostMessage(blink::TransferableMessage message) {

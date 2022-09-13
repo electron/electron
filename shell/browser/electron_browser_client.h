@@ -72,6 +72,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetApplicationLocale() override;
   base::FilePath GetFontLookupTableCacheDir() override;
   bool ShouldEnableStrictSiteIsolation() override;
+  void BindUtilityHostReceiver(mojo::GenericPendingReceiver receiver) override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;

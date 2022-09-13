@@ -114,6 +114,15 @@ Returns:
 Emitted when the child process has a normal termination.
 For other abnormal exit cases listen to the [`child-process-gone` event of `app`](app.md#event-child-process-gone).
 
+#### Event: 'message'
+
+Returns:
+
+* `event` Event
+* `message` any
+
+Emitted when the child process sends a message using [`process.parentPort.postMessage()`](process.md#processparentport).
+
 [`child_process.fork`]: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processforkmodulepath-args-options
 [Services API]: https://chromium.googlesource.com/chromium/src/+/master/docs/mojo_and_services.md
 [stdio]: https://nodejs.org/dist/latest/docs/api/child_process.html#optionsstdio

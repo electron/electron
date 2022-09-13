@@ -15,6 +15,7 @@ require('../common/reset-search-paths');
 require('@electron/internal/common/init');
 
 const parentPort: NodeJS.ParentPort = new EventEmitter() as any;
+parentPort.postMessage = v8Util.getHiddenValue(process, '_postMessage');
 
 v8Util.setHiddenValue(global, 'messagechannel', {
   didReceiveMessage (event: any, ports: any[]) {

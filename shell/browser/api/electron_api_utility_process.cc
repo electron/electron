@@ -22,6 +22,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/child_process_host.h"
+#include "content/public/common/result_codes.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
@@ -476,10 +477,14 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
   node_service_remote_->ReceivePostMessage(std::move(transferable_message));
 }
 
-int UtilityProcessWrapper::Kill(int signal) const {
+bool UtilityProcessWrapper::Kill() const {
   if (pid_ == base::kNullProcessId)
     return 0;
-  return uv_kill(pid_, signal);
+  base::Process process = base::Process::Open(pid_);
+  bool result = process.Terminate(content::RESULT_CODE_NORMAL_EXIT, false);
+  // Refs https://bugs.chromium.org/p/chromium/issues/detail?id=818244
+  base::EnsureProcessTerminated(process.Duplicate());
+  return result;
 }
 
 v8::Local<v8::Value> UtilityProcessWrapper::GetOSProcessId(
@@ -487,6 +492,15 @@ v8::Local<v8::Value> UtilityProcessWrapper::GetOSProcessId(
   if (pid_ == base::kNullProcessId)
     return v8::Undefined(isolate);
   return gin::ConvertToV8(isolate, pid_);
+}
+
+void UtilityProcessWrapper::ReceivePostMessage(
+    blink::TransferableMessage message) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Value> message_value =
+      electron::DeserializeV8Value(isolate, message);
+  Emit("message", message_value);
 }
 
 void UtilityProcessWrapper::HandleMessage(ReaderType type,

@@ -112,7 +112,7 @@ index 5f89cc089f8cca58c4d5f5168d0cf893ab461005..99b53cd36484c7c30b273e62c2fb4193
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index b96072fd917fce5cd8abb16a4ef705aea4dfe132..e85c2de6726453409d3144d3a07f48b9aacb7670 100644
+index cde30840e19c6838233a26f11549a85411f3e99a..e7092d2520396946b24f8c8f9f250590e650666b 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -153,6 +153,19 @@ void UtilityProcessHost::SetExtraCommandLineSwitches(
@@ -135,7 +135,7 @@ index b96072fd917fce5cd8abb16a4ef705aea4dfe132..e85c2de6726453409d3144d3a07f48b9
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -357,6 +370,18 @@ bool UtilityProcessHost::StartProcess() {
+@@ -356,6 +369,18 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
  
@@ -320,10 +320,10 @@ index ba4da80ea34b038d22f048d17c267c92040667c4..f31413cd670d8075419f6e74f1cefb96
  
  }  // namespace content
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 73627a4c488b1658469184efe57731ca3fefdc71..054f53ab02b4eeb052b21786e8d6bf267b40a6bf 100644
+index 2d1a89a0bf50df40177e41010adb5b05fae10ce2..2ceadaa38ad52451b04a0f3b70eae479b9af95c4 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
-@@ -740,11 +740,9 @@ ResultCode SetupAppContainerProfile(AppContainer* container,
+@@ -864,11 +864,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
  // command line flag.
  ResultCode LaunchWithoutSandbox(
      const base::CommandLine& cmd_line,
@@ -336,7 +336,7 @@ index 73627a4c488b1658469184efe57731ca3fefdc71..054f53ab02b4eeb052b21786e8d6bf26
    // Network process runs in a job even when unsandboxed. This is to ensure it
    // does not outlive the browser, which could happen if there is a lot of I/O
    // on process shutdown, in which case TerminateProcess can fail. See
-@@ -975,7 +973,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
+@@ -1103,7 +1101,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
  ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
      const base::CommandLine& cmd_line,
      const std::string& process_type,
@@ -345,7 +345,7 @@ index 73627a4c488b1658469184efe57731ca3fefdc71..054f53ab02b4eeb052b21786e8d6bf26
      SandboxDelegate* delegate,
      TargetPolicy* policy) {
    const base::CommandLine& launcher_process_command_line =
-@@ -995,7 +993,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -1117,7 +1115,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    }
  
    // Add any handles to be inherited to the policy.
@@ -353,8 +353,8 @@ index 73627a4c488b1658469184efe57731ca3fefdc71..054f53ab02b4eeb052b21786e8d6bf26
 +  for (HANDLE handle : options.handles_to_inherit)
      policy->AddHandleToShare(handle);
  
-   // Pre-startup mitigations.
-@@ -1125,6 +1123,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+   if (!policy->GetConfig()->IsConfigured()) {
+@@ -1138,6 +1136,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    // have no effect. These calls can fail with SBOX_ERROR_BAD_PARAMS.
    policy->SetStdoutHandle(GetStdHandle(STD_OUTPUT_HANDLE));
    policy->SetStderrHandle(GetStdHandle(STD_ERROR_HANDLE));
@@ -368,7 +368,7 @@ index 73627a4c488b1658469184efe57731ca3fefdc71..054f53ab02b4eeb052b21786e8d6bf26
  #endif
  
    if (!delegate->PreSpawnTarget(policy))
-@@ -1137,7 +1142,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -1150,7 +1155,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
  ResultCode SandboxWin::StartSandboxedProcess(
      const base::CommandLine& cmd_line,
      const std::string& process_type,
@@ -377,7 +377,7 @@ index 73627a4c488b1658469184efe57731ca3fefdc71..054f53ab02b4eeb052b21786e8d6bf26
      SandboxDelegate* delegate,
      base::Process* process) {
    const base::ElapsedTimer timer;
-@@ -1145,7 +1150,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -1158,7 +1163,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
    // Avoid making a policy if we won't use it.
    if (IsUnsandboxedProcess(delegate->GetSandboxType(), cmd_line,
                             *base::CommandLine::ForCurrentProcess())) {
@@ -386,7 +386,7 @@ index 73627a4c488b1658469184efe57731ca3fefdc71..054f53ab02b4eeb052b21786e8d6bf26
                                  process);
    }
  
-@@ -1156,7 +1161,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -1169,7 +1174,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
    auto policy = g_broker_services->CreatePolicy(tag);
    auto time_policy_created = timer.Elapsed();
    ResultCode result = GeneratePolicyForSandboxedProcess(
@@ -396,10 +396,10 @@ index 73627a4c488b1658469184efe57731ca3fefdc71..054f53ab02b4eeb052b21786e8d6bf26
      return result;
    auto time_policy_generated = timer.Elapsed();
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
-index ec9cb8b12e1d7cf9bada846b99e578199e34b711..76077b4bd05068e7d3330dae5554641e09628518 100644
+index cd8b2dcd6f8eeab0bdd1fd09dcb118012ef64e60..2325e4831958564e2ae36b982bd7523621a7b763 100644
 --- a/sandbox/policy/win/sandbox_win.h
 +++ b/sandbox/policy/win/sandbox_win.h
-@@ -49,7 +49,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
+@@ -50,7 +50,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
    static ResultCode StartSandboxedProcess(
        const base::CommandLine& cmd_line,
        const std::string& process_type,
@@ -408,7 +408,7 @@ index ec9cb8b12e1d7cf9bada846b99e578199e34b711..76077b4bd05068e7d3330dae5554641e
        SandboxDelegate* delegate,
        base::Process* process);
  
-@@ -63,7 +63,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
+@@ -64,7 +64,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
    static ResultCode GeneratePolicyForSandboxedProcess(
        const base::CommandLine& cmd_line,
        const std::string& process_type,
