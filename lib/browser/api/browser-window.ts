@@ -28,34 +28,6 @@ BrowserWindow.prototype._init = function (this: BWT) {
     app.emit('browser-window-focus', event, this);
   });
 
-  let unresponsiveEvent: any = null;
-  const emitUnresponsiveEvent = () => {
-    unresponsiveEvent = null;
-    if (!this.isDestroyed() && this.isEnabled()) { this.emit('unresponsive'); }
-  };
-  this.webContents.on('unresponsive', () => {
-    if (!unresponsiveEvent) { unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 50); }
-  });
-  this.webContents.on('responsive', () => {
-    if (unresponsiveEvent) {
-      clearTimeout(unresponsiveEvent);
-      unresponsiveEvent = null;
-    }
-    this.emit('responsive');
-  });
-  this.on('close', (e) => {
-    e.preventDefault();
-    if (!this.webContents || this.webContents.isDestroyed()) return;
-
-    if (!unresponsiveEvent) { unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 5000); }
-
-    this.webContents.close({ waitForBeforeUnload: true });
-  });
-  this.webContents.on('destroyed', () => {
-    clearTimeout(unresponsiveEvent);
-    unresponsiveEvent = null;
-  });
-
   // Subscribe to visibilityState changes and pass to renderer process.
   let isVisible = this.isVisible() && !this.isMinimized();
   const visibilityChanged = () => {
