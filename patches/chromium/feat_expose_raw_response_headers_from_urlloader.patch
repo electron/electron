@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index cda43d3792af175a68899ef0f707d858b9a1aee1..63cab7f07ab1c93f6cd931005d1d88fe42cfa303 100644
+index 74b0246320256fd96bd1da56e60ab72b695492b6..9425504e4421ce2ca088cd5ab25042371770c327 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -235,6 +235,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
+@@ -234,6 +234,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
           do_not_prompt_for_login == request.do_not_prompt_for_login &&
           is_outermost_main_frame == request.is_outermost_main_frame &&
           transition_type == request.transition_type &&

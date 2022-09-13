@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 31f9403bf89095f8694aecc855c24d81be9261e7..1e82eaa7b45e1a1b04b132d752ae8252ee55ad1f 100644
+index cd48375cfb1a780cdf328c1b1598d84ad1643440..574c8473fa0ade2dd84a75b7395501da02f27718 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -17,12 +17,16 @@
@@ -129,7 +129,7 @@ index 31f9403bf89095f8694aecc855c24d81be9261e7..1e82eaa7b45e1a1b04b132d752ae8252
    extension_caused_fullscreen_ = GURL();
  
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index a31c0b1a17d4cda765a4511923686b7f44d10e81..0b0a015f0500432273bf0e7f7231987cdd11b440 100644
+index 07eeac78d168a60f5c0fa0226a68740539487ca0..3088c9a9ecc6cde91f1b37a5f144f359b7358377 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 @@ -247,10 +247,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {

@@ -9,10 +9,10 @@ necessary for native modules to load.
 Also, some fixes relating to mksnapshot on ARM.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index afa37f0124f1a7d9e5b61a1b1261f0cdeb538617..e2121d78513d20338fc322558d9cdece4c962421 100644
+index 43667839c5d27cbb609b98eec3be6724dd3cd24a..773be44066474cbc52cc9a7d1459008d8dc97f38 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -650,7 +650,7 @@ config("internal_config") {
+@@ -642,7 +642,7 @@ config("internal_config") {
      ":cppgc_header_features",
    ]
  
@@ -21,7 +21,7 @@ index afa37f0124f1a7d9e5b61a1b1261f0cdeb538617..e2121d78513d20338fc322558d9cdece
      defines += [ "BUILDING_V8_SHARED" ]
    }
  
-@@ -6155,7 +6155,7 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -6146,7 +6146,7 @@ if (current_toolchain == v8_generator_toolchain) {
        "src/interpreter/bytecodes.h",
      ]
  

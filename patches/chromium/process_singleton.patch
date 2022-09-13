@@ -18,7 +18,7 @@ This patch adds a few changes to the Chromium code:
    admin permissions.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 7cd82d27a741f194da5d0b3fcfd9c15c8ea1fa5c..9de82e5422428d6419a24401e0479fbd19a15147 100644
+index 2db06b7dc4cb729ebfb5ae48ab676a7bc0697a99..19350d58e817ea8ac7868dd90a08cc25836c9921 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -102,12 +102,19 @@ class ProcessSingleton {
@@ -51,7 +51,7 @@ index 7cd82d27a741f194da5d0b3fcfd9c15c8ea1fa5c..9de82e5422428d6419a24401e0479fbd
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index a7647b1f3a9d8421dae277ad1d5c35e3c8147942..99b42b0e8f81c6a5696d56fede3e168cfc282cc3 100644
+index afe39196a3882326c27527623ffeeb5019f685b0..455585a9f6d59d65bcfd322f4f925641148cbf55 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@
@@ -164,7 +164,7 @@ index a7647b1f3a9d8421dae277ad1d5c35e3c8147942..99b42b0e8f81c6a5696d56fede3e168c
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 41bc176510f93ef667e4f1373eab61142f3e264f..c375a587abd3d575b5c75a0863b01c9611e8287c 100644
+index dd4354c3cc95b5dfb1126319d81a3f942a601da8..df5f476531b2bab30bf1e586fd5e18d751a0f871 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -29,7 +29,9 @@

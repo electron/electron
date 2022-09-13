@@ -56,7 +56,7 @@ index b71bd477dac6fb5dde6a5c68b0acb066bfa47c32..a1607db91e9c373691a526988d098695
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index b8023168b7be3f74e376c7a22f3519defa4eb01d..56c8f4f96203e4c8c963afda7244bac261a8519a 100644
+index f5bb40dad7e32d04dc43f107ec8b33b9b6ffd501..0c7f2c35cec20d04e0f242f842d467ab23d2edac 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -88,7 +88,7 @@ index b8023168b7be3f74e376c7a22f3519defa4eb01d..56c8f4f96203e4c8c963afda7244bac2
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 59571fe4cbf8a75b3fd62d31bbd3bf693e1003a2..c1ca3d5343c66402143dcb5c9b809361ec17b498 100644
+index dded60dcd6667b9cd5ca11e9b960258466d1b42c..e97f59da3253b51e07d20f6e6b137adb637da4e6 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -153,7 +153,7 @@ index 59571fe4cbf8a75b3fd62d31bbd3bf693e1003a2..c1ca3d5343c66402143dcb5c9b809361
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 3cba12472e2856d43076e5f171486b32673156eb..fb2fbea01bbd9f5bc05663e80aaae84460204374 100644
+index 31bab513868da795a6ee545fa6c4290847de1176..1b2a93424c8c3b7abad055225760d44a030ef2f6 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";

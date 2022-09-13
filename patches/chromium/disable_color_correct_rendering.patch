@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 5542037a338e34800d86c3ca9cbaf0511fa60570..e5011a2b9d2127c1e17730db54f9574f1ed1d287 100644
+index 8f21442bef5a68dabe2227284a517f6175cf2b7e..47c493e2174a4f5e0df5b942855a8b858f33458b 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1873,6 +1873,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1880,6 +1880,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -35,7 +35,7 @@ index 5542037a338e34800d86c3ca9cbaf0511fa60570..e5011a2b9d2127c1e17730db54f9574f
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 809fb46cc34db308e0ec73197859045ba639407c..9360695cd920de372529206212f795f299405fcf 100644
+index 3fcff27da7ab1094da4fa91bcf6822f5414dd1ef..ab898ebd5da178e0ca5510059ee97a5843314d8b 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -93,6 +93,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -93,7 +93,7 @@ index 510c2bb4c8a859a36605eb4dbfc5b5ce11a9334d..b685b682ee12861b8e9de0bfa83d2ad0
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 57639004908694d5d4a247ee23446b05b9ac0b14..dfd588523ec35d59f6b44610f6eee0416b983f83 100644
+index 550e5120a221e09e5ceede60b170419071fba5d9..5cbde48dbba22659212e3b838d9f3c5530eb3c94 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -199,6 +199,7 @@
@@ -104,7 +104,7 @@ index 57639004908694d5d4a247ee23446b05b9ac0b14..dfd588523ec35d59f6b44610f6eee041
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3206,6 +3207,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3209,6 +3210,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -156,7 +156,7 @@ index 75d7af9a79d4e7f2cd39e45496ab5fff66407638..35b0bb908245330fbdc5205caa3299bf
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index ba6ab6961dec25a3f9c572341d24f341c8f58358..ba8cfd2a2572368fc14073a53f8544f269089894 100644
+index f44f2bca5fa9f7fadc736c8c017ed6141e0d53f9..0e7f0958f2ad81a91707a6f8175795de89981f03 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@

@@ -8,10 +8,10 @@ Allow registering custom protocols to handle service worker main script fetching
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=996511
 
 diff --git a/content/browser/service_worker/service_worker_context_wrapper.cc b/content/browser/service_worker/service_worker_context_wrapper.cc
-index 2754f849a4a8cdd23956ef8e49b8025c6528a218..76bef9239dcbe93300143bd2b6960beef0d38392 100644
+index bd7c327f934c9c52c26b0e46f3f4751a9e5dbc4b..3bbec16f80c58deb103b7492fcd5e5d4c690b1b8 100644
 --- a/content/browser/service_worker/service_worker_context_wrapper.cc
 +++ b/content/browser/service_worker/service_worker_context_wrapper.cc
-@@ -1670,6 +1670,28 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+@@ -1671,6 +1671,28 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
        loader_factory_bundle_info =
            context()->loader_factory_bundle_for_update_check()->Clone();
  
@@ -40,7 +40,7 @@ index 2754f849a4a8cdd23956ef8e49b8025c6528a218..76bef9239dcbe93300143bd2b6960bee
    if (base::FeatureList::IsEnabled(
            features::kEnableServiceWorkersForChromeUntrusted) &&
        scope.scheme_piece() == kChromeUIUntrustedScheme) {
-@@ -1690,9 +1712,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+@@ -1691,9 +1713,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
              browser_context(), scope_origin)) {
        config->RegisterURLDataSource(browser_context());
  

@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 5396a2163add191edcd9d54da7974a5e75ee792e..77a6c439fdbf2444e4532579a0e97f5d8cce214a 100644
+index 7b9d745dddab9bc170b70035b2995cd59b41e188..b71bc25f4148700420bcb5bce5472b51239ff1dd 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -984,7 +984,6 @@ if (is_win) {
+@@ -994,7 +994,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 5396a2163add191edcd9d54da7974a5e75ee792e..77a6c439fdbf2444e4532579a0e97f5d
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -993,6 +992,10 @@ if (is_win) {
+@@ -1003,6 +1002,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -34,7 +34,7 @@ index 5396a2163add191edcd9d54da7974a5e75ee792e..77a6c439fdbf2444e4532579a0e97f5d
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 331a084371402b5a2440b5d60feac8f0189e84b9..6755d1f497cef4deea6b83df1d8720dcf54817e9 100644
+index e5566f069e3e54ee0b7ddd5ea377889cf1c9690f..6845a3f6376160991f0e90cd1647ea3aa00963a8 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -90,6 +90,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -78,7 +78,7 @@ index 331a084371402b5a2440b5d60feac8f0189e84b9..6755d1f497cef4deea6b83df1d8720dc
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index f0d4596f0e95391e752c48dc6ac12f76397c27f1..b7313ce8037c88aa5b8826dc2edcb0dfa4ebee46 100644
+index 51bab147b3c353313e91b1ff09b735bfdde9b19a..d311ed33b2cf8fc459af7c3b7dd0c0ff9f2fdc51 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,7 +20,6 @@
@@ -121,7 +121,7 @@ index f0d4596f0e95391e752c48dc6ac12f76397c27f1..b7313ce8037c88aa5b8826dc2edcb0df
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/print_job_worker_oop.cc b/chrome/browser/printing/print_job_worker_oop.cc
-index 398d59a0ebad165981e9e96b29ffc672e4b841eb..e420d87ef0e90cddb740ac4b24f92519a6eb3347 100644
+index 8a126ddc655271416eda3d035caeb2c6778537b1..a2b6b19846bddf918efb75a53ea58dcfdddbc9d5 100644
 --- a/chrome/browser/printing/print_job_worker_oop.cc
 +++ b/chrome/browser/printing/print_job_worker_oop.cc
 @@ -356,7 +356,7 @@ void PrintJobWorkerOop::OnFailure() {
@@ -134,7 +134,7 @@ index 398d59a0ebad165981e9e96b29ffc672e4b841eb..e420d87ef0e90cddb740ac4b24f92519
  
  void PrintJobWorkerOop::UnregisterServiceManagerClient() {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index b73982f234aaca5492fdf06a46e0231e66e3504f..ad4631f6ae9211fe6e5d09c46a8b26538b90c1b2 100644
+index cbb6c5925c2ae5bdba7b9262b2f613e516a063ae..ec16afcbb69e7fe60e826fa0d151364dde9704f7 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -30,8 +30,6 @@
@@ -456,7 +456,7 @@ index b73982f234aaca5492fdf06a46e0231e66e3504f..ad4631f6ae9211fe6e5d09c46a8b2653
    for (auto& observer : GetObservers())
      observer.OnPrintNow(rfh);
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 871e00c49028ccf58d207f904c22e0107f3c2b65..c9b136ab165410eb533f84254454dac0b6674f14 100644
+index ffbdbe363d95676492f98d6ab33a1760b50ea101..f95737e91cdf666efff8d8eadea0be4351813c89 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -42,6 +42,8 @@ namespace printing {
@@ -527,7 +527,7 @@ index 871e00c49028ccf58d207f904c22e0107f3c2b65..c9b136ab165410eb533f84254454dac0
    // Set while running an inner message loop inside RenderAllMissingPagesNow().
    // This means we are _blocking_ until all the necessary pages have been
 diff --git a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
-index f3c3f85edb19489d079dc93411be64828ae581e2..ff303dcbc034cd8f1530fe1543729e98d3035826 100644
+index e942b0b58bebdb0663d2be69dcee65484627f731..cca3cc6b73e079770e2e2ee23c237c28537bf7b7 100644
 --- a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
 +++ b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
 @@ -21,7 +21,7 @@ FakePrintRenderFrame::FakePrintRenderFrame(
@@ -540,7 +540,7 @@ index f3c3f85edb19489d079dc93411be64828ae581e2..ff303dcbc034cd8f1530fe1543729e98
  void FakePrintRenderFrame::PrintWithParams(mojom::PrintPagesParamsPtr params,
                                             PrintWithParamsCallback callback) {
 diff --git a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
-index 0e788384809f9f7218c6483822ffea08f86b4f79..c6f08845cb292ff406db5560c9a744dc7ab1c712 100644
+index 2273775eccac63960bdea6124e657b4177120ad8..a94d3ecb7fde44888ef85df1cda1c1b5f4c1081c 100644
 --- a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
 +++ b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
 @@ -25,7 +25,7 @@ class FakePrintRenderFrame : public mojom::PrintRenderFrame {
@@ -796,10 +796,10 @@ index 66026548181a897c161d7202646f33fd8847ccb8..113a8165b5db6294087773e5a4b2f003
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ba3e4bc8a46d8936435a015cc8bbd7e83be08943..5c2979a98fa0b05067801a6dd3109f375681868d 100644
+index cc1fe51df1c85108d58b3fafc43b2cb9d718309d..9ea9a63d4e2f9bda8c8e928ff7388e776ac8ad5a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2812,8 +2812,9 @@ source_set("browser") {
+@@ -2815,8 +2815,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -812,10 +812,10 @@ index ba3e4bc8a46d8936435a015cc8bbd7e83be08943..5c2979a98fa0b05067801a6dd3109f37
      if (is_chromeos) {
        sources += [
 diff --git a/content/browser/utility_sandbox_delegate_win.cc b/content/browser/utility_sandbox_delegate_win.cc
-index d072c23a079bbe269b90d39882bf688a0c17280e..9ebc07769f13d384ebe9bca318a3634234b913be 100644
+index 0d62433580acf083031402e0321e63cf2e5b1350..55e89be1ceb3a3c6c2efac507355d3daedc2b73b 100644
 --- a/content/browser/utility_sandbox_delegate_win.cc
 +++ b/content/browser/utility_sandbox_delegate_win.cc
-@@ -99,6 +99,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetConfig* config) {
+@@ -96,6 +96,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetConfig* config) {
    return true;
  }
  
@@ -823,7 +823,7 @@ index d072c23a079bbe269b90d39882bf688a0c17280e..9ebc07769f13d384ebe9bca318a36342
  // Sets the sandbox policy for the print backend service process.
  bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
    DCHECK(!config->IsConfigured());
-@@ -170,6 +171,7 @@ bool XrCompositingPreSpawnTarget(sandbox::TargetConfig* config,
+@@ -164,6 +165,7 @@ bool XrCompositingPreSpawnTarget(sandbox::TargetConfig* config,
  
    return true;
  }

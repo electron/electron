@@ -7,7 +7,7 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 17b9ed63bd839632a5eed5bcbaa3e990472761ef..09c266f1a99e42d6c417c294d7db1d6621ec0365 100644
+index cd973955e8b424858532b383ee5af368db3333ed..d1c7084983da7060cce5596b623b6cf727794de9 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
 @@ -197,6 +197,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
@@ -19,7 +19,7 @@ index 17b9ed63bd839632a5eed5bcbaa3e990472761ef..09c266f1a99e42d6c417c294d7db1d66
      const GURL& origin,
      const GURL& document_url,
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.h b/chrome/browser/notifications/platform_notification_service_impl.h
-index b0e64049d411305d58802fd290bb0480e9b36fee..4afcf3b7a5b841409b0e1c4c2f32fd4878f12768 100644
+index dfbfbf4e5d92eb8c7c2ba38f31264ac41713a485..78cc81931321656c308e5611e30e0813b8e6b88a 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.h
 +++ b/chrome/browser/notifications/platform_notification_service_impl.h
 @@ -56,6 +56,7 @@ class PlatformNotificationServiceImpl
@@ -133,10 +133,10 @@ index 424fae79eb1c93f1fac293ae8fdeb6d067f523cc..6a2f074ad981deb15b46bd91b6d7eb5d
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 47eaf5d48f7acc2ee05a07f79a2fa457c50d88d8..0947bc416a00ac23c1d26fdc85baf28e634f419e 100644
+index a225289145f99a86899e128ea1d63673f5639f1c..478653e61771ac890cae7f7386b3d37f3d415ff8 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2075,8 +2075,9 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2066,8 +2066,9 @@ void RenderProcessHostImpl::CreateNotificationService(
    // For workers:
    if (render_frame_id == MSG_ROUTING_NONE) {
      storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -148,7 +148,7 @@ index 47eaf5d48f7acc2ee05a07f79a2fa457c50d88d8..0947bc416a00ac23c1d26fdc85baf28e
      return;
    }
  
-@@ -2084,7 +2085,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2075,7 +2076,7 @@ void RenderProcessHostImpl::CreateNotificationService(
    RenderFrameHost* rfh = RenderFrameHost::FromID(GetID(), render_frame_id);
    CHECK(rfh);
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

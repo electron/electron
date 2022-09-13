@@ -11,7 +11,7 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
-index bc009606d01469125052e68a9cdc82aaa697c764..ff18043cb07d748a49adea9874517fb29e3e7f9f 100644
+index fa5be7e4dbddd8333263c412b84a1d93b2d5046a..1b3c65359bff41a96ff27aef6e979ac7e6e8518d 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener.cc
 @@ -7,6 +7,7 @@
@@ -46,7 +46,7 @@ index bc009606d01469125052e68a9cdc82aaa697c764..ff18043cb07d748a49adea9874517fb2
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
    if (IsShortcutHandlingSuspended())
 diff --git a/chrome/browser/extensions/global_shortcut_listener.h b/chrome/browser/extensions/global_shortcut_listener.h
-index ad366d0fd4c3a637d75a102ab56984f0d01bfc04..d63eb133fd4bab1ea309bb8c742acf88d97d779e 100644
+index f96af14cb915c8ab92b314ac15b6dffcdd6ec607..2556abe433493251ebd48d4aeddaa6d4f553208f 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.h
 +++ b/chrome/browser/extensions/global_shortcut_listener.h
 @@ -33,6 +33,8 @@ class GlobalShortcutListener {

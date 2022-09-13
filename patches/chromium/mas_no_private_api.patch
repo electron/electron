@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/base/process/process_info_mac.cc b/base/process/process_info_mac.cc
-index 368405f29313d51a6eee16517b634c6d0ea95281..2553a7fbf1e8b4dea796dec3b3e906d265d3ad76 100644
+index 6840358c3187522c63dff66b5a85567aaadc5c12..ef94524eab52719c84e176fde2afd88f85223888 100644
 --- a/base/process/process_info_mac.cc
 +++ b/base/process/process_info_mac.cc
-@@ -5,18 +5,22 @@
+@@ -9,18 +9,22 @@
  #include <stdlib.h>
  #include <unistd.h>
  
@@ -166,10 +166,10 @@ index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index d872796dee0dee4aa14c238f788b962b3f1c9311..4d5f74c18d773755d5d8f7223bc0d5c944467d69 100644
+index 72bd43ecdbb80315963733bae348ee5e563a9e76..db8f41f6d8cbb379ec48dffde85dbabb2f79a0b5 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -176,6 +176,12 @@ source_set("audio") {
+@@ -178,6 +178,12 @@ source_set("audio") {
        "mac/scoped_audio_unit.cc",
        "mac/scoped_audio_unit.h",
      ]

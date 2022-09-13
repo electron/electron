@@ -10,7 +10,7 @@ can be reverted when those failures are addressed. It's unlikely
 that this patch will be upstreamed.
 
 diff --git a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
-index 9e86fff4335a5efc3d89eda167f756ec82f10407..4375f34b007b21d4cc190bdb1434964304f14785 100644
+index 28c11bb54a25d396c7d9246870bf97559df4152d..957aeb5d71d2312a0a0aeb7faf64a6a596f94336 100644
 --- a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
 +++ b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
 @@ -297,26 +297,7 @@ TEST_F(LanguageSettingsPrivateApiTest, GetNeverTranslateLanguagesListTest) {
@@ -42,7 +42,7 @@ index 9e86fff4335a5efc3d89eda167f756ec82f10407..4375f34b007b21d4cc190bdb14349643
    RunGetLanguageListTest();
  }
 diff --git a/chrome/browser/spellchecker/spellcheck_service_unittest.cc b/chrome/browser/spellchecker/spellcheck_service_unittest.cc
-index b8fa14fa50d82521845b9f84d62d9de922df9168..1e9c21eca325845bbc8f09a5287a2451f9829e80 100644
+index f528150f455103828c463c28b302f671f100d533..18566653b1cdca9a4db1657f3e4b811ff720c41b 100644
 --- a/chrome/browser/spellchecker/spellcheck_service_unittest.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service_unittest.cc
 @@ -341,18 +341,9 @@ const std::vector<std::string> SpellcheckServiceHybridUnitTestBase::

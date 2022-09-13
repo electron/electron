@@ -11,7 +11,7 @@ and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.cc b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-index ed2ac20679a9357c9493224ec5e08837c7860d6e..7f9a97e11395e5521e100694cd37bcd95bcd8e35 100644
+index 2ac08809148beeb6bacccfc5e9f032c3a88eabe7..025082e5fa644f89cec42fd8a2b97d6f764f375f 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 @@ -58,7 +58,8 @@ bool GlobalShortcutListenerOzone::RegisterAcceleratorImpl(
@@ -52,7 +52,7 @@ index ed2ac20679a9357c9493224ec5e08837c7860d6e..7f9a97e11395e5521e100694cd37bcd9
    NotifyKeyPressed(ui::Accelerator(key_code, modifiers));
  }
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.h b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-index a2cec20e0ba434afa5e15bf60327c6a6f9b551f9..f58796ff2050883879225a22ed0b3f0c1aacf824 100644
+index 3c2fc1707e38345c114e140104ffc5a93d704918..40dac9fd7beb7a1a589a479a8035391d4a32cbb8 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.h
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.h
 @@ -46,7 +46,8 @@ class GlobalShortcutListenerOzone
@@ -66,7 +66,7 @@ index a2cec20e0ba434afa5e15bf60327c6a6f9b551f9..f58796ff2050883879225a22ed0b3f0c
  
    bool is_listening_ = false;
 diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index 2778a18b6c28f3342c6b43d1de71fbbd46c72f06..85af551f87b8b0f9aed7a2a395ecf79f81f5a0a1 100644
+index 51cc1dd4f3452c18a4b4cc0634509ab4faa9dcd7..bb5f937d59617f323e829c5259a33028822f585a 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_win.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
 @@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
