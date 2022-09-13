@@ -159,10 +159,11 @@ void WinCaptionButtonContainer::UpdateButtons() {
   const bool is_touch = ui::TouchUiController::Get()->touch_ui();
   restore_button_->SetEnabled(!is_touch);
 
-  // The maximize button should only be enabled if the window is
-  // maximizable *and* touch mode is disabled.
+  // In touch mode, windows cannot be taken out of fullscreen or tiled mode, so
+  // the maximize/restore button should be disabled, unless the window is not
+  // maximized.
   const bool maximizable = frame_view_->window()->IsMaximizable();
-  maximize_button_->SetEnabled(!is_touch && maximizable);
+  maximize_button_->SetEnabled(!(is_touch && is_maximized) && maximizable);
 
   const bool closable = frame_view_->window()->IsClosable();
   close_button_->SetEnabled(closable);
