@@ -5,42 +5,6 @@ import { app } from 'electron/main';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { createProcessWrapper } = process._linkedBinding('electron_browser_utility_process');
 
-// Signal validation is based on
-// https://github.com/nodejs/node/blob/main/lib/child_process.js#L938-L946
-let signalsToNamesMapping: Record<number, string>;
-function getSignalsToNamesMapping () {
-  if (signalsToNamesMapping !== undefined) { return signalsToNamesMapping; }
-
-  const { signals } = require('os').constants;
-  signalsToNamesMapping = Object.create(null);
-  for (const key in signals) { // eslint-disable-line guard-for-in
-    signalsToNamesMapping[signals[key]] = key;
-  }
-
-  return signalsToNamesMapping;
-}
-
-function convertToValidSignal (signal: string | number): number {
-  if (typeof signal === 'number' && getSignalsToNamesMapping()[signal]) { return signal; }
-
-  const { signals } = require('os').constants;
-
-  if (typeof signal === 'string') {
-    const signalName = signals[signal.toUpperCase()];
-    if (signalName) return signalName;
-  }
-
-  return signals.SIGTERM;
-}
-
-function sanitizeKillSignal (signal: string | number): number {
-  if (typeof signal === 'string' || typeof signal === 'number') {
-    return convertToValidSignal(signal);
-  } else {
-    throw new TypeError('Kill signal must be a string or number');
-  }
-}
-
 class IOReadable extends Readable {
   _shouldPush: boolean = false;
   _data: (Buffer | null)[] = [];
@@ -208,15 +172,10 @@ export default class UtilityProcess extends EventEmitter {
     return this._handle.postMessage(...args);
   }
 
-  kill (signal: string | number) : boolean {
+  kill () : boolean {
     if (this._handle === null) {
       return false;
     }
-    signal = signal || 'SIGTERM';
-    const sig = signal === 0 ? signal
-      : sanitizeKillSignal(signal);
-    const err = this._handle.kill(sig);
-    if (err === 0) return true;
-    return false;
+    return this._handle.kill();
   }
 }

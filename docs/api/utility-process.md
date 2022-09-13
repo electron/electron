@@ -62,15 +62,13 @@ process.parentPort.once('message', (e) => {
 })
 ```
 
-#### `child.kill([signal])`
-
-* `signal` (string | Integer) (optional)
+#### `child.kill()`
 
 Returns `boolean`
 
-Sends a signal to the child process. If no argument is given,
-the process will be sent the 'SIGTERM' signal. This function returns true
-if kill succeeds, and false otherwise.
+Terminates the process gracefully. On POSIX, it uses SIGTERM
+but will ensure to reap the process on exit. This function returns
+true if kill succeeds, and false otherwise.
 
 ### Instance Properties
 

@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 import * as childProcess from 'child_process';
 import * as path from 'path';
-import { app, BrowserWindow, MessageChannelMain, UtilityProcess } from 'electron/main';
+import { BrowserWindow, MessageChannelMain, UtilityProcess } from 'electron/main';
 import { emittedOnce } from './events-helpers';
+import { ifit } from './spec-helpers';
 import { closeWindow } from './window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
@@ -64,22 +65,13 @@ describe('UtilityProcess module', () => {
   });
 
   describe('kill() API', () => {
-    it('terminates the child process with SIGTERM by default', (done) => {
+    it('terminates the child process gracefully', async () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'endless.js'), [], {
         serviceName: 'endless'
       });
-      const handler = (_: any, details: any) => {
-        if (details.type === 'Utility' && details.name === 'endless') {
-          app.removeListener('child-process-gone', handler);
-          expect(details.reason).to.equal('killed');
-          expect(details.exitCode).to.equal(15);
-          done();
-        }
-      };
-      app.on('child-process-gone', handler);
-      child.once('spawn', () => {
-        expect(child.kill()).to.be.true();
-      });
+      await emittedOnce(child, 'spawn');
+      expect(child.kill()).to.be.true();
+      await emittedOnce(child, 'exit');
     });
   });
 
@@ -230,9 +222,9 @@ describe('UtilityProcess module', () => {
       child.stdout!.on('data', listener);
     });
 
-    it('supports redirecting stdout to parent process', async () => {
+    ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
       const result = 'Output from utility process';
-      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stdout'), `--payload=${result}`, '--enable-logging=stdout']);
+      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stdout'), `--payload=${result}`]);
       let output = '';
       appProcess.stdout.on('data', (data: Buffer) => { output += data; });
       await emittedOnce(appProcess, 'exit');
@@ -257,7 +249,7 @@ describe('UtilityProcess module', () => {
       let output = '';
       appProcess.stdout.on('data', (data: Buffer) => { output += data; });
       await emittedOnce(appProcess.stdout, 'end');
-      expect(output).to.equal('Cannot load entry script from outisde the application.');
+      expect(output).to.contain('Cannot load entry script from outisde the application.');
     });
 
     it('can establish communication channel with sandboxed renderer', async () => {
