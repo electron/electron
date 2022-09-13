@@ -45,6 +45,7 @@
 #include "shell/app/command_line_args.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/gpuinfo_manager.h"
 #include "shell/browser/electron_browser_context.h"
@@ -920,6 +921,12 @@ void App::BrowserChildProcessCrashedOrKilled(
   details.Set("serviceName", data.metrics_name);
   if (!data.name.empty()) {
     details.Set("name", data.name);
+  }
+  if (data.process_type == content::PROCESS_TYPE_UTILITY) {
+    base::ProcessId pid = data.GetProcess().Pid();
+    auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
+    if (utility_process_wrapper)
+      utility_process_wrapper->Emit("exit", info.exit_code);
   }
   Emit("child-process-gone", details);
 }

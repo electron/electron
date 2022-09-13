@@ -62,6 +62,22 @@ describe('UtilityProcess module', () => {
       const [, code] = await emittedOnce(child, 'exit');
       expect(code).to.equal(0);
     });
+
+    it('emits \'exit\' when child process crashes', async () => {
+      const child = new UtilityProcess(path.join(fixturesPath, 'crash.js'));
+      const [, code] = await emittedOnce(child, 'exit');
+      expect(code).to.equal(11);
+    });
+
+    it('emits \'exit\' corresponding to the child process', async () => {
+      const child1 = new UtilityProcess(path.join(fixturesPath, 'endless.js'));
+      await emittedOnce(child1, 'spawn');
+      const child2 = new UtilityProcess(path.join(fixturesPath, 'crash.js'));
+      const [, code] = await emittedOnce(child2, 'exit');
+      expect(code).to.equal(11);
+      expect(child1.kill()).to.be.true();
+      await emittedOnce(child1, 'exit');
+    });
   });
 
   describe('kill() API', () => {
