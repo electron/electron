@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ayu Ishii <ayui@chromium.org>
+Date: Fri, 15 Jul 2022 13:20:47 +0000
+Subject: When applying the omit-ORDER-BY optimization, defer deleting the AST
+ of the deleted ORDER BY clause until after code generation ends.
+
+FossilOrigin-Name: b88d6c4b814ec4166ec50f32a2f10d7857df05414c0048c1234ab290a273e50c
+(cherry picked from commit 9dde91f61386e4fc53eb95b6cbd26bf30521225f)
+Bug: 1343348
+Change-Id: Id677f72166c00a05f95c25438230f4b1d40f4d4d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/deps/sqlite/+/3764026
+Reviewed-by: Austin Sullivan <asully@chromium.org>
+Commit-Queue: Ayu Ishii <ayui@chromium.org>
+Reviewed-by: Joshua Bell <jsbell@chromium.org>
+
+diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
+index c7f9ddb45fe5b8ec29b37406308df66797a2d7b7..80d356ed5a66ad6e5bf2ce3fdba2f0686cb451bd 100644
+--- a/amalgamation/sqlite3.c
++++ b/amalgamation/sqlite3.c
+@@ -139696,7 +139696,9 @@ SQLITE_PRIVATE int sqlite3Select(
+     ){
+       SELECTTRACE(0x100,pParse,p,
+                 ("omit superfluous ORDER BY on %r FROM-clause subquery\n",i+1));
+-      sqlite3ExprListDelete(db, pSub->pOrderBy);
++      sqlite3ParserAddCleanup(pParse,
++         (void(*)(sqlite3*,void*))sqlite3ExprListDelete,
++         pSub->pOrderBy);
+       pSub->pOrderBy = 0;
+     }
+ 
+diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
+index b5c0c9e93abe5c16af86b8a4444b35c6880b2ba7..9da59fc429290ba0964f2c2abd4dd8c4312e864d 100644
+--- a/amalgamation_dev/sqlite3.c
++++ b/amalgamation_dev/sqlite3.c
+@@ -139709,7 +139709,9 @@ SQLITE_PRIVATE int sqlite3Select(
+     ){
+       SELECTTRACE(0x100,pParse,p,
+                 ("omit superfluous ORDER BY on %r FROM-clause subquery\n",i+1));
+-      sqlite3ExprListDelete(db, pSub->pOrderBy);
++      sqlite3ParserAddCleanup(pParse,
++         (void(*)(sqlite3*,void*))sqlite3ExprListDelete,
++         pSub->pOrderBy);
+       pSub->pOrderBy = 0;
+     }
+ 
+diff --git a/src/select.c b/src/select.c
+index 7f15c2acb28c109cda63b6e08370910ca0da76f4..f2e319e3405526055cc7fdbd9073bdebdfb3a94a 100644
+--- a/src/select.c
++++ b/src/select.c
+@@ -6491,7 +6491,9 @@ int sqlite3Select(
+     ){
+       SELECTTRACE(0x100,pParse,p,
+                 ("omit superfluous ORDER BY on %r FROM-clause subquery\n",i+1));
+-      sqlite3ExprListDelete(db, pSub->pOrderBy);
++      sqlite3ParserAddCleanup(pParse,
++         (void(*)(sqlite3*,void*))sqlite3ExprListDelete,
++         pSub->pOrderBy);
+       pSub->pOrderBy = 0;
+     }
+ 
