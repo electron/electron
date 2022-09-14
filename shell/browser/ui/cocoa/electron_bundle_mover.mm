@@ -181,20 +181,29 @@ bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
 bool ElectronBundleMover::IsCurrentAppInApplicationsFolder() {
   return IsInApplicationsFolder([[NSBundle mainBundle] bundlePath]);
 }
+  
+NSString* resolvePath(NSString* path) {
+    NSString *standardizedPath = [path stringByStandardizingPath];
+    const char *cpath = [standardizedPath cStringUsingEncoding:NSUTF8StringEncoding];
+    char *resolved = NULL;
+    char *retValue = realpath(cpath, resolved);
+    if (retValue == NULL && resolved != NULL) return path;
+    return [NSString stringWithCString:retValue encoding:NSUTF8StringEncoding];
+}
 
 bool ElectronBundleMover::IsInApplicationsFolder(NSString* bundlePath) {
   // Check all the normal Application directories
   NSArray* applicationDirs = NSSearchPathForDirectoriesInDomains(
       NSApplicationDirectory, NSAllDomainsMask, true);
-  NSString* lcBundlePath = [bundlePath lowercaseString];
+  NSString* resolvedBundlePath = resolvePath(bundlePath);
   for (NSString* appDir in applicationDirs) {
-    if ([lcBundlePath hasPrefix:[appDir lowercaseString]])
+    if ([resolvedBundlePath hasPrefix:[appDir lowercaseString]])
       return true;
   }
 
   // Also, handle the case that the user has some other Application directory
   // (perhaps on a separate data partition).
-  if ([[lcBundlePath pathComponents] containsObject:@"applications"])
+  if ([[resolvedBundlePath pathComponents] containsObject:@"applications"])
     return true;
 
   return false;
