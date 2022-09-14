@@ -155,7 +155,7 @@ class PipeReaderBase : public PipeIOBase {
 #endif
       if (had_error) {
         if (!shutting_down_.IsSet()) {
-          LOG(ERROR) << "Connection terminated while reading from pipe";
+          ShutdownReader();
         }
         return 0;
       }
@@ -179,7 +179,6 @@ class PipeReaderBase : public PipeIOBase {
     size_t bytes_read =
         ReadBytes(read_buffer_->data(), read_buffer_->RemainingCapacity());
     if (!bytes_read) {
-      ShutdownReader();
       return;
     }
     read_buffer_->DidRead(bytes_read);
@@ -417,12 +416,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   node_service_remote_->Initialize(std::move(params));
 }
 
-UtilityProcessWrapper::~UtilityProcessWrapper() {
-  if (stdout_reader_.get())
-    PipeIOBase::Shutdown(std::move(stdout_reader_));
-  if (stderr_reader_.get())
-    PipeIOBase::Shutdown(std::move(stderr_reader_));
-}
+UtilityProcessWrapper::~UtilityProcessWrapper() = default;
 
 void UtilityProcessWrapper::OnServiceProcessLaunched(
     const base::Process& process) {
@@ -439,6 +433,11 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
   if (GetAllUtilityProcessWrappers().Lookup(pid_))
     GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();
+  // Shutdown output readers before exit event..
+  if (stdout_reader_.get())
+    PipeIOBase::Shutdown(std::move(stdout_reader_));
+  if (stderr_reader_.get())
+    PipeIOBase::Shutdown(std::move(stderr_reader_));
   // Emit 'exit' event
   Emit("exit", 0 /* exit_code */);
   Unpin();

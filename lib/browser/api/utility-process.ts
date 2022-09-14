@@ -131,10 +131,10 @@ export default class UtilityProcess extends EventEmitter {
           this._stderr.removeAllListeners();
           this._stderr = null;
         }
-      } else if (channel === 'stdout') {
-        this._stdout!._storeInternalData(Buffer.from(args[1]), args[2]);
-      } else if (channel === 'stderr') {
-        this._stderr!._storeInternalData(Buffer.from(args[1]), args[2]);
+      } else if (channel === 'stdout' && this._stdout) {
+        this._stdout._storeInternalData(Buffer.from(args[1]), args[2]);
+      } else if (channel === 'stderr' && this._stderr) {
+        this._stderr._storeInternalData(Buffer.from(args[1]), args[2]);
       } else {
         this.emit(channel, ...args);
       }
