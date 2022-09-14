@@ -1461,6 +1461,34 @@ describe('chromium features', () => {
         expect((w.webContents as any).length()).to.equal(2);
       });
     });
+
+    describe('window.history.back', () => {
+      it('should not allow sandboxed iframe to modify main frame state', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL('data:text/html,<iframe sandbox="allow-scripts"></iframe>');
+        await Promise.all([
+          emittedOnce(w.webContents, 'navigation-entry-committed'),
+          emittedOnce(w.webContents, 'did-frame-navigate'),
+          emittedOnce(w.webContents, 'did-navigate')
+        ]);
+
+        w.webContents.executeJavaScript('window.history.pushState(1, "")');
+        await Promise.all([
+          emittedOnce(w.webContents, 'navigation-entry-committed'),
+          emittedOnce(w.webContents, 'did-navigate-in-page')
+        ]);
+
+        (w.webContents as any).once('navigation-entry-committed', () => {
+          expect.fail('Unexpected navigation-entry-committed');
+        });
+        w.webContents.once('did-navigate-in-page', () => {
+          expect.fail('Unexpected did-navigate-in-page');
+        });
+        await w.webContents.mainFrame.frames[0].executeJavaScript('window.history.back()');
+        expect(await w.webContents.executeJavaScript('window.history.state')).to.equal(1);
+        expect((w.webContents as any).getActiveIndex()).to.equal(1);
+      });
+    });
   });
 
   describe('chrome://media-internals', () => {
