@@ -130,7 +130,7 @@ describe('webFrameMain module', () => {
 
     it('should be file:// for file frames', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      await w.loadFile(path.join(fixtures, 'blank.html'));
       expect(w.webContents.mainFrame.origin).to.equal('file://');
     });
 
@@ -144,7 +144,7 @@ describe('webFrameMain module', () => {
 
     it('should show parent origin when child page is about:blank', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      await w.loadFile(path.join(fixtures, 'blank.html'));
       const webContentsCreated: Promise<[unknown, WebContents]> = emittedOnce(app, 'web-contents-created') as any;
       expect(w.webContents.mainFrame.origin).to.equal('file://');
       await w.webContents.executeJavaScript('window.open("", null, "show=false"), null');
