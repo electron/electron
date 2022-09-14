@@ -50,6 +50,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
     if (e.type === 'gestureScrollBegin') {
       if (this.listenerCount('scroll-touch-begin') !== 0) {
         warn();
+        this.emit('scroll-touch-edge');
         this.emit('scroll-touch-begin');
       }
     } else if (e.type === 'gestureScrollUpdate') {
@@ -60,6 +61,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
     } else if (e.type === 'gestureScrollEnd') {
       if (this.listenerCount('scroll-touch-end') !== 0) {
         warn();
+        this.emit('scroll-touch-edge');
         this.emit('scroll-touch-end');
       }
     }
