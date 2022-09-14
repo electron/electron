@@ -66,7 +66,11 @@ describe('UtilityProcess module', () => {
     it('emits \'exit\' when child process crashes', async () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'crash.js'));
       const [, code] = await emittedOnce(child, 'exit');
-      expect(code).to.equal(11);
+      if (process.platform === 'linux') {
+        expect(code).to.equal(139);
+      } else if (process.platform === 'darwin') {
+        expect(code).to.equal(11);
+      }
     });
 
     it('emits \'exit\' corresponding to the child process', async () => {
@@ -74,7 +78,11 @@ describe('UtilityProcess module', () => {
       await emittedOnce(child1, 'spawn');
       const child2 = new UtilityProcess(path.join(fixturesPath, 'crash.js'));
       const [, code] = await emittedOnce(child2, 'exit');
-      expect(code).to.equal(11);
+      if (process.platform === 'linux') {
+        expect(code).to.equal(139);
+      } else if (process.platform === 'darwin') {
+        expect(code).to.equal(11);
+      }
       expect(child1.kill()).to.be.true();
       await emittedOnce(child1, 'exit');
     });
@@ -257,7 +265,8 @@ describe('UtilityProcess module', () => {
     it('throws an error when script path is outside application for packaged apps', async () => {
       const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'fake-packaged-app')], {
         env: {
-          ELECTRON_FORCE_IS_PACKAGED: '1'
+          ELECTRON_FORCE_IS_PACKAGED: '1',
+          ...process.env
         }
       });
       let output = '';
