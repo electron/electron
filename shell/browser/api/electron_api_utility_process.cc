@@ -483,6 +483,12 @@ bool UtilityProcessWrapper::Kill() const {
   base::Process process = base::Process::Open(pid_);
   bool result = process.Terminate(content::RESULT_CODE_NORMAL_EXIT, false);
   // Refs https://bugs.chromium.org/p/chromium/issues/detail?id=818244
+  // Currently utility process is not sandboxed which
+  // means Zygote is not used on linux, refs
+  // content::UtilitySandboxedProcessLauncherDelegate::GetZygote.
+  // If sandbox feature is enabled for the utility process, then the
+  // process reap should be signaled through the zygote via
+  // content::ZygoteCommunication::EnsureProcessTerminated.
   base::EnsureProcessTerminated(process.Duplicate());
   return result;
 }
