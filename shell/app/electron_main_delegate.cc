@@ -423,18 +423,18 @@ absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
   return absl::nullopt;
 }
 
-base::StringPiece ElectronMainDelegate::GetCustomV8SnapshotFilename() {
+base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
   const base::CommandLine* command_line =
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  bool use_custom_v8_snapshot_file_name =
+  bool load_browser_process_specific_v8_snapshot =
       process_type.empty() &&
-      electron::fuses::IsLoadV8SnapshotFromCustomPathEnabled();
-  if (use_custom_v8_snapshot_file_name) {
-    return "custom_v8_context_snapshot.bin";
+      electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
+  if (load_browser_process_specific_v8_snapshot) {
+    return "browser_v8_context_snapshot.bin";
   }
-  return ContentMainDelegate::GetCustomV8SnapshotFilename();
+  return ContentMainDelegate::GetBrowserV8SnapshotFilename();
 }
 
 content::ContentBrowserClient*

@@ -30,7 +30,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   ElectronMainDelegate(const ElectronMainDelegate&) = delete;
   ElectronMainDelegate& operator=(const ElectronMainDelegate&) = delete;
 
-  base::StringPiece GetCustomV8SnapshotFilename() override;
+  base::StringPiece GetBrowserV8SnapshotFilename() override;
 
  protected:
   // content::ContentMainDelegate:

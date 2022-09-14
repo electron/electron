@@ -8,7 +8,7 @@ to have multiple v8 snapshots loaded in different contexts by passing `custom-v8
 via the command line.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 6242f0a0070b2b862f9fa5ed70825a16d6e270ef..58a0606060df1d0484d7ba32dafcf0a21c5f1621 100644
+index 6242f0a0070b2b862f9fa5ed70825a16d6e270ef..af355d4b0adb509f6b04d8bc2eddbb3a6b3c9a08 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -37,6 +37,7 @@
@@ -26,9 +26,9 @@ index 6242f0a0070b2b862f9fa5ed70825a16d6e270ef..58a0606060df1d0484d7ba32dafcf0a2
 -void LoadV8SnapshotFile(const base::CommandLine& command_line) {
 +void LoadV8SnapshotFile(const raw_ptr<ContentMainDelegate> delegate, const base::CommandLine& command_line) {
    const gin::V8SnapshotFileType snapshot_type = GetSnapshotType(command_line);
-+  base::StringPiece custom_v8_snapshot_file_name = delegate->GetCustomV8SnapshotFilename();
-+  if (!custom_v8_snapshot_file_name.empty()) {
-+    gin::V8Initializer::LoadV8SnapshotFromFileName(custom_v8_snapshot_file_name, snapshot_type);
++  base::StringPiece browser_v8_snapshot_file_name = delegate->GetBrowserV8SnapshotFilename();
++  if (!browser_v8_snapshot_file_name.empty()) {
++    gin::V8Initializer::LoadV8SnapshotFromFileName(browser_v8_snapshot_file_name, snapshot_type);
 +    return;
 +  }
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
@@ -59,7 +59,7 @@ index 6242f0a0070b2b862f9fa5ed70825a16d6e270ef..58a0606060df1d0484d7ba32dafcf0a2
    blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
        base::BindRepeating([]() -> blink::OriginTrialPolicy* {
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 5450eb6ba565164953b778f861d8fc75a06b6115..ffe1cbfb3a532d129dc6c265faf9da5e6770e20e 100644
+index 5450eb6ba565164953b778f861d8fc75a06b6115..3f15d5a83d6e8011da09da178a0a9dfd2dd95d30 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -5,6 +5,7 @@
@@ -74,7 +74,7 @@ index 5450eb6ba565164953b778f861d8fc75a06b6115..ffe1cbfb3a532d129dc6c265faf9da5e
    return absl::nullopt;
  }
  
-+base::StringPiece ContentMainDelegate::GetCustomV8SnapshotFilename() {
++base::StringPiece ContentMainDelegate::GetBrowserV8SnapshotFilename() {
 +  return base::StringPiece();
 +}
 +
@@ -82,7 +82,7 @@ index 5450eb6ba565164953b778f861d8fc75a06b6115..ffe1cbfb3a532d129dc6c265faf9da5e
    return new ContentClient();
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index f40146c4ed20e63dd09450e43c26736171f02ed4..5a89cbf6a3965b8deb69c1c151168116a90031cb 100644
+index f40146c4ed20e63dd09450e43c26736171f02ed4..5e3246a1346bd0210e7b83842a17dcc1986c8647 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -9,6 +9,7 @@
@@ -97,7 +97,7 @@ index f40146c4ed20e63dd09450e43c26736171f02ed4..5a89cbf6a3965b8deb69c1c151168116
    virtual bool ShouldHandleConsoleControlEvents();
  #endif
  
-+  virtual base::StringPiece GetCustomV8SnapshotFilename();
++  virtual base::StringPiece GetBrowserV8SnapshotFilename();
 +
   protected:
    friend class ContentClientCreator;
