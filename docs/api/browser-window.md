@@ -657,7 +657,7 @@ The following app commands are explicitly supported on Linux:
 Emitted when scroll wheel event phase has begun.
 
 > **Note**
-> This event is deprecated beginning in Electron 21.0.0. See [Breaking
+> This event is deprecated beginning in Electron 22.0.0. See [Breaking
 > Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
 > for details of how to migrate to using the [WebContents
 > `input-event`](api/web-contents.md#event-input-event) event.
@@ -667,7 +667,7 @@ Emitted when scroll wheel event phase has begun.
 Emitted when scroll wheel event phase has ended.
 
 > **Note**
-> This event is deprecated beginning in Electron 21.0.0. See [Breaking
+> This event is deprecated beginning in Electron 22.0.0. See [Breaking
 > Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
 > for details of how to migrate to using the [WebContents
 > `input-event`](api/web-contents.md#event-input-event) event.
@@ -677,7 +677,7 @@ Emitted when scroll wheel event phase has ended.
 Emitted when scroll wheel event phase filed upon reaching the edge of element.
 
 > **Note**
-> This event is deprecated beginning in Electron 21.0.0. See [Breaking
+> This event is deprecated beginning in Electron 22.0.0. See [Breaking
 > Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
 > for details of how to migrate to using the [WebContents
 > `input-event`](api/web-contents.md#event-input-event) event.
