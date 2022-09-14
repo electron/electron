@@ -183,12 +183,12 @@ bool ElectronBundleMover::IsCurrentAppInApplicationsFolder() {
 }
   
 NSString* resolvePath(NSString* path) {
-    NSString *standardizedPath = [path stringByStandardizingPath];
-    const char *cpath = [standardizedPath cStringUsingEncoding:NSUTF8StringEncoding];
-    char *resolved = NULL;
-    char *retValue = realpath(cpath, resolved);
-    if (retValue == NULL && resolved != NULL) return path;
-    return [NSString stringWithCString:retValue encoding:NSUTF8StringEncoding];
+  NSString *standardizedPath = [path stringByStandardizingPath];
+  const char *cpath = [standardizedPath cStringUsingEncoding:NSUTF8StringEncoding];
+  char *resolved = NULL;
+  char *retValue = realpath(cpath, resolved);
+  if (retValue == NULL && resolved != NULL) return path;
+  return [NSString stringWithCString:retValue encoding:NSUTF8StringEncoding];
 }
 
 bool ElectronBundleMover::IsInApplicationsFolder(NSString* bundlePath) {
