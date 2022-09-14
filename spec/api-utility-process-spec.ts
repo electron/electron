@@ -291,5 +291,15 @@ describe('UtilityProcess module', () => {
       await exit;
       await closeWindow(w);
     });
+
+    ifit(process.platform === 'linux')('allows executing a setuid binary with child_process', async () => {
+      const child = new UtilityProcess(path.join(fixturesPath, 'suid.js'));
+      await emittedOnce(child, 'spawn');
+      const [, data] = await emittedOnce(child, 'message');
+      expect(data).to.not.be.empty();
+      const exit = emittedOnce(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
+    });
   });
 });

@@ -3,28 +3,28 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Mon, 26 Aug 2019 12:02:51 -0700
 Subject: allow new privileges in unsandboxed child processes
 
-This allows unsandboxed renderers to launch setuid processes on Linux.
+This allows unsandboxed child process to launch setuid processes on Linux.
 
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 16d838b710d4f717733f4aa8f92f144922969b3b..ff2c78c7b803159dde97dafdb799d9b8761dc3fd 100644
+index 16d838b710d4f717733f4aa8f92f144922969b3b..3e27400720019c3b429acc55f6a921e84eee6e43 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -54,6 +54,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
-   if (GetProcessType() == switches::kRendererProcess) {
-     const int sandbox_fd = SandboxHostLinux::GetInstance()->GetChildSocket();
+@@ -56,6 +56,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
      options->fds_to_remap.push_back(std::make_pair(sandbox_fd, GetSandboxFD()));
-+
-+    // (For Electron), if we're launching without zygote, that means we're
-+    // launching an unsandboxed process (since all sandboxed processes are
-+    // forked from the zygote). Relax the allow_new_privs option to permit
-+    // launching suid processes from unsandboxed renderers.
-+    ZygoteHandle zygote_handle =
-+        base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)
-+            ? nullptr
-+            : delegate_->GetZygote();
-+    if (!zygote_handle) {
-+      options->allow_new_privs = true;
-+    }
    }
  
++  // (For Electron), if we're launching without zygote, that means we're
++  // launching an unsandboxed process (since all sandboxed processes are
++  // forked from the zygote). Relax the allow_new_privs option to permit
++  // launching suid processes from unsandboxed child processes.
++  ZygoteHandle zygote_handle =
++      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)
++          ? nullptr
++          : delegate_->GetZygote();
++  if (!zygote_handle) {
++    options->allow_new_privs = true;
++  }
++
    for (const auto& remapped_fd : file_data_->additional_remapped_fds) {
+     options->fds_to_remap.emplace_back(remapped_fd.second.get(),
+                                        remapped_fd.first);
