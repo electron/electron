@@ -24,8 +24,6 @@
 @class ElectronTouchBar;
 @class WindowButtonsProxy;
 
-class SkRegion;
-
 namespace electron {
 
 class RootViewMac;
@@ -201,10 +199,6 @@ class NativeWindowMac : public NativeWindow,
   void set_default_frame_for_zoom(NSRect frame) {
     default_frame_for_zoom_ = frame;
   }
-
-  SkRegion* GetDraggableRegion() const { return draggable_region_.get(); }
-  void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions);
 
  protected:
   // views::WidgetDelegate:

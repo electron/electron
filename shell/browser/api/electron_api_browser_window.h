@@ -110,8 +110,6 @@ class BrowserWindow : public BaseWindow,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableRepeatingClosure window_unresponsive_closure_;
 
-  std::vector<mojom::DraggableRegionPtr> draggable_regions_;
-
   v8::Global<v8::Value> web_contents_;
   base::WeakPtr<api::WebContents> api_web_contents_;
 

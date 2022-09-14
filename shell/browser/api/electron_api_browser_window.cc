@@ -186,7 +186,10 @@ void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
 
 void BrowserWindow::OnDraggableRegionsUpdated(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
-  UpdateDraggableRegions(regions);
+  if (window_->has_frame())
+    return;
+
+  window_->UpdateDraggableRegions(regions);
 }
 
 void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
