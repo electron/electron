@@ -43,11 +43,11 @@ win.on('scroll-touch-end', scrollTouchEnd)
 
 // Replace with
 win.webContents.on('input-event', (_, event) => {
-  if (event.type === 'gesturescrollbegin') {
+  if (event.type === 'gestureScrollBegin') {
     scrollTouchBegin()
-  } else if (event.type === 'gesturescrollupdate') {
+  } else if (event.type === 'gestureScrollUpdate') {
     scrollTouchEdge()
-  } else if (event.type === 'gesturescrollend') {
+  } else if (event.type === 'gestureScrollEnd') {
     scrollTouchEnd()
   }
 })
@@ -69,11 +69,11 @@ win.on('scroll-touch-end', scrollTouchEnd)
 
 // Replace with
 win.webContents.on('input-event', (_, event) => {
-  if (event.type === 'gesturescrollbegin') {
+  if (event.type === 'gestureScrollBegin') {
     scrollTouchBegin()
-  } else if (event.type === 'gesturescrollupdate') {
+  } else if (event.type === 'gestureScrollUpdate') {
     scrollTouchEdge()
-  } else if (event.type === 'gesturescrollend') {
+  } else if (event.type === 'gestureScrollEnd') {
     scrollTouchEnd()
   }
 })
