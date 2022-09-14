@@ -1266,7 +1266,12 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
 
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown ||
       event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
-    bool prevent_default = Emit("before-input-event", event);
+    // For backwards compatibility, pretend that `kRawKeyDown` events are
+    // actually `kKeyDown`.
+    content::NativeWebKeyboardEvent tweaked_event(event);
+    if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
+      tweaked_event.SetType(blink::WebInputEvent::Type::kKeyDown);
+    bool prevent_default = Emit("before-input-event", tweaked_event);
     if (prevent_default) {
       return content::KeyboardEventProcessingResult::HANDLED;
     }
@@ -3065,6 +3070,9 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         blink::WebKeyboardEvent::Type::kRawKeyDown,
         blink::WebInputEvent::Modifiers::kNoModifiers, ui::EventTimeForNow());
     if (gin::ConvertFromV8(isolate, input_event, &keyboard_event)) {
+      // For backwards compatibility, convert `kKeyDown` to `kRawKeyDown`.
+      if (keyboard_event.GetType() == blink::WebKeyboardEvent::Type::kKeyDown)
+        keyboard_event.SetType(blink::WebKeyboardEvent::Type::kRawKeyDown);
       rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }

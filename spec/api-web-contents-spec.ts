@@ -590,8 +590,8 @@ describe('webContents module', () => {
       w.webContents.once('before-input-event', (event, input) => {
         if (input.key === 'a') event.preventDefault();
       });
-      w.webContents.sendInputEvent({ type: 'rawKeyDown', keyCode: 'a' });
-      w.webContents.sendInputEvent({ type: 'rawKeyDown', keyCode: 'b' });
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'a' });
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'b' });
       expect(await keyDown).to.equal('b');
     });
 
@@ -624,7 +624,7 @@ describe('webContents module', () => {
         expect(input.meta).to.equal(opts.meta);
       };
       await testBeforeInput({
-        type: 'rawKeyDown',
+        type: 'keyDown',
         key: 'A',
         code: 'KeyA',
         keyCode: 'a',
