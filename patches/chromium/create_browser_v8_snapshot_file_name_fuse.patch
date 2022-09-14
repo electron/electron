@@ -1,11 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ryan Manuel <ryanm@cypress.io>
 Date: Thu, 4 Aug 2022 22:37:01 -0500
-Subject: Allow using a browser v8 snapshot file name
+Subject: Create browser v8 snapshot file name fuse
 
 By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This patch allows consumers
-to have multiple v8 snapshots loaded in different contexts by passing `custom-v8-snapshot-file-name`
-via the command line.
+to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
 index 6242f0a0070b2b862f9fa5ed70825a16d6e270ef..af355d4b0adb509f6b04d8bc2eddbb3a6b3c9a08 100644
