@@ -2132,4 +2132,62 @@ describe('webContents module', () => {
       expect(params.y).to.be.a('number');
     });
   });
+
+  describe('content-bounds-updated event', () => {
+    afterEach(closeAllWindows);
+    it('emits when moveTo is called', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.moveTo(100, 100)', true);
+      const [, rect] = await emittedOnce(w.webContents, 'content-bounds-updated');
+      const { width, height } = w.getBounds();
+      expect(rect).to.deep.equal({
+        x: 100,
+        y: 100,
+        width,
+        height
+      });
+      await new Promise(setImmediate);
+      expect(w.getBounds().x).to.equal(100);
+      expect(w.getBounds().y).to.equal(100);
+    });
+
+    it('emits when resizeTo is called', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.resizeTo(100, 100)', true);
+      const [, rect] = await emittedOnce(w.webContents, 'content-bounds-updated');
+      const { x, y } = w.getBounds();
+      expect(rect).to.deep.equal({
+        x,
+        y,
+        width: 100,
+        height: 100
+      });
+      await new Promise(setImmediate);
+      expect({
+        width: w.getBounds().width,
+        height: w.getBounds().height
+      }).to.deep.equal(process.platform === 'win32' ? {
+        // The width is reported as being larger on Windows? I'm not sure why
+        // this is.
+        width: 136,
+        height: 100
+      } : {
+        width: 100,
+        height: 100
+      });
+    });
+
+    it('does not change window bounds if cancelled', async () => {
+      const w = new BrowserWindow({ show: false });
+      const { width, height } = w.getBounds();
+      w.loadURL('about:blank');
+      w.webContents.once('content-bounds-updated', e => e.preventDefault());
+      await w.webContents.executeJavaScript('window.resizeTo(100, 100)', true);
+      await new Promise(setImmediate);
+      expect(w.getBounds().width).to.equal(width);
+      expect(w.getBounds().height).to.equal(height);
+    });
+  });
 });
