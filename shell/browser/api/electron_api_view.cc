@@ -95,7 +95,6 @@ class JSLayoutManager : public views::LayoutManagerBase {
         calculate_proposed_layout;
     if (dict.Get("calculateProposedLayout", &calculate_proposed_layout)) {
       views::ProposedLayout pl = calculate_proposed_layout.Run(size_bounds);
-      LOG(INFO) << "Proposed Layout: " << pl.ToString();
       return pl;
     }
     return views::ProposedLayout();
