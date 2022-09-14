@@ -32,8 +32,9 @@ webContents.setWindowOpenHandler((details) => {
 
 ### Removed: BrowserWindow `scroll-touch-*` events
 
-The `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge` events on
-BrowserWindow have been removed.
+The deprecated `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge`
+events on BrowserWindow have been removed. Instead, use the newly available
+[`input-event` event](api/web-contents.md#event-input-event) on WebContents.
 
 ```js
 // Removed in Electron 22.0
@@ -58,8 +59,8 @@ win.webContents.on('input-event', (_, event) => {
 ### Deprecated: BrowserWindow `scroll-touch-*` events
 
 The `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge` events on
-BrowserWindow are deprecated. Instead, use the newly available `input-event`
-event on WebContents.
+BrowserWindow are deprecated. Instead, use the newly available [`input-event`
+event](api/web-contents.md#event-input-event) on WebContents.
 
 ```js
 // Deprecated
