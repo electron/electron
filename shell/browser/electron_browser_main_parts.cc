@@ -322,7 +322,8 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #endif
 
   // Fetch the system locale for Electron.
-  fake_browser_process_->SetSystemLocale(l10n_util::GetApplicationLocale("", false));
+  fake_browser_process_->SetSystemLocale(
+      l10n_util::GetApplicationLocale("", false));
 
   // Initialize the app locale for Electron and Chromium.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
