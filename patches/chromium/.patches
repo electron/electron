@@ -123,3 +123,4 @@ add_electron_deps_to_license_credits_file.patch
 feat_add_set_can_resize_mutator.patch
 cherry-pick-2083e894852c.patch
 cherry-pick-51daffbf5cd8.patch
+dpwa_enable_window_controls_overlay_by_default.patch
