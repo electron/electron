@@ -305,7 +305,7 @@ const std::string& BrowserProcessImpl::GetApplicationLocale() {
   return locale_;
 }
 
-const std::string& BrowserProcessImpl::GetSystemLocale() {
+const std::string& BrowserProcessImpl::GetSystemLocale() const {
   return system_locale_;
 }
 

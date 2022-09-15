@@ -102,7 +102,7 @@ class BrowserProcessImpl : public BrowserProcess {
   void SetApplicationLocale(const std::string& locale) override;
   void SetSystemLocale(const std::string& locale);
   const std::string& GetApplicationLocale() override;
-  const std::string& GetSystemLocale();
+  const std::string& GetSystemLocale() const;
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
 

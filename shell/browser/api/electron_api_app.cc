@@ -1040,7 +1040,7 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
-std::string App::GetSystemLocale() {
+std::string App::GetSystemLocale() const {
   return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
 }
 
