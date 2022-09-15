@@ -88,6 +88,7 @@ declare namespace Electron {
     detachFromOuterFrame(): void;
     setEmbedder(embedder: Electron.WebContents): void;
     viewInstanceId: number;
+    _setOwnerWindow(w: BaseWindow): void;
   }
 
   interface WebFrameMain {

@@ -1998,6 +1998,10 @@ void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
   SetOwnerWindow(GetWebContents(), owner_window);
 }
 
+void WebContents::SetOwnerBaseWindow(BaseWindow* owner_window) {
+  SetOwnerWindow(GetWebContents(), owner_window->window());
+}
+
 void WebContents::SetOwnerWindow(content::WebContents* web_contents,
                                  NativeWindow* owner_window) {
   if (owner_window) {
@@ -4033,6 +4037,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
+      .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
       .Build();
 }
 

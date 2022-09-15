@@ -84,7 +84,7 @@ BrowserWindow.fromWebContents = (webContents: WebContents) => {
 };
 
 BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
-  return browserView.ownerWindow;
+  return BrowserWindow.fromWebContents(browserView.webContents);
 };
 
 BrowserWindow.prototype.setTouchBar = function (touchBar) {
@@ -162,8 +162,10 @@ BrowserWindow.prototype.setBackgroundThrottling = function (allowed: boolean) {
 };
 
 BrowserWindow.prototype.addBrowserView = function (browserView: BrowserView) {
+  if (browserView.ownerWindow) { browserView.ownerWindow.removeBrowserView(browserView); }
   this.contentView.addChildView(browserView.webContentsView);
   browserView.ownerWindow = this;
+  browserView.webContents._setOwnerWindow(this);
   this._browserViews.push(browserView);
 };
 
@@ -193,7 +195,6 @@ BrowserWindow.prototype.getBrowserViews = function () {
 };
 
 BrowserWindow.prototype.setTopBrowserView = function (browserView: BrowserView) {
-  this.removeBrowserView(browserView);
   this.addBrowserView(browserView);
 };
 
