@@ -126,6 +126,128 @@ describe('BrowserView module', () => {
         view.setAutoResize(null as any);
       }).to.throw(/conversion failure/);
     });
+
+    it('resizes horizontally when the window is resized horizontally', () => {
+      view = new BrowserView();
+      view.setAutoResize({ width: true, height: false });
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 0, width: 400, height: 200 });
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 200
+      });
+      w.setSize(800, 400);
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 200
+      });
+    });
+
+    it('resizes vertically when the window is resized vertically', () => {
+      view = new BrowserView();
+      view.setAutoResize({ width: false, height: true });
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 0, width: 200, height: 400 });
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 400
+      });
+      w.setSize(400, 800);
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 800
+      });
+    });
+
+    it('resizes both vertically and horizontally when the window is resized', () => {
+      view = new BrowserView();
+      view.setAutoResize({ width: true, height: true });
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 0, width: 400, height: 400 });
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 400
+      });
+      w.setSize(800, 800);
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 800
+      });
+    });
+
+    it('resizes proportionally', () => {
+      view = new BrowserView();
+      view.setAutoResize({ width: true, height: false });
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 0, width: 200, height: 100 });
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 100
+      });
+      w.setSize(800, 400);
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 100
+      });
+    });
+
+    it('does not move x if horizontal: false', () => {
+      view = new BrowserView();
+      view.setAutoResize({ width: true });
+      w.addBrowserView(view);
+      view.setBounds({ x: 200, y: 0, width: 200, height: 100 });
+      w.setSize(800, 400);
+      expect(view.getBounds()).to.deep.equal({
+        x: 200,
+        y: 0,
+        width: 600,
+        height: 100
+      });
+    });
+
+    it('moves x if horizontal: true', () => {
+      view = new BrowserView();
+      view.setAutoResize({ horizontal: true });
+      w.addBrowserView(view);
+      view.setBounds({ x: 200, y: 0, width: 200, height: 100 });
+      w.setSize(800, 400);
+      expect(view.getBounds()).to.deep.equal({
+        x: 400,
+        y: 0,
+        width: 400,
+        height: 100
+      });
+    });
+
+    it('moves x if horizontal: true width: true', () => {
+      view = new BrowserView();
+      view.setAutoResize({ horizontal: true, width: true });
+      w.addBrowserView(view);
+      view.setBounds({ x: 200, y: 0, width: 200, height: 100 });
+      w.setSize(800, 400);
+      expect(view.getBounds()).to.deep.equal({
+        x: 400,
+        y: 0,
+        width: 400,
+        height: 100
+      });
+    });
   });
 
   describe('BrowserView.setBounds()', () => {
