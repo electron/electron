@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: blocked/need-repro
         if: github.event.label.name == 'blocked/need-repro'
-        uses: actions-cool/issues-helper@v3
+        uses: actions-cool/issues-helper@dad28fdb88da5f082c04659b7373d85790f9b135 # v3.3.0
         with:
           actions: 'create-comment'
           body: |
