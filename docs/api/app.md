@@ -723,6 +723,13 @@ Returns `string` - User operating system's locale two-letter [ISO 3166](https://
 
 **Note:** When unable to detect locale country code, it returns empty string.
 
+### `app.getSystemLocale()`
+
+Returns `string` - The current system locale, fetched using Chromium's `l10n_util` library.
+Possible return values are documented [here](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/l10n/l10n_util.cc).
+
+**Note:** On Windows, you have to call it after the `ready` events gets emitted.
+
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
 * `path` string

@@ -297,8 +297,16 @@ void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }
 
+void BrowserProcessImpl::SetSystemLocale(const std::string& locale) {
+  system_locale_ = locale;
+}
+
 const std::string& BrowserProcessImpl::GetApplicationLocale() {
   return locale_;
+}
+
+const std::string& BrowserProcessImpl::GetSystemLocale() {
+  return system_locale_;
 }
 
 printing::PrintJobManager* BrowserProcessImpl::print_job_manager() {
