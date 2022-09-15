@@ -12,6 +12,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/layout_manager_base.h"
 
 #include <limits>
@@ -56,6 +57,63 @@ struct Converter<views::ProposedLayout> {
 };
 
 template <>
+struct Converter<views::LayoutOrientation> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     views::LayoutOrientation* out) {
+    std::string orientation = base::ToLowerASCII(gin::V8ToString(isolate, val));
+    if (orientation == "horizontal") {
+      *out = views::LayoutOrientation::kHorizontal;
+    } else if (orientation == "vertical") {
+      *out = views::LayoutOrientation::kVertical;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
+template <>
+struct Converter<views::LayoutAlignment> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     views::LayoutAlignment* out) {
+    std::string orientation = base::ToLowerASCII(gin::V8ToString(isolate, val));
+    if (orientation == "start") {
+      *out = views::LayoutAlignment::kStart;
+    } else if (orientation == "center") {
+      *out = views::LayoutAlignment::kCenter;
+    } else if (orientation == "end") {
+      *out = views::LayoutAlignment::kEnd;
+    } else if (orientation == "stretch") {
+      *out = views::LayoutAlignment::kStretch;
+    } else if (orientation == "baseline") {
+      *out = views::LayoutAlignment::kBaseline;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
+template <>
+struct Converter<views::FlexAllocationOrder> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     views::FlexAllocationOrder* out) {
+    std::string orientation = base::ToLowerASCII(gin::V8ToString(isolate, val));
+    if (orientation == "normal") {
+      *out = views::FlexAllocationOrder::kNormal;
+    } else if (orientation == "reverse") {
+      *out = views::FlexAllocationOrder::kReverse;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
+template <>
 struct Converter<views::SizeBound> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const views::SizeBound& in) {
@@ -79,29 +137,24 @@ struct Converter<views::SizeBounds> {
 
 namespace electron::api {
 
+using LayoutCallback = base::RepeatingCallback<views::ProposedLayout(
+    const views::SizeBounds& size_bounds)>;
+
 class JSLayoutManager : public views::LayoutManagerBase {
  public:
-  JSLayoutManager(v8::Isolate* isolate, v8::Local<v8::Object> js_side)
-      : js_side_(isolate, js_side) {}
+  JSLayoutManager(LayoutCallback layout_callback)
+      : layout_callback_(std::move(layout_callback)) {}
   ~JSLayoutManager() override {}
 
   views::ProposedLayout CalculateProposedLayout(
       const views::SizeBounds& size_bounds) const override {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    gin_helper::Dictionary dict(isolate, js_side_.Get(isolate));
-    base::RepeatingCallback<views::ProposedLayout(
-        const views::SizeBounds& size_bounds)>
-        calculate_proposed_layout;
-    if (dict.Get("calculateProposedLayout", &calculate_proposed_layout)) {
-      views::ProposedLayout pl = calculate_proposed_layout.Run(size_bounds);
-      return pl;
-    }
-    return views::ProposedLayout();
+    return layout_callback_.Run(size_bounds);
   }
 
  private:
-  v8::Global<v8::Object> js_side_;
+  LayoutCallback layout_callback_;
 };
 
 View::View(views::View* view) : view_(view) {
@@ -132,8 +185,51 @@ void View::SetBounds(const gfx::Rect& bounds) {
   view()->SetBoundsRect(bounds);
 }
 
-void View::SetLayoutManager(v8::Isolate* isolate, v8::Local<v8::Object> value) {
-  view_->SetLayoutManager(std::make_unique<JSLayoutManager>(isolate, value));
+gfx::Rect View::GetBounds() {
+  return view()->bounds();
+}
+
+void View::SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value) {
+  gin_helper::Dictionary dict(isolate, value);
+  LayoutCallback calculate_proposed_layout;
+  if (dict.Get("calculateProposedLayout", &calculate_proposed_layout)) {
+    view_->SetLayoutManager(std::make_unique<JSLayoutManager>(
+        std::move(calculate_proposed_layout)));
+  } else {
+    auto* layout =
+        view_->SetLayoutManager(std::make_unique<views::FlexLayout>());
+    views::LayoutOrientation orientation;
+    if (dict.Get("orientation", &orientation))
+      layout->SetOrientation(orientation);
+    views::LayoutAlignment main_axis_alignment;
+    if (dict.Get("mainAxisAlignment", &main_axis_alignment))
+      layout->SetMainAxisAlignment(main_axis_alignment);
+    views::LayoutAlignment cross_axis_alignment;
+    if (dict.Get("crossAxisAlignment", &cross_axis_alignment))
+      layout->SetCrossAxisAlignment(cross_axis_alignment);
+    gfx::Insets interior_margin;
+    if (dict.Get("interiorMargin", &interior_margin))
+      layout->SetInteriorMargin(interior_margin);
+    int minimum_cross_axis_size;
+    if (dict.Get("minimumCrossAxisSize", &minimum_cross_axis_size))
+      layout->SetMinimumCrossAxisSize(minimum_cross_axis_size);
+    bool collapse_margins;
+    if (dict.Has("collapseMargins") &&
+        dict.Get("collapseMargins", &collapse_margins))
+      layout->SetCollapseMargins(collapse_margins);
+    bool include_host_insets_in_layout;
+    if (dict.Has("includeHostInsetsInLayout") &&
+        dict.Get("includeHostInsetsInLayout", &include_host_insets_in_layout))
+      layout->SetIncludeHostInsetsInLayout(include_host_insets_in_layout);
+    bool ignore_default_main_axis_margins;
+    if (dict.Has("ignoreDefaultMainAxisMargins") &&
+        dict.Get("ignoreDefaultMainAxisMargins",
+                 &ignore_default_main_axis_margins))
+      layout->SetIgnoreDefaultMainAxisMargins(ignore_default_main_axis_margins);
+    views::FlexAllocationOrder flex_allocation_order;
+    if (dict.Get("flexAllocationOrder", &flex_allocation_order))
+      layout->SetFlexAllocationOrder(flex_allocation_order);
+  }
 }
 
 std::vector<v8::Local<v8::Value>> View::GetChildren() {
@@ -188,7 +284,8 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addChildViewAt", &View::AddChildViewAt)
       .SetProperty("children", &View::GetChildren)
       .SetMethod("setBounds", &View::SetBounds)
-      .SetMethod("setLayoutManager", &View::SetLayoutManager);
+      .SetMethod("getBounds", &View::GetBounds)
+      .SetMethod("setLayout", &View::SetLayout);
 #endif
 }
 

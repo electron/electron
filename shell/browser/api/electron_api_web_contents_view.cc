@@ -14,6 +14,8 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/views/layout/flex_layout_types.h"
+#include "ui/views/view_class_properties.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
@@ -38,6 +40,10 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
   // managed by InspectableWebContents.
   set_delete_view(false);
 #endif
+  view()->SetProperty(
+      views::kFlexBehaviorKey,
+      views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
+                               views::MaximumFlexSizeRule::kUnbounded));
   Observe(web_contents->web_contents());
 }
 

@@ -31,7 +31,8 @@ class View : public gin_helper::Wrappable<View> {
   void AddChildViewAt(gin::Handle<View> child, size_t index);
 
   void SetBounds(const gfx::Rect& bounds);
-  void SetLayoutManager(v8::Isolate* isolate, v8::Local<v8::Object> value);
+  gfx::Rect GetBounds();
+  void SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value);
   std::vector<v8::Local<v8::Value>> GetChildren();
 #endif
 
