@@ -186,7 +186,7 @@ NSString* resolvePath(NSString* path) {
   NSString *standardizedPath = [path stringByStandardizingPath];
   char resolved[PATH_MAX];
   if (realpath([standardizedPath UTF8String], resolved) == NULL) return path;
-  return [NSString stringWithCString:resolved encoding:NSUTF8StringEncoding];
+  return @(resolved);
 }
 
 bool ElectronBundleMover::IsInApplicationsFolder(NSString* bundlePath) {
