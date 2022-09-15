@@ -56,6 +56,7 @@ class BrowserWindow : public BaseWindow,
   void WebContentsDestroyed() override;
 
   // ExtendedWebContentsObserver:
+  void OnCloseContents() override;
   void OnDraggableRegionsUpdated(
       const std::vector<mojom::DraggableRegionPtr>& regions) override;
   void OnSetContentBounds(const gfx::Rect& rect) override;

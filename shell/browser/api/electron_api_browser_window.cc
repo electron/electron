@@ -132,7 +132,7 @@ BrowserWindow::~BrowserWindow() {
       host->GetWidget()->RemoveInputEventObserver(this);
     api_web_contents_->RemoveObserver(this);
     // Destroy the WebContents.
-    api_web_contents_->Destroy();
+    OnCloseContents();
   }
 }
 
@@ -176,6 +176,10 @@ void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
 void BrowserWindow::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   CloseImmediately();
+}
+
+void BrowserWindow::OnCloseContents() {
+  api_web_contents_->Destroy();
 }
 
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
