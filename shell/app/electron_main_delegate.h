@@ -30,6 +30,8 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   ElectronMainDelegate(const ElectronMainDelegate&) = delete;
   ElectronMainDelegate& operator=(const ElectronMainDelegate&) = delete;
 
+  base::StringPiece GetBrowserV8SnapshotFilename() override;
+
  protected:
   // content::ContentMainDelegate:
   bool BasicStartupComplete(int* exit_code) override;
