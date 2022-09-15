@@ -2,7 +2,8 @@ daysUntilStale: 90
 daysUntilClose: 30
 exemptLabels:
   - discussion
-  - security
+  - security 🔒
+  - enhancement :sparkles:
 staleLabel: stale
 markComment: >
   This issue has been automatically marked as stale because it has not had
