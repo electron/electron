@@ -100,7 +100,9 @@ class BrowserProcessImpl : public BrowserProcess {
   void StartAutoupdateTimer() override {}
 #endif
   void SetApplicationLocale(const std::string& locale) override;
+  void SetSystemLocale(const std::string& locale);
   const std::string& GetApplicationLocale() override;
+  const std::string& GetSystemLocale();
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
 
@@ -110,6 +112,7 @@ class BrowserProcessImpl : public BrowserProcess {
 #endif
   std::unique_ptr<PrefService> local_state_;
   std::string locale_;
+  std::string system_locale_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
