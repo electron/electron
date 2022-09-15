@@ -326,16 +326,10 @@ void BrowserWindow::Blur() {
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
   SkColor color = ParseCSSColor(color_name);
-  web_contents()->SetPageBaseBackgroundColor(color);
-  auto* rwhv = web_contents()->GetRenderWidgetHostView();
-  if (rwhv) {
-    rwhv->SetBackgroundColor(color);
-    static_cast<content::RenderWidgetHostViewBase*>(rwhv)
-        ->SetContentBackgroundColor(color);
-  }
-  // Also update the web preferences object otherwise the view will be reset on
-  // the next load URL call
   if (api_web_contents_) {
+    api_web_contents_->SetBackgroundColor(color);
+    // Also update the web preferences object otherwise the view will be reset
+    // on the next load URL call
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {

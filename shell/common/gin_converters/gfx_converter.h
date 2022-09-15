@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_GFX_CONVERTER_H_
 
 #include "gin/converter.h"
+#include "shell/common/color_util.h"
 
 namespace display {
 class Display;
@@ -77,6 +78,13 @@ template <>
 struct Converter<gfx::ResizeEdge> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const gfx::ResizeEdge& val);
+};
+
+template <>
+struct Converter<WrappedSkColor> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     WrappedSkColor* out);
 };
 
 }  // namespace gin

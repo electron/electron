@@ -5,6 +5,7 @@
 #include "shell/common/gin_converters/gfx_converter.h"
 
 #include "gin/data_object_builder.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -215,6 +216,16 @@ v8::Local<v8::Value> Converter<gfx::ResizeEdge>::ToV8(
     default:
       return StringToV8(isolate, "unknown");
   }
+}
+
+bool Converter<WrappedSkColor>::FromV8(v8::Isolate* isolate,
+                                       v8::Local<v8::Value> val,
+                                       WrappedSkColor* out) {
+  std::string str;
+  if (!gin::ConvertFromV8(isolate, val, &str))
+    return false;
+  *out = electron::ParseCSSColor(str);
+  return true;
 }
 
 }  // namespace gin

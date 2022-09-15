@@ -12,6 +12,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/layout_manager_base.h"
 
@@ -242,6 +243,10 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
     ret.push_back(child_view.Get(isolate));
 
   return ret;
+}
+
+void View::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
+  view()->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
 }
 #endif
 

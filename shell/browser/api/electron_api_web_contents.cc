@@ -612,12 +612,6 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
   return file_system_paths.find(file_system_path) != file_system_paths.end();
 }
 
-void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
-  rwhv->SetBackgroundColor(color);
-  static_cast<content::RenderWidgetHostViewBase*>(rwhv)
-      ->SetContentBackgroundColor(color);
-}
-
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1478,15 +1472,8 @@ void WebContents::HandleNewRenderFrame(
 
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (web_preferences) {
-    absl::optional<SkColor> maybe_color = web_preferences->GetBackgroundColor();
-    web_contents()->SetPageBaseBackgroundColor(maybe_color);
-
-    bool guest = IsGuest();
-    SkColor color =
-        maybe_color.value_or(guest ? SK_ColorTRANSPARENT : SK_ColorWHITE);
-    SetBackgroundColor(rwhv, color);
-  }
+  if (web_preferences)
+    SetBackgroundColor(web_preferences->GetBackgroundColor());
 
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
@@ -3433,6 +3420,22 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   web_contents()->OnWebPreferencesChanged();
 }
 
+void WebContents::SetBackgroundColor(absl::optional<SkColor> maybe_color) {
+  web_contents()->SetPageBaseBackgroundColor(maybe_color);
+
+  content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
+  if (!rfh)
+    return;
+  content::RenderWidgetHostView* rwhv = rfh->GetView();
+  if (rwhv) {
+    SkColor color =
+        maybe_color.value_or(IsGuest() ? SK_ColorTRANSPARENT : SK_ColorWHITE);
+    rwhv->SetBackgroundColor(color);
+    static_cast<content::RenderWidgetHostViewBase*>(rwhv)
+        ->SetContentBackgroundColor(color);
+  }
+}
+
 v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -4113,14 +4116,8 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
       existing_preferences->SetFromDictionary(web_preferences_dict);
-      absl::optional<SkColor> color =
-          existing_preferences->GetBackgroundColor();
-      web_contents->web_contents()->SetPageBaseBackgroundColor(color);
-      // Because web preferences don't recognize transparency,
-      // only set rwhv background color if a color exists
-      auto* rwhv = web_contents->web_contents()->GetRenderWidgetHostView();
-      if (rwhv && color.has_value())
-        SetBackgroundColor(rwhv, color.value());
+      web_contents->SetBackgroundColor(
+          existing_preferences->GetBackgroundColor());
     }
   } else {
     // Create one if not.

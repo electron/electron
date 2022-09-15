@@ -32,6 +32,7 @@ class WebContentsView : public View, public content::WebContentsObserver {
 
   // Public APIs.
   gin::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
+  void SetBackgroundColor(absl::optional<WrappedSkColor> color);
 
  protected:
   // Takes an existing WebContents.

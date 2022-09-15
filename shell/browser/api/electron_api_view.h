@@ -9,6 +9,7 @@
 
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "ui/views/view.h"
 #include "v8/include/v8-value.h"
@@ -34,6 +35,7 @@ class View : public gin_helper::Wrappable<View> {
   gfx::Rect GetBounds();
   void SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value);
   std::vector<v8::Local<v8::Value>> GetChildren();
+  void SetBackgroundColor(absl::optional<WrappedSkColor> color);
 #endif
 
   views::View* view() const { return view_; }

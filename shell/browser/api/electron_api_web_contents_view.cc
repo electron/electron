@@ -9,6 +9,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -54,6 +55,20 @@ WebContentsView::~WebContentsView() {
 
 gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
   return gin::CreateHandle(isolate, api_web_contents_);
+}
+
+void WebContentsView::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
+  View::SetBackgroundColor(color);
+  if (api_web_contents_) {
+    api_web_contents_->SetBackgroundColor(color);
+    // Also update the web preferences object otherwise the view will be reset
+    // on the next load URL call
+    auto* web_preferences =
+        WebContentsPreferences::From(api_web_contents_->web_contents());
+    if (web_preferences) {
+      web_preferences->SetBackgroundColor(color);
+    }
+  }
 }
 
 void WebContentsView::WebContentsDestroyed() {
@@ -107,6 +122,7 @@ void WebContentsView::BuildPrototype(
     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "WebContentsView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("setBackgroundColor", &WebContentsView::SetBackgroundColor)
       .SetProperty("webContents", &WebContentsView::GetWebContents);
 }
 

@@ -430,6 +430,8 @@ class WebContents : public ExclusiveAccessContext,
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 
+  void SetBackgroundColor(absl::optional<SkColor> color);
+
   // disable copy
   WebContents(const WebContents&) = delete;
   WebContents& operator=(const WebContents&) = delete;
