@@ -1,4 +1,4 @@
-import { BaseWindow, WebContents, Event, TouchBar } from 'electron/main';
+import { BaseWindow, WebContents, Event, TouchBar, BrowserView } from 'electron/main';
 import type { BrowserWindow as BWT } from 'electron/main';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
@@ -83,6 +83,10 @@ BrowserWindow.fromWebContents = (webContents: WebContents) => {
   return webContents.getOwnerBrowserWindow();
 };
 
+BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
+  return browserView.ownerWindow;
+};
+
 BrowserWindow.prototype.setTouchBar = function (touchBar) {
   (TouchBar as any)._setOnWindow(touchBar, this);
 };
@@ -155,6 +159,42 @@ BrowserWindow.prototype.getBackgroundThrottling = function () {
 
 BrowserWindow.prototype.setBackgroundThrottling = function (allowed: boolean) {
   return this.webContents.setBackgroundThrottling(allowed);
+};
+
+BrowserWindow.prototype.addBrowserView = function (browserView: BrowserView) {
+  this.contentView.addChildView(browserView.webContentsView);
+  browserView.ownerWindow = this;
+  this._browserViews.push(browserView);
+};
+
+BrowserWindow.prototype.setBrowserView = function (browserView: BrowserView) {
+  this._browserViews.forEach(bv => {
+    this.removeBrowserView(bv);
+  });
+  this.addBrowserView(browserView);
+};
+
+BrowserWindow.prototype.removeBrowserView = function (browserView: BrowserView) {
+  const idx = this._browserViews.indexOf(browserView);
+  if (idx >= 0) {
+    this.contentView.removeChildView(browserView.webContentsView);
+    browserView.ownerWindow = null;
+    this._browserViews.splice(idx, 1);
+  }
+};
+
+BrowserWindow.prototype.getBrowserView = function () {
+  if (this._browserViews.length > 1) { throw new Error('This BrowserWindow has multiple BrowserViews, use getBrowserViews() instead'); }
+  return this._browserViews[0];
+};
+
+BrowserWindow.prototype.getBrowserViews = function () {
+  return [...this._browserViews];
+};
+
+BrowserWindow.prototype.setTopBrowserView = function (browserView: BrowserView) {
+  this.removeBrowserView(browserView);
+  this.addBrowserView(browserView);
 };
 
 module.exports = BrowserWindow;

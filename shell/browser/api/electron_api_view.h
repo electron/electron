@@ -30,6 +30,7 @@ class View : public gin_helper::Wrappable<View> {
 #if BUILDFLAG(ENABLE_VIEWS_API)
   void AddChildView(gin::Handle<View> child);
   void AddChildViewAt(gin::Handle<View> child, size_t index);
+  void RemoveChildView(gin::Handle<View> child);
 
   void SetBounds(const gfx::Rect& bounds);
   gfx::Rect GetBounds();

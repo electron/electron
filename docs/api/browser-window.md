@@ -737,6 +737,16 @@ Returns `BrowserWindow | null` - The window that is focused in this application,
 Returns `BrowserWindow | null` - The window that owns the given `webContents`
 or `null` if the contents are not owned by a window.
 
+#### `BrowserWindow.fromBrowserView(browserView)` _Deprecated_
+
+* `browserView` [BrowserView](browser-view.md)
+
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+Returns `BrowserWindow | null` - The window that owns the given `browserView`. If the given view is not attached to any window, returns `null`.
+
 #### `BrowserWindow.fromId(id)`
 
 * `id` Integer
@@ -1816,6 +1826,63 @@ machine has a touch bar and is running on macOS 10.12.1+.
 
 **Note:** The TouchBar API is currently experimental and may change or be
 removed in future Electron releases.
+
+#### `win.setBrowserView(browserView)` _Experimental_ _Deprecated_
+
+* `browserView` [BrowserView](browser-view.md) | null - Attach `browserView` to `win`.
+If there are other `BrowserView`s attached, they will be removed from
+this window.
+
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.getBrowserView()` _Experimental_ _Deprecated_
+
+Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
+if one is not attached. Throws an error if multiple `BrowserView`s are attached.
+
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.addBrowserView(browserView)` _Experimental_ _Deprecated_
+
+* `browserView` [BrowserView](browser-view.md)
+
+Replacement API for setBrowserView supporting work with multi browser views.
+
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.removeBrowserView(browserView)` _Experimental_ _Deprecated_
+
+* `browserView` [BrowserView](browser-view.md)
+
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.setTopBrowserView(browserView)` _Experimental_ _Deprecated_
+
+* `browserView` [BrowserView](browser-view.md)
+
+Raises `browserView` above other `BrowserView`s attached to `win`.
+Throws an error if `browserView` is not attached to `win`.
+
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
+
+#### `win.getBrowserViews()` _Experimental_ _Deprecated_
+
+Returns `BrowserView[]` - an array of all BrowserViews that have been attached
+with `addBrowserView` or `setBrowserView`.
+
+> **Note**
+> The `BrowserView` class is deprecated, and replaced by the new
+> [`WebContentsView`](web-contents-view.md) class.
 
 #### `win.setTitleBarOverlay(options)` _Windows_
 

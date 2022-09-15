@@ -16,6 +16,7 @@
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/layout_manager_base.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace gin {
@@ -182,6 +183,14 @@ void View::AddChildViewAt(gin::Handle<View> child, size_t index) {
   view()->AddChildViewAt(child->view(), index);
 }
 
+void View::RemoveChildView(gin::Handle<View> child) {
+  auto it = std::find(child_views_.begin(), child_views_.end(), child.ToV8());
+  if (it != child_views_.end()) {
+    view()->RemoveChildView(child->view());
+    child_views_.erase(it);
+  }
+}
+
 void View::SetBounds(const gfx::Rect& bounds) {
   view()->SetBoundsRect(bounds);
 }
@@ -287,6 +296,7 @@ void View::BuildPrototype(v8::Isolate* isolate,
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("addChildView", &View::AddChildView)
       .SetMethod("addChildViewAt", &View::AddChildViewAt)
+      .SetMethod("removeChildView", &View::RemoveChildView)
       .SetProperty("children", &View::GetChildren)
       .SetMethod("setBounds", &View::SetBounds)
       .SetMethod("getBounds", &View::GetBounds)
