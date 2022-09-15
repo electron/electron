@@ -13,7 +13,7 @@
 // ease of use in gin converters.
 struct WrappedSkColor {
   WrappedSkColor() {}
-  WrappedSkColor(SkColor c) : value(c) {}
+  WrappedSkColor(SkColor c) : value(c) {}  // NOLINT(runtime/explicit)
   SkColor value;
   operator SkColor() const { return value; }
 };

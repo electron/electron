@@ -1520,9 +1520,6 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   // handle minimized windows on Windows.
   const auto new_bounds = GetBounds();
   if (widget_size_ != new_bounds.size()) {
-    int width_delta = new_bounds.width() - widget_size_.width();
-    int height_delta = new_bounds.height() - widget_size_.height();
-
     NotifyWindowResize();
     widget_size_ = new_bounds.size();
   }
