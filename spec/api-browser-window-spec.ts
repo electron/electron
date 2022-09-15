@@ -2970,7 +2970,7 @@ describe('BrowserWindow module', () => {
         expect(url).to.equal(expectedUrl);
       });
 
-      it('exposes full EventEmmiter object to preload script', async () => {
+      it('exposes full EventEmitter object to preload script', async () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -2982,12 +2982,12 @@ describe('BrowserWindow module', () => {
         const [, rendererEventEmitterProperties] = await emittedOnce(ipcMain, 'answer');
         const { EventEmitter } = require('events');
         const emitter = new EventEmitter();
-        let browserEventEmitterProperties = '';
+        const browserEventEmitterProperties = [];
         let currentObj = emitter;
         do {
-          Object.getOwnPropertyNames(currentObj).map(property => { browserEventEmitterProperties += property + ';'; });
+          browserEventEmitterProperties.push(...Object.getOwnPropertyNames(currentObj));
         } while ((currentObj = Object.getPrototypeOf(currentObj)));
-        expect(rendererEventEmitterProperties).to.equal(browserEventEmitterProperties);
+        expect(rendererEventEmitterProperties).to.deep.equal(browserEventEmitterProperties);
       });
 
       it('should open windows in same domain with cross-scripting enabled', async () => {

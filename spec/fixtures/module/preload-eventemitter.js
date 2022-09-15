@@ -1,10 +1,10 @@
 (function () {
   const { EventEmitter } = require('events');
   const emitter = new EventEmitter();
-  let rendererEventEmitterProperties = '';
+  const rendererEventEmitterProperties = [];
   let currentObj = emitter;
   do {
-    Object.getOwnPropertyNames(currentObj).map(property => { rendererEventEmitterProperties += property + ';'; });
+    rendererEventEmitterProperties.push(...Object.getOwnPropertyNames(currentObj));
   } while ((currentObj = Object.getPrototypeOf(currentObj)));
   const { ipcRenderer } = require('electron');
   ipcRenderer.send('answer', rendererEventEmitterProperties);
