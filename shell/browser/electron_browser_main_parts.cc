@@ -11,6 +11,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/i18n/rtl.h"
 #include "base/metrics/field_trial.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -285,6 +286,13 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   if (!views::LayoutProvider::Get())
     layout_provider_ = std::make_unique<views::LayoutProvider>();
 
+    // Fetch the system locale for Electron.
+#if BUILDFLAG(IS_MAC)
+  fake_browser_process_->SetSystemLocale(GetCurrentSystemLocale());
+#else
+  fake_browser_process_->SetSystemLocale(base::i18n::GetConfiguredLocale());
+#endif
+
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string locale = command_line->GetSwitchValueASCII(::switches::kLang);
 
@@ -319,10 +327,6 @@ int ElectronBrowserMainParts::PreCreateThreads() {
     screen_ = views::CreateDesktopScreen();
   }
 #endif
-
-  // Fetch the system locale for Electron.
-  fake_browser_process_->SetSystemLocale(
-      l10n_util::GetApplicationLocale("", false));
 
   // Initialize the app locale for Electron and Chromium.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
