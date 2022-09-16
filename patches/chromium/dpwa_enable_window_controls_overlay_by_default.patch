@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hassan Talat <hatalat@microsoft.com>
+Date: Mon, 13 Jun 2022 21:27:53 +0000
+Subject: dpwa: Enable Window Controls Overlay by default
+
+This reverts commit d61c4042374672712176e43e33f39a1e66da4faa.
+I2S: https://groups.google.com/a/chromium.org/g/blink-dev/c/guI1QCPJTAA
+
+Bug: 937121
+Change-Id: I3dfebec2356c7a12fd7eab32f12ef8d9e4bf6ee6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3430266
+Commit-Queue: Alex Russell <slightlyoff@chromium.org>
+Reviewed-by: Alex Russell <slightlyoff@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1013665}
+
+diff --git a/content/public/common/content_features.cc b/content/public/common/content_features.cc
+index aa4a054fad59f57af17251a3ede7cd6c9806b4cb..ea32976ab88bdae7417b2e0ce25d6778369085ae 100644
+--- a/content/public/common/content_features.cc
++++ b/content/public/common/content_features.cc
+@@ -1045,7 +1045,7 @@ const base::Feature kV8VmFuture{"V8VmFuture",
+ 
+ // Enable window controls overlays for desktop PWAs
+ const base::Feature kWebAppWindowControlsOverlay{
+-    "WebAppWindowControlsOverlay", base::FEATURE_DISABLED_BY_DEFAULT};
++    "WebAppWindowControlsOverlay", base::FEATURE_ENABLED_BY_DEFAULT};
+ 
+ // Enable WebAssembly baseline compilation (Liftoff).
+ const base::Feature kWebAssemblyBaseline{"WebAssemblyBaseline",
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 47cfcc8c758bed2fe46c6c75ba45b3cec2576ba6..ebf862fcc88579db6300b6972187f4b06f2af9e3 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -2543,7 +2543,7 @@
+       name: "WebAppWindowControlsOverlay",
+       origin_trial_feature_name: "WebAppWindowControlsOverlay",
+       origin_trial_os: ["win", "mac", "linux", "chromeos"],
+-      status: "experimental",
++      status: "stable",
+     },
+     {
+       name: "WebAssemblyCSP",
+diff --git a/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-navigated-expected.txt b/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-navigated-expected.txt
+index a2bac6e1f0fc6404a8fabbab87cd78da3e50570c..d6e4d3d5846ec3de2056af5a89a74f168a0e216d 100644
+--- a/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-navigated-expected.txt
++++ b/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-navigated-expected.txt
+@@ -77,6 +77,8 @@ PASS window.cached_navigator_virtualKeyboard.boundingRect.x is 0
+ PASS window.cached_navigator_virtualKeyboard.boundingRect.y is 0
+ PASS window.cached_navigator_virtualKeyboard.ongeometrychange is null
+ PASS window.cached_navigator_virtualKeyboard.overlaysContent is false
++PASS window.cached_navigator_windowControlsOverlay.ongeometrychange is null
++PASS window.cached_navigator_windowControlsOverlay.visible is false
+ PASS window.cached_navigator_xr.ondevicechange is null
+ PASS window.cached_performance.onresourcetimingbufferfull is null
+ PASS window.cached_performance_navigation.redirectCount is 0
+diff --git a/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-removed-and-gced-expected.txt b/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-removed-and-gced-expected.txt
+index 9b413dea03d864d6cef496279187b39cf81ba4b0..5cfdedb36e5f9bd0dbfae11d5ba5cc1172823071 100644
+--- a/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-removed-and-gced-expected.txt
++++ b/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-removed-and-gced-expected.txt
+@@ -77,6 +77,8 @@ PASS window.cached_navigator_virtualKeyboard.boundingRect.x is 0
+ PASS window.cached_navigator_virtualKeyboard.boundingRect.y is 0
+ PASS window.cached_navigator_virtualKeyboard.ongeometrychange is null
+ PASS window.cached_navigator_virtualKeyboard.overlaysContent is false
++PASS window.cached_navigator_windowControlsOverlay.ongeometrychange is null
++PASS window.cached_navigator_windowControlsOverlay.visible is false
+ PASS window.cached_navigator_xr.ondevicechange is null
+ PASS window.cached_performance.onresourcetimingbufferfull is null
+ PASS window.cached_performance_navigation.redirectCount is 0
+diff --git a/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-removed-expected.txt b/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-removed-expected.txt
+index 6f480ccfc7031fbdab98b50511a667aed5840af1..37bba469a00c719128762f861313e383d1ad4b86 100644
+--- a/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-removed-expected.txt
++++ b/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-properties-after-frame-removed-expected.txt
+@@ -77,6 +77,8 @@ PASS window.cached_navigator_virtualKeyboard.boundingRect.x is 0
+ PASS window.cached_navigator_virtualKeyboard.boundingRect.y is 0
+ PASS window.cached_navigator_virtualKeyboard.ongeometrychange is null
+ PASS window.cached_navigator_virtualKeyboard.overlaysContent is false
++PASS window.cached_navigator_windowControlsOverlay.ongeometrychange is null
++PASS window.cached_navigator_windowControlsOverlay.visible is false
+ PASS window.cached_navigator_xr.ondevicechange is null
+ PASS window.cached_performance.onresourcetimingbufferfull is null
+ PASS window.cached_performance_navigation.redirectCount is 0
+diff --git a/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-window-after-frame-navigated-expected.txt b/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-window-after-frame-navigated-expected.txt
+index ef72385e2cc50ae9519f2d0cf496e8cc771cf5aa..36efa30d35e4b8e5e7752bfde58f50cdef865e89 100644
+--- a/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-window-after-frame-navigated-expected.txt
++++ b/third_party/blink/web_tests/virtual/stable/fast/dom/Window/property-access-on-cached-window-after-frame-navigated-expected.txt
+@@ -87,6 +87,8 @@ PASS oldChildWindow.navigator.virtualKeyboard.boundingRect.y is newChildWindow.n
+ PASS oldChildWindow.navigator.virtualKeyboard.ongeometrychange is newChildWindow.navigator.virtualKeyboard.ongeometrychange
+ PASS oldChildWindow.navigator.virtualKeyboard.overlaysContent is newChildWindow.navigator.virtualKeyboard.overlaysContent
+ PASS oldChildWindow.navigator.webdriver is newChildWindow.navigator.webdriver
++PASS oldChildWindow.navigator.windowControlsOverlay.ongeometrychange is newChildWindow.navigator.windowControlsOverlay.ongeometrychange
++PASS oldChildWindow.navigator.windowControlsOverlay.visible is newChildWindow.navigator.windowControlsOverlay.visible
+ PASS oldChildWindow.navigator.xr.ondevicechange is newChildWindow.navigator.xr.ondevicechange
+ PASS oldChildWindow.onabort is newChildWindow.onabort
+ PASS oldChildWindow.onafterprint is newChildWindow.onafterprint
+diff --git a/third_party/blink/web_tests/virtual/stable/webexposed/global-interface-listing-expected.txt b/third_party/blink/web_tests/virtual/stable/webexposed/global-interface-listing-expected.txt
+index 1f0f00e9879c0e5f24029617d146f760e6abb100..6789814dd76154ce4d2547d5e89616255585249f 100644
+--- a/third_party/blink/web_tests/virtual/stable/webexposed/global-interface-listing-expected.txt
++++ b/third_party/blink/web_tests/virtual/stable/webexposed/global-interface-listing-expected.txt
+@@ -4955,6 +4955,7 @@ interface Navigator
+     getter webdriver
+     getter webkitPersistentStorage
+     getter webkitTemporaryStorage
++    getter windowControlsOverlay
+     getter xr
+     method clearAppBadge
+     method constructor
+@@ -9646,6 +9647,18 @@ interface Window : EventTarget
+     attribute PERSISTENT
+     attribute TEMPORARY
+     method constructor
++interface WindowControlsOverlay : EventTarget
++    attribute @@toStringTag
++    getter ongeometrychange
++    getter visible
++    method constructor
++    method getTitlebarAreaRect
++    setter ongeometrychange
++interface WindowControlsOverlayGeometryChangeEvent : Event
++    attribute @@toStringTag
++    getter titlebarAreaRect
++    getter visible
++    method constructor
+ interface Worker : EventTarget
+     attribute @@toStringTag
+     getter onerror
