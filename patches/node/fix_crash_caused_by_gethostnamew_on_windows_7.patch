@@ -6,7 +6,7 @@ Subject: fix: crash caused by GetHostNameW on Windows 7
 Backported from https://github.com/libuv/libuv/pull/3285.
 
 diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
-index 33e874ac442f88b58d2b68c8ec9764f6f664552e..2d4cc0aaa02e61bf359e80eca27527efb49fd85e 100644
+index 33e874ac442f88b58d2b68c8ec9764f6f664552e..37ece5e2867ab836492a8b7faa0aa5e1b8e562f0 100644
 --- a/deps/uv/src/win/util.c
 +++ b/deps/uv/src/win/util.c
 @@ -37,6 +37,7 @@
@@ -166,3 +166,17 @@ index 33e874ac442f88b58d2b68c8ec9764f6f664552e..2d4cc0aaa02e61bf359e80eca27527ef
  int uv_os_gethostname(char* buffer, size_t* size) {
    WCHAR buf[UV_MAXHOSTNAMESIZE];
    size_t len;
+@@ -1674,10 +1803,10 @@ int uv_os_gethostname(char* buffer, size_t* size) {
+ 
+   uv__once_init(); /* Initialize winsock */
+ 
+-  if (pGetHostNameW == NULL)
+-    return UV_ENOSYS;
++  uv_sGetHostNameW gethostnamew =
++      pGetHostNameW == NULL ? uv__gethostnamew_nt60 : pGetHostNameW;
+ 
+-  if (pGetHostNameW(buf, UV_MAXHOSTNAMESIZE) != 0)
++  if (gethostnamew(buf, UV_MAXHOSTNAMESIZE) != 0)
+     return uv_translate_sys_error(WSAGetLastError());
+ 
+   convert_result = uv__convert_utf16_to_utf8(buf, -1, &utf8_str);
