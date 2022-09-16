@@ -144,6 +144,10 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/native_window_views.h"
+#endif
+
 #if !BUILDFLAG(IS_MAC)
 #include "ui/aura/window.h"
 #else
@@ -176,9 +180,8 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
-#include "shell/browser/native_window_views.h"
 #endif
-#endif
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
@@ -1180,8 +1183,9 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnSetContentBounds(rect);
+  if (!Emit("content-bounds-updated", rect))
+    for (ExtendedWebContentsObserver& observer : observers_)
+      observer.OnSetContentBounds(rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {

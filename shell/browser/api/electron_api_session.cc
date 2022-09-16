@@ -1043,6 +1043,7 @@ base::Value Session::GetSpellCheckerLanguages() {
 void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
+#if !BUILDFLAG(IS_MAC)
   base::Value::List language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
@@ -1058,10 +1059,12 @@ void Session::SetSpellCheckerLanguages(
   // Enable spellcheck if > 0 languages, disable if no languages set
   browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
                                         !languages.empty());
+#endif
 }
 
 void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
                                           const GURL& url) {
+#if !BUILDFLAG(IS_MAC)
   if (!url.is_valid()) {
     thrower.ThrowError(
         "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
@@ -1069,6 +1072,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
     return;
   }
   SpellcheckHunspellDictionary::SetBaseDownloadURL(url);
+#endif
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
