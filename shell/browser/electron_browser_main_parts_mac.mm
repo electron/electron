@@ -4,6 +4,8 @@
 
 #include "shell/browser/electron_browser_main_parts.h"
 
+#include <string>
+
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
@@ -72,6 +74,25 @@ void ElectronBrowserMainParts::InitializeMainNib() {
 
   [mainNib instantiateWithOwner:application topLevelObjects:nil];
   [mainNib release];
+}
+
+std::string GetCurrentSystemLocale() {
+  NSString* systemLocaleIdentifier =
+      [[NSLocale currentLocale] localeIdentifier];
+
+  // Mac OS X uses "_" instead of "-", so swap to get a real locale value.
+  std::string locale_value = [[systemLocaleIdentifier
+      stringByReplacingOccurrencesOfString:@"_"
+                                withString:@"-"] UTF8String];
+
+  // On disk the "en-US" resources are just "en" (http://crbug.com/25578), so
+  // the reverse mapping is done here to continue to feed Chrome the same values
+  // in all cases on all platforms.  (l10n_util maps en to en-US if it gets
+  // passed this on the command line)
+  if (locale_value == "en")
+    locale_value = "en-US";
+
+  return locale_value;
 }
 
 }  // namespace electron

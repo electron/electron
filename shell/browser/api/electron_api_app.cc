@@ -1039,7 +1039,13 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
-std::string App::GetSystemLocale() const {
+std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.getSystemLocale() can only be called "
+        "after app is ready");
+    return std::string();
+  }
   return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
 }
 
