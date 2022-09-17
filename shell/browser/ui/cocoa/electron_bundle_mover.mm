@@ -181,11 +181,12 @@ bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
 bool ElectronBundleMover::IsCurrentAppInApplicationsFolder() {
   return IsInApplicationsFolder([[NSBundle mainBundle] bundlePath]);
 }
-  
+
 NSString* resolvePath(NSString* path) {
-  NSString *standardizedPath = [path stringByStandardizingPath];
+  NSString* standardizedPath = [path stringByStandardizingPath];
   char resolved[PATH_MAX];
-  if (realpath([standardizedPath UTF8String], resolved) == NULL) return path;
+  if (realpath([standardizedPath UTF8String], resolved) == NULL)
+    return path;
   return @(resolved);
 }
 
