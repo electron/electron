@@ -76,7 +76,7 @@ void ElectronBrowserMainParts::InitializeMainNib() {
   [mainNib release];
 }
 
-std::string GetCurrentSystemLocale() {
+std::string ElectronBrowserMainParts::GetCurrentSystemLocale() {
   NSString* systemLocaleIdentifier =
       [[NSLocale currentLocale] localeIdentifier];
 
