@@ -283,10 +283,11 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {
-  if (!views::LayoutProvider::Get())
+  if (!views::LayoutProvider::Get()) {
     layout_provider_ = std::make_unique<views::LayoutProvider>();
+  }
 
-    // Fetch the system locale for Electron.
+  // Fetch the system locale for Electron.
 #if BUILDFLAG(IS_MAC)
   fake_browser_process_->SetSystemLocale(GetCurrentSystemLocale());
 #else
