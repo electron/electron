@@ -33,7 +33,7 @@ namespace extensions {
 
 namespace {
 
-void AddStringsForPdf(base::DictionaryValue* dict) {
+void AddStringsForPdf(base::Value::Dict* dict) {
 #if BUILDFLAG(ENABLE_PDF)
   static constexpr webui::LocalizedString kPdfResources[] = {
       {"passwordDialogTitle", IDS_PDF_PASSWORD_DIALOG_TITLE},
@@ -55,16 +55,16 @@ void AddStringsForPdf(base::DictionaryValue* dict) {
       {"tooltipZoomOut", IDS_PDF_TOOLTIP_ZOOM_OUT},
   };
   for (const auto& resource : kPdfResources)
-    dict->SetString(resource.name, l10n_util::GetStringUTF16(resource.id));
+    dict->Set(resource.name, l10n_util::GetStringUTF16(resource.id));
 
-  dict->SetString("presetZoomFactors", zoom::GetPresetZoomFactorsAsJSON());
+  dict->Set("presetZoomFactors", zoom::GetPresetZoomFactorsAsJSON());
 #endif  // BUILDFLAG(ENABLE_PDF)
 }
 
-void AddAdditionalDataForPdf(base::DictionaryValue* dict) {
+void AddAdditionalDataForPdf(base::Value::Dict* dict) {
 #if BUILDFLAG(ENABLE_PDF)
-  dict->SetKey("pdfAnnotationsEnabled", base::Value(false));
-  dict->SetKey("printingEnabled", base::Value(true));
+  dict->Set("pdfAnnotationsEnabled", base::Value(false));
+  dict->Set("printingEnabled", base::Value(true));
 #endif  // BUILDFLAG(ENABLE_PDF)
 }
 
@@ -81,14 +81,14 @@ ResourcesPrivateGetStringsFunction::~ResourcesPrivateGetStringsFunction() =
 ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
   std::unique_ptr<get_strings::Params> params(
       get_strings::Params::Create(args()));
-  auto dict = std::make_unique<base::Value::Dict>();
+  base::Value::Dict dict;
 
   api::resources_private::Component component = params->component;
 
   switch (component) {
     case api::resources_private::COMPONENT_PDF:
-      AddStringsForPdf(dict.get());
-      AddAdditionalDataForPdf(dict.get());
+      AddStringsForPdf(&dict);
+      AddAdditionalDataForPdf(&dict);
       break;
     case api::resources_private::COMPONENT_IDENTITY:
       NOTREACHED();
@@ -99,10 +99,9 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
   }
 
   const std::string& app_locale = g_browser_process->GetApplicationLocale();
-  webui::SetLoadTimeDataDefaults(app_locale, dict.get());
+  webui::SetLoadTimeDataDefaults(app_locale, &dict);
 
-  return RespondNow(
-      OneArgument(base::Value::FromUniquePtrValue(std::move(dict))));
+  return RespondNow(WithArguments(std::move(dict)));
 }
 
 }  // namespace extensions
