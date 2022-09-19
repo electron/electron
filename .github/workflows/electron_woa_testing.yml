@@ -10,6 +10,8 @@ on:
         type: text
         required: true
 
+permissions: {}
+
 jobs:
   electron-woa-init:
     if: ${{ github.event_name == 'push' && github.repository == 'electron/electron' }}
@@ -20,11 +22,13 @@ jobs:
             echo "This job is a needed initialization step for Electron WOA testing.  Another test result will appear once the electron-woa-testing build is done."
 
   electron-woa-testing:    
+
     if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'electron/electron' }}    
     runs-on: [self-hosted, woa]  
     permissions:
-      checks: write
+      checks: write # to create checks (LouisBrunner/checks-action)
       pull-requests: write
+      contents: read # to fetch code (actions/checkout)
     steps:
     - uses: LouisBrunner/checks-action@v1.1.1
       with:
