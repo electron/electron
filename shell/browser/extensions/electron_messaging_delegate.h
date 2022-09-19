@@ -27,7 +27,7 @@ class ElectronMessagingDelegate : public MessagingDelegate {
   PolicyPermission IsNativeMessagingHostAllowed(
       content::BrowserContext* browser_context,
       const std::string& native_host_name) override;
-  std::unique_ptr<base::DictionaryValue> MaybeGetTabInfo(
+  absl::optional<base::Value::Dict> MaybeGetTabInfo(
       content::WebContents* web_contents) override;
   content::WebContents* GetWebContentsByTabId(
       content::BrowserContext* browser_context,

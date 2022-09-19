@@ -14,7 +14,6 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -135,6 +134,7 @@ BrowserWindow::~BrowserWindow() {
     api_web_contents_->RemoveObserver(this);
     // Destroy the WebContents.
     OnCloseContents();
+    api_web_contents_->Destroy();
   }
 }
 
@@ -182,7 +182,6 @@ void BrowserWindow::WebContentsDestroyed() {
 
 void BrowserWindow::OnCloseContents() {
   BaseWindow::ResetBrowserViews();
-  api_web_contents_->Destroy();
 }
 
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
@@ -506,8 +505,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
 
 void BrowserWindow::NotifyWindowUnresponsive() {
   window_unresponsive_closure_.Cancel();
-  if (!window_->IsClosed() && window_->IsEnabled() &&
-      !IsUnresponsiveEventSuppressed()) {
+  if (!window_->IsClosed() && window_->IsEnabled()) {
     Emit("unresponsive");
   }
 }

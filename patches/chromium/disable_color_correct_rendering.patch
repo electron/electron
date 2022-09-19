@@ -81,10 +81,10 @@ index 9d34ced366026eb7cdd00ce40a4eb1af56180d39..abf67f8246bfa37df08cd2216c388dd3
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 81cd08b72e56dd2893f252bba5a2291983e3d06c..4c90b6d5780cfda9ffdc0623fe856f2ad651314a 100644
+index 510c2bb4c8a859a36605eb4dbfc5b5ce11a9334d..b685b682ee12861b8e9de0bfa83d2ad054a11898 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -228,6 +228,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -224,6 +224,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
