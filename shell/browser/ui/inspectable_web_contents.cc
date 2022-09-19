@@ -576,7 +576,7 @@ void InspectableWebContents::LoadCompleted() {
       const base::Value::Dict& prefs =
           pref_service_->GetDict(kDevToolsPreferences);
       const std::string* current_dock_state =
-          prefs->FindStringKey("currentDockState");
+          prefs.FindString("currentDockState");
       base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
     std::u16string javascript = base::UTF8ToUTF16(
@@ -857,14 +857,13 @@ void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
 }
 
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
-  const base::Value::Dict& prefs = pref_service_->GetDict(kDevToolsPreferences);
-  std::move(callback).Run(prefs);
+  const base::Value& prefs = pref_service_->GetValue(kDevToolsPreferences);
+  std::move(callback).Run(&prefs);
 }
 
 void InspectableWebContents::GetPreference(DispatchCallback callback,
                                            const std::string& name) {
-  if (auto* pref =
-          pref_service_->GetDict(kDevToolsPreferences)->FindKey(name)) {
+  if (auto* pref = pref_service_->GetDict(kDevToolsPreferences).Find(name)) {
     std::move(callback).Run(pref);
     return;
   }
