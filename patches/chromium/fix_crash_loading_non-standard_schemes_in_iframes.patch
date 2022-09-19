@@ -37,10 +37,28 @@ index 9beedcefa5649f0f8afae04e7fa9b6aac5401f2d..14477ca44be4b8d8f424b9545abc14d9
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 1f7a7bdd29011b73152143a383df0424cd67855d..9bce51e9526329d1e45ec94a7115c977a368567b 100644
+index 1f7a7bdd29011b73152143a383df0424cd67855d..ef91a3c98bc1ac317e5297348383621c6a29b4b6 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2885,17 +2885,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2550,6 +2550,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+       const storage::BucketInfo& bucket,
+       mojo::PendingReceiver<blink::mojom::CacheStorage> receiver) override;
+ 
++  // Returns whether the given origin and URL is allowed to commit in the
++  // current RenderFrameHost. The |url| is used to ensure it matches the origin
++  // in cases where it is applicable. This is a more conservative check than
++  // RenderProcessHost::FilterURL, since it will be used to kill processes that
++  // commit unauthorized origins.
++  CanCommitStatus CanCommitOriginAndUrl(const url::Origin& origin,
++                                        const GURL& url,
++                                        bool is_same_document_navigation,
++                                        bool is_pdf,
++                                        bool is_sandboxed);
++
+  protected:
+   friend class RenderFrameHostFactory;
+ 
+@@ -2885,17 +2896,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
