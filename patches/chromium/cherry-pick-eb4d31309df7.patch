@@ -1,7 +1,7 @@
-From eb4d31309df7e555e928388778fe8a0801b4ede6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Stefan Zager <szager@chromium.org>
-Date: Fri, 09 Sep 2022 01:56:46 +0000
-Subject: [PATCH] Fix for reference to invalid iterator
+Date: Fri, 9 Sep 2022 01:56:46 +0000
+Subject: Fix for reference to invalid iterator
 
 Evidently, LocalFrameView::layout_subtree_root_list_ can be modified
 during LayoutFromRootObject, leaving the loop variable in an invalid
@@ -22,13 +22,12 @@ Auto-Submit: Srinivas Sista <srinivassista@chromium.org>
 Reviewed-by: Stefan Zager <szager@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5112@{#1566}
 Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
----
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
-index 7890e7b..9eefcdd 100644
+index 8a9dabd602b54b4801406bffb26723b4105c5fdc..82963b7edb85da99f4bbf345b22e70d50ac1573c 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_view.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
-@@ -826,6 +826,7 @@
+@@ -821,6 +821,7 @@ void LocalFrameView::PerformLayout() {
        }
        for (auto& root : layout_subtree_root_list_.Ordered()) {
          bool should_rebuild_fragments = false;
@@ -36,7 +35,7 @@ index 7890e7b..9eefcdd 100644
          LayoutBlock* cb = root->ContainingNGBlock();
          if (cb) {
            auto it = fragment_tree_spines.find(cb);
-@@ -845,7 +846,7 @@
+@@ -840,7 +841,7 @@ void LocalFrameView::PerformLayout() {
          // We need to ensure that we mark up all layoutObjects up to the
          // LayoutView for paint invalidation. This simplifies our code as we
          // just always do a full tree walk.
