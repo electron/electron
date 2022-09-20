@@ -35,7 +35,7 @@ index 669587afa84448b654e5086cc0030030be72985e..d5accf5035c18aee3f2d0083032f48dc
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 3fcff27da7ab1094da4fa91bcf6822f5414dd1ef..ab898ebd5da178e0ca5510059ee97a5843314d8b 100644
+index ed65d3d86f73759c6bcd06b7b3daae69c16419df..443044170f72accbd8c10b79db95b69b77cb0825 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -93,6 +93,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -156,7 +156,7 @@ index 75d7af9a79d4e7f2cd39e45496ab5fff66407638..35b0bb908245330fbdc5205caa3299bf
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index d673aad86614dda27051a965d1c6b4f7d27cae3d..808522f56d128f3c9d3bcaf0d27ac7666e6ad0f8 100644
+index 53a1c6b7ed7953506ebf5f556d81e3fb74ad664b..e3d59fd8b9178f52af213ed7da6150248f4da1d9 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@
@@ -167,7 +167,7 @@ index d673aad86614dda27051a965d1c6b4f7d27cae3d..808522f56d128f3c9d3bcaf0d27ac766
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -178,6 +179,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -182,6 +183,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

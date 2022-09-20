@@ -122,10 +122,10 @@ index f50448237c40710e25644c2f7d44e8d0bc0789c8..fd351c916993a8950b595c103f3f5a40
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 9bb0ff3ed665db06645e1268f346693e9fd2358a..f77eef1d12cee532beef4b2f65eaae11bfb35ca5 100644
+index 644990412b4d67789faffc65c4f1114fa96c8f42..085ceafcda3f66b27cec2aedde86ac7ca23fcf8f 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -42,6 +42,7 @@
+@@ -43,6 +43,7 @@
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
@@ -133,7 +133,7 @@ index 9bb0ff3ed665db06645e1268f346693e9fd2358a..f77eef1d12cee532beef4b2f65eaae11
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -55,6 +56,7 @@
+@@ -56,6 +57,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -141,7 +141,7 @@ index 9bb0ff3ed665db06645e1268f346693e9fd2358a..f77eef1d12cee532beef4b2f65eaae11
  
  namespace {
  
-@@ -114,8 +116,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -115,8 +117,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -152,7 +152,7 @@ index 9bb0ff3ed665db06645e1268f346693e9fd2358a..f77eef1d12cee532beef4b2f65eaae11
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        low_energy_discovery_manager_(
-@@ -356,8 +360,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -357,8 +361,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -313,10 +313,10 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..b048bb27eee1001c2bc34092220150d3
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index 7c5118e9c54efddd0985093d589f0839a1a4449c..8541f2018181b2a40172bf9c2343db9dd28f3bb2 100644
+index fe043e6dc2203a9054ae367b70a3854b8560c9c7..8d8ba5065d3c50263650eb2452a0f81449d40a25 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-@@ -87,6 +87,7 @@
+@@ -88,6 +88,7 @@
      }
    }
  
@@ -324,7 +324,7 @@ index 7c5118e9c54efddd0985093d589f0839a1a4449c..8541f2018181b2a40172bf9c2343db9d
    // AXTextMarker
    if (IsAXTextMarker(value)) {
      return AXTextMarkerToBaseValue(value, indexer);
-@@ -95,6 +96,7 @@
+@@ -96,6 +97,7 @@
    // AXTextMarkerRange
    if (IsAXTextMarkerRange(value))
      return AXTextMarkerRangeToBaseValue(value, indexer);

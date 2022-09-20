@@ -64,7 +64,7 @@ index b3cf48eb7c6581605997e31b55d7f3ff95dd7b27..cb700cd45c02b718c7b21bf6579eba10
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 738ddb6dd65134e6fb25dba8fc7ccc6ea6cecc5d..d30f934ffb58c3a364c205d22ccd9bdd70241cd5 100644
+index 50a58d700db4bad905a3edd0711fffed36cb345d..7177a1547e2d4cb31ebbab57189d71c39a13de8e 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -2576,6 +2576,7 @@ void LocalFrame::RequestExecuteScript(
@@ -98,7 +98,7 @@ index 448d1b81b1b908ba64f8bc93c3790e73c8c93e66..b49da5bb62271efeca3d6c0a3f8b43f0
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index cd47b48dcbdd4879824d7e858f077e7c2d8ff6cf..29d7465f01952fffa6f073c0b1873327262be544 100644
+index d65ce43400f1e6b2d1a9f06804a9e488434a9252..0454167b05373c43c85c27c785996d16032d16b0 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -1034,6 +1034,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
@@ -110,7 +110,7 @@ index cd47b48dcbdd4879824d7e858f077e7c2d8ff6cf..29d7465f01952fffa6f073c0b1873327
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index c638d405d0274d43ecfac53fcb48f0f93194e4be..76fd86cd55f0ef438103b9e5236cf4b1eabc913f 100644
+index 27435cae5ccad448f2d1d22b5fcab9c6a2932d18..8ff41d39dc87aab5e2a85544405fe10390a83ebc 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 @@ -248,7 +248,7 @@ void PausableScriptExecutor::CreateAndRun(
