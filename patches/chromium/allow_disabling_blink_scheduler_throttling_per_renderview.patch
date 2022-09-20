@@ -72,10 +72,10 @@ index f3b681ec44c57f69c57390f31bd951cef8de3f0c..2fbe866ddf50d7eb324b0e2e4d120f4c
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 42d8fbbe94f87a1693205d72ba55d6ede65d6371..55a2d5dc4dc43ffaaa07e335cfa9b85323195c79 100644
+index 9dd8b8ba4eee9721ce4d9e5b7233dc095d33c869..ef7aa18ce03aede5fd8320f2e96e7b23b833ae69 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3807,6 +3807,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3807,13 +3807,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -89,16 +89,15 @@ index 42d8fbbe94f87a1693205d72ba55d6ede65d6371..55a2d5dc4dc43ffaaa07e335cfa9b853
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3818,7 +3825,8 @@ void WebViewImpl::SetVisibilityState(
-   }
+   DCHECK(GetPage());
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(
 -      visibility_state == mojom::blink::PageVisibilityState::kVisible);
 +      scheduler_throttling_allowed_ ?
 +          (visibility_state == mojom::blink::PageVisibilityState::kVisible) : true);
- }
- 
- mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
+   // Notify observers of the change.
+   if (!is_initial_state) {
+     for (auto& observer : observers_)
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
 index 49da24df2b0136eed93ba36e7fbde8772a366c8f..65f7f120d1f518883f5709ed32d2d43f440e3388 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
