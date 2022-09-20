@@ -797,7 +797,8 @@ app.whenReady().then(() => {
 
 Sets a handler to respond to bluetooth pairing requests. This handler
 allows developers to handle devices that require additional validation
-before pairing.
+before pairing.  When a handler is not defined, any pairing on Linux or Windows
+that requires additional validation will be automatically cancelled.
 To clear the handler, call `setBluetoothPairingHandler(null)`.
 
 ```javascript
