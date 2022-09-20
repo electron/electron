@@ -839,8 +839,7 @@ app.whenReady().then(() => {
       * `providePin`
         This prompt is requesting that a pin be provided for the device.
     * `frame` [WebFrameMain](web-frame-main.md)
-    * `pin` string - If the `pairingKind` is `confirmPin`, this value will be
-      the pin value to verify.
+    * `pin` string (optional) - The pin value to verify if `pairingKind` is `confirmPin`.
   * `callback` Function
     * `response` Object
       * `confirmed` boolean - `false` should be passed in if the dialog is canceled.
