@@ -130,7 +130,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   void FreeAppDelegate();
   void RegisterURLHandler();
   void InitializeMainNib();
-  std::string GetCurrentSystemLocale();
+  static std::string GetCurrentSystemLocale();
 #endif
 
 #if BUILDFLAG(IS_MAC)
