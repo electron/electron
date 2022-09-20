@@ -1,0 +1,47 @@
+From eb4d31309df7e555e928388778fe8a0801b4ede6 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Fri, 09 Sep 2022 01:56:46 +0000
+Subject: [PATCH] Fix for reference to invalid iterator
+
+Evidently, LocalFrameView::layout_subtree_root_list_ can be modified
+during LayoutFromRootObject, leaving the loop variable in an invalid
+state. I don't know the exact sequence, but the test case crashes for
+me without this patch, and doesn't crash with the patch.
+
+(cherry picked from commit 815aa5ca03ab4ecc619b2d2ad7650531bd3892a8)
+
+Bug: 1355237
+Change-Id: Ib17b1fac5b2ec060eda39be76305db18075802fa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3864877
+Reviewed-by: Ian Kilpatrick <ikilpatrick@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1041903}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3884238
+Owners-Override: Srinivas Sista <srinivassista@chromium.org>
+Auto-Submit: Srinivas Sista <srinivassista@chromium.org>
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5112@{#1566}
+Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
+---
+
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index 7890e7b..9eefcdd 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -826,6 +826,7 @@
+       }
+       for (auto& root : layout_subtree_root_list_.Ordered()) {
+         bool should_rebuild_fragments = false;
++        LayoutObject& root_layout_object = *root;
+         LayoutBlock* cb = root->ContainingNGBlock();
+         if (cb) {
+           auto it = fragment_tree_spines.find(cb);
+@@ -845,7 +846,7 @@
+         // We need to ensure that we mark up all layoutObjects up to the
+         // LayoutView for paint invalidation. This simplifies our code as we
+         // just always do a full tree walk.
+-        if (LayoutObject* container = root->Container())
++        if (LayoutObject* container = root_layout_object.Container())
+           container->SetShouldCheckForPaintInvalidation();
+       }
+       layout_subtree_root_list_.Clear();
