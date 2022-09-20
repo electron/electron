@@ -10,10 +10,10 @@ can be reverted when those failures are addressed. It's unlikely
 that this patch will be upstreamed.
 
 diff --git a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
-index 28c11bb54a25d396c7d9246870bf97559df4152d..957aeb5d71d2312a0a0aeb7faf64a6a596f94336 100644
+index c8eccc85881c4ebe879dcb4fc3c21a3529e17085..42ce09bc56c1a761612251af3d3d0d3add7128cf 100644
 --- a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
 +++ b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
-@@ -297,26 +297,7 @@ TEST_F(LanguageSettingsPrivateApiTest, GetNeverTranslateLanguagesListTest) {
+@@ -293,26 +293,7 @@ TEST_F(LanguageSettingsPrivateApiTest, GetNeverTranslateLanguagesListTest) {
    }
  }
  
@@ -98,7 +98,7 @@ index f528150f455103828c463c28b302f671f100d533..18566653b1cdca9a4db1657f3e4b811f
  static const DictionaryMappingTestCase kHybridDictionaryMappingsParams[] = {
      DictionaryMappingTestCase({"en-CA", "en-CA", "en-CA", "en", "en"}),
 diff --git a/components/spellcheck/common/spellcheck_features.cc b/components/spellcheck/common/spellcheck_features.cc
-index 37f2b0e837d8031bee488e9fd7bd4eb456c42204..dcd365a802e0feebbb2bc3839c7a0f47fb113c70 100644
+index f1b9017c7fa252463682011179a1c68fdc6be621..3522c3eeef76c06973ea3474e88d0a7fd760b41c 100644
 --- a/components/spellcheck/common/spellcheck_features.cc
 +++ b/components/spellcheck/common/spellcheck_features.cc
 @@ -32,7 +32,7 @@ const base::Feature kWinUseBrowserSpellChecker{

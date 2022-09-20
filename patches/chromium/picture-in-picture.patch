@@ -113,7 +113,7 @@ index 4a49b767193881e115efb23f969c4b2ad5d9665a..551f580a40377368a490efb4ef7bace2
    // OverlayWindowViews
    bool ControlsHitTestContainsPoint(const gfx::Point& point) override;
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index bbdddb982129c9d93bf843ff47eeb5e134df9301..b79c93991e3fa1b8f5e38d094fd217386844327f 100644
+index 15073cc98c2cc010d4ecee4f0e8e53f001f89e6a..dcac5c7bcf0626e1848e3411cda23b40936807e7 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -14,9 +14,11 @@
@@ -128,7 +128,7 @@ index bbdddb982129c9d93bf843ff47eeb5e134df9301..b79c93991e3fa1b8f5e38d094fd21738
  #include "chrome/grit/generated_resources.h"
  #include "chromeos/ui/base/chromeos_ui_constants.h"
  #include "components/vector_icons/vector_icons.h"
-@@ -35,7 +37,7 @@
+@@ -36,7 +38,7 @@
  #include "ui/aura/window.h"
  #endif
  

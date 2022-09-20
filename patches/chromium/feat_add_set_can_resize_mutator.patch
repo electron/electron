@@ -11,7 +11,7 @@ and in turn, avoid showing a frame at startup
 for frameless applications.
 
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index 431d19f2543a9011de76b941982603ff98afa041..32e07e0c9686e6942a40c4d4775a03068cfd33b5 100644
+index 8e15368a19ec68a468ad9834dd6d08b5b30f98a8..9b73c9faf0fa25568d0a278b1e9a1933ba20224f 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
 @@ -323,6 +323,10 @@ class VIEWS_EXPORT WidgetDelegate {

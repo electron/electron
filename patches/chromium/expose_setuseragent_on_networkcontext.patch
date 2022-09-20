@@ -10,7 +10,7 @@ patch may be merged upstream, at which point this patch should be
 removed.
 
 diff --git a/net/url_request/static_http_user_agent_settings.h b/net/url_request/static_http_user_agent_settings.h
-index 14c71cc69388da46f62d9835e2a06fef0870da02..9481ea08401ae29ae9c1d960491b05b364257cc8 100644
+index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d41b0dbd3b 100644
 --- a/net/url_request/static_http_user_agent_settings.h
 +++ b/net/url_request/static_http_user_agent_settings.h
 @@ -30,13 +30,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
@@ -33,7 +33,7 @@ index 14c71cc69388da46f62d9835e2a06fef0870da02..9481ea08401ae29ae9c1d960491b05b3
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index da399205a72c31530cc440dd51031d58abe7fb65..80b05fd2401756c4eb6ab1b047ab16bb0a4436e4 100644
+index 10b5bca728ac15acc7b46b531bb7bc5576d686de..82992e3fffd33244b7d2896736bd3cae61c82bc1 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1414,6 +1414,13 @@ void NetworkContext::SetNetworkConditions(
@@ -51,7 +51,7 @@ index da399205a72c31530cc440dd51031d58abe7fb65..80b05fd2401756c4eb6ab1b047ab16bb
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 6cf7ddefc5dc3c7a44c105dccbc42279f42a3b28..c8ca5b30456a9543693dd7f59016c663c9dcffa2 100644
+index 366870e27981debdf7dc5ed0fa191c3b4f8268a7..dc2111daff67b7812dca687bbdfd65b5f6eb4026 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -300,6 +300,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,7 +63,7 @@ index 6cf7ddefc5dc3c7a44c105dccbc42279f42a3b28..c8ca5b30456a9543693dd7f59016c663
    void SetEnableReferrers(bool enable_referrers) override;
    void SetEnablePreconnect(bool enable_preconnect) override;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 84496b8bd583a357cb10104311a5f2140321c4ea..fbcda208bb2368c0ea7f7946a490a55f70b7ca40 100644
+index 45b883c568ef7b4398ff9f06c3efc26bca596f4a..1fb807f7e2fa8bd77571d889e06ff561f3d21de1 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -1108,6 +1108,9 @@ interface NetworkContext {
@@ -77,7 +77,7 @@ index 84496b8bd583a357cb10104311a5f2140321c4ea..fbcda208bb2368c0ea7f7946a490a55f
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index d71cab57d547f0896ef212129d398da19d3e667a..e3df8fe993009f667cf80965a742abad28c9e7e1 100644
+index f24aba08e49ed7c649e60b18fb3138cda7c85477..d3d0c2434796d36df84a7cc037f72d9ec5e534f9 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -134,6 +134,7 @@ class TestNetworkContext : public mojom::NetworkContext {

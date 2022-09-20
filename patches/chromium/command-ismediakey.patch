@@ -87,7 +87,7 @@ index 51cc1dd4f3452c18a4b4cc0634509ab4faa9dcd7..bb5f937d59617f323e829c5259a33028
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 3f37f08ccc06137317164e96e8934a0202fa5550..b954f8dde00d4f5257223c464e9145a6bef48900 100644
+index f855a6f083d7f0de1aa2ac26e6032917e2a984c8..2901d408d154a86f0df838314e54c17c208ac573 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -297,6 +297,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
@@ -103,7 +103,7 @@ index 3f37f08ccc06137317164e96e8934a0202fa5550..b954f8dde00d4f5257223c464e9145a6
          NOTREACHED();
      }
 diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
-index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
+index db596585cbb44b3710636e3fc013f288966f604f..6d5557ee1a2c35ee15e695e024834184a525e2a7 100644
 --- a/ui/base/accelerators/media_keys_listener.cc
 +++ b/ui/base/accelerators/media_keys_listener.cc
 @@ -13,7 +13,8 @@ MediaKeysListener::~MediaKeysListener() = default;
@@ -117,7 +117,7 @@ index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 87a53282aa3afa3fe8469272d8b1ee37dcadf845..55c36da933165c8f86dd2ab440733f4b20bee378 100644
+index 49cdcc41ccc1d1f005520e7f26700a98e5123476..7710129240b17124c8a845e513e49c16daa839a0 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -34,6 +34,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
@@ -146,7 +146,7 @@ index 87a53282aa3afa3fe8469272d8b1ee37dcadf845..55c36da933165c8f86dd2ab440733f4b
    }
  
 diff --git a/ui/base/x/x11_global_shortcut_listener.cc b/ui/base/x/x11_global_shortcut_listener.cc
-index 898e15a25c99ad25221c41594803521565ff4432..664337941023e800c9605f987d0e1d65bb0a444d 100644
+index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae9475cb8112 100644
 --- a/ui/base/x/x11_global_shortcut_listener.cc
 +++ b/ui/base/x/x11_global_shortcut_listener.cc
 @@ -31,11 +31,13 @@ const x11::ModMask kModifiersMasks[] = {
@@ -226,7 +226,7 @@ index 898e15a25c99ad25221c41594803521565ff4432..664337941023e800c9605f987d0e1d65
  
  }  // namespace ui
 diff --git a/ui/base/x/x11_global_shortcut_listener.h b/ui/base/x/x11_global_shortcut_listener.h
-index bfb82e38a9ccc7459ccb427d512df821517a328b..7f1d5876a51fa53e539b2bab8d2f020f26d39ceb 100644
+index 7165e88ef78e0e1b4683a2ead588dc6529d085b8..a605cd8c1468be78172fed09eb227722b4832227 100644
 --- a/ui/base/x/x11_global_shortcut_listener.h
 +++ b/ui/base/x/x11_global_shortcut_listener.h
 @@ -41,18 +41,21 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
@@ -264,7 +264,7 @@ index bfb82e38a9ccc7459ccb427d512df821517a328b..7f1d5876a51fa53e539b2bab8d2f020f
    // Invoked when a global shortcut is pressed.
    void OnKeyPressEvent(const KeyEvent& event);
 diff --git a/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.cc b/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.cc
-index 760dfc340601b7c1807fa750b008bcc79780c583..54f9817017c9fc0ebcd2f5825fb20b2fb8412b02 100644
+index d23310746bca13981d0099ce74c62459471db0e5..6ad79156e62dc60bdf20ef1acf53ec2425cb2bfe 100644
 --- a/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.cc
 +++ b/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.cc
 @@ -26,27 +26,30 @@ void X11GlobalShortcutListenerOzone::StopListening() {
@@ -305,7 +305,7 @@ index 760dfc340601b7c1807fa750b008bcc79780c583..54f9817017c9fc0ebcd2f5825fb20b2f
  }
  
 diff --git a/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.h b/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.h
-index 0f1980abdcaf30e23f580b937ecb2c422bf2a357..112967622cb8a6263c7a88dd8d09f48f52448a45 100644
+index 4f7392e2019828caf374d7008068222aa366815f..bc1fcbb68c15d999caa991d678a6bb7473496d39 100644
 --- a/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.h
 +++ b/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.h
 @@ -28,17 +28,20 @@ class X11GlobalShortcutListenerOzone : public PlatformGlobalShortcutListener,
@@ -333,7 +333,7 @@ index 0f1980abdcaf30e23f580b937ecb2c422bf2a357..112967622cb8a6263c7a88dd8d09f48f
  
  }  // namespace ui
 diff --git a/ui/ozone/public/platform_global_shortcut_listener.h b/ui/ozone/public/platform_global_shortcut_listener.h
-index 5b6ceb2e23d306e446cad5a6b6e7adf37334410a..d4fbca17a11bd52deaf746e052eeeb12d8a4594e 100644
+index dd8bf45d0b7072178d97678565c023c0a6f9a6db..c6af8dbe1dee2d9c1552383b17c81ae12b5cc05c 100644
 --- a/ui/ozone/public/platform_global_shortcut_listener.h
 +++ b/ui/ozone/public/platform_global_shortcut_listener.h
 @@ -20,7 +20,8 @@ class COMPONENT_EXPORT(OZONE_BASE) PlatformGlobalShortcutListenerDelegate {

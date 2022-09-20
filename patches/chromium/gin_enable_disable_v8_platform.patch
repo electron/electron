@@ -7,7 +7,7 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 88f9e4dd05d8efdabbbdd044f5e09e844ced3d55..c254b045494936eca14ce947e1c2de3327820aa2 100644
+index a82c7d1189b35223647f5de46ed415302f269827..c74b81af691aee95609913519e36498ec578620a 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -137,9 +137,10 @@ void IsolateHolder::Initialize(ScriptMode mode,
@@ -24,7 +24,7 @@ index 88f9e4dd05d8efdabbbdd044f5e09e844ced3d55..c254b045494936eca14ce947e1c2de33
    g_reference_table = reference_table;
    g_fatal_error_callback = fatal_error_callback;
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 617819d15c30bafab4fd1afc8368463018b3792d..f8e5d0246b92fd2f1316313e13ccda7ef6c57495 100644
+index 10caab6d9ef3345332c163a55dcef991248ab4ea..c9bc6e5dd7e1cf8d198afcd21cbb24970337a50f 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -109,7 +109,8 @@ class GIN_EXPORT IsolateHolder {
@@ -38,7 +38,7 @@ index 617819d15c30bafab4fd1afc8368463018b3792d..f8e5d0246b92fd2f1316313e13ccda7e
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index cb3302bb2abb735609436bdf2a5d4d51cc4258ad..5530d975303cc96701e4b70ffbcaf6e7c02bb016 100644
+index 7c9a98103a934c35426754e4c0947c83d328581d..eb5eeddae93342048e87c785521177d417874ae8 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -368,7 +368,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
@@ -62,7 +62,7 @@ index cb3302bb2abb735609436bdf2a5d4d51cc4258ad..5530d975303cc96701e4b70ffbcaf6e7
    // Set this as early as possible in order to ensure OOM errors are reported
    // correctly.
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index da5b4017b4a8128bf620d4b43d4c2d183719265b..13a120c7fe8e69a44793473f3124c33d572a07a3 100644
+index d499cb43c4e12ca32912fce7078fcadff7509a87..dd9899c3e0dbadfc0074ffce87d51193e1c963cb 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -31,7 +31,8 @@ class GIN_EXPORT V8Initializer {

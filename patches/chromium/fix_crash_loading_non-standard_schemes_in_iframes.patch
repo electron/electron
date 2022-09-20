@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 9beedcefa5649f0f8afae04e7fa9b6aac5401f2d..14477ca44be4b8d8f424b9545abc14d9e9c39af9 100644
+index 274c38b68b4a9b7b655dac2eee1ea356cec74265..246c649e22619b389b7e68d8f4fd1e24fe13bcf7 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6578,10 +6578,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
+@@ -6571,10 +6571,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,12 +37,12 @@ index 9beedcefa5649f0f8afae04e7fa9b6aac5401f2d..14477ca44be4b8d8f424b9545abc14d9
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 1f7a7bdd29011b73152143a383df0424cd67855d..ef91a3c98bc1ac317e5297348383621c6a29b4b6 100644
+index 77b0c575b6866a183e976cfed321940a5b296dca..16c95f42e0b5ea5be7f7990fd21a9a6a7cedafe1 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2550,6 +2550,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-       const storage::BucketInfo& bucket,
-       mojo::PendingReceiver<blink::mojom::CacheStorage> receiver) override;
+@@ -2556,6 +2556,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   // This method must be called when navigating away from the current document.
+   void SendAllPendingBeaconsOnNavigation();
  
 +  // Returns whether the given origin and URL is allowed to commit in the
 +  // current RenderFrameHost. The |url| is used to ensure it matches the origin
@@ -58,7 +58,7 @@ index 1f7a7bdd29011b73152143a383df0424cd67855d..ef91a3c98bc1ac317e5297348383621c
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -2885,17 +2896,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2891,17 +2902,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

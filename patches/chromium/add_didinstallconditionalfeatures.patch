@@ -10,7 +10,7 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 9bdb516d44cf69fa438f99a7bdb0df9c989465a7..fa235f8993cfdb7dce2da0b505ebe2461334a9b9 100644
+index a84c4b1d5d2aeb8db3fefbfe3d99205cf07f4364..b3d5bba84fd4015d55315ef8130f9e238932b632 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
 @@ -136,6 +136,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
@@ -23,10 +23,10 @@ index 9bdb516d44cf69fa438f99a7bdb0df9c989465a7..fa235f8993cfdb7dce2da0b505ebe246
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 9e5d1e45102c120e080e994ea14904f0ea85a237..52daf091bec1668c2725a026a91e8fd7fb6ac4e1 100644
+index b14e44bda66127dd1f9b99742a729cce0bf2f047..4edf0e8f10103e8de490f2f05e1a6f15f38b3e89 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4350,6 +4350,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4349,6 +4349,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,7 +40,7 @@ index 9e5d1e45102c120e080e994ea14904f0ea85a237..52daf091bec1668c2725a026a91e8fd7
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index eea01ab95a033b5fb537db004dc0b63724192a93..d72b75f1dbccc4aa7bf9f4abb080b0692c4b9d04 100644
+index c913ea09f243084b4b52f5d92666f8b968d58a99..a04b1c578f96bf9dfd4187a1b030e96e8293fada 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -589,6 +589,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -123,7 +123,7 @@ index c974fa2f7c7f9c2aa5f075ec4aeb887d0b104453..b4ed9b2fadcfad7676387045b8581eb8
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 7466af4e3ccceadca37009e08d10bdde304c3b11..c4ff158ef95f29dedd8e14d6433433e0e8eda06f 100644
+index 05f6e4002766fec006a55b2edf621f6b0b1a0d59..a9f6d89d0310732d7d26c0e9f8461ecadc87dbee 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -366,6 +366,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

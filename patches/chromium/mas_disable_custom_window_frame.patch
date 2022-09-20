@@ -7,7 +7,7 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 4d8f9f89f03653221fc0b509aa0e15ff20e73574..7bd5094db9b1a8e9af4ecc118fed7b78178e1e58 100644
+index 6e116d634c658ff26f6990fae5fcac975285e865..5beceecf8e0d712b69eefeba939c6fa524b7e363 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,6 +9,7 @@
@@ -42,7 +42,7 @@ index 4d8f9f89f03653221fc0b509aa0e15ff20e73574..7bd5094db9b1a8e9af4ecc118fed7b78
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
-index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70ba3674913 100644
+index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..8584b6b09323a9e100841dcde9a963b48e84b518 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
 @@ -4,6 +4,8 @@
@@ -75,7 +75,7 @@ index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70b
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index cfbb9f03214084c5181e48e1b0d497ab0b5cf1b3..21fdd6e2e9fae08443ca74c49c1b6984ea0c3429 100644
+index e7bf48ba670dbe8fa2a8688cf89e74a7d15cc6a3..5596703bbae1977c9c2bcd421373c578ca9780cb 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -95,7 +95,7 @@ index cfbb9f03214084c5181e48e1b0d497ab0b5cf1b3..21fdd6e2e9fae08443ca74c49c1b6984
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 58ee0150cb993a833933ba56194fd5f71a981ae1..e155763509b0b41fa796a706d5771c78aa6cf2e9 100644
+index 0cf281aff32bd37b3539056ea202aa74ef432000..f65046706dc0e05f7d654ea96901fdeee268a445 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -97,7 +97,9 @@ void OrderChildWindow(NSWindow* child_window,
@@ -126,7 +126,7 @@ index 58ee0150cb993a833933ba56194fd5f71a981ae1..e155763509b0b41fa796a706d5771c78
  @implementation NativeWidgetMacNSWindow {
   @private
    base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -323,6 +329,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -328,6 +334,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index 58ee0150cb993a833933ba56194fd5f71a981ae1..e155763509b0b41fa796a706d5771c78
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -334,6 +342,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -339,6 +347,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

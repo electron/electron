@@ -10,7 +10,7 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 3725aa4cd902a9c84e22bbcbd702bd47e1901fe4..221019f5df71e1d66accbf2ea2d161bd1125666f 100644
+index 53b106a1522a04d596d6ec833b00aa2170c760d9..3b5ca717d48cdade667fda8ce113f3f64bdaa063 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
 @@ -83,6 +83,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
@@ -25,7 +25,7 @@ index 3725aa4cd902a9c84e22bbcbd702bd47e1901fe4..221019f5df71e1d66accbf2ea2d161bd
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 9e351c7e80a135adf0ebe011763f5164e51981bb..b9fcb4d2a8c7a22ebc7cd8434636454e7fc2aab6 100644
+index 9dd650de9a9a372eba11854aa48695d5bdbff8aa..561ac4a781432a974ec6e5d131859863c0d5ad28 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -199,7 +199,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
@@ -62,7 +62,7 @@ index 9e351c7e80a135adf0ebe011763f5164e51981bb..b9fcb4d2a8c7a22ebc7cd8434636454e
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index b7ba6ba4446963b08bce9fe416379169bd880378..7c621ea7a60725d08ee9ade68b65fd5bc88b0c2d 100644
+index 07f495636151c5ad7399bf2bd810e0732b06e24e..ddd5c57d05ec4f298a028ac15656f4d90583f03c 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
 @@ -75,14 +75,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
@@ -100,7 +100,7 @@ index b7ba6ba4446963b08bce9fe416379169bd880378..7c621ea7a60725d08ee9ade68b65fd5b
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index db23b214107c2b4a137e623e183ca08b409959fb..3f10aa71ad6fe698392228dd4b8a73eae7b1dbc6 100644
+index 1207e8e99dcfdb5787a388ec472a6ec30460a14c..2f719fc28d80993cdffb06d0f71617b82156978e 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -243,6 +243,24 @@ void PrintDialogGtk::UpdateSettings(

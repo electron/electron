@@ -142,7 +142,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..20cead8c65f109fd74669bf647486132
    std::vector<char*> argv_cstr;
    argv_cstr.reserve(argv.size() + 1);
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index de981fa288c19ca46a8172e99bc25df36ff29d50..45e5648826c60f6ba6332776e7579a62165b0e8d 100644
+index 751b723388f78a314e2af9c0ec0205f3bd4b6d77..248fe5fc47bb94bf18a96700a5aaca0c516c39b8 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -34,19 +34,23 @@
@@ -170,7 +170,7 @@ index de981fa288c19ca46a8172e99bc25df36ff29d50..45e5648826c60f6ba6332776e7579a62
  
  }  // namespace
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index f071b192208fdfb1b9da932fcbbf64f0712d8f8b..7481ec29aaaa7b9f40af4a1180dd779e60131ea5 100644
+index f52f1d1da4d431505b1a55df4764f37a70e0b29d..ebc15064d0d0e97dfab7fc82b99254556b050eb2 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -32,9 +32,11 @@
@@ -198,7 +198,7 @@ index f071b192208fdfb1b9da932fcbbf64f0712d8f8b..7481ec29aaaa7b9f40af4a1180dd779e
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 9f5261425162791668c2d15b7ffba091f831d652..c37f3dc05cb8372c7a6c4caef7a280b6f2f48e98 100644
+index 92b84121da46b692b89f70a46e36f5d1991383b8..8e5f05bb012b622e27f41b7c6327f70959dd9731 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
