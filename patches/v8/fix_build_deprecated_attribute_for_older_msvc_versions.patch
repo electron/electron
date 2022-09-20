@@ -6,7 +6,7 @@ Subject: fix: usage of c++ [[deprecated]] attribute for older msvc versions
 This attribute can only be used in all contexts in Visual Studio 2019
 
 diff --git a/include/v8config.h b/include/v8config.h
-index 71d932006ba4b0668d901879f49df43ea3db4f9c..70227d6fb68fd35cfab34e745164fa6684e6b6a2 100644
+index 6753eb083b3c1cc06fe57dd5d12b56408280021e..70cdbc4b80acf04c6d399c8aa1e40559ab8f9c5f 100644
 --- a/include/v8config.h
 +++ b/include/v8config.h
 @@ -471,10 +471,13 @@ path. Add it with -I<path> to the command line
