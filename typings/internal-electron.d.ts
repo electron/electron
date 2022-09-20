@@ -204,7 +204,7 @@ declare namespace ElectronInternal {
     id: string;
     name: string;
     thumbnail: Electron.NativeImage;
-    display_id: string;
+    displayId: string;
     appIcon: Electron.NativeImage | null;
   }
 

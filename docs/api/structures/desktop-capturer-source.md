@@ -15,11 +15,12 @@
   `thumbnailSize` specified in the `options` passed to
   `desktopCapturer.getSources`. The actual size depends on the scale of the
   screen or window.
-* `display_id` string - A unique identifier that will correspond to the `id` of
+* `displayId` string - A unique identifier that will correspond to the `id` of
   the matching [Display](display.md) returned by the [Screen API](../screen.md).
   On some platforms, this is equivalent to the `XX` portion of the `id` field
   above and on others it will differ. It will be an empty string if not
   available.
+* `display_id` string _Deprecated_ - Deprecated accessor for `displayId`.
 * `appIcon` [NativeImage](../native-image.md) - An icon image of the
   application that owns the window or null if the source has a type screen.
   The size of the icon is not known in advance and depends on what

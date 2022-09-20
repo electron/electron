@@ -44,7 +44,11 @@ struct Converter<electron::api::DesktopCapturer::Source> {
     dict.Set("thumbnail",
              electron::api::NativeImage::Create(
                  isolate, gfx::Image(source.media_list_source.thumbnail)));
-    dict.Set("display_id", source.display_id);
+    dict.Set("displayId", source.display_id);
+    dict.SetDeprecated(
+        "display_id", source.display_id,
+        "The display_id property on the DesktopCapturerSource object is "
+        "deprecated, please us the displayId property instead");
     if (source.fetch_icon) {
       dict.Set(
           "appIcon",

@@ -50,25 +50,25 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   });
 
   // Linux doesn't return any window sources.
-  ifit(process.platform !== 'linux')('returns an empty display_id for window sources', async () => {
+  ifit(process.platform !== 'linux')('returns an empty displayId for window sources', async () => {
     const w = new BrowserWindow({ width: 200, height: 200 });
     await w.loadURL('about:blank');
 
     const sources = await desktopCapturer.getSources({ types: ['window'] });
     w.destroy();
     expect(sources).to.be.an('array').that.is.not.empty();
-    for (const { display_id: displayId } of sources) {
+    for (const { displayId } of sources) {
       expect(displayId).to.be.a('string').and.be.empty();
     }
   });
 
-  ifit(process.platform !== 'linux')('returns display_ids matching the Screen API', async () => {
+  ifit(process.platform !== 'linux')('returns displayIds matching the Screen API', async () => {
     const displays = screen.getAllDisplays();
     const sources = await desktopCapturer.getSources({ types: ['screen'] });
     expect(sources).to.be.an('array').of.length(displays.length);
 
     for (let i = 0; i < sources.length; i++) {
-      expect(sources[i].display_id).to.equal(displays[i].id.toString());
+      expect(sources[i].displayId).to.equal(displays[i].id.toString());
     }
   });
 

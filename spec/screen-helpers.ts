@@ -19,14 +19,14 @@ export const captureScreen = async (point: Electron.Point = { x: 0, y: 0 }): Pro
   const DEBUG_CAPTURE = false;
   if (DEBUG_CAPTURE) {
     for (const source of sources) {
-      await fs.promises.writeFile(path.join(fixtures, `screenshot_${source.display_id}.png`), source.thumbnail.toPNG());
+      await fs.promises.writeFile(path.join(fixtures, `screenshot_${source.displayId}.png`), source.thumbnail.toPNG());
     }
   }
-  const screenCapture = sources.find(source => source.display_id === `${display.id}`);
+  const screenCapture = sources.find(source => source.displayId === `${display.id}`);
   // Fails when HDR is enabled on Windows.
   // https://bugs.chromium.org/p/chromium/issues/detail?id=1247730
   if (!screenCapture) {
-    const displayIds = sources.map(source => source.display_id);
+    const displayIds = sources.map(source => source.displayId);
     throw new Error(`Unable to find screen capture for display '${display.id}'\n\tAvailable displays: ${displayIds.join(', ')}`);
   }
   return screenCapture.thumbnail;

@@ -9,12 +9,28 @@
 #include <utility>
 
 #include "gin/dictionary.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/accessor.h"
 #include "shell/common/gin_helper/function_template.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace gin_helper {
+
+namespace {
+
+template <typename V>
+v8::Local<v8::Value> DeprecatedValueProvider(const std::string& message,
+                                             v8::Isolate* isolate,
+                                             const V& value) {
+  electron::EmitWarning(node::Environment::GetCurrent(isolate), message,
+                        "electron");
+  return gin::ConvertToV8(isolate, value);
+}
+
+}  // namespace
 
 // Adds a few more extends methods to gin::Dictionary.
 //
@@ -108,6 +124,22 @@ class Dictionary : public gin::Dictionary {
         ->Set(context, gin::StringToV8(isolate(), key),
               templ->GetFunction(context).ToLocalChecked())
         .ToChecked();
+  }
+
+  template <typename K, typename V>
+  bool SetDeprecated(const K& key,
+                     const V& val,
+                     const std::string& message,
+                     v8::PropertyAttribute attribute = v8::None) {
+    auto context = isolate()->GetCurrentContext();
+
+    v8::Local<v8::Value> getter = gin::ConvertToV8(
+        isolate(), base::BindRepeating(&DeprecatedValueProvider<V>, message,
+                                       isolate(), val));
+    v8::PropertyDescriptor prop_desc(getter, v8::Undefined(isolate()));
+    v8::Maybe<bool> maybe = GetHandle()->DefineProperty(
+        context, gin::StringToV8(isolate(), key), prop_desc);
+    return maybe.IsJust() && maybe.FromJust();
   }
 
   template <typename K, typename V>
