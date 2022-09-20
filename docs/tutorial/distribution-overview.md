@@ -11,7 +11,7 @@ you can deliver it to your users.
 ## Packaging
 
 To distribute your app with Electron, you need to package all your resources and assets
-into an executable and rebrand it. To do this, you can either use [specialized tooling]
+into an executable and rebrand it. To do this, you can either use specialized tooling like Electron Forge
 or do it manually. See the [Application Packaging][application-packaging] tutorial
 for more information.
 
@@ -52,4 +52,3 @@ with Electron.
 [windows-store]: ./windows-store-guide.md
 [snapcraft]: ./snapcraft.md
 [updates]: ./updates.md
-[specialized tooling]: ./forge-overview.md

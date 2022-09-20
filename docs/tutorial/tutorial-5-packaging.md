@@ -113,7 +113,7 @@ Electron Forge can be configured to create distributables in different OS-specif
 
 :::tip Creating and Adding Application Icons
 
-Setting custom application icons requires a few additions to your config. Check out Forge's [icon] tutorial for more information.
+Setting custom application icons requires a few additions to your config. Check out [Forge's icon tutorial] for more information.
 
 :::
 
@@ -220,7 +220,7 @@ information.
 [electron forge]: https://www.electronforge.io
 [electron forge cli documentation]: https://www.electronforge.io/cli#commands
 [makers]: https://www.electronforge.io/config/makers
-[icon]: https://www.electronforge.io/guides/create-and-add-icons
+[Forge's icon tutorial]: https://www.electronforge.io/guides/create-and-add-icons
 
 <!-- Tutorial links -->
 
