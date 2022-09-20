@@ -188,8 +188,7 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params.get());
 
   bool bypass_cache = false;
-  if (params->reload_properties.get() &&
-      params->reload_properties->bypass_cache) {
+  if (params->reload_properties && params->reload_properties->bypass_cache) {
     bypass_cache = *params->reload_properties->bypass_cache;
   }
 
