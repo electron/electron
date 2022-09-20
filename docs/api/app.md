@@ -1199,7 +1199,7 @@ For `infoType` equal to `basic`:
 
 Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
 
-### `app.setBadgeCount([count])` _Linux_ _macOS_
+### `app.setBadgeCount([count])`
 
 * `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications). On Linux, if a value is not provided the badge will not display.
 
@@ -1213,7 +1213,7 @@ On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 **Note:** Unity launcher requires a `.desktop` file to work. For more information,
 please read the [Unity integration documentation][unity-requirement].
 
-### `app.getBadgeCount()` _Linux_ _macOS_
+### `app.getBadgeCount()`
 
 Returns `Integer` - The current value displayed in the counter badge.
 
@@ -1443,7 +1443,7 @@ This API must be called after the `ready` event is emitted.
 A `Menu | null` property that returns [`Menu`](menu.md) if one has been set and `null` otherwise.
 Users can pass a [Menu](menu.md) to set this property.
 
-### `app.badgeCount` _Linux_ _macOS_
+### `app.badgeCount`
 
 An `Integer` property that returns the badge count for current app. Setting the count to `0` will hide the badge.
 
