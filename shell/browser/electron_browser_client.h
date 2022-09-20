@@ -38,6 +38,7 @@ namespace electron {
 class ElectronBrowserMainParts;
 class NotificationPresenter;
 class PlatformNotificationService;
+class ElectronWebAuthenticationDelegate;
 
 class ElectronBrowserClient : public content::ContentBrowserClient,
                               public content::RenderProcessHostObserver {
@@ -101,6 +102,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::BluetoothDelegate* GetBluetoothDelegate() override;
 
   content::HidDelegate* GetHidDelegate() override;
+
+  content::WebAuthenticationDelegate* GetWebAuthenticationDelegate() override;
 
   device::GeolocationManager* GetGeolocationManager() override;
 
@@ -330,6 +333,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
   std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
   std::unique_ptr<ElectronHidDelegate> hid_delegate_;
+  std::unique_ptr<ElectronWebAuthenticationDelegate>
+      web_authentication_delegate_;
 
 #if BUILDFLAG(IS_MAC)
   ElectronBrowserMainParts* browser_main_parts_ = nullptr;
