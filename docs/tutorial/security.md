@@ -113,6 +113,7 @@ You should at least follow these steps to improve the security of your applicati
 14. [Disable or limit creation of new windows](#14-disable-or-limit-creation-of-new-windows)
 15. [Do not use `shell.openExternal` with untrusted content](#15-do-not-use-shellopenexternal-with-untrusted-content)
 16. [Use a current version of Electron](#16-use-a-current-version-of-electron)
+17. [Validate the `sender` of all IPC messages](#17-validate-the-sender-of-all-ipc-messages)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -256,7 +257,7 @@ the sandbox in all renderers. Loading, reading or processing any untrusted
 content in an unsandboxed process, including the main process, is not advised.
 
 :::info
-For more information on what `contextIsolation` is and how to enable it please
+For more information on what Process Sandboxing is and how to enable it please
 see our dedicated [Process Sandboxing](sandbox.md) document.
 :::info
 

@@ -58,6 +58,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/referrer_type_converters.h"
+#include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -143,6 +144,10 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/native_window_views.h"
+#endif
+
 #if !BUILDFLAG(IS_MAC)
 #include "ui/aura/window.h"
 #else
@@ -175,9 +180,8 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
-#include "shell/browser/native_window_views.h"
 #endif
-#endif
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
@@ -1005,6 +1009,19 @@ void WebContents::Destroy() {
   }
 }
 
+void WebContents::Close(absl::optional<gin_helper::Dictionary> options) {
+  bool dispatch_beforeunload = false;
+  if (options)
+    options->Get("waitForBeforeUnload", &dispatch_beforeunload);
+  if (dispatch_beforeunload &&
+      web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
+    NotifyUserActivation();
+    web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
+  } else {
+    web_contents()->Close();
+  }
+}
+
 bool WebContents::DidAddMessageToConsole(
     content::WebContents* source,
     blink::mojom::ConsoleMessageLevel level,
@@ -1095,7 +1112,7 @@ void WebContents::AddNewContents(
     std::unique_ptr<content::WebContents> new_contents,
     const GURL& target_url,
     WindowOpenDisposition disposition,
-    const gfx::Rect& initial_rect,
+    const blink::mojom::WindowFeatures& window_features,
     bool user_gesture,
     bool* was_blocked) {
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents.get());
@@ -1117,9 +1134,10 @@ void WebContents::AddNewContents(
   }
 
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
-           initial_rect.x(), initial_rect.y(), initial_rect.width(),
-           initial_rect.height(), tracker->url, tracker->frame_name,
-           tracker->referrer, tracker->raw_features, tracker->body)) {
+           window_features.bounds.x(), window_features.bounds.y(),
+           window_features.bounds.width(), window_features.bounds.height(),
+           tracker->url, tracker->frame_name, tracker->referrer,
+           tracker->raw_features, tracker->body)) {
     api_web_contents->Destroy();
   }
 }
@@ -1178,8 +1196,9 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnSetContentBounds(rect);
+  if (!Emit("content-bounds-updated", rect))
+    for (ExtendedWebContentsObserver& observer : observers_)
+      observer.OnSetContentBounds(rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -1193,6 +1212,8 @@ void WebContents::CloseContents(content::WebContents* source) {
 
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
+
+  Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -1283,6 +1304,7 @@ void WebContents::UpdateExclusiveAccessExitBubbleContent(
     const GURL& url,
     ExclusiveAccessBubbleType bubble_type,
     ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+    bool notify_download,
     bool force_update) {}
 
 void WebContents::OnExclusiveAccessUserInput() {}
@@ -1375,11 +1397,6 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
   Emit("context-menu", std::make_pair(params, &render_frame_host));
 
   return true;
-}
-
-bool WebContents::OnGoToEntryOffset(int offset) {
-  GoToOffset(offset);
-  return false;
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,
@@ -2756,11 +2773,11 @@ void WebContents::Print(gin::Arguments* args) {
     for (auto& range : page_ranges) {
       int from, to;
       if (range.Get("from", &from) && range.Get("to", &to)) {
-        base::Value::Dict range;
+        base::Value::Dict range_dict;
         // Chromium uses 1-based page ranges, so increment each by 1.
-        range.Set(printing::kSettingPageRangeFrom, from + 1);
-        range.Set(printing::kSettingPageRangeTo, to + 1);
-        page_range_list.Append(std::move(range));
+        range_dict.Set(printing::kSettingPageRangeFrom, from + 1);
+        range_dict.Set(printing::kSettingPageRangeTo, to + 1);
+        page_range_list.Append(std::move(range_dict));
       } else {
         continue;
       }
@@ -3919,6 +3936,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
   // destroyable.
   return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("destroy", &WebContents::Destroy)
+      .SetMethod("close", &WebContents::Close)
       .SetMethod("getBackgroundThrottling",
                  &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",

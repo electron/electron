@@ -20,7 +20,6 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/dialog_thread.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -275,7 +274,6 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
-  electron::UnresponsiveSuppressor suppressor;
   DialogResult result = ShowTaskDialogUTF8(settings, nullptr);
   return result.button_id;
 }
@@ -326,7 +324,6 @@ void CloseMessageBox(int id) {
 }
 
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
-  electron::UnresponsiveSuppressor suppressor;
   ShowTaskDialogWstr(nullptr, MessageBoxType::kError, {}, -1, 0, false,
                      u"Error", title, content, u"", false, gfx::ImageSkia(),
                      nullptr);

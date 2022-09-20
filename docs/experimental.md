@@ -20,4 +20,4 @@ happen at an API WG meeting.  Things to consider when discussing / nominating:
 * During that time no major bugs / issues should have been caused by the adoption of this feature
 * The API is stable enough and hasn't been heavily impacted by Chromium upgrades
 * Is anyone using the API?
-* Is the API fulfilling the original proposed usecases, does it have any gaps?
+* Is the API fulfilling the original proposed use cases, does it have any gaps?

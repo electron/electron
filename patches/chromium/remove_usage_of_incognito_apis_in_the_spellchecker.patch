@@ -8,18 +8,37 @@ Electron nor do we want it to be.  We could potentially upstream a
 change to move more of //chrome spellchecker logic into //components so
 that we can further separate our dependency from //chrome.
 
-diff --git a/chrome/browser/spellchecker/spellcheck_factory.cc b/chrome/browser/spellchecker/spellcheck_factory.cc
-index 9d238b5de516a672d5b99f2f66316a205fc705a7..7c3b6a69acb16186add5d467dbc22360d90d46d4 100644
---- a/chrome/browser/spellchecker/spellcheck_factory.cc
-+++ b/chrome/browser/spellchecker/spellcheck_factory.cc
-@@ -72,7 +72,10 @@ void SpellcheckServiceFactory::RegisterProfilePrefs(
+diff --git a/chrome/browser/profiles/profile_keyed_service_factory.cc b/chrome/browser/profiles/profile_keyed_service_factory.cc
+index f2bbec66cc2d83a391dff09046f2552581782ecc..a631da03d2c431d52886ef913d5bceca4850d04c 100644
+--- a/chrome/browser/profiles/profile_keyed_service_factory.cc
++++ b/chrome/browser/profiles/profile_keyed_service_factory.cc
+@@ -22,6 +22,9 @@ ProfileKeyedServiceFactory::~ProfileKeyedServiceFactory() = default;
  
- content::BrowserContext* SpellcheckServiceFactory::GetBrowserContextToUse(
+ content::BrowserContext* ProfileKeyedServiceFactory::GetBrowserContextToUse(
      content::BrowserContext* context) const {
 +  return context;
 +#if 0
-   return chrome::GetBrowserContextRedirectedInIncognito(context);
+   Profile* profile = Profile::FromBrowserContext(context);
+   return profile_selections_.ApplyProfileSelection(profile);
 +#endif
  }
+diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
+index 0e5aa496024e94b236ef84b8ef93573df5e22ecd..b6df3dcbef3600d64206bb57cc488e56f0235e39 100644
+--- a/chrome/browser/profiles/profile_selections.cc
++++ b/chrome/browser/profiles/profile_selections.cc
+@@ -153,6 +153,7 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
  
- bool SpellcheckServiceFactory::ServiceIsNULLWhileTesting() const {
+ ProfileSelection ProfileSelections::GetProfileSelection(
+     Profile* profile) const {
++#if 0
+   // Treat other off the record profiles as Incognito (primary otr) Profiles.
+   if (profile->IsRegularProfile() || profile->IsIncognitoProfile() ||
+       profile_metrics::GetBrowserProfileType(profile) ==
+@@ -194,6 +195,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   }
+ 
+   NOTREACHED();
++#endif
+   return ProfileSelection::kNone;
+ }
+ 

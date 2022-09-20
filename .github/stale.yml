@@ -1,0 +1,14 @@
+daysUntilStale: 90
+daysUntilClose: 30
+exemptLabels:
+  - discussion
+  - security 🔒
+  - "enhancement :sparkles:"
+staleLabel: stale
+markComment: >
+  This issue has been automatically marked as stale. **If this issue is still affecting you, please leave any comment** (for example, "bump"), and we'll keep it open. If you have any new additional information—in particular, if this is still reproducible in the [latest version of Electron](https://www.electronjs.org/releases/stable) or in the [beta](https://www.electronjs.org/releases/beta)—please include it with your comment!
+closeComment: >
+  This issue has been closed as it was considered stale, this issue will not be
+  monitored.  If this is a bug and you can reproduce this issue on a [supported
+  version of Electron](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline) please open a new issue and ensure a repro is provided.
+  
