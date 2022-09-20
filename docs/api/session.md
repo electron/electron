@@ -849,9 +849,9 @@ app.whenReady().then(() => {
       * `pin` string | null (optional) - When the `pairingKind` is `providePin`
         this value should be the required pin for the bluetooth device.
 
-Sets the handler which can be used to respond when a bluetooth device requires
-a response to pairing.  This handler allows developers to handle devices that
-require additional validation for pairing.
+Sets a handler to respond to bluetooth pairing requests. This handler
+allows developers to handle devices that require additional validation
+before pairing.
 To clear the handler, call `setBluetoothPairingHandler(null)`.
 
 ```javascript
