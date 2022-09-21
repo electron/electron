@@ -847,41 +847,44 @@ app.whenReady().then(() => {
         if the pairing is confirmed.  If the `pairingKind` is `providePin` the value
         should be `true` when a value is provided.
       * `pin` string | null (optional) - When the `pairingKind` is `providePin`
-        this value should be the required pin for the bluetooth device.
+        this value should be the required pin for the Bluetooth device.
 
-Sets a handler to respond to bluetooth pairing requests. This handler
+Sets a handler to respond to Bluetooth pairing requests. This handler
 allows developers to handle devices that require additional validation
 before pairing.  When a handler is not defined, any pairing on Linux or Windows
 that requires additional validation will be automatically cancelled.
-To clear the handler, call `setBluetoothPairingHandler(null)`.
+macOS does not require a handler because macOS handles the pairing
+automatically.  To clear the handler, call `setBluetoothPairingHandler(null)`.
 
 ```javascript
 
-const { session } = require('electron')
+const { app, BrowserWindow, ipcMain, session } = require('electron')
 
-session.defaultSession.setBluetoothPairingHandler((details, callback) => {
-  const response = {}
+let bluetoothPinCallback = null
 
-  switch (details.pairingKind) {
-    case 'confirm': {
-      response.confirmed = confirm(`Do you want to connect to device ${details.deviceId}`)
-      break
+function createWindow () {
+  const mainWindow = new BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
     }
-    case 'confirmPin': {
-      response.confirmed = confirm(`Does the pin ${details.pin} match the pin displayed on device ${details.deviceId}?`)
-      break
-    }
-    case 'providePin': {
-      const pin = prompt(`Please provide a pin for ${details.deviceId}`)
-      if (pin) {
-        response.pin = pin
-        response.confirmed = true
-      } else {
-        response.confirmed = false
-      }
-    }
-  }
-  callback(response)
+  })
+}
+
+// Listen for an IPC message from the renderer to get the response for the Bluetooth pairing.
+ipcMain.on('bluetooth-pairing-response', (event, response) => {
+  bluetoothPinCallback(response)
+})
+
+mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
+  bluetoothPinCallback = callback
+  // Send a IPC message to the renderer to prompt the user to confirm the pairing.
+  // Note that this will require logic in the renderer to handle this message and
+  // display a prompt to the user.
+  mainWindow.webContents.send('bluetooth-pairing-request', details)
+})
+
+app.whenReady().then(() => {
+  createWindow()
 })
 ```
 
