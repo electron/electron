@@ -68,16 +68,18 @@ device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(
   return GetChooserContext(frame)->GetPortManager();
 }
 
-void ElectronSerialDelegate::AddObserver(content::RenderFrameHost* frame,
-                                         Observer* observer) {
+void ElectronSerialDelegate::AddObserver(
+    content::RenderFrameHost* frame,
+    content::SerialDelegate::Observer* observer) {
   observer_list_.AddObserver(observer);
   auto* chooser_context = GetChooserContext(frame);
   if (!port_observation_.IsObserving())
     port_observation_.Observe(chooser_context);
 }
 
-void ElectronSerialDelegate::RemoveObserver(content::RenderFrameHost* frame,
-                                            Observer* observer) {
+void ElectronSerialDelegate::RemoveObserver(
+    content::RenderFrameHost* frame,
+    content::SerialDelegate::Observer* observer) {
   observer_list_.RemoveObserver(observer);
 }
 
