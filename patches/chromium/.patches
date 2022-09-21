@@ -135,4 +135,10 @@ cherry-pick-54a7927b19f9.patch
 cherry-pick-bd9724c9fe63.patch
 cherry-pick-c643d18a078d.patch
 feat_add_set_can_resize_mutator.patch
+cherry-pick-2083e894852c.patch
+cherry-pick-079105b7ebba.patch
+cherry-pick-51daffbf5cd8.patch
+cherry-pick-9b5207569882.patch
+dpwa_enable_window_controls_overlay_by_default.patch
+cherry-pick-eb4d31309df7.patch
 fix_crash_loading_non-standard_schemes_in_iframes.patch
