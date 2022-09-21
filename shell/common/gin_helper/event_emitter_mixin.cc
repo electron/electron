@@ -15,7 +15,6 @@ v8::Eternal<v8::Object>* GetEventEmitterPrototypeReference() {
 }
 
 v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate) {
-  LOG(INFO) << "GetEventEmitterPrototype";
   CHECK(!GetEventEmitterPrototypeReference()->IsEmpty());
   return GetEventEmitterPrototypeReference()->Get(isolate);
 }
@@ -28,20 +27,8 @@ gin::WrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin};
 
 void SetEventEmitterPrototype(v8::Isolate* isolate,
                               v8::Local<v8::Object> proto) {
-  // gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   if (GetEventEmitterPrototypeReference()->IsEmpty()) {
-    LOG(INFO) << "SetEventEmitterPrototype RESET";
     GetEventEmitterPrototypeReference()->Set(isolate, proto->Clone());
-    // GetEventEmitterPrototypeReference()->ClearWeak();
-  } else if (GetEventEmitterPrototypeReference()
-                 ->Get(isolate)
-                 ->GetCreationContextChecked() !=
-             proto->GetCreationContextChecked()) {
-    LOG(INFO) << "SetEventEmitterPrototype CONTEXT DIFFERS";
-    // GetEventEmitterPrototypeReference()->Reset(isolate, std::move(proto));
-    // GetEventEmitterPrototypeReference()->ClearWeak();
-  } else {
-    LOG(INFO) << "SetEventEmitterPrototype IGNORED";
   }
 
   // Ensure whichever context is setting the prototype also applies it to all

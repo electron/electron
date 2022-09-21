@@ -10,14 +10,6 @@
 #include "gin/object_template_builder.h"
 #include "shell/common/gin_helper/event_emitter.h"
 
-namespace {
-
-static void InitializeTest(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  LOG(INFO) << "InitializeTest";
-}
-
-}  // namespace
-
 namespace gin_helper {
 
 namespace internal {
@@ -71,7 +63,7 @@ class EventEmitterMixin {
     v8::Local<v8::FunctionTemplate> constructor =
         data->GetFunctionTemplate(wrapper_info);
     if (constructor.IsEmpty()) {
-      constructor = v8::FunctionTemplate::New(isolate, InitializeTest);
+      constructor = v8::FunctionTemplate::New(isolate);
       constructor->SetClassName(
           gin::StringToV8(isolate, static_cast<T*>(this)->GetTypeName()));
       constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
