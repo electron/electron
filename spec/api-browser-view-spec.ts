@@ -45,6 +45,7 @@ describe('BrowserView module', () => {
     await wc.loadURL('about:blank');
 
     view = new BrowserView({ webContents: wc } as any);
+    expect(view.webContents).to.equal(wc);
 
     expect(view.webContents.getURL()).to.equal('about:blank');
   });

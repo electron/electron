@@ -377,7 +377,7 @@ class WebContents : public ExclusiveAccessContext,
   void SetOwnerWindow(NativeWindow* owner_window);
   void SetOwnerWindow(content::WebContents* web_contents,
                       NativeWindow* owner_window);
-  void SetOwnerBaseWindow(BaseWindow* owner_window);
+  void SetOwnerBaseWindow(absl::optional<BaseWindow*> owner_window);
 
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;

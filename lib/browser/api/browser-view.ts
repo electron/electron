@@ -1,9 +1,14 @@
 import { BrowserWindow, AutoResizeOptions, Rectangle, WebContentsView, WebPreferences } from 'electron/main';
 
+const v8Util = process._linkedBinding('electron_common_v8_util');
+
 export default class BrowserView {
   #webContentsView: WebContentsView
 
   constructor (options?: WebPreferences) {
+    if (options && 'webContents' in options) {
+      v8Util.setHiddenValue(options, 'webContents', (options as any).webContents);
+    }
     this.#webContentsView = new WebContentsView(options);
   }
 
@@ -29,7 +34,13 @@ export default class BrowserView {
   }
 
   // Internal methods
-  ownerWindow: BrowserWindow | null = null;
+  get ownerWindow (): BrowserWindow | null {
+    return this.webContents.getOwnerBrowserWindow();
+  }
+
+  set ownerWindow (w: BrowserWindow | null) {
+    this.webContents._setOwnerWindow(w);
+  }
 
   get webContentsView () {
     return this.#webContentsView;

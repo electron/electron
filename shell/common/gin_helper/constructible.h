@@ -23,7 +23,7 @@ class EventEmitterMixin;
 //   class Example : public gin::Wrappable<Example>,
 //                   public gin_helper::Constructible<Example> {
 //    public:
-//     static gin::Handle<Tray> New(...usual gin method arguments...);
+//     static gin::Handle<Example> New(...usual gin method arguments...);
 //     static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
 //         v8::Isolate*,
 //         v8::Local<v8::ObjectTemplate>);

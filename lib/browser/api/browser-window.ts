@@ -44,6 +44,8 @@ BrowserWindow.prototype._init = function (this: BWT) {
     this.on(event as any, visibilityChanged);
   }
 
+  this._browserViews = [];
+
   // Notify the creation of the window.
   const event = process._linkedBinding('electron_browser_event').createEmpty();
   app.emit('browser-window-created', event, this);
@@ -173,7 +175,7 @@ BrowserWindow.prototype.setBrowserView = function (browserView: BrowserView) {
   this._browserViews.forEach(bv => {
     this.removeBrowserView(bv);
   });
-  this.addBrowserView(browserView);
+  if (browserView) { this.addBrowserView(browserView); }
 };
 
 BrowserWindow.prototype.removeBrowserView = function (browserView: BrowserView) {
@@ -187,7 +189,7 @@ BrowserWindow.prototype.removeBrowserView = function (browserView: BrowserView) 
 
 BrowserWindow.prototype.getBrowserView = function () {
   if (this._browserViews.length > 1) { throw new Error('This BrowserWindow has multiple BrowserViews, use getBrowserViews() instead'); }
-  return this._browserViews[0];
+  return this._browserViews[0] ?? null;
 };
 
 BrowserWindow.prototype.getBrowserViews = function () {
@@ -195,6 +197,7 @@ BrowserWindow.prototype.getBrowserViews = function () {
 };
 
 BrowserWindow.prototype.setTopBrowserView = function (browserView: BrowserView) {
+  if (browserView.ownerWindow !== this) { throw new Error('Given BrowserView is not attached to the window'); }
   this.addBrowserView(browserView);
 };
 

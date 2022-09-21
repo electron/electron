@@ -1998,8 +1998,9 @@ void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
   SetOwnerWindow(GetWebContents(), owner_window);
 }
 
-void WebContents::SetOwnerBaseWindow(BaseWindow* owner_window) {
-  SetOwnerWindow(GetWebContents(), owner_window->window());
+void WebContents::SetOwnerBaseWindow(absl::optional<BaseWindow*> owner_window) {
+  SetOwnerWindow(GetWebContents(),
+                 owner_window ? (*owner_window)->window() : nullptr);
 }
 
 void WebContents::SetOwnerWindow(content::WebContents* web_contents,
