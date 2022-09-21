@@ -11,13 +11,13 @@ namespace gin_helper::internal {
 
 gin::WrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin};
 
-v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
+// MUST BE SET PER-CONTEXT
+void UpdateEventEmitterTemplatePrototype(v8::Isolate* isolate) {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   v8::Local<v8::FunctionTemplate> tmpl =
       data->GetFunctionTemplate(&kWrapperInfo);
 
-  if (tmpl.IsEmpty()) {
-    tmpl = v8::FunctionTemplate::New(isolate);
+  if (!tmpl.IsEmpty()) {
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Function> func = tmpl->GetFunction(context).ToLocalChecked();
 
@@ -31,8 +31,18 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
     CHECK(func_prototype.As<v8::Object>()
               ->SetPrototype(context, eventemitter_prototype)
               .ToChecked());
+  }
+}
 
+v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  v8::Local<v8::FunctionTemplate> tmpl =
+      data->GetFunctionTemplate(&kWrapperInfo);
+
+  if (tmpl.IsEmpty()) {
+    tmpl = v8::FunctionTemplate::New(isolate);
     data->SetFunctionTemplate(&kWrapperInfo, tmpl);
+    UpdateEventEmitterTemplatePrototype(isolate);
   }
 
   return tmpl;

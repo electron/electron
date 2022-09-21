@@ -226,10 +226,13 @@ describe('webFrame module', () => {
       });
     });
 
+    // TODO: test same-site and cross-site navigation
+    // need to check behavior when new v8::Isolate is created
+
     // TODO: WebFrameRenderer.prototype is losing EventEmitter upon navigation,
     // possibly due to context being destroyed? 'setEventEmitterPrototype'
     // assigns a v8::Global which should be persisted through navigation...
-    it.skip('can emit following page navigation', async () => {
+    it.only('can emit following page navigation', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -241,6 +244,8 @@ describe('webFrame module', () => {
       defer(() => w.close());
       await w.loadURL('about:blank');
       await w.loadURL('about:blank');
+      // await w.loadURL('https://www.google.com/');
+      // await w.loadURL('https://www.electronjs.org/');
       const worldId = await executeJsHelper.inPreloadWorld(w.webContents, function testFunction () {
         return new Promise(resolve => {
           // resolve(typeof electron.webFrame.on);
