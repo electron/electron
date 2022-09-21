@@ -131,10 +131,8 @@ like `HTTP`. Similarly, we recommend the use of `WSS` over `WS`, `FTPS` over
 
 #### Why?
 
-`HTTPS` has three main benefits:
+`HTTPS` has two main benefits:
 
-1. It authenticates the remote server, ensuring your app connects to the correct
-   host instead of an impersonator.
 1. It ensures data integrity, asserting that the data was not modified while in
    transit between your application and the host.
 1. It encrypts the traffic between your user and the destination host, making it
