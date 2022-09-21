@@ -1,8 +1,10 @@
 import { expect } from 'chai';
+import * as http from 'http';
 import * as path from 'path';
 import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { defer, executeJsHelper } from './spec-helpers';
+import { AddressInfo } from 'net';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -226,13 +228,7 @@ describe('webFrame module', () => {
       });
     });
 
-    // TODO: test same-site and cross-site navigation
-    // need to check behavior when new v8::Isolate is created
-
-    // TODO: WebFrameRenderer.prototype is losing EventEmitter upon navigation,
-    // possibly due to context being destroyed? 'setEventEmitterPrototype'
-    // assigns a v8::Global which should be persisted through navigation...
-    it.only('can emit following page navigation', async () => {
+    it('can emit following same-site navigation', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -244,16 +240,48 @@ describe('webFrame module', () => {
       defer(() => w.close());
       await w.loadURL('about:blank');
       await w.loadURL('about:blank');
-      // await w.loadURL('https://www.google.com/');
-      // await w.loadURL('https://www.electronjs.org/');
       const worldId = await executeJsHelper.inPreloadWorld(w.webContents, function testFunction () {
         return new Promise(resolve => {
-          // resolve(typeof electron.webFrame.on);
           electron.webFrame.once('script-context-created', (_e, worldId) => resolve(worldId));
           electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
         });
       });
       expect(worldId).to.equal(123);
+    });
+
+    it('can emit following cross-site navigation', async () => {
+      const server = http.createServer((_req, res) => {
+        res.writeHead(200);
+        res.end('hello world');
+      });
+
+      await new Promise<void>(resolve => {
+        server.listen(0, '127.0.0.1', () => resolve());
+      });
+
+      try {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            contextIsolation: true,
+            preload: path.join(fixtures, 'pages', 'electron-global-preload.js')
+          }
+        });
+        defer(() => w.close());
+        const port = (server.address() as AddressInfo).port;
+        await w.loadURL(`http://127.0.0.1:${port}`);
+        await w.loadURL(`http://localhost:${port}`);
+        const worldId = await executeJsHelper.inPreloadWorld(w.webContents, function testFunction () {
+          return new Promise(resolve => {
+            electron.webFrame.once('script-context-created', (_e, worldId) => resolve(worldId));
+            electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
+          });
+        });
+        expect(worldId).to.equal(123);
+      } finally {
+        server.close();
+      }
     });
   });
 });
