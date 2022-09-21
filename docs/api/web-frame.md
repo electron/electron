@@ -27,7 +27,7 @@ Returns:
 * `details` Object
   * `worldId` Integer - The ID of the world JavaScript is running in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`.
 
-Emitted when a new script context to run JavaScript in is created in the frame.
+Emitted when a new script context is created in the frame to run JavaScript.
 
 ## Methods
 

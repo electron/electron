@@ -220,7 +220,7 @@ describe('webFrame module', () => {
         const executeJavaScript = webPrefs.contextIsolation ? executeJsHelper.inPreloadWorld : executeJsHelper.inMainWorld;
         const worldId = await executeJavaScript(w.webContents, () =>
           new Promise(resolve => {
-            electron.webFrame.once('script-context-created', (_e, worldId) => resolve(worldId));
+            electron.webFrame.once('script-context-created', (_e, { worldId }) => resolve(worldId));
             electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
           })
         );
@@ -242,7 +242,7 @@ describe('webFrame module', () => {
       await w.loadURL('about:blank');
       const worldId = await executeJsHelper.inPreloadWorld(w.webContents, function testFunction () {
         return new Promise(resolve => {
-          electron.webFrame.once('script-context-created', (_e, worldId) => resolve(worldId));
+          electron.webFrame.once('script-context-created', (_e, { worldId }) => resolve(worldId));
           electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
         });
       });
@@ -274,7 +274,7 @@ describe('webFrame module', () => {
         await w.loadURL(`http://localhost:${port}`);
         const worldId = await executeJsHelper.inPreloadWorld(w.webContents, function testFunction () {
           return new Promise(resolve => {
-            electron.webFrame.once('script-context-created', (_e, worldId) => resolve(worldId));
+            electron.webFrame.once('script-context-created', (_e, { worldId }) => resolve(worldId));
             electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
           });
         });

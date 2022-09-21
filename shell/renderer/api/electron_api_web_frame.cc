@@ -388,7 +388,13 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   // thrown in the event emitter callback.
   void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                      int32_t world_id) override {
-    Emit("script-context-created", world_id);
+    v8::Isolate* isolate = context->GetIsolate();
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+    gin_helper::Dictionary details =
+        gin_helper::Dictionary::CreateEmpty(isolate);
+    details.Set("worldId", world_id);
+    Emit("script-context-created", details);
   }
 
  private:
