@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Tue, 5 Jul 2022 10:01:42 +0200
+Subject: Fix flag mismatch in serialized data
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit 3483b970eb1c35f96b2b605cfaf6ca25dc9b6ab9)
+
+Bug: v8:11111,chromium:1339648
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I3b472f74f37a4e1514ce20635b16970e95a36e15
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3735162
+Reviewed-by: Shu-yu Guo <syg@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#81598}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3859324
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/10.2@{#29}
+Cr-Branched-From: 374091f382e88095694c1283cbdc2acddc1b1417-refs/heads/10.2.154@{#1}
+Cr-Branched-From: f0c353f6315eeb2212ba52478983a3b3af07b5b1-refs/heads/main@{#79976}
+
+diff --git a/src/objects/value-serializer.cc b/src/objects/value-serializer.cc
+index 179c47ca4903bf9cbce5a3f78eb18ef8ffc9d48b..94655f46e33b737c37c2cb3a03f9e0f385cdd454 100644
+--- a/src/objects/value-serializer.cc
++++ b/src/objects/value-serializer.cc
+@@ -63,6 +63,17 @@ static const uint32_t kLatestVersion = 15;
+ static_assert(kLatestVersion == v8::CurrentValueSerializerFormatVersion(),
+               "Exported format version must match latest version.");
+ 
++namespace {
++// For serializing JSArrayBufferView flags. Instead of serializing /
++// deserializing the flags directly, we serialize them bit by bit. This is for
++// ensuring backwards compatilibity in the case where the representation
++// changes. Note that the ValueSerializer data can be stored on disk.
++using JSArrayBufferViewIsLengthTracking = base::BitField<bool, 0, 1>;
++using JSArrayBufferViewIsBackedByRab =
++    JSArrayBufferViewIsLengthTracking::Next<bool, 1>;
++
++}  // namespace
++
+ template <typename T>
+ static size_t BytesNeededForVarint(T value) {
+   static_assert(std::is_integral<T>::value && std::is_unsigned<T>::value,
+@@ -923,6 +934,8 @@ Maybe<bool> ValueSerializer::WriteJSArrayBuffer(
+   if (byte_length > std::numeric_limits<uint32_t>::max()) {
+     return ThrowDataCloneError(MessageTemplate::kDataCloneError, array_buffer);
+   }
++  // TODO(v8:11111): Support RAB / GSAB. The wire version will need to be
++  // bumped.
+   WriteTag(SerializationTag::kArrayBuffer);
+   WriteVarint<uint32_t>(byte_length);
+   WriteRawBytes(array_buffer->backing_store(), byte_length);
+@@ -951,7 +964,10 @@ Maybe<bool> ValueSerializer::WriteJSArrayBufferView(JSArrayBufferView view) {
+   WriteVarint(static_cast<uint8_t>(tag));
+   WriteVarint(static_cast<uint32_t>(view.byte_offset()));
+   WriteVarint(static_cast<uint32_t>(view.byte_length()));
+-  WriteVarint(static_cast<uint32_t>(view.bit_field()));
++  uint32_t flags =
++      JSArrayBufferViewIsLengthTracking::encode(view.is_length_tracking()) |
++      JSArrayBufferViewIsBackedByRab::encode(view.is_backed_by_rab());
++  WriteVarint(flags);
+   return ThrowIfOutOfMemory();
+ }
+ 
+@@ -1948,7 +1964,7 @@ MaybeHandle<JSArrayBuffer> ValueDeserializer::ReadTransferredJSArrayBuffer() {
+ 
+ MaybeHandle<JSArrayBufferView> ValueDeserializer::ReadJSArrayBufferView(
+     Handle<JSArrayBuffer> buffer) {
+-  uint32_t buffer_byte_length = static_cast<uint32_t>(buffer->byte_length());
++  uint32_t buffer_byte_length = static_cast<uint32_t>(buffer->GetByteLength());
+   uint8_t tag = 0;
+   uint32_t byte_offset = 0;
+   uint32_t byte_length = 0;
+@@ -1972,7 +1988,9 @@ MaybeHandle<JSArrayBufferView> ValueDeserializer::ReadJSArrayBufferView(
+       Handle<JSDataView> data_view =
+           isolate_->factory()->NewJSDataView(buffer, byte_offset, byte_length);
+       AddObjectWithID(id, data_view);
+-      data_view->set_bit_field(flags);
++      if (!ValidateAndSetJSArrayBufferViewFlags(*data_view, *buffer, flags)) {
++        return MaybeHandle<JSArrayBufferView>();
++      }
+       return data_view;
+     }
+ #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype) \
+@@ -1989,11 +2007,39 @@ MaybeHandle<JSArrayBufferView> ValueDeserializer::ReadJSArrayBufferView(
+   }
+   Handle<JSTypedArray> typed_array = isolate_->factory()->NewJSTypedArray(
+       external_array_type, buffer, byte_offset, byte_length / element_size);
+-  typed_array->set_bit_field(flags);
++  if (!ValidateAndSetJSArrayBufferViewFlags(*typed_array, *buffer, flags)) {
++    return MaybeHandle<JSArrayBufferView>();
++  }
+   AddObjectWithID(id, typed_array);
+   return typed_array;
+ }
+ 
++bool ValueDeserializer::ValidateAndSetJSArrayBufferViewFlags(
++    JSArrayBufferView view, JSArrayBuffer buffer, uint32_t serialized_flags) {
++  bool is_length_tracking =
++      JSArrayBufferViewIsLengthTracking::decode(serialized_flags);
++  bool is_backed_by_rab =
++      JSArrayBufferViewIsBackedByRab::decode(serialized_flags);
++
++  // TODO(marja): When the version number is bumped the next time, check that
++  // serialized_flags doesn't contain spurious 1-bits.
++
++  if (is_backed_by_rab || is_length_tracking) {
++    if (!FLAG_harmony_rab_gsab) {
++      return false;
++    }
++    if (!buffer.is_resizable()) {
++      return false;
++    }
++    if (is_backed_by_rab && buffer.is_shared()) {
++      return false;
++    }
++  }
++  view.set_is_length_tracking(is_length_tracking);
++  view.set_is_backed_by_rab(is_backed_by_rab);
++  return true;
++}
++
+ MaybeHandle<Object> ValueDeserializer::ReadJSError() {
+   Handle<Object> message = isolate_->factory()->undefined_value();
+   Handle<Object> options = isolate_->factory()->undefined_value();
+diff --git a/src/objects/value-serializer.h b/src/objects/value-serializer.h
+index a3ab32b2cd556ee676a1adc565496c35ba1cfe4b..4b780caf3dbf8a940bdf877f78c0b5f912b4b9e7 100644
+--- a/src/objects/value-serializer.h
++++ b/src/objects/value-serializer.h
+@@ -291,6 +291,9 @@ class ValueDeserializer {
+       V8_WARN_UNUSED_RESULT;
+   MaybeHandle<JSArrayBufferView> ReadJSArrayBufferView(
+       Handle<JSArrayBuffer> buffer) V8_WARN_UNUSED_RESULT;
++  bool ValidateAndSetJSArrayBufferViewFlags(
++      JSArrayBufferView view, JSArrayBuffer buffer,
++      uint32_t serialized_flags) V8_WARN_UNUSED_RESULT;
+   MaybeHandle<Object> ReadJSError() V8_WARN_UNUSED_RESULT;
+ #if V8_ENABLE_WEBASSEMBLY
+   MaybeHandle<JSObject> ReadWasmModuleTransfer() V8_WARN_UNUSED_RESULT;
+diff --git a/test/mjsunit/rab-gsab-valueserializer.js b/test/mjsunit/rab-gsab-valueserializer.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f523648095f2508680c3c63591364e52909e1d6c
+--- /dev/null
++++ b/test/mjsunit/rab-gsab-valueserializer.js
+@@ -0,0 +1,17 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --harmony-rab-gsab
++
++"use strict";
++
++(function FlagMismatch() {
++  // Length tracking TA, buffer not resizable.
++  const data1 = new Uint8Array([255, 15, 66, 4, 3, 5, 7, 11, 86, 66, 1, 2, 1]);
++  assertThrows(() => { d8.serializer.deserialize(data1.buffer); });
++
++  // RAB backed TA, buffer not resizable.
++  const data2 = new Uint8Array([255, 15, 66, 4, 3, 5, 7, 11, 86, 66, 1, 2, 2]);
++  assertThrows(() => { d8.serializer.deserialize(data2.buffer); });
++})();
