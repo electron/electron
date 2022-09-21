@@ -19,7 +19,7 @@ AppIndicatorIconMenu::AppIndicatorIconMenu(ui::MenuModel* model)
     ANNOTATE_SCOPED_MEMORY_LEAK;  // http://crbug.com/378770
     gtk_menu_ = gtk_menu_new();
   }
-  g_object_ref_sink(gtk_menu_);
+  g_object_ref_sink(gtk_menu_.get());
   if (menu_model_) {
     BuildSubmenuFromModel(menu_model_, gtk_menu_,
                           G_CALLBACK(OnMenuItemActivatedThunk),
@@ -39,7 +39,7 @@ void AppIndicatorIconMenu::UpdateClickActionReplacementMenuItem(
   click_action_replacement_callback_ = callback;
 
   if (click_action_replacement_menu_item_added_) {
-    GList* children = gtk_container_get_children(GTK_CONTAINER(gtk_menu_));
+    GList* children = gtk_container_get_children(GTK_CONTAINER(gtk_menu_.get()));
     for (GList* child = children; child; child = g_list_next(child)) {
       if (g_object_get_data(G_OBJECT(child->data), "click-action-item") !=
           nullptr) {
@@ -56,7 +56,7 @@ void AppIndicatorIconMenu::UpdateClickActionReplacementMenuItem(
     if (menu_model_ && menu_model_->GetItemCount() > 0) {
       GtkWidget* menu_item = gtk_separator_menu_item_new();
       gtk_widget_show(menu_item);
-      gtk_menu_shell_prepend(GTK_MENU_SHELL(gtk_menu_), menu_item);
+      gtk_menu_shell_prepend(GTK_MENU_SHELL(gtk_menu_.get()), menu_item);
     }
 
     GtkWidget* menu_item = gtk_menu_item_new_with_mnemonic(label);
@@ -66,17 +66,17 @@ void AppIndicatorIconMenu::UpdateClickActionReplacementMenuItem(
                      G_CALLBACK(OnClickActionReplacementMenuItemActivatedThunk),
                      this);
     gtk_widget_show(menu_item);
-    gtk_menu_shell_prepend(GTK_MENU_SHELL(gtk_menu_), menu_item);
+    gtk_menu_shell_prepend(GTK_MENU_SHELL(gtk_menu_.get()), menu_item);
   }
 }
 
 void AppIndicatorIconMenu::Refresh() {
-  gtk_container_foreach(GTK_CONTAINER(gtk_menu_), SetMenuItemInfo,
+  gtk_container_foreach(GTK_CONTAINER(gtk_menu_.get()), SetMenuItemInfo,
                         &block_activation_);
 }
 
 GtkMenu* AppIndicatorIconMenu::GetGtkMenu() {
-  return GTK_MENU(gtk_menu_);
+  return GTK_MENU(gtk_menu_.get());
 }
 
 void AppIndicatorIconMenu::OnClickActionReplacementMenuItemActivated(

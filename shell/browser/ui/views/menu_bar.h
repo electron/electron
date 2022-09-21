@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_MENU_BAR_H_
 
+#include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/menu_delegate.h"
@@ -84,9 +85,9 @@ class MenuBar : public views::AccessiblePaneView,
   SkColor disabled_color_;
 #endif
 
-  NativeWindow* window_;
-  RootView* root_view_;
-  ElectronMenuModel* menu_model_ = nullptr;
+  raw_ptr<NativeWindow> window_;
+  raw_ptr<RootView> root_view_;
+  raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
   bool accelerator_installed_ = false;
 };
 

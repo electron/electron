@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 
+#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "extensions/common/url_pattern.h"
 #include "gin/arguments.h"
@@ -146,7 +147,7 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   std::map<uint64_t, net::CompletionOnceCallback> callbacks_;
 
   // Weak-ref, it manages us.
-  content::BrowserContext* browser_context_;
+  raw_ptr<content::BrowserContext> browser_context_;
 };
 
 }  // namespace electron::api

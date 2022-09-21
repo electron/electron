@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "extensions/browser/api/execute_code_function.h"
 #include "extensions/browser/extension_function.h"
 #include "extensions/common/extension_resource.h"
@@ -107,7 +108,7 @@ class TabsUpdateFunction : public ExtensionFunction {
   bool UpdateURL(const std::string& url, int tab_id, std::string* error);
   ResponseValue GetResult();
 
-  content::WebContents* web_contents_;
+  raw_ptr<content::WebContents> web_contents_;
 
  private:
   ResponseAction Run() override;

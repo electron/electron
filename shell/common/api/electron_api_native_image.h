@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -134,7 +135,7 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 
   gfx::Image image_;
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   int32_t memory_usage_ = 0;
 };
 

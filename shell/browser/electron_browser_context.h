@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
@@ -227,7 +228,7 @@ class ElectronBrowserContext : public content::BrowserContext {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Owned by the KeyedService system.
-  extensions::ElectronExtensionSystem* extension_system_;
+  raw_ptr<extensions::ElectronExtensionSystem> extension_system_;
 #endif
 
   // Shared URLLoaderFactory.

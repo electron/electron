@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "components/viz/host/client_frame_sink_video_capturer.h"
 #include "content/public/browser/web_contents.h"
@@ -70,7 +71,7 @@ class FrameSubscriber : public content::WebContentsObserver,
   FrameCaptureCallback callback_;
   bool only_dirty_;
 
-  content::RenderWidgetHost* host_;
+  raw_ptr<content::RenderWidgetHost> host_;
   std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_{this};

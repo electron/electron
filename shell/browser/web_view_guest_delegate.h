@@ -49,11 +49,11 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   void ResetZoomController();
 
   // The WebContents that attaches this guest view.
-  content::WebContents* embedder_web_contents_ = nullptr;
+  raw_ptr<content::WebContents> embedder_web_contents_ = nullptr;
 
   // The zoom controller of the embedder that is used
   // to subscribe for zoom changes.
-  WebContentsZoomController* embedder_zoom_controller_ = nullptr;
+  raw_ptr<WebContentsZoomController> embedder_zoom_controller_ = nullptr;
 
   raw_ptr<api::WebContents> api_web_contents_ = nullptr;
 };

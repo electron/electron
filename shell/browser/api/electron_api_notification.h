@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -110,7 +111,7 @@ class Notification : public gin::Wrappable<Notification>,
   std::u16string close_button_text_;
   std::u16string toast_xml_;
 
-  electron::NotificationPresenter* presenter_;
+  raw_ptr<electron::NotificationPresenter> presenter_;
 
   base::WeakPtr<electron::Notification> notification_;
 };

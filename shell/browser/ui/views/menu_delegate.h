@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/views/controls/menu/menu_delegate.h"
@@ -66,7 +67,7 @@ class MenuDelegate : public views::MenuDelegate {
                                       views::MenuButton** button) override;
 
  private:
-  MenuBar* menu_bar_;
+  raw_ptr<MenuBar> menu_bar_;
   int id_ = -1;
   std::unique_ptr<views::MenuDelegate> adapter_;
   std::unique_ptr<views::MenuRunner> menu_runner_;

@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "ui/linux/linux_ui.h"
@@ -113,10 +114,10 @@ class ClientFrameViewLinux : public FramelessView,
 
   gfx::Size SizeWithDecorations(gfx::Size size) const;
 
-  ui::NativeTheme* theme_;
+  raw_ptr<ui::NativeTheme> theme_;
   ThemeValues theme_values_;
 
-  views::Label* title_;
+  raw_ptr<views::Label> title_;
 
   std::unique_ptr<ui::NavButtonProvider> nav_button_provider_;
   std::array<NavButton, kNavButtonCount> nav_buttons_;
@@ -126,7 +127,7 @@ class ClientFrameViewLinux : public FramelessView,
 
   bool host_supports_client_frame_shadow_ = false;
 
-  ui::WindowFrameProvider* frame_provider_;
+  raw_ptr<ui::WindowFrameProvider> frame_provider_;
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       native_theme_observer_{this};

@@ -93,8 +93,8 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
   }
 
   devtools_web_view_->SetVisible(false);
-  AddChildView(devtools_web_view_);
-  AddChildView(contents_web_view_);
+  AddChildView(devtools_web_view_.get());
+  AddChildView(contents_web_view_.get());
 }
 
 InspectableWebContentsViewViews::~InspectableWebContentsViewViews() {

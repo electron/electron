@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_VIEW_H_
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/browser/api/electron_api_view.h"
 
@@ -48,7 +49,7 @@ class WebContentsView : public View, public content::WebContentsObserver {
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;
-  api::WebContents* api_web_contents_;
+  raw_ptr<api::WebContents> api_web_contents_;
 };
 
 }  // namespace electron::api

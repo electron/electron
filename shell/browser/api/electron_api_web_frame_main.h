@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
 #include "gin/handle.h"
@@ -124,7 +125,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   int frame_tree_node_id_;
 
-  content::RenderFrameHost* render_frame_ = nullptr;
+  raw_ptr<content::RenderFrameHost> render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.

@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/task/sequenced_task_runner_helpers.h"
 #include "content/public/browser/browser_message_filter.h"
 #include "content/public/browser/browser_thread.h"
@@ -63,7 +64,7 @@ class ElectronExtensionMessageFilter : public content::BrowserMessageFilter {
   // be accessed on the UI thread! Furthermore since this class is refcounted it
   // may outlive |browser_context_|, so make sure to NULL check if in doubt;
   // async calls and the like.
-  content::BrowserContext* browser_context_;
+  raw_ptr<content::BrowserContext> browser_context_;
 };
 
 }  // namespace electron

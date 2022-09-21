@@ -8,6 +8,7 @@
 #include <deque>
 #include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "services/network/public/mojom/proxy_lookup_client.mojom.h"
@@ -70,7 +71,7 @@ class ResolveProxyHelper
   mojo::Receiver<network::mojom::ProxyLookupClient> receiver_{this};
 
   // Weak Ref
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 };
 
 }  // namespace electron

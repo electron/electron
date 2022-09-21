@@ -737,7 +737,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 #endif
 
   // Init embedder earlier
-  options.Get("embedder", &embedder_);
+  WebContents* embedder = nullptr;
+  options.Get("embedder", &embedder);
+  embedder_ = embedder;
 
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);

@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
@@ -67,7 +68,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   mojo::Receiver<network::mojom::URLLoader> url_loader_;
   mojo::Remote<network::mojom::URLLoaderClient> client_;
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   v8::Global<v8::Object> emitter_;
   v8::Global<v8::Value> buffer_;
 

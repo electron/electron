@@ -323,7 +323,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;
 
-  Delegate* delegate_ = nullptr;
+  raw_ptr<Delegate> delegate_ = nullptr;
 
   std::string user_agent_override_ = "";
 

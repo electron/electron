@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/compiler_specific.h"
+#include "base/memory/raw_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "ui/views/view.h"
@@ -55,13 +56,13 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   InspectableWebContents* inspectable_web_contents_;
 
   std::unique_ptr<views::Widget> devtools_window_;
-  views::WebView* devtools_window_web_view_ = nullptr;
-  views::View* contents_web_view_ = nullptr;
-  views::WebView* devtools_web_view_ = nullptr;
+  raw_ptr<views::WebView> devtools_window_web_view_ = nullptr;
+  raw_ptr<views::View> contents_web_view_ = nullptr;
+  raw_ptr<views::WebView> devtools_web_view_ = nullptr;
 
   DevToolsContentsResizingStrategy strategy_;
   bool devtools_visible_ = false;
-  views::WidgetDelegate* devtools_window_delegate_ = nullptr;
+  raw_ptr<views::WidgetDelegate> devtools_window_delegate_ = nullptr;
   std::u16string title_;
 };
 

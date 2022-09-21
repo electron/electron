@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_MENU_H_
 
 #include "base/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "ui/base/glib/glib_signal.h"
 
 typedef struct _GtkMenu GtkMenu;
@@ -63,7 +64,7 @@ class AppIndicatorIconMenu {
   // invoked and is assumed to do any necessary processing.
   base::RepeatingClosure click_action_replacement_callback_;
 
-  GtkWidget* gtk_menu_ = nullptr;
+  raw_ptr<GtkWidget> gtk_menu_ = nullptr;
 
   bool block_activation_ = false;
 };

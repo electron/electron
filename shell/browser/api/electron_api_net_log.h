@@ -7,6 +7,7 @@
 
 #include "base/callback.h"
 #include "base/files/file_path.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "gin/handle.h"
@@ -62,7 +63,7 @@ class NetLog : public gin::Wrappable<NetLog> {
   void NetLogStarted(int32_t error);
 
  private:
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   mojo::Remote<network::mojom::NetLogExporter> net_log_exporter_;
 

@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_frame_host.h"
@@ -129,7 +130,7 @@ class ProxyingURLLoaderFactory
     void OnRequestError(const network::URLLoaderCompletionStatus& status);
     void HandleBeforeRequestRedirect();
 
-    ProxyingURLLoaderFactory* const factory_;
+    const raw_ptr<ProxyingURLLoaderFactory> factory_;
     network::ResourceRequest request_;
     const absl::optional<url::Origin> original_initiator_;
     const uint64_t request_id_ = 0;
@@ -245,7 +246,7 @@ class ProxyingURLLoaderFactory
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
 
   // Passed from api::WebRequest.
-  WebRequestAPI* web_request_api_;
+  raw_ptr<WebRequestAPI> web_request_api_;
 
   // This is passed from api::Protocol.
   //
@@ -258,7 +259,7 @@ class ProxyingURLLoaderFactory
 
   const int render_process_id_;
   const int frame_routing_id_;
-  uint64_t* request_id_generator_;  // managed by ElectronBrowserClient
+  raw_ptr<uint64_t> request_id_generator_;  // managed by ElectronBrowserClient
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;
   absl::optional<int64_t> navigation_id_;
   mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;

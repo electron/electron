@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "base/memory/raw_ptr.h"
 #include "base/strings/string_piece.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -75,7 +76,7 @@ class PromiseBase {
   v8::Local<v8::Promise::Resolver> GetInner() const;
 
  private:
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Promise::Resolver> resolver_;
 };

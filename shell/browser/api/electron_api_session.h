@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
@@ -189,12 +190,12 @@ class Session : public gin::Wrappable<Session>,
   v8::Global<v8::Value> service_worker_context_;
   v8::Global<v8::Value> web_request_;
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
 
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 };
 
 }  // namespace api

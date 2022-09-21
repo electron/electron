@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "ipc/ipc_platform_file.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -45,8 +46,8 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
                           const std::string& channel);
 
   bool has_delayed_node_initialization_ = false;
-  content::RenderFrame* render_frame_;
-  RendererClientBase* renderer_client_;
+  raw_ptr<content::RenderFrame> render_frame_;
+  raw_ptr<RendererClientBase> renderer_client_;
 };
 
 }  // namespace electron

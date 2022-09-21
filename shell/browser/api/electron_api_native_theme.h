@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
+#include "base/memory/raw_ptr.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -51,8 +52,8 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
   void OnNativeThemeUpdatedOnUI();
 
  private:
-  ui::NativeTheme* ui_theme_;
-  ui::NativeTheme* web_theme_;
+  raw_ptr<ui::NativeTheme> ui_theme_;
+  raw_ptr<ui::NativeTheme> web_theme_;
 };
 
 }  // namespace electron::api

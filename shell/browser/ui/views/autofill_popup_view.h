@@ -9,6 +9,7 @@
 
 #include "shell/browser/ui/autofill_popup.h"
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_widget_host.h"
 #include "electron/buildflags/buildflags.h"
@@ -130,10 +131,10 @@ class AutofillPopupView : public views::WidgetDelegateView,
   void RemoveObserver();
 
   // Controller for this popup. Weak reference.
-  AutofillPopup* popup_;
+  raw_ptr<AutofillPopup> popup_;
 
   // The widget of the window that triggered this popup. Weak reference.
-  views::Widget* parent_widget_;
+  raw_ptr<views::Widget> parent_widget_;
 
   // The time when the popup was shown.
   base::Time show_time_;

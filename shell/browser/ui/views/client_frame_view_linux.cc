@@ -99,7 +99,7 @@ ClientFrameViewLinux::ClientFrameViewLinux()
   title_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
   title_->SetVerticalAlignment(gfx::ALIGN_MIDDLE);
   title_->SetTextStyle(views::style::STYLE_TAB_ACTIVE);
-  AddChildView(title_);
+  AddChildView(title_.get());
 
   native_theme_observer_.Observe(theme_);
 

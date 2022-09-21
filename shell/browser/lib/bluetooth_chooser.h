@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/bluetooth_chooser.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 
@@ -42,7 +43,7 @@ class BluetoothChooser : public content::BluetoothChooser {
 
  private:
   std::map<std::string, std::u16string> device_map_;
-  api::WebContents* api_web_contents_;
+  raw_ptr<api::WebContents> api_web_contents_;
   EventHandler event_handler_;
   int num_retries_ = 0;
   bool refreshing_ = false;

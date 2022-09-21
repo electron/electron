@@ -44,7 +44,7 @@ class JavascriptEnvironment {
  private:
   v8::Isolate* Initialize(uv_loop_t* event_loop);
   // Leaked on exit.
-  node::MultiIsolatePlatform* platform_;
+  raw_ptr<node::MultiIsolatePlatform> platform_;
 
   raw_ptr<v8::Isolate> isolate_;
   gin::IsolateHolder isolate_holder_;

@@ -10,6 +10,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 
+#include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/win_caption_button.h"
@@ -90,7 +91,7 @@ class WinFrameView : public FramelessView {
   // The container holding the caption buttons (minimize, maximize, close, etc.)
   // May be null if the caption button container is destroyed before the frame
   // view. Always check for validity before using!
-  WinCaptionButtonContainer* caption_button_container_;
+  raw_ptr<WinCaptionButtonContainer> caption_button_container_;
 };
 
 }  // namespace electron

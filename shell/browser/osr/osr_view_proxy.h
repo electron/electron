@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/memory/raw_ptr.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/events/event.h"
 #include "ui/gfx/geometry/rect.h"
@@ -41,7 +42,7 @@ class OffscreenViewProxy {
   void ResetView() { view_ = nullptr; }
 
  private:
-  views::View* view_;
+  raw_ptr<views::View> view_;
 
   gfx::Rect view_bounds_;
   std::unique_ptr<SkBitmap> view_bitmap_;
