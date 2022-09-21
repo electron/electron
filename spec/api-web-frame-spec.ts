@@ -228,6 +228,36 @@ describe('webFrame module', () => {
       });
     });
 
+    it('doesnt crash when an error is thrown', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'pages', 'electron-global-preload.js')
+        }
+      });
+      defer(() => w.close());
+      await w.loadURL('about:blank');
+      const errorPromise = new Promise<void>(resolve => {
+        w.webContents.on('console-message', function onError (e, level, message) {
+          if (message === 'Uncaught Error: 123') {
+            w.webContents.off('console-message', onError);
+            resolve();
+          }
+        });
+      });
+      executeJsHelper.inPreloadWorld(w.webContents, () =>
+        new Promise(() => {
+          electron.webFrame.once('script-context-created', (_e, { worldId }) => {
+            throw new Error(`${worldId}`);
+          });
+          electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
+        })
+      );
+      await errorPromise;
+    });
+
     it('can emit following same-site navigation', async () => {
       const w = new BrowserWindow({
         show: false,
