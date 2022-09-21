@@ -575,8 +575,9 @@ void ExposeAPIInWorld(v8::Isolate* isolate,
   CHECK(frame);
 
   v8::Local<v8::Context> target_context =
-      world_id == 0 ? frame->MainWorldScriptContext()
-                    : frame->GetScriptContextFromWorldId(isolate, world_id);
+      world_id == WorldIDs::MAIN_WORLD_ID
+          ? frame->MainWorldScriptContext()
+          : frame->GetScriptContextFromWorldId(isolate, world_id);
 
   gin_helper::Dictionary global(target_context->GetIsolate(),
                                 target_context->Global());

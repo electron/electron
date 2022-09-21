@@ -48,7 +48,7 @@ The `contextBridge` module has the following methods:
 
 ### `contextBridge.exposeInIsolatedWorld(worldId, apiKey, api)`
 
-* `worldId` Integer - The ID of the world to inject the API into. This has to be an existing world. `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature. Using 999 would expose the object for preload context.
+* `worldId` Integer - The ID of the world to inject the API into. `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature. Using 999 would expose the object for preload context. We recommend using 1000+ while creating isolated world.
 * `apiKey` string - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
 * `api` any - Your API, more information on what this API can be and how it works is available below.
 
