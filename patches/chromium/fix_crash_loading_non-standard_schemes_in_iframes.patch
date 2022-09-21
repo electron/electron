@@ -17,30 +17,29 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index b1120c9270a255e4b6070c0d2b5f49e6f99d935d..407888cb17d3e609ad7aaa2ed1c079642df60bca 100644
+index e3e73a2353312a505ffee9d7b9a801bf480dbf86..48bfc3ceb934ef9d507dbda6b0d472d5268e2494 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6517,10 +6517,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
+@@ -6372,9 +6372,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryWithFinalFrameHost() {
    if (IsForMhtmlSubframe())
-     return origin_with_debug_info;
+     return origin;
  
 -  int process_id = GetRenderFrameHost()->GetProcess()->GetID();
 -  auto* policy = ChildProcessSecurityPolicyImpl::GetInstance();
--  CHECK(
--      policy->CanAccessDataForOrigin(process_id, origin_with_debug_info.first));
+-  CHECK(policy->CanAccessDataForOrigin(process_id, origin));
 +  CanCommitStatus can_commit = GetRenderFrameHost()->CanCommitOriginAndUrl(
 +    origin_with_debug_info.first, GetURL(), IsSameDocument(), IsPdf(),
 +    GetUrlInfo().is_sandboxed);
 +  CHECK_EQ(CanCommitStatus::CAN_COMMIT_ORIGIN_AND_URL, can_commit);
 +
-   return origin_with_debug_info;
+   return origin;
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index b1259618ff4dc1848cf007d853e6f3e70b08829f..3d4e6c4c7e0348c52c3f0ccd0f6c19e0e1ec15a5 100644
+index 6d9fc86c21f4ed82b7d706c165fd61b6073f7ac4..32a0cfcd9b7f88d5c4b264e3d04f4d557b4366bc 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2550,6 +2550,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2513,6 +2513,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
      HandleAXEvents(tree_id, std::move(updates_and_events), reset_token);
    }
  
@@ -58,7 +57,7 @@ index b1259618ff4dc1848cf007d853e6f3e70b08829f..3d4e6c4c7e0348c52c3f0ccd0f6c19e0
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -2879,17 +2890,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2848,17 +2859,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
