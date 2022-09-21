@@ -256,7 +256,7 @@ the sandbox in all renderers. Loading, reading or processing any untrusted
 content in an unsandboxed process, including the main process, is not advised.
 
 :::info
-For more information on what `contextIsolation` is and how to enable it please
+For more information on what Process Sandboxing is and how to enable it please
 see our dedicated [Process Sandboxing](sandbox.md) document.
 :::info
 
