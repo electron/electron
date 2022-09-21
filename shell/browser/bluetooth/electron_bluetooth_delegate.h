@@ -94,9 +94,8 @@ class ElectronBluetoothDelegate : public content::BluetoothDelegate {
       FramePermissionObserver* observer) override;
 
  private:
-  void OnDevicePairPromptResponse(base::Value::Dict response);
-
-  PairPromptCallback pair_prompt_callback_;
+  void OnDevicePairPromptResponse(PairPromptCallback callback,
+                                  base::Value::Dict response);
 
   base::WeakPtrFactory<ElectronBluetoothDelegate> weak_factory_{this};
 };
