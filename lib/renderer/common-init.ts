@@ -9,12 +9,8 @@ import type * as webFrameInitModule from '@electron/internal/renderer/web-frame-
 import type * as securityWarningsModule from '@electron/internal/renderer/security-warnings';
 
 // Must be set prior to linking electron_renderer_web_frame
-try {
-  process._linkedBinding('electron_common_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
-} catch (e) {
-  // TODO: why is this only needed for the non-sandboxed renderer
-  console.error(e);
-}
+
+process._linkedBinding('electron_common_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 const v8Util = process._linkedBinding('electron_common_v8_util');

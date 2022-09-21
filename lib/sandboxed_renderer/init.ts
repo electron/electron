@@ -10,12 +10,7 @@ const { EventEmitter } = events;
 process._linkedBinding = binding.get;
 
 // Must be set prior to linking electron_renderer_web_frame
-try {
-  process._linkedBinding('electron_common_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
-} catch (e) {
-  // TODO: why is this only needed for the non-sandboxed renderer
-  console.error(e);
-}
+process._linkedBinding('electron_common_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 // Expose Buffer shim as a hidden value. This is used by C++ code to
