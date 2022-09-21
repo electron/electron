@@ -4,14 +4,53 @@
 
 #include "shell/common/gin_helper/event_emitter_mixin.h"
 
+#include "base/logging.h"
 #include "gin/public/wrapper_info.h"
-#include "shell/common/api/electron_api_event_emitter.h"
+
+namespace {
+
+v8::Eternal<v8::Object>* GetEventEmitterPrototypeReference() {
+  static v8::Eternal<v8::Object> event_emitter_prototype;
+  return &event_emitter_prototype;
+}
+
+v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate) {
+  LOG(INFO) << "GetEventEmitterPrototype";
+  CHECK(!GetEventEmitterPrototypeReference()->IsEmpty());
+  return GetEventEmitterPrototypeReference()->Get(isolate);
+}
+
+}  // namespace
 
 namespace gin_helper::internal {
 
 gin::WrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin};
 
-// MUST BE SET PER-CONTEXT
+void SetEventEmitterPrototype(v8::Isolate* isolate,
+                              v8::Local<v8::Object> proto) {
+  // gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  if (GetEventEmitterPrototypeReference()->IsEmpty()) {
+    LOG(INFO) << "SetEventEmitterPrototype RESET";
+    GetEventEmitterPrototypeReference()->Set(isolate, proto->Clone());
+    // GetEventEmitterPrototypeReference()->ClearWeak();
+  } else if (GetEventEmitterPrototypeReference()
+                 ->Get(isolate)
+                 ->GetCreationContextChecked() !=
+             proto->GetCreationContextChecked()) {
+    LOG(INFO) << "SetEventEmitterPrototype CONTEXT DIFFERS";
+    // GetEventEmitterPrototypeReference()->Reset(isolate, std::move(proto));
+    // GetEventEmitterPrototypeReference()->ClearWeak();
+  } else {
+    LOG(INFO) << "SetEventEmitterPrototype IGNORED";
+  }
+
+  // Ensure whichever context is setting the prototype also applies it to all
+  // APIs using the EventEmitter template.
+  UpdateEventEmitterTemplatePrototype(isolate);
+}
+
+// Templates create a unique function per context. Calling this method will set
+// the template's function prototype to that of EventEmitter.
 void UpdateEventEmitterTemplatePrototype(v8::Isolate* isolate) {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   v8::Local<v8::FunctionTemplate> tmpl =
@@ -22,7 +61,7 @@ void UpdateEventEmitterTemplatePrototype(v8::Isolate* isolate) {
     v8::Local<v8::Function> func = tmpl->GetFunction(context).ToLocalChecked();
 
     v8::Local<v8::Object> eventemitter_prototype =
-        electron::GetEventEmitterPrototype(isolate);
+        GetEventEmitterPrototype(isolate);
 
     v8::Local<v8::Value> func_prototype;
     CHECK(func->Get(context, gin::StringToSymbol(isolate, "prototype"))
@@ -42,6 +81,12 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
   if (tmpl.IsEmpty()) {
     tmpl = v8::FunctionTemplate::New(isolate);
     data->SetFunctionTemplate(&kWrapperInfo, tmpl);
+
+    // The EventEmitter template is created once per isolate. However, setting
+    // the EventEmitter prototype is required once per context. Updating the
+    // prototype here covers the case for the main process which only ever has
+    // a single context. Using this in the renderer requires calls for each
+    // context.
     UpdateEventEmitterTemplatePrototype(isolate);
   }
 

@@ -524,7 +524,6 @@ filenames = {
     "shell/common/api/electron_api_command_line.cc",
     "shell/common/api/electron_api_environment.cc",
     "shell/common/api/electron_api_event_emitter.cc",
-    "shell/common/api/electron_api_event_emitter.h",
     "shell/common/api/electron_api_key_weak_map.h",
     "shell/common/api/electron_api_native_image.cc",
     "shell/common/api/electron_api_native_image.h",

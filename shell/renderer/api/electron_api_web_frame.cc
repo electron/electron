@@ -20,7 +20,6 @@
 #include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
-#include "shell/common/api/electron_api_event_emitter.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -326,17 +325,19 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   static gin::Handle<WebFrameRenderer> Create(
       v8::Isolate* isolate,
       content::RenderFrame* render_frame) {
-    LOG(INFO) << "Creating WebFrameRenderer for " << render_frame->GetRoutingID();
+    LOG(INFO) << "Creating WebFrameRenderer for "
+              << render_frame->GetRoutingID();
 
     // gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     // data->ClearObjectTemplate(WebFrameRenderer::kWrapperInfo);
-    gin_helper::internal::UpdateEventEmitterTemplatePrototype(isolate);
+    // gin_helper::internal::UpdateEventEmitterTemplatePrototype(isolate);
 
-    gin::Handle<WebFrameRenderer> handle = gin::CreateHandle(isolate, new WebFrameRenderer(render_frame));
-    
+    gin::Handle<WebFrameRenderer> handle =
+        gin::CreateHandle(isolate, new WebFrameRenderer(render_frame));
+
     // v8::Local<v8::Object> obj = handle.ToV8().As<v8::Object>;
     // obj->SetPrototype();
-    
+
     return handle;
   }
 
@@ -345,18 +346,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     DCHECK(render_frame);
 
     LOG(INFO) << "WebFrameRenderer constructor";
-
-    // v8::Local<v8::Object> wrapper;
-    // if (GetWrapper(context->GetIsolate()).ToLocal(&wrapper)) {
-    //   wrapper->SetPrototype(context, electron::GetEventEmitterPrototype(context->GetIsolate())).ToChecked();
-    //   LOG(INFO) << "SetPrototype of WebFrameRenderer";
-    // }
   }
 
-  
-  ~WebFrameRenderer() override {
-    LOG(INFO) << "Disposing of WebFrameRenderer";
-  }
+  ~WebFrameRenderer() override { LOG(INFO) << "Disposing of WebFrameRenderer"; }
 
   // gin::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -400,7 +392,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetMethod("getFrameForSelector",
                    &WebFrameRenderer::GetFrameForSelector)
         .SetMethod("findFrameByName", &WebFrameRenderer::FindFrameByName)
-        .SetMethod("getEventEmitterPrototype", &WebFrameRenderer::GetEventEmitterPrototype)
         .SetProperty("opener", &WebFrameRenderer::GetOpener)
         .SetProperty("parent", &WebFrameRenderer::GetFrameParent)
         .SetProperty("top", &WebFrameRenderer::GetTop)
@@ -411,13 +402,12 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
   const char* GetTypeName() override { return "WebFrameRenderer"; }
 
-  void OnDestruct() override {
-    LOG(INFO) << "OnDestruct";
-  }
+  void OnDestruct() override { LOG(INFO) << "OnDestruct"; }
 
   void DidCreateScriptContext(v8::Local<v8::Context> context,
-                                     int32_t world_id) override {
-    LOG(INFO) << "FRAME:" << GetRoutingId(context->GetIsolate()) << " DidCreateScriptContext " << world_id;
+                              int32_t world_id) override {
+    LOG(INFO) << "FRAME:" << GetRoutingId(context->GetIsolate())
+              << " DidCreateScriptContext " << world_id;
 
     v8::Local<v8::Object> wrapper;
     if (GetWrapper(context->GetIsolate()).ToLocal(&wrapper)) {
@@ -425,13 +415,14 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         LOG(INFO) << "CREATED IN THIS CONTEXT";
       } else {
         LOG(INFO) << "not CREATED IN THIS CONTEXT";
-        if (wrapper->GetCreationContextChecked()->GetSecurityToken() == context->GetSecurityToken()) {
+        if (wrapper->GetCreationContextChecked()->GetSecurityToken() ==
+            context->GetSecurityToken()) {
           LOG(INFO) << "SECURITY TOKENS MATCH";
         } else {
           LOG(INFO) << "SECURITY TOKENS do not MATCH";
         }
       }
-      
+
       if (wrapper->GetPrototype().IsEmpty()) {
         LOG(INFO) << "PROTOTYPE EMPTY";
       } else {
@@ -441,8 +432,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   }
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
-                                     int32_t world_id) override {
-    LOG(INFO) << "FRAME:" << GetRoutingId(context->GetIsolate()) << " WillReleaseScriptContext " << world_id;
+                                int32_t world_id) override {
+    LOG(INFO) << "FRAME:" << GetRoutingId(context->GetIsolate())
+              << " WillReleaseScriptContext " << world_id;
 
     // gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     // data->ClearObjectTemplate(WebFrameRenderer::kWrapperInfo);
@@ -452,7 +444,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   // thrown in the event emitter callback.
   void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                      int32_t world_id) override {
-    LOG(INFO) << "FRAME:" << GetRoutingId(context->GetIsolate()) << " DidInstallConditionalFeatures " << world_id;
+    LOG(INFO) << "FRAME:" << GetRoutingId(context->GetIsolate())
+              << " DidInstallConditionalFeatures " << world_id;
     Emit("script-context-created", world_id);
   }
 
@@ -955,10 +948,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     blink::WebFrame* frame = render_frame->GetWebFrame()->FindFrameByName(
         blink::WebString::FromUTF8(name));
     return CreateWebFrameRenderer(isolate, frame);
-  }
-
-  v8::Local<v8::Value> GetEventEmitterPrototype(v8::Isolate* isolate) {
-    return electron::GetEventEmitterPrototype(isolate);
   }
 
   int GetRoutingId(v8::Isolate* isolate) {

@@ -12,16 +12,17 @@
 
 namespace {
 
-static void InitializeTest(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
+static void InitializeTest(const v8::FunctionCallbackInfo<v8::Value>& args) {
   LOG(INFO) << "InitializeTest";
 }
-  
-}
+
+}  // namespace
 
 namespace gin_helper {
 
 namespace internal {
+void SetEventEmitterPrototype(v8::Isolate* isolate,
+                              v8::Local<v8::Object> proto);
 void UpdateEventEmitterTemplatePrototype(v8::Isolate* isolate);
 v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate);
 }  // namespace internal
