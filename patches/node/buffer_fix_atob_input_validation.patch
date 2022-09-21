@@ -12,7 +12,7 @@ To bring the Node.js implementation of atob into alignment with the
 WHATWG spec.
 
 diff --git a/lib/buffer.js b/lib/buffer.js
-index 57d6cddbaa2e6bdd846a667897588dea18daeb42..7602d4049e9bb1c09440bc3af09ad5ad9c768308 100644
+index 2d0057544395bc4aabff891fb30bfb9932a441f7..565753f76663611f0c069321b938c465b46f4ec8 100644
 --- a/lib/buffer.js
 +++ b/lib/buffer.js
 @@ -23,8 +23,10 @@
@@ -23,10 +23,10 @@ index 57d6cddbaa2e6bdd846a667897588dea18daeb42..7602d4049e9bb1c09440bc3af09ad5ad
    ArrayIsArray,
    ArrayPrototypeForEach,
 +  ArrayPrototypeIndexOf,
+   Error,
    MathFloor,
    MathMin,
-   MathTrunc,
-@@ -1231,8 +1233,25 @@ function btoa(input) {
+@@ -1227,8 +1229,25 @@ function btoa(input) {
    return buf.toString('base64');
  }
  
@@ -54,7 +54,7 @@ index 57d6cddbaa2e6bdd846a667897588dea18daeb42..7602d4049e9bb1c09440bc3af09ad5ad
  
  function atob(input) {
    // The implementation here has not been performance optimized in any way and
-@@ -1241,11 +1260,31 @@ function atob(input) {
+@@ -1237,11 +1256,31 @@ function atob(input) {
    if (arguments.length === 0) {
      throw new ERR_MISSING_ARGS('input');
    }
