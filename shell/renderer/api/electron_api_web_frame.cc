@@ -394,7 +394,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     gin_helper::Dictionary details =
         gin_helper::Dictionary::CreateEmpty(isolate);
     details.Set("worldId", world_id);
-    Emit("script-context-created", details);
+    Emit(isolate, "script-context-created", details);
   }
 
  private:

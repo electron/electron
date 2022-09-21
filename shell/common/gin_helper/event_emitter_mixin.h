@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "gin/object_template_builder.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event_emitter.h"
 
 namespace gin_helper {
@@ -29,8 +30,7 @@ class EventEmitterMixin {
   // this.emit(name, new Event(), args...);
   // Returns true if event.preventDefault() was called during processing.
   template <typename... Args>
-  bool Emit(base::StringPiece name, Args&&... args) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  bool Emit(v8::Isolate* isolate, base::StringPiece name, Args&&... args) {
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
@@ -40,18 +40,37 @@ class EventEmitterMixin {
                          std::forward<Args>(args)...);
   }
 
+  // Shortcut for browser process which only has one isolate/context.
+  template <typename... Args>
+  bool Emit(base::StringPiece name, Args&&... args) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    DCHECK(isolate);
+    return Emit(isolate, name, std::forward<Args>(args)...);
+  }
+
   // this.emit(name, event, args...);
   template <typename... Args>
-  bool EmitCustomEvent(base::StringPiece name,
+  bool EmitCustomEvent(v8::Isolate* isolate,
+                       base::StringPiece name,
                        v8::Local<v8::Object> custom_event,
                        Args&&... args) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
     return EmitWithEvent(isolate, wrapper, name, custom_event,
                          std::forward<Args>(args)...);
+  }
+
+  // Shortcut for browser process which only has one isolate/context.
+  template <typename... Args>
+  bool EmitCustomEvent(base::StringPiece name,
+                       v8::Local<v8::Object> custom_event,
+                       Args&&... args) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    DCHECK(isolate);
+    return EmitCustomEvent(isolate, name, custom_event,
+                           std::forward<Args>(args)...);
   }
 
  protected:
