@@ -33,8 +33,8 @@ template <>
 struct Converter<content::BluetoothDelegate::PairingKind> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      content::BluetoothDelegate::PairingKind paring_kind) {
-    switch (paring_kind) {
+      content::BluetoothDelegate::PairingKind pairing_kind) {
+    switch (pairing_kind) {
       case content::BluetoothDelegate::PairingKind::kConfirmOnly:
         return StringToV8(isolate, "confirm");
       case content::BluetoothDelegate::PairingKind::kConfirmPinMatch:
@@ -196,11 +196,10 @@ void ElectronBluetoothDelegate::OnDevicePairPromptResponse(
     result.result_code = BluetoothDelegate::PairPromptStatus::kCancelled;
   }
 
-  std::string* pin = response.FindString("pin");
+  const std::string* pin = response.FindString("pin");
   if (pin) {
-    std::u16string trimmed_input;
-    base::TrimWhitespace(base::UTF8ToUTF16(*pin), base::TRIM_ALL,
-                         &trimmed_input);
+    std::u16string trimmed_input = base::UTF8ToUTF16(*pin);
+    base::TrimWhitespace(trimmed_input, base::TRIM_ALL, &trimmed_input);
     result.pin = base::UTF16ToUTF8(trimmed_input);
   }
   std::move(pair_prompt_callback_).Run(result);

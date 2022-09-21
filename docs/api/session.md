@@ -831,10 +831,10 @@ app.whenReady().then(() => {
     * `pairingKind` string - The type of pairing prompt being requested.
       One of the following values:
       * `confirm`
-        This prompt is requesting confirmation that the bluetooth device should
+        This prompt is requesting confirmation that the Bluetooth device should
         be paired.
       * `confirmPin`
-        This prompt is requesting confirmation that the provided pin matches the
+        This prompt is requesting confirmation that the provided PIN matches the
         pin displayed on the device.
       * `providePin`
         This prompt is requesting that a pin be provided for the device.
