@@ -5,11 +5,13 @@
       {
         "paths": [
           "electron",
+          "electron/main",
           "electron/renderer"
         ],
         "patterns": [
           "./*",
           "../*",
+          "@electron/internal/browser/*",
           "@electron/internal/isolated_renderer/*",
           "@electron/internal/renderer/*",
           "@electron/internal/sandboxed_worker/*",
