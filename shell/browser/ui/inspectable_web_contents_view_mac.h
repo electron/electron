@@ -9,6 +9,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 
 #include "base/mac/scoped_nsobject.h"
+#include "base/memory/raw_ptr.h"
 
 @class ElectronInspectableWebContentsView;
 
@@ -41,7 +42,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
 
  private:
   // Owns us.
-  InspectableWebContents* inspectable_web_contents_;
+  raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
   base::scoped_nsobject<ElectronInspectableWebContentsView> view_;
 };

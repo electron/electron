@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/views/widget/widget_observer.h"
@@ -259,7 +260,7 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<RootView> root_view_;
 
   // The view should be focused by default.
-  views::View* focused_view_ = nullptr;
+  base::raw_ptr<views::View> focused_view_ = nullptr;
 
   // The "resizable" flag on Linux is implemented by setting size constraints,
   // we need to make sure size constraints are restored when window becomes

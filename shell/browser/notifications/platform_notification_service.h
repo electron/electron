@@ -9,6 +9,8 @@
 
 #include "content/public/browser/platform_notification_service.h"
 
+#include "base/memory/raw_ptr.h"
+
 namespace electron {
 
 class ElectronBrowserClient;
@@ -50,7 +52,7 @@ class PlatformNotificationService
   base::Time ReadNextTriggerTimestamp() override;
 
  private:
-  ElectronBrowserClient* browser_client_;
+  raw_ptr<ElectronBrowserClient> browser_client_;
 };
 
 }  // namespace electron

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"
+#include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window.h"
 #include "ui/display/display_observer.h"
 #include "ui/native_theme/native_theme_observer.h"
@@ -222,7 +223,7 @@ class NativeWindowMac : public NativeWindow,
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void SetForwardMouseMessages(bool forward);
 
-  ElectronNSWindow* window_;  // Weak ref, managed by widget_.
+  raw_ptr<ElectronNSWindow> window_;  // Weak ref, managed by widget_.
 
   base::scoped_nsobject<ElectronNSWindowDelegate> window_delegate_;
   base::scoped_nsobject<ElectronPreviewItem> preview_item_;

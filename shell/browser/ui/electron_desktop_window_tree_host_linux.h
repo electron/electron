@@ -9,6 +9,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
 #define ELECTRON_SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
 
+#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
@@ -58,7 +59,7 @@ class ElectronDesktopWindowTreeHostLinux
   void UpdateClientDecorationHints(ClientFrameViewLinux* view);
   void UpdateWindowState(ui::PlatformWindowState new_state);
 
-  NativeWindowViews* native_window_view_;  // weak ref
+  raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       theme_observation_{this};

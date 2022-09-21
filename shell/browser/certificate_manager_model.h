@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "net/cert/nss_cert_database.h"
 
@@ -107,7 +108,7 @@ class CertificateManagerModel {
   static void GetCertDBOnIOThread(content::ResourceContext* context,
                                   CreationCallback callback);
 
-  net::NSSCertDatabase* cert_db_;
+  raw_ptr<net::NSSCertDatabase> cert_db_;
   // Whether the certificate database has a public slot associated with the
   // profile. If not set, importing certificates is not allowed with this model.
   bool is_user_db_available_;

@@ -8,6 +8,7 @@
 
 #include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "ui/gfx/native_widget_types.h"
 
 class DevToolsContentsResizingStrategy;
@@ -55,7 +56,7 @@ class InspectableWebContentsView {
   virtual void SetTitle(const std::u16string& title) = 0;
 
  private:
-  InspectableWebContentsViewDelegate* delegate_ = nullptr;  // weak references.
+  raw_ptr<InspectableWebContentsViewDelegate> delegate_ = nullptr;  // weak references.
 };
 
 }  // namespace electron

@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
@@ -409,7 +410,7 @@ class NativeWindow : public base::SupportsUserData,
   static int32_t next_id_;
 
   // The content view, weak ref.
-  views::View* content_view_ = nullptr;
+  raw_ptr<views::View> content_view_ = nullptr;
 
   // Whether window has standard frame.
   bool has_frame_ = true;
@@ -442,7 +443,7 @@ class NativeWindow : public base::SupportsUserData,
   gfx::Size aspect_ratio_extraSize_;
 
   // The parent window, it is guaranteed to be valid during this window's life.
-  NativeWindow* parent_ = nullptr;
+  raw_ptr<NativeWindow> parent_ = nullptr;
 
   // Is this a modal window.
   bool is_modal_ = false;

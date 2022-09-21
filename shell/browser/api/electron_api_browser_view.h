@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -81,7 +82,7 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   v8::Local<v8::Value> GetWebContents(v8::Isolate*);
 
   v8::Global<v8::Value> web_contents_;
-  class WebContents* api_web_contents_ = nullptr;
+  raw_ptr<class WebContents> api_web_contents_ = nullptr;
 
   std::unique_ptr<NativeBrowserView> view_;
   base::WeakPtr<BaseWindow> owner_window_;

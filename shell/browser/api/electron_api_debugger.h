@@ -8,6 +8,7 @@
 #include <map>
 
 #include "base/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -65,7 +66,7 @@ class Debugger : public gin::Wrappable<Debugger>,
   v8::Local<v8::Promise> SendCommand(gin::Arguments* args);
   void ClearPendingRequests();
 
-  content::WebContents* web_contents_;  // Weak Reference.
+  raw_ptr<content::WebContents> web_contents_;  // Weak Reference.
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
 
   PendingRequestMap pending_requests_;

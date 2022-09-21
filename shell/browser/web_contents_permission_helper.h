@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 
 #include "base/values.h"
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
@@ -70,7 +71,7 @@ class WebContentsPermissionHelper
 
   // TODO(clavin): refactor to use the WebContents provided by the
   // WebContentsUserData base class instead of storing a duplicate ref
-  content::WebContents* web_contents_;
+  raw_ptr<content::WebContents> web_contents_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 };

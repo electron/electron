@@ -7,6 +7,8 @@
 
 #include "components/network_hints/browser/simple_network_hints_handler_impl.h"
 
+#include "base/memory/raw_ptr.h"
+
 namespace content {
 class RenderFrameHost;
 class BrowserContext;
@@ -28,7 +30,7 @@ class NetworkHintsHandlerImpl
  private:
   explicit NetworkHintsHandlerImpl(content::RenderFrameHost*);
 
-  content::BrowserContext* browser_context_ = nullptr;
+  raw_ptr<content::BrowserContext> browser_context_ = nullptr;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_NETWORK_HINTS_HANDLER_IMPL_H_

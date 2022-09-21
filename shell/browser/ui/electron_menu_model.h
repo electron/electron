@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
@@ -112,7 +113,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   ElectronMenuModel* GetSubmenuModelAt(size_t index);
 
  private:
-  Delegate* delegate_;  // weak ref.
+  raw_ptr<Delegate> delegate_;  // weak ref.
 
 #if BUILDFLAG(IS_MAC)
   absl::optional<SharingItem> sharing_item_;

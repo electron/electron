@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/render_frame_host.h"
 #include "shell/browser/ui/views/autofill_popup_view.h"
 #include "ui/color/color_id.h"
@@ -79,13 +80,13 @@ class AutofillPopup : public views::ViewObserver {
 
   // For sending the accepted suggestion to the render frame that
   // asked to open the popup
-  content::RenderFrameHost* frame_host_ = nullptr;
+  raw_ptr<content::RenderFrameHost> frame_host_ = nullptr;
 
   // The popup view. The lifetime is managed by the owning Widget
-  AutofillPopupView* view_ = nullptr;
+  raw_ptr<AutofillPopupView> view_ = nullptr;
 
   // The parent view that the popup view shows on. Weak ref.
-  views::View* parent_ = nullptr;
+  raw_ptr<views::View> parent_ = nullptr;
 };
 
 }  // namespace electron

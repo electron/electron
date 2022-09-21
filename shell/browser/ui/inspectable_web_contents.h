@@ -15,6 +15,7 @@
 
 #include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
@@ -213,7 +214,7 @@ class InspectableWebContents
 
   InspectableWebContentsDelegate* delegate_ = nullptr;  // weak references.
 
-  PrefService* pref_service_;  // weak reference.
+  raw_ptr<PrefService> pref_service_;  // weak reference.
 
   std::unique_ptr<content::WebContents> web_contents_;
 
@@ -221,7 +222,7 @@ class InspectableWebContents
   // one assigned by SetDevToolsWebContents.
   std::unique_ptr<content::WebContents> managed_devtools_web_contents_;
   // The external devtools assigned by SetDevToolsWebContents.
-  content::WebContents* external_devtools_web_contents_ = nullptr;
+  raw_ptr<content::WebContents> external_devtools_web_contents_ = nullptr;
 
   bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;
