@@ -35,7 +35,7 @@ index acca6f8dfa8525a981b3d51c1bc05506f6e72f00..96b924a3601386aca5cf7e6a7f8fcbb7
                                                    int type) {
    return Word32Equal(instance_type, Int32Constant(type));
 diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
-index cab04b65abacca7b419ca08426360fb66e0d02aa..515994df561960e1a141de2c3a34d9f7b9e3f5ee 100644
+index 35fc4e5eaadec5796a9f7cfa0abb09f9f46fe8c4..c0e877b5703a2a1f4ec672f95bedfd77c6a1467a 100644
 --- a/src/codegen/code-stub-assembler.h
 +++ b/src/codegen/code-stub-assembler.h
 @@ -2560,7 +2560,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler

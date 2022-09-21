@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 710257cbb808c2ce24949ea5694842b3270bd00f..17527a236afececfb71ad071cbce67bc4256a55a 100644
+index 333c3c86b8d0a22fdc2ab381e22c8034a6bdad1e..5dc33087bf2de684f14a8014538aba66036c1d61 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -996,7 +996,6 @@ if (is_win) {
+@@ -997,7 +997,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 710257cbb808c2ce24949ea5694842b3270bd00f..17527a236afececfb71ad071cbce67bc
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -1005,6 +1004,10 @@ if (is_win) {
+@@ -1006,6 +1005,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -812,7 +812,7 @@ index 762b186d0b5cc57a6eddd2323023c1924794e02c..6096d43928db1caf2d8acd3cf2a10026
      if (is_chromeos) {
        sources += [
 diff --git a/content/browser/utility_sandbox_delegate_win.cc b/content/browser/utility_sandbox_delegate_win.cc
-index 9887afe3724bea1d13572833040f85a748e05230..7f1d2e791ef6f191e1ed64bad291b0be3a9bb1f0 100644
+index 715b35eb4122bbe2c0bdaa83960900eaadeef964..cc0cb656ae091693fddcab246b8cce3531d77fd0 100644
 --- a/content/browser/utility_sandbox_delegate_win.cc
 +++ b/content/browser/utility_sandbox_delegate_win.cc
 @@ -96,6 +96,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetConfig* config) {
@@ -823,7 +823,7 @@ index 9887afe3724bea1d13572833040f85a748e05230..7f1d2e791ef6f191e1ed64bad291b0be
  // Sets the sandbox policy for the print backend service process.
  bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
    DCHECK(!config->IsConfigured());
-@@ -164,6 +165,7 @@ bool XrCompositingPreSpawnTarget(sandbox::TargetConfig* config,
+@@ -162,6 +163,7 @@ bool XrCompositingPreSpawnTarget(sandbox::TargetConfig* config,
  
    return true;
  }
