@@ -162,8 +162,6 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
     PairPromptCallback callback,
     PairingKind pairing_kind,
     const absl::optional<std::u16string>& pin) {
-  pair_prompt_callback_ = std::move(callback);
-
   auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
   if (web_contents) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
@@ -183,11 +181,12 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
     permission_manager->CheckBluetoothDevicePair(
         details, base::AdaptCallbackForRepeating(base::BindOnce(
                      &ElectronBluetoothDelegate::OnDevicePairPromptResponse,
-                     weak_factory_.GetWeakPtr())));
+                     weak_factory_.GetWeakPtr(), std::move(callback))));
   }
 }
 
 void ElectronBluetoothDelegate::OnDevicePairPromptResponse(
+    PairPromptCallback callback,
     base::Value::Dict response) {
   BluetoothDelegate::PairPromptResult result;
   if (response.FindBool("confirmed").value_or(false)) {
@@ -202,7 +201,7 @@ void ElectronBluetoothDelegate::OnDevicePairPromptResponse(
     base::TrimWhitespace(trimmed_input, base::TRIM_ALL, &trimmed_input);
     result.pin = base::UTF16ToUTF8(trimmed_input);
   }
-  std::move(pair_prompt_callback_).Run(result);
+  std::move(callback).Run(result);
 }
 
 }  // namespace electron
