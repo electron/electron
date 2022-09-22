@@ -9,7 +9,8 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 
 | Electron | Alpha | Beta | Stable | Chrome | Node | Supported |
 | ------- | ----- | ------- | ------ | ------ | ---- | ---- |
-| 21.0.0 | 2022-Aug-04 | 2022-Aug-30 | 2022-Sep-27 | M106 | TBD | ✅ |
+| 22.0.0 | 2022-Sep-29 | 2022-Oct-25 | 2022-Nov-29 | M108 | TBD | ✅ |
+| 21.0.0 | 2022-Aug-04 | 2022-Aug-30 | 2022-Sep-27 | M106 | v16.17 | ✅ |
 | 20.0.0 | 2022-May-26 | 2022-Jun-21 | 2022-Aug-02 | M104 | v16.15 | ✅ |
 | 19.0.0 | 2022-Mar-31 | 2022-Apr-26 | 2022-May-24 | M102 | v16.14 | ✅ |
 | 18.0.0 | 2022-Feb-03 | 2022-Mar-03 | 2022-Mar-29 | M100 | v16.13 | ✅ |
