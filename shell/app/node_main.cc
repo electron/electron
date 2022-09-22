@@ -209,7 +209,8 @@ int NodeMain(int argc, char* argv[]) {
         node::per_process::cli_options->get_per_isolate_options()
             ->get_per_env_options()
             ->experimental_fetch;
-    JavascriptEnvironment gin_env(loop, setup_wasm_streaming);
+    JavascriptEnvironment gin_env(loop, NodeEnvironmentType::kNodeMode,
+                                  setup_wasm_streaming);
 
     v8::Isolate* isolate = gin_env.isolate();
 
@@ -226,7 +227,8 @@ int NodeMain(int argc, char* argv[]) {
       uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                            node::EnvironmentFlags::kHideConsoleWindows;
       env = node::CreateEnvironment(
-          isolate_data, gin_env.context(), result->args(), result->exec_args(),
+          isolate_data, isolate->GetCurrentContext(), result->args(),
+          result->exec_args(),
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
@@ -294,6 +296,16 @@ int NodeMain(int argc, char* argv[]) {
     node::ResetStdio();
 
     node::Stop(env);
+
+    // We do not want to invoke a termination exception at this stage when
+    // we're running with only_terminate_in_safe_scope set to false. Heap and
+    // coverage profilers run after environment exit and if there is a pending
+    // exception at this stage then they will fail to generate the appropriate
+    // profiles. Node.js does not call node::Stop(), which calls
+    // isolate->TerminateExecution(), and therefore does not have this issue
+    // when also running with only_terminate_in_safe_scope set to false.
+    env->isolate()->CancelTerminateExecution();
+
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
   }
