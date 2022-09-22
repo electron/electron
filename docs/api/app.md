@@ -725,8 +725,7 @@ Returns `string` - User operating system's locale two-letter [ISO 3166](https://
 
 ### `app.getSystemLocale()`
 
-Returns `string` - The current system locale, fetched using Chromium's `l10n_util` library.
-Possible return values are documented [here](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/l10n/l10n_util.cc).
+Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, the `NSLocale` object is used instead.
 
 **Note:** This API must be called after the `ready` event is emitted.
 
