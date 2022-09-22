@@ -87,7 +87,7 @@ index abd19b8613e52a6f4c9404f509ab7ed5a61046a6..e3c17b1092e55bb94b3182f3274adc0c
  }
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 6309769275edbb88fc53e4fa3b74e3b2cc4fb7ad..22369ba1568adc4b6c22ae33b2c2a6e087cb9994 100644
+index fda9114d759cfb2db9ef7f981b82ae5f73c2f758..cd81c5481976e0a355230bae6a9ee2a362236b6f 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -100,7 +100,7 @@ index 6309769275edbb88fc53e4fa3b74e3b2cc4fb7ad..22369ba1568adc4b6c22ae33b2c2a6e0
  
  namespace {
  
-@@ -614,6 +616,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -619,6 +621,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    if ([NSApp isActive])
      return window == [NSApp accessibilityFocusedWindow];
  
@@ -108,7 +108,7 @@ index 6309769275edbb88fc53e4fa3b74e3b2cc4fb7ad..22369ba1568adc4b6c22ae33b2c2a6e0
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -641,6 +644,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -646,6 +649,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    // from within the app shim content.
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]])
      return true;

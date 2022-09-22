@@ -72,10 +72,10 @@ index f3b681ec44c57f69c57390f31bd951cef8de3f0c..2fbe866ddf50d7eb324b0e2e4d120f4c
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 9dd8b8ba4eee9721ce4d9e5b7233dc095d33c869..ef7aa18ce03aede5fd8320f2e96e7b23b833ae69 100644
+index a95e5a7124e38ceaba246f2879a51fd2d0766090..1b8438998f12de72f58e5ab515d07e09393bfe5b 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3807,13 +3807,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3817,13 +3817,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -99,10 +99,10 @@ index 9dd8b8ba4eee9721ce4d9e5b7233dc095d33c869..ef7aa18ce03aede5fd8320f2e96e7b23
    if (!is_initial_state) {
      for (auto& observer : observers_)
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 49da24df2b0136eed93ba36e7fbde8772a366c8f..65f7f120d1f518883f5709ed32d2d43f440e3388 100644
+index ac38111515f40630f2d16c8425e39775e4118818..0a4890ed17305e215eb8963d27767d77471eebb7 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -425,6 +425,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -426,6 +426,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -110,7 +110,7 @@ index 49da24df2b0136eed93ba36e7fbde8772a366c8f..65f7f120d1f518883f5709ed32d2d43f
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -875,6 +876,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -879,6 +880,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  

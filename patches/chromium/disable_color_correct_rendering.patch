@@ -178,7 +178,7 @@ index 53a1c6b7ed7953506ebf5f556d81e3fb74ad664b..e3d59fd8b9178f52af213ed7da615024
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 691bc658c6a91867841f7e7a06ebd91214300051..c62932ed6677d3ab80ff7c7f7e5be97e3f731dfc 100644
+index d346af4fa91adfc2f031484252e4ae05435f94d7..88315bdf562451a2371e53d994bbb3821f357d0e 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -189,7 +189,7 @@ index 691bc658c6a91867841f7e7a06ebd91214300051..c62932ed6677d3ab80ff7c7f7e5be97e
  
  namespace gfx {
  
-@@ -142,6 +143,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -143,6 +144,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -204,7 +204,7 @@ index 691bc658c6a91867841f7e7a06ebd91214300051..c62932ed6677d3ab80ff7c7f7e5be97e
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -312,6 +321,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -313,6 +322,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
@@ -221,7 +221,7 @@ index 691bc658c6a91867841f7e7a06ebd91214300051..c62932ed6677d3ab80ff7c7f7e5be97e
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index ebc1c94911b4f98d4b95566500d3be856c4bb859..a773af5d6be673873a9d848875954f1be066db76 100644
+index 3efe109c57d7cdf2979bfd97d26ff351b48158f6..d549cb67409425238cf7cae57a34339650584fb7 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -11,6 +11,8 @@ namespace switches {
@@ -234,7 +234,7 @@ index ebc1c94911b4f98d4b95566500d3be856c4bb859..a773af5d6be673873a9d848875954f1b
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index 45c47c693690b54ba111c208d1b4fe65758ab496..e2049580226ed4d3ff12157dc349fda23e6321d4 100644
+index 96563c15f0849dfced900435e8eb20db4d50bc0d..01e6a4954866cdcdc9e8a2e05c092e059b05426b 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -12,6 +12,7 @@
