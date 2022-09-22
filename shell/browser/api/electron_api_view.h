@@ -10,13 +10,14 @@
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "shell/common/color_util.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gin_helper/event_emitter.h"
 #include "ui/views/view.h"
+#include "ui/views/view_observer.h"
 #include "v8/include/v8-value.h"
 
 namespace electron::api {
 
-class View : public gin_helper::Wrappable<View> {
+class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
  public:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
   static gin::Handle<View> Create(v8::Isolate* isolate);
@@ -37,6 +38,9 @@ class View : public gin_helper::Wrappable<View> {
   void SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value);
   std::vector<v8::Local<v8::Value>> GetChildren();
   void SetBackgroundColor(absl::optional<WrappedSkColor> color);
+
+  // views::ViewObserver
+  void OnViewBoundsChanged(views::View* observed_view) override;
 #endif
 
   views::View* view() const { return view_; }

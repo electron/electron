@@ -23,6 +23,14 @@ Process: [Main](../glossary.md#main-process)
 
 Creates a new `View`.
 
+### Instance Events
+
+Objects created with `new View` emit the following events:
+
+#### Event: 'bounds-changed'
+
+**TODO**
+
 ### Instance Methods
 
 Objects created with `new View` have the following instance methods:

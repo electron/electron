@@ -161,11 +161,13 @@ class JSLayoutManager : public views::LayoutManagerBase {
 
 View::View(views::View* view) : view_(view) {
   view_->set_owned_by_client();
+  view_->AddObserver(this);
 }
 
 View::View() : View(new views::View()) {}
 
 View::~View() {
+  view_->RemoveObserver(this);
   if (delete_view_)
     delete view_;
 }
@@ -256,6 +258,10 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 
 void View::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
   view()->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
+}
+
+void View::OnViewBoundsChanged(views::View* observed_view) {
+  Emit("bounds-changed");
 }
 #endif
 

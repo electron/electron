@@ -143,6 +143,10 @@ require('@electron/internal/browser/api/web-contents');
 // Load web-frame-main module to ensure it is populated on app ready
 require('@electron/internal/browser/api/web-frame-main');
 
+// Required because `new BrowserWindow` calls some WebContentsView stuff, so
+// the inheritance needs to be set up before that happens.
+require('@electron/internal/browser/api/web-contents-view');
+
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';
 
