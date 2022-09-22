@@ -102,3 +102,14 @@ duplicates are not merged.
 //   '*/*' ]
 console.log(request.rawHeaders)
 ```
+
+### Methods
+
+Objects received in [ClientRequest](client-request.md) event `response` have the following instance methods:
+
+#### `response.ignore()`
+
+Indicates that response is ignored. Cancels all chunks of data from being downloaded.
+
+**Note:** Please make sure you call this method if response data is not read.
+Otherwise it will lead to memory leaks in browser process ([#34158](https://github.com/electron/electron/issues/34158)).

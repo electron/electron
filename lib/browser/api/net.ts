@@ -113,6 +113,10 @@ class IncomingMessage extends Readable {
     throw new Error('HTTP trailers are not supported');
   }
 
+  ignore () {
+    this.emit('ignored');
+  }
+
   _storeInternalData (chunk: Buffer | null, resume: (() => void) | null) {
     // save the network callback for use in _pushInternalData
     this._resume = resume;
@@ -438,6 +442,9 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     this._urlLoader = createURLLoader(opts);
     this._urlLoader.on('response-started', (event, finalUrl, responseHead) => {
       const response = this._response = new IncomingMessage(responseHead);
+      this._response.on('ignored', () => {
+        this._urlLoader!.cancel();
+      });
       this.emit('response', response);
     });
     this._urlLoader.on('data', (event, data, resume) => {
