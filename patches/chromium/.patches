@@ -122,3 +122,4 @@ fix_return_v8_value_from_localframe_requestexecutescript.patch
 disable_optimization_guide_for_preconnect_feature.patch
 fix_the_gn_gen_for_components_segmentation_platform.patch
 fix_crash_loading_non-standard_schemes_in_iframes.patch
+cherry-pick-5a28a162d01a.patch

@@ -1,0 +1,55 @@
+From 5a28a162d01a9d8e125528d684eaa0c1289e68f9 Mon Sep 17 00:00:00 2001
+From: Aaron Leventhal <aleventhal@google.com>
+Date: Wed, 03 Aug 2022 05:21:35 +0000
+Subject: [PATCH] RetargetForEvents() can return nullptr
+
+BrowserAccessibilityManagerAndroid::RetargetForEvents() can return
+nullptr for events that occur on descendants of a password field.
+This code was introduced in CL:2174098.
+
+Fixed: 1348797, 1349244
+Change-Id: I25290502566aa319306b028f0b3aadb9f060af90
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3798943
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Commit-Queue: Nektarios Paisios <nektar@chromium.org>
+Auto-Submit: Aaron Leventhal <aleventhal@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1030900}
+---
+
+diff --git a/content/browser/accessibility/browser_accessibility_manager.cc b/content/browser/accessibility/browser_accessibility_manager.cc
+index 0346e65..9556580 100644
+--- a/content/browser/accessibility/browser_accessibility_manager.cc
++++ b/content/browser/accessibility/browser_accessibility_manager.cc
+@@ -624,8 +624,8 @@
+ 
+     event_target = RetargetForEvents(
+         event_target, RetargetEventType::RetargetEventTypeGenerated);
+-    DCHECK(event_target) << "No retargeted event target for "
+-                         << targeted_event.node_id;
++    if (!event_target)
++      continue;  // Drop the event if RetargetForEvents() returns nullptr.
+     if (!event_target->CanFireEvents())
+       continue;
+ 
+@@ -655,8 +655,8 @@
+ 
+     event_target = RetargetForEvents(
+         event_target, RetargetEventType::RetargetEventTypeGenerated);
+-    DCHECK(event_target) << "No retargeted event target for "
+-                         << targeted_event.node_id;
++    if (!event_target)
++      continue;  // Drop the event if RetargetForEvents() returns nullptr.
+     if (!event_target->CanFireEvents())
+       continue;
+ 
+@@ -675,8 +675,8 @@
+             ? RetargetEventType::RetargetEventTypeBlinkHover
+             : RetargetEventType::RetargetEventTypeBlinkGeneral;
+     BrowserAccessibility* retargeted = RetargetForEvents(event_target, type);
+-    DCHECK(retargeted) << "No retargeted event target for " << event.id
+-                       << " with event type " << event.event_type;
++    if (!retargeted)
++      continue;  // Drop the event if RetargetForEvents() returns nullptr.
+     if (!retargeted->CanFireEvents())
+       continue;
+ 
