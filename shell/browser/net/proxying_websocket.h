@@ -138,7 +138,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   void OnMojoConnectionError();
 
   // Passed from api::WebRequest.
-  raw_ptr<WebRequestAPI> web_request_api_;
+  raw_ptr<WebRequestAPI> web_request_api_ = nullptr;
 
   // Saved to feed the api::WebRequest.
   network::ResourceRequest request_;

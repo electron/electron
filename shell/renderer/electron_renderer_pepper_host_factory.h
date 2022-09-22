@@ -35,7 +35,7 @@ class ElectronRendererPepperHostFactory : public ppapi::host::HostFactory {
 
  private:
   // Not owned by this object.
-  raw_ptr<content::RendererPpapiHost> host_;
+  raw_ptr<content::RendererPpapiHost> host_ = nullptr;
 };
 
 #endif  // ELECTRON_SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_

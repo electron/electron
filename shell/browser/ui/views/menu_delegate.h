@@ -67,7 +67,7 @@ class MenuDelegate : public views::MenuDelegate {
                                       views::MenuButton** button) override;
 
  private:
-  raw_ptr<MenuBar> menu_bar_;
+  raw_ptr<MenuBar> menu_bar_ = nullptr;
   int id_ = -1;
   std::unique_ptr<views::MenuDelegate> adapter_;
   std::unique_ptr<views::MenuRunner> menu_runner_;

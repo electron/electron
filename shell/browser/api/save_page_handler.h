@@ -43,7 +43,7 @@ class SavePageHandler : public content::DownloadManager::Observer,
   // download::DownloadItem::Observer:
   void OnDownloadUpdated(download::DownloadItem* item) override;
 
-  raw_ptr<content::WebContents> web_contents_;  // weak
+  raw_ptr<content::WebContents> web_contents_ = nullptr;  // weak
   gin_helper::Promise<void> promise_;
 };
 

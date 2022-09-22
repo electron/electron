@@ -52,8 +52,8 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
   void OnNativeThemeUpdatedOnUI();
 
  private:
-  raw_ptr<ui::NativeTheme> ui_theme_;
-  raw_ptr<ui::NativeTheme> web_theme_;
+  raw_ptr<ui::NativeTheme> ui_theme_ = nullptr;
+  raw_ptr<ui::NativeTheme> web_theme_ = nullptr;
 };
 
 }  // namespace electron::api

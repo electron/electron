@@ -131,10 +131,10 @@ class AutofillPopupView : public views::WidgetDelegateView,
   void RemoveObserver();
 
   // Controller for this popup. Weak reference.
-  raw_ptr<AutofillPopup> popup_;
+  raw_ptr<AutofillPopup> popup_ = nullptr;
 
   // The widget of the window that triggered this popup. Weak reference.
-  raw_ptr<views::Widget> parent_widget_;
+  raw_ptr<views::Widget> parent_widget_ = nullptr;
 
   // The time when the popup was shown.
   base::Time show_time_;

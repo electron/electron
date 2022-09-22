@@ -190,12 +190,12 @@ class Session : public gin::Wrappable<Session>,
   v8::Global<v8::Value> service_worker_context_;
   v8::Global<v8::Value> web_request_;
 
-  raw_ptr<v8::Isolate> isolate_;
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
 
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  raw_ptr<ElectronBrowserContext> browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_ = nullptr;
 };
 
 }  // namespace api

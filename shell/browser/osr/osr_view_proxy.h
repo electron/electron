@@ -42,7 +42,7 @@ class OffscreenViewProxy {
   void ResetView() { view_ = nullptr; }
 
  private:
-  raw_ptr<views::View> view_;
+  raw_ptr<views::View> view_ = nullptr;
 
   gfx::Rect view_bounds_;
   std::unique_ptr<SkBitmap> view_bitmap_;

@@ -130,7 +130,7 @@ class ProxyingURLLoaderFactory
     void OnRequestError(const network::URLLoaderCompletionStatus& status);
     void HandleBeforeRequestRedirect();
 
-    const raw_ptr<ProxyingURLLoaderFactory> factory_;
+    const raw_ptr<ProxyingURLLoaderFactory> factory_ = nullptr;
     network::ResourceRequest request_;
     const absl::optional<url::Origin> original_initiator_;
     const uint64_t request_id_ = 0;
@@ -246,7 +246,7 @@ class ProxyingURLLoaderFactory
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
 
   // Passed from api::WebRequest.
-  raw_ptr<WebRequestAPI> web_request_api_;
+  raw_ptr<WebRequestAPI> web_request_api_ = nullptr;
 
   // This is passed from api::Protocol.
   //
@@ -259,7 +259,8 @@ class ProxyingURLLoaderFactory
 
   const int render_process_id_;
   const int frame_routing_id_;
-  raw_ptr<uint64_t> request_id_generator_;  // managed by ElectronBrowserClient
+  raw_ptr<uint64_t> request_id_generator_ =
+      nullptr;  // managed by ElectronBrowserClient
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;
   absl::optional<int64_t> navigation_id_;
   mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;

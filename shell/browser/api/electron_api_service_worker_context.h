@@ -54,7 +54,7 @@ class ServiceWorkerContext
   ~ServiceWorkerContext() override;
 
  private:
-  raw_ptr<content::ServiceWorkerContext> service_worker_context_;
+  raw_ptr<content::ServiceWorkerContext> service_worker_context_ = nullptr;
 
   base::WeakPtrFactory<ServiceWorkerContext> weak_ptr_factory_{this};
 };

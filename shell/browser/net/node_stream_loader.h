@@ -68,7 +68,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   mojo::Receiver<network::mojom::URLLoader> url_loader_;
   mojo::Remote<network::mojom::URLLoaderClient> client_;
 
-  raw_ptr<v8::Isolate> isolate_;
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
   v8::Global<v8::Object> emitter_;
   v8::Global<v8::Value> buffer_;
 

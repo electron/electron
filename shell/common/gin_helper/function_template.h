@@ -238,7 +238,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
     return arg1 && And(args...);
   }
 
-  raw_ptr<gin::Arguments> args_;
+  raw_ptr<gin::Arguments> args_ = nullptr;
 };
 
 // DispatchToCallback converts all the JavaScript arguments to C++ types and

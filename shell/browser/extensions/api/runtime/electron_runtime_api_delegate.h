@@ -38,7 +38,7 @@ class ElectronRuntimeAPIDelegate : public RuntimeAPIDelegate {
   bool RestartDevice(std::string* error_message) override;
 
  private:
-  raw_ptr<content::BrowserContext> browser_context_;
+  raw_ptr<content::BrowserContext> browser_context_ = nullptr;
 };
 
 }  // namespace extensions

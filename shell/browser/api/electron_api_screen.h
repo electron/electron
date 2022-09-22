@@ -54,7 +54,7 @@ class Screen : public gin::Wrappable<Screen>,
                                uint32_t changed_metrics) override;
 
  private:
-  raw_ptr<display::Screen> screen_;
+  raw_ptr<display::Screen> screen_ = nullptr;
 };
 
 }  // namespace electron::api

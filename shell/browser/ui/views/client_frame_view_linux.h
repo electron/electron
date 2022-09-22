@@ -114,10 +114,10 @@ class ClientFrameViewLinux : public FramelessView,
 
   gfx::Size SizeWithDecorations(gfx::Size size) const;
 
-  raw_ptr<ui::NativeTheme> theme_;
+  raw_ptr<ui::NativeTheme> theme_ = nullptr;
   ThemeValues theme_values_;
 
-  raw_ptr<views::Label> title_;
+  raw_ptr<views::Label> title_ = nullptr;
 
   std::unique_ptr<ui::NavButtonProvider> nav_button_provider_;
   std::array<NavButton, kNavButtonCount> nav_buttons_;
@@ -127,7 +127,7 @@ class ClientFrameViewLinux : public FramelessView,
 
   bool host_supports_client_frame_shadow_ = false;
 
-  raw_ptr<ui::WindowFrameProvider> frame_provider_;
+  raw_ptr<ui::WindowFrameProvider> frame_provider_ = nullptr;
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       native_theme_observer_{this};

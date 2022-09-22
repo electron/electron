@@ -85,8 +85,8 @@ class MenuBar : public views::AccessiblePaneView,
   SkColor disabled_color_;
 #endif
 
-  raw_ptr<NativeWindow> window_;
-  raw_ptr<RootView> root_view_;
+  raw_ptr<NativeWindow> window_ = nullptr;
+  raw_ptr<RootView> root_view_ = nullptr;
   raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
   bool accelerator_installed_ = false;
 };

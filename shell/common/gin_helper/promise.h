@@ -76,7 +76,7 @@ class PromiseBase {
   v8::Local<v8::Promise::Resolver> GetInner() const;
 
  private:
-  raw_ptr<v8::Isolate> isolate_;
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Promise::Resolver> resolver_;
 };

@@ -54,7 +54,7 @@ class RootView : public views::View {
 
  private:
   // Parent window, weak ref.
-  raw_ptr<NativeWindow> window_;
+  raw_ptr<NativeWindow> window_ = nullptr;
 
   // Menu bar.
   std::unique_ptr<MenuBar> menu_bar_;

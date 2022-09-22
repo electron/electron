@@ -111,7 +111,7 @@ class Notification : public gin::Wrappable<Notification>,
   std::u16string close_button_text_;
   std::u16string toast_xml_;
 
-  raw_ptr<electron::NotificationPresenter> presenter_;
+  raw_ptr<electron::NotificationPresenter> presenter_ = nullptr;
 
   base::WeakPtr<electron::Notification> notification_;
 };

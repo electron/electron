@@ -108,7 +108,7 @@ class TabsUpdateFunction : public ExtensionFunction {
   bool UpdateURL(const std::string& url, int tab_id, std::string* error);
   ResponseValue GetResult();
 
-  raw_ptr<content::WebContents> web_contents_;
+  raw_ptr<content::WebContents> web_contents_ = nullptr;
 
  private:
   ResponseAction Run() override;

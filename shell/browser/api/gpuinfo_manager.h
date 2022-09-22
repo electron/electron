@@ -43,7 +43,7 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   // This set maintains all the promises that should be fulfilled
   // once we have the complete information data
   std::vector<gin_helper::Promise<base::Value>> complete_info_promise_set_;
-  raw_ptr<content::GpuDataManagerImpl> gpu_data_manager_;
+  raw_ptr<content::GpuDataManagerImpl> gpu_data_manager_ = nullptr;
 };
 
 }  // namespace electron

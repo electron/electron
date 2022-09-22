@@ -139,7 +139,7 @@ class NodeBindings {
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 
   // Current thread's libuv loop.
-  raw_ptr<uv_loop_t> uv_loop_;
+  raw_ptr<uv_loop_t> uv_loop_ = nullptr;
 
  private:
   // Thread to poll uv events.

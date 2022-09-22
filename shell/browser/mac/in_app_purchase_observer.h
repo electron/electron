@@ -75,7 +75,7 @@ class TransactionObserver {
       const std::vector<Transaction>& transactions) = 0;
 
  private:
-  raw_ptr<InAppTransactionObserver> observer_;
+  raw_ptr<InAppTransactionObserver> observer_ = nullptr;
 
   base::WeakPtrFactory<TransactionObserver> weak_ptr_factory_{this};
 };

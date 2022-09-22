@@ -30,7 +30,7 @@ class NativeFrameView : public views::NativeFrameView {
   const char* GetClassName() const override;
 
  private:
-  raw_ptr<NativeWindow> window_;  // weak ref.
+  raw_ptr<NativeWindow> window_ = nullptr;  // weak ref.
 };
 
 }  // namespace electron

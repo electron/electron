@@ -99,7 +99,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
       scoped_refptr<Extension> extension);
   void LoadComponentExtensions();
 
-  raw_ptr<content::BrowserContext> browser_context_;  // Not owned.
+  raw_ptr<content::BrowserContext> browser_context_ = nullptr;  // Not owned.
 
   // Data to be accessed on the IO thread. Must outlive process_manager_.
   scoped_refptr<InfoMap> info_map_;

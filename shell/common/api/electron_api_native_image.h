@@ -135,7 +135,7 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 
   gfx::Image image_;
 
-  raw_ptr<v8::Isolate> isolate_;
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
   int32_t memory_usage_ = 0;
 };
 

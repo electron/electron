@@ -97,7 +97,7 @@ class Protocol : public gin::Wrappable<Protocol> {
 
   // Weak pointer; the lifetime of the ProtocolRegistry is guaranteed to be
   // longer than the lifetime of this JS interface.
-  raw_ptr<ProtocolRegistry> protocol_registry_;
+  raw_ptr<ProtocolRegistry> protocol_registry_ = nullptr;
 };
 
 }  // namespace api

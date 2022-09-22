@@ -30,7 +30,7 @@ class ErrorThrower {
       v8::Local<v8::Value> (*)(v8::Local<v8::String> err_msg);
   void Throw(ErrorGenerator gen, base::StringPiece err_msg) const;
 
-  raw_ptr<v8::Isolate> isolate_;
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
 };
 
 }  // namespace gin_helper

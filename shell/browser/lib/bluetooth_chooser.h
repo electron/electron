@@ -43,7 +43,7 @@ class BluetoothChooser : public content::BluetoothChooser {
 
  private:
   std::map<std::string, std::u16string> device_map_;
-  raw_ptr<api::WebContents> api_web_contents_;
+  raw_ptr<api::WebContents> api_web_contents_ = nullptr;
   EventHandler event_handler_;
   int num_retries_ = 0;
   bool refreshing_ = false;

@@ -102,7 +102,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // requests so we do not have to use vectors.)
   std::unique_ptr<SpellcheckRequest> pending_request_param_;
 
-  raw_ptr<v8::Isolate> isolate_;
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Object> provider_;
   v8::Global<v8::Function> spell_check_;

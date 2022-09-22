@@ -71,7 +71,7 @@ class ResolveProxyHelper
   mojo::Receiver<network::mojom::ProxyLookupClient> receiver_{this};
 
   // Weak Ref
-  raw_ptr<ElectronBrowserContext> browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_ = nullptr;
 };
 
 }  // namespace electron

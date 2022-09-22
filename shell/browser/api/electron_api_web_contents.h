@@ -785,7 +785,7 @@ class WebContents : public ExclusiveAccessContext,
 
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
-  raw_ptr<ElectronBrowserContext> browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_ = nullptr;
 
   // The stored InspectableWebContents object.
   // Notice that inspectable_web_contents_ must be placed after

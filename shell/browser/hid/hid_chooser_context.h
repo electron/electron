@@ -119,7 +119,7 @@ class HidChooserContext : public KeyedService,
       const url::Origin& origin,
       const device::mojom::HidDeviceInfo& device);
 
-  raw_ptr<ElectronBrowserContext> browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_ = nullptr;
 
   bool is_initialized_ = false;
   base::queue<device::mojom::HidManager::GetDevicesCallback>

@@ -228,7 +228,7 @@ class ElectronBrowserContext : public content::BrowserContext {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Owned by the KeyedService system.
-  raw_ptr<extensions::ElectronExtensionSystem> extension_system_;
+  raw_ptr<extensions::ElectronExtensionSystem> extension_system_ = nullptr;
 #endif
 
   // Shared URLLoaderFactory.

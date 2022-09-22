@@ -49,7 +49,7 @@ class WebContentsView : public View, public content::WebContentsObserver {
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;
-  raw_ptr<api::WebContents> api_web_contents_;
+  raw_ptr<api::WebContents> api_web_contents_ = nullptr;
 };
 
 }  // namespace electron::api

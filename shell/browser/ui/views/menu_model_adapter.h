@@ -24,7 +24,7 @@ class MenuModelAdapter : public views::MenuModelAdapter {
   bool GetAccelerator(int id, ui::Accelerator* accelerator) const override;
 
  private:
-  raw_ptr<ElectronMenuModel> menu_model_;
+  raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
 };
 
 }  // namespace electron

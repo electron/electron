@@ -79,9 +79,9 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
 
   base::FilePath save_path_;
   file_dialog::DialogSettings dialog_options_;
-  raw_ptr<download::DownloadItem> download_item_;
+  raw_ptr<download::DownloadItem> download_item_ = nullptr;
 
-  raw_ptr<v8::Isolate> isolate_;
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
 
   base::WeakPtrFactory<DownloadItem> weak_factory_{this};
 };

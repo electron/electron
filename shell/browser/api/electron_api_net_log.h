@@ -63,7 +63,7 @@ class NetLog : public gin::Wrappable<NetLog> {
   void NetLogStarted(int32_t error);
 
  private:
-  raw_ptr<ElectronBrowserContext> browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_ = nullptr;
 
   mojo::Remote<network::mojom::NetLogExporter> net_log_exporter_;
 

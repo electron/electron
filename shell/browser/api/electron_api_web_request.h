@@ -147,7 +147,7 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   std::map<uint64_t, net::CompletionOnceCallback> callbacks_;
 
   // Weak-ref, it manages us.
-  raw_ptr<content::BrowserContext> browser_context_;
+  raw_ptr<content::BrowserContext> browser_context_ = nullptr;
 };
 
 }  // namespace electron::api

@@ -103,7 +103,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   raw_ptr<content::WebContents> web_contents_ = nullptr;
 
 #if BUILDFLAG(IS_MAC)
-  raw_ptr<OffScreenView> offScreenView_;
+  raw_ptr<OffScreenView> offScreenView_ = nullptr;
 #endif
 };
 
