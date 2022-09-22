@@ -85,13 +85,6 @@ std::string ElectronBrowserMainParts::GetCurrentSystemLocale() {
       stringByReplacingOccurrencesOfString:@"_"
                                 withString:@"-"] UTF8String];
 
-  // On disk the "en-US" resources are just "en" (http://crbug.com/25578), so
-  // the reverse mapping is done here to continue to feed Chrome the same values
-  // in all cases on all platforms.  (l10n_util maps en to en-US if it gets
-  // passed this on the command line)
-  if (locale_value == "en")
-    locale_value = "en-US";
-
   return locale_value;
 }
 
