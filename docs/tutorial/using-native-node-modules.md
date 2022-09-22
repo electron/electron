@@ -40,6 +40,8 @@ npm install --save-dev electron-rebuild
 .\node_modules\.bin\electron-rebuild.cmd
 ```
 
+This will ONLY apply to modules declared in your `dependencies`, not `devDependencies`.
+
 For more information on usage and integration with other tools such as [Electron
 Packager][electron-packager], consult the project's README.
 
