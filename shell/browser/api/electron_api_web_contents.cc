@@ -2410,14 +2410,6 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
       !owner_window()) {
     state = "detach";
   }
-  bool activate = true;
-  if (args && args->Length() == 1) {
-    gin_helper::Dictionary options;
-    if (args->GetNext(&options)) {
-      options.Get("mode", &state);
-      options.Get("activate", &activate);
-    }
-  }
 
 #if BUILDFLAG(IS_WIN)
   auto* win = static_cast<NativeWindowViews*>(owner_window());
@@ -2426,6 +2418,15 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
   if (win && win->IsWindowControlsOverlayEnabled())
     state = "detach";
 #endif
+
+  bool activate = true;
+  if (args && args->Length() == 1) {
+    gin_helper::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("mode", &state);
+      options.Get("activate", &activate);
+    }
+  }
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
