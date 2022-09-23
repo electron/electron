@@ -1,0 +1,58 @@
+From c2c8cac2131bcfb32df86b81f29a00034997f062 Mon Sep 17 00:00:00 2001
+From: Michael Niedermayer <michael@niedermayer.cc>
+Date: Thu, 28 Jul 2022 14:42:43 +0200
+Subject: [PATCH] [M102-LTS] avformat/mov: Check count sums in build_open_gop_key_points()
+
+Fixes: ffmpeg.md
+Fixes: Out of array access
+Fixes: CVE-2022-2566
+
+Bug: 1348283
+Found-by: Andy Nguyen <theflow@google.com>
+Found-by: 3pvd <3pvd@google.com>
+Change-Id: I6821c87acce5a62cd9a5b829c17f56ae6418116a
+Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+(cherry picked from commit 64d7d8d0e5035087ebe24a65845b36f78e7fad92)
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/3890391
+Reviewed-by: Matthew Wolenetz <wolenetz@chromium.org>
+---
+
+diff --git a/libavformat/mov.c b/libavformat/mov.c
+index 124c8e9..595babc 100644
+--- a/libavformat/mov.c
++++ b/libavformat/mov.c
+@@ -3943,8 +3943,11 @@
+ 
+     /* Build an unrolled index of the samples */
+     sc->sample_offsets_count = 0;
+-    for (uint32_t i = 0; i < sc->ctts_count; i++)
++    for (uint32_t i = 0; i < sc->ctts_count; i++) {
++        if (sc->ctts_data[i].count > INT_MAX - sc->sample_offsets_count)
++            return AVERROR(ENOMEM);
+         sc->sample_offsets_count += sc->ctts_data[i].count;
++    }
+     av_freep(&sc->sample_offsets);
+     sc->sample_offsets = av_calloc(sc->sample_offsets_count, sizeof(*sc->sample_offsets));
+     if (!sc->sample_offsets)
+@@ -3963,8 +3966,11 @@
+     /* Build a list of open-GOP key samples */
+     sc->open_key_samples_count = 0;
+     for (uint32_t i = 0; i < sc->sync_group_count; i++)
+-        if (sc->sync_group[i].index == cra_index)
++        if (sc->sync_group[i].index == cra_index) {
++            if (sc->sync_group[i].count > INT_MAX - sc->open_key_samples_count)
++                return AVERROR(ENOMEM);
+             sc->open_key_samples_count += sc->sync_group[i].count;
++        }
+     av_freep(&sc->open_key_samples);
+     sc->open_key_samples = av_calloc(sc->open_key_samples_count, sizeof(*sc->open_key_samples));
+     if (!sc->open_key_samples)
+@@ -3975,6 +3981,8 @@
+         if (sg->index == cra_index)
+             for (uint32_t j = 0; j < sg->count; j++)
+                 sc->open_key_samples[k++] = sample_id;
++        if (sg->count > INT_MAX - sample_id)
++            return AVERROR_PATCHWELCOME;
+         sample_id += sg->count;
+     }
+ 
