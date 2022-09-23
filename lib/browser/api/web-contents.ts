@@ -537,11 +537,8 @@ const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
 };
 
 const getWebFrameForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
-  try {
-    return webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
-  } catch {
-    return null;
-  }
+  if (!event.processId || !event.frameId) return null;
+  return webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
 };
 
 const commandLine = process._linkedBinding('electron_common_command_line');
@@ -596,7 +593,7 @@ WebContents.prototype._init = function () {
       event.sendReply({ error: error.toString() });
     };
     const maybeWebFrame = getWebFrameForEvent(event);
-    const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, ipc, ipcMain];
+    const targets: (ElectronInternal.IpcMainInternal| null)[] = internal ? [ipcMainInternal] : [maybeWebFrame && maybeWebFrame.ipc, ipc, ipcMain];
     const target = targets.find(target => target && (target as any)._invokeHandlers.has(channel));
     if (target) {
       (target as any)._invokeHandlers.get(channel)(event, ...args);
