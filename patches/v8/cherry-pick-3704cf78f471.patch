@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20Inf=C3=BChr?= <dinfuehr@chromium.org>
+Date: Thu, 8 Sep 2022 16:27:54 +0200
+Subject: Merged: [heap] Fix aborting compaction with map space compaction
+
+Revision: 3ec02e314cfca04e7457a60363af98b9c9957b16
+
+BUG=chromium:1359294,v8:12578
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=mlippautz@chromium.org
+
+Change-Id: I04093833a1bfef4269eb578fa5a002872015199e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3882977
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.4@{#43}
+Cr-Branched-From: b1413ed7c71ababe05d590de4b5c4ed97b68693e-refs/heads/10.4.132@{#1}
+Cr-Branched-From: 9d0a09368569234a1d1094975e2e92591922cd08-refs/heads/main@{#80972}
+
+diff --git a/src/heap/mark-compact.cc b/src/heap/mark-compact.cc
+index 6999d52f2d38b1eb937e5fb46d26a90d4bfe6c0f..bdbafb366d430cb4e9481abbe2a296bdaf8843b6 100644
+--- a/src/heap/mark-compact.cc
++++ b/src/heap/mark-compact.cc
+@@ -1897,7 +1897,7 @@ class EvacuateRecordOnlyVisitor final : public HeapObjectVisitor {
+     // Instead of calling object.IterateBodyFast(cage_base(), &visitor) here
+     // we can shortcut and use the precomputed size value passed to the visitor.
+     DCHECK_EQ(object.SizeFromMap(map), size);
+-    object.IterateBodyFast(map, size, &visitor);
++    object.IterateFast(map, size, &visitor);
+     return true;
+   }
+ 
