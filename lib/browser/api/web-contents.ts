@@ -538,11 +538,8 @@ const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
 };
 
 const getWebFrameForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
-  try {
-    return webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
-  } catch {
-    return null;
-  }
+  if (!event.processId || !event.frameId) return null;
+  return webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
 };
 
 const commandLine = process._linkedBinding('electron_common_command_line');
