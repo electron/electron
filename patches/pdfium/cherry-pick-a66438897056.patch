@@ -1,7 +1,7 @@
-From a664388970569270f7644bd70efd980705753662 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Sepez <tsepez@chromium.org>
-Date: Thu, 08 Sep 2022 21:45:44 +0000
-Subject: [PATCH] [M104] Enforce maximum legal object number during linearized parses.
+Date: Thu, 8 Sep 2022 21:45:44 +0000
+Subject: Enforce maximum legal object number during linearized parses.
 
 - Watch for overflow of object numbers.
 - Re-validate CPDF_Object pointer after notification in CPDF_FormField.
@@ -15,10 +15,9 @@ Commit-Queue: Tom Sepez <tsepez@chromium.org>
 Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/97733
 Auto-Submit: Tom Sepez <tsepez@chromium.org>
 Commit-Queue: Lei Zhang <thestig@chromium.org>
----
 
 diff --git a/core/fpdfapi/parser/cpdf_hint_tables.cpp b/core/fpdfapi/parser/cpdf_hint_tables.cpp
-index 3445e90..0f2632c 100644
+index 3445e90c9f68bc2386272b4d72f72d90c10bf7ec..0f2632c6d4a5dd7e6cd18c7d2bdc370b68e5bcb9 100644
 --- a/core/fpdfapi/parser/cpdf_hint_tables.cpp
 +++ b/core/fpdfapi/parser/cpdf_hint_tables.cpp
 @@ -13,6 +13,7 @@
@@ -29,7 +28,7 @@ index 3445e90..0f2632c 100644
  #include "core/fpdfapi/parser/cpdf_read_validator.h"
  #include "core/fpdfapi/parser/cpdf_stream.h"
  #include "core/fpdfapi/parser/cpdf_stream_acc.h"
-@@ -101,7 +102,7 @@
+@@ -101,7 +102,7 @@ bool CPDF_HintTables::ReadPageHintTable(CFX_BitStream* hStream) {
  
    // Item 1: The least number of objects in a page.
    const uint32_t dwObjLeastNum = hStream->GetBits(32);
@@ -38,7 +37,7 @@ index 3445e90..0f2632c 100644
      return false;
  
    // Item 2: The location of the first page's page object.
-@@ -164,7 +165,7 @@
+@@ -164,7 +165,7 @@ bool CPDF_HintTables::ReadPageHintTable(CFX_BitStream* hStream) {
    m_PageInfos[nFirstPageNum].set_start_obj_num(
        m_pLinearized->GetFirstPageObjNum());
    // The object number of remaining pages starts from 1.
@@ -47,7 +46,7 @@ index 3445e90..0f2632c 100644
    for (uint32_t i = 0; i < nPages; ++i) {
      FX_SAFE_UINT32 safeDeltaObj = hStream->GetBits(dwDeltaObjectsBits);
      safeDeltaObj += dwObjLeastNum;
-@@ -173,8 +174,12 @@
+@@ -173,8 +174,12 @@ bool CPDF_HintTables::ReadPageHintTable(CFX_BitStream* hStream) {
      m_PageInfos[i].set_objects_count(safeDeltaObj.ValueOrDie());
      if (i == nFirstPageNum)
        continue;
@@ -62,10 +61,10 @@ index 3445e90..0f2632c 100644
    hStream->ByteAlign();
  
 diff --git a/core/fpdfdoc/cpdf_formfield.cpp b/core/fpdfdoc/cpdf_formfield.cpp
-index 933cf5f..0270b25 100644
+index e882098fa36058d5454475743a7e4f34186469b4..c27576e494568f66d82a7b77f81afc265ab2aea6 100644
 --- a/core/fpdfdoc/cpdf_formfield.cpp
 +++ b/core/fpdfdoc/cpdf_formfield.cpp
-@@ -178,14 +178,15 @@
+@@ -178,14 +178,15 @@ bool CPDF_FormField::ResetField() {
      case kRichText:
      case kFile:
      default: {
@@ -86,7 +85,7 @@ index 933cf5f..0270b25 100644
          const CPDF_Object* pV = GetValueObject();
          if (pV)
            csValue = pV->GetUnicodeText();
-@@ -195,21 +196,26 @@
+@@ -195,21 +196,26 @@ bool CPDF_FormField::ResetField() {
        if (!bHasRV && (csDValue == csValue))
          return false;
  
@@ -98,10 +97,11 @@ index 933cf5f..0270b25 100644
 -        RetainPtr<CPDF_Object> pClone = pDV->Clone();
 -        if (!pClone)
 -          return false;
- 
+-
 -        m_pDict->SetFor(pdfium::form_fields::kV, std::move(pClone));
 -        if (bHasRV) {
 -          m_pDict->SetFor("RV", pDV->Clone());
++
 +      {
 +        // Limit scope of |pDV| because it may get invalidated during
 +        // notification below.
