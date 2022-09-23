@@ -384,10 +384,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
   void OnDestruct() override {}
 
-  // Avoid using DidCreateScriptContext since it crashes if an exception is
-  // thrown in the event emitter callback.
-  void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
-                                     int32_t world_id) override {
+  void DidCreateScriptContext(v8::Local<v8::Context> context,
+                              int32_t world_id) override {
     v8::Isolate* isolate = context->GetIsolate();
     gin_helper::MicrotasksScope microtasks_scope(
         isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
