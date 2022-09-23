@@ -1,7 +1,7 @@
-From c2c8cac2131bcfb32df86b81f29a00034997f062 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michael Niedermayer <michael@niedermayer.cc>
 Date: Thu, 28 Jul 2022 14:42:43 +0200
-Subject: [PATCH] [M102-LTS] avformat/mov: Check count sums in build_open_gop_key_points()
+Subject: avformat/mov: Check count sums in build_open_gop_key_points()
 
 Fixes: ffmpeg.md
 Fixes: Out of array access
@@ -15,13 +15,12 @@ Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
 (cherry picked from commit 64d7d8d0e5035087ebe24a65845b36f78e7fad92)
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/3890391
 Reviewed-by: Matthew Wolenetz <wolenetz@chromium.org>
----
 
 diff --git a/libavformat/mov.c b/libavformat/mov.c
-index 124c8e9..595babc 100644
+index 124c8e907f2e0cb5777b5433ccdb17ac52f0b6eb..595babcd4bfb1298d2928b1f4c9b40b2d09971e9 100644
 --- a/libavformat/mov.c
 +++ b/libavformat/mov.c
-@@ -3943,8 +3943,11 @@
+@@ -3943,8 +3943,11 @@ static int build_open_gop_key_points(AVStream *st)
  
      /* Build an unrolled index of the samples */
      sc->sample_offsets_count = 0;
@@ -34,7 +33,7 @@ index 124c8e9..595babc 100644
      av_freep(&sc->sample_offsets);
      sc->sample_offsets = av_calloc(sc->sample_offsets_count, sizeof(*sc->sample_offsets));
      if (!sc->sample_offsets)
-@@ -3963,8 +3966,11 @@
+@@ -3963,8 +3966,11 @@ static int build_open_gop_key_points(AVStream *st)
      /* Build a list of open-GOP key samples */
      sc->open_key_samples_count = 0;
      for (uint32_t i = 0; i < sc->sync_group_count; i++)
@@ -47,7 +46,7 @@ index 124c8e9..595babc 100644
      av_freep(&sc->open_key_samples);
      sc->open_key_samples = av_calloc(sc->open_key_samples_count, sizeof(*sc->open_key_samples));
      if (!sc->open_key_samples)
-@@ -3975,6 +3981,8 @@
+@@ -3975,6 +3981,8 @@ static int build_open_gop_key_points(AVStream *st)
          if (sg->index == cra_index)
              for (uint32_t j = 0; j < sg->count; j++)
                  sc->open_key_samples[k++] = sample_id;
