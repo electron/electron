@@ -197,10 +197,10 @@ index f2cd4583734aab9a6760f357eb6fb9ce73d96753..7274d2aec11b689ecbdf6acc8c0a2552
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 22a0515b40036d99603ea085ccb5330888ccad7f..51a5769760d9313a1d23de0fa97bbb96ff3899e7 100644
+index 1eec0da75d9a732485d38e20a13edb9dffe37835..fd84ed8640f902706264cc0929a46afe7d1cfdce 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -341,6 +341,13 @@ component("base") {
+@@ -343,6 +343,13 @@ component("base") {
      sources += [ "resource/resource_bundle_lacros.cc" ]
    }
  
