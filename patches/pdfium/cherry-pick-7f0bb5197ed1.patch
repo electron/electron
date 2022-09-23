@@ -1,7 +1,7 @@
-From 7f0bb5197ed133c92ceac8c0009f569caea4f065 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Sepez <tsepez@chromium.org>
-Date: Thu, 08 Sep 2022 23:45:54 +0000
-Subject: [PATCH] [M104] Avoid de-referencing end() in GetNextAvailContentHeight().
+Date: Thu, 8 Sep 2022 23:45:54 +0000
+Subject: Avoid de-referencing end() in GetNextAvailContentHeight().
 
 Add the same HasCurrentViewRecord() check as in other methods.
 
@@ -14,13 +14,12 @@ Commit-Queue: Lei Zhang <thestig@chromium.org>
 (cherry picked from commit 0d76a139d7ffbbdfb0ef5f5e714597a25f9767c4)
 Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/97738
 Commit-Queue: Tom Sepez <tsepez@chromium.org>
----
 
 diff --git a/xfa/fxfa/layout/cxfa_viewlayoutprocessor.cpp b/xfa/fxfa/layout/cxfa_viewlayoutprocessor.cpp
-index d042c37..ac43d9c 100644
+index 086e02d686d9fcabea6c3320ce515ae5180b6443..a92c1dfbea9684c9258b9eef594b94f93af4f525 100644
 --- a/xfa/fxfa/layout/cxfa_viewlayoutprocessor.cpp
 +++ b/xfa/fxfa/layout/cxfa_viewlayoutprocessor.cpp
-@@ -1523,6 +1523,8 @@
+@@ -1550,6 +1550,8 @@ void CXFA_ViewLayoutProcessor::ProcessLastPageSet() {
  }
  
  bool CXFA_ViewLayoutProcessor::GetNextAvailContentHeight(float fChildHeight) {
