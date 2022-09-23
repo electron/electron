@@ -23,5 +23,7 @@
 
   "src/electron/patches/angle": "src/third_party/angle",
 
-  "src/electron/patches/sqlite": "src/third_party/sqlite/src"
+  "src/electron/patches/sqlite": "src/third_party/sqlite/src",
+
+  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg"
 }
