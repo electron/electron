@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 import * as http from 'http';
 import * as path from 'path';
-import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
+import { BrowserWindow, ipcMain, WebContents, session } from 'electron/main';
 import { emittedOnce } from './events-helpers';
-import { defer, executeJsHelper } from './spec-helpers';
+import { defer, executeJsHelper, ifit } from './spec-helpers';
 import { AddressInfo } from 'net';
 
 describe('webFrame module', () => {
@@ -284,34 +284,63 @@ describe('webFrame module', () => {
         res.writeHead(200);
         res.end('hello world');
       });
-
+      defer(() => server.close());
       await new Promise<void>(resolve => {
         server.listen(0, '127.0.0.1', () => resolve());
       });
 
-      try {
-        const w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            sandbox: true,
-            contextIsolation: true,
-            preload: path.join(fixtures, 'pages', 'electron-global-preload.js')
-          }
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: true,
+          preload: path.join(fixtures, 'pages', 'electron-global-preload.js')
+        }
+      });
+      defer(() => w.close());
+      const port = (server.address() as AddressInfo).port;
+      await w.loadURL(`http://127.0.0.1:${port}`);
+      await w.loadURL(`http://localhost:${port}`);
+      const worldId = await executeJsHelper.inPreloadWorld(w.webContents, function testFunction () {
+        return new Promise(resolve => {
+          electron.webFrame.once('script-context-created', (_e, { worldId }) => resolve(worldId));
+          electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
         });
-        defer(() => w.close());
-        const port = (server.address() as AddressInfo).port;
-        await w.loadURL(`http://127.0.0.1:${port}`);
-        await w.loadURL(`http://localhost:${port}`);
-        const worldId = await executeJsHelper.inPreloadWorld(w.webContents, function testFunction () {
-          return new Promise(resolve => {
-            electron.webFrame.once('script-context-created', (_e, { worldId }) => resolve(worldId));
-            electron.webFrame.executeJavaScriptInIsolatedWorld(123, [{ code: 'void 0;' }]);
-          });
-        });
-        expect(worldId).to.equal(123);
-      } finally {
-        server.close();
-      }
+      });
+      expect(worldId).to.equal(123);
+    });
+
+    const extensionsEnabled = !!session.defaultSession.loadExtension;
+    ifit(extensionsEnabled)('emits before extension content scripts are run', async () => {
+      const extensionPath = path.resolve(fixtures, 'extensions/content-script-document-start');
+      const extension = await session.defaultSession.loadExtension(extensionPath);
+      defer(() => session.defaultSession.removeExtension(extension.id));
+
+      const server = http.createServer((_req, res) => {
+        res.writeHead(200);
+        res.end('hello world');
+      });
+      defer(() => server.close());
+      await new Promise<void>(resolve => {
+        server.listen(0, '127.0.0.1', () => resolve());
+      });
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: true,
+          preload: path.join(extensionPath, 'context-listener-preload.js')
+        }
+      });
+      defer(() => w.close());
+      const port = (server.address() as AddressInfo).port;
+      await w.loadURL(`http://127.0.0.1:${port}`);
+      const result = await executeJsHelper.inPreloadWorld(
+        w.webContents,
+        'window.hasChrome && window.ranContentScriptForTest !== true;'
+      );
+      expect(result).to.be.true();
     });
   });
 });
