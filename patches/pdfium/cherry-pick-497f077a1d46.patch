@@ -1,7 +1,7 @@
-From 497f077a1d46bfeacb4eef83b223ae7b0fc51137 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Sepez <tsepez@chromium.org>
-Date: Thu, 08 Sep 2022 23:05:34 +0000
-Subject: [PATCH] [M104] Return retained const objects from SearchNameNodeByNameInternal()
+Date: Thu, 8 Sep 2022 23:05:34 +0000
+Subject: Return retained const objects from SearchNameNodeByNameInternal()
 
 Cherry-pick of d51720c9bb55d1163ab4fdcdc6981e753aa2354d + manual
 conflict resolution.
@@ -13,13 +13,12 @@ Auto-Submit: Tom Sepez <tsepez@chromium.org>
 Reviewed-by: Lei Zhang <thestig@chromium.org>
 Commit-Queue: Lei Zhang <thestig@chromium.org>
 Commit-Queue: Tom Sepez <tsepez@chromium.org>
----
 
 diff --git a/core/fpdfapi/parser/cpdf_array.h b/core/fpdfapi/parser/cpdf_array.h
-index 223cd59..a2c0678 100644
+index 223cd59ab7cb6cc2c08071118d1fbb3241904c6b..a2c067878847cc8ed17eb78bee416716f08a338b 100644
 --- a/core/fpdfapi/parser/cpdf_array.h
 +++ b/core/fpdfapi/parser/cpdf_array.h
-@@ -194,4 +194,8 @@
+@@ -194,4 +194,8 @@ inline RetainPtr<CPDF_Array> ToArray(RetainPtr<CPDF_Object> obj) {
    return RetainPtr<CPDF_Array>(ToArray(obj.Get()));
  }
  
@@ -29,10 +28,10 @@ index 223cd59..a2c0678 100644
 +
  #endif  // CORE_FPDFAPI_PARSER_CPDF_ARRAY_H_
 diff --git a/core/fpdfapi/parser/cpdf_dictionary.h b/core/fpdfapi/parser/cpdf_dictionary.h
-index dab24b4..fa567f4 100644
+index c7ccdc6eef50ddb93585975fb613ce442199e0ee..658ed6586959b5c2165589c9633060f86825c535 100644
 --- a/core/fpdfapi/parser/cpdf_dictionary.h
 +++ b/core/fpdfapi/parser/cpdf_dictionary.h
-@@ -171,4 +171,9 @@
+@@ -170,4 +170,9 @@ inline RetainPtr<CPDF_Dictionary> ToDictionary(RetainPtr<CPDF_Object> obj) {
    return RetainPtr<CPDF_Dictionary>(ToDictionary(obj.Get()));
  }
  
@@ -43,10 +42,10 @@ index dab24b4..fa567f4 100644
 +
  #endif  // CORE_FPDFAPI_PARSER_CPDF_DICTIONARY_H_
 diff --git a/core/fpdfapi/parser/cpdf_number.h b/core/fpdfapi/parser/cpdf_number.h
-index 864bbb2..0ca1130 100644
+index 864bbb2186f0c6208db9942121d2f80b214d46a1..0ca1130ec5a0f595054ff3e4d3d73c5e57f94e6c 100644
 --- a/core/fpdfapi/parser/cpdf_number.h
 +++ b/core/fpdfapi/parser/cpdf_number.h
-@@ -49,4 +49,12 @@
+@@ -49,4 +49,12 @@ inline const CPDF_Number* ToNumber(const CPDF_Object* obj) {
    return obj ? obj->AsNumber() : nullptr;
  }
  
@@ -60,10 +59,10 @@ index 864bbb2..0ca1130 100644
 +
  #endif  // CORE_FPDFAPI_PARSER_CPDF_NUMBER_H_
 diff --git a/core/fpdfapi/parser/cpdf_stream.h b/core/fpdfapi/parser/cpdf_stream.h
-index 497db20..171d93e 100644
+index 497db20cfcf98792bef6cb3b4bef1a4c0b1b1bff..171d93eb28e26baf1e51f4fafd4c83e39798f88b 100644
 --- a/core/fpdfapi/parser/cpdf_stream.h
 +++ b/core/fpdfapi/parser/cpdf_stream.h
-@@ -92,4 +92,8 @@
+@@ -92,4 +92,8 @@ inline RetainPtr<CPDF_Stream> ToStream(RetainPtr<CPDF_Object> obj) {
    return RetainPtr<CPDF_Stream>(ToStream(obj.Get()));
  }
  
@@ -73,10 +72,10 @@ index 497db20..171d93e 100644
 +
  #endif  // CORE_FPDFAPI_PARSER_CPDF_STREAM_H_
 diff --git a/core/fpdfdoc/cpdf_dest.cpp b/core/fpdfdoc/cpdf_dest.cpp
-index 34fb416..02c6fe5 100644
+index f3b11523918258e7702bda360129857165abc945..fcc09d9e580832678980987489d58ac3c7c0b9bf 100644
 --- a/core/fpdfdoc/cpdf_dest.cpp
 +++ b/core/fpdfdoc/cpdf_dest.cpp
-@@ -41,9 +41,11 @@
+@@ -41,9 +41,11 @@ CPDF_Dest CPDF_Dest::Create(CPDF_Document* pDoc, const CPDF_Object* pDest) {
    if (!pDest)
      return CPDF_Dest(nullptr);
  
@@ -92,10 +91,10 @@ index 34fb416..02c6fe5 100644
  }
  
 diff --git a/core/fpdfdoc/cpdf_nametree.cpp b/core/fpdfdoc/cpdf_nametree.cpp
-index 09d4a87..2dfecbb 100644
+index 09d4a873fbd9e1151ddbe4f943903d796b18dbe1..2dfecbb5eeb95525c0a83023ee85b722588f3489 100644
 --- a/core/fpdfdoc/cpdf_nametree.cpp
 +++ b/core/fpdfdoc/cpdf_nametree.cpp
-@@ -170,7 +170,7 @@
+@@ -170,7 +170,7 @@ bool UpdateNodesAndLimitsUponDeletion(CPDF_Dictionary* pNode,
  // will be the index of |csName| in |ppFind|. If |csName| is not found, |ppFind|
  // will be the leaf array that |csName| should be added to, and |pFindIndex|
  // will be the index that it should be added at.
@@ -104,7 +103,7 @@ index 09d4a87..2dfecbb 100644
      const RetainPtr<CPDF_Dictionary>& pNode,
      const WideString& csName,
      int nLevel,
-@@ -217,7 +217,7 @@
+@@ -217,7 +217,7 @@ CPDF_Object* SearchNameNodeByNameInternal(
          continue;
  
        *nIndex += i;
@@ -113,7 +112,7 @@ index 09d4a87..2dfecbb 100644
      }
      *nIndex += dwCount;
      return nullptr;
-@@ -233,7 +233,7 @@
+@@ -233,7 +233,7 @@ CPDF_Object* SearchNameNodeByNameInternal(
      if (!pKid)
        continue;
  
@@ -122,7 +121,7 @@ index 09d4a87..2dfecbb 100644
          pKid, csName, nLevel + 1, nIndex, ppFind, pFindIndex);
      if (pFound)
        return pFound;
-@@ -243,10 +243,11 @@
+@@ -243,10 +243,11 @@ CPDF_Object* SearchNameNodeByNameInternal(
  
  // Wrapper for SearchNameNodeByNameInternal() so callers do not need to know
  // about the details.
@@ -138,7 +137,7 @@ index 09d4a87..2dfecbb 100644
    size_t nIndex = 0;
    return SearchNameNodeByNameInternal(pNode, csName, 0, &nIndex, ppFind,
                                        pFindIndex);
-@@ -344,24 +345,25 @@
+@@ -344,24 +345,25 @@ size_t CountNamesInternal(CPDF_Dictionary* pNode, int nLevel) {
    return nCount;
  }
  
@@ -174,7 +173,7 @@ index 09d4a87..2dfecbb 100644
  }
  
  }  // namespace
-@@ -424,9 +426,10 @@
+@@ -424,9 +426,10 @@ std::unique_ptr<CPDF_NameTree> CPDF_NameTree::CreateForTesting(
  }
  
  // static
@@ -188,7 +187,7 @@ index 09d4a87..2dfecbb 100644
    std::unique_ptr<CPDF_NameTree> name_tree = Create(pDoc, "Dests");
    if (name_tree)
      dest_array = name_tree->LookupNewStyleNamedDest(name);
-@@ -526,10 +529,12 @@
+@@ -526,10 +529,12 @@ CPDF_Object* CPDF_NameTree::LookupValueAndName(size_t nIndex,
    return result.value().value;
  }
  
@@ -204,10 +203,10 @@ index 09d4a87..2dfecbb 100644
    return GetNamedDestFromObject(LookupValue(PDF_DecodeText(sName.raw_span())));
  }
 diff --git a/core/fpdfdoc/cpdf_nametree.h b/core/fpdfdoc/cpdf_nametree.h
-index e27f5b1..30371b4 100644
+index e27f5b13cd76052e1de533b94f85ae505aa56339..30371b42ac622b53b79e180789a491a917c3f263 100644
 --- a/core/fpdfdoc/cpdf_nametree.h
 +++ b/core/fpdfdoc/cpdf_nametree.h
-@@ -38,14 +38,14 @@
+@@ -38,14 +38,14 @@ class CPDF_NameTree {
    static std::unique_ptr<CPDF_NameTree> CreateForTesting(
        CPDF_Dictionary* pRoot);
  
@@ -225,7 +224,7 @@ index e27f5b1..30371b4 100644
  
    size_t GetCount() const;
    CPDF_Dictionary* GetRootForTesting() const { return m_pRoot.Get(); }
-@@ -53,7 +53,7 @@
+@@ -53,7 +53,7 @@ class CPDF_NameTree {
   private:
    explicit CPDF_NameTree(CPDF_Dictionary* pRoot);
  
@@ -235,10 +234,10 @@ index e27f5b1..30371b4 100644
    const RetainPtr<CPDF_Dictionary> m_pRoot;
  };
 diff --git a/core/fpdfdoc/cpdf_nametree_unittest.cpp b/core/fpdfdoc/cpdf_nametree_unittest.cpp
-index 36617e7..e144033 100644
+index 36617e74d438985b17a889043f2e5ac73836bb3a..e144033bfd66448e45267788d66e577ab366b964 100644
 --- a/core/fpdfdoc/cpdf_nametree_unittest.cpp
 +++ b/core/fpdfdoc/cpdf_nametree_unittest.cpp
-@@ -120,7 +120,7 @@
+@@ -120,7 +120,7 @@ TEST(cpdf_nametree, GetUnicodeNameWithBOM) {
    EXPECT_STREQ(L"1", stored_name.c_str());
  
    // Check that the correct value object can be obtained by looking up "1".
@@ -247,7 +246,7 @@ index 36617e7..e144033 100644
    ASSERT_TRUE(pNumber);
    EXPECT_EQ(100, pNumber->GetInteger());
  }
-@@ -140,7 +140,8 @@
+@@ -140,7 +140,8 @@ TEST(cpdf_nametree, GetFromTreeWithLimitsArrayWith4Items) {
    std::unique_ptr<CPDF_NameTree> name_tree =
        CPDF_NameTree::CreateForTesting(pRootDict.Get());
  
@@ -258,10 +257,10 @@ index 36617e7..e144033 100644
    EXPECT_EQ(999, pNumber->GetInteger());
    CheckLimitsArray(pKid1, "1.txt", "9.txt");
 diff --git a/fpdfsdk/fpdf_view.cpp b/fpdfsdk/fpdf_view.cpp
-index 161340b..b89efdd 100644
+index 161340b8a1b406987b62934d9ad6a67ec49d4bb5..b89efdd063d6c81a38536686965f7bdf8f4da244 100644
 --- a/fpdfsdk/fpdf_view.cpp
 +++ b/fpdfsdk/fpdf_view.cpp
-@@ -1050,7 +1050,9 @@
+@@ -1050,7 +1050,9 @@ FPDF_GetNamedDestByName(FPDF_DOCUMENT document, FPDF_BYTESTRING name) {
      return nullptr;
  
    ByteString dest_name(name);
@@ -273,10 +272,10 @@ index 161340b..b89efdd 100644
  
  #ifdef PDF_ENABLE_V8
 diff --git a/fxjs/cjs_document.cpp b/fxjs/cjs_document.cpp
-index 83e61eb..df508d3 100644
+index a0bcf868157446cd664eab2717a1adff4e6155b5..991c3aa4a3a41cd58bf22b37626658750831691c 100644
 --- a/fxjs/cjs_document.cpp
 +++ b/fxjs/cjs_document.cpp
-@@ -1381,12 +1381,13 @@
+@@ -1395,12 +1395,13 @@ CJS_Result CJS_Document::gotoNamedDest(
      return CJS_Result::Failure(JSMessage::kBadObjectError);
  
    CPDF_Document* pDocument = m_pFormFillEnv->GetPDFDocument();
@@ -294,7 +293,7 @@ index 83e61eb..df508d3 100644
    if (arrayObject) {
 diff --git a/testing/resources/javascript/bug_1358075.in b/testing/resources/javascript/bug_1358075.in
 new file mode 100644
-index 0000000..b503bf2
+index 0000000000000000000000000000000000000000..b503bf2d81eb3ca9adaa108c5075c04fa1c69f89
 --- /dev/null
 +++ b/testing/resources/javascript/bug_1358075.in
 @@ -0,0 +1,39 @@
@@ -339,16 +338,16 @@ index 0000000..b503bf2
 +%%EOF
 diff --git a/testing/resources/javascript/bug_1358075_expected.txt b/testing/resources/javascript/bug_1358075_expected.txt
 new file mode 100644
-index 0000000..13d460b
+index 0000000000000000000000000000000000000000..13d460b3b9aa905cec757ab821b980f379772565
 --- /dev/null
 +++ b/testing/resources/javascript/bug_1358075_expected.txt
 @@ -0,0 +1 @@
 +Alert: completed
 diff --git a/xfa/fxfa/cxfa_ffdoc.cpp b/xfa/fxfa/cxfa_ffdoc.cpp
-index 691248d..5693d23 100644
+index 691248d2709508fc4aff096c80c535a2863bc851..5693d231122ed953c863f4a2333c5ee782bcd68e 100644
 --- a/xfa/fxfa/cxfa_ffdoc.cpp
 +++ b/xfa/fxfa/cxfa_ffdoc.cpp
-@@ -279,7 +279,8 @@
+@@ -279,7 +279,8 @@ RetainPtr<CFX_DIBitmap> CXFA_FFDoc::GetPDFNamedImage(WideStringView wsName,
    if (count == 0)
      return nullptr;
  
@@ -358,7 +357,7 @@ index 691248d..5693d23 100644
    if (!pObject) {
      for (size_t i = 0; i < count; ++i) {
        WideString wsTemp;
-@@ -291,11 +292,12 @@
+@@ -291,11 +292,12 @@ RetainPtr<CFX_DIBitmap> CXFA_FFDoc::GetPDFNamedImage(WideStringView wsName,
      }
    }
  
