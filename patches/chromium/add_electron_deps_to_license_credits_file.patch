@@ -7,12 +7,12 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses.py b/tools/licenses.py
-index a58dbf44370baabbfa2986c734c96a210cc16f1d..1d6934460f788ab76275710e727fb062f5c92b5b 100755
+index b083d3509433aa97aa85c59a4269def5ef5a5359..c032e1f9dc058ff2c76b54ac5da6805163d1eadf 100755
 --- a/tools/licenses.py
 +++ b/tools/licenses.py
-@@ -347,6 +347,32 @@ SPECIAL_CASES = {
+@@ -340,6 +340,32 @@ SPECIAL_CASES = {
          "License File":
-         "/third_party/swiftshader/third_party/SPIRV-Headers/LICENSE",
+         "/third_party/swiftshader/third_party/SPIRV-Tools/LICENSE",
      },
 +
 +    os.path.join('third_party', 'electron_node'): {
