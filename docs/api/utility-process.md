@@ -1,8 +1,8 @@
 # UtilityProcess
 
-`UtilityProcess` is the equivalent of [`child_process.fork`][] API from Node.js
-but instead uses [Services API][] from Chromium to create child processes with
-Node.js and Message ports enabled.
+`UtilityProcess` creates a child process with
+Node.js and Message ports enabled. It provides the equivalent of [`child_process.fork`][] API from Node.js
+but instead uses [Services API][] from Chromium to launch the child process.
 
 `UtilityProcess` is an [EventEmitter][event-emitter].
 
@@ -109,10 +109,10 @@ Emitted once the child process has spawned successfully.
 Returns:
 
 * `event` Event
-* `code` number
-
-Emitted after the child process ends. `code` contains the exit code for
+* `code` number - Contains the exit code for
 the process obtained from waitpid on posix, or GetExitCodeProcess on windows.
+
+Emitted after the child process ends.
 
 #### Event: 'message'
 

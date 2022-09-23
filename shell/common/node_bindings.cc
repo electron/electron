@@ -586,9 +586,9 @@ node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform) {
 #if BUILDFLAG(IS_WIN)
-  auto& atom_args = ElectronCommandLine::argv();
-  std::vector<std::string> args(atom_args.size());
-  std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
+  auto& electron_args = ElectronCommandLine::argv();
+  std::vector<std::string> args(electron_args.size());
+  std::transform(electron_args.cbegin(), electron_args.cend(), args.begin(),
                  [](auto& a) { return base::WideToUTF8(a); });
 #else
   auto args = ElectronCommandLine::argv();
