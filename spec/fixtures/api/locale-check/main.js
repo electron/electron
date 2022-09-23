@@ -9,7 +9,7 @@ app.whenReady().then(() => {
   if (process.argv[3] === '--print-env') {
     process.stdout.write(String(process.env.LC_ALL));
   } else {
-    process.stdout.write(app.getLocale());
+    process.stdout.write(`${app.getLocale()}|${app.getSystemLocale()}`);
   }
   process.stdout.end();
 
