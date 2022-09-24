@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@chromium.org>
+Date: Thu, 8 Sep 2022 23:45:54 +0000
+Subject: Avoid de-referencing end() in GetNextAvailContentHeight().
+
+Add the same HasCurrentViewRecord() check as in other methods.
+
+Bug: chromium:1355682
+Change-Id: I466f386f037801daa82ead30239f34e025748748
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/96910
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Auto-Submit: Tom Sepez <tsepez@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+(cherry picked from commit 0d76a139d7ffbbdfb0ef5f5e714597a25f9767c4)
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/97738
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/xfa/fxfa/layout/cxfa_viewlayoutprocessor.cpp b/xfa/fxfa/layout/cxfa_viewlayoutprocessor.cpp
+index a8efdb7dfa740bd9f3e70aeadc3c8d4ccb12587f..295854f655807ce706cc76d4786ad3c57564736e 100644
+--- a/xfa/fxfa/layout/cxfa_viewlayoutprocessor.cpp
++++ b/xfa/fxfa/layout/cxfa_viewlayoutprocessor.cpp
+@@ -1551,6 +1551,8 @@ void CXFA_ViewLayoutProcessor::ProcessLastPageSet() {
+ }
+ 
+ bool CXFA_ViewLayoutProcessor::GetNextAvailContentHeight(float fChildHeight) {
++  if (!HasCurrentViewRecord())
++    return false;
+   CXFA_Node* pCurContentNode =
+       GetCurrentViewRecord()->pCurContentArea->GetFormNode();
+   if (!pCurContentNode)
