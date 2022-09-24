@@ -106,14 +106,15 @@ void BrowserView::SetOwnerWindow(BaseWindow* window) {
     web_contents()->SetOwnerWindow(window ? window->window() : nullptr);
 
   if (owner_window_.get()) {
-    owner_window_->remove_inspectable_view(
+    owner_window_->window()->remove_inspectable_view(
         view_->GetInspectableWebContentsView());
   }
 
   owner_window_ = window ? window->GetWeakPtr() : nullptr;
 
   if (owner_window_.get() && view_->GetInspectableWebContentsView())
-    owner_window_->add_inspectable_view(view_->GetInspectableWebContentsView());
+    owner_window_->window()->add_inspectable_view(
+        view_->GetInspectableWebContentsView());
 }
 
 BrowserView::~BrowserView() {
