@@ -373,7 +373,7 @@ absl::optional<int> ElectronBrowserClient::GetRenderFrameProcessID() {
           notifications_allowed = notifications_allowed_;
         };
         WebNotificationAllowed(
-            GetWebContentsFromProcessID(proc_id),
+            GetWebContentsFromProcessID(proc_id)->GetPrimaryMainFrame(),
             base::BindRepeating(
                 [](std::function<void(bool, bool)> process_flags_,
                    // flags below will come from WebNotificationAllowed
