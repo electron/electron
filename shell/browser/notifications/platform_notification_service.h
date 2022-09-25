@@ -51,6 +51,8 @@ class PlatformNotificationService
 
  private:
   ElectronBrowserClient* browser_client_;
+  int64_t next_persistent_id_;  // SAP-14036: counter for persitent
+                                // notifications
 };
 
 }  // namespace electron

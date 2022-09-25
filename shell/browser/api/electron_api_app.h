@@ -220,7 +220,12 @@ class App : public ElectronBrowserClient::Delegate,
   void EnableSandbox(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
-
+#if BUILDFLAG(IS_WIN)
+  // SAP-15762: Support COM activation registration at runtime
+  void SetBrowserClientNotificationsComServerCLSID(
+      const std::string& com_server_clsid);
+  std::string GetBrowserClientNotificationsComServerCLSID();
+#endif
 #if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
                            const std::string& policy);

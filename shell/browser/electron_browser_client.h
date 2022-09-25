@@ -57,12 +57,15 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
+  // Returns regestered frame host process id
+  absl::optional<int> GetRenderFrameProcessID();
+
   // Returns the WebContents for pending render processes.
   content::WebContents* GetWebContentsFromProcessID(int process_id);
 
   NotificationPresenter* GetNotificationPresenter();
 
-  void WebNotificationAllowed(content::RenderFrameHost* rfh,
+  void WebNotificationAllowed(content::WebContents* web_contents,
                               base::OnceCallback<void(bool, bool)> callback);
 
   // content::NavigatorDelegate
@@ -101,6 +104,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::SerialDelegate* GetSerialDelegate() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
+#if BUILDFLAG(IS_WIN)
+  // SAP-15762: Support COM activation registration at runtime
+  void SetNotificationsComServerCLSID(const std::string& com_server_clsid);
+  std::string GetNotificationsComServerCLSID();
+#endif
 
   content::HidDelegate* GetHidDelegate() override;
   content::UsbDelegate* GetUsbDelegate() override;
@@ -318,6 +326,12 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::string user_agent_override_ = "";
 
+#if defined(OS_WIN)
+  // SAP-15762: To support COM activation registration at runtime
+  std::string notifications_com_server_clsid_ =
+      "";  // default empty i.e absence support for persistent notifications
+#endif
+
   // Simple shared ID generator, used by ProxyingURLLoaderFactory and
   // ProxyingWebSocket classes.
   uint64_t next_id_ = 0;
@@ -332,6 +346,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #if BUILDFLAG(IS_MAC)
   ElectronBrowserMainParts* browser_main_parts_ = nullptr;
 #endif
+  // SAP-15679: Notification doesn't work when using Web URL in a restricted
+  // container
+  content::BrowserContext* notifications_browser_context_;
 };
 
 }  // namespace electron

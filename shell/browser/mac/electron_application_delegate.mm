@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include <sstream>
+
 #include "base/allocator/buildflags.h"
 #include "base/allocator/partition_allocator/shim/allocator_shim.h"
 #include "base/mac/mac_util.h"
@@ -19,6 +21,8 @@
 #import "shell/browser/mac/electron_application.h"
 
 #import <UserNotifications/UserNotifications.h>
+// SAP-16595 : Refine cold start procedure in macOS
+#include "shell/browser/api/electron_api_app.h"
 
 static NSDictionary* UNNotificationResponseToNSDictionary(
     UNNotificationResponse* response) API_AVAILABLE(macosx(10.14)) {
@@ -81,6 +85,40 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
     } else if (@available(macOS 10.14, *)) {
       notification_info = UNNotificationResponseToNSDictionary(
           static_cast<UNNotificationResponse*>(user_notification));
+    }
+    auto* app = electron::api::App::Get();
+    if (app) {
+      NSUserNotification* notif =
+          static_cast<NSUserNotification*>(user_notification);
+      // SAP-16595 : Refine cold start procedure in macOS
+      const char* action =
+          notif.additionalActivationAction == nil
+              ? nullptr
+              : [notif.additionalActivationAction.identifier UTF8String];
+      const char* reply =
+          notif.response == nil ? nullptr : [notif.response.string UTF8String];
+
+      if (!action && !reply) {  // click on toast body
+        // in case if data exists forwarding it as invoked argument
+        NSString* _data = notif.userInfo ? notif.userInfo[@"_data"] : @"";
+        action = [_data UTF8String];
+      }
+      // SAP-15908 - Refine notification-activation for cold start in macOS
+      std::stringstream stm;
+      if (reply) {
+        NSString* _replyKey =
+            notif.userInfo ? notif.userInfo[@"_replyKey"] : @"";
+        const char* key = [_replyKey UTF8String];
+        stm << L"[";  // json array open brace
+        stm << L"{";  // open brace for key-value pair
+        stm << L"\"" << (key ? key : "") << L"\"";
+        stm << L":";  // json delimeter (i.e colon) between key value
+        stm << L"\"" << reply << L"\"";
+        stm << L"}";  // close brace for key-value pair
+        stm << L"]";  // json array close brace
+      }
+      app->Emit("notification-activation", [notif.identifier UTF8String],
+                action ? action : "", reply ? 1 : 0, reply ? stm.str() : "");
     }
   }
 

@@ -17,12 +17,13 @@ class NotificationDelegate {
   // Failed to send the notification.
   virtual void NotificationFailed(const std::string& error) {}
 
-  // Notification was replied to
+  // Notification was replied to (SAP-14036 upgrade for persistent notifications
+  // support)
   virtual void NotificationReplied(const std::string& reply) {}
   virtual void NotificationAction(int index) {}
 
   virtual void NotificationClick() {}
-  virtual void NotificationClosed() {}
+  virtual void NotificationClosed(bool is_persistent = false) {}
   virtual void NotificationDisplayed() {}
 
  protected:

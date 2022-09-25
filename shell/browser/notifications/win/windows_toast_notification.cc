@@ -1,5 +1,5 @@
 // Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and Jason Poon
-// <jason.poon@microsoft.com>. All rights reserved.
+// <jason.poon@microsoft.com>. All rights reserved.>
 // Copyright (c) 2015 Ryan McShane <rmcshane@bandwidth.com> and Brandon Smith
 // <bsmith@bandwidth.com>
 // Thanks to both of those folks mentioned above who first thought up a bunch of
@@ -7,14 +7,29 @@
 // and released it as MIT to the world.
 
 #include "shell/browser/notifications/win/windows_toast_notification.h"
-
-#include <shlobj.h>
+// SAP-14036 upgrade for headers necessary for persistent notifications
+// functionality
+#include <NotificationActivationCallback.h>
+#include <Psapi.h>
+#include <SDKDDKVer.h>
+#include <ShObjIdl.h>
+#include <Shlobj.h>
+#include <combaseapi.h>
+#include <propkey.h>
+#include <propvarutil.h>
+#include <shellapi.h>
+#include <strsafe.h>
+#include <windows.ui.notifications.h>
+#include <wrl\module.h>
 #include <wrl\wrappers\corewrappers.h>
+#include <algorithm>
+#include <iterator>
+#include <sstream>
 
 #include "base/environment.h"
 #include "base/logging.h"
-#include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/scoped_handle.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/notifications/notification_delegate.h"
@@ -23,6 +38,11 @@
 #include "shell/common/application_info.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/strings/grit/ui_strings.h"
+// This is win part of Electon and some API requires native StrCat
+// so we have problems du to ./src/base/win/windows_defines.inc
+// there is some workaround to allow compilation of win part
+#undef StrCat
+#include "shell/browser/api/electron_api_app.h"
 
 using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
 using ABI::Windows::Data::Xml::Dom::IXmlDocument;
@@ -32,6 +52,28 @@ using ABI::Windows::Data::Xml::Dom::IXmlNamedNodeMap;
 using ABI::Windows::Data::Xml::Dom::IXmlNode;
 using ABI::Windows::Data::Xml::Dom::IXmlNodeList;
 using ABI::Windows::Data::Xml::Dom::IXmlText;
+using ABI::Windows::Foundation::IPropertyValue;
+using ABI::Windows::Foundation::Collections::IMap;
+using ABI::Windows::Foundation::Collections::IMapView;
+using ABI::Windows::Foundation::Collections::IPropertySet;
+using ABI::Windows::UI::Notifications::IToastActivatedEventArgs;
+using ABI::Windows::UI::Notifications::IToastActivatedEventArgs2;
+using ABI::Windows::UI::Notifications::ToastDismissalReason;
+using Microsoft::WRL::Wrappers::HandleT;
+using Microsoft::WRL::Wrappers::HStringReference;
+using namespace Microsoft::WRL;
+using namespace Microsoft::WRL::Wrappers;
+using base::win::ScopedHandle;
+
+//  Used to CoCreate an INotificationActivationCallback interface to notify
+//  about toast activations.
+EXTERN_C const PROPERTYKEY DECLSPEC_SELECTANY
+    PKEY_AppUserModel_ToastActivatorCLSID = {
+        {0x9F4C2855,
+         0x9F79,
+         0x4B39,
+         {0xA8, 0xD0, 0xE1, 0xD4, 0x2D, 0xE1, 0xD5, 0xF3}},
+        26};
 using Microsoft::WRL::Wrappers::HStringReference;
 
 #define RETURN_IF_FAILED(hr) \
@@ -54,6 +96,18 @@ using Microsoft::WRL::Wrappers::HStringReference;
     }                                                                    \
   } while (false)
 
+namespace std {
+wostream& operator<<(wostream& out, const NOTIFICATION_USER_INPUT_DATA& data) {
+  // SAP-15908 refine notification-activation for cold start
+  out << L"{";  // open brace for key-value pair
+  out << L"\"" << data.Key << L"\"";
+  out << L":";  // json delimeter (i.e colon) between key value
+  out << L"\"" << data.Value << L"\"";
+  out << L"}";  // close brace for key-value pair
+  return out;
+}
+}  // namespace std
+
 namespace electron {
 
 namespace {
@@ -61,6 +115,13 @@ namespace {
 bool IsDebuggingNotifications() {
   return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
 }
+// SAP-15501 : Clear notifications
+std::wstring HexStringFromStdHash(std::size_t hash) {
+  std::wstringstream ss;
+  ss << std::hex << hash;
+  return ss.str();
+}
+
 }  // namespace
 
 // static
@@ -68,10 +129,58 @@ ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
     WindowsToastNotification::toast_manager_;
 
 // static
-ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>
-    WindowsToastNotification::toast_notifier_;
+ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics2>
+    ToastEventHandler::toast_manager_;
 
 // static
+ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>
+    WindowsToastNotification::toast_notifier_;
+// SAP-14036 add COM server regestration
+class NotificationActivator;
+// SAP-15762 support COM server registration at runtime
+class NotificationActivatorFactory;
+class NotificationRegistrator {
+ public:
+  bool RegisterAppForNotificationSupport(const std::wstring& appId,
+                                         const std::wstring& clsid);
+  bool SetRegistryKeyValue(HKEY hKey,
+                           const std::wstring& subKey,
+                           const std::wstring& valueName,
+                           const std::wstring& value) {
+    return SUCCEEDED(HRESULT_FROM_WIN32(::RegSetKeyValue(
+        hKey, subKey.c_str(), valueName.empty() ? nullptr : valueName.c_str(),
+        REG_SZ, reinterpret_cast<const BYTE*>(value.c_str()),
+        static_cast<DWORD>(value.length()) * sizeof(WCHAR))));
+  }
+
+  HSTRING AppId() { return app_id_; }
+  // SAP-16574 : Allow App icon into Action center and System Notifications
+  // settings
+  NotificationRegistrator() {
+    wchar_t appPath[MAX_PATH] = {0};
+    if (!::GetModuleFileName(nullptr, appPath, ARRAYSIZE(appPath)))
+      return;
+    app_path_ = std::wstring(appPath);
+
+    wchar_t tmpPath[MAX_PATH] = {0};
+    if (!::GetTempPath(ARRAYSIZE(tmpPath), tmpPath))
+      return;
+    tmp_path_ = std::wstring(tmpPath);
+  }
+
+ private:
+  ScopedHString app_id_;
+  // SAP-16574 : Allow App icon into Action center and System Notifications
+  // settings
+  std::wstring app_path_;
+  std::wstring tmp_path_;
+  std::wstring ico_path_;
+
+  bool ExtractAppIconToTempFile(const std::wstring& file_name);
+};
+
+// static
+static std::unique_ptr<NotificationRegistrator> registrator_;
 bool WindowsToastNotification::Initialize() {
   // Just initialize, don't care if it fails or already initialized.
   Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
@@ -83,6 +192,9 @@ bool WindowsToastNotification::Initialize() {
   if (FAILED(Windows::Foundation::GetActivationFactory(toast_manager_str,
                                                        &toast_manager_)))
     return false;
+  if (FAILED(toast_manager_->QueryInterface(
+          IID_PPV_ARGS(&(ToastEventHandler::toast_manager_)))))
+    return false;
 
   if (IsRunningInDesktopBridge()) {
     // Ironically, the Desktop Bridge / UWP environment
@@ -92,11 +204,40 @@ bool WindowsToastNotification::Initialize() {
     ScopedHString app_id;
     if (!GetAppUserModelID(&app_id))
       return false;
-
+    // SAP-15762: Support COM activation registration at runtime
+    std::wstring notificationsCOMServerCLSID;
+    // SAP-15318: Make the com registration system activable
+    auto* client = ElectronBrowserClient::Get();
+    if (client) {
+      const auto& clsid_str = client->GetNotificationsComServerCLSID();
+      std::transform(clsid_str.begin(), clsid_str.end(),
+                     std::back_inserter(notificationsCOMServerCLSID),
+                     [](const char ch) { return ch; });
+    }
+    GUID clsid{};
+    if (!notificationsCOMServerCLSID.empty() &&
+        SUCCEEDED(
+            CLSIDFromString(notificationsCOMServerCLSID.c_str(), &clsid))) {
+      // SAP-15762: Support COM activation registration at runtime
+      DWORD registration{};
+      // Register callback
+      if (FAILED(CoRegisterClassObject(
+              clsid,
+              reinterpret_cast<LPUNKNOWN>(
+                  Make<electron::NotificationActivatorFactory>().Get()),
+              CLSCTX_LOCAL_SERVER, REGCLS_MULTIPLEUSE, &registration)))
+        return false;
+      // SAP-14036 support COM server regestration
+      registrator_ = std::make_unique<NotificationRegistrator>();
+      if (!registrator_->RegisterAppForNotificationSupport(
+              WindowsGetStringRawBuffer((HSTRING)app_id, NULL),
+              notificationsCOMServerCLSID))
+        return false;
+    }
     return SUCCEEDED(
         toast_manager_->CreateToastNotifierWithId(app_id, &toast_notifier_));
   }
-}
+}  // namespace electron
 
 WindowsToastNotification::WindowsToastNotification(
     NotificationDelegate* delegate,
@@ -128,19 +269,45 @@ void WindowsToastNotification::Dismiss() {
 
 HRESULT WindowsToastNotification::ShowInternal(
     const NotificationOptions& options) {
+  if (options.is_persistent && !registrator_) {
+    NotificationFailed("COM Activator was not registered");
+    return E_FAIL;
+  }
   ComPtr<IXmlDocument> toast_xml;
   // The custom xml takes priority over the preset template.
   if (!options.toast_xml.empty()) {
     REPORT_AND_RETURN_IF_FAILED(
-        XmlDocumentFromString(base::as_wcstr(options.toast_xml), &toast_xml),
+        XmlDocumentFromString(base::UTF16ToWide(options.toast_xml).c_str(),
+                              &toast_xml),
         "XML: Invalid XML");
   } else {
     auto* presenter_win = static_cast<NotificationPresenterWin*>(presenter());
     std::wstring icon_path =
         presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
+
+    // SAP-15259 : Add the reply field on a notification
+    // Win XML toast scheme requires that inputs will follow befor buttons
+    // code bellow provide smart sorting without lost of initial inputs/buttons
+    // relative order
+    std::vector<electron::NotificationAction> actions;
+    auto add_inputs =
+        [&actions](const electron::NotificationAction& notification) {
+          if (notification.type == NotificationAction::sTYPE_TEXT)
+            actions.push_back(notification);
+        };
+    auto add_buttons =
+        [&actions](const electron::NotificationAction& notification) {
+          if (notification.type == NotificationAction::sTYPE_BUTTON)
+            actions.push_back(notification);
+        };
+    std::for_each(options.actions.begin(), options.actions.end(), add_inputs);
+    std::for_each(options.actions.begin(), options.actions.end(), add_buttons);
     REPORT_AND_RETURN_IF_FAILED(
-        GetToastXml(toast_manager_.Get(), options.title, options.msg, icon_path,
-                    options.timeout_type, options.silent, &toast_xml),
+        GetToastXml(toast_manager_.Get(), base::UTF16ToWide(options.title),
+                    base::UTF16ToWide(options.msg), icon_path,
+                    base::UTF16ToWide(options.timeout_type),
+                    base::UTF16ToWide(options.data), actions, options.silent,
+                    options.require_interaction, &toast_xml),
         "XML: Failed to create XML document");
   }
 
@@ -161,22 +328,60 @@ HRESULT WindowsToastNotification::ShowInternal(
                                   toast_xml.Get(), &toast_notification_),
                               "WinAPI: CreateToastNotification failed");
 
+  ComPtr<ABI::Windows::UI::Notifications::IToastNotification2>
+      toast_notification2_;
+
+  REPORT_AND_RETURN_IF_FAILED(
+      toast_notification_->QueryInterface(IID_PPV_ARGS(&toast_notification2_)),
+      "WinAPI: CreateToastNotification2 failed");
+
+  // https://docs.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.tag?view=winrt-20348
+  // The tag can be maximum 16 characters long. However,
+  // the Creators Update (15063) extends this limit to 64 characters.
+  const std::wstring& hex_str{
+      HexStringFromStdHash(std::hash<std::string>{}(notification_id()))};
+  // Beware: do not put any methods with temporary wstring as return value
+  // directly to HStringReference c-tor HStringReference uses bare pointer to
+  // raw std::wstring data which should be available during all scope
+  // life-circle
+  REPORT_AND_RETURN_IF_FAILED(
+      toast_notification2_->put_Tag(HStringReference(hex_str.c_str()).Get()),
+      "WinAPI: put_Tag failed");
+
   REPORT_AND_RETURN_IF_FAILED(SetupCallbacks(toast_notification_.Get()),
                               "WinAPI: SetupCallbacks failed");
 
-  REPORT_AND_RETURN_IF_FAILED(toast_notifier_->Show(toast_notification_.Get()),
-                              "WinAPI: Show failed");
+  REPORT_AND_RETURN_IF_FAILED(
+      (event_handler_->SetNotificationOptions(options),
+       toast_notifier_->Show(toast_notification_.Get())),
+      "WinAPI: Show failed");
   return S_OK;
 }
 
+PCWSTR WindowsToastNotification::AsString(
+    ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument>& xmlDocument) {
+  HSTRING xml;
+  ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeSerializer> ser;
+  HRESULT hr =
+      xmlDocument.As<ABI::Windows::Data::Xml::Dom::IXmlNodeSerializer>(&ser);
+  hr = ser->GetXml(&xml);
+  if (SUCCEEDED(hr))
+    return WindowsGetStringRawBuffer(xml, nullptr);
+  return nullptr;
+}
+
+static const std::wstring kFileUriPrefix{L"file:///"};
 HRESULT WindowsToastNotification::GetToastXml(
     ABI::Windows::UI::Notifications::IToastNotificationManagerStatics*
         toastManager,
-    const std::u16string& title,
-    const std::u16string& msg,
+    const std::wstring& title,
+    const std::wstring& msg,
     const std::wstring& icon_path,
-    const std::u16string& timeout_type,
-    bool silent,
+    const std::wstring& timeout_type,
+    const std::wstring& data,
+    const std::vector<electron::NotificationAction>& actions_list,
+    const bool silent,
+    const bool require_interaction,
     IXmlDocument** toast_xml) {
   ABI::Windows::UI::Notifications::ToastTemplateType template_type;
   if (title.empty() || msg.empty()) {
@@ -189,9 +394,9 @@ HRESULT WindowsToastNotification::GetToastXml(
     REPORT_AND_RETURN_IF_FAILED(
         toast_manager_->GetTemplateContent(template_type, toast_xml),
         "XML: Fetching XML ToastImageAndText01 template failed");
-    std::u16string toastMsg = title.empty() ? msg : title;
+    std::wstring toastMsg = title.empty() ? msg : title;
     // we can't create an empty notification
-    toastMsg = toastMsg.empty() ? u"[no message]" : toastMsg;
+    toastMsg = toastMsg.empty() ? L"[no message]" : toastMsg;
     REPORT_AND_RETURN_IF_FAILED(
         SetXmlText(*toast_xml, toastMsg),
         "XML: Filling XML ToastImageAndText01 template failed");
@@ -211,7 +416,7 @@ HRESULT WindowsToastNotification::GetToastXml(
   }
 
   // Configure the toast's timeout settings
-  if (timeout_type == u"never") {
+  if (timeout_type == base::ASCIIToWide("never")) {
     REPORT_AND_RETURN_IF_FAILED(
         (SetXmlScenarioReminder(*toast_xml)),
         "XML: Setting \"scenario\" option on notification failed");
@@ -224,12 +429,57 @@ HRESULT WindowsToastNotification::GetToastXml(
         "XML: Setting \"silent\" option on notification failed");
   }
 
+  if (require_interaction) {
+    REPORT_AND_RETURN_IF_FAILED(
+        SetXmlScenarioType(*toast_xml, L"reminder"),
+        "XML: Setting \"reminder\" senarion type failed");
+  }
+
   // Configure the toast's image
   if (!icon_path.empty()) {
     REPORT_AND_RETURN_IF_FAILED(
         SetXmlImage(*toast_xml, icon_path),
         "XML: Setting \"icon\" option on notification failed");
   }
+
+  if (!data.empty()) {
+    REPORT_AND_RETURN_IF_FAILED(
+        SetLaunchParams(*toast_xml, data),
+        "XML: Setting \"data\" option on notification failed");
+  }
+  for (const auto& action : actions_list) {
+    std::wstring icon_path_ = base::UTF8ToWide(action.icon.spec());
+    if (icon_path_.find(kFileUriPrefix) == 0) {
+      icon_path_.assign(icon_path_, kFileUriPrefix.length(),
+                        std::wstring::npos);
+    }
+    std::wstring hint_input_id_;
+    REPORT_AND_RETURN_IF_FAILED(
+        AddAction(*toast_xml, base::UTF16ToWide(action.type),
+                  base::UTF16ToWide(action.text), base::UTF16ToWide(action.arg),
+                  icon_path_, base::UTF16ToWide(action.placeholder),
+                  hint_input_id_),
+        "XML: Setting \"action\" option on notification failed");
+    if (action.type != NotificationAction::sTYPE_TEXT)
+      continue;
+    hint_input_id_ = base::UTF16ToWide(action.arg);
+    REPORT_AND_RETURN_IF_FAILED(
+        AddAction(
+            *toast_xml, base::UTF16ToWide(NotificationAction::sTYPE_BUTTON),
+            base::UTF16ToWide(action.text),
+            base::UTF16ToWide(action.arg + NotificationAction::sTYPE_BUTTON),
+            icon_path_, base::UTF16ToWide(action.placeholder), hint_input_id_),
+        "XML: Setting \"action\" option on notification failed");
+  }
+  // Next approach can be used for accessing to XML toast scheme during debug
+  // {
+  // ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> doc;
+  // doc.Attach(*toast_xml);
+  // PCWSTR str = AsString(doc);
+  // OutputDebugString(str);
+  // OutputDebugString(L"\n");
+  // doc.Detach();
+  // }
 
   return S_OK;
 }
@@ -399,6 +649,50 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
                                                &content_attribute_pnode);
 }
 
+HRESULT WindowsToastNotification::SetXmlScenarioType(
+    ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+    const std::wstring& scenario_type) {
+  ScopedHString tag(L"toast");
+  if (!tag.success())
+    return false;
+
+  ComPtr<IXmlNodeList> node_list;
+  RETURN_IF_FAILED(doc->GetElementsByTagName(tag, &node_list));
+
+  // Check that root "toast" node exists
+  ComPtr<IXmlNode> root;
+  RETURN_IF_FAILED(node_list->Item(0, &root));
+
+  // get attributes of root "toast" node
+  ComPtr<IXmlNamedNodeMap> toast_attributes;
+  RETURN_IF_FAILED(root->get_Attributes(&toast_attributes));
+
+  ComPtr<IXmlAttribute> scenario_attribute;
+  ScopedHString scenario_str(L"scenario");
+  RETURN_IF_FAILED(doc->CreateAttribute(scenario_str, &scenario_attribute));
+
+  ComPtr<IXmlNode> scenario_attribute_node;
+  RETURN_IF_FAILED(scenario_attribute.As(&scenario_attribute_node));
+
+  ScopedHString scenario_value(scenario_type);
+  if (!scenario_value.success())
+    return E_FAIL;
+
+  ComPtr<IXmlText> scenario_text;
+  RETURN_IF_FAILED(doc->CreateTextNode(scenario_value, &scenario_text));
+
+  ComPtr<IXmlNode> scenario_node;
+  RETURN_IF_FAILED(scenario_text.As(&scenario_node));
+
+  ComPtr<IXmlNode> scenario_backup_node;
+  RETURN_IF_FAILED(scenario_attribute_node->AppendChild(scenario_node.Get(),
+                                                        &scenario_backup_node));
+
+  ComPtr<IXmlNode> scenario_attribute_pnode;
+  return toast_attributes.Get()->SetNamedItem(scenario_attribute_node.Get(),
+                                              &scenario_attribute_pnode);
+}
+
 HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
   ScopedHString tag(L"toast");
   if (!tag.success())
@@ -453,7 +747,7 @@ HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
 }
 
 HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
-                                             const std::u16string& text) {
+                                             const std::wstring& text) {
   ScopedHString tag;
   ComPtr<IXmlNodeList> node_list;
   RETURN_IF_FAILED(GetTextNodeList(&tag, doc, &node_list, 1));
@@ -465,8 +759,8 @@ HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
 }
 
 HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
-                                             const std::u16string& title,
-                                             const std::u16string& body) {
+                                             const std::wstring& title,
+                                             const std::wstring& body) {
   ScopedHString tag;
   ComPtr<IXmlNodeList> node_list;
   RETURN_IF_FAILED(GetTextNodeList(&tag, doc, &node_list, 2));
@@ -515,6 +809,26 @@ HRESULT WindowsToastNotification::SetXmlImage(IXmlDocument* doc,
   return src_attr->AppendChild(src_node.Get(), &child_node);
 }
 
+HRESULT WindowsToastNotification::SetLaunchParams(
+    ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+    const std::wstring& params) {
+  UINT32 length;
+  ComPtr<IXmlNodeList> nodeList;
+  RETURN_IF_FAILED(
+      doc->GetElementsByTagName(HStringReference(L"toast").Get(), &nodeList));
+
+  RETURN_IF_FAILED(nodeList->get_Length(&length));
+
+  ComPtr<IXmlNode> toastNode;
+  RETURN_IF_FAILED(nodeList->Item(0, &toastNode));
+
+  ComPtr<IXmlElement> toastElement;
+  RETURN_IF_FAILED(toastNode.As(&toastElement));
+
+  return toastElement->SetAttribute(HStringReference(L"launch").Get(),
+                                    HStringReference(params.c_str()).Get());
+}
+
 HRESULT WindowsToastNotification::GetTextNodeList(ScopedHString* tag,
                                                   IXmlDocument* doc,
                                                   IXmlNodeList** node_list,
@@ -533,8 +847,8 @@ HRESULT WindowsToastNotification::GetTextNodeList(ScopedHString* tag,
 
 HRESULT WindowsToastNotification::AppendTextToXml(IXmlDocument* doc,
                                                   IXmlNode* node,
-                                                  const std::u16string& text) {
-  ScopedHString str(base::as_wcstr(text));
+                                                  const std::wstring& text) {
+  ScopedHString str(text);
   if (!str.success())
     return E_FAIL;
 
@@ -546,6 +860,88 @@ HRESULT WindowsToastNotification::AppendTextToXml(IXmlDocument* doc,
 
   ComPtr<IXmlNode> append_node;
   RETURN_IF_FAILED(node->AppendChild(text_node.Get(), &append_node));
+
+  return S_OK;
+}
+
+HRESULT WindowsToastNotification::AddAction(
+    ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+    const std::wstring& type,
+    const std::wstring& content,
+    const std::wstring& arguments,  // equal to id for input
+    const std::wstring& icon_path,
+    const std::wstring& placeholder,
+    const std::wstring& hint_inputId) {
+  ComPtr<IXmlNodeList> nodeList;
+  RETURN_IF_FAILED(
+      doc->GetElementsByTagName(HStringReference(L"actions").Get(), &nodeList));
+  UINT32 length;
+  RETURN_IF_FAILED(nodeList->get_Length(&length));
+  ComPtr<IXmlNode> actionsNode;
+  if (length > 0) {
+    RETURN_IF_FAILED(nodeList->Item(0, &actionsNode));
+  } else {
+    RETURN_IF_FAILED(
+        doc->GetElementsByTagName(HStringReference(L"toast").Get(), &nodeList));
+
+    RETURN_IF_FAILED(nodeList->get_Length(&length));
+
+    ComPtr<IXmlNode> toastNode;
+    RETURN_IF_FAILED(nodeList->Item(0, &toastNode));
+
+    ComPtr<IXmlElement> toastElement;
+    RETURN_IF_FAILED(toastNode.As(&toastElement));
+
+    ComPtr<IXmlElement> actionsElement;
+    RETURN_IF_FAILED(doc->CreateElement(HStringReference(L"actions").Get(),
+                                        &actionsElement));
+
+    RETURN_IF_FAILED(actionsElement.As(&actionsNode));
+
+    ComPtr<IXmlNode> appendedChild;
+    RETURN_IF_FAILED(toastNode->AppendChild(actionsNode.Get(), &appendedChild));
+  }
+
+  ComPtr<IXmlElement> actionElement;
+  if (type == L"button") {
+    // BUTTON
+    RETURN_IF_FAILED(
+        doc->CreateElement(HStringReference(L"action").Get(), &actionElement));
+
+    RETURN_IF_FAILED(
+        actionElement->SetAttribute(HStringReference(L"content").Get(),
+                                    HStringReference(content.c_str()).Get()));
+
+    RETURN_IF_FAILED(
+        actionElement->SetAttribute(HStringReference(L"arguments").Get(),
+                                    HStringReference(arguments.c_str()).Get()));
+
+    RETURN_IF_FAILED(
+        actionElement->SetAttribute(HStringReference(L"imageUri").Get(),
+                                    HStringReference(icon_path.c_str()).Get()));
+    RETURN_IF_FAILED(actionElement->SetAttribute(
+        HStringReference(L"hint-inputId").Get(),
+        HStringReference(hint_inputId.c_str()).Get()));
+  } else {
+    // INPUT
+    RETURN_IF_FAILED(
+        doc->CreateElement(HStringReference(L"input").Get(), &actionElement));
+
+    RETURN_IF_FAILED(
+        actionElement->SetAttribute(HStringReference(L"id").Get(),
+                                    HStringReference(arguments.c_str()).Get()));
+    RETURN_IF_FAILED(actionElement->SetAttribute(
+        HStringReference(L"type").Get(), HStringReference(type.c_str()).Get()));
+    RETURN_IF_FAILED(actionElement->SetAttribute(
+        HStringReference(L"placeHolderContent").Get(),
+        HStringReference(placeholder.c_str()).Get()));
+  }
+
+  ComPtr<IXmlNode> actionNode;
+  RETURN_IF_FAILED(actionElement.As(&actionNode));
+
+  ComPtr<IXmlNode> appendedChild;
+  RETURN_IF_FAILED(actionsNode->AppendChild(actionNode.Get(), &appendedChild));
 
   return S_OK;
 }
@@ -577,15 +973,14 @@ HRESULT WindowsToastNotification::SetupCallbacks(
   return S_OK;
 }
 
-bool WindowsToastNotification::RemoveCallbacks(
+HRESULT WindowsToastNotification::RemoveCallbacks(
     ABI::Windows::UI::Notifications::IToastNotification* toast) {
-  if (FAILED(toast->remove_Activated(activated_token_)))
-    return false;
+  RETURN_IF_FAILED(toast->remove_Activated(activated_token_));
 
-  if (FAILED(toast->remove_Dismissed(dismissed_token_)))
-    return false;
+  RETURN_IF_FAILED(toast->remove_Dismissed(dismissed_token_));
 
-  return SUCCEEDED(toast->remove_Failed(failed_token_));
+  RETURN_IF_FAILED(toast->remove_Failed(failed_token_));
+  return S_OK;
 }
 
 /*
@@ -594,16 +989,122 @@ bool WindowsToastNotification::RemoveCallbacks(
 ToastEventHandler::ToastEventHandler(Notification* notification)
     : notification_(notification->GetWeakPtr()) {}
 
-ToastEventHandler::~ToastEventHandler() = default;
+ToastEventHandler::~ToastEventHandler() {}
 
+HRESULT GetReplyFromNotificationAction(
+    const ComPtr<IMap<HSTRING, IInspectable*>>& replyMap,
+    const electron::NotificationAction& action,
+    std::string& reply) {
+  // Beware: do not put any methods with temporary wstring as return value
+  // directly to HStringReference c-tor
+  // HStringReference uses bare pointer to raw std::wstring data which should be
+  // available during all scope life-circle
+  const std::wstring& action_arg{base::UTF16ToWide(action.arg)};
+  HSTRING hKey = HStringReference(action_arg.c_str()).Get();
+
+  boolean bHasKey;
+  RETURN_IF_FAILED(replyMap->HasKey(hKey, &bHasKey));
+
+  if (bHasKey) {
+    ComPtr<IInspectable> pValue;
+    RETURN_IF_FAILED(replyMap->Lookup(hKey, &pValue));
+
+    ComPtr<IPropertyValue> str;
+    RETURN_IF_FAILED(pValue.As(&str));
+
+    HSTRING argumentsHandle;
+    RETURN_IF_FAILED(str->GetString(&argumentsHandle));
+    PCWSTR arguments = WindowsGetStringRawBuffer(argumentsHandle, NULL);
+
+    if (arguments && *arguments)
+      reply = base::WideToUTF8(arguments);
+  }
+  return S_OK;
+}
+
+static const std::wstring kReplyTextType{L"text"};
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     IInspectable* args) {
-  content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&Notification::NotificationClicked, notification_));
-  if (IsDebuggingNotifications())
-    LOG(INFO) << "Notification clicked";
+  // SAP-14036 upgrade for get_Activated callback
+  if (options_.is_persistent) {  // click on persistent notification toast
+
+    if (options_.has_reply) {
+      // Notification::NotificationReplied scope
+      // SAP-15259 : Add the reply field on a notification
+      ComPtr<IToastActivatedEventArgs2> activatedEventArgs2;
+      RETURN_IF_FAILED(
+          args->QueryInterface(activatedEventArgs2.GetAddressOf()));
+
+      ComPtr<IPropertySet> propSet;
+      RETURN_IF_FAILED(activatedEventArgs2->get_UserInput(&propSet));
+
+      ComPtr<IMap<HSTRING, IInspectable*>> replyMap;
+      RETURN_IF_FAILED(propSet->QueryInterface(IID_PPV_ARGS(&replyMap)));
+
+      PCWSTR arguments = kReplyTextType.c_str();
+      if (arguments && *arguments) {
+        auto first = options_.actions.begin();
+        auto last = options_.actions.end();
+        auto find = std::find_if(
+            first, last,
+            [arguments](const electron::NotificationAction& action) {
+              return base::UTF16ToWide(action.type) == arguments;
+            });
+        int index = -1;
+        if (find != last)  // index of first field with reply
+          index = std::distance(first, find);
+        // Processing for index == -1 will allow to distinguish click on toast
+        // for this case event.reply field will be empty
+        std::string reply;
+        if (index != -1) {
+          RETURN_IF_FAILED(GetReplyFromNotificationAction(
+              replyMap, options_.actions[index], reply));
+        }
+        base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                       base::BindOnce(&Notification::NotificationReplied,
+                                      notification_, reply));
+        if (IsDebuggingNotifications())
+          LOG(INFO) << "NotificationReplied";
+      }
+    }  // if options_.has_reply
+    else {
+      // Notification::NotificationAction scope
+      ComPtr<IToastActivatedEventArgs> activatedEventArgs;
+      if (FAILED(args->QueryInterface(activatedEventArgs.GetAddressOf())))
+        return HRESULT_FROM_WIN32(::GetLastError());
+      HSTRING argumentsHandle;
+      if (FAILED(activatedEventArgs->get_Arguments(&argumentsHandle)))
+        return HRESULT_FROM_WIN32(::GetLastError());
+      PCWSTR arguments = WindowsGetStringRawBuffer(argumentsHandle, NULL);
+      if (arguments && *arguments) {
+        auto first = options_.actions.begin();
+        auto last = options_.actions.end();
+        auto find = std::find_if(
+            first, last,
+            [arguments](const electron::NotificationAction& action) {
+              return base::UTF16ToWide(action.arg) == arguments;
+            });
+        int index = -1;
+        if (find != last)  // index for toast button clicked
+          index = std::distance(first, find);
+        // Forwarding index == -1 will allow to distinguish click on toast
+        // for this case event.action field will be empty
+        base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                       base::BindOnce(&Notification::NotificationAction,
+                                      notification_, index));
+        if (IsDebuggingNotifications())
+          LOG(INFO) << "NotificationAction";
+      }
+    }     // else options_.has_reply
+  } else  // if options_.is_persistent
+  {
+    base::PostTask(
+        FROM_HERE, {content::BrowserThread::UI},
+        base::BindOnce(&Notification::NotificationClicked, notification_));
+    if (IsDebuggingNotifications())
+      LOG(INFO) << "Notification clicked";
+  }
 
   return S_OK;
 }
@@ -611,11 +1112,59 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
-  content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&Notification::NotificationDismissed, notification_));
-  if (IsDebuggingNotifications())
-    LOG(INFO) << "Notification dismissed";
+  ToastDismissalReason reason;
+  // SAP-14036 upgrade for get_Dismissed callback
+  if (SUCCEEDED(e->get_Reason(&reason)) &&
+      // we need to post dismissed only for that case
+      reason == ToastDismissalReason::ToastDismissalReason_UserCanceled) {
+    // SAP-15501 : Clear notifications
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotificationHistory> hist;
+    RETURN_IF_FAILED(toast_manager_->get_History(&hist));
+
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotificationHistory2> hist2;
+    RETURN_IF_FAILED(hist->QueryInterface(IID_PPV_ARGS(&hist2)));
+
+    ComPtr<ABI::Windows::Foundation::Collections::IVectorView<
+        ABI::Windows::UI::Notifications::ToastNotification*>>
+        hist_view;
+    RETURN_IF_FAILED(
+        hist2->GetHistoryWithId(registrator_->AppId(), &hist_view));
+
+    unsigned size = 0;
+    RETURN_IF_FAILED(hist_view->get_Size(&size));
+
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotification2> n2;
+    RETURN_IF_FAILED(sender->QueryInterface(IID_PPV_ARGS(&n2)));
+
+    HSTRING ref;
+    RETURN_IF_FAILED(n2->get_Tag(&ref));
+
+    bool notification_is_exisit(false);
+    for (unsigned i = 0; !notification_is_exisit && i < size; i++) {
+      ComPtr<ABI::Windows::UI::Notifications::IToastNotification> n;
+      RETURN_IF_FAILED(hist_view->GetAt(i, &n));
+
+      ComPtr<ABI::Windows::UI::Notifications::IToastNotification2> n2;
+      RETURN_IF_FAILED(n->QueryInterface(IID_PPV_ARGS(&n2)));
+
+      HSTRING tag;
+      RETURN_IF_FAILED(n2->get_Tag(&tag));
+
+      INT32 result;
+      RETURN_IF_FAILED(WindowsCompareStringOrdinal(ref, tag, &result));
+
+      notification_is_exisit = result == 0;
+    }
+
+    if (!notification_is_exisit) {
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce(&Notification::NotificationDismissed,
+                                    notification_, options_.is_persistent));
+
+      if (IsDebuggingNotifications())
+        LOG(INFO) << "Notification dismissed";
+    }
+  }
 
   return S_OK;
 }
@@ -623,6 +1172,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
+  // SAP-14036 upgrade for get_Failed callback
   HRESULT error;
   e->get_ErrorCode(&error);
   std::string errorMessage =
@@ -634,6 +1184,280 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     LOG(INFO) << errorMessage;
 
   return S_OK;
+}
+
+struct CoTaskMemStringTraits {
+  typedef PWSTR Type;
+
+  inline static bool Close(_In_ Type h) throw() {
+    ::CoTaskMemFree(h);
+    return true;
+  }
+
+  inline static Type GetInvalidValue() throw() { return nullptr; }
+};
+typedef HandleT<CoTaskMemStringTraits> CoTaskMemString;
+
+// #pragma GCC diagnostic push
+// #pragma GCC diagnostic ignored "-Wmissing-braces"
+// #pragma GCC diagnostic ignored "-Wc++98-compat-extra-semi"
+//  For the app to be activated from Action Center, it needs to provide a COM
+//  server to be called when the notification is activated.  The CLSID of the
+//  object needs t  registered with the OS via its shortcut so that it knows
+//  who to call later.
+class NotificationActivator final
+    : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
+                          INotificationActivationCallback> {
+ public:
+  HRESULT STDMETHODCALLTYPE
+  Activate(_In_ LPCWSTR appUserModelId,
+           _In_ LPCWSTR invokedArgs,
+           _In_reads_(dataCount) const NOTIFICATION_USER_INPUT_DATA* data,
+           ULONG dataCount) override {
+    // packing user input structs into stream
+    std::wstringstream stm;
+    // SAP-15908 refine notification-activation for cold start
+    if (dataCount) {
+      stm << L"[";  // json array open brace
+      std::for_each(
+          data, data + dataCount,
+          [&](const NOTIFICATION_USER_INPUT_DATA& item) {
+            stm << item
+                // avoid problem with last delimeter
+                << std::wstring((&item - data + 1 == dataCount) ? L"" : L",");
+          });
+      stm << L"]";  // json array close brace
+    }
+    auto* app = api::App::Get();
+    if (app)
+      app->Emit("notification-activation", std::wstring(appUserModelId),
+                std::wstring(invokedArgs), dataCount, stm.str());
+    return S_OK;
+  }
+};
+
+class NotificationActivatorFactory final
+    : public RuntimeClass<RuntimeClassFlags<ClassicCom>, IClassFactory> {
+ public:
+  HRESULT __stdcall CreateInstance(IUnknown* outer,
+                                   GUID const& iid,
+                                   void** result) noexcept override {
+    *result = nullptr;
+
+    if (outer) {
+      return CLASS_E_NOAGGREGATION;
+    }
+
+    return Make<electron::NotificationActivator>()->QueryInterface(iid, result);
+  }
+
+  HRESULT __stdcall LockServer(BOOL) noexcept override { return S_OK; }
+};
+// #pragma GCC diagnostic pop
+
+bool NotificationRegistrator::RegisterAppForNotificationSupport(
+    const std::wstring& appId,
+    const std::wstring& clsid) {
+  if (app_path_.empty())
+    return false;
+
+  // Update registry with activator
+  std::wstring key_path =
+      LR"(SOFTWARE\Classes\CLSID\)" + clsid + LR"(\LocalServer32)";
+  std::wstring launchStr = L"\"" + app_path_ + L"\" " + clsid;
+  if (!SetRegistryKeyValue(HKEY_CURRENT_USER, key_path, L"", launchStr))
+    return false;
+
+  // Register via registry
+  std::wstring subKey = LR"(SOFTWARE\Classes\AppUserModelId\)" + appId;
+  // Set the display name
+  if (!SetRegistryKeyValue(HKEY_CURRENT_USER, subKey, L"DisplayName", appId))
+    return false;
+  // Set up custom activator
+  if (!SetRegistryKeyValue(HKEY_CURRENT_USER, subKey, L"CustomActivator",
+                           clsid))
+    return false;
+  // SAP-16574 : Allow App icon into Action center and System Notifications
+  // settings
+  if (ExtractAppIconToTempFile(clsid) &&
+      // Some incformation about IconUri can be found on the link
+      // https://docs.microsoft.com/en-us/windows/apps/design/shell/tiles-and-notifications/send-local-toast-other-apps
+      !SetRegistryKeyValue(HKEY_CURRENT_USER, subKey, L"IconUri", ico_path_))
+    // there is no nesecity to fail register at all in case if icon was not set
+    DeleteFile(ico_path_.c_str());
+
+  // SAP-15501 : Clear notifications
+  return app_id_.Reset(appId), true;
+}
+
+#pragma pack(1)
+// Structs below were taken from
+// https://docs.microsoft.com/en-us/previous-versions/ms997538(v=msdn.10)?redirectedfrom=MSDN
+// and necessary for storing app icon stripped from executable to file
+// Unfortunately well known approach with usage OleSavePicture gives low quality
+// of ico data that is why it is necessary to store icon by ourself
+typedef struct {
+  BYTE bWidth;          // Width, in pixels, of the image
+  BYTE bHeight;         // Height, in pixels, of the image
+  BYTE bColorCount;     // Number of colors in image (0 if >=8bpp)
+  BYTE bReserved;       // Reserved ( must be 0)
+  WORD wPlanes;         // Color Planes
+  WORD wBitCount;       // Bits per pixel
+  DWORD dwBytesInRes;   // How many bytes in this resource?
+  DWORD dwImageOffset;  // Where in the file is this image?
+} ICONDIRENTRY, *LPICONDIRENTRY;
+
+typedef struct {
+  WORD idReserved;            // Reserved (must be 0)
+  WORD idType;                // Resource Type (1 for icons)
+  WORD idCount;               // How many images?
+  ICONDIRENTRY idEntries[1];  // An entry for each image (idCount of 'em)
+} ICONDIR, *LPICONDIR;
+#pragma pack()
+// ExternalModule should call LocalFree to dealocate memory
+PBITMAPINFO GetBITMAPInfo(HBITMAP hBitmap) {
+  BITMAP bmp = {0};
+  if (!GetObject(hBitmap, sizeof(BITMAP), &bmp))
+    return NULL;
+
+  WORD cClrBits = (WORD)(bmp.bmPlanes * bmp.bmBitsPixel);
+  WORD biClrUsed = cClrBits < 24 ? (1 << cClrBits) : 0;
+  PBITMAPINFO pbmi = (PBITMAPINFO)LocalAlloc(
+      LPTR, sizeof(BITMAPINFOHEADER) +
+                // There is no RGBQUAD array for these formats: 24-bit-per-pixel
+                // or 32-bit-per-pixel
+                sizeof(RGBQUAD) * biClrUsed);
+
+  BITMAPINFOHEADER& hdr = pbmi->bmiHeader;
+
+  hdr.biSize = sizeof(BITMAPINFOHEADER);
+  hdr.biWidth = bmp.bmWidth;
+  hdr.biHeight = bmp.bmHeight;
+  hdr.biPlanes = bmp.bmPlanes;
+  hdr.biBitCount = bmp.bmBitsPixel;
+  hdr.biCompression = BI_RGB;
+  // Next metrics will be clarified by GetDIBits with call lpvBits = NULL
+  // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getdibits
+  hdr.biSizeImage = bmp.bmWidthBytes * bmp.bmHeight;
+  hdr.biClrUsed = biClrUsed;
+
+  return pbmi;
+}
+
+bool GetBitmapBits(std::vector<BYTE>& bmpBits,
+                   HBITMAP hBitmap,
+                   PBITMAPINFO pBitmapInfo) {
+  HDC hDC = GetDC(NULL);  // Get Desktop device context
+  // Make compatible device context
+  HDC pDC = CreateCompatibleDC(hDC);
+  if (pDC) {
+    int nLines = 0;
+    // This call is necessary to clarify metrics biSizeImage and biClrUsed
+    if (nLines =
+            GetDIBits(pDC, hBitmap, 0, (WORD)pBitmapInfo->bmiHeader.biHeight,
+                      NULL, pBitmapInfo, DIB_RGB_COLORS),
+        !nLines)
+      return false;
+
+    bmpBits.resize(pBitmapInfo->bmiHeader.biSizeImage);
+
+    // This call is necessary to copy DIB bits into bmpBits vector
+    if (nLines =
+            GetDIBits(pDC, hBitmap, 0, (WORD)pBitmapInfo->bmiHeader.biHeight,
+                      bmpBits.data(), pBitmapInfo, DIB_RGB_COLORS),
+        !nLines)
+      return false;
+  }
+  return DeleteDC(pDC), true;
+}
+
+bool NotificationRegistrator::ExtractAppIconToTempFile(
+    const std::wstring& file_name) {
+  if (tmp_path_.empty())
+    return false;
+
+  SHFILEINFO sfi = {0};
+  if (FAILED(SHGetFileInfo(app_path_.c_str(), FILE_ATTRIBUTE_NORMAL, &sfi,
+                           sizeof(sfi), SHGFI_ICON)))
+    return false;
+
+  ICONINFO iconInfo = {0};
+  if (!GetIconInfo(sfi.hIcon, &iconInfo))
+    return false;
+
+  // Information about color DIB into icon
+  std::unique_ptr<BITMAPINFO, void (*)(PBITMAPINFO)> bmColorInfo{
+      GetBITMAPInfo(iconInfo.hbmColor),
+      [](PBITMAPINFO p) { LocalFree(p); }  // custom deleter
+  };
+  if (!bmColorInfo)
+    return false;
+
+  // Information about color DIB bits icon
+  std::vector<BYTE> bmpColorBits;
+  if (!GetBitmapBits(bmpColorBits, iconInfo.hbmColor, bmColorInfo.get()))
+    return false;
+
+  // Information about mask DIB into icon
+  std::unique_ptr<BITMAPINFO, void (*)(PBITMAPINFO)> bmMaskInfo{
+      GetBITMAPInfo(iconInfo.hbmMask),
+      [](PBITMAPINFO p) { LocalFree(p); }  // custom deleter
+  };
+  if (!bmMaskInfo)
+    return false;
+
+  // Information about mask DIB bits icon
+  std::vector<BYTE> bmpMaskBits;
+  if (!GetBitmapBits(bmpMaskBits, iconInfo.hbmMask, bmMaskInfo.get()))
+    return false;
+
+  ico_path_ = tmp_path_ + file_name + L".ico";
+  // Now we have all necessary metrics to store icon into file
+  ScopedHandle ico_file_(
+      CreateFileW(ico_path_.c_str(), GENERIC_READ | GENERIC_WRITE,
+                  FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS,
+                  FILE_ATTRIBUTE_NORMAL, NULL));
+
+  if (ico_file_.Get() == INVALID_HANDLE_VALUE)
+    return false;
+
+  // Filling icon file metrics
+  ICONDIR iconDir = {0, 1, 1};
+  ICONDIRENTRY& entry = iconDir.idEntries[0];
+
+  entry.bWidth = bmColorInfo->bmiHeader.biWidth;
+  entry.bHeight = bmColorInfo->bmiHeader.biHeight;
+  entry.bColorCount = bmColorInfo->bmiHeader.biClrUsed;
+  entry.bReserved = 0;
+  entry.wPlanes = bmColorInfo->bmiHeader.biPlanes;
+  entry.wBitCount = bmColorInfo->bmiHeader.biBitCount;
+  entry.dwBytesInRes =
+      bmColorInfo->bmiHeader.biSizeImage + bmMaskInfo->bmiHeader.biSizeImage;
+  entry.dwImageOffset = sizeof(ICONDIR);
+
+  if (!WriteFile(ico_file_.Get(), &iconDir, sizeof(ICONDIR), NULL, NULL))
+    return false;
+
+  // Stripped from original MSDN sample mentioned into
+  // https://docs.microsoft.com/en-us/previous-versions/ms997538(v=msdn.10)?redirectedfrom=MSDN
+  // quote : "Complete code can be found in the Icons.C module of IconPro, in a
+  // function named ReadIconFromICOFile" ReadIconFromICOFile : Icons are stored
+  // in funky format where height is doubled - account for it
+  bmColorInfo->bmiHeader.biHeight *= 2;
+
+  if (!WriteFile(ico_file_.Get(), bmColorInfo.get(), sizeof(BITMAPINFO), NULL,
+                 NULL))
+    return false;
+
+  if (!WriteFile(ico_file_.Get(), bmpColorBits.data(),
+                 bmColorInfo->bmiHeader.biSizeImage, NULL, NULL))
+    return false;
+
+  if (!WriteFile(ico_file_.Get(), bmpMaskBits.data(),
+                 bmMaskInfo->bmiHeader.biSizeImage, NULL, NULL))
+    return false;
+
+  return true;
 }
 
 }  // namespace electron

@@ -899,6 +899,7 @@ if (is_mac) {
     framework_contents = [
       "Resources",
       "Libraries",
+      "XPCServices",
     ]
     if (!is_mas_build) {
       framework_contents += [ "Helpers" ]
@@ -914,6 +915,9 @@ if (is_mac) {
       ":electron_swiftshader_library",
       ":electron_xibs",
     ]
+    if (is_mac) {
+      deps += [ ":electron_framework_services" ]  # Alert XPC
+    }
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
     }
@@ -1067,6 +1071,51 @@ if (is_mac) {
     sources = [ "$root_out_dir/$electron_login_helper_name.app" ]
     outputs =
         [ "{{bundle_contents_dir}}/Library/LoginItems/{{source_file_part}}" ]
+  }
+
+  if (is_mac) {
+    mac_app_bundle("alert_xpc_service") {
+      output_name = "alert_xpc_service"
+      package_type = "xpc"
+
+      info_plist =
+          "shell/browser/notifications/mac/alert_xpc_service/Info.plist"
+      extra_substitutions = [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id" ]
+
+      sources = [
+        "shell/browser/notifications/mac/alert_xpc_service/alert_xpc_protocol.h",
+        "shell/browser/notifications/mac/alert_xpc_service/alert_xpc_service.h",
+        "shell/browser/notifications/mac/alert_xpc_service/alert_xpc_service.mm",
+        "shell/browser/notifications/mac/alert_xpc_service/xpc_main.mm",
+      ]
+
+      deps = [
+        # ":common",
+        "//base",
+        "//third_party/crashpad/crashpad/client",
+      ]
+
+      frameworks = [
+        "AppKit.framework",
+        "Foundation.framework",
+        "UserNotifications.framework",
+      ]
+
+      ldflags = [
+        # The XPC service is in Electron.app/Contents/Frameworks/Electron \
+        # Framework.framework/Versions/A/XPCServices/ \
+        # AlertNotificationService.xpc/Contents/MacOS/
+        # so set rpath up to the base.
+        "-rpath",
+        "@loader_path/../../../../../../../../../../",
+      ]
+    }
+
+    bundle_data("electron_framework_services") {
+      sources = [ "$root_out_dir/alert_xpc_service.xpc" ]
+      outputs = [ "{{bundle_contents_dir}}/XPCServices/{{source_file_part}}" ]
+      public_deps = [ ":alert_xpc_service" ]
+    }
   }
 
   action("electron_app_lproj_dirs") {

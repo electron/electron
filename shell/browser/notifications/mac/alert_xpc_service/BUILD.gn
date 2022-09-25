@@ -1,0 +1,44 @@
+import("//build/config/mac/rules.gni")
+import("//build/util/branding.gni")
+
+# My XPC
+mac_app_bundle("alert_xpc_service") {
+  output_name = "alert_xpc_service"
+  package_type = "xpc"
+
+  info_plist = "Info.plist"
+  extra_substitutions = [ "ELECTRON_BUNDLE_ID=$chrome_mac_bundle_id" ]
+
+  sources = [
+    "alert_xpc_protocol.h",
+    "alert_xpc_service.h",
+    "alert_xpc_service.mm",
+    "xpc_main.m",
+  ]
+
+  deps = [
+    # ":common",
+    "//base",
+    "//third_party/crashpad/crashpad/client",
+  ]
+
+  frameworks = [
+    "AppKit.framework",
+    "Foundation.framework",
+    "UserNotifications.framework",
+  ]
+
+  #ldflags = []
+  #if (is_component_build) {
+  #  ldflags += [
+  ldflags = [
+    # The XPC service is in Chromium.app/Contents/Frameworks/Chromium \
+    # Framework.framework/Versions/A/XPCServices/ \
+    # AlertNotificationService.xpc/Contents/MacOS/
+    # so set rpath up to the base.
+    "-rpath",
+    "@loader_path/../../../../../../../../../../",
+  ]
+
+  #}
+}
