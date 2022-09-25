@@ -206,7 +206,8 @@ void PlatformNotificationService::DisplayNotification(
     const bool is_persistent(false);
     const bool is_replacing(prev_notif_count > curr_notif_count);
     browser_client_->WebNotificationAllowed(
-        content::WebContents::FromRenderFrameHost(render_frame_host),
+        // content::WebContents::FromRenderFrameHost(render_frame_host),
+        render_frame_host,
         base::BindRepeating(&OnWebNotificationAllowed, notification,
                             notification_resources.notification_icon,
                             notification_resources.image, notification_data,
@@ -247,7 +248,7 @@ void PlatformNotificationService::DisplayPersistentNotification(
     const bool is_persistent(true);
     const bool is_replacing(prev_notif_count > curr_notif_count);
     browser_client_->WebNotificationAllowed(
-        web_ctx,
+        web_ctx->GetPrimaryMainFrame(),
         base::BindRepeating(&OnWebNotificationAllowed, notification,
                             notification_resources.notification_icon,
                             notification_resources.image, notification_data,
