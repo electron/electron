@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 757059958a1ea357468d3e1989c7e813a3b423e6..10b5bca728ac15acc7b46b531bb7bc5576d686de 100644
+index f9acfee6133ec05e49db779ef9ebfda5803cb8df..41754f183010f804b0bd0db6cb82958812f8513d 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -132,6 +132,11 @@
+@@ -133,6 +133,11 @@
  #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index 757059958a1ea357468d3e1989c7e813a3b423e6..10b5bca728ac15acc7b46b531bb7bc55
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -440,6 +445,91 @@ bool GetFullDataFilePath(
+@@ -441,6 +446,91 @@ bool GetFullDataFilePath(
  
  }  // namespace
  
@@ -114,7 +114,7 @@ index 757059958a1ea357468d3e1989c7e813a3b423e6..10b5bca728ac15acc7b46b531bb7bc55
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -745,6 +835,13 @@ void NetworkContext::SetClient(
+@@ -746,6 +836,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -128,7 +128,7 @@ index 757059958a1ea357468d3e1989c7e813a3b423e6..10b5bca728ac15acc7b46b531bb7bc55
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2325,6 +2422,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2326,6 +2423,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)

@@ -33,7 +33,7 @@ index c79bd85771f8f4650ce1d74a5db219f94921021a..e159f8e1684c6421eb8b41b1303f9d56
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 221d25cf8bb400c0fd6a3454e054406779768e8f..00b235a9884743f28e6592aeeff42ec4cfbc10fa 100644
+index 52436abb35cf346a1cb83700f08e28b6314985ac..6613c097ce2cca505be88c567c5a1a0aefd6788a 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4679,7 +4679,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index 221d25cf8bb400c0fd6a3454e054406779768e8f..00b235a9884743f28e6592aeeff42ec4
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 6cc578b6b1d051616dbcad1ca851869c465ce692..f969962571befad436c1a2633f4d01fb8aa9750a 100644
+index 8f013451c2e80f068f9f2789e592b9358ca1542c..7b77ae98cd11b5a95e2d4d0dec495a314c5a3324 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6111,7 +6111,6 @@ test("unit_tests") {
+@@ -6109,7 +6109,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 6cc578b6b1d051616dbcad1ca851869c465ce692..f969962571befad436c1a2633f4d01fb
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:crash_reporter_client_win_unit_tests",
-@@ -6136,6 +6135,10 @@ test("unit_tests") {
+@@ -6134,6 +6133,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 6cc578b6b1d051616dbcad1ca851869c465ce692..f969962571befad436c1a2633f4d01fb
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7061,7 +7064,7 @@ test("unit_tests") {
+@@ -7060,7 +7063,7 @@ test("unit_tests") {
      }
  
      deps += [
@@ -77,7 +77,7 @@ index 6cc578b6b1d051616dbcad1ca851869c465ce692..f969962571befad436c1a2633f4d01fb
        "//chrome/browser/autofill_assistant/password_change/vector_icons:vector_icons",
        "//chrome/browser/enterprise/connectors/analysis:features",
        "//chrome/browser/media/router:test_support",
-@@ -7184,6 +7187,10 @@ test("unit_tests") {
+@@ -7183,6 +7186,10 @@ test("unit_tests") {
      }
    }
  

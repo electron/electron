@@ -15,10 +15,10 @@ at some point be an API to "unfreeze" the flags, or we may be able to refactor
 node initialization to not update flags after V8 initialization.
 
 diff --git a/content/renderer/render_process_impl.cc b/content/renderer/render_process_impl.cc
-index 9f568aac38cda753d43ecfbf2d0d78700fd37781..63e1d4f0227e1ab1da590a06dee9074eb6d1d760 100644
+index 69f5528f0f6f3bfe6dab949b26dee9276aa115c6..81d637e84ef11681146beee74b1d27b23b16f11d 100644
 --- a/content/renderer/render_process_impl.cc
 +++ b/content/renderer/render_process_impl.cc
-@@ -236,6 +236,9 @@ RenderProcessImpl::RenderProcessImpl()
+@@ -241,6 +241,9 @@ RenderProcessImpl::RenderProcessImpl()
    SetV8FlagIfNotFeature(features::kWebAssemblyDynamicTiering,
                          "--no-wasm-dynamic-tiering");
  
