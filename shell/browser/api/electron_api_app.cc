@@ -714,6 +714,12 @@ void App::OnFinishLaunching(base::Value::Dict launch_info) {
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
+  // SAP-14667 handling notification from previous session requires
+  // ASAP COM server registration instead deffered call as exisit now
+  // GetNotificationPresenter will trigger WindowsToastNotification::Initialize
+  // and as result will register COM server too
+  static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+      ->GetNotificationPresenter();
   Emit("ready", base::Value(std::move(launch_info)));
 }
 
@@ -1555,6 +1561,18 @@ std::string App::GetUserAgentFallback() {
   return ElectronBrowserClient::Get()->GetUserAgent();
 }
 
+#if BUILDFLAG(IS_WIN)
+// SAP-15762: Support COM activation registration at runtime
+void App::SetBrowserClientNotificationsComServerCLSID(
+    const std::string& com_server_clsid) {
+  ElectronBrowserClient::Get()->SetNotificationsComServerCLSID(
+      com_server_clsid);
+}
+std::string App::GetBrowserClientNotificationsComServerCLSID() {
+  return ElectronBrowserClient::Get()->GetNotificationsComServerCLSID();
+}
+#endif
+
 #if BUILDFLAG(IS_MAC)
 bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
                                    gin::Arguments* args) {
@@ -1847,6 +1865,11 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
+#if BUILDFLAG(IS_WIN)
+      .SetProperty("notificationsComServerCLSID",
+                   &App::GetBrowserClientNotificationsComServerCLSID,
+                   &App::SetBrowserClientNotificationsComServerCLSID)
+#endif
       .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 

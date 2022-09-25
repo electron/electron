@@ -347,6 +347,49 @@ ElectronBrowserClient::~ElectronBrowserClient() {
   g_browser_client = nullptr;
 }
 
+absl::optional<int> ElectronBrowserClient::GetRenderFrameProcessID() {
+  absl::optional<int> proc_id;
+  // SAP-15679: Notification doesn't work when using Web URL in a restricted
+  // container
+  // search for pending renderer process which BrowserContext is same as
+  // current notifications BrowserContext
+  const auto last = std::end(pending_processes_);
+  const auto find = std::find_if(
+      pending_processes_.begin(), pending_processes_.end(),
+      [&](const std::pair<int, content::WebContents*>& proc_item) {
+        const auto& proc_id{proc_item.first};
+        auto* web_contents{proc_item.second};
+        if (!web_contents || web_contents->GetBrowserContext() !=
+                                 notifications_browser_context_) {
+          return false;
+        }
+
+        bool audio_muted{false};
+        bool notifications_allowed{false};
+        auto process_flags = [&](bool audio_muted_,
+                                 bool notifications_allowed_) {
+          audio_muted = audio_muted_;
+          notifications_allowed = notifications_allowed_;
+        };
+        WebNotificationAllowed(
+            GetWebContentsFromProcessID(proc_id),
+            base::BindRepeating(
+                [](std::function<void(bool, bool)> process_flags_,
+                   // flags below will come from WebNotificationAllowed
+                   bool audio_muted_, bool notifications_allowed_) {
+                  process_flags_(audio_muted_, notifications_allowed_);
+                },
+                process_flags));
+
+        return notifications_allowed;
+      });
+
+  if (find != last)
+    proc_id = find->first;
+
+  return proc_id;
+}
+
 content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
   // If the process is a pending process, we should use the web contents
@@ -1734,5 +1777,18 @@ ElectronBrowserClient::GetWebAuthenticationDelegate() {
   }
   return web_authentication_delegate_.get();
 }
+
+#if defined(OS_WIN)
+// SAP-15762: Support COM activation registration at runtime
+void ElectronBrowserClient::SetNotificationsComServerCLSID(
+    const std::string& com_server_clsid) {
+  notifications_com_server_clsid_ = com_server_clsid;
+}
+
+std::string ElectronBrowserClient::GetNotificationsComServerCLSID() {
+  return notifications_com_server_clsid_;
+}
+
+#endif
 
 }  // namespace electron

@@ -6,18 +6,20 @@
 #define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_CENTER_DELEGATE_H_
 
 #import <Foundation/Foundation.h>
+#import "shell/browser/notifications/mac/alert_xpc_service/alert_xpc_protocol.h"
 
 namespace electron {
 class NotificationPresenterMac;
 }
 
 @interface NotificationCenterDelegate
-    : NSObject <NSUserNotificationCenterDelegate> {
+    : NSObject <NSAlertResponceXPCProtocol, NSUserNotificationCenterDelegate> {
  @private
   electron::NotificationPresenterMac* presenter_;
 }
 - (instancetype)initWithPresenter:
     (electron::NotificationPresenterMac*)presenter;
+- (NSXPCConnection*)connection;
 @end
 
 #endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_CENTER_DELEGATE_H_

@@ -518,6 +518,41 @@ gets emitted.
 **Note:** Extra command line arguments might be added by Chromium,
 such as `--original-process-start-time`.
 
+### Event: 'notification-activation' _macOS_ _Windows_
+
+Returns:
+
+* `event` Event
+* `appUserModelId` string - contains App module ID
+* `invokedArgs` string - contains arguments(in case of any) for toast button or data property in case of non-persistent notification
+* `dataCount` integer - contains amount of token pairs present inputData string (not null, default value 0 - which means abcense of inputData)
+* `inputData` string - valid JSON-string which contains result of User input into toast Reply fields. Empty string in case of absence of User input (i.e for case dataCount == 0)
+
+Emitted after each completed user choise on notification.
+
+```javascript
+const { app } = require('electron')
+
+app.on('notification-activation', (event, appUserModelId, invokedArgs, dataCount, inputData) => {
+  console.log('app.on : notification-activation')
+  console.log('appUserModelId : ' + appUserModelId)
+  console.log('invokedArgs : ' + invokedArgs)
+  console.log('dataCount : ' + dataCount)
+  console.log('inputData : ' + inputData)
+  if (dataCount) {
+    const jsonObj = JSON.parse(inputData)
+    console.log('jsonObj : ', jsonObj)
+    Object.values(jsonObj).forEach((item) => {
+      console.log('item : ', item)
+      const keys = Object.keys(item)
+      for (const key in item) {
+        console.log(key, item[key])
+      }
+    })
+  }
+})
+```
+
 ## Methods
 
 The `app` object has the following methods:
@@ -1582,3 +1617,11 @@ or Windows [WOW](https://en.wikipedia.org/wiki/Windows_on_Windows)).
 
 You can use this property to prompt users to download the arm64 version of
 your application when they are mistakenly running the x64 version under Rosetta or WOW.
+
+### `app.notificationsComServerCLSID` _Windows_
+
+A `string` which contains fully formed CLSID for notifications COM server.
+This is necessary only for apps with persistent notifications support.
+The current default value for this property is `empty` (not `nil`). It means that by the default no persistent notifications support is exist.
+
+Changing for property value should be provided earlier than `ready` event triggered. Preferably changing for `app.notificationsComServerCLSID` is need to be provided into `will-finish-launching` event handler.

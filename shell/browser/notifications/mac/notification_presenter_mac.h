@@ -21,6 +21,10 @@ class NotificationPresenterMac : public NotificationPresenter {
   NotificationPresenterMac();
   ~NotificationPresenterMac() override;
 
+  NotificationCenterDelegate* delegate() const {
+    return notification_center_delegate_;
+  }
+
  private:
   Notification* CreateNotificationObject(
       NotificationDelegate* delegate) override;

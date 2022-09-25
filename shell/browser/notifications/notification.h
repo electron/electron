@@ -19,8 +19,23 @@ class NotificationDelegate;
 class NotificationPresenter;
 
 struct NotificationAction {
-  std::u16string type;
-  std::u16string text;
+  // SAP-15259 : Add the reply field on a notification
+  std::u16string type;  // type of the action (button or text input).
+  std::u16string text;  // title of the button.
+  std::u16string
+      arg;    // argument that the author can use to distinguish actions.
+  GURL icon;  // URL of the icon for the button. May be empty if
+              // no icon was specified.
+  // Optional text to use as placeholder for text inputs. May be empty if it was
+  // not specified. Has meaning only for type == text input
+  std::u16string placeholder;
+
+  NotificationAction();
+  NotificationAction(
+      const NotificationAction& copy);  // requires for std::vector storing
+  ~NotificationAction();
+  static const std::u16string sTYPE_BUTTON;
+  static const std::u16string sTYPE_TEXT;
 };
 
 struct NotificationOptions {
@@ -36,9 +51,15 @@ struct NotificationOptions {
   std::u16string reply_placeholder;
   std::u16string sound;
   std::u16string urgency;  // Linux
+  std::u16string data;     // SAP-14775: support Notification.data property
   std::vector<NotificationAction> actions;
   std::u16string close_button_text;
   std::u16string toast_xml;
+  bool is_persistent;  // 12-SAP-15399: correct processing for the persistent
+                       // notification without actions
+  bool require_interaction;  // SAP-17772: configuration toast show time
+                             // according to
+                             // Notification.requireInteraction property
 
   NotificationOptions();
   ~NotificationOptions();
@@ -56,11 +77,14 @@ class Notification {
 
   // Should be called by derived classes.
   void NotificationClicked();
-  void NotificationDismissed();
+  void NotificationDismissed(bool is_persistent = false);
   void NotificationFailed(const std::string& error = "");
+  // SAP-14036: Notification was replied to
+  void NotificationReplied(const std::string& reply);
+  void NotificationAction(int index);
 
   // delete this.
-  void Destroy();
+  virtual void Destroy();
 
   base::WeakPtr<Notification> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
