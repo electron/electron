@@ -1283,13 +1283,15 @@ class NotificationActivator final
     // SAP-15908 refine notification-activation for cold start
     if (dataCount) {
       stm << L"[";  // json array open brace
-      std::for_each(
-          data, data + dataCount,
-          [&](const NOTIFICATION_USER_INPUT_DATA& item) {
-            stm << item
-                // avoid problem with last delimeter
-                << std::wstring((&item - data + 1 == dataCount) ? L"" : L",");
-          });
+      std::for_each(data, data + dataCount,
+                    [&](const NOTIFICATION_USER_INPUT_DATA& item) {
+                      stm << item
+                          // avoid problem with last delimeter
+                          << std::wstring((static_cast<ULONG>(&item - data +
+                                                              1) == dataCount)
+                                              ? L""
+                                              : L",");
+                    });
       stm << L"]";  // json array close brace
     }
     auto* app = api::App::Get();
