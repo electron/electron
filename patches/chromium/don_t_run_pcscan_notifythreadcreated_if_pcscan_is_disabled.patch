@@ -3,23 +3,24 @@ From: John Kleinschmidt <jkleinsc@electronjs.org>
 Date: Wed, 16 Jun 2021 11:30:28 -0400
 Subject: Don't run PCScan functions if PCScan is disabled
 
-PCScan should not be invoked if PCScan is disabled.  Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/2916657.
+PCScan should not be invoked if PCScan is disabled.
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/2965109.
 
 diff --git a/base/allocator/partition_allocator/memory_reclaimer.cc b/base/allocator/partition_allocator/memory_reclaimer.cc
-index 1e54559bd5f9a2ee889b921379d70c51e902502d..6797a076b612ad4ed6d5ce7d9868d944fae3694f 100644
+index 0d480d11d5d51fa72639d346448ec22f2f6b9621..d6ea0053cee3dcd5ba1ef79c52b82c858876e337 100644
 --- a/base/allocator/partition_allocator/memory_reclaimer.cc
 +++ b/base/allocator/partition_allocator/memory_reclaimer.cc
-@@ -66,7 +66,7 @@ void MemoryReclaimer::Reclaim(int flags) {
+@@ -70,7 +70,7 @@ void MemoryReclaimer::Reclaim(int flags) {
    //
    // Lastly decommit empty slot spans and lastly try to discard unused pages at
    // the end of the remaining active slots.
--#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM
+-#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM && BUILDFLAG(STARSCAN)
 +#if PA_STARSCAN_ENABLE_STARSCAN_ON_RECLAIM && defined(PA_ALLOW_PCSCAN)
    {
      using PCScan = internal::PCScan;
      const auto invocation_mode = flags & PurgeFlags::kAggressiveReclaim
 diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
-index d51b37c8a2df11f71fa6056193100d00883db43d..b44002788cf4d4f5d754dd35dd193be233e6ebcb 100644
+index 714232b0c2707d6c256e634ff784c18322bf0a85..48c8d0051c427954fe7265fee9cd0c6b5f473984 100644
 --- a/base/threading/platform_thread_posix.cc
 +++ b/base/threading/platform_thread_posix.cc
 @@ -44,6 +44,7 @@
@@ -36,20 +37,20 @@ index d51b37c8a2df11f71fa6056193100d00883db43d..b44002788cf4d4f5d754dd35dd193be2
  #if !BUILDFLAG(IS_NACL)
 -#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 +#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && defined(PA_ALLOW_PCSCAN)
-     internal::PCScan::NotifyThreadCreated(internal::GetStackPointer());
+     partition_alloc::internal::PCScan::NotifyThreadCreated(
+         partition_alloc::internal::GetStackPointer());
  #endif
- 
-@@ -103,7 +104,7 @@ void* ThreadFunc(void* params) {
+@@ -104,7 +105,7 @@ void* ThreadFunc(void* params) {
        PlatformThread::CurrentHandle().platform_handle(),
        PlatformThread::CurrentId());
  
 -#if !BUILDFLAG(IS_NACL) && BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 +#if !BUILDFLAG(IS_NACL) && BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && defined(PA_ALLOW_PCSCAN)
-   internal::PCScan::NotifyThreadDestroyed();
+   partition_alloc::internal::PCScan::NotifyThreadDestroyed();
  #endif
  
 diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thread_win.cc
-index 5b179a2d15cfc4997410d9467bf9484f5cae0b9f..98296aa4e8d75e94b141694c592dfa83627861ff 100644
+index 960d0100e1857592ee24b2da22e0253ab06098c1..dca9fb72fb69386ffb0910e13f841fa698250b66 100644
 --- a/base/threading/platform_thread_win.cc
 +++ b/base/threading/platform_thread_win.cc
 @@ -30,6 +30,7 @@
@@ -60,21 +61,21 @@ index 5b179a2d15cfc4997410d9467bf9484f5cae0b9f..98296aa4e8d75e94b141694c592dfa83
  #include "base/allocator/partition_allocator/starscan/pcscan.h"
  #include "base/allocator/partition_allocator/starscan/stack/stack.h"
  #endif
-@@ -113,7 +114,7 @@ DWORD __stdcall ThreadFunc(void* params) {
+@@ -115,7 +116,7 @@ DWORD __stdcall ThreadFunc(void* params) {
                                  FALSE,
                                  DUPLICATE_SAME_ACCESS);
  
 -#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 +#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && defined(PA_ALLOW_PCSCAN)
-   internal::PCScan::NotifyThreadCreated(internal::GetStackPointer());
+   partition_alloc::internal::PCScan::NotifyThreadCreated(
+       partition_alloc::internal::GetStackPointer());
  #endif
- 
-@@ -133,7 +134,7 @@ DWORD __stdcall ThreadFunc(void* params) {
+@@ -136,7 +137,7 @@ DWORD __stdcall ThreadFunc(void* params) {
                                                     PlatformThread::CurrentId());
    }
  
 -#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 +#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && defined(PA_ALLOW_PCSCAN)
-   internal::PCScan::NotifyThreadDestroyed();
+   partition_alloc::internal::PCScan::NotifyThreadDestroyed();
  #endif
  

@@ -8,6 +8,59 @@ For a subset of Electron functionality it makes sense to disable certain feature
 
 Fuses are the solution to this problem, at a high level they are "magic bits" in the Electron binary that can be flipped when packaging your Electron app to enable / disable certain features / restrictions.  Because they are flipped at package time before you code sign your app the OS becomes responsible for ensuring those bits aren't flipped back via OS level code signing validation (Gatekeeper / App Locker).
 
+## Current Fuses
+
+### `runAsNode`
+
+**Default:** Enabled
+**@electron/fuses:** `FuseV1Options.RunAsNode`
+
+The runAsNode fuse toggles whether the `ELECTRON_RUN_AS_NODE` environment variable is respected or not.  Please note that if this fuse is disabled then `process.fork` in the main process will not function as expected as it depends on this environment variable to function.
+
+### `cookieEncryption`
+
+**Default:** Disabled
+**@electron/fuses:** `FuseV1Options.EnableCookieEncryption`
+
+The cookieEncryption fuse toggles whether the cookie store on disk is encrypted using OS level cryptography keys.  By default the sqlite database that Chromium uses to store cookies stores the values in plaintext.  If you wish to ensure your apps cookies are encrypted in the same way Chrome does then you should enable this fuse.  Please note it is a one-way transition, if you enable this fuse existing unencrypted cookies will be encrypted-on-write but if you then disable the fuse again your cookie store will effectively be corrupt and useless.  Most apps can safely enable this fuse.
+
+### `nodeOptions`
+
+**Default:** Enabled
+**@electron/fuses:** `FuseV1Options.EnableNodeOptionsEnvironmentVariable`
+
+The nodeOptions fuse toggles whether the [`NODE_OPTIONS`](https://nodejs.org/api/cli.html#node_optionsoptions) environment variable is respected or not.  This environment variable can be used to pass all kinds of custom options to the Node.js runtime and isn't typically used by apps in production.  Most apps can safely disable this fuse.
+
+### `nodeCliInspect`
+
+**Default:** Enabled
+**@electron/fuses:** `FuseV1Options.EnableNodeCliInspectArguments`
+
+The nodeCliInspect fuse toggles whether the `--inspect`, `--inspect-brk`, etc. flags are respected or not.  When disabled it also ensures that `SIGUSR1` signal does not initialize the main process inspector.  Most apps can safely disable this fuse.
+
+### `embeddedAsarIntegrityValidation`
+
+**Default:** Disabled
+**@electron/fuses:** `FuseV1Options.EnableEmbeddedAsarIntegrityValidation`
+
+The embeddedAsarIntegrityValidation fuse toggles an experimental feature on macOS that validates the content of the `app.asar` file when it is loaded.  This feature is designed to have a minimal performance impact but may marginally slow down file reads from inside the `app.asar` archive.
+
+For more information on how to use asar integrity validation please read the [Asar Integrity](asar-integrity.md) documentation.
+
+### `onlyLoadAppFromAsar`
+
+**Default:** Disabled
+**@electron/fuses:** `FuseV1Options.OnlyLoadAppFromAsar`
+
+The onlyLoadAppFromAsar fuse changes the search system that Electron uses to locate your app code.  By default Electron will search in the following order `app.asar` -> `app` -> `default_app.asar`.  When this fuse is enabled the search order becomes a single entry `app.asar` thus ensuring that when combined with the `embeddedAsarIntegrityValidation` fuse it is impossible to load non-validated code.
+
+### `loadBrowserProcessSpecificV8Snapshot`
+
+**Default:** Disabled
+**@electron/fuses:** `FuseV1Options.LoadBrowserProcessSpecificV8Snapshot`
+
+The loadBrowserProcessSpecificV8Snapshot fuse changes which V8 snapshot file is used for the browser process.  By default Electron's processes will all use the same V8 snapshot file.  When this fuse is enabled the browser process uses the file called `browser_v8_context_snapshot.bin` for its V8 snapshot. The other processes will use the V8 snapshot file that they normally do.
+
 ## How do I flip the fuses?
 
 ### The easy way
@@ -20,9 +73,16 @@ require('@electron/fuses').flipFuses(
   require('electron'),
   // Fuses to flip
   {
-    runAsNode: false
+    version: FuseVersion.V1,
+    [FuseV1Options.RunAsNode]: false
   }
 )
+```
+
+You can validate the fuses have been flipped or check the fuse status of an arbitrary Electron app using the fuses CLI.
+
+```bash
+ npx @electron/fuses read --app /Applications/Foo.app
 ```
 
 ### The hard way

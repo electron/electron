@@ -130,6 +130,11 @@ set `NSPrincipalClass` to `AtomApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
+As with the `open-file` event, be sure to register a listener for the `open-url`
+event early in your application startup to detect if the the application being
+is being opened to handle a URL. If you register the listener in response to a
+`ready` event, you'll miss URLs that trigger the launch of your application.
+
 ### Event: 'activate' _macOS_
 
 Returns:
@@ -484,7 +489,6 @@ Returns:
 * `argv` string[] - An array of the second instance's command line arguments
 * `workingDirectory` string - The second instance's working directory
 * `additionalData` unknown - A JSON object of additional data passed from the second instance
-* `ackCallback` unknown - A function that can be used to send data back to the second instance
 
 This event will be emitted inside the primary instance of your application
 when a second instance has been executed and calls `app.requestSingleInstanceLock()`.
@@ -496,34 +500,11 @@ non-minimized.
 
 **Note:** If the second instance is started by a different user than the first, the `argv` array will not include the arguments.
 
-**Note:** `ackCallback` allows the user to send data back to the
-second instance during the `app.requestSingleInstanceLock()` flow.
-This callback can be used for cases where the second instance
-needs to obtain additional information from the first instance
-before quitting.
-
-Currently, the limit on the message size is kMaxMessageLength,
-or around 32kB. To be safe, keep the amount of data passed to 31kB at most.
-
-In order to call the callback, `event.preventDefault()` must be called, first.
-If the callback is not called in either case, `null` will be sent back.
-If `event.preventDefault()` is not called, but `ackCallback` is called
-by the user in the event, then the behaviour is undefined.
-
 This event is guaranteed to be emitted after the `ready` event of `app`
 gets emitted.
 
 **Note:** Extra command line arguments might be added by Chromium,
 such as `--original-process-start-time`.
-
-### Event: 'first-instance-ack'
-
-Returns:
-
-* `event` Event
-* `additionalData` unknown - A JSON object of additional data passed from the first instance, in response to the first instance's `second-instance` event.
-
-This event will be emitted within the second instance during the call to `app.requestSingleInstanceLock()`, when the first instance calls the `ackCallback` provided by the `second-instance` event handler.
 
 ## Methods
 
@@ -734,13 +715,19 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.
 
-**Note:** On Windows, you have to call it after the `ready` events gets emitted.
+**Note:** This API must be called after the `ready` event is emitted.
 
 ### `app.getLocaleCountryCode()`
 
 Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
 
 **Note:** When unable to detect locale country code, it returns empty string.
+
+### `app.getSystemLocale()`
+
+Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, the `NSLocale` object is used instead.
+
+**Note:** This API must be called after the `ready` event is emitted.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
@@ -998,33 +985,21 @@ starts:
 const { app } = require('electron')
 let myWindow = null
 
-app.on('first-instance-ack', (event, additionalData) => {
-  // Print out the ack received from the first instance.
-  // Note this event handler must come before the requestSingleInstanceLock call.
-  // Expected output: '{"myAckKey":"myAckValue"}'
-  console.log(JSON.stringify(additionalData))
-})
-
 const additionalData = { myKey: 'myValue' }
 const gotTheLock = app.requestSingleInstanceLock(additionalData)
 
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory, additionalData, ackCallback) => {
-    // We must call preventDefault if we're sending back data.
-    event.preventDefault()
+  app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
     // Print out data received from the second instance.
-    // Expected output: '{"myKey":"myValue"}'
-    console.log(JSON.stringify(additionalData))
+    console.log(additionalData)
 
     // Someone tried to run a second instance, we should focus our window.
     if (myWindow) {
       if (myWindow.isMinimized()) myWindow.restore()
       myWindow.focus()
     }
-    const ackData = { myAckKey: 'myAckValue' }
-    ackCallback(ackData)
   })
 
   // Create myWindow, load the rest of the app, etc...
@@ -1417,7 +1392,7 @@ method returns false. If we fail to perform the copy, then this method will
 throw an error. The message in the error should be informative and tell
 you exactly what went wrong.
 
-By default, if an app of the same name as the one being moved exists in the Applications directory and is _not_ running, the existing app will be trashed and the active app moved into its place. If it _is_ running, the pre-existing running app will assume focus and the previously active app will quit itself. This behavior can be changed by providing the optional conflict handler, where the boolean returned by the handler determines whether or not the move conflict is resolved with default behavior.  i.e. returning `false` will ensure no further action is taken, returning `true` will result in the default behavior and the method continuing.
+By default, if an app of the same name as the one being moved exists in the Applications directory and is _not_ running, the existing app will be trashed and the active app moved into its place. If it _is_ running, the preexisting running app will assume focus and the previously active app will quit itself. This behavior can be changed by providing the optional conflict handler, where the boolean returned by the handler determines whether or not the move conflict is resolved with default behavior.  i.e. returning `false` will ensure no further action is taken, returning `true` will result in the default behavior and the method continuing.
 
 For example:
 

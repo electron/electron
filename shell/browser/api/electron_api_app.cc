@@ -47,6 +47,7 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/gpuinfo_manager.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
@@ -453,9 +454,7 @@ struct Converter<net::SecureDnsMode> {
 };
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -522,24 +521,21 @@ bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
         void(const base::CommandLine& command_line,
              const base::FilePath& current_directory,
-             const std::vector<uint8_t> additional_data,
-             const ProcessSingleton::NotificationAckCallback& ack_callback)>&
-        callback,
+             const std::vector<const uint8_t> additional_data)>& callback,
     const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const std::vector<uint8_t> additional_data,
-    const ProcessSingleton::NotificationAckCallback& ack_callback) {
+    const std::vector<const uint8_t> additional_data) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(cmd, cwd, std::move(additional_data), ack_callback);
+    callback.Run(cmd, cwd, std::move(additional_data));
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
 
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(
-        FROM_HERE, base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
-                                  std::move(additional_data), ack_callback));
+    task_runner->PostTask(FROM_HERE,
+                          base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
+                                         std::move(additional_data)));
   }
   // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();
@@ -709,19 +705,20 @@ void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
 
-void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
+void App::OnFinishLaunching(base::Value::Dict launch_info) {
 #if BUILDFLAG(IS_LINUX)
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
-  Emit("ready", launch_info);
+  Emit("ready", base::Value(std::move(launch_info)));
 }
 
 void App::OnPreMainMessageLoopRun() {
   content::BrowserChildProcessObserver::Add(this);
-  if (process_singleton_) {
-    process_singleton_->OnBrowserReady();
+  if (process_singleton_ && watch_singleton_socket_on_ready_) {
+    process_singleton_->StartWatching();
+    watch_singleton_socket_on_ready_ = false;
   }
 }
 
@@ -759,22 +756,23 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
-                                 const base::DictionaryValue& user_info,
-                                 const base::DictionaryValue& details) {
-  if (Emit("continue-activity", type, user_info, details)) {
+                                 base::Value::Dict user_info,
+                                 base::Value::Dict details) {
+  if (Emit("continue-activity", type, base::Value(std::move(user_info)),
+           base::Value(std::move(details)))) {
     *prevent_default = true;
   }
 }
 
 void App::OnUserActivityWasContinued(const std::string& type,
-                                     const base::DictionaryValue& user_info) {
-  Emit("activity-was-continued", type, user_info);
+                                     base::Value::Dict user_info) {
+  Emit("activity-was-continued", type, base::Value(std::move(user_info)));
 }
 
 void App::OnUpdateUserActivityState(bool* prevent_default,
                                     const std::string& type,
-                                    const base::DictionaryValue& user_info) {
-  if (Emit("update-activity-state", type, user_info)) {
+                                    base::Value::Dict user_info) {
+  if (Emit("update-activity-state", type, base::Value(std::move(user_info)))) {
     *prevent_default = true;
   }
 }
@@ -1042,6 +1040,16 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
+std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.getSystemLocale() can only be called "
+        "after app is ready");
+    return std::string();
+  }
+  return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
+}
+
 std::string App::GetLocaleCountryCode() {
   std::string region;
 #if BUILDFLAG(IS_WIN)
@@ -1084,52 +1092,14 @@ std::string App::GetLocaleCountryCode() {
   return region.size() == 2 ? region : std::string();
 }
 
-void App::OnFirstInstanceAck(
-    const base::span<const uint8_t>* first_instance_data) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  base::Value data_to_send;
-  if (first_instance_data) {
-    // Don't send back the local directly, because it might be empty.
-    v8::Local<v8::Value> data_local;
-    data_local = DeserializeV8Value(isolate, *first_instance_data);
-    if (!data_local.IsEmpty()) {
-      gin::ConvertFromV8(isolate, data_local, &data_to_send);
-    }
-  }
-  Emit("first-instance-ack", data_to_send);
-}
-
-// This function handles the user calling
-// the callback parameter sent out by the second-instance event.
-static void AckCallbackWrapper(
-    const ProcessSingleton::NotificationAckCallback& ack_callback,
-    gin::Arguments* args) {
-  blink::CloneableMessage ack_message;
-  args->GetNext(&ack_message);
-  if (!ack_message.encoded_message.empty()) {
-    ack_callback.Run(&ack_message.encoded_message);
-  } else {
-    ack_callback.Run(nullptr);
-  }
-}
-
-void App::OnSecondInstance(
-    const base::CommandLine& cmd,
-    const base::FilePath& cwd,
-    const std::vector<uint8_t> additional_data,
-    const ProcessSingleton::NotificationAckCallback& ack_callback) {
+void App::OnSecondInstance(const base::CommandLine& cmd,
+                           const base::FilePath& cwd,
+                           const std::vector<const uint8_t> additional_data) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> data_value =
       DeserializeV8Value(isolate, std::move(additional_data));
-  auto cb = base::BindRepeating(&AckCallbackWrapper, ack_callback);
-  bool prevent_default =
-      Emit("second-instance", cmd.argv(), cwd, data_value, cb);
-  if (!prevent_default) {
-    // Call the callback ourselves, and send back nothing.
-    ack_callback.Run(nullptr);
-  }
+  Emit("second-instance", cmd.argv(), cwd, data_value);
 }
 
 bool App::HasSingleInstanceLock() const {
@@ -1150,9 +1120,6 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   base::CreateDirectoryAndGetError(user_dir, nullptr);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
-  auto wrapped_cb = base::BindRepeating(NotificationCallbackWrapper, cb);
-  auto ack_cb =
-      base::BindRepeating(&App::OnFirstInstanceAck, base::Unretained(this));
 
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
@@ -1161,22 +1128,28 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(
       program_name, user_dir, additional_data_message.encoded_message,
-      app_is_sandboxed, wrapped_cb, ack_cb);
+      app_is_sandboxed, base::BindRepeating(NotificationCallbackWrapper, cb));
 #else
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, additional_data_message.encoded_message, wrapped_cb, ack_cb);
+      user_dir, additional_data_message.encoded_message,
+      base::BindRepeating(NotificationCallbackWrapper, cb));
 #endif
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+      if (content::BrowserThread::IsThreadInitialized(
+              content::BrowserThread::IO)) {
+        process_singleton_->StartWatching();
+      } else {
+        watch_singleton_socket_on_ready_ = true;
+      }
+      return true;
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
       process_singleton_.reset();
       return false;
     }
-    case ProcessSingleton::NotifyResult::PROCESS_NONE:
-    default:  // Shouldn't be needed, but VS warns if it is not there.
-      return true;
   }
 }
 
@@ -1195,7 +1168,9 @@ bool App::Relaunch(gin::Arguments* js_args) {
 
   gin_helper::Dictionary options;
   if (js_args->GetNext(&options)) {
-    if (options.Get("execPath", &exec_path) || options.Get("args", &args))
+    bool has_exec_path = options.Get("execPath", &exec_path);
+    bool has_args = options.Get("args", &args);
+    if (has_exec_path || has_args)
       override_argv = true;
   }
 
@@ -1485,7 +1460,7 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  gin_helper::Promise<base::DictionaryValue> promise(isolate);
+  gin_helper::Promise<base::Value> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   if (info_type != "basic" && info_type != "complete") {
     promise.RejectWithErrorMessage(
@@ -1821,6 +1796,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("getSystemLocale", &App::GetSystemLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
 #if BUILDFLAG(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
@@ -1864,9 +1840,7 @@ const char* App::GetTypeName() {
   return "App";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

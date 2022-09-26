@@ -38,6 +38,7 @@ namespace electron {
 class ElectronBrowserMainParts;
 class NotificationPresenter;
 class PlatformNotificationService;
+class ElectronWebAuthenticationDelegate;
 
 class ElectronBrowserClient : public content::ContentBrowserClient,
                               public content::RenderProcessHostObserver {
@@ -82,6 +83,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::RenderFrameHost* render_frame_host,
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map) override;
   void RegisterBrowserInterfaceBindersForServiceWorker(
+      content::BrowserContext* browser_context,
       mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
           map) override;
 #if BUILDFLAG(IS_LINUX)
@@ -93,12 +95,15 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
+  blink::UserAgentMetadata GetUserAgentMetadata() override;
 
   content::SerialDelegate* GetSerialDelegate() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
 
   content::HidDelegate* GetHidDelegate() override;
+
+  content::WebAuthenticationDelegate* GetWebAuthenticationDelegate() override;
 
   device::GeolocationManager* GetGeolocationManager() override;
 
@@ -328,6 +333,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
   std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
   std::unique_ptr<ElectronHidDelegate> hid_delegate_;
+  std::unique_ptr<ElectronWebAuthenticationDelegate>
+      web_authentication_delegate_;
 
 #if BUILDFLAG(IS_MAC)
   ElectronBrowserMainParts* browser_main_parts_ = nullptr;

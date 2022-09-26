@@ -235,14 +235,14 @@ bool Browser::SetBadgeCount(absl::optional<int> count) {
 }
 
 void Browser::SetUserActivity(const std::string& type,
-                              base::DictionaryValue user_info,
+                              base::Value::Dict user_info,
                               gin::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
 
   [[AtomApplication sharedApplication]
       setCurrentActivity:base::SysUTF8ToNSString(type)
-            withUserInfo:DictionaryValueToNSDictionary(user_info)
+            withUserInfo:DictionaryValueToNSDictionary(std::move(user_info))
           withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
 }
 
@@ -261,10 +261,11 @@ void Browser::ResignCurrentActivity() {
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
-                                    base::DictionaryValue user_info) {
+                                    base::Value::Dict user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
-               withUserInfo:DictionaryValueToNSDictionary(user_info)];
+               withUserInfo:DictionaryValueToNSDictionary(
+                                std::move(user_info))];
 }
 
 bool Browser::WillContinueUserActivity(const std::string& type) {
@@ -281,25 +282,27 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::DictionaryValue user_info,
-                                   base::DictionaryValue details) {
+                                   base::Value::Dict user_info,
+                                   base::Value::Dict details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnContinueUserActivity(&prevent_default, type, user_info, details);
+    observer.OnContinueUserActivity(&prevent_default, type, user_info.Clone(),
+                                    details.Clone());
   return prevent_default;
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       base::DictionaryValue user_info) {
+                                       base::Value::Dict user_info) {
   for (BrowserObserver& observer : observers_)
-    observer.OnUserActivityWasContinued(type, user_info);
+    observer.OnUserActivityWasContinued(type, user_info.Clone());
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      base::DictionaryValue user_info) {
+                                      base::Value::Dict user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
+    observer.OnUpdateUserActivityState(&prevent_default, type,
+                                       user_info.Clone());
   return prevent_default;
 }
 
@@ -318,43 +321,6 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   return settings;
 }
 
-// Some logic here copied from GetLoginItemForApp in base/mac/mac_util.mm
-void RemoveFromLoginItems() {
-#pragma clang diagnostic push  // https://crbug.com/1154377
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  base::ScopedCFTypeRef<LSSharedFileListRef> login_items(
-      LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL));
-  if (!login_items.get()) {
-    LOG(ERROR) << "Couldn't get a Login Items list.";
-    return;
-  }
-
-  base::scoped_nsobject<NSArray> login_items_array(
-      base::mac::CFToNSCast(LSSharedFileListCopySnapshot(login_items, NULL)));
-  NSURL* url = [NSURL fileURLWithPath:[base::mac::MainBundle() bundlePath]];
-  for (id login_item in login_items_array.get()) {
-    LSSharedFileListItemRef item =
-        reinterpret_cast<LSSharedFileListItemRef>(login_item);
-
-    // kLSSharedFileListDoNotMountVolumes is used so that we don't trigger
-    // mounting when it's not expected by a user. Just listing the login
-    // items should not cause any side-effects.
-    base::ScopedCFTypeRef<CFErrorRef> error;
-    base::ScopedCFTypeRef<CFURLRef> item_url_ref(
-        LSSharedFileListItemCopyResolvedURL(
-            item, kLSSharedFileListDoNotMountVolumes, error.InitializeInto()));
-
-    if (!error && item_url_ref) {
-      base::ScopedCFTypeRef<CFURLRef> item_url(item_url_ref);
-      if (CFEqual(item_url, url)) {
-        LSSharedFileListItemRemove(login_items, item);
-        return;
-      }
-    }
-  }
-#pragma clang diagnostic pop
-}
-
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 #if defined(MAS_BUILD)
   if (!platform_util::SetLoginItemEnabled(settings.open_at_login)) {
@@ -364,7 +330,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   if (settings.open_at_login) {
     base::mac::AddToLoginItems(settings.open_as_hidden);
   } else {
-    RemoveFromLoginItems();
+    base::mac::RemoveFromLoginItems();
   }
 #endif
 }
@@ -486,7 +452,8 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
 }
 
 void Browser::ShowAboutPanel() {
-  NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
+  NSDictionary* options =
+      DictionaryValueToNSDictionary(about_panel_options_.GetDict());
 
   // Credits must be a NSAttributedString instead of NSString
   NSString* credits = (NSString*)options[@"Credits"];
@@ -508,11 +475,11 @@ void Browser::ShowAboutPanel() {
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
-void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
+void Browser::SetAboutPanelOptions(base::Value::Dict options) {
   about_panel_options_.DictClear();
 
-  for (const auto pair : options.DictItems()) {
-    std::string key = std::string(pair.first);
+  for (const auto pair : options) {
+    std::string key = pair.first;
     if (!key.empty() && pair.second.is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
       auto val = std::make_unique<base::Value>(pair.second.Clone());

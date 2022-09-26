@@ -15,9 +15,7 @@ namespace ui {
 class MenuModel;
 }
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 // The app indicator icon's menu.
 class AppIndicatorIconMenu {
@@ -70,8 +68,6 @@ class AppIndicatorIconMenu {
   bool block_activation_ = false;
 };
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_GTK_APP_INDICATOR_ICON_MENU_H_

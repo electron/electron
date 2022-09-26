@@ -53,6 +53,10 @@ class HidChooserController
   HidChooserController& operator=(HidChooserController&) = delete;
   ~HidChooserController() override;
 
+  // static
+  static std::string PhysicalDeviceIdFromDeviceInfo(
+      const device::mojom::HidDeviceInfo& device);
+
   // HidChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::HidDeviceInfo& device_info) override;
   void OnDeviceRemoved(

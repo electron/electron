@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: msizanoen1 <msizanoen@qtmlabs.xyz>
+Date: Tue, 19 Jul 2022 05:11:06 +0200
+Subject: Add maximized parameter to LinuxUI::GetWindowFrameProvider
+
+This allows ClientFrameViewLinux to instruct the toolkit to draw the window
+decorations in maximized mode where needed, preventing empty space caused
+by decoration shadows and rounded titlebars around the window while maximized.
+
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index 7d1c3407ff408fbbb0d123323af09fb9e46e5453..90c93d2826739df07fb1accc48cd83810dea8dee 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -504,13 +504,15 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+   return nullptr;
+ }
+ 
+-ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(bool solid_frame) {
++ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(bool solid_frame, bool maximized) {
+   if (!GtkCheckVersion(3, 14))
+     return nullptr;
+   auto& provider =
+-      solid_frame ? solid_frame_provider_ : transparent_frame_provider_;
++      maximized
++        ? (solid_frame ? solid_maximized_frame_provider_ : transparent_maximized_frame_provider_)
++        : (solid_frame ? solid_frame_provider_ : transparent_frame_provider_);
+   if (!provider)
+-    provider = std::make_unique<gtk::WindowFrameProviderGtk>(solid_frame);
++    provider = std::make_unique<gtk::WindowFrameProviderGtk>(solid_frame, maximized);
+   return provider.get();
+ }
+ 
+diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
+index 3bf62d4de0ce141db60bab5356839d20543b3026..ca0f0bc3270b9b3ad793cd48b95a61bd7965b458 100644
+--- a/ui/gtk/gtk_ui.h
++++ b/ui/gtk/gtk_ui.h
+@@ -95,7 +95,7 @@ class GtkUi : public ui::LinuxUi {
+   bool PreferDarkTheme() const override;
+   bool AnimationsEnabled() const override;
+   std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+-  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame) override;
++  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame, bool maximized) override;
+   base::flat_map<std::string, std::string> GetKeyboardLayoutMap() override;
+   std::string GetCursorThemeName() override;
+   int GetCursorThemeSize() override;
+@@ -199,6 +199,8 @@ class GtkUi : public ui::LinuxUi {
+   // while Chrome is running.
+   std::unique_ptr<ui::WindowFrameProvider> solid_frame_provider_;
+   std::unique_ptr<ui::WindowFrameProvider> transparent_frame_provider_;
++  std::unique_ptr<ui::WindowFrameProvider> solid_maximized_frame_provider_;
++  std::unique_ptr<ui::WindowFrameProvider> transparent_maximized_frame_provider_;
+ };
+ 
+ }  // namespace gtk
+diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
+index e4dbdad327eb77994ffd7f068c67336a19897915..d3ae0636455489a7c7443df85cb769952c98aca2 100644
+--- a/ui/gtk/window_frame_provider_gtk.cc
++++ b/ui/gtk/window_frame_provider_gtk.cc
+@@ -38,16 +38,18 @@ std::string GetThemeName() {
+   return theme_string;
+ }
+ 
+-GtkCssContext WindowContext(bool solid_frame, bool focused) {
++GtkCssContext WindowContext(bool solid_frame, bool maximized, bool focused) {
+   std::string selector = "#window.background.";
+   selector += solid_frame ? "solid-csd" : "csd";
++  if (maximized)
++    selector += ".maximized";
+   if (!focused)
+     selector += ":inactive";
+   return AppendCssNodeToStyleContext({}, selector);
+ }
+ 
+-GtkCssContext DecorationContext(bool solid_frame, bool focused) {
+-  auto context = WindowContext(solid_frame, focused);
++GtkCssContext DecorationContext(bool solid_frame, bool maximized, bool focused) {
++  auto context = WindowContext(solid_frame, maximized, focused);
+   // GTK4 renders the decoration directly on the window.
+   if (!GtkCheckVersion(4))
+     context = AppendCssNodeToStyleContext(context, "#decoration");
+@@ -64,8 +66,8 @@ GtkCssContext DecorationContext(bool solid_frame, bool focused) {
+   return context;
+ }
+ 
+-GtkCssContext HeaderContext(bool solid_frame, bool focused) {
+-  auto context = WindowContext(solid_frame, focused);
++GtkCssContext HeaderContext(bool solid_frame, bool maximized, bool focused) {
++  auto context = WindowContext(solid_frame, maximized, focused);
+   context =
+       AppendCssNodeToStyleContext(context, "#headerbar.header-bar.titlebar");
+   if (!focused)
+@@ -110,8 +112,8 @@ int ComputeTopCornerRadius() {
+   // need to experimentally determine the corner radius by rendering a sample.
+   // Additionally, in GTK4, the headerbar corners get clipped by the window
+   // rather than the headerbar having its own rounded corners.
+-  auto context = GtkCheckVersion(4) ? DecorationContext(false, false)
+-                                    : HeaderContext(false, false);
++  auto context = GtkCheckVersion(4) ? DecorationContext(false, false, false)
++                                    : HeaderContext(false, false, false);
+   ApplyCssToContext(context, R"(window, headerbar {
+     background-image: none;
+     background-color: black;
+@@ -169,8 +171,8 @@ void WindowFrameProviderGtk::Asset::CloneFrom(
+   unfocused_bitmap = src.unfocused_bitmap;
+ }
+ 
+-WindowFrameProviderGtk::WindowFrameProviderGtk(bool solid_frame)
+-    : solid_frame_(solid_frame) {}
++WindowFrameProviderGtk::WindowFrameProviderGtk(bool solid_frame, bool maximized)
++    : solid_frame_(solid_frame), maximized_(maximized) {}
+ 
+ WindowFrameProviderGtk::~WindowFrameProviderGtk() = default;
+ 
+@@ -264,7 +266,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
+       top_area_height_dip * scale - asset.frame_thickness_px.top();
+ 
+   auto header = PaintHeaderbar({client_bounds_px.width(), top_area_height_px},
+-                               HeaderContext(solid_frame_, focused), scale);
++                               HeaderContext(solid_frame_, maximized_, focused), scale);
+   image = gfx::ImageSkia::CreateFrom1xBitmap(header);
+   // In GTK4, the headerbar gets clipped by the window.
+   if (GtkCheckVersion(4)) {
+@@ -296,7 +298,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+ 
+   gfx::Rect frame_bounds_dip(kMaxFrameSizeDip, kMaxFrameSizeDip,
+                              2 * kMaxFrameSizeDip, 2 * kMaxFrameSizeDip);
+-  auto focused_context = DecorationContext(solid_frame_, true);
++  auto focused_context = DecorationContext(solid_frame_, maximized_, true);
+   frame_bounds_dip.Inset(-GtkStyleContextGetPadding(focused_context));
+   frame_bounds_dip.Inset(-GtkStyleContextGetBorder(focused_context));
+   gfx::Size bitmap_size(BitmapSizePx(asset), BitmapSizePx(asset));
+@@ -304,7 +306,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+       PaintBitmap(bitmap_size, frame_bounds_dip, focused_context, scale);
+   asset.unfocused_bitmap =
+       PaintBitmap(bitmap_size, frame_bounds_dip,
+-                  DecorationContext(solid_frame_, false), scale);
++                  DecorationContext(solid_frame_, maximized_, false), scale);
+ 
+   // In GTK4, there's no way to obtain the frame thickness from CSS values
+   // directly, so we must determine it experimentally based on the drawn
+diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
+index 8370c1cb3f8c3532d94e1265242cbf2397920480..2e0105ba8782dfe0a3ac169850734032c8ab071c 100644
+--- a/ui/gtk/window_frame_provider_gtk.h
++++ b/ui/gtk/window_frame_provider_gtk.h
+@@ -14,7 +14,7 @@ namespace gtk {
+ 
+ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+  public:
+-  explicit WindowFrameProviderGtk(bool solid_frame);
++  explicit WindowFrameProviderGtk(bool solid_frame, bool maximized);
+ 
+   WindowFrameProviderGtk(const WindowFrameProviderGtk&) = delete;
+   WindowFrameProviderGtk& operator=(const WindowFrameProviderGtk&) = delete;
+@@ -69,6 +69,9 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+ 
+   // Cached bitmaps and metrics.  The scale is rounded to percent.
+   base::flat_map<int, Asset> assets_;
++
++  // Whether to draw the window decorations as maximized.
++  bool maximized_;
+ };
+ 
+ }  // namespace gtk
+diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
+index e177923484a1be740170a65c2b3067f04e949995..68f217d316f15129f66e74f14851613dbb24970e 100644
+--- a/ui/linux/linux_ui.h
++++ b/ui/linux/linux_ui.h
+@@ -171,7 +171,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUi {
+   // if transparency is unsupported and the frame should be rendered opaque.
+   // The returned object is not owned by the caller and will remain alive until
+   // the process ends.
+-  virtual WindowFrameProvider* GetWindowFrameProvider(bool solid_frame) = 0;
++  virtual WindowFrameProvider* GetWindowFrameProvider(bool solid_frame, bool maximized) = 0;
+ 
+   // Returns a map of KeyboardEvent code to KeyboardEvent key values.
+   virtual base::flat_map<std::string, std::string> GetKeyboardLayoutMap() = 0;

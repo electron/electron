@@ -114,9 +114,9 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   bool has_mime_type = dict.Get("mimeType", &head->mime_type);
   bool has_content_type = false;
 
-  base::DictionaryValue headers;
+  base::Value::Dict headers;
   if (dict.Get("headers", &headers)) {
-    for (const auto iter : headers.DictItems()) {
+    for (const auto iter : headers) {
       if (iter.second.is_string()) {
         // key, value
         head->headers->AddHeader(iter.first, iter.second.GetString());
@@ -410,15 +410,15 @@ void ElectronURLLoaderFactory::StartLoading(
                          dict);
       break;
     case ProtocolType::kFree:
-      ProtocolType type;
-      if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
+      ProtocolType protocol_type;
+      if (!gin::ConvertFromV8(args->isolate(), response, &protocol_type)) {
         OnComplete(std::move(client), request_id,
                    network::URLLoaderCompletionStatus(net::ERR_FAILED));
         return;
       }
       StartLoading(std::move(loader), request_id, options, request,
                    std::move(client), traffic_annotation,
-                   std::move(target_factory), type, args);
+                   std::move(target_factory), protocol_type, args);
       break;
   }
 }
@@ -513,7 +513,7 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
   if (!dict.Get("method", &request->method))
     request->method = original_request.method;
 
-  base::DictionaryValue upload_data;
+  base::Value::Dict upload_data;
   if (request->method != net::HttpRequestHeaders::kGetMethod &&
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
@@ -554,13 +554,6 @@ void ElectronURLLoaderFactory::StartLoadingStream(
   } else if (stream->IsNullOrUndefined()) {
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
         std::move(client));
-    // "data" was explicitly passed as null or undefined, assume the user wants
-    // to send an empty body.
-    //
-    // Note that We must submit a empty body otherwise NetworkService would
-    // crash.
-    client_remote->OnReceiveResponse(std::move(head),
-                                     mojo::ScopedDataPipeConsumerHandle());
     mojo::ScopedDataPipeProducerHandle producer;
     mojo::ScopedDataPipeConsumerHandle consumer;
     if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
@@ -568,8 +561,14 @@ void ElectronURLLoaderFactory::StartLoadingStream(
           network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
       return;
     }
+    // "data" was explicitly passed as null or undefined, assume the user wants
+    // to send an empty body.
+    //
+    // Note that We must submit a empty body otherwise NetworkService would
+    // crash.
+    client_remote->OnReceiveResponse(std::move(head), std::move(consumer),
+                                     absl::nullopt);
     producer.reset();  // The data pipe is empty.
-    client_remote->OnStartLoadingResponseBody(std::move(consumer));
     client_remote->OnComplete(network::URLLoaderCompletionStatus(net::OK));
     return;
   } else if (!stream->IsObject()) {
@@ -605,8 +604,6 @@ void ElectronURLLoaderFactory::SendContents(
 
   // Add header to ignore CORS.
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
-  client_remote->OnReceiveResponse(std::move(head),
-                                   mojo::ScopedDataPipeConsumerHandle());
 
   // Code below follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
@@ -617,7 +614,8 @@ void ElectronURLLoaderFactory::SendContents(
     return;
   }
 
-  client_remote->OnStartLoadingResponseBody(std::move(consumer));
+  client_remote->OnReceiveResponse(std::move(head), std::move(consumer),
+                                   absl::nullopt);
 
   auto write_data = std::make_unique<WriteData>();
   write_data->client = std::move(client_remote);

@@ -52,6 +52,7 @@
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"
@@ -65,6 +66,7 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -72,6 +74,8 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
+#include "third_party/blink/public/common/storage_key/storage_key.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -115,7 +119,7 @@ PreconnectRequest::PreconnectRequest(
 namespace {
 
 struct ClearStorageDataOptions {
-  GURL origin;
+  blink::StorageKey storage_key;
   uint32_t storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
   uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
 };
@@ -170,7 +174,8 @@ struct Converter<ClearStorageDataOptions> {
     gin_helper::Dictionary options;
     if (!ConvertFromV8(isolate, val, &options))
       return false;
-    options.Get("origin", &out->origin);
+    if (GURL storage_origin; options.Get("origin", &storage_origin))
+      out->storage_key = blink::StorageKey(url::Origin::Create(storage_origin));
     std::vector<std::string> types;
     if (options.Get("storages", &types))
       out->storage_types = GetStorageMask(types);
@@ -242,9 +247,7 @@ struct Converter<network::mojom::SSLConfigPtr> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -466,8 +469,8 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   }
 
   storage_partition->ClearData(
-      options.storage_types, options.quota_types, options.origin, base::Time(),
-      base::Time::Max(),
+      options.storage_types, options.quota_types, options.storage_key,
+      base::Time(), base::Time::Max(),
       base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                      std::move(promise)));
   return handle;
@@ -643,6 +646,22 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionCheckHandler(handler);
 }
 
+void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
+                                            v8::Local<v8::Value> val) {
+  if (val->IsNull()) {
+    browser_context_->SetDisplayMediaRequestHandler(
+        DisplayMediaRequestHandler());
+    return;
+  }
+  DisplayMediaRequestHandler handler;
+  if (!gin::ConvertFromV8(isolate, val, &handler)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Display media request handler must be null or a function");
+    return;
+  }
+  browser_context_->SetDisplayMediaRequestHandler(handler);
+}
+
 void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
                                          gin::Arguments* args) {
   ElectronPermissionManager::DeviceCheckHandler handler;
@@ -653,6 +672,18 @@ void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetDevicePermissionHandler(handler);
+}
+
+void Session::SetBluetoothPairingHandler(v8::Local<v8::Value> val,
+                                         gin::Arguments* args) {
+  ElectronPermissionManager::BluetoothPairingHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetBluetoothPairingHandler(handler);
 }
 
 v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
@@ -1017,14 +1048,15 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
-      ->Get(spellcheck::prefs::kSpellCheckDictionaries)
-      ->Clone();
+      ->GetValue(spellcheck::prefs::kSpellCheckDictionaries)
+      .Clone();
 }
 
 void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
-  base::ListValue language_codes;
+#if !BUILDFLAG(IS_MAC)
+  base::Value::List language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
     if (code.empty()) {
@@ -1035,14 +1067,16 @@ void Session::SetSpellCheckerLanguages(
     language_codes.Append(code);
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
-                                 language_codes);
+                                 base::Value(std::move(language_codes)));
   // Enable spellcheck if > 0 languages, disable if no languages set
   browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
                                         !languages.empty());
+#endif
 }
 
 void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
                                           const GURL& url) {
+#if !BUILDFLAG(IS_MAC)
   if (!url.is_valid()) {
     thrower.ThrowError(
         "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
@@ -1050,6 +1084,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
     return;
   }
   SpellcheckHunspellDictionary::SetBaseDownloadURL(url);
+#endif
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
@@ -1162,7 +1197,7 @@ gin::Handle<Session> Session::CreateFrom(
 // static
 gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
                                             const std::string& partition,
-                                            base::DictionaryValue options) {
+                                            base::Value::Dict options) {
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
@@ -1198,8 +1233,12 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
+      .SetMethod("setDisplayMediaRequestHandler",
+                 &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
+      .SetMethod("setBluetoothPairingHandler",
+                 &Session::SetBluetoothPairingHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",
@@ -1255,9 +1294,7 @@ const char* Session::GetTypeName() {
   return "Session";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
@@ -1269,7 +1306,7 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
     args->ThrowTypeError("Session can only be received when app is ready");
     return v8::Null(args->isolate());
   }
-  base::DictionaryValue options;
+  base::Value::Dict options;
   args->GetNext(&options);
   return Session::FromPartition(args->isolate(), partition, std::move(options))
       .ToV8();

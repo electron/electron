@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Thu, 26 May 2022 15:38:32 -0700
+Subject: feat: filter out non-shareable windows in the current application in
+ ScreenCaptureKitDevice
+
+This patch ensures that windows protected via win.setContentProtection(true) do not appear in full display captures via desktopCapturer.  This patch could be upstreamed but as the check is limited to in-process windows it doesn't make a lot of sense for Chromium itself.  This patch currently has a limitation that it only function for windows created / protected BEFORE the stream is started.  There is theoretical future work we can do via polling / observers to automatically update the SCContentFilter when new windows are made but for now this will solve 99+% of the problem and folks can re-order their logic a bit to get it working for their use cases.
+
+diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+index 35cb1bb72a462c91d21bd1c99c35d90478c9442c..2bbb3fe1b1b747770da466c33633489830a42afe 100644
+--- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
++++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+@@ -100,7 +100,15 @@ void OnShareableContentCreated(
+       case DesktopMediaID::TYPE_SCREEN:
+         for (SCDisplay* display : [content displays]) {
+           if (source_.id == [display displayID]) {
+-            NSArray<SCWindow*>* exclude_windows = nil;
++            NSArray<NSWindow*>* exclude_ns_windows = [[[NSApplication sharedApplication] windows] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSWindow* win, NSDictionary *bindings) {
++              return [win sharingType] == NSWindowSharingNone;
++            }]];
++            NSArray<SCWindow*>* exclude_windows = [[content windows] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(SCWindow* win, NSDictionary *bindings) {
++              for (NSWindow* excluded : exclude_ns_windows) {
++                if ((CGWindowID)[excluded windowNumber] == [win windowID]) return true;
++              }
++              return false;
++            }]];
+             filter.reset([[SCContentFilter alloc]
+                  initWithDisplay:display
+                 excludingWindows:exclude_windows]);

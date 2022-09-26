@@ -10,52 +10,78 @@
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/ui/drag_util.h"
 
-namespace electron {
+// Contents largely copied from
+// chrome/browser/download/drag_download_item_mac.mm.
+
+@interface DragDownloadItemSource : NSObject <NSDraggingSource>
+@end
+
+@implementation DragDownloadItemSource
+
+- (NSDragOperation)draggingSession:(NSDraggingSession*)session
+    sourceOperationMaskForDraggingContext:(NSDraggingContext)context {
+  return NSDragOperationEvery;
+}
+
+@end
 
 namespace {
 
-// Write information about the file being dragged to the pasteboard.
-void AddFilesToPasteboard(NSPasteboard* pasteboard,
-                          const std::vector<base::FilePath>& files) {
-  NSMutableArray* fileList = [NSMutableArray array];
-  for (const base::FilePath& file : files)
-    [fileList addObject:base::SysUTF8ToNSString(file.value())];
-  [pasteboard declareTypes:[NSArray arrayWithObject:NSFilenamesPboardType]
-                     owner:nil];
-  [pasteboard setPropertyList:fileList forType:NSFilenamesPboardType];
+id<NSDraggingSource> GetDraggingSource() {
+  static id<NSDraggingSource> source = [[DragDownloadItemSource alloc] init];
+  return source;
 }
 
 }  // namespace
 
+namespace electron {
+
 void DragFileItems(const std::vector<base::FilePath>& files,
                    const gfx::Image& icon,
                    gfx::NativeView view) {
-  NSPasteboard* pasteboard = [NSPasteboard pasteboardWithName:NSDragPboard];
-  AddFilesToPasteboard(pasteboard, files);
+  auto* native_view = view.GetNativeNSView();
+  NSPoint current_position =
+      [[native_view window] mouseLocationOutsideOfEventStream];
+  current_position =
+      [native_view backingAlignedRect:NSMakeRect(current_position.x,
+                                                 current_position.y, 0, 0)
+                              options:NSAlignAllEdgesOutward]
+          .origin;
+
+  NSMutableArray* file_items = [NSMutableArray array];
+  for (auto const& file : files) {
+    NSURL* file_url =
+        [NSURL fileURLWithPath:base::SysUTF8ToNSString(file.value())];
+    NSDraggingItem* file_item = [[[NSDraggingItem alloc]
+        initWithPasteboardWriter:file_url] autorelease];
+    NSImage* file_image = icon.ToNSImage();
+    NSSize image_size = file_image.size;
+    NSRect image_rect = NSMakeRect(current_position.x - image_size.width / 2,
+                                   current_position.y - image_size.height / 2,
+                                   image_size.width, image_size.height);
+    [file_item setDraggingFrame:image_rect contents:file_image];
+    [file_items addObject:file_item];
+  }
 
   // Synthesize a drag event, since we don't have access to the actual event
   // that initiated a drag (possibly consumed by the Web UI, for example).
-  NSWindow* window = [view.GetNativeNSView() window];
-  NSPoint position = [window mouseLocationOutsideOfEventStream];
+  NSPoint position = [[native_view window] mouseLocationOutsideOfEventStream];
   NSTimeInterval eventTime = [[NSApp currentEvent] timestamp];
-  NSEvent* dragEvent = [NSEvent mouseEventWithType:NSLeftMouseDragged
-                                          location:position
-                                     modifierFlags:NSLeftMouseDraggedMask
-                                         timestamp:eventTime
-                                      windowNumber:[window windowNumber]
-                                           context:nil
-                                       eventNumber:0
-                                        clickCount:1
-                                          pressure:1.0];
+  NSEvent* dragEvent =
+      [NSEvent mouseEventWithType:NSEventTypeLeftMouseDragged
+                         location:position
+                    modifierFlags:NSEventMaskLeftMouseDragged
+                        timestamp:eventTime
+                     windowNumber:[[native_view window] windowNumber]
+                          context:nil
+                      eventNumber:0
+                       clickCount:1
+                         pressure:1.0];
 
   // Run the drag operation.
-  [window dragImage:icon.ToNSImage()
-                 at:position
-             offset:NSZeroSize
-              event:dragEvent
-         pasteboard:pasteboard
-             source:view.GetNativeNSView()
-          slideBack:YES];
+  [native_view beginDraggingSessionWithItems:file_items
+                                       event:dragEvent
+                                      source:GetDraggingSource()];
 }
 
 }  // namespace electron

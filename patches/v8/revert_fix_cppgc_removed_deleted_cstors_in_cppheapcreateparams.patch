@@ -6,7 +6,7 @@ Subject: Revert "fix(cppgc): removed deleted cstors in CppHeapCreateParams"
 This reverts commit a66b09e5510d62ff469e72b1a8ff7f0ead1bf0f6.
 
 diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
-index 412154930f7d92b5e3932bf7a1cace16eee940e8..401e492210609f9c1b16a082ff9d97b8acd4fc61 100644
+index f96709c783a0b13a3c09925a930d59c8ba48e01f..00ea5c5ae502ef36969cde07a2587d9eaa760359 100644
 --- a/include/v8-cppgc.h
 +++ b/include/v8-cppgc.h
 @@ -77,6 +77,9 @@ struct WrapperDescriptor final {
@@ -18,4 +18,4 @@ index 412154930f7d92b5e3932bf7a1cace16eee940e8..401e492210609f9c1b16a082ff9d97b8
 +
    std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces;
    WrapperDescriptor wrapper_descriptor;
- };
+   /**

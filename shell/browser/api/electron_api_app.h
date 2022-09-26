@@ -96,7 +96,7 @@ class App : public ElectronBrowserClient::Delegate,
   void OnOpenURL(const std::string& url) override;
   void OnActivate(bool has_visible_windows) override;
   void OnWillFinishLaunching() override;
-  void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
+  void OnFinishLaunching(base::Value::Dict launch_info) override;
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
   void OnPreCreateThreads() override;
@@ -107,15 +107,13 @@ class App : public ElectronBrowserClient::Delegate,
                                        const std::string& error) override;
   void OnContinueUserActivity(bool* prevent_default,
                               const std::string& type,
-                              const base::DictionaryValue& user_info,
-                              const base::DictionaryValue& details) override;
-  void OnUserActivityWasContinued(
-      const std::string& type,
-      const base::DictionaryValue& user_info) override;
-  void OnUpdateUserActivityState(
-      bool* prevent_default,
-      const std::string& type,
-      const base::DictionaryValue& user_info) override;
+                              base::Value::Dict user_info,
+                              base::Value::Dict details) override;
+  void OnUserActivityWasContinued(const std::string& type,
+                                  base::Value::Dict user_info) override;
+  void OnUpdateUserActivityState(bool* prevent_default,
+                                 const std::string& type,
+                                 base::Value::Dict user_info) override;
   void OnNewWindowForTab() override;
   void OnDidBecomeActive() override;
 #endif
@@ -193,12 +191,10 @@ class App : public ElectronBrowserClient::Delegate,
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
-  void OnFirstInstanceAck(const base::span<const uint8_t>* first_instance_data);
-  void OnSecondInstance(
-      const base::CommandLine& cmd,
-      const base::FilePath& cwd,
-      const std::vector<uint8_t> additional_data,
-      const ProcessSingleton::NotificationAckCallback& ack_callback);
+  std::string GetSystemLocale(gin_helper::ErrorThrower thrower) const;
+  void OnSecondInstance(const base::CommandLine& cmd,
+                        const base::FilePath& cwd,
+                        const std::vector<const uint8_t> additional_data);
   bool HasSingleInstanceLock() const;
   bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
@@ -269,6 +265,7 @@ class App : public ElectronBrowserClient::Delegate,
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
+  bool watch_singleton_socket_on_ready_ = false;
 };
 
 }  // namespace api

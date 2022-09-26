@@ -1,16 +1,28 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Thu, 7 Apr 2022 20:30:16 +0900
-Subject: Make gtk::GetLibGtk public
+Subject: Make gtk::GetLibGtk and gtk::GetLibGdkPixbuf public
 
-Allows embedders to get a handle to the gtk library
-already loaded in the process.
+Allows embedders to get a handle to the gtk and
+gdk_pixbuf libraries already loaded in the process.
 
 diff --git a/ui/gtk/gtk_compat.cc b/ui/gtk/gtk_compat.cc
-index b5c7af5bdb93b320f95252d35d2d76bae7f8c445..40b706ed7cde206e98274025148604760b7477f9 100644
+index 2ba5b4c4468fca1bf76011754e358c81f670a8d3..e831abb6d14be75b3f5e5b4b3455b8b136f921b1 100644
 --- a/ui/gtk/gtk_compat.cc
 +++ b/ui/gtk/gtk_compat.cc
-@@ -86,12 +86,6 @@ void* GetLibGtk4(bool check = true) {
+@@ -66,11 +66,6 @@ void* GetLibGio() {
+   return libgio;
+ }
+ 
+-void* GetLibGdkPixbuf() {
+-  static void* libgdk_pixbuf = DlOpen("libgdk_pixbuf-2.0.so.0");
+-  return libgdk_pixbuf;
+-}
+-
+ void* GetLibGdk3() {
+   static void* libgdk3 = DlOpen("libgdk-3.so.0");
+   return libgdk3;
+@@ -86,12 +81,6 @@ void* GetLibGtk4(bool check = true) {
    return libgtk4;
  }
  
@@ -23,10 +35,15 @@ index b5c7af5bdb93b320f95252d35d2d76bae7f8c445..40b706ed7cde206e9827402514860476
  bool LoadGtk3() {
    if (!GetLibGtk3(false))
      return false;
-@@ -134,6 +128,12 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
+@@ -134,6 +123,17 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
  
  }  // namespace
  
++void* GetLibGdkPixbuf() {
++  static void* libgdk_pixbuf = DlOpen("libgdk_pixbuf-2.0.so.0");
++  return libgdk_pixbuf;
++}
++
 +void* GetLibGtk() {
 +  if (GtkCheckVersion(4))
 +    return GetLibGtk4();
@@ -37,13 +54,16 @@ index b5c7af5bdb93b320f95252d35d2d76bae7f8c445..40b706ed7cde206e9827402514860476
    static bool loaded = LoadGtkImpl();
    return loaded;
 diff --git a/ui/gtk/gtk_compat.h b/ui/gtk/gtk_compat.h
-index 57e55b9e749b43d327deff449a530e1f435a8e8b..2245974f91be4a691d82f54b55e12e44ae2000c5 100644
+index 57e55b9e749b43d327deff449a530e1f435a8e8b..37720be9e393d192b3b7db13a007431a9ce77ddc 100644
 --- a/ui/gtk/gtk_compat.h
 +++ b/ui/gtk/gtk_compat.h
-@@ -34,6 +34,9 @@ using SkColor = uint32_t;
+@@ -34,6 +34,12 @@ using SkColor = uint32_t;
  
  namespace gtk {
  
++// Get handle to the currently loaded gdk_pixbuf library in the process.
++void* GetLibGdkPixbuf();
++
 +// Get handle to the currently loaded gtk library in the process.
 +void* GetLibGtk();
 +

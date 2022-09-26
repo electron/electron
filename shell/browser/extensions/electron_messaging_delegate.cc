@@ -15,6 +15,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
+#include "electron/shell/common/extensions/api/tabs.h"
 #include "extensions/browser/api/messaging/extension_message_port.h"
 #include "extensions/browser/api/messaging/native_message_host.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
@@ -39,25 +40,20 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
   return PolicyPermission::DISALLOW;
 }
 
-std::unique_ptr<base::DictionaryValue>
-ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
+absl::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
+    content::WebContents* web_contents) {
   if (web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);
     if (api_contents) {
-      auto tab = std::make_unique<base::DictionaryValue>();
-      tab->SetWithoutPathExpansion(
-          "id", std::make_unique<base::Value>(api_contents->ID()));
-      tab->SetWithoutPathExpansion(
-          "url", std::make_unique<base::Value>(api_contents->GetURL().spec()));
-      tab->SetWithoutPathExpansion(
-          "title", std::make_unique<base::Value>(api_contents->GetTitle()));
-      tab->SetWithoutPathExpansion(
-          "audible",
-          std::make_unique<base::Value>(api_contents->IsCurrentlyAudible()));
-      return tab;
+      api::tabs::Tab tab;
+      tab.id = api_contents->ID();
+      tab.url = api_contents->GetURL().spec();
+      tab.title = base::UTF16ToUTF8(api_contents->GetTitle());
+      tab.audible = api_contents->IsCurrentlyAudible();
+      return std::move(tab.ToValue()->GetDict());
     }
   }
-  return nullptr;
+  return absl::nullopt;
 }
 
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(
@@ -84,7 +80,7 @@ std::unique_ptr<MessagePort> ElectronMessagingDelegate::CreateReceiverForTab(
   content::RenderFrameHost* receiver_rfh = nullptr;
   if (include_child_frames) {
     // The target is the active outermost main frame of the WebContents.
-    receiver_rfh = receiver_contents->GetMainFrame();
+    receiver_rfh = receiver_contents->GetPrimaryMainFrame();
   } else if (!receiver_document_id.empty()) {
     ExtensionApiFrameIdMap::DocumentId document_id =
         ExtensionApiFrameIdMap::DocumentIdFromString(receiver_document_id);

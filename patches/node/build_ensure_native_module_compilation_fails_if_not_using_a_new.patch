@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Wed, 13 Jul 2022 13:56:12 -0700
+Subject: build: ensure native module compilation fails if not using a new
+ enough builder
+
+This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
+
+diff --git a/common.gypi b/common.gypi
+index ae9889508ed0f3f24f2a888ba8650ccdce72fa47..946b80af9cda553d0ee5328701f2b6c1f8a08e9d 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -85,6 +85,8 @@
+ 
+     'v8_enable_reverse_jsargs%': 1,
+ 
++    'using_electron_config_gypi%': 0,
++
+     ##### end V8 defaults #####
+ 
+     # When building native modules using 'npm install' with the system npm,
+@@ -290,6 +292,7 @@
+       'V8_DEPRECATION_WARNINGS',
+       'V8_IMMINENT_DEPRECATION_WARNINGS',
+       '_GLIBCXX_USE_CXX11_ABI=1',
++      'ELECTRON_ENSURE_CONFIG_GYPI',
+     ],
+ 
+     # Forcibly disable -Werror.  We support a wide range of compilers, it's
+@@ -397,6 +400,11 @@
+           }],
+         ],
+       }],
++      ['using_electron_config_gypi == 1', {
++        'defines': [
++          'USING_ELECTRON_CONFIG_GYPI',
++        ],
++      }],
+       ['v8_enable_pointer_compression == 1', {
+         'defines': [
+           'V8_COMPRESS_POINTERS',
+diff --git a/configure.py b/configure.py
+index 08894bf3908916d1cb639810c5e1b2afae74ff4d..19cbde58df38009258db145c5f7dbe73b0dc5cdf 100755
+--- a/configure.py
++++ b/configure.py
+@@ -1447,6 +1447,7 @@ def configure_library(lib, output, pkgname=None):
+ 
+ 
+ def configure_v8(o):
++  o['variables']['using_electron_config_gypi'] = 1
+   o['variables']['v8_enable_webassembly'] = 1
+   o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
+   o['variables']['v8_enable_gdbjit'] = 1 if options.gdb else 0
+diff --git a/src/node.h b/src/node.h
+index b6a26f8adf11959f94a00de0cbf9016fcc8707cb..38bbb20968772a4ba6bceddb04a83589f8582fc8 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -22,6 +22,12 @@
+ #ifndef SRC_NODE_H_
+ #define SRC_NODE_H_
+ 
++#ifdef ELECTRON_ENSURE_CONFIG_GYPI
++#ifndef USING_ELECTRON_CONFIG_GYPI
++#error "It looks like you are building this native module without using the right config.gypi.  This normally means that you need to update electron-rebuild (>=3.2.8) or node-gyp (>=8.4.0) if you're building modules directly."
++#endif
++#endif
++
+ #ifdef _WIN32
+ # ifndef BUILDING_NODE_EXTENSION
+ #  define NODE_EXTERN __declspec(dllexport)

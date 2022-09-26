@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 7b4b42449a60e9309135aae38213cb3b003337e0..7d9068b87eee4dbc3435ed6f67285d428dc85f52 100644
+index 88f9e4dd05d8efdabbbdd044f5e09e844ced3d55..c254b045494936eca14ce947e1c2de3327820aa2 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -123,9 +123,10 @@ void IsolateHolder::Initialize(ScriptMode mode,
+@@ -137,9 +137,10 @@ void IsolateHolder::Initialize(ScriptMode mode,
                                 const intptr_t* reference_table,
                                 const std::string js_command_line_flags,
                                 v8::FatalErrorCallback fatal_error_callback,
@@ -24,10 +24,10 @@ index 7b4b42449a60e9309135aae38213cb3b003337e0..7d9068b87eee4dbc3435ed6f67285d42
    g_reference_table = reference_table;
    g_fatal_error_callback = fatal_error_callback;
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 20cfc2257e9ba25ec3f39f19db952ba6b6036c72..4efc13c79ae742fa1925d064318627452ba852b2 100644
+index 617819d15c30bafab4fd1afc8368463018b3792d..f8e5d0246b92fd2f1316313e13ccda7ef6c57495 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -102,7 +102,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -109,7 +109,8 @@ class GIN_EXPORT IsolateHolder {
                           const intptr_t* reference_table = nullptr,
                           const std::string js_command_line_flags = {},
                           v8::FatalErrorCallback fatal_error_callback = nullptr,
@@ -38,10 +38,10 @@ index 20cfc2257e9ba25ec3f39f19db952ba6b6036c72..4efc13c79ae742fa1925d06431862745
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 072387786cc70f7d0b7d3d31cebf86af69f98a30..9df4d0aa257e7b4ecacd8c7a4ad392c4a33ff177 100644
+index cb3302bb2abb735609436bdf2a5d4d51cc4258ad..5530d975303cc96701e4b70ffbcaf6e7c02bb016 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -352,7 +352,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
+@@ -368,7 +368,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
  // static
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
                                 const std::string js_command_line_flags,
@@ -51,7 +51,7 @@ index 072387786cc70f7d0b7d3d31cebf86af69f98a30..9df4d0aa257e7b4ecacd8c7a4ad392c4
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -362,7 +363,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+@@ -378,7 +379,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
    // See https://crbug.com/v8/11043
    SetFlags(mode, js_command_line_flags);
  

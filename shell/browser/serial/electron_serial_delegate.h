@@ -11,13 +11,15 @@
 
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/serial_delegate.h"
+#include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/serial/serial_chooser_controller.h"
 
 namespace electron {
 
 class SerialChooserController;
 
-class ElectronSerialDelegate : public content::SerialDelegate {
+class ElectronSerialDelegate : public content::SerialDelegate,
+                               public SerialChooserContext::PortObserver {
  public:
   ElectronSerialDelegate();
   ~ElectronSerialDelegate() override;
@@ -36,9 +38,9 @@ class ElectronSerialDelegate : public content::SerialDelegate {
   device::mojom::SerialPortManager* GetPortManager(
       content::RenderFrameHost* frame) override;
   void AddObserver(content::RenderFrameHost* frame,
-                   Observer* observer) override;
+                   content::SerialDelegate::Observer* observer) override;
   void RemoveObserver(content::RenderFrameHost* frame,
-                      Observer* observer) override;
+                      content::SerialDelegate::Observer* observer) override;
   void RevokePortPermissionWebInitiated(
       content::RenderFrameHost* frame,
       const base::UnguessableToken& token) override;
@@ -48,6 +50,13 @@ class ElectronSerialDelegate : public content::SerialDelegate {
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
 
+  // SerialChooserContext::PortObserver:
+  void OnPortAdded(const device::mojom::SerialPortInfo& port) override;
+  void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
+  void OnPortManagerConnectionError() override;
+  void OnPermissionRevoked(const url::Origin& origin) override {}
+  void OnSerialChooserContextShutdown() override;
+
  private:
   SerialChooserController* ControllerForFrame(
       content::RenderFrameHost* render_frame_host);
@@ -55,6 +64,13 @@ class ElectronSerialDelegate : public content::SerialDelegate {
       content::RenderFrameHost* render_frame_host,
       std::vector<blink::mojom::SerialPortFilterPtr> filters,
       content::SerialChooser::Callback callback);
+
+  base::ScopedObservation<SerialChooserContext,
+                          SerialChooserContext::PortObserver,
+                          &SerialChooserContext::AddPortObserver,
+                          &SerialChooserContext::RemovePortObserver>
+      port_observation_{this};
+  base::ObserverList<content::SerialDelegate::Observer> observer_list_;
 
   std::unordered_map<content::RenderFrameHost*,
                      std::unique_ptr<SerialChooserController>>

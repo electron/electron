@@ -1,0 +1,31 @@
+name: Trigger Major Release Dependency Updates
+
+on:
+  release:
+    types: [published]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  check_tag:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check Tag
+      run: |
+        if [[ ${{ github.event.ref }} =~ ^refs/tags/v[0-9]+\.0\.0$ ]]; then
+          echo ::set-output name=should_release::true
+        fi
+  trigger:
+    runs-on: ubuntu-latest
+    needs: check_tag
+    if: needs.check_tag.outputs.should_release == 'true'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Trigger New chromedriver Release
+        run: |
+          gh api /repos/:owner/chromedriver/actions/workflows/release.yml/dispatches --input - <<< '{"ref":"main","inputs":{"version":"${{ github.event.release.tag_name }}"}}'
+      - name: Trigger New mksnapshot Release
+        run: |
+          gh api /repos/:owner/mksnapshot/actions/workflows/release.yml/dispatches --input - <<< '{"ref":"main","inputs":{"version":"${{ github.event.release.tag_name }}"}}'

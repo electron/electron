@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Thu, 7 Jul 2022 14:42:49 -0700
+Subject: build: ensure v8 pointer compression + sandbox is enabled on 64bit
+
+Aligns common.gypi with the current build flag state of //v8.
+
+Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
+
+diff --git a/common.gypi b/common.gypi
+index 7224823f0df04da7a7626839f2205057d95155d2..ae9889508ed0f3f24f2a888ba8650ccdce72fa47 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -65,6 +65,7 @@
+     # node-gyp to build addons.
+     'v8_enable_pointer_compression%': 0,
+     'v8_enable_31bit_smis_on_64bit_arch%': 0,
++    'v8_enable_sandbox%': 0,
+ 
+     # Disable V8 untrusted code mitigations.
+     # See https://github.com/v8/v8/wiki/Untrusted-code-mitigations
+@@ -134,6 +135,7 @@
+       ['target_arch in "arm ia32 mips mipsel ppc"', {
+         'v8_enable_pointer_compression': 0,
+         'v8_enable_31bit_smis_on_64bit_arch': 0,
++        'v8_enable_sandbox': 0,
+       }],
+       ['target_arch in "ppc64 s390x"', {
+         'v8_enable_backtrace': 1,
+@@ -398,9 +400,14 @@
+       ['v8_enable_pointer_compression == 1', {
+         'defines': [
+           'V8_COMPRESS_POINTERS',
+-          'V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE',
++          'V8_COMPRESS_POINTERS_IN_SHARED_CAGE',
+         ],
+       }],
++      ['v8_enable_sandbox == 1', {
++        'defines': [
++          'V8_ENABLE_SANDBOX',
++        ]
++      }],
+       ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
+         'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
+       }],
+diff --git a/configure.py b/configure.py
+index 1a7023dece588631b8281c67b223204c1ebb5ee7..08894bf3908916d1cb639810c5e1b2afae74ff4d 100755
+--- a/configure.py
++++ b/configure.py
+@@ -1459,6 +1459,7 @@ def configure_v8(o):
+   o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
+   o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
++  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
+   o['variables']['node_use_v8_platform'] = b(not options.without_v8_platform)
+   o['variables']['node_use_bundled_v8'] = b(not options.without_bundled_v8)

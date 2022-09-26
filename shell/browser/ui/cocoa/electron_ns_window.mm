@@ -13,7 +13,7 @@
 
 namespace electron {
 
-bool ScopedDisableResize::disable_resize_ = false;
+int ScopedDisableResize::disable_resize_ = 0;
 
 }  // namespace electron
 
@@ -56,7 +56,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   return [super contentRectForFrameRect:frameRect];
 }
 
-- (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2)) {
+- (NSTouchBar*)makeTouchBar {
   if (shell_->touch_bar())
     return [shell_->touch_bar() makeTouchBar];
   else

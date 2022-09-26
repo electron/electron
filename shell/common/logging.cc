@@ -141,7 +141,7 @@ void InitElectronLogging(const base::CommandLine& command_line,
           : APPEND_TO_OLD_LOG_FILE;
   bool success = InitLogging(settings);
   if (!success) {
-    PLOG(FATAL) << "Failed to init logging";
+    PLOG(ERROR) << "Failed to init logging";
   }
 
   SetLogItems(true /* pid */, false, true /* timestamp */, false);

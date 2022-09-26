@@ -7,10 +7,10 @@ This is used by editors to obtain the filesystem path from a dragged file. See
 documentation at https://electronjs.org/docs/api/file-object
 
 diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
-index 72d6b7e109779c9785130ebb0e1e23202c5bc68d..e12c4acfd87f1d698d7c8c8459e7231ee03789fd 100644
+index c061962bec620d2da0e217d8f55b7db57d120f97..59d9946ecfb7d68b41f539ce7c29c7398e00e9b2 100644
 --- a/third_party/blink/renderer/core/fileapi/file.h
 +++ b/third_party/blink/renderer/core/fileapi/file.h
-@@ -212,6 +212,9 @@ class CORE_EXPORT File final : public Blob {
+@@ -211,6 +211,9 @@ class CORE_EXPORT File final : public Blob {
    }
    const String& name() const { return name_; }
  

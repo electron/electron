@@ -10,9 +10,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 
-namespace gin_helper {
-
-namespace internal {
+namespace gin_helper::internal {
 
 namespace {
 
@@ -75,6 +73,4 @@ v8::Local<v8::Object> CreateNativeEvent(
   return event;
 }
 
-}  // namespace internal
-
-}  // namespace gin_helper
+}  // namespace gin_helper::internal

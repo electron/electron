@@ -68,10 +68,8 @@ an issue:
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
   * [Windows Store](tutorial/windows-store-guide.md)
   * [Snapcraft](tutorial/snapcraft.md)
+  * [ASAR Archives](tutorial/asar-archives.md)
 * [Updates](tutorial/updates.md)
-  * [Deploying an Update Server](tutorial/updates.md#deploying-an-update-server)
-  * [Implementing Updates in Your App](tutorial/updates.md#implementing-updates-in-your-app)
-  * [Applying Updates](tutorial/updates.md#applying-updates)
 * [Getting Support](tutorial/support.md)
 
 ## Detailed Tutorials

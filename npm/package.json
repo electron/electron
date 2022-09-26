@@ -8,11 +8,11 @@
     "postinstall": "node install.js"
   },
   "dependencies": {
-    "@electron/get": "^1.14.1",
+    "@electron/get": "^2.0.0",
     "@types/node": "^16.11.26",
     "extract-zip": "^2.0.1"
   },
   "engines": {
-    "node": ">= 10.17.0"
+    "node": ">= 12.20.55"
   }
 }

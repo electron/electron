@@ -167,7 +167,7 @@ new Promise((resolve, reject) => {
     const tarballPath = path.join(tempDir, `${rootPackageJson.name}-${rootPackageJson.version}.tgz`);
     return new Promise((resolve, reject) => {
       const result = childProcess.spawnSync('npm', ['install', tarballPath, '--force', '--silent'], {
-        env: Object.assign({}, process.env, { electron_config_cache: tempDir }),
+        env: { ...process.env, electron_config_cache: tempDir },
         cwd: tempDir,
         stdio: 'inherit'
       });

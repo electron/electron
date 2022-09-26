@@ -18,6 +18,9 @@ template <>
 struct Converter<content::RenderFrameHost*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    content::RenderFrameHost* val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     content::RenderFrameHost** out);
 };
 
 template <>

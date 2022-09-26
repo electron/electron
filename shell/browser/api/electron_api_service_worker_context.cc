@@ -21,9 +21,7 @@
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/node_includes.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -162,6 +160,4 @@ const char* ServiceWorkerContext::GetTypeName() {
   return "ServiceWorkerContext";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

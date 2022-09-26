@@ -241,8 +241,10 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveEarlyHints(
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
     network::mojom::URLResponseHeadPtr head,
-    mojo::ScopedDataPipeConsumerHandle body) {
+    mojo::ScopedDataPipeConsumerHandle body,
+    absl::optional<mojo_base::BigBuffer> cached_metadata) {
   current_body_ = std::move(body);
+  current_cached_metadata_ = std::move(cached_metadata);
   if (current_request_uses_header_client_) {
     // Use the headers we got from OnHeadersReceived as that'll contain
     // Set-Cookie if it existed.
@@ -290,19 +292,9 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnUploadProgress(
                                    std::move(callback));
 }
 
-void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveCachedMetadata(
-    mojo_base::BigBuffer data) {
-  target_client_->OnReceiveCachedMetadata(std::move(data));
-}
-
 void ProxyingURLLoaderFactory::InProgressRequest::OnTransferSizeUpdated(
     int32_t transfer_size_diff) {
   target_client_->OnTransferSizeUpdated(transfer_size_diff);
-}
-
-void ProxyingURLLoaderFactory::InProgressRequest::OnStartLoadingResponseBody(
-    mojo::ScopedDataPipeConsumerHandle body) {
-  target_client_->OnStartLoadingResponseBody(std::move(body));
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
@@ -675,7 +667,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
 
   factory_->web_request_api()->OnResponseStarted(&info_.value(), request_);
   target_client_->OnReceiveResponse(current_response_.Clone(),
-                                    std::move(current_body_));
+                                    std::move(current_body_),
+                                    std::move(current_cached_metadata_));
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(

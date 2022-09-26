@@ -11,11 +11,11 @@
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "electron/electron_gtk_stubs.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/gtk_util.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gtk/gtk_ui.h"    // nogncheck
@@ -186,8 +186,6 @@ class GtkMessageBox : public NativeWindowObserver {
   CHROMEG_CALLBACK_0(GtkMessageBox, void, OnCheckboxToggled, GtkWidget*);
 
  private:
-  electron::UnresponsiveSuppressor unresponsive_suppressor_;
-
   // The id of the dialog.
   absl::optional<int> id_;
 

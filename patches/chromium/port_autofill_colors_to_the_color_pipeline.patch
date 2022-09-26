@@ -8,13 +8,13 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 14d91a0d19c01a856a9614b127a4ef3655614684..a243dd71886af7c5313b16a8522a50ae50af5959 100644
+index 7887adf130100eecfc64634f11f68dfab675c601..4c1d0a2b9149f1db81d9abb624f45f00370bdfc4 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -128,6 +128,16 @@
-   E_CPONLY(kColorOverlayScrollbarStrokeHoveredDark) \
+@@ -209,6 +209,16 @@
    E_CPONLY(kColorOverlayScrollbarStrokeHoveredLight) \
    E_CPONLY(kColorProgressBar) \
+   E_CPONLY(kColorProgressBarPaused) \
 +  E_CPONLY(kColorPwaSecurityChipForeground) \
 +  E_CPONLY(kColorPwaSecurityChipForegroundDangerous) \
 +  E_CPONLY(kColorPwaSecurityChipForegroundPolicyCert) \
@@ -28,7 +28,7 @@ index 14d91a0d19c01a856a9614b127a4ef3655614684..a243dd71886af7c5313b16a8522a50ae
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -180,6 +190,7 @@
+@@ -263,6 +273,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -37,12 +37,12 @@ index 14d91a0d19c01a856a9614b127a4ef3655614684..a243dd71886af7c5313b16a8522a50ae
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 8b5b8c6321aaf668ad90870a0567c1a97d268323..8296b2c017f1774c1a38d931add2b7cac4f57dfe 100644
+index ca33acaffdb3c3dbd8f5f1b7012b1013a983645e..ae5ca280a3965c5922f272fdbc45247fcc8a9750 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -149,6 +149,17 @@ void AddUiColorMixer(ColorProvider* provider,
-       SetAlpha(GetColorWithMaxContrast(kColorOverlayScrollbarFillHoveredLight),
+@@ -151,6 +151,17 @@ void AddUiColorMixer(ColorProvider* provider,
                 gfx::kGoogleGreyAlpha500);
+   mixer[kColorProgressBarPaused] = {kColorDisabledForeground};
    mixer[kColorProgressBar] = {kColorAccent};
 +  mixer[kColorResultsTableNormalBackground] = {SK_ColorWHITE};
 +  mixer[kColorResultsTableHoveredBackground] =
@@ -58,7 +58,7 @@ index 8b5b8c6321aaf668ad90870a0567c1a97d268323..8296b2c017f1774c1a38d931add2b7ca
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -228,6 +239,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -232,6 +243,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};

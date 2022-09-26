@@ -23,6 +23,7 @@
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
@@ -41,6 +42,7 @@
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
+#include "third_party/abseil-cpp/absl/types/variant.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
@@ -239,7 +241,7 @@ const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
 const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
     std::size(kNonWildcardDomainNonPortSchemes);
 
-bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
+absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
 #if BUILDFLAG(IS_WIN)
@@ -317,7 +319,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   content_client_ = std::make_unique<ElectronContentClient>();
   SetContentClient(content_client_.get());
 
-  return false;
+  return absl::nullopt;
 }
 
 void ElectronMainDelegate::PreSandboxStartup() {
@@ -410,7 +412,7 @@ void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
 #endif
 }
 
-void ElectronMainDelegate::PreBrowserMain() {
+absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
@@ -418,6 +420,21 @@ void ElectronMainDelegate::PreBrowserMain() {
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
+  return absl::nullopt;
+}
+
+base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  bool load_browser_process_specific_v8_snapshot =
+      process_type.empty() &&
+      electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
+  if (load_browser_process_specific_v8_snapshot) {
+    return "browser_v8_context_snapshot.bin";
+  }
+  return ContentMainDelegate::GetBrowserV8SnapshotFilename();
 }
 
 content::ContentBrowserClient*
@@ -460,8 +477,8 @@ ElectronMainDelegate::RunProcess(
     return std::move(main_function_params);
 }
 
-bool ElectronMainDelegate::ShouldCreateFeatureList() {
-  return false;
+bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {
+  return absl::holds_alternative<InvokedInChildProcess>(invoked_in);
 }
 
 bool ElectronMainDelegate::ShouldLockSchemeRegistry() {

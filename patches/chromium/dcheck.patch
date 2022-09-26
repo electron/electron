@@ -16,20 +16,6 @@ example, the checks might be disabled for a whole build target, but actually
 only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
-diff --git a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-index 21e7b1cbada3856a7d91040c259be80ae95df07e..b19206ba58725f949403469a3e1d221b12833581 100644
---- a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-+++ b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-@@ -542,8 +542,7 @@ void MobileFriendlinessChecker::NotifyInvalidatePaint(
-                                ->GetPageScaleConstraintsSet()
-                                .FinalConstraints()
-                                .initial_scale;
--    DCHECK_GT(initial_scale, 0);
--
-+    // DCHECK_GT(initial_scale, 0);
-     double actual_font_size =
-         style.FontSize() * initial_scale / viewport_scalar;
-     double area = text->PhysicalAreaSize();
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
 index fe8d191217e24b08d36339dbf047beaeb6bd6538..870db0552544e3e89d9498c22ec3db81b46df741 100644
 --- a/ui/base/clipboard/clipboard_win.cc

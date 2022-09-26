@@ -16,8 +16,8 @@
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/skia_conversions.h"
+#include "ui/linux/linux_ui.h"
 #include "ui/platform_window/platform_window.h"
-#include "ui/views/linux_ui/linux_ui.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/non_client_view.h"
@@ -95,6 +95,9 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
       break;
     case ui::PlatformWindowState::kUnknown:
     case ui::PlatformWindowState::kNormal:
+    case ui::PlatformWindowState::kSnappedPrimary:
+    case ui::PlatformWindowState::kSnappedSecondary:
+    case ui::PlatformWindowState::kFloated:
       break;
   }
   switch (new_state) {
@@ -109,6 +112,9 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
       break;
     case ui::PlatformWindowState::kUnknown:
     case ui::PlatformWindowState::kNormal:
+    case ui::PlatformWindowState::kSnappedPrimary:
+    case ui::PlatformWindowState::kSnappedSecondary:
+    case ui::PlatformWindowState::kFloated:
       break;
   }
   window_state_ = new_state;

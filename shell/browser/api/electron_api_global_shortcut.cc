@@ -9,7 +9,7 @@
 #include "base/containers/contains.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/common/extensions/command.h"
+#include "extensions/common/command.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
@@ -51,9 +51,7 @@ bool MapHasMediaKeys(
 
 }  // namespace
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo GlobalShortcut::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -182,9 +180,7 @@ const char* GlobalShortcut::GetTypeName() {
   return "GlobalShortcut";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

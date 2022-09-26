@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Mon, 20 Jun 2022 14:53:37 -0700
+Subject: disable freezing flags after init in node
+
+This was introduced in
+https://chromium-review.googlesource.com/c/chromium/src/+/3687671.
+
+When running node in the renderer, flags are updated after initialization, so
+freezing the flags in Blink causes node initialization to fail.
+
+If possible, it would be ideal to do this without a patch.
+https://bugs.chromium.org/p/v8/issues/detail?id=12887 suggests that there may
+at some point be an API to "unfreeze" the flags, or we may be able to refactor
+node initialization to not update flags after V8 initialization.
+
+diff --git a/content/renderer/render_process_impl.cc b/content/renderer/render_process_impl.cc
+index c00f1b3d1bde2c1bcc201e6580b8f6151e09af0c..bc33814fb82632c0956f057a4e91fd29c45c9d40 100644
+--- a/content/renderer/render_process_impl.cc
++++ b/content/renderer/render_process_impl.cc
+@@ -226,6 +226,9 @@ RenderProcessImpl::RenderProcessImpl()
+   SetV8FlagIfNotFeature(features::kWebAssemblyDynamicTiering,
+                         "--no-wasm-dynamic-tiering");
+ 
++  // Freezing flags after init conflicts with node in the renderer.
++  v8::V8::SetFlagsFromString("--no-freeze-flags-after-init");
++
+ #if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && defined(ARCH_CPU_X86_64)
+   if (base::FeatureList::IsEnabled(features::kWebAssemblyTrapHandler)) {
+     if (command_line->HasSwitch(switches::kEnableCrashpad) ||

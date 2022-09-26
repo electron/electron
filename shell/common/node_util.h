@@ -13,9 +13,7 @@ namespace node {
 class Environment;
 }
 
-namespace electron {
-
-namespace util {
+namespace electron::util {
 
 // Run a script with JS source bundled inside the binary as if it's wrapped
 // in a function called with a null receiver and arguments specified in C++.
@@ -29,8 +27,6 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     std::vector<v8::Local<v8::Value>>* arguments,
     node::Environment* optional_env);
 
-}  // namespace util
-
-}  // namespace electron
+}  // namespace electron::util
 
 #endif  // ELECTRON_SHELL_COMMON_NODE_UTIL_H_

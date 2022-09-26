@@ -67,38 +67,36 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
   bool has_other_items_proxy = false;
 
-  if (@available(macOS 10.12.2, *)) {
-    for (const auto& item : dicts) {
-      std::string type;
-      std::string item_id;
-      if (item.Get("type", &type) && item.Get("id", &item_id)) {
-        NSTouchBarItemIdentifier identifier = nil;
-        if (type == "spacer") {
-          std::string size;
-          item.Get("size", &size);
-          if (size == "large") {
-            identifier = NSTouchBarItemIdentifierFixedSpaceLarge;
-          } else if (size == "flexible") {
-            identifier = NSTouchBarItemIdentifierFlexibleSpace;
-          } else {
-            identifier = NSTouchBarItemIdentifierFixedSpaceSmall;
-          }
-        } else if (type == "other_items_proxy") {
-          identifier = NSTouchBarItemIdentifierOtherItemsProxy;
-          has_other_items_proxy = true;
+  for (const auto& item : dicts) {
+    std::string type;
+    std::string item_id;
+    if (item.Get("type", &type) && item.Get("id", &item_id)) {
+      NSTouchBarItemIdentifier identifier = nil;
+      if (type == "spacer") {
+        std::string size;
+        item.Get("size", &size);
+        if (size == "large") {
+          identifier = NSTouchBarItemIdentifierFixedSpaceLarge;
+        } else if (size == "flexible") {
+          identifier = NSTouchBarItemIdentifierFlexibleSpace;
         } else {
-          identifier = [self identifierFromID:item_id type:type];
+          identifier = NSTouchBarItemIdentifierFixedSpaceSmall;
         }
+      } else if (type == "other_items_proxy") {
+        identifier = NSTouchBarItemIdentifierOtherItemsProxy;
+        has_other_items_proxy = true;
+      } else {
+        identifier = [self identifierFromID:item_id type:type];
+      }
 
-        if (identifier) {
-          settings_[item_id] = item;
-          [identifiers addObject:identifier];
-        }
+      if (identifier) {
+        settings_[item_id] = item;
+        [identifiers addObject:identifier];
       }
     }
-    if (!has_other_items_proxy)
-      [identifiers addObject:NSTouchBarItemIdentifierOtherItemsProxy];
   }
+  if (!has_other_items_proxy)
+    [identifiers addObject:NSTouchBarItemIdentifierOtherItemsProxy];
 
   return identifiers;
 }
@@ -140,8 +138,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar
                          id:(NSTouchBarItemIdentifier)identifier
                    withType:(const std::string&)item_type
-               withSettings:(const gin_helper::PersistentDictionary&)settings
-    API_AVAILABLE(macosx(10.12.2)) {
+               withSettings:(const gin_helper::PersistentDictionary&)settings {
   NSTouchBarItem* item = [touchBar itemForIdentifier:identifier];
   if (!item)
     return;
@@ -244,8 +241,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)buttonAction:(id)sender {
   NSString* item_id =
       [NSString stringWithFormat:@"%ld", ((NSButton*)sender).tag];
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
-                                         base::DictionaryValue());
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String], {});
 }
 
 - (void)colorPickerAction:(id)sender {
@@ -255,19 +251,20 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   NSColor* color = ((NSColorPickerTouchBarItem*)sender).color;
   std::string hex_color =
       electron::ToRGBHex(skia::NSDeviceColorToSkColor(color));
-  base::DictionaryValue details;
-  details.SetString("color", hex_color);
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String], details);
+  base::Value::Dict details;
+  details.Set("color", hex_color);
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
+                                         std::move(details));
 }
 
 - (void)sliderAction:(id)sender {
   NSString* identifier = ((NSSliderTouchBarItem*)sender).identifier;
   NSString* item_id = [self idFromIdentifier:identifier
                                   withPrefix:SliderIdentifier];
-  base::DictionaryValue details;
-  details.SetInteger("value",
-                     [((NSSliderTouchBarItem*)sender).slider intValue]);
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String], details);
+  base::Value::Dict details;
+  details.Set("value", [((NSSliderTouchBarItem*)sender).slider intValue]);
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
+                                         std::move(details));
 }
 
 - (NSString*)idFromIdentifier:(NSString*)identifier
@@ -278,34 +275,33 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)segmentedControlAction:(id)sender {
   NSString* item_id =
       [NSString stringWithFormat:@"%ld", ((NSSegmentedControl*)sender).tag];
-  base::DictionaryValue details;
-  details.SetInteger("selectedIndex",
-                     ((NSSegmentedControl*)sender).selectedSegment);
-  details.SetBoolean(
+  base::Value::Dict details;
+  details.Set("selectedIndex",
+              static_cast<int>(((NSSegmentedControl*)sender).selectedSegment));
+  details.Set(
       "isSelected",
       [((NSSegmentedControl*)sender)
           isSelectedForSegment:((NSSegmentedControl*)sender).selectedSegment]);
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String], details);
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
+                                         std::move(details));
 }
 
 - (void)scrubber:(NSScrubber*)scrubber
-    didSelectItemAtIndex:(NSInteger)selectedIndex
-    API_AVAILABLE(macosx(10.12.2)) {
-  base::DictionaryValue details;
-  details.SetInteger("selectedIndex", selectedIndex);
-  details.SetString("type", "select");
+    didSelectItemAtIndex:(NSInteger)selectedIndex {
+  base::Value::Dict details;
+  details.Set("selectedIndex", static_cast<int>(selectedIndex));
+  details.Set("type", "select");
   window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String],
-                                         details);
+                                         std::move(details));
 }
 
 - (void)scrubber:(NSScrubber*)scrubber
-    didHighlightItemAtIndex:(NSInteger)highlightedIndex
-    API_AVAILABLE(macosx(10.12.2)) {
-  base::DictionaryValue details;
-  details.SetInteger("highlightedIndex", highlightedIndex);
-  details.SetString("type", "highlight");
+    didHighlightItemAtIndex:(NSInteger)highlightedIndex {
+  base::Value::Dict details;
+  details.Set("highlightedIndex", static_cast<int>(highlightedIndex));
+  details.Set("type", "highlight");
   window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String],
-                                         details);
+                                         std::move(details));
 }
 
 - (NSTouchBarItemIdentifier)identifierFromID:(const std::string&)item_id
@@ -592,8 +588,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)updateGroup:(NSGroupTouchBarItem*)item
-       withSettings:(const gin_helper::PersistentDictionary&)settings
-    API_AVAILABLE(macosx(10.12.2)) {
+       withSettings:(const gin_helper::PersistentDictionary&)settings {
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
@@ -609,8 +604,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSTouchBarItem*)makeSegmentedControlForID:(NSString*)id
-                              withIdentifier:(NSString*)identifier
-    API_AVAILABLE(macosx(10.12.2)) {
+                              withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id])
     return nil;
@@ -635,8 +629,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)updateSegmentedControl:(NSCustomTouchBarItem*)item
-                  withSettings:(const gin_helper::PersistentDictionary&)settings
-    API_AVAILABLE(macosx(10.12.2)) {
+                  withSettings:
+                      (const gin_helper::PersistentDictionary&)settings {
   NSSegmentedControl* control = item.view;
 
   std::string segmentStyle;
@@ -697,8 +691,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSTouchBarItem*)makeScrubberForID:(NSString*)id
-                      withIdentifier:(NSString*)identifier
-    API_AVAILABLE(macosx(10.12.2)) {
+                      withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
   if (![self hasItemWithID:s_id])
     return nil;
@@ -729,8 +722,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)updateScrubber:(NSCustomTouchBarItem*)item
-          withSettings:(const gin_helper::PersistentDictionary&)settings
-    API_AVAILABLE(macosx(10.12.2)) {
+          withSettings:(const gin_helper::PersistentDictionary&)settings {
   NSScrubber* scrubber = item.view;
 
   bool showsArrowButtons = false;
@@ -780,8 +772,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   [scrubber reloadData];
 }
 
-- (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber
-    API_AVAILABLE(macosx(10.12.2)) {
+- (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber {
   std::string s_id([[scrubber identifier] UTF8String]);
   if (![self hasItemWithID:s_id])
     return 0;
@@ -796,8 +787,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSScrubberItemView*)scrubber:(NSScrubber*)scrubber
-             viewForItemAtIndex:(NSInteger)index
-    API_AVAILABLE(macosx(10.12.2)) {
+             viewForItemAtIndex:(NSInteger)index {
   std::string s_id([[scrubber identifier] UTF8String]);
   if (![self hasItemWithID:s_id])
     return nil;
@@ -839,7 +829,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSSize)scrubber:(NSScrubber*)scrubber
                 layout:(NSScrubberFlowLayout*)layout
-    sizeForItemAtIndex:(NSInteger)itemIndex API_AVAILABLE(macosx(10.12.2)) {
+    sizeForItemAtIndex:(NSInteger)itemIndex {
   NSInteger width = 50;
   NSInteger height = 30;
   NSInteger margin = 15;

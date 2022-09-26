@@ -7,41 +7,18 @@
 #include <memory>
 #include <string>
 
-#include "base/allocator/allocator_shim.h"
 #include "base/allocator/buildflags.h"
+#include "base/allocator/partition_allocator/shim/allocator_shim.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_objc_class_swizzler.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
+#include "shell/browser/api/electron_api_push_notifications.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
 #import "shell/browser/mac/electron_application.h"
 
 #import <UserNotifications/UserNotifications.h>
-
-#if BUILDFLAG(USE_ALLOCATOR_SHIM)
-// On macOS 10.12, the IME system attempts to allocate a 2^64 size buffer,
-// which would typically cause an OOM crash. To avoid this, the problematic
-// method is swizzled out and the make-OOM-fatal bit is disabled for the
-// duration of the original call. https://crbug.com/654695
-static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
-@interface OOMDisabledIMKInputSession : NSObject
-@end
-@implementation OOMDisabledIMKInputSession
-- (void)_coreAttributesFromRange:(NSRange)range
-                 whichAttributes:(long long)attributes  // NOLINT(runtime/int)
-               completionHandler:(void (^)(void))block {
-  // The allocator flag is per-process, so other threads may temporarily
-  // not have fatal OOM occur while this method executes, but it is better
-  // than crashing when using IME.
-  base::allocator::SetCallNewHandlerOnMallocFailure(false);
-  g_swizzle_imk_input_session->InvokeOriginal<
-      void, NSRange, long long, void (^)(void)>(  // NOLINT(runtime/int)
-      self, _cmd, range, attributes, block);
-  base::allocator::SetCallNewHandlerOnMallocFailure(true);
-}
-@end
-#endif  // BUILDFLAG(USE_ALLOCATOR_SHIM)
 
 static NSDictionary* UNNotificationResponseToNSDictionary(
     UNNotificationResponse* response) API_AVAILABLE(macosx(10.14)) {
@@ -108,17 +85,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   }
 
   electron::Browser::Get()->DidFinishLaunching(
-      electron::NSDictionaryToDictionaryValue(notification_info));
-
-#if BUILDFLAG(USE_ALLOCATOR_SHIM)
-  // Disable fatal OOM to hack around an OS bug https://crbug.com/654695.
-  if (base::mac::IsOS10_12()) {
-    g_swizzle_imk_input_session = new base::mac::ScopedObjCClassSwizzler(
-        NSClassFromString(@"IMKInputSession"),
-        [OOMDisabledIMKInputSession class],
-        @selector(_coreAttributesFromRange:whichAttributes:completionHandler:));
-  }
-#endif
+      electron::NSDictionaryToValue(notification_info));
 }
 
 - (void)applicationDidBecomeActive:(NSNotification*)notification {
@@ -162,8 +129,8 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   electron::Browser* browser = electron::Browser::Get();
   return browser->ContinueUserActivity(
              activity_type,
-             electron::NSDictionaryToDictionaryValue(userActivity.userInfo),
-             electron::NSDictionaryToDictionaryValue(details))
+             electron::NSDictionaryToValue(userActivity.userInfo),
+             electron::NSDictionaryToValue(details))
              ? YES
              : NO;
 }
@@ -189,6 +156,45 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 
 - (IBAction)newWindowForTab:(id)sender {
   electron::Browser::Get()->NewWindowForTab();
+}
+
+- (void)application:(NSApplication*)application
+    didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
+  // https://stackoverflow.com/a/16411517
+  const char* token_data = static_cast<const char*>([deviceToken bytes]);
+  NSMutableString* token_string = [NSMutableString string];
+  for (NSUInteger i = 0; i < [deviceToken length]; i++) {
+    [token_string appendFormat:@"%02.2hhX", token_data[i]];
+  }
+  // Resolve outstanding APNS promises created during registration attempts
+  electron::api::PushNotifications* push_notifications =
+      electron::api::PushNotifications::Get();
+  if (push_notifications) {
+    push_notifications->ResolveAPNSPromiseSetWithToken(
+        base::SysNSStringToUTF8(token_string));
+  }
+}
+
+- (void)application:(NSApplication*)application
+    didFailToRegisterForRemoteNotificationsWithError:(NSError*)error {
+  std::string error_message(base::SysNSStringToUTF8(
+      [NSString stringWithFormat:@"%ld %@ %@", [error code], [error domain],
+                                 [error userInfo]]));
+  electron::api::PushNotifications* push_notifications =
+      electron::api::PushNotifications::Get();
+  if (push_notifications) {
+    push_notifications->RejectAPNSPromiseSetWithError(error_message);
+  }
+}
+
+- (void)application:(NSApplication*)application
+    didReceiveRemoteNotification:(NSDictionary*)userInfo {
+  electron::api::PushNotifications* push_notifications =
+      electron::api::PushNotifications::Get();
+  if (push_notifications) {
+    electron::api::PushNotifications::Get()->OnDidReceiveAPNSNotification(
+        electron::NSDictionaryToValue(userInfo));
+  }
 }
 
 @end

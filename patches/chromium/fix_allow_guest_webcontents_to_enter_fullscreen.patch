@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Mon, 6 Jun 2022 14:25:15 -0700
+Subject: fix: allow guest webcontents to enter fullscreen
+
+This can be upstreamed, a guest webcontents can't technically become the focused webContents. This DCHECK should allow all guest webContents to request fullscreen entrance.
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index d5af52091f201cc51c3525798d99e2e42f623979..dfb2ac1c515176c12f7f39d08b671321f6a931b4 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -3460,7 +3460,7 @@ void WebContentsImpl::EnterFullscreenMode(
+   OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::EnterFullscreenMode");
+   DCHECK(CanEnterFullscreenMode(requesting_frame, options));
+   DCHECK(requesting_frame->IsActive());
+-  DCHECK(ContainsOrIsFocusedWebContents());
++  DCHECK(ContainsOrIsFocusedWebContents() || IsGuest());
+ 
+   if (delegate_) {
+     delegate_->EnterFullscreenModeForTab(requesting_frame, options);

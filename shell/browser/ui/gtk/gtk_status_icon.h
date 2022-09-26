@@ -9,7 +9,7 @@
 
 #include "ui/base/glib/glib_integers.h"
 #include "ui/base/glib/glib_signal.h"
-#include "ui/views/linux_ui/status_icon_linux.h"
+#include "ui/linux/status_icon_linux.h"
 
 typedef struct _GtkStatusIcon GtkStatusIcon;
 
@@ -21,14 +21,13 @@ namespace ui {
 class MenuModel;
 }
 
-namespace electron {
+namespace electron::gtkui {
 
-namespace gtkui {
 class AppIndicatorIconMenu;
 
 // Status icon implementation which uses the system tray X11 spec (via
 // GtkStatusIcon).
-class GtkStatusIcon : public views::StatusIconLinux {
+class GtkStatusIcon : public ui::StatusIconLinux {
  public:
   GtkStatusIcon(const gfx::ImageSkia& image, const std::u16string& tool_tip);
   ~GtkStatusIcon() override;
@@ -37,7 +36,7 @@ class GtkStatusIcon : public views::StatusIconLinux {
   GtkStatusIcon(const GtkStatusIcon&) = delete;
   GtkStatusIcon& operator=(const GtkStatusIcon&) = delete;
 
-  // Overridden from views::StatusIconLinux:
+  // Overridden from ui::StatusIconLinux:
   void SetIcon(const gfx::ImageSkia& image) override;
   void SetToolTip(const std::u16string& tool_tip) override;
   void UpdatePlatformContextMenu(ui::MenuModel* menu) override;
@@ -58,8 +57,6 @@ class GtkStatusIcon : public views::StatusIconLinux {
   std::unique_ptr<AppIndicatorIconMenu> menu_;
 };
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_GTK_GTK_STATUS_ICON_H_

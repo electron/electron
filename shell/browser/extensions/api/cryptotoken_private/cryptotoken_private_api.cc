@@ -39,9 +39,7 @@
 #include "device/fido/win/webauthn_api.h"
 #endif  // BUILDFLAG(IS_WIN)
 
-namespace extensions {
-
-namespace api {
+namespace extensions::api {
 
 namespace {
 
@@ -255,18 +253,18 @@ CryptotokenPrivateCanAppIdGetAttestationFunction::Run() {
   return RespondNow(Error("no PermissionRequestManager"));
   // }
 
-  // // The created AttestationPermissionRequest deletes itself once complete.
-  // permission_request_manager->AddRequest(
-  //     web_contents->GetMainFrame(),  // Extension API targets a particular
-  //     tab,
-  //                                    // so select the current main frame to
-  //                                    // handle the request.
-  //     NewAttestationPermissionRequest(
-  //         origin,
-  //         base::BindOnce(
-  //             &CryptotokenPrivateCanAppIdGetAttestationFunction::Complete,
-  //             this)));
-  // return RespondLater();
+#if 0  // TODO(MarshallOfSound): why is this commented out?
+  // The created AttestationPermissionRequest deletes itself once complete.
+  permission_request_manager->AddRequest(
+      web_contents->GetPrimaryMainFrame(),
+      tab,
+      NewAttestationPermissionRequest(
+          origin,
+          base::BindOnce(
+              &CryptotokenPrivateCanAppIdGetAttestationFunction::Complete,
+              this)));
+  return RespondLater();
+#endif
 #endif
 }
 
@@ -307,5 +305,4 @@ CryptotokenPrivateRecordSignRequestFunction::Run() {
   return RespondNow(NoArguments());
 }
 
-}  // namespace api
-}  // namespace extensions
+}  // namespace extensions::api

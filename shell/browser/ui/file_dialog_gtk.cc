@@ -14,7 +14,6 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/gtk_util.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gtk/gtk_ui.h"    // nogncheck
@@ -32,8 +31,11 @@ static const int kPreviewWidth = 256;
 static const int kPreviewHeight = 512;
 
 std::string MakeCaseInsensitivePattern(const std::string& extension) {
-  std::string pattern("*.");
+  // If the extension is the "all files" extension, no change needed.
+  if (extension == "*")
+    return extension;
 
+  std::string pattern("*.");
   for (std::size_t i = 0, n = extension.size(); i < n; i++) {
     char ch = extension[i];
     if (!base::IsAsciiAlpha(ch)) {
@@ -219,7 +221,6 @@ class FileChooserDialog {
   void AddFilters(const Filters& filters);
 
   electron::NativeWindowViews* parent_;
-  electron::UnresponsiveSuppressor unresponsive_suppressor_;
 
   GtkFileChooser* dialog_;
   GtkWidget* preview_;

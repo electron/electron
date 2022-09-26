@@ -12,8 +12,8 @@
 
 namespace electron {
 
-class ElectronDesktopWindowTreeHostWin
-    : public views::DesktopWindowTreeHostWin {
+class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
+                                         public ::ui::NativeThemeObserver {
  public:
   ElectronDesktopWindowTreeHostWin(
       NativeWindowViews* native_window_view,
@@ -36,6 +36,10 @@ class ElectronDesktopWindowTreeHostWin
   bool GetDwmFrameInsetsInPixels(gfx::Insets* insets) const override;
   bool GetClientAreaInsets(gfx::Insets* insets,
                            HMONITOR monitor) const override;
+  bool HandleMouseEventForCaption(UINT message) const override;
+
+  // ui::NativeThemeObserver:
+  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
  private:
   NativeWindowViews* native_window_view_;  // weak ref

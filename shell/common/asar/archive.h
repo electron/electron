@@ -13,11 +13,8 @@
 #include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
+#include "base/values.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
-
-namespace base {
-class DictionaryValue;
-}
 
 namespace asar {
 
@@ -104,7 +101,7 @@ class Archive {
   base::File file_;
   int fd_ = -1;
   uint32_t header_size_ = 0;
-  std::unique_ptr<base::DictionaryValue> header_;
+  absl::optional<base::Value::Dict> header_;
 
   // Cached external temporary files.
   base::Lock external_files_lock_;

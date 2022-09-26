@@ -23,9 +23,7 @@
 #include "shell/common/process_util.h"
 #include "third_party/crashpad/crashpad/client/annotation.h"
 
-namespace electron {
-
-namespace crash_keys {
+namespace electron::crash_keys {
 
 namespace {
 
@@ -167,6 +165,4 @@ void SetPlatformCrashKey() {
 #endif
 }
 
-}  // namespace crash_keys
-
-}  // namespace electron
+}  // namespace electron::crash_keys

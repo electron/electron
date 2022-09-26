@@ -75,10 +75,9 @@ class Session : public gin::Wrappable<Session>,
   static Session* FromBrowserContext(content::BrowserContext* context);
 
   // Gets the Session of |partition|.
-  static gin::Handle<Session> FromPartition(
-      v8::Isolate* isolate,
-      const std::string& partition,
-      base::DictionaryValue options = base::DictionaryValue());
+  static gin::Handle<Session> FromPartition(v8::Isolate* isolate,
+                                            const std::string& partition,
+                                            base::Value::Dict options = {});
 
   ElectronBrowserContext* browser_context() const { return browser_context_; }
 
@@ -105,6 +104,8 @@ class Session : public gin::Wrappable<Session>,
   void SetPermissionCheckHandler(v8::Local<v8::Value> val,
                                  gin::Arguments* args);
   void SetDevicePermissionHandler(v8::Local<v8::Value> val,
+                                  gin::Arguments* args);
+  void SetBluetoothPairingHandler(v8::Local<v8::Value> val,
                                   gin::Arguments* args);
   v8::Local<v8::Promise> ClearHostResolverCache(gin::Arguments* args);
   v8::Local<v8::Promise> ClearAuthCache();
@@ -180,6 +181,9 @@ class Session : public gin::Wrappable<Session>,
 #endif
 
  private:
+  void SetDisplayMediaRequestHandler(v8::Isolate* isolate,
+                                     v8::Local<v8::Value> val);
+
   // Cached gin_helper::Wrappable objects.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;

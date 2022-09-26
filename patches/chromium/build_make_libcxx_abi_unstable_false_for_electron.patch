@@ -5,19 +5,15 @@ Subject: build: make libcxx_abi_unstable false for electron
 
 https://nornagon.medium.com/a-libc-odyssey-973e51649063
 
-diff --git a/build/config/c++/BUILD.gn b/build/config/c++/BUILD.gn
-index 046792ac275853bf109537589b911cfada44ed24..e43daeaa8f8c8e23eea99b3f8f5f48f92012bbc1 100644
---- a/build/config/c++/BUILD.gn
-+++ b/build/config/c++/BUILD.gn
-@@ -8,6 +8,11 @@ assert(use_custom_libcxx, "should only be used if use_custom_libcxx is set")
+diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
+index c9f885120cdcafbdd021a3d2afa3d7f29bf56367..a26efc71bed9c672528431fa8969e60d0aac3c42 100644
+--- a/buildtools/third_party/libc++/__config_site
++++ b/buildtools/third_party/libc++/__config_site
+@@ -12,7 +12,6 @@
+ //    limit for PDBs (https://crbug.com/1327710#c5). To fix this, we set
+ //    _LIBCPP_ABI_NAMESPACE to a shorter value.
+ #define _LIBCPP_ABI_NAMESPACE Cr
+-#define _LIBCPP_ABI_VERSION 2
  
- libcxx_abi_unstable = true
- 
-+if (is_electron_build) {
-+  # This breaks native node modules
-+  libcxx_abi_unstable = false
-+}
-+
- # TODO(xiaohuic): https://crbug/917533 Crashes on internal ChromeOS build.
- # Do unconditionally once the underlying problem is fixed.
- if (is_chromeos_ash && is_chrome_branded) {
+ /* #undef _LIBCPP_ABI_FORCE_ITANIUM */
+ /* #undef _LIBCPP_ABI_FORCE_MICROSOFT */

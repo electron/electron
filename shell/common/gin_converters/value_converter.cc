@@ -7,38 +7,38 @@
 #include <memory>
 #include <utility>
 
-#include "base/values.h"
-#include "shell/common/v8_value_converter.h"
+#include "content/public/renderer/v8_value_converter.h"
 
 namespace gin {
 
-bool Converter<base::DictionaryValue>::FromV8(v8::Isolate* isolate,
-                                              v8::Local<v8::Value> val,
-                                              base::DictionaryValue* out) {
-  electron::V8ValueConverter converter;
-  std::unique_ptr<base::Value> value(
-      converter.FromV8Value(val, isolate->GetCurrentContext()));
+bool Converter<base::Value::Dict>::FromV8(v8::Isolate* isolate,
+                                          v8::Local<v8::Value> val,
+                                          base::Value::Dict* out) {
+  std::unique_ptr<base::Value> value =
+      content::V8ValueConverter::Create()->FromV8Value(
+          val, isolate->GetCurrentContext());
   if (value && value->is_dict()) {
-    out->Swap(static_cast<base::DictionaryValue*>(value.get()));
+    *out = std::move(value->GetDict());
     return true;
   } else {
     return false;
   }
 }
 
-v8::Local<v8::Value> Converter<base::DictionaryValue>::ToV8(
+v8::Local<v8::Value> Converter<base::Value::Dict>::ToV8(
     v8::Isolate* isolate,
-    const base::DictionaryValue& val) {
-  electron::V8ValueConverter converter;
-  return converter.ToV8Value(&val, isolate->GetCurrentContext());
+    const base::Value::Dict& val) {
+  base::Value value(val.Clone());
+  return content::V8ValueConverter::Create()->ToV8Value(
+      value, isolate->GetCurrentContext());
 }
 
 bool Converter<base::Value>::FromV8(v8::Isolate* isolate,
                                     v8::Local<v8::Value> val,
                                     base::Value* out) {
-  electron::V8ValueConverter converter;
-  std::unique_ptr<base::Value> value(
-      converter.FromV8Value(val, isolate->GetCurrentContext()));
+  std::unique_ptr<base::Value> value =
+      content::V8ValueConverter::Create()->FromV8Value(
+          val, isolate->GetCurrentContext());
   if (value) {
     *out = std::move(*value);
     return true;
@@ -49,29 +49,30 @@ bool Converter<base::Value>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<base::Value>::ToV8(v8::Isolate* isolate,
                                                   const base::Value& val) {
-  electron::V8ValueConverter converter;
-  return converter.ToV8Value(&val, isolate->GetCurrentContext());
+  return content::V8ValueConverter::Create()->ToV8Value(
+      val, isolate->GetCurrentContext());
 }
 
-bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
-                                        v8::Local<v8::Value> val,
-                                        base::ListValue* out) {
-  electron::V8ValueConverter converter;
-  std::unique_ptr<base::Value> value(
-      converter.FromV8Value(val, isolate->GetCurrentContext()));
+bool Converter<base::Value::List>::FromV8(v8::Isolate* isolate,
+                                          v8::Local<v8::Value> val,
+                                          base::Value::List* out) {
+  std::unique_ptr<base::Value> value =
+      content::V8ValueConverter::Create()->FromV8Value(
+          val, isolate->GetCurrentContext());
   if (value && value->is_list()) {
-    out->Swap(static_cast<base::ListValue*>(value.get()));
+    *out = std::move(value->GetList());
     return true;
   } else {
     return false;
   }
 }
 
-v8::Local<v8::Value> Converter<base::ListValue>::ToV8(
+v8::Local<v8::Value> Converter<base::Value::List>::ToV8(
     v8::Isolate* isolate,
-    const base::ListValue& val) {
-  electron::V8ValueConverter converter;
-  return converter.ToV8Value(&val, isolate->GetCurrentContext());
+    const base::Value::List& val) {
+  base::Value value(val.Clone());
+  return content::V8ValueConverter::Create()->ToV8Value(
+      value, isolate->GetCurrentContext());
 }
 
 }  // namespace gin

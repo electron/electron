@@ -14,7 +14,6 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -33,9 +32,7 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 BrowserWindow::BrowserWindow(gin::Arguments* args,
                              const gin_helper::Dictionary& options)
@@ -137,6 +134,7 @@ BrowserWindow::~BrowserWindow() {
     api_web_contents_->RemoveObserver(this);
     // Destroy the WebContents.
     OnCloseContents();
+    api_web_contents_->Destroy();
   }
 }
 
@@ -158,29 +156,6 @@ void BrowserWindow::RenderViewHostChanged(content::RenderViewHost* old_host,
     old_host->GetWidget()->RemoveInputEventObserver(this);
   if (new_host)
     new_host->GetWidget()->AddInputEventObserver(this);
-}
-
-void BrowserWindow::RenderFrameCreated(
-    content::RenderFrameHost* render_frame_host) {
-  if (!window()->transparent())
-    return;
-
-  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_frame_host->GetProcess()->GetID(),
-      render_frame_host->GetRoutingID());
-  if (impl)
-    impl->owner_delegate()->SetBackgroundOpaque(false);
-}
-
-void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
-  if (window()->IsClosed() || window()->IsVisible())
-    return;
-
-  // When there is a non-empty first paint, resize the RenderWidget to force
-  // Chromium to draw.
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  view->Show();
-  view->SetSize(window()->GetContentSize());
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
@@ -207,7 +182,6 @@ void BrowserWindow::WebContentsDestroyed() {
 
 void BrowserWindow::OnCloseContents() {
   BaseWindow::ResetBrowserViews();
-  api_web_contents_->Destroy();
 }
 
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
@@ -290,7 +264,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   } else {
     web_contents()->Close();
   }
-}  // namespace api
+}
 
 void BrowserWindow::OnWindowBlur() {
   if (api_web_contents_)
@@ -397,31 +371,33 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   }
 }
 
-void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
+void BrowserWindow::SetBrowserView(
+    absl::optional<gin::Handle<BrowserView>> browser_view) {
   BaseWindow::ResetBrowserViews();
-  BaseWindow::AddBrowserView(value);
+  if (browser_view)
+    BaseWindow::AddBrowserView(*browser_view);
 #if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
-void BrowserWindow::AddBrowserView(v8::Local<v8::Value> value) {
-  BaseWindow::AddBrowserView(value);
+void BrowserWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
+  BaseWindow::AddBrowserView(browser_view);
 #if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
-void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
-  BaseWindow::RemoveBrowserView(value);
+void BrowserWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
+  BaseWindow::RemoveBrowserView(browser_view);
 #if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
-void BrowserWindow::SetTopBrowserView(v8::Local<v8::Value> value,
+void BrowserWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                                       gin_helper::Arguments* args) {
-  BaseWindow::SetTopBrowserView(value, args);
+  BaseWindow::SetTopBrowserView(browser_view, args);
 #if BUILDFLAG(IS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
@@ -436,23 +412,6 @@ void BrowserWindow::ResetBrowserViews() {
 
 void BrowserWindow::OnDevToolsResized() {
   UpdateDraggableRegions(draggable_regions_);
-}
-
-void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
-                                v8::Local<v8::Value> value) {
-  std::string type = gin::V8ToString(isolate, value);
-
-  auto* render_view_host = web_contents()->GetRenderViewHost();
-  if (render_view_host) {
-    auto* impl = content::RenderWidgetHostImpl::FromID(
-        render_view_host->GetProcess()->GetID(),
-        render_view_host->GetRoutingID());
-    if (impl)
-      impl->owner_delegate()->SetBackgroundOpaque(
-          type.empty() ? !window_->transparent() : false);
-  }
-
-  BaseWindow::SetVibrancy(isolate, value);
 }
 
 void BrowserWindow::FocusOnWebView() {
@@ -546,8 +505,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
 
 void BrowserWindow::NotifyWindowUnresponsive() {
   window_unresponsive_closure_.Cancel();
-  if (!window_->IsClosed() && window_->IsEnabled() &&
-      !IsUnresponsiveEventSuppressed()) {
+  if (!window_->IsClosed() && window_->IsEnabled()) {
     Emit("unresponsive");
   }
 }
@@ -607,9 +565,7 @@ v8::Local<v8::Value> BrowserWindow::From(v8::Isolate* isolate,
     return v8::Null(isolate);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
