@@ -186,7 +186,7 @@ by creating a barebones web page in an `index.html` file in the root folder of y
 ```
 
 Now that you have a web page, you can load it into an Electron [BrowserWindow][browser-window].
-Replace the contents your `main.js` file with the following code. We will explain each
+Replace the contents of your `main.js` file with the following code. We will explain each
 highlighted block separately.
 
 ```js {1,3-10,12-14} title='main.js' showLineNumbers
@@ -435,7 +435,7 @@ This file controls Electron's **main process**, which runs an instance of Node.j
 responsible for your app's lifecycle, displaying native interfaces, performing privileged operations,
 and managing renderer processes.
 
-**Renderer processes** (or renderers for short) are responsible for display graphical content. You can
+**Renderer processes** (or renderers for short) are responsible for displaying graphical content. You can
 load a web page into a renderer by pointing it to either a web address or a local HTML file.
 Renderers behave very similarly to regular web pages and have access to the same web APIs.
 
