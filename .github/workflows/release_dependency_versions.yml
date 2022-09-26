@@ -20,7 +20,7 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     needs: check_tag
-    if: jobs.check_tag.outputs.should_release == 'true'
+    if: needs.check_tag.outputs.should_release == 'true'
     steps:
       - uses: actions/checkout@v3
       - name: Trigger New chromedriver Release
