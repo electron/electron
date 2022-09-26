@@ -1,0 +1,374 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@chromium.org>
+Date: Thu, 8 Sep 2022 23:05:34 +0000
+Subject: Return retained const objects from SearchNameNodeByNameInternal()
+
+Cherry-pick of d51720c9bb55d1163ab4fdcdc6981e753aa2354d + manual
+conflict resolution.
+
+Bug: chromium:1358075
+Change-Id: Ibb20a6feaf79f7b351f22c607c306da40026d53e
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/97739
+Auto-Submit: Tom Sepez <tsepez@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/core/fpdfapi/parser/cpdf_array.h b/core/fpdfapi/parser/cpdf_array.h
+index 223cd59ab7cb6cc2c08071118d1fbb3241904c6b..a2c067878847cc8ed17eb78bee416716f08a338b 100644
+--- a/core/fpdfapi/parser/cpdf_array.h
++++ b/core/fpdfapi/parser/cpdf_array.h
+@@ -194,4 +194,8 @@ inline RetainPtr<CPDF_Array> ToArray(RetainPtr<CPDF_Object> obj) {
+   return RetainPtr<CPDF_Array>(ToArray(obj.Get()));
+ }
+ 
++inline RetainPtr<const CPDF_Array> ToArray(RetainPtr<const CPDF_Object> obj) {
++  return RetainPtr<const CPDF_Array>(ToArray(obj.Get()));
++}
++
+ #endif  // CORE_FPDFAPI_PARSER_CPDF_ARRAY_H_
+diff --git a/core/fpdfapi/parser/cpdf_dictionary.h b/core/fpdfapi/parser/cpdf_dictionary.h
+index c7ccdc6eef50ddb93585975fb613ce442199e0ee..658ed6586959b5c2165589c9633060f86825c535 100644
+--- a/core/fpdfapi/parser/cpdf_dictionary.h
++++ b/core/fpdfapi/parser/cpdf_dictionary.h
+@@ -170,4 +170,9 @@ inline RetainPtr<CPDF_Dictionary> ToDictionary(RetainPtr<CPDF_Object> obj) {
+   return RetainPtr<CPDF_Dictionary>(ToDictionary(obj.Get()));
+ }
+ 
++inline RetainPtr<const CPDF_Dictionary> ToDictionary(
++    RetainPtr<const CPDF_Object> obj) {
++  return RetainPtr<const CPDF_Dictionary>(ToDictionary(obj.Get()));
++}
++
+ #endif  // CORE_FPDFAPI_PARSER_CPDF_DICTIONARY_H_
+diff --git a/core/fpdfapi/parser/cpdf_number.h b/core/fpdfapi/parser/cpdf_number.h
+index 864bbb2186f0c6208db9942121d2f80b214d46a1..0ca1130ec5a0f595054ff3e4d3d73c5e57f94e6c 100644
+--- a/core/fpdfapi/parser/cpdf_number.h
++++ b/core/fpdfapi/parser/cpdf_number.h
+@@ -49,4 +49,12 @@ inline const CPDF_Number* ToNumber(const CPDF_Object* obj) {
+   return obj ? obj->AsNumber() : nullptr;
+ }
+ 
++inline RetainPtr<CPDF_Number> ToNumber(RetainPtr<CPDF_Object> obj) {
++  return RetainPtr<CPDF_Number>(ToNumber(obj.Get()));
++}
++
++inline RetainPtr<const CPDF_Number> ToNumber(RetainPtr<const CPDF_Object> obj) {
++  return RetainPtr<const CPDF_Number>(ToNumber(obj.Get()));
++}
++
+ #endif  // CORE_FPDFAPI_PARSER_CPDF_NUMBER_H_
+diff --git a/core/fpdfapi/parser/cpdf_stream.h b/core/fpdfapi/parser/cpdf_stream.h
+index 497db20cfcf98792bef6cb3b4bef1a4c0b1b1bff..171d93eb28e26baf1e51f4fafd4c83e39798f88b 100644
+--- a/core/fpdfapi/parser/cpdf_stream.h
++++ b/core/fpdfapi/parser/cpdf_stream.h
+@@ -92,4 +92,8 @@ inline RetainPtr<CPDF_Stream> ToStream(RetainPtr<CPDF_Object> obj) {
+   return RetainPtr<CPDF_Stream>(ToStream(obj.Get()));
+ }
+ 
++inline RetainPtr<const CPDF_Stream> ToStream(RetainPtr<const CPDF_Object> obj) {
++  return RetainPtr<const CPDF_Stream>(ToStream(obj.Get()));
++}
++
+ #endif  // CORE_FPDFAPI_PARSER_CPDF_STREAM_H_
+diff --git a/core/fpdfdoc/cpdf_dest.cpp b/core/fpdfdoc/cpdf_dest.cpp
+index f3b11523918258e7702bda360129857165abc945..fcc09d9e580832678980987489d58ac3c7c0b9bf 100644
+--- a/core/fpdfdoc/cpdf_dest.cpp
++++ b/core/fpdfdoc/cpdf_dest.cpp
+@@ -41,9 +41,11 @@ CPDF_Dest CPDF_Dest::Create(CPDF_Document* pDoc, const CPDF_Object* pDest) {
+   if (!pDest)
+     return CPDF_Dest(nullptr);
+ 
+-  if (pDest->IsString() || pDest->IsName())
+-    return CPDF_Dest(CPDF_NameTree::LookupNamedDest(pDoc, pDest->GetString()));
+-
++  if (pDest->IsString() || pDest->IsName()) {
++    // TODO(tsepez): make CPDF_Dest constructor take retained args.
++    return CPDF_Dest(
++        CPDF_NameTree::LookupNamedDest(pDoc, pDest->GetString()).Get());
++  }
+   return CPDF_Dest(pDest->AsArray());
+ }
+ 
+diff --git a/core/fpdfdoc/cpdf_nametree.cpp b/core/fpdfdoc/cpdf_nametree.cpp
+index 09d4a873fbd9e1151ddbe4f943903d796b18dbe1..2dfecbb5eeb95525c0a83023ee85b722588f3489 100644
+--- a/core/fpdfdoc/cpdf_nametree.cpp
++++ b/core/fpdfdoc/cpdf_nametree.cpp
+@@ -170,7 +170,7 @@ bool UpdateNodesAndLimitsUponDeletion(CPDF_Dictionary* pNode,
+ // will be the index of |csName| in |ppFind|. If |csName| is not found, |ppFind|
+ // will be the leaf array that |csName| should be added to, and |pFindIndex|
+ // will be the index that it should be added at.
+-CPDF_Object* SearchNameNodeByNameInternal(
++RetainPtr<const CPDF_Object> SearchNameNodeByNameInternal(
+     const RetainPtr<CPDF_Dictionary>& pNode,
+     const WideString& csName,
+     int nLevel,
+@@ -217,7 +217,7 @@ CPDF_Object* SearchNameNodeByNameInternal(
+         continue;
+ 
+       *nIndex += i;
+-      return pNames->GetDirectObjectAt(i * 2 + 1);
++      return pdfium::WrapRetain(pNames->GetDirectObjectAt(i * 2 + 1));
+     }
+     *nIndex += dwCount;
+     return nullptr;
+@@ -233,7 +233,7 @@ CPDF_Object* SearchNameNodeByNameInternal(
+     if (!pKid)
+       continue;
+ 
+-    CPDF_Object* pFound = SearchNameNodeByNameInternal(
++    RetainPtr<const CPDF_Object> pFound = SearchNameNodeByNameInternal(
+         pKid, csName, nLevel + 1, nIndex, ppFind, pFindIndex);
+     if (pFound)
+       return pFound;
+@@ -243,10 +243,11 @@ CPDF_Object* SearchNameNodeByNameInternal(
+ 
+ // Wrapper for SearchNameNodeByNameInternal() so callers do not need to know
+ // about the details.
+-CPDF_Object* SearchNameNodeByName(const RetainPtr<CPDF_Dictionary>& pNode,
+-                                  const WideString& csName,
+-                                  RetainPtr<CPDF_Array>* ppFind,
+-                                  int* pFindIndex) {
++RetainPtr<const CPDF_Object> SearchNameNodeByName(
++    const RetainPtr<CPDF_Dictionary>& pNode,
++    const WideString& csName,
++    RetainPtr<CPDF_Array>* ppFind,
++    int* pFindIndex) {
+   size_t nIndex = 0;
+   return SearchNameNodeByNameInternal(pNode, csName, 0, &nIndex, ppFind,
+                                       pFindIndex);
+@@ -344,24 +345,25 @@ size_t CountNamesInternal(CPDF_Dictionary* pNode, int nLevel) {
+   return nCount;
+ }
+ 
+-CPDF_Array* GetNamedDestFromObject(CPDF_Object* obj) {
+-  if (!obj)
+-    return nullptr;
+-  CPDF_Array* array = obj->AsArray();
++RetainPtr<const CPDF_Array> GetNamedDestFromObject(
++    RetainPtr<const CPDF_Object> obj) {
++  RetainPtr<const CPDF_Array> array = ToArray(obj);
+   if (array)
+     return array;
+-  CPDF_Dictionary* dict = obj->AsDictionary();
++  RetainPtr<const CPDF_Dictionary> dict = ToDictionary(obj);
+   if (dict)
+-    return dict->GetArrayFor("D");
++    return pdfium::WrapRetain(dict->GetArrayFor("D"));
+   return nullptr;
+ }
+ 
+-CPDF_Array* LookupOldStyleNamedDest(CPDF_Document* pDoc,
+-                                    const ByteString& name) {
+-  CPDF_Dictionary* pDests = pDoc->GetRoot()->GetDictFor("Dests");
++RetainPtr<const CPDF_Array> LookupOldStyleNamedDest(CPDF_Document* pDoc,
++                                                    const ByteString& name) {
++  const CPDF_Dictionary* pDests = pDoc->GetRoot()->GetDictFor("Dests");
+   if (!pDests)
+     return nullptr;
+-  return GetNamedDestFromObject(pDests->GetDirectObjectFor(name));
++  // TODO(tsepez): return const retained objects from CPDF object getters.
++  return GetNamedDestFromObject(
++      pdfium::WrapRetain(pDests->GetDirectObjectFor(name)));
+ }
+ 
+ }  // namespace
+@@ -424,9 +426,10 @@ std::unique_ptr<CPDF_NameTree> CPDF_NameTree::CreateForTesting(
+ }
+ 
+ // static
+-CPDF_Array* CPDF_NameTree::LookupNamedDest(CPDF_Document* pDoc,
+-                                           const ByteString& name) {
+-  CPDF_Array* dest_array = nullptr;
++RetainPtr<const CPDF_Array> CPDF_NameTree::LookupNamedDest(
++    CPDF_Document* pDoc,
++    const ByteString& name) {
++  RetainPtr<const CPDF_Array> dest_array;
+   std::unique_ptr<CPDF_NameTree> name_tree = Create(pDoc, "Dests");
+   if (name_tree)
+     dest_array = name_tree->LookupNewStyleNamedDest(name);
+@@ -526,10 +529,12 @@ CPDF_Object* CPDF_NameTree::LookupValueAndName(size_t nIndex,
+   return result.value().value;
+ }
+ 
+-CPDF_Object* CPDF_NameTree::LookupValue(const WideString& csName) const {
++RetainPtr<const CPDF_Object> CPDF_NameTree::LookupValue(
++    const WideString& csName) const {
+   return SearchNameNodeByName(m_pRoot, csName, nullptr, nullptr);
+ }
+ 
+-CPDF_Array* CPDF_NameTree::LookupNewStyleNamedDest(const ByteString& sName) {
++RetainPtr<const CPDF_Array> CPDF_NameTree::LookupNewStyleNamedDest(
++    const ByteString& sName) {
+   return GetNamedDestFromObject(LookupValue(PDF_DecodeText(sName.raw_span())));
+ }
+diff --git a/core/fpdfdoc/cpdf_nametree.h b/core/fpdfdoc/cpdf_nametree.h
+index e27f5b13cd76052e1de533b94f85ae505aa56339..30371b42ac622b53b79e180789a491a917c3f263 100644
+--- a/core/fpdfdoc/cpdf_nametree.h
++++ b/core/fpdfdoc/cpdf_nametree.h
+@@ -38,14 +38,14 @@ class CPDF_NameTree {
+   static std::unique_ptr<CPDF_NameTree> CreateForTesting(
+       CPDF_Dictionary* pRoot);
+ 
+-  static CPDF_Array* LookupNamedDest(CPDF_Document* doc,
+-                                     const ByteString& name);
++  static RetainPtr<const CPDF_Array> LookupNamedDest(CPDF_Document* doc,
++                                                     const ByteString& name);
+ 
+   bool AddValueAndName(RetainPtr<CPDF_Object> pObj, const WideString& name);
+   bool DeleteValueAndName(size_t nIndex);
+ 
+   CPDF_Object* LookupValueAndName(size_t nIndex, WideString* csName) const;
+-  CPDF_Object* LookupValue(const WideString& csName) const;
++  RetainPtr<const CPDF_Object> LookupValue(const WideString& csName) const;
+ 
+   size_t GetCount() const;
+   CPDF_Dictionary* GetRootForTesting() const { return m_pRoot.Get(); }
+@@ -53,7 +53,7 @@ class CPDF_NameTree {
+  private:
+   explicit CPDF_NameTree(CPDF_Dictionary* pRoot);
+ 
+-  CPDF_Array* LookupNewStyleNamedDest(const ByteString& name);
++  RetainPtr<const CPDF_Array> LookupNewStyleNamedDest(const ByteString& name);
+ 
+   const RetainPtr<CPDF_Dictionary> m_pRoot;
+ };
+diff --git a/core/fpdfdoc/cpdf_nametree_unittest.cpp b/core/fpdfdoc/cpdf_nametree_unittest.cpp
+index 36617e74d438985b17a889043f2e5ac73836bb3a..e144033bfd66448e45267788d66e577ab366b964 100644
+--- a/core/fpdfdoc/cpdf_nametree_unittest.cpp
++++ b/core/fpdfdoc/cpdf_nametree_unittest.cpp
+@@ -120,7 +120,7 @@ TEST(cpdf_nametree, GetUnicodeNameWithBOM) {
+   EXPECT_STREQ(L"1", stored_name.c_str());
+ 
+   // Check that the correct value object can be obtained by looking up "1".
+-  const CPDF_Number* pNumber = ToNumber(name_tree->LookupValue(L"1"));
++  RetainPtr<const CPDF_Number> pNumber = ToNumber(name_tree->LookupValue(L"1"));
+   ASSERT_TRUE(pNumber);
+   EXPECT_EQ(100, pNumber->GetInteger());
+ }
+@@ -140,7 +140,8 @@ TEST(cpdf_nametree, GetFromTreeWithLimitsArrayWith4Items) {
+   std::unique_ptr<CPDF_NameTree> name_tree =
+       CPDF_NameTree::CreateForTesting(pRootDict.Get());
+ 
+-  const CPDF_Number* pNumber = ToNumber(name_tree->LookupValue(L"9.txt"));
++  RetainPtr<const CPDF_Number> pNumber =
++      ToNumber(name_tree->LookupValue(L"9.txt"));
+   ASSERT_TRUE(pNumber);
+   EXPECT_EQ(999, pNumber->GetInteger());
+   CheckLimitsArray(pKid1, "1.txt", "9.txt");
+diff --git a/fpdfsdk/fpdf_view.cpp b/fpdfsdk/fpdf_view.cpp
+index 161340b8a1b406987b62934d9ad6a67ec49d4bb5..b89efdd063d6c81a38536686965f7bdf8f4da244 100644
+--- a/fpdfsdk/fpdf_view.cpp
++++ b/fpdfsdk/fpdf_view.cpp
+@@ -1050,7 +1050,9 @@ FPDF_GetNamedDestByName(FPDF_DOCUMENT document, FPDF_BYTESTRING name) {
+     return nullptr;
+ 
+   ByteString dest_name(name);
+-  return FPDFDestFromCPDFArray(CPDF_NameTree::LookupNamedDest(pDoc, dest_name));
++  // TODO(tsepez): murky ownership, should caller get a reference?
++  return FPDFDestFromCPDFArray(
++      CPDF_NameTree::LookupNamedDest(pDoc, dest_name).Get());
+ }
+ 
+ #ifdef PDF_ENABLE_V8
+diff --git a/fxjs/cjs_document.cpp b/fxjs/cjs_document.cpp
+index a0bcf868157446cd664eab2717a1adff4e6155b5..991c3aa4a3a41cd58bf22b37626658750831691c 100644
+--- a/fxjs/cjs_document.cpp
++++ b/fxjs/cjs_document.cpp
+@@ -1395,12 +1395,13 @@ CJS_Result CJS_Document::gotoNamedDest(
+     return CJS_Result::Failure(JSMessage::kBadObjectError);
+ 
+   CPDF_Document* pDocument = m_pFormFillEnv->GetPDFDocument();
+-  CPDF_Array* dest_array = CPDF_NameTree::LookupNamedDest(
++  RetainPtr<const CPDF_Array> dest_array = CPDF_NameTree::LookupNamedDest(
+       pDocument, pRuntime->ToByteString(params[0]));
+   if (!dest_array)
+     return CJS_Result::Failure(JSMessage::kBadObjectError);
+ 
+-  CPDF_Dest dest(dest_array);
++  // TODO(tsepez): make CPDF_Dest constructor take retained argument.
++  CPDF_Dest dest(dest_array.Get());
+   const CPDF_Array* arrayObject = dest.GetArray();
+   std::vector<float> scrollPositionArray;
+   if (arrayObject) {
+diff --git a/testing/resources/javascript/bug_1358075.in b/testing/resources/javascript/bug_1358075.in
+new file mode 100644
+index 0000000000000000000000000000000000000000..b503bf2d81eb3ca9adaa108c5075c04fa1c69f89
+--- /dev/null
++++ b/testing/resources/javascript/bug_1358075.in
+@@ -0,0 +1,39 @@
++{{header}}
++{{object 1 0}} <<
++  /Pages 1 0 R
++  /OpenAction 2 0 R
++  /Names <<
++    /Dests 3 0 R
++  >>
++>>
++endobj
++{{object 2 0}} <<
++  /Type /Action
++  /S /JavaScript
++  /JS (
++        this.gotoNamedDest\("2"\);
++        app.alert\("completed"\);
++  )
++>>
++endobj
++{{object 3 0}} <<
++  /Kids 4 0 R
++>>
++endobj
++{{object 4 0}} [
++  (1)
++  (3)
++  <<
++    /Kids [
++      <<
++        /Limits 4 0 R
++        /Names [(2) []]
++      >>
++    ]
++  >>
++]
++endobj
++{{xref}}
++{{trailer}}
++{{startxref}}
++%%EOF
+diff --git a/testing/resources/javascript/bug_1358075_expected.txt b/testing/resources/javascript/bug_1358075_expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..13d460b3b9aa905cec757ab821b980f379772565
+--- /dev/null
++++ b/testing/resources/javascript/bug_1358075_expected.txt
+@@ -0,0 +1 @@
++Alert: completed
+diff --git a/xfa/fxfa/cxfa_ffdoc.cpp b/xfa/fxfa/cxfa_ffdoc.cpp
+index 691248d2709508fc4aff096c80c535a2863bc851..5693d231122ed953c863f4a2333c5ee782bcd68e 100644
+--- a/xfa/fxfa/cxfa_ffdoc.cpp
++++ b/xfa/fxfa/cxfa_ffdoc.cpp
+@@ -279,7 +279,8 @@ RetainPtr<CFX_DIBitmap> CXFA_FFDoc::GetPDFNamedImage(WideStringView wsName,
+   if (count == 0)
+     return nullptr;
+ 
+-  CPDF_Object* pObject = name_tree->LookupValue(WideString(wsName));
++  RetainPtr<const CPDF_Object> pObject =
++      name_tree->LookupValue(WideString(wsName));
+   if (!pObject) {
+     for (size_t i = 0; i < count; ++i) {
+       WideString wsTemp;
+@@ -291,11 +292,12 @@ RetainPtr<CFX_DIBitmap> CXFA_FFDoc::GetPDFNamedImage(WideStringView wsName,
+     }
+   }
+ 
+-  CPDF_Stream* pStream = ToStream(pObject);
++  RetainPtr<const CPDF_Stream> pStream = ToStream(pObject);
+   if (!pStream)
+     return nullptr;
+ 
+-  auto pAcc = pdfium::MakeRetain<CPDF_StreamAcc>(pStream);
++  // TODO(tsepez): make CPDF_StreamAcc constructor take retained argument.
++  auto pAcc = pdfium::MakeRetain<CPDF_StreamAcc>(pStream.Get());
+   pAcc->LoadAllDataFiltered();
+ 
+   auto pImageFileRead =
