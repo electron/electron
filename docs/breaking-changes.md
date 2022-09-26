@@ -30,7 +30,7 @@ webContents.setWindowOpenHandler((details) => {
 })
 ```
 
-## Planned Breaking API Changes (20.0)
+## Planned Breaking API Changes (21.0)
 
 ### Behavior Changed: V8 Memory Cage enabled
 
@@ -93,6 +93,8 @@ webContents.printToPDF({
   console.log(`Failed to write PDF to ${pdfPath}: `, error)
 })
 ```
+
+## Planned Breaking API Changes (20.0)
 
 ### Default Changed: renderers without `nodeIntegration: true` are sandboxed by default
 
