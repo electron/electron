@@ -17,7 +17,7 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index e3e73a2353312a505ffee9d7b9a801bf480dbf86..48bfc3ceb934ef9d507dbda6b0d472d5268e2494 100644
+index e3e73a2353312a505ffee9d7b9a801bf480dbf86..4730b8cc175a4ac21ddbec6500a28c35c891f0c1 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -6372,9 +6372,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryWithFinalFrameHost() {
@@ -28,7 +28,7 @@ index e3e73a2353312a505ffee9d7b9a801bf480dbf86..48bfc3ceb934ef9d507dbda6b0d472d5
 -  auto* policy = ChildProcessSecurityPolicyImpl::GetInstance();
 -  CHECK(policy->CanAccessDataForOrigin(process_id, origin));
 +  CanCommitStatus can_commit = GetRenderFrameHost()->CanCommitOriginAndUrl(
-+    origin_with_debug_info.first, GetURL(), IsSameDocument(), IsPdf(),
++    origin, GetURL(), IsSameDocument(), IsPdf(),
 +    GetUrlInfo().is_sandboxed);
 +  CHECK_EQ(CanCommitStatus::CAN_COMMIT_ORIGIN_AND_URL, can_commit);
 +
