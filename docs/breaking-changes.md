@@ -21,7 +21,7 @@ events on BrowserWindow have been removed. Instead, use the newly available
 [`input-event` event](api/web-contents.md#event-input-event) on WebContents.
 
 ```js
-// Removed in Electron 22.0
+// Removed in Electron 23.0
 win.on('scroll-touch-begin', scrollTouchBegin)
 win.on('scroll-touch-edge', scrollTouchEdge)
 win.on('scroll-touch-end', scrollTouchEnd)
