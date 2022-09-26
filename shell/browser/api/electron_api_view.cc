@@ -306,6 +306,7 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("children", &View::GetChildren)
       .SetMethod("setBounds", &View::SetBounds)
       .SetMethod("getBounds", &View::GetBounds)
+      .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
       .SetMethod("setLayout", &View::SetLayout);
 #endif
 }

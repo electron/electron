@@ -125,7 +125,7 @@ describe('BrowserView module', () => {
       view = new BrowserView();
       expect(() => {
         view.setAutoResize(null as any);
-      }).to.throw(/conversion failure/);
+      }).to.throw(/Invalid auto resize options/);
     });
 
     it('resizes horizontally when the window is resized horizontally', () => {
