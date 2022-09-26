@@ -17,7 +17,6 @@ initialization of DeserializeRequest to fail:
 struct DeserializeRequest {
        ^
 
-
 I think (though not 100% sure) that this is because the one explicitly
 specified move constructor "shadows" the implicit initializer-list constructor.
 This patch seems to fix things, in any case.
