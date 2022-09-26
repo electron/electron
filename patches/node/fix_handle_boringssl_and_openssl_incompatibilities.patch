@@ -207,10 +207,10 @@ index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index 648fda211c4305f0ce2f676159bd23e95b4844f8..147fe4a79bfa1e2063ab9ba2f16dda22f0c40e48 100644
+index 1459e410453da6850157444affa48b4a215edb03..2cf5861a110a2579329b9b0327d7b4296d0fb2c1 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
-@@ -147,7 +147,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
+@@ -146,7 +146,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
  
    params->bits = bits;
    params->safe = safe;
@@ -240,10 +240,10 @@ index bd732a70a8ffe6212e06dddb352ca75cb45b50d3..cd025663f58d386e3b7c47823a7d6cf1
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 58a5d88d7a10def618170550246fbf50685ac0a4..77af0661dbd056a38a8d7599b9e4f067f6b79f64 100644
+index 652f6e0b12e2d56f33b1c18b80ec211b9c6bd5e9..840fe824617b951d4f4421155c5e1ce79c28525e 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -534,24 +534,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -522,24 +522,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -269,7 +269,7 @@ index 58a5d88d7a10def618170550246fbf50685ac0a4..77af0661dbd056a38a8d7599b9e4f067
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -710,7 +701,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -698,7 +689,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -278,7 +278,7 @@ index 58a5d88d7a10def618170550246fbf50685ac0a4..77af0661dbd056a38a8d7599b9e4f067
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -722,7 +713,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -710,7 +701,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -287,7 +287,7 @@ index 58a5d88d7a10def618170550246fbf50685ac0a4..77af0661dbd056a38a8d7599b9e4f067
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -730,10 +721,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -718,10 +709,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
