@@ -42,10 +42,6 @@
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
 
-#if BUILDFLAG(IS_MAC)
-#include "components/os_crypt/keychain_password_mac.h"
-#endif
-
 #if BUILDFLAG(IS_LINUX)
 #include "components/os_crypt/key_storage_config_linux.h"
 #endif
@@ -287,12 +283,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   content::GetNetworkService()->ConfigureStubHostResolver(
       base::FeatureList::IsEnabled(features::kAsyncDns),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
-
-  std::string app_name = electron::Browser::Get()->GetName();
-#if BUILDFLAG(IS_MAC)
-  KeychainPassword::GetServiceName() = app_name + " Safe Storage";
-  KeychainPassword::GetAccountName() = app_name;
-#endif
 
   // The OSCrypt keys are process bound, so if network service is out of
   // process, send it the required key.
