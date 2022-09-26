@@ -715,13 +715,19 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.
 
-**Note:** On Windows, you have to call it after the `ready` events gets emitted.
+**Note:** This API must be called after the `ready` event is emitted.
 
 ### `app.getLocaleCountryCode()`
 
 Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
 
 **Note:** When unable to detect locale country code, it returns empty string.
+
+### `app.getSystemLocale()`
+
+Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, the `NSLocale` object is used instead.
+
+**Note:** This API must be called after the `ready` event is emitted.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 

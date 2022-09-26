@@ -118,6 +118,12 @@ describe('app module', () => {
     });
   });
 
+  describe('app.getSystemLocale()', () => {
+    it('should not be empty', () => {
+      expect(app.getSystemLocale()).to.not.equal('');
+    });
+  });
+
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
       const localeCountryCode = app.getLocaleCountryCode();

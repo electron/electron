@@ -49,6 +49,9 @@ class BrowserProcessImpl : public BrowserProcess {
   void PostDestroyThreads() {}
   void PostMainMessageLoopRun();
 
+  void SetSystemLocale(const std::string& locale);
+  const std::string& GetSystemLocale() const;
+
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
@@ -110,6 +113,7 @@ class BrowserProcessImpl : public BrowserProcess {
 #endif
   std::unique_ptr<PrefService> local_state_;
   std::string locale_;
+  std::string system_locale_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_

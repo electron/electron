@@ -47,6 +47,7 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/gpuinfo_manager.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
@@ -1038,6 +1039,16 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
+std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.getSystemLocale() can only be called "
+        "after app is ready");
+    return std::string();
+  }
+  return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
+}
+
 std::string App::GetLocaleCountryCode() {
   std::string region;
 #if BUILDFLAG(IS_WIN)
@@ -1779,6 +1790,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("getSystemLocale", &App::GetSystemLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
 #if BUILDFLAG(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
