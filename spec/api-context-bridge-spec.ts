@@ -62,17 +62,29 @@ describe('contextBridge', () => {
 
   const generateTests = (useSandbox: boolean) => {
     describe(`with sandbox=${useSandbox}`, () => {
-      const makeBindingWindow = async (bindingCreator: Function) => {
-        const preloadContent = `const renderer_1 = require('electron');
+      const makeBindingWindow = async (bindingCreator: Function, worldId: number = 0) => {
+        const preloadContentForMainWorld = `const renderer_1 = require('electron');
         ${useSandbox ? '' : `require('v8').setFlagsFromString('--expose_gc');
         const gc=require('vm').runInNewContext('gc');
         renderer_1.contextBridge.exposeInMainWorld('GCRunner', {
           run: () => gc()
         });`}
         (${bindingCreator.toString()})();`;
+
+        const preloadContentForIsolatedWorld = `const renderer_1 = require('electron');
+        ${useSandbox ? '' : `require('v8').setFlagsFromString('--expose_gc');
+        const gc=require('vm').runInNewContext('gc');
+        renderer_1.webFrame.setIsolatedWorldInfo(${worldId}, {
+          name: "Isolated World"
+        });  
+        renderer_1.contextBridge.exposeInIsolatedWorld(${worldId}, 'GCRunner', {
+          run: () => gc()
+        });`}
+        (${bindingCreator.toString()})();`;
+
         const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-preload-'));
         dir = tmpDir;
-        await fs.writeFile(path.resolve(tmpDir, 'preload.js'), preloadContent);
+        await fs.writeFile(path.resolve(tmpDir, 'preload.js'), worldId === 0 ? preloadContentForMainWorld : preloadContentForIsolatedWorld);
         w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -86,8 +98,8 @@ describe('contextBridge', () => {
         await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       };
 
-      const callWithBindings = (fn: Function) =>
-        w.webContents.executeJavaScript(`(${fn.toString()})(window)`);
+      const callWithBindings = (fn: Function, worldId: number = 0) =>
+        worldId === 0 ? w.webContents.executeJavaScript(`(${fn.toString()})(window)`) : w.webContents.executeJavaScriptInIsolatedWorld(worldId, [{ code: `(${fn.toString()})(window)` }]); ;
 
       const getGCInfo = async (): Promise<{
         trackedValues: number;
@@ -111,6 +123,16 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example;
         });
+        expect(result).to.equal(123);
+      });
+
+      it('should proxy numbers when exposed in isolated world', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInIsolatedWorld(1004, 'example', 123);
+        }, 1004);
+        const result = await callWithBindings((root: any) => {
+          return root.example;
+        }, 1004);
         expect(result).to.equal(123);
       });
 
@@ -169,6 +191,18 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myString;
         });
+        expect(result).to.equal('my-words');
+      });
+
+      it('should proxy nested strings when exposed in isolated world', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInIsolatedWorld(1004, 'example', {
+            myString: 'my-words'
+          });
+        }, 1004);
+        const result = await callWithBindings((root: any) => {
+          return root.example.myString;
+        }, 1004);
         expect(result).to.equal('my-words');
       });
 

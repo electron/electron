@@ -674,6 +674,18 @@ void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
   permission_manager->SetDevicePermissionHandler(handler);
 }
 
+void Session::SetBluetoothPairingHandler(v8::Local<v8::Value> val,
+                                         gin::Arguments* args) {
+  ElectronPermissionManager::BluetoothPairingHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetBluetoothPairingHandler(handler);
+}
+
 v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
   gin_helper::Promise<void> promise(isolate);
@@ -1043,6 +1055,7 @@ base::Value Session::GetSpellCheckerLanguages() {
 void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
+#if !BUILDFLAG(IS_MAC)
   base::Value::List language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
@@ -1058,10 +1071,12 @@ void Session::SetSpellCheckerLanguages(
   // Enable spellcheck if > 0 languages, disable if no languages set
   browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
                                         !languages.empty());
+#endif
 }
 
 void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
                                           const GURL& url) {
+#if !BUILDFLAG(IS_MAC)
   if (!url.is_valid()) {
     thrower.ThrowError(
         "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
@@ -1069,6 +1084,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
     return;
   }
   SpellcheckHunspellDictionary::SetBaseDownloadURL(url);
+#endif
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
@@ -1221,6 +1237,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
+      .SetMethod("setBluetoothPairingHandler",
+                 &Session::SetBluetoothPairingHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",

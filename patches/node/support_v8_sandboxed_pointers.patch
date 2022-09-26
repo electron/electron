@@ -26,10 +26,10 @@ index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7becacaa28d 100644
+index 840fe824617b951d4f4421155c5e1ce79c28525e..b1ae378993723d7a0a71bfe36fc5be94a899082a 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -344,10 +344,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -332,10 +332,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -66,7 +66,7 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7be
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -359,10 +384,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -347,10 +372,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -79,7 +79,7 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7be
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -692,6 +718,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
+@@ -680,6 +706,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
  }
  
  namespace {
@@ -96,7 +96,7 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7be
  // SecureBuffer uses openssl to allocate a Uint8Array using
  // OPENSSL_secure_malloc. Because we do not yet actually
  // make use of secure heap, this has the same semantics as
-@@ -719,6 +755,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -707,6 +743,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -105,10 +105,10 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7be
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 07ea8e44da3e54b8c24fd2d57b3922d6ddd35781..6d0d93b5b7c0bd1d8342e81024712df029d7e618 100644
+index f26422ee106ab7a816750ee717cb18ea454b5b62..5e5798e7e55dbb2df93ef4a8ab6f40aeb85616b4 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -254,7 +254,7 @@ class ByteSource {
+@@ -241,7 +241,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.

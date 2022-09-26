@@ -374,6 +374,7 @@ describe('command line switches', () => {
   });
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
+    const currentSystemLocale = app.getSystemLocale();
     const testLocale = async (locale: string, result: string, printEnv: boolean = false) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const args = [appPath, `--set-lang=${locale}`];
@@ -396,8 +397,9 @@ describe('command line switches', () => {
       expect(output).to.equal(result);
     };
 
-    it('should set the locale', async () => testLocale('fr', 'fr'));
-    it('should not set an invalid locale', async () => testLocale('asdfkl', currentLocale));
+    it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}`));
+    it('should set the locale with country code', async () => testLocale('zh-CN', `zh-CN|${currentSystemLocale}`));
+    it('should not set an invalid locale', async () => testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}`));
 
     const lcAll = String(process.env.LC_ALL);
     ifit(process.platform === 'linux')('current process has a valid LC_ALL env', async () => {
@@ -1810,6 +1812,34 @@ describe('chromium features', () => {
         await waitCommit;
         // Initial page + pushed state.
         expect((w.webContents as any).length()).to.equal(2);
+      });
+    });
+
+    describe('window.history.back', () => {
+      it('should not allow sandboxed iframe to modify main frame state', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL('data:text/html,<iframe sandbox="allow-scripts"></iframe>');
+        await Promise.all([
+          emittedOnce(w.webContents, 'navigation-entry-committed'),
+          emittedOnce(w.webContents, 'did-frame-navigate'),
+          emittedOnce(w.webContents, 'did-navigate')
+        ]);
+
+        w.webContents.executeJavaScript('window.history.pushState(1, "")');
+        await Promise.all([
+          emittedOnce(w.webContents, 'navigation-entry-committed'),
+          emittedOnce(w.webContents, 'did-navigate-in-page')
+        ]);
+
+        (w.webContents as any).once('navigation-entry-committed', () => {
+          expect.fail('Unexpected navigation-entry-committed');
+        });
+        w.webContents.once('did-navigate-in-page', () => {
+          expect.fail('Unexpected did-navigate-in-page');
+        });
+        await w.webContents.mainFrame.frames[0].executeJavaScript('window.history.back()');
+        expect(await w.webContents.executeJavaScript('window.history.state')).to.equal(1);
+        expect((w.webContents as any).getActiveIndex()).to.equal(1);
       });
     });
   });

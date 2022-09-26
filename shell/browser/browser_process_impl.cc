@@ -293,6 +293,14 @@ HidPolicyAllowedDevices* BrowserProcessImpl::hid_policy_allowed_devices() {
   return nullptr;
 }
 
+void BrowserProcessImpl::SetSystemLocale(const std::string& locale) {
+  system_locale_ = locale;
+}
+
+const std::string& BrowserProcessImpl::GetSystemLocale() const {
+  return system_locale_;
+}
+
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }
