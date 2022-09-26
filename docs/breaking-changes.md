@@ -38,14 +38,98 @@ win.webContents.on('input-event', (_, event) => {
 })
 ```
 
+### Removed: `webContents.incrementCapturerCount(stayHidden, stayAwake)`
+
+The `webContents.incrementCapturerCount(stayHidden, stayAwake)` function has been removed.
+It is now automatically handled by `webContents.capturePage` when a page capture completes.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed in Electron 23
+w.webContents.incrementCapturerCount()
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+  w.webContents.decrementCapturerCount()
+})
+
+// Replace with
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+})
+```
+
+### Removed: `webContents.decrementCapturerCount(stayHidden, stayAwake)`
+
+The `webContents.decrementCapturerCount(stayHidden, stayAwake)` function has been removed.
+It is now automatically handled by `webContents.capturePage` when a page capture completes.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed in Electron 23
+w.webContents.incrementCapturerCount()
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+  w.webContents.decrementCapturerCount()
+})
+
+// Replace with
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+})
+```
+
 ## Planned Breaking API Changes (22.0)
+
+### Deprecated: `webContents.incrementCapturerCount(stayHidden, stayAwake)`
+
+`webContents.incrementCapturerCount(stayHidden, stayAwake)` has been deprecated.
+It is now automatically handled by `webContents.capturePage` when a page capture completes.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed in Electron 23
+w.webContents.incrementCapturerCount()
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+  w.webContents.decrementCapturerCount()
+})
+
+// Replace with
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+})
+```
+
+### Removed: `webContents.decrementCapturerCount(stayHidden, stayAwake)`
+
+`webContents.decrementCapturerCount(stayHidden, stayAwake)` has been deprecated.
+It is now automatically handled by `webContents.capturePage` when a page capture completes.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed in Electron 23
+w.webContents.incrementCapturerCount()
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+  w.webContents.decrementCapturerCount()
+})
+
+// Replace with
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+})
+```
 
 ### Removed: WebContents `new-window` event
 
 The `new-window` event of WebContents has been removed. It is replaced by [`webContents.setWindowOpenHandler()`](api/web-contents.md#contentssetwindowopenhandlerhandler).
 
 ```js
-// Removed in Electron 21
+// Removed in Electron 22
 webContents.on('new-window', (event) => {
   event.preventDefault()
 })
