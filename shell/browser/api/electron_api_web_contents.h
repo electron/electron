@@ -333,6 +333,7 @@ class WebContents : public ExclusiveAccessContext,
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
   content::RenderFrameHost* MainFrame();
+  content::RenderFrameHost* Opener();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 

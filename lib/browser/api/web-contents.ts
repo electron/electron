@@ -835,6 +835,10 @@ export function fromId (id: string) {
   return binding.fromId(id);
 }
 
+export function fromFrame (frame: Electron.WebFrameMain) {
+  return binding.fromFrame(frame);
+}
+
 export function fromDevToolsTargetId (targetId: string) {
   return binding.fromDevToolsTargetId(targetId);
 }
