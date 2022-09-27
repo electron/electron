@@ -61,10 +61,28 @@ index fc1c6259a76c520769b5b6fcefb141f5530918c7..5c1cfaf7ddc350fdd3ac030e03f1d352
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // crrev/c/1236675. The ordering of unassociated layers relative to NSView
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index abd19b8613e52a6f4c9404f509ab7ed5a61046a6..e3c17b1092e55bb94b3182f3274adc0cd7e3516a 100644
+index abd19b8613e52a6f4c9404f509ab7ed5a61046a6..35945493a02996e88b0c53caf107c4352450aff7 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-@@ -100,8 +100,10 @@ id GetFocusedBrowserAccessibilityElement() override {
+@@ -77,6 +77,7 @@ explicit RenderWidgetHostNSViewBridgeOwner(
+ 
+   // RenderWidgetHostNSViewHostHelper implementation.
+   id GetAccessibilityElement() override {
++#ifndef MAS_BUILD
+     if (!remote_accessibility_element_) {
+       base::ProcessId browser_pid = base::kNullProcessId;
+       std::vector<uint8_t> element_token;
+@@ -87,6 +88,9 @@ id GetAccessibilityElement() override {
+           ui::RemoteAccessibility::GetRemoteElementFromToken(element_token);
+     }
+     return remote_accessibility_element_.get();
++#else
++    return nil;
++#endif
+   }
+ 
+   id GetRootBrowserAccessibilityElement() override {
+@@ -100,8 +104,10 @@ id GetFocusedBrowserAccessibilityElement() override {
      return nil;
    }
    void SetAccessibilityWindow(NSWindow* window) override {
@@ -75,7 +93,7 @@ index abd19b8613e52a6f4c9404f509ab7ed5a61046a6..e3c17b1092e55bb94b3182f3274adc0c
    }
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
-@@ -163,8 +165,10 @@ void SmartMagnify(const blink::WebGestureEvent& web_event) override {
+@@ -163,8 +169,10 @@ void SmartMagnify(const blink::WebGestureEvent& web_event) override {
  
    mojo::AssociatedRemote<mojom::RenderWidgetHostNSViewHost> host_;
    std::unique_ptr<RenderWidgetHostNSViewBridge> bridge_;
