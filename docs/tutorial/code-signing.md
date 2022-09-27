@@ -54,85 +54,11 @@ and notarized requires a few additions to your configuration. [Forge](https://el
 collection of the official Electron tools, using [`electron-packager`],
 [`electron-osx-sign`], and [`electron-notarize`] under the hood.
 
-Let's take a look at an example `package.json` configuration with all required fields. Not all of them are
-required: the tools will be clever enough to automatically find a suitable `identity`, for instance,
-but we recommend that you are explicit.
-
-```json title="package.json" {7}
-{
-  "name": "my-app",
-  "version": "0.0.1",
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "osxSign": {
-          "identity": "Developer ID Application: Felix Rieseberg (LT94ZKYDCJ)",
-          "hardened-runtime": true,
-          "entitlements": "entitlements.plist",
-          "entitlements-inherit": "entitlements.plist",
-          "signature-flags": "library"
-        },
-        "osxNotarize": {
-          "appleId": "felix@felix.fun",
-          "appleIdPassword": "my-apple-id-password"
-        }
-      }
-    }
-  }
-}
-```
-
-The `entitlements.plist` file referenced here needs the following macOS-specific entitlements
-to assure the Apple security mechanisms that your app is doing these things
-without meaning any harm:
-
-```xml title="entitlements.plist"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-  <dict>
-    <key>com.apple.security.cs.allow-jit</key>
-    <true/>
-    <key>com.apple.security.cs.debugger</key>
-    <true/>
-  </dict>
-</plist>
-```
-
-Note that up until Electron 12, the `com.apple.security.cs.allow-unsigned-executable-memory` entitlement was required
-as well. However, it should not be used anymore if it can be avoided.
-
-To see all of this in action, check out Electron Fiddle's source code,
-[especially its `electron-forge` configuration
-file](https://github.com/electron/fiddle/blob/master/forge.config.js).
-
-If you plan to access the microphone or camera within your app using Electron's APIs, you'll also
-need to add the following entitlements:
-
-```xml title="entitlements.plist"
-<key>com.apple.security.device.audio-input</key>
-<true/>
-<key>com.apple.security.device.camera</key>
-<true/>
-```
-
-If these are not present in your app's entitlements when you invoke, for example:
-
-```js title="main.js"
-const { systemPreferences } = require('electron')
-const microphone = systemPreferences.askForMediaAccess('microphone')
-```
-
-Your app may crash. See the Resource Access section in [Hardened Runtime](https://developer.apple.com/documentation/security/hardened_runtime) for more information and entitlements you may need.
-
-### Using Electron Builder
-
-Electron Builder comes with a custom solution for signing your application. You
-can find [its documentation here](https://www.electron.build/code-signing).
+Detailed instructions on how to configure your application can be found in the [Electron Forge Code Signing Tutorial](https://www.electronforge.io/guides/code-signing/code-signing-macos).
 
 ### Using Electron Packager
 
-If you're not using an integrated build pipeline like Forge or Builder, you
+If you're not using an integrated build pipeline like Forge, you
 are likely using [`electron-packager`], which includes [`electron-osx-sign`] and
 [`electron-notarize`].
 
@@ -204,36 +130,7 @@ commit it to your source code.
 
 ### Using Electron Forge
 
-Once you have a code signing certificate file (`.pfx`), you can sign
-[Squirrel.Windows][maker-squirrel] and [MSI][maker-msi] installers in Electron Forge
-with the `certificateFile` and `certificatePassword` fields in their respective
-configuration objects.
-
-For example, if you keep your Forge config in your `package.json` file and are
-creating a Squirrel.Windows installer:
-
-```json {9-15} title='package.json'
-{
-  "name": "my-app",
-  "version": "0.0.1",
-  //...
-  "config": {
-    "forge": {
-      "packagerConfig": {},
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "certificateFile": "./cert.pfx",
-            "certificatePassword": "this-is-a-secret"
-          }
-        }
-      ]
-    }
-  }
-  //...
-}
-```
+Electron Forge is the recommended way to sign your `Squirrel.Windows` and `WiX MSI` installers. Detailed instructions on how to configure your application can be found in the [Electron Forge Code Signing Tutorial](https://www.electronforge.io/guides/code-signing/code-signing-macos).
 
 ### Using electron-winstaller (Squirrel.Windows)
 

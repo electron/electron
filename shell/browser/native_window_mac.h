@@ -228,9 +228,6 @@ class NativeWindowMac : public NativeWindow,
   base::scoped_nsobject<ElectronPreviewItem> preview_item_;
   base::scoped_nsobject<ElectronTouchBar> touch_bar_;
 
-  // Event monitor for scroll wheel event.
-  id wheel_event_monitor_;
-
   // The views::View that fills the client area.
   std::unique_ptr<RootViewMac> root_view_;
 

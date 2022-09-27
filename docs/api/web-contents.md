@@ -45,6 +45,13 @@ returns `null`.
 Returns `WebContents` | undefined - A WebContents instance with the given ID, or
 `undefined` if there is no WebContents associated with the given ID.
 
+### `webContents.fromFrame(frame)`
+
+* `frame` WebFrameMain
+
+Returns `WebContents` | undefined - A WebContents instance with the given WebFrameMain, or
+`undefined` if there is no WebContents associated with the given WebFrameMain.
+
 ### `webContents.fromDevToolsTargetId(targetId)`
 
 * `targetId` string - The Chrome DevTools Protocol [TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID) associated with the WebContents instance.
@@ -130,10 +137,6 @@ Corresponds to the points in time when the spinner of the tab stopped spinning.
 
 #### Event: 'dom-ready'
 
-Returns:
-
-* `event` Event
-
 Emitted when the document in the top-level frame is loaded.
 
 #### Event: 'page-title-updated'
@@ -155,6 +158,18 @@ Returns:
 * `favicons` string[] - Array of URLs.
 
 Emitted when page receives favicon urls.
+
+#### Event: 'content-bounds-updated'
+
+Returns:
+
+* `event` Event
+* `bounds` [Rectangle](structures/rectangle.md) - requested new content bounds
+
+Emitted when the page calls `window.moveTo`, `window.resizeTo` or related APIs.
+
+By default, this will move the window. To prevent that behavior, call
+`event.preventDefault()`.
 
 #### Event: 'did-create-window'
 
@@ -395,6 +410,16 @@ Emitted when a plugin process has crashed.
 #### Event: 'destroyed'
 
 Emitted when `webContents` is destroyed.
+
+#### Event: 'input-event'
+
+Returns:
+
+* `event` Event
+* `inputEvent` [InputEvent](structures/input-event.md)
+
+Emitted when an input event is sent to the WebContents. See
+[InputEvent](structures/input-event.md) for details.
 
 #### Event: 'before-input-event'
 
@@ -925,6 +950,21 @@ Returns `string` - The title of the current web page.
 #### `contents.isDestroyed()`
 
 Returns `boolean` - Whether the web page is destroyed.
+
+#### `contents.close([opts])`
+
+* `opts` Object (optional)
+  * `waitForBeforeUnload` boolean - if true, fire the `beforeunload` event
+    before closing the page. If the page prevents the unload, the WebContents
+    will not be closed. The [`will-prevent-unload`](#event-will-prevent-unload)
+    will be fired if the page requests prevention of unload.
+
+Closes the page, as if the web content had called `window.close()`.
+
+If the page is successfully closed (i.e. the unload is not prevented by the
+page, or `waitForBeforeUnload` is false or unspecified), the WebContents will
+be destroyed and no longer usable. The [`destroyed`](#event-destroyed) event
+will be emitted.
 
 #### `contents.focus()`
 
@@ -2020,6 +2060,11 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 #### `contents.mainFrame` _Readonly_
 
 A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.
+
+#### `contents.opener` _Readonly_
+
+A [`WebFrameMain`](web-frame-main.md) property that represents the frame that opened this WebContents, either
+with open(), or by navigating a link with a target attribute.
 
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

@@ -33,12 +33,16 @@ function createWindow () {
     if (permission === 'serial' && details.securityOrigin === 'file:///') {
       return true
     }
+    
+    return false
   })
 
   mainWindow.webContents.session.setDevicePermissionHandler((details) => {
     if (details.deviceType === 'serial' && details.origin === 'file://') {
       return true
     }
+    
+    return false
   })
   
   mainWindow.loadFile('index.html')

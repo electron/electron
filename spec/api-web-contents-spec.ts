@@ -6,7 +6,7 @@ import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, WebContents, app, BrowserView } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe, delay, defer } from './spec-helpers';
+import { ifdescribe, delay, defer, waitUntil } from './spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -43,6 +43,28 @@ describe('webContents module', () => {
   describe('fromId()', () => {
     it('returns undefined for an unknown id', () => {
       expect(webContents.fromId(12345)).to.be.undefined();
+    });
+  });
+
+  describe('fromFrame()', () => {
+    it('returns WebContents for mainFrame', () => {
+      const contents = (webContents as any).create() as WebContents;
+      expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
+    });
+    it('returns undefined for disposed frame', async () => {
+      const contents = (webContents as any).create() as WebContents;
+      const { mainFrame } = contents;
+      contents.destroy();
+      await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
+    });
+    it('throws when passing invalid argument', async () => {
+      let errored = false;
+      try {
+        webContents.fromFrame({} as any);
+      } catch {
+        errored = true;
+      }
+      expect(errored).to.be.true();
     });
   });
 
@@ -1259,6 +1281,54 @@ describe('webContents module', () => {
     });
   });
 
+  describe('opener api', () => {
+    afterEach(closeAllWindows);
+    it('can get opener with window.open()', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const childPromise = emittedOnce(w.webContents, 'did-create-window');
+      w.webContents.executeJavaScript('window.open("about:blank")', true);
+      const [childWindow] = await childPromise;
+      expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
+    });
+    it('has no opener when using "noopener"', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const childPromise = emittedOnce(w.webContents, 'did-create-window');
+      w.webContents.executeJavaScript('window.open("about:blank", undefined, "noopener")', true);
+      const [childWindow] = await childPromise;
+      expect(childWindow.webContents.opener).to.be.null();
+    });
+    it('can get opener with a[target=_blank][rel=opener]', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const childPromise = emittedOnce(w.webContents, 'did-create-window');
+      w.webContents.executeJavaScript(`(function() {
+        const a = document.createElement('a');
+        a.target = '_blank';
+        a.rel = 'opener';
+        a.href = 'about:blank';
+        a.click();
+      }())`, true);
+      const [childWindow] = await childPromise;
+      expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
+    });
+    it('has no opener with a[target=_blank][rel=noopener]', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const childPromise = emittedOnce(w.webContents, 'did-create-window');
+      w.webContents.executeJavaScript(`(function() {
+        const a = document.createElement('a');
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.href = 'about:blank';
+        a.click();
+      }())`, true);
+      const [childWindow] = await childPromise;
+      expect(childWindow.webContents.opener).to.be.null();
+    });
+  });
+
   describe('render view deleted events', () => {
     let server: http.Server;
     let serverUrl: string;
@@ -2108,6 +2178,141 @@ describe('webContents module', () => {
       expect(params.frame).to.be.an('object');
       expect(params.x).to.be.a('number');
       expect(params.y).to.be.a('number');
+    });
+  });
+
+  describe('close() method', () => {
+    afterEach(closeAllWindows);
+
+    it('closes when close() is called', async () => {
+      const w = (webContents as any).create() as WebContents;
+      const destroyed = emittedOnce(w, 'destroyed');
+      w.close();
+      await destroyed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+
+    it('closes when close() is called after loading a page', async () => {
+      const w = (webContents as any).create() as WebContents;
+      await w.loadURL('about:blank');
+      const destroyed = emittedOnce(w, 'destroyed');
+      w.close();
+      await destroyed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+
+    it('can be GCed before loading a page', async () => {
+      const v8Util = process._linkedBinding('electron_common_v8_util');
+      let registry: FinalizationRegistry<unknown> | null = null;
+      const cleanedUp = new Promise<number>(resolve => {
+        registry = new FinalizationRegistry(resolve as any);
+      });
+      (() => {
+        const w = (webContents as any).create() as WebContents;
+        registry!.register(w, 42);
+      })();
+      const i = setInterval(() => v8Util.requestGarbageCollectionForTesting(), 100);
+      defer(() => clearInterval(i));
+      expect(await cleanedUp).to.equal(42);
+    });
+
+    it('causes its parent browserwindow to be closed', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const closed = emittedOnce(w, 'closed');
+      w.webContents.close();
+      await closed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+
+    it('ignores beforeunload if waitForBeforeUnload not specified', async () => {
+      const w = (webContents as any).create() as WebContents;
+      await w.loadURL('about:blank');
+      await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
+      w.on('will-prevent-unload', () => { throw new Error('unexpected will-prevent-unload'); });
+      const destroyed = emittedOnce(w, 'destroyed');
+      w.close();
+      await destroyed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+
+    it('runs beforeunload if waitForBeforeUnload is specified', async () => {
+      const w = (webContents as any).create() as WebContents;
+      await w.loadURL('about:blank');
+      await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
+      const willPreventUnload = emittedOnce(w, 'will-prevent-unload');
+      w.close({ waitForBeforeUnload: true });
+      await willPreventUnload;
+      expect(w.isDestroyed()).to.be.false();
+    });
+
+    it('overriding beforeunload prevention results in webcontents close', async () => {
+      const w = (webContents as any).create() as WebContents;
+      await w.loadURL('about:blank');
+      await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
+      w.once('will-prevent-unload', e => e.preventDefault());
+      const destroyed = emittedOnce(w, 'destroyed');
+      w.close({ waitForBeforeUnload: true });
+      await destroyed;
+      expect(w.isDestroyed()).to.be.true();
+    });
+  });
+
+  describe('content-bounds-updated event', () => {
+    afterEach(closeAllWindows);
+    it('emits when moveTo is called', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.moveTo(100, 100)', true);
+      const [, rect] = await emittedOnce(w.webContents, 'content-bounds-updated');
+      const { width, height } = w.getBounds();
+      expect(rect).to.deep.equal({
+        x: 100,
+        y: 100,
+        width,
+        height
+      });
+      await new Promise(setImmediate);
+      expect(w.getBounds().x).to.equal(100);
+      expect(w.getBounds().y).to.equal(100);
+    });
+
+    it('emits when resizeTo is called', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.resizeTo(100, 100)', true);
+      const [, rect] = await emittedOnce(w.webContents, 'content-bounds-updated');
+      const { x, y } = w.getBounds();
+      expect(rect).to.deep.equal({
+        x,
+        y,
+        width: 100,
+        height: 100
+      });
+      await new Promise(setImmediate);
+      expect({
+        width: w.getBounds().width,
+        height: w.getBounds().height
+      }).to.deep.equal(process.platform === 'win32' ? {
+        // The width is reported as being larger on Windows? I'm not sure why
+        // this is.
+        width: 136,
+        height: 100
+      } : {
+        width: 100,
+        height: 100
+      });
+    });
+
+    it('does not change window bounds if cancelled', async () => {
+      const w = new BrowserWindow({ show: false });
+      const { width, height } = w.getBounds();
+      w.loadURL('about:blank');
+      w.webContents.once('content-bounds-updated', e => e.preventDefault());
+      await w.webContents.executeJavaScript('window.resizeTo(100, 100)', true);
+      await new Promise(setImmediate);
+      expect(w.getBounds().width).to.equal(width);
+      expect(w.getBounds().height).to.equal(height);
     });
   });
 });
