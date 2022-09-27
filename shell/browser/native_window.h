@@ -340,7 +340,7 @@ class NativeWindow : public base::SupportsUserData,
     return fullscreen_transition_type_;
   }
 
-  SkRegion* draggable_region() const { return draggable_region_.get(); }
+  SkRegion const* draggable_region() const { return draggable_region_.get(); }
 
   void UpdateDraggableRegions(
       const std::vector<mojom::DraggableRegionPtr>& regions);
