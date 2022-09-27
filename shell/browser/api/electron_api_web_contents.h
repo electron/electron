@@ -103,6 +103,7 @@ class WebContents : public ExclusiveAccessContext,
                     public gin_helper::CleanedUpAtExit,
                     public content::WebContentsObserver,
                     public content::WebContentsDelegate,
+                    public content::RenderWidgetHost::InputEventObserver,
                     public InspectableWebContentsDelegate,
                     public InspectableWebContentsViewDelegate {
  public:
@@ -433,6 +434,9 @@ class WebContents : public ExclusiveAccessContext,
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 
+  // content::RenderWidgetHost::InputEventObserver:
+  void OnInputEvent(const blink::WebInputEvent& event) override;
+
   // disable copy
   WebContents(const WebContents&) = delete;
   WebContents& operator=(const WebContents&) = delete;
@@ -616,6 +620,8 @@ class WebContents : public ExclusiveAccessContext,
       content::RenderWidgetHost* render_widget_host) override;
   void OnWebContentsLostFocus(
       content::RenderWidgetHost* render_widget_host) override;
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
