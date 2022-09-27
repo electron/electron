@@ -6,10 +6,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 0a7fc2ef0120b9403efe4eaad50806375587ec59..75730a72f799dad5dbedc65af3cf12c1c96f9a7f 100644
+index 7295960cfb1a7388568de99a003fedf5366e56a2..e12e2431413f3c773ebd228eb9adef2efae3a188 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -678,6 +678,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -662,6 +662,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -22,7 +22,7 @@ index 0a7fc2ef0120b9403efe4eaad50806375587ec59..75730a72f799dad5dbedc65af3cf12c1
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 49a75e240ba55bc4fea09299390635e012c2e846..35447a73d873cbdcea4fbbc492558c4aeafd2133 100644
+index 6a3d44f495df01dff587d546a9e7498741eecf52..1e1d2f50000f0a92f257a5c84aca667102e4d8a3 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -137,6 +137,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -48,10 +48,10 @@ index 9979c25ecd57e68331b628a518368635db5c2027..32733bf951af3eff7da5fd5758bbcbaa
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
-index 6ff7c34463f3ce5011ea8711d23f9cd11da38d8b..2b8e313dfac2ea9fad0583bb5e98d0c385e8584a 100644
+index dac861bc12ebc90fb04c9fbd2979c105a756e6a2..acaef1d6c9030705f693fb7075b7c1f93bf208d1 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
 +++ b/third_party/blink/public/mojom/page/page.mojom
-@@ -137,4 +137,7 @@ interface PageBroadcast {
+@@ -131,4 +131,7 @@ interface PageBroadcast {
      mojo_base.mojom.UnguessableToken devtools_frame_token,
      RemoteFrameInterfacesFromBrowser remote_frame_interfaces,
      RemoteMainFrameInterfaces remote_main_frame_interfaces);
@@ -72,10 +72,10 @@ index f3b681ec44c57f69c57390f31bd951cef8de3f0c..2fbe866ddf50d7eb324b0e2e4d120f4c
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index a95e5a7124e38ceaba246f2879a51fd2d0766090..1b8438998f12de72f58e5ab515d07e09393bfe5b 100644
+index 03b884bf2b0b4f1eaa084ecfda76e926226e8495..74c35b16d5778a5ac0618b9395a855995e9d0296 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3817,13 +3817,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3808,13 +3808,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  

@@ -98,15 +98,15 @@ index f528150f455103828c463c28b302f671f100d533..18566653b1cdca9a4db1657f3e4b811f
  static const DictionaryMappingTestCase kHybridDictionaryMappingsParams[] = {
      DictionaryMappingTestCase({"en-CA", "en-CA", "en-CA", "en", "en"}),
 diff --git a/components/spellcheck/common/spellcheck_features.cc b/components/spellcheck/common/spellcheck_features.cc
-index f1b9017c7fa252463682011179a1c68fdc6be621..3522c3eeef76c06973ea3474e88d0a7fd760b41c 100644
+index 0f17118a967852309b42c74d5c41516df3288d73..5be8a0b6a4472eee426c1af1342c86158630ac37 100644
 --- a/components/spellcheck/common/spellcheck_features.cc
 +++ b/components/spellcheck/common/spellcheck_features.cc
-@@ -32,7 +32,7 @@ const base::Feature kWinUseBrowserSpellChecker{
-     "WinUseBrowserSpellChecker", base::FEATURE_ENABLED_BY_DEFAULT};
+@@ -34,7 +34,7 @@ BASE_FEATURE(kWinUseBrowserSpellChecker,
  
- const base::Feature kWinDelaySpellcheckServiceInit{
--    "WinDelaySpellcheckServiceInit", base::FEATURE_ENABLED_BY_DEFAULT};
-+    "WinDelaySpellcheckServiceInit", base::FEATURE_DISABLED_BY_DEFAULT};
+ BASE_FEATURE(kWinDelaySpellcheckServiceInit,
+              "WinDelaySpellcheckServiceInit",
+-             base::FEATURE_ENABLED_BY_DEFAULT);
++             base::FEATURE_DISABLED_BY_DEFAULT);
  
- const base::Feature kWinRetrieveSuggestionsOnlyOnDemand{
-     "WinRetrieveSuggestionsOnlyOnDemand", base::FEATURE_ENABLED_BY_DEFAULT};
+ BASE_FEATURE(kWinRetrieveSuggestionsOnlyOnDemand,
+              "WinRetrieveSuggestionsOnlyOnDemand",
