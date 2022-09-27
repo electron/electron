@@ -4,6 +4,9 @@
 
 #include "shell/browser/notifications/platform_notification_service.h"
 
+#include <algorithm>
+#include <set>
+#include <utility>
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/notification_event_dispatcher.h"
 #include "content/public/browser/render_process_host.h"

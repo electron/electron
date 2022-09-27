@@ -113,7 +113,7 @@ class WindowsToastNotification : public Notification {
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
       toast_notification_;
   PCWSTR AsString(
-      ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument>& xmlDocument);
+      const ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument>& xmlDocument);
 };
 
 class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,

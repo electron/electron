@@ -25,6 +25,7 @@
 #include <wrl\wrappers\corewrappers.h>
 #include <algorithm>
 #include <iterator>
+#include <memory>
 #include <sstream>
 
 #include "base/environment.h"
@@ -60,11 +61,9 @@ using ABI::Windows::Foundation::Collections::IPropertySet;
 using ABI::Windows::UI::Notifications::IToastActivatedEventArgs;
 using ABI::Windows::UI::Notifications::IToastActivatedEventArgs2;
 using ABI::Windows::UI::Notifications::ToastDismissalReason;
+using base::win::ScopedHandle;
 using Microsoft::WRL::Wrappers::HandleT;
 using Microsoft::WRL::Wrappers::HStringReference;
-using namespace Microsoft::WRL;
-using namespace Microsoft::WRL::Wrappers;
-using base::win::ScopedHandle;
 
 //  Used to CoCreate an INotificationActivationCallback interface to notify
 //  about toast activations.
@@ -392,7 +391,7 @@ HRESULT WindowsToastNotification::ShowInternal(
 }
 
 PCWSTR WindowsToastNotification::AsString(
-    ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument>& xmlDocument) {
+    const ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument>& xmlDocument) {
   HSTRING xml;
   ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeSerializer> ser;
   HRESULT hr =
@@ -1058,7 +1057,7 @@ ToastEventHandler::~ToastEventHandler() {}
 HRESULT GetReplyFromNotificationAction(
     const ComPtr<IMap<HSTRING, IInspectable*>>& replyMap,
     const electron::NotificationAction& action,
-    std::string& reply) {
+    std::string* reply) {
   // Beware: do not put any methods with temporary wstring as return value
   // directly to HStringReference c-tor
   // HStringReference uses bare pointer to raw std::wstring data which should be
@@ -1081,7 +1080,7 @@ HRESULT GetReplyFromNotificationAction(
     PCWSTR arguments = WindowsGetStringRawBuffer(argumentsHandle, NULL);
 
     if (arguments && *arguments)
-      reply = base::WideToUTF8(arguments);
+      *reply = base::WideToUTF8(arguments);
   }
   return S_OK;
 }
@@ -1091,8 +1090,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     IInspectable* args) {
   // SAP-14036 upgrade for get_Activated callback
-  if (options_.is_persistent) {  // click on persistent notification toast
-
+  if (options_.is_persistent) {
+    // click on persistent notification toast
     if (options_.has_reply) {
       // Notification::NotificationReplied scope
       // SAP-15259 : Add the reply field on a notification
@@ -1123,7 +1122,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
         std::string reply;
         if (index != -1) {
           RETURN_IF_FAILED(GetReplyFromNotificationAction(
-              replyMap, options_.actions[index], reply));
+              replyMap, options_.actions[index], &reply));
         }
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE, base::BindOnce(&Notification::NotificationReplied,
@@ -1131,8 +1130,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
         if (IsDebuggingNotifications())
           LOG(INFO) << "NotificationReplied";
       }
-    }  // if options_.has_reply
-    else {
+      // if options_.has_reply
+    } else {
       // Notification::NotificationAction scope
       ComPtr<IToastActivatedEventArgs> activatedEventArgs;
       if (FAILED(args->QueryInterface(activatedEventArgs.GetAddressOf())))
@@ -1160,9 +1159,10 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
         if (IsDebuggingNotifications())
           LOG(INFO) << "NotificationAction";
       }
-    }     // else options_.has_reply
-  } else  // if options_.is_persistent
-  {
+    }
+    // else options_.has_reply
+  } else {
+    // if options_.is_persistent
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE,
         base::BindOnce(&Notification::NotificationClicked, notification_));
@@ -1412,7 +1412,7 @@ PBITMAPINFO GetBITMAPInfo(HBITMAP hBitmap) {
   return pbmi;
 }
 
-bool GetBitmapBits(std::vector<BYTE>& bmpBits,
+bool GetBitmapBits(std::vector<BYTE>* lpBmpBits,
                    HBITMAP hBitmap,
                    PBITMAPINFO pBitmapInfo) {
   HDC hDC = GetDC(NULL);  // Get Desktop device context
@@ -1427,12 +1427,12 @@ bool GetBitmapBits(std::vector<BYTE>& bmpBits,
         !nLines)
       return false;
 
-    bmpBits.resize(pBitmapInfo->bmiHeader.biSizeImage);
+    lpBmpBits->resize(pBitmapInfo->bmiHeader.biSizeImage);
 
     // This call is necessary to copy DIB bits into bmpBits vector
     if (nLines =
             GetDIBits(pDC, hBitmap, 0, (WORD)pBitmapInfo->bmiHeader.biHeight,
-                      bmpBits.data(), pBitmapInfo, DIB_RGB_COLORS),
+                      lpBmpBits->data(), pBitmapInfo, DIB_RGB_COLORS),
         !nLines)
       return false;
   }
@@ -1463,7 +1463,7 @@ bool NotificationRegistrator::ExtractAppIconToTempFile(
 
   // Information about color DIB bits icon
   std::vector<BYTE> bmpColorBits;
-  if (!GetBitmapBits(bmpColorBits, iconInfo.hbmColor, bmColorInfo.get()))
+  if (!GetBitmapBits(&bmpColorBits, iconInfo.hbmColor, bmColorInfo.get()))
     return false;
 
   // Information about mask DIB into icon
@@ -1476,7 +1476,7 @@ bool NotificationRegistrator::ExtractAppIconToTempFile(
 
   // Information about mask DIB bits icon
   std::vector<BYTE> bmpMaskBits;
-  if (!GetBitmapBits(bmpMaskBits, iconInfo.hbmMask, bmMaskInfo.get()))
+  if (!GetBitmapBits(&bmpMaskBits, iconInfo.hbmMask, bmMaskInfo.get()))
     return false;
 
   ico_path_ = tmp_path_ + file_name + L".ico";
