@@ -1652,7 +1652,7 @@ class NativeAppWindowFrameViewMac : public views::NativeFrameViewMac {
 
     // Check for possible draggable region in the client area for the frameless
     // window.
-    SkRegion* draggable_region = native_window_->draggable_region();
+    SkRegion const* draggable_region = native_window_->draggable_region();
     if (draggable_region && draggable_region->contains(point.x(), point.y()))
       return HTCAPTION;
 
@@ -1661,7 +1661,7 @@ class NativeAppWindowFrameViewMac : public views::NativeFrameViewMac {
 
  private:
   // Weak.
-  raw_ptr<NativeWindowMac> native_window_;
+  raw_ptr<NativeWindowMac> const native_window_;
 };
 
 std::unique_ptr<views::NonClientFrameView>
