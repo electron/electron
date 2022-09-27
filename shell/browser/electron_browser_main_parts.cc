@@ -11,6 +11,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/i18n/rtl.h"
 #include "base/metrics/field_trial.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -90,6 +91,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "components/os_crypt/keychain_password_mac.h"
 #include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
@@ -282,8 +284,16 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {
-  if (!views::LayoutProvider::Get())
+  if (!views::LayoutProvider::Get()) {
     layout_provider_ = std::make_unique<views::LayoutProvider>();
+  }
+
+  // Fetch the system locale for Electron.
+#if BUILDFLAG(IS_MAC)
+  fake_browser_process_->SetSystemLocale(GetCurrentSystemLocale());
+#else
+  fake_browser_process_->SetSystemLocale(base::i18n::GetConfiguredLocale());
+#endif
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string locale = command_line->GetSwitchValueASCII(::switches::kLang);
@@ -320,7 +330,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   }
 #endif
 
-  // Initialize the app locale.
+  // Initialize the app locale for Electron and Chromium.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
   ElectronBrowserClient::SetApplicationLocale(app_locale);
   fake_browser_process_->SetApplicationLocale(app_locale);
@@ -481,6 +491,9 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
 }
 
 void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
+  std::string app_name = electron::Browser::Get()->GetName();
+#endif
 #if BUILDFLAG(IS_LINUX)
   auto shutdown_cb =
       base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
@@ -491,7 +504,6 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   // Set up crypt config. This needs to be done before anything starts the
   // network service, as the raw encryption key needs to be shared with the
   // network service for encrypted cookie storage.
-  std::string app_name = electron::Browser::Get()->GetName();
   const base::CommandLine& command_line =
       *base::CommandLine::ForCurrentProcess();
   std::unique_ptr<os_crypt::Config> config =
@@ -507,6 +519,10 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
       command_line.HasSwitch(::switches::kEnableEncryptionSelection);
   base::PathService::Get(DIR_SESSION_DATA, &config->user_data_path);
   OSCrypt::SetConfig(std::move(config));
+#endif
+#if BUILDFLAG(IS_MAC)
+  KeychainPassword::GetServiceName() = app_name + " Safe Storage";
+  KeychainPassword::GetAccountName() = app_name;
 #endif
 #if BUILDFLAG(IS_POSIX)
   // Exit in response to SIGINT, SIGTERM, etc.

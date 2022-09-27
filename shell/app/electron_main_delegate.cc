@@ -24,6 +24,7 @@
 #include "content/public/app/initialize_mojo_core.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
@@ -423,6 +424,20 @@ absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
   RegisterAtomCrApp();
 #endif
   return absl::nullopt;
+}
+
+base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  bool load_browser_process_specific_v8_snapshot =
+      process_type.empty() &&
+      electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
+  if (load_browser_process_specific_v8_snapshot) {
+    return "browser_v8_context_snapshot.bin";
+  }
+  return ContentMainDelegate::GetBrowserV8SnapshotFilename();
 }
 
 content::ContentBrowserClient*

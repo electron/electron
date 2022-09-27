@@ -144,6 +144,10 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/native_window_views.h"
+#endif
+
 #if !BUILDFLAG(IS_MAC)
 #include "ui/aura/window.h"
 #else
@@ -176,9 +180,8 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
-#include "shell/browser/native_window_views.h"
 #endif
-#endif
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
@@ -1001,6 +1004,19 @@ void WebContents::Destroy() {
   }
 }
 
+void WebContents::Close(absl::optional<gin_helper::Dictionary> options) {
+  bool dispatch_beforeunload = false;
+  if (options)
+    options->Get("waitForBeforeUnload", &dispatch_beforeunload);
+  if (dispatch_beforeunload &&
+      web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
+    NotifyUserActivation();
+    web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
+  } else {
+    web_contents()->Close();
+  }
+}
+
 bool WebContents::DidAddMessageToConsole(
     content::WebContents* source,
     blink::mojom::ConsoleMessageLevel level,
@@ -1175,8 +1191,9 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnSetContentBounds(rect);
+  if (!Emit("content-bounds-updated", rect))
+    for (ExtendedWebContentsObserver& observer : observers_)
+      observer.OnSetContentBounds(rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -1190,6 +1207,8 @@ void WebContents::CloseContents(content::WebContents* source) {
 
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
+
+  Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -2400,14 +2419,6 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
       !owner_window()) {
     state = "detach";
   }
-  bool activate = true;
-  if (args && args->Length() == 1) {
-    gin_helper::Dictionary options;
-    if (args->GetNext(&options)) {
-      options.Get("mode", &state);
-      options.Get("activate", &activate);
-    }
-  }
 
 #if BUILDFLAG(IS_WIN)
   auto* win = static_cast<NativeWindowViews*>(owner_window());
@@ -2416,6 +2427,15 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
   if (win && win->IsWindowControlsOverlayEnabled())
     state = "detach";
 #endif
+
+  bool activate = true;
+  if (args && args->Length() == 1) {
+    gin_helper::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("mode", &state);
+      options.Get("activate", &activate);
+    }
+  }
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
@@ -3424,6 +3444,10 @@ content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetPrimaryMainFrame();
 }
 
+content::RenderFrameHost* WebContents::Opener() {
+  return web_contents()->GetOpener();
+}
+
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
   if (frame)
@@ -3912,6 +3936,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
   // destroyable.
   return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("destroy", &WebContents::Destroy)
+      .SetMethod("close", &WebContents::Close)
       .SetMethod("getBackgroundThrottling",
                  &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",
@@ -4034,6 +4059,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
+      .SetProperty("opener", &WebContents::Opener)
       .Build();
 }
 
@@ -4148,9 +4174,19 @@ namespace {
 
 using electron::api::GetAllWebContents;
 using electron::api::WebContents;
+using electron::api::WebFrameMain;
 
 gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
   WebContents* contents = WebContents::FromID(id);
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
+}
+
+gin::Handle<WebContents> WebContentsFromFrame(v8::Isolate* isolate,
+                                              WebFrameMain* web_frame) {
+  content::RenderFrameHost* rfh = web_frame->render_frame_host();
+  content::WebContents* source = content::WebContents::FromRenderFrameHost(rfh);
+  WebContents* contents = WebContents::From(source);
   return contents ? gin::CreateHandle(isolate, contents)
                   : gin::Handle<WebContents>();
 }
@@ -4183,6 +4219,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
+  dict.SetMethod("fromFrame", &WebContentsFromFrame);
   dict.SetMethod("fromDevToolsTargetId", &WebContentsFromDevToolsTargetID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }

@@ -134,6 +134,7 @@ BrowserWindow::~BrowserWindow() {
     api_web_contents_->RemoveObserver(this);
     // Destroy the WebContents.
     OnCloseContents();
+    api_web_contents_->Destroy();
   }
 }
 
@@ -181,7 +182,6 @@ void BrowserWindow::WebContentsDestroyed() {
 
 void BrowserWindow::OnCloseContents() {
   BaseWindow::ResetBrowserViews();
-  api_web_contents_->Destroy();
 }
 
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
