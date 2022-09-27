@@ -16,6 +16,7 @@ jobs:
           days-before-stale: 90
           days-before-close: 30
           stale-issue-label: stale
+          operations-per-run: 1750
           stale-issue-message: >
             This issue has been automatically marked as stale. **If this issue is still affecting you, please leave any comment** (for example, "bump"), and we'll keep it open. If you have any new additional information—in particular, if this is still reproducible in the [latest version of Electron](https://www.electronjs.org/releases/stable) or in the [beta](https://www.electronjs.org/releases/beta)—please include it with your comment!
           close-issue-message: >
