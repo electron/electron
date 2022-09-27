@@ -27,5 +27,7 @@
 
   "src/electron/patches/pdfium": "src/third_party/pdfium",
 
-  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg"
+  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg",
+
+  "src/electron/patches/libaom": "src/third_party/libaom/source/libaom"
 }
