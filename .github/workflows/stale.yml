@@ -4,11 +4,14 @@ on:
     # 1:30am every day
     - cron: '30 1 * * *'
 
+permissions:
+  issues: write
+
 jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v6
+      - uses: actions/stale@3de2653986ebd134983c79fe2be5d45cc3d9f4e1
         with:
           days-before-stale: 90
           days-before-close: 30
