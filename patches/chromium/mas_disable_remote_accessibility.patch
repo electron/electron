@@ -162,7 +162,7 @@ index c1f2725cf74fe8845843461518a849f2cbf2c024..897f46a7333eb80c8fe54535f6159dc1
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index f2cd4583734aab9a6760f357eb6fb9ce73d96753..e43abe38dabbb09d25b6bf02a4abaf7515445740 100644
+index f2cd4583734aab9a6760f357eb6fb9ce73d96753..a420b3cf9b1c325967318db322d61c4ebc4cf7c6 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -260,8 +260,10 @@
@@ -199,11 +199,12 @@ index f2cd4583734aab9a6760f357eb6fb9ce73d96753..e43abe38dabbb09d25b6bf02a4abaf75
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2122,19 +2128,25 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2121,20 +2127,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+ void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
-   id element_id = GetNativeViewAccessible();
 +#ifndef MAS_BUILD
+   id element_id = GetNativeViewAccessible();
    std::vector<uint8_t> token =
        ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
 +#else
