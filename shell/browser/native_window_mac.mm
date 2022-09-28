@@ -418,32 +418,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
-  // Use an NSEvent monitor to listen for the wheel event.
-  BOOL __block began = NO;
-  wheel_event_monitor_ = [NSEvent
-      addLocalMonitorForEventsMatchingMask:NSEventMaskScrollWheel
-                                   handler:^(NSEvent* event) {
-                                     if ([[event window] windowNumber] !=
-                                         [window_ windowNumber])
-                                       return event;
-
-                                     if (!began && (([event phase] ==
-                                                     NSEventPhaseMayBegin) ||
-                                                    ([event phase] ==
-                                                     NSEventPhaseBegan))) {
-                                       this->NotifyWindowScrollTouchBegin();
-                                       began = YES;
-                                     } else if (began &&
-                                                (([event phase] ==
-                                                  NSEventPhaseEnded) ||
-                                                 ([event phase] ==
-                                                  NSEventPhaseCancelled))) {
-                                       this->NotifyWindowScrollTouchEnd();
-                                       began = NO;
-                                     }
-                                     return event;
-                                   }];
-
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
   SetMaximizable(maximizable);
@@ -1725,10 +1699,6 @@ void NativeWindowMac::Cleanup() {
   DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   display::Screen::GetScreen()->RemoveObserver(this);
-  if (wheel_event_monitor_) {
-    [NSEvent removeMonitor:wheel_event_monitor_];
-    wheel_event_monitor_ = nil;
-  }
 }
 
 void NativeWindowMac::OverrideNSWindowContentView() {
