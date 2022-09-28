@@ -925,9 +925,9 @@ void App::BrowserChildProcessCrashedOrKilled(
   }
   if (data.process_type == content::PROCESS_TYPE_UTILITY) {
     base::ProcessId pid = data.GetProcess().Pid();
-    auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
+    auto utility_process_wrapper = UtilityProcessWrapper::FromProcessId(pid);
     if (utility_process_wrapper)
-      utility_process_wrapper->Emit("exit", info.exit_code);
+      utility_process_wrapper->Shutdown(info.exit_code);
   }
   Emit("child-process-gone", details);
 }

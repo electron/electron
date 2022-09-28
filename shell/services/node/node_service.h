@@ -43,8 +43,6 @@ class NodeService : public node::mojom::NodeService {
   void ReceivePostMessage(blink::TransferableMessage message) override;
 
  private:
-  bool initialized_ = false;
-
   std::unique_ptr<JavascriptEnvironment> js_env_;
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<ElectronBindings> electron_bindings_;

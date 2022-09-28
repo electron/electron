@@ -113,6 +113,8 @@ if (nodeIntegration) {
     process.once('loaded', function () {
       delete (global as any).process;
       delete (global as any).Buffer;
+      delete (global as any).setImmediate;
+      delete (global as any).clearImmediate;
       delete (global as any).global;
       delete (global as any).root;
       delete (global as any).GLOBAL;

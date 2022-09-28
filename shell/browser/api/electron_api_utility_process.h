@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_UTILITY_PROCESS_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_UTILITY_PROCESS_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -40,9 +41,11 @@ class UtilityProcessWrapper
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper> {
  public:
-  enum ReaderType { STDOUT, STDERR };
+  enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
+  enum IOType { PIPE, INHERIT, IGNORE };
   ~UtilityProcessWrapper() override;
   static gin::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
+  static raw_ptr<UtilityProcessWrapper> FromProcessId(base::ProcessId pid);
 
   void OnServiceProcessDisconnected(uint32_t error_code,
                                     const std::string& description);
@@ -54,14 +57,15 @@ class UtilityProcessWrapper
   const char* GetTypeName() override;
 
   void ReceivePostMessage(blink::TransferableMessage message);
-  void HandleMessage(ReaderType type, std::vector<uint8_t> message);
-  void ResumeReading(PipeReaderBase* pipe_io);
-  void ShutdownReader(ReaderType type);
+  void HandleStdioMessage(IOHandle handle, std::vector<uint8_t> message);
+  void ShutdownStdioReader(IOHandle handle);
+  void ResumeStdioReading(PipeReaderBase* pipe_io);
+  void Shutdown(int exit_code);
 
  private:
   UtilityProcessWrapper(node::mojom::NodeServiceParamsPtr params,
                         std::u16string display_name,
-                        std::vector<std::string> stdio,
+                        std::map<IOHandle, IOType> stdio,
                         bool use_plugin_helper);
   void OnServiceProcessLaunched(const base::Process& process);
 
@@ -77,9 +81,6 @@ class UtilityProcessWrapper
 };
 
 }  // namespace api
-
-base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>&
-GetAllUtilityProcessWrappers();
 
 }  // namespace electron
 

@@ -37,5 +37,6 @@ Object.defineProperty(process, 'parentPort', {
 });
 
 // Finally load entry script.
-process._firstFileName = Module._resolveFilename(process._serviceStartupScript, null, false);
-Module._load(process._serviceStartupScript, Module, true);
+const entryScript = v8Util.getHiddenValue(process, '_serviceStartupScript');
+process._firstFileName = Module._resolveFilename(entryScript, null, false);
+Module._load(entryScript, Module, true);

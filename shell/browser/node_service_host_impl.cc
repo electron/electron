@@ -24,7 +24,7 @@ void NodeServiceHostImpl::ReceivePostMessage(
     base::ProcessId pid,
     blink::TransferableMessage message) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
+  auto utility_process_wrapper = api::UtilityProcessWrapper::FromProcessId(pid);
   if (utility_process_wrapper)
     utility_process_wrapper->ReceivePostMessage(std::move(message));
 }

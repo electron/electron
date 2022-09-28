@@ -573,10 +573,10 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
       auto& process = it.GetData().GetProcess();
       if (!process.IsValid())
         continue;
-      auto* utility_process_wrapper =
-          GetAllUtilityProcessWrappers().Lookup(process.Pid());
+      auto utility_process_wrapper =
+          api::UtilityProcessWrapper::FromProcessId(process.Pid());
       if (utility_process_wrapper)
-        utility_process_wrapper->OnServiceProcessDisconnected(0, std::string());
+        utility_process_wrapper->Shutdown(0 /* exit_code */);
     }
   }
 

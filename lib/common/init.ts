@@ -40,7 +40,8 @@ function wrap <T extends AnyFn> (func: T, wrapper: (fn: AnyFn) => T) {
 // initiatively activate the uv loop once process.nextTick and setImmediate is
 // called.
 process.nextTick = wrapWithActivateUvLoop(process.nextTick);
-timers.setImmediate = wrapWithActivateUvLoop(timers.setImmediate);
+global.setImmediate = timers.setImmediate = wrapWithActivateUvLoop(timers.setImmediate);
+global.clearImmediate = timers.clearImmediate;
 
 // setTimeout needs to update the polling timeout of the event loop, when
 // called under Chromium's event loop the node's event loop won't get a chance
@@ -57,7 +58,6 @@ if (process.type === 'browser' ||
     process.type === 'utility') {
   global.setTimeout = timers.setTimeout;
   global.setInterval = timers.setInterval;
-  global.setImmediate = timers.setImmediate;
 }
 
 if (process.platform === 'win32') {

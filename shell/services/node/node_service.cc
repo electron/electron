@@ -36,24 +36,24 @@ NodeService::NodeService(
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
   if (receiver.is_valid())
     receiver_.Bind(std::move(receiver));
-  if (auto* thread = content::UtilityThread::Get()) {
-    thread->BindHostReceiver(
-        node_service_host_remote_.BindNewPipeAndPassReceiver());
-  }
+  auto* thread = content::UtilityThread::Get();
+  CHECK(thread) << "Called on incorrect thread in the utility process";
+  thread->BindHostReceiver(
+      node_service_host_remote_.BindNewPipeAndPassReceiver());
 }
 
 NodeService::~NodeService() {
   // Destroy node platform.
-  node_env_->env()->set_trace_sync_io(false);
-  js_env_->OnMessageLoopDestroying();
-  node::Stop(node_env_->env());
+  if (NodeBindings::IsInitialized()) {
+    node_env_->env()->set_trace_sync_io(false);
+    js_env_->OnMessageLoopDestroying();
+    node::Stop(node_env_->env());
+  }
 }
 
 void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
-  if (initialized_)
+  if (NodeBindings::IsInitialized())
     return;
-
-  initialized_ = true;
 
   if (!params->environment.empty()) {
     std::unique_ptr<base::Environment> env(base::Environment::Create());
@@ -88,7 +88,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
 
   // Add entry script to process object.
   gin_helper::Dictionary process(env->isolate(), env->process_object());
-  process.SetReadOnly("_serviceStartupScript", params->script);
+  process.SetHidden("_serviceStartupScript", params->script);
   process.SetHidden("_postMessage",
                     base::BindRepeating(&NodeService::PostMessage,
                                         weak_factory_.GetWeakPtr()));

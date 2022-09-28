@@ -214,18 +214,18 @@ class StdoutPipeReader : public PipeReaderBase {
   void HandleMessage(std::vector<uint8_t> message) override {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE,
-        base::BindOnce(&api::UtilityProcessWrapper::HandleMessage,
+        base::BindOnce(&api::UtilityProcessWrapper::HandleStdioMessage,
                        utility_process_wrapper_,
-                       api::UtilityProcessWrapper::ReaderType::STDOUT,
+                       api::UtilityProcessWrapper::IOHandle::STDOUT,
                        std::move(message)));
   }
 
   void ShutdownReader() override {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE,
-        base::BindOnce(&api::UtilityProcessWrapper::ShutdownReader,
+        base::BindOnce(&api::UtilityProcessWrapper::ShutdownStdioReader,
                        utility_process_wrapper_,
-                       api::UtilityProcessWrapper::ReaderType::STDOUT));
+                       api::UtilityProcessWrapper::IOHandle::STDOUT));
   }
 
   base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper_;
@@ -249,18 +249,18 @@ class StderrPipeReader : public PipeReaderBase {
   void HandleMessage(std::vector<uint8_t> message) override {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE,
-        base::BindOnce(&api::UtilityProcessWrapper::HandleMessage,
+        base::BindOnce(&api::UtilityProcessWrapper::HandleStdioMessage,
                        utility_process_wrapper_,
-                       api::UtilityProcessWrapper::ReaderType::STDERR,
+                       api::UtilityProcessWrapper::IOHandle::STDERR,
                        std::move(message)));
   }
 
   void ShutdownReader() override {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE,
-        base::BindOnce(&api::UtilityProcessWrapper::ShutdownReader,
+        base::BindOnce(&api::UtilityProcessWrapper::ShutdownStdioReader,
                        utility_process_wrapper_,
-                       api::UtilityProcessWrapper::ReaderType::STDERR));
+                       api::UtilityProcessWrapper::IOHandle::STDERR));
   }
 
   base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper_;
@@ -274,116 +274,103 @@ gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {
 UtilityProcessWrapper::UtilityProcessWrapper(
     node::mojom::NodeServiceParamsPtr params,
     std::u16string display_name,
-    std::vector<std::string> stdio,
+    std::map<IOHandle, IOType> stdio,
     bool use_plugin_helper) {
-  DCHECK(!node_service_remote_.is_bound());
-
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);
-  if (stdio[1] == "pipe") {
-    HANDLE read = nullptr;
-    HANDLE write = nullptr;
-    if (!::CreatePipe(&read, &write, nullptr, 0)) {
-      LOG(ERROR) << "stdout pipe creation failed";
-      return;
-    }
-    stdout_write.Set(write);
-    stdout_reader_ =
-        std::make_unique<StdoutPipeReader>(weak_factory_.GetWeakPtr(), read);
-    if (!stdout_reader_->Start()) {
-      LOG(ERROR) << "stdout output watcher thread failed to start.";
-      PipeIOBase::Shutdown(std::move(stdout_reader_));
-      CloseHandle(write);
-      return;
-    }
-  } else if (stdio[1] == "ignore") {
-    HANDLE handle = CreateFileW(
-        L"NUL", FILE_GENERIC_WRITE | FILE_READ_ATTRIBUTES,
-        FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
-    if (handle == INVALID_HANDLE_VALUE) {
-      LOG(ERROR) << "stdout failed to create null handle";
-      return;
-    }
-    stdout_write.Set(handle);
-  }
-
-  if (stdio[2] == "pipe") {
-    HANDLE read = nullptr;
-    HANDLE write = nullptr;
-    if (!::CreatePipe(&read, &write, nullptr, 0)) {
-      LOG(ERROR) << "stderr pipe creation failed";
-      return;
-    }
-    stderr_write.Set(write);
-    stderr_reader_ =
-        std::make_unique<StderrPipeReader>(weak_factory_.GetWeakPtr(), read);
-    if (!stderr_reader_->Start()) {
-      LOG(ERROR) << "stderr output watcher thread failed to start.";
-      PipeIOBase::Shutdown(std::move(stderr_reader_));
-      CloseHandle(write);
-      return;
-    }
-  } else if (stdio[2] == "ignore") {
-    HANDLE handle =
-        CreateFileW(L"NUL", FILE_GENERIC_WRITE | FILE_READ_ATTRIBUTES,
-                    FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
-    if (handle == INVALID_HANDLE_VALUE) {
-      LOG(ERROR) << "stderr failed to create null handle";
-      return;
-    }
-    stderr_write.Set(handle);
-  }
 #elif BUILDFLAG(IS_POSIX)
   base::FileHandleMappingVector fds_to_remap;
-  if (stdio[1] == "pipe") {
-    int stdout_pipe_fd[2];
-    if (HANDLE_EINTR(pipe(stdout_pipe_fd)) < 0) {
-      LOG(ERROR) << "stdout pipe creation failed";
-      return;
-    }
-    fds_to_remap.push_back(std::make_pair(stdout_pipe_fd[1], STDOUT_FILENO));
-    stdout_reader_ = std::make_unique<StdoutPipeReader>(
-        weak_factory_.GetWeakPtr(), stdout_pipe_fd[0]);
-    if (!stdout_reader_->Start()) {
-      LOG(ERROR) << "stdout output watcher thread failed to start.";
-      PipeIOBase::Shutdown(std::move(stdout_reader_));
-      IGNORE_EINTR(close(stdout_pipe_fd[1]));
-      return;
-    }
-  } else if (stdio[1] == "ignore") {
-    int devnull = open("/dev/null", O_WRONLY);
-    if (devnull < 0) {
-      LOG(ERROR) << "stdout ignore failed to open /dev/null";
-      return;
-    }
-    fds_to_remap.push_back(std::make_pair(devnull, STDOUT_FILENO));
-  }
-
-  if (stdio[2] == "pipe") {
-    int stderr_pipe_fd[2];
-    if (HANDLE_EINTR(pipe(stderr_pipe_fd)) < 0) {
-      LOG(ERROR) << "stderr pipe creation failed";
-      return;
-    }
-    fds_to_remap.push_back(std::make_pair(stderr_pipe_fd[1], STDERR_FILENO));
-    stderr_reader_ = std::make_unique<StderrPipeReader>(
-        weak_factory_.GetWeakPtr(), stderr_pipe_fd[0]);
-    if (!stderr_reader_->Start()) {
-      LOG(ERROR) << "stderr output watcher thread failed to start.";
-      PipeIOBase::Shutdown(std::move(stderr_reader_));
-      IGNORE_EINTR(close(stderr_pipe_fd[1]));
-      return;
-    }
-  } else if (stdio[2] == "ignore") {
-    int devnull = open("/dev/null", O_WRONLY);
-    if (devnull < 0) {
-      LOG(ERROR) << "stderr ignore failed to open /dev/null";
-      return;
-    }
-    fds_to_remap.push_back(std::make_pair(devnull, STDERR_FILENO));
-  }
 #endif
+  for (const auto& [handle, type] : stdio) {
+    if (type == IOType::PIPE) {
+#if BUILDFLAG(IS_WIN)
+      HANDLE read = nullptr;
+      HANDLE write = nullptr;
+      if (!::CreatePipe(&read, &write, nullptr, 0)) {
+        PLOG(ERROR) << "pipe creation failed";
+        return;
+      }
+#elif BUILDFLAG(IS_POSIX)
+      int pipe_fd[2];
+      if (HANDLE_EINTR(pipe(pipe_fd)) < 0) {
+        PLOG(ERROR) << "pipe creation failed";
+        return;
+      }
+#endif
+      if (handle == IOHandle::STDOUT) {
+#if BUILDFLAG(IS_WIN)
+        stdout_write.Set(write);
+        stdout_reader_ = std::make_unique<StdoutPipeReader>(
+            weak_factory_.GetWeakPtr(), read);
+#elif BUILDFLAG(IS_POSIX)
+        fds_to_remap.push_back(std::make_pair(pipe_fd[1], STDOUT_FILENO));
+        stdout_reader_ = std::make_unique<StdoutPipeReader>(
+            weak_factory_.GetWeakPtr(), pipe_fd[0]);
+#endif
+        if (!stdout_reader_->Start()) {
+          PLOG(ERROR) << "stdout output watcher thread failed to start.";
+          PipeIOBase::Shutdown(std::move(stdout_reader_));
+#if BUILDFLAG(IS_WIN)
+          CloseHandle(write);
+#elif BUILDFLAG(IS_POSIX)
+          IGNORE_EINTR(close(pipe_fd[1]));
+#endif
+          return;
+        }
+      } else if (handle == IOHandle::STDERR) {
+#if BUILDFLAG(IS_WIN)
+        stderr_write.Set(write);
+        stderr_reader_ = std::make_unique<StderrPipeReader>(
+            weak_factory_.GetWeakPtr(), read);
+#elif BUILDFLAG(IS_POSIX)
+        fds_to_remap.push_back(std::make_pair(pipe_fd[1], STDERR_FILENO));
+        stderr_reader_ = std::make_unique<StderrPipeReader>(
+            weak_factory_.GetWeakPtr(), pipe_fd[0]);
+#endif
+        if (!stderr_reader_->Start()) {
+          PLOG(ERROR) << "stderr output watcher thread failed to start.";
+          PipeIOBase::Shutdown(std::move(stderr_reader_));
+#if BUILDFLAG(IS_WIN)
+          CloseHandle(write);
+#elif BUILDFLAG(IS_POSIX)
+          IGNORE_EINTR(close(pipe_fd[1]));
+#endif
+          return;
+        }
+      }
+    } else if (type == IOType::IGNORE) {
+#if BUILDFLAG(IS_WIN)
+      HANDLE handle =
+          CreateFileW(L"NUL", FILE_GENERIC_WRITE | FILE_READ_ATTRIBUTES,
+                      FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                      OPEN_EXISTING, 0, nullptr);
+      if (handle == INVALID_HANDLE_VALUE) {
+        PLOG(ERROR) << "stdout failed to create null handle";
+        return;
+      }
+#elif BUILDFLAG(IS_POSIX)
+      int devnull = open("/dev/null", O_WRONLY);
+      if (devnull < 0) {
+        PLOG(ERROR) << "failed to open /dev/null";
+        return;
+      }
+#endif
+      if (handle == IOHandle::STDOUT) {
+#if BUILDFLAG(IS_WIN)
+        stdout_write.Set(handle);
+#elif BUILDFLAG(IS_POSIX)
+        fds_to_remap.push_back(std::make_pair(devnull, STDOUT_FILENO));
+#endif
+      } else if (handle == IOHandle::STDERR) {
+#if BUILDFLAG(IS_WIN)
+        stderr_write.Set(handle);
+#elif BUILDFLAG(IS_POSIX)
+        fds_to_remap.push_back(std::make_pair(devnull, STDERR_FILENO));
+#endif
+      }
+    }
+  }
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
@@ -392,7 +379,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       std::move(receiver),
       content::ServiceProcessHost::Options()
           .WithDisplayName(display_name.empty()
-                               ? std::u16string(u"Node Service")
+                               ? std::u16string(u"Node Utility Process")
                                : display_name)
           .WithExtraCommandLineSwitches(params->exec_args)
 #if BUILDFLAG(IS_WIN)
@@ -430,7 +417,11 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
     uint32_t error_code,
     const std::string& description) {
-  if (GetAllUtilityProcessWrappers().Lookup(pid_))
+  Shutdown(0 /* exit_code */);
+}
+
+void UtilityProcessWrapper::Shutdown(int exit_code) {
+  if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();
   // Shutdown output readers before exit event..
@@ -439,7 +430,7 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
   if (stderr_reader_.get())
     PipeIOBase::Shutdown(std::move(stderr_reader_));
   // Emit 'exit' event
-  EmitWithoutCustomEvent("exit", 0 /* exit_code */);
+  EmitWithoutCustomEvent("exit", exit_code);
   Unpin();
 }
 
@@ -488,7 +479,7 @@ bool UtilityProcessWrapper::Kill() const {
   // If sandbox feature is enabled for the utility process, then the
   // process reap should be signaled through the zygote via
   // content::ZygoteCommunication::EnsureProcessTerminated.
-  base::EnsureProcessTerminated(process.Duplicate());
+  base::EnsureProcessTerminated(std::move(process));
   return result;
 }
 
@@ -508,32 +499,32 @@ void UtilityProcessWrapper::ReceivePostMessage(
   EmitWithoutCustomEvent("message", message_value);
 }
 
-void UtilityProcessWrapper::HandleMessage(ReaderType type,
-                                          std::vector<uint8_t> message) {
+void UtilityProcessWrapper::HandleStdioMessage(IOHandle handle,
+                                               std::vector<uint8_t> message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, message.size());
   auto backing_store = array_buffer->GetBackingStore();
   memcpy(backing_store->Data(), message.data(), message.size());
-  if (type == ReaderType::STDOUT) {
+  if (handle == IOHandle::STDOUT) {
     Emit("stdout", array_buffer,
-         base::BindRepeating(&UtilityProcessWrapper::ResumeReading,
+         base::BindRepeating(&UtilityProcessWrapper::ResumeStdioReading,
                              weak_factory_.GetWeakPtr(), stdout_reader_.get()));
   } else {
     Emit("stderr", array_buffer,
-         base::BindRepeating(&UtilityProcessWrapper::ResumeReading,
+         base::BindRepeating(&UtilityProcessWrapper::ResumeStdioReading,
                              weak_factory_.GetWeakPtr(), stderr_reader_.get()));
   }
 }
 
-void UtilityProcessWrapper::ResumeReading(PipeReaderBase* pipe_io) {
+void UtilityProcessWrapper::ResumeStdioReading(PipeReaderBase* pipe_io) {
   if (!pipe_io->is_shutting_down()) {
     pipe_io->StartReadLoop();
   }
 }
 
-void UtilityProcessWrapper::ShutdownReader(ReaderType type) {
-  if (type == ReaderType::STDOUT) {
+void UtilityProcessWrapper::ShutdownStdioReader(IOHandle handle) {
+  if (handle == IOHandle::STDOUT) {
     PipeIOBase::Shutdown(std::move(stdout_reader_));
   } else {
     PipeIOBase::Shutdown(std::move(stderr_reader_));
@@ -541,29 +532,59 @@ void UtilityProcessWrapper::ShutdownReader(ReaderType type) {
 }
 
 // static
+raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
+    base::ProcessId pid) {
+  auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
+  return !!utility_process_wrapper ? utility_process_wrapper : nullptr;
+}
+
+// static
 gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
     gin::Arguments* args) {
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
-    args->ThrowTypeError("Expected a dictionary");
+    args->ThrowTypeError("Options must be an object.");
     return gin::Handle<UtilityProcessWrapper>();
   }
   node::mojom::NodeServiceParamsPtr params =
       node::mojom::NodeServiceParams::New();
   opts.Get("modulePath", &params->script);
-  opts.Get("args", &params->args);
+  if (opts.Has("args") && !opts.Get("args", &params->args)) {
+    args->ThrowTypeError("Invalid value for args");
+    return gin::Handle<UtilityProcessWrapper>();
+  }
   std::map<std::string, std::string> env_map;
-  if (opts.Get("env", &env_map)) {
-    for (auto const& env : env_map) {
-      params->environment.push_back(
-          node::mojom::EnvironmentVariable::New(env.first, env.second));
+  if (opts.Has("env")) {
+    if (opts.Get("env", &env_map)) {
+      for (auto const& env : env_map) {
+        params->environment.push_back(
+            node::mojom::EnvironmentVariable::New(env.first, env.second));
+      }
+    } else {
+      args->ThrowTypeError("Invalid value for env");
+      return gin::Handle<UtilityProcessWrapper>();
     }
   }
-  opts.Get("execArgv", &params->exec_args);
+  if (opts.Has("execArgv") && !opts.Get("execArgv", &params->exec_args)) {
+    args->ThrowTypeError("Invalid value for execArgv");
+    return gin::Handle<UtilityProcessWrapper>();
+  }
   std::u16string display_name;
   opts.Get("serviceName", &display_name);
-  std::vector<std::string> stdio{"ignore", "pipe", "pipe"};
-  opts.Get("stdio", &stdio);
+  std::map<IOHandle, IOType> stdio;
+  std::vector<std::string> stdio_arr{"ignore", "pipe", "pipe"};
+  opts.Get("stdio", &stdio_arr);
+  for (size_t i = 0; i < 3; i++) {
+    IOType type;
+    if (stdio_arr[i] == "ignore")
+      type = IOType::IGNORE;
+    else if (stdio_arr[i] == "inherit")
+      type = IOType::INHERIT;
+    else if (stdio_arr[i] == "pipe")
+      type = IOType::PIPE;
+
+    stdio.emplace(static_cast<IOHandle>(i), type);
+  }
   bool use_plugin_helper = false;
 #if BUILDFLAG(IS_MAC)
   opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
