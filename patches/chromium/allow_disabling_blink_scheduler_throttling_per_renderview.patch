@@ -48,7 +48,7 @@ index 9979c25ecd57e68331b628a518368635db5c2027..32733bf951af3eff7da5fd5758bbcbaa
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
-index dac861bc12ebc90fb04c9fbd2979c105a756e6a2..acaef1d6c9030705f693fb7075b7c1f93bf208d1 100644
+index 0cfe109e1ee4ac59dc8ddc68dff3ab929fcf480b..398be46c71fb9ea42ea655b204aaff31501d48c9 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
 +++ b/third_party/blink/public/mojom/page/page.mojom
 @@ -131,4 +131,7 @@ interface PageBroadcast {

@@ -8,7 +8,7 @@ accessing Blink internals. Its inverse, which already exists, is used in
 Android WebView.
 
 diff --git a/third_party/blink/public/web/web_message_port_converter.h b/third_party/blink/public/web/web_message_port_converter.h
-index 15378c3f747ebccba9038f435aa75ee324f28fb1..157cee75a2c59cfe949d683cf3839517811e3ac2 100644
+index a58ddcc8f6e79d3288d0c645875c8b1bbdaaf209..1283bd18cce78bc5eaad71b3fad01031b54d1ab3 100644
 --- a/third_party/blink/public/web/web_message_port_converter.h
 +++ b/third_party/blink/public/web/web_message_port_converter.h
 @@ -13,6 +13,7 @@ class Isolate;
@@ -30,7 +30,7 @@ index 15378c3f747ebccba9038f435aa75ee324f28fb1..157cee75a2c59cfe949d683cf3839517
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/exported/web_message_port_converter.cc b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
-index 0f9377d28fdf8dd6511fbf025493367205ff74d6..5b04fb60cbd079b7d589ca14dfbb351fd2492f74 100644
+index f440ee59be4ed14760f2948751f31f7ea3d42e2a..654fbb2d12c9fe7cb362d792ede64c9d1f8c099f 100644
 --- a/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 +++ b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 @@ -6,6 +6,7 @@

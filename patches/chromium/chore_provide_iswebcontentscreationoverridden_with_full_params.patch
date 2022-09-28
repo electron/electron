@@ -274,7 +274,7 @@ index bd4bdeda3403325ac5c3b83bc575b46844b5077a..224d70abab0fdcd08fd09cff4a3deba5
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 214d70d07e9aaa087459a450e71a539fc0199414..08ae6dabb6dbd032890210d98c74a8f5c40283b1 100644
+index f33bc7ec4bce4b6a4c38462110b68aae5b6280d6..53cf3913f59bc4d2fc883462a1b854ed18d7681f 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -321,8 +321,7 @@ class CONTENT_EXPORT WebContentsDelegate {
