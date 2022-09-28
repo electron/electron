@@ -216,6 +216,7 @@ step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
         rm -rf ~/Library/Application\ Support/electron*
         security delete-generic-password -l "Chromium Safe Storage" || echo "✓ Keychain does not contain password from tests"
         security delete-generic-password -l "Electron Test Main Safe Storage" || echo "✓ Keychain does not contain password from tests"
+        security delete-generic-password -a "electron-safe-storage" || echo "✓ Keychain does not contain password from tests"
       elif [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
         XVFB=/usr/bin/Xvfb
         /sbin/start-stop-daemon --stop --exec $XVFB || echo "Xvfb not running"
