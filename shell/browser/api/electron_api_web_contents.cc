@@ -3435,6 +3435,10 @@ content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetPrimaryMainFrame();
 }
 
+content::RenderFrameHost* WebContents::Opener() {
+  return web_contents()->GetOpener();
+}
+
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
   if (frame)
@@ -4045,6 +4049,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
+      .SetProperty("opener", &WebContents::Opener)
       .Build();
 }
 
@@ -4159,9 +4164,19 @@ namespace {
 
 using electron::api::GetAllWebContents;
 using electron::api::WebContents;
+using electron::api::WebFrameMain;
 
 gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
   WebContents* contents = WebContents::FromID(id);
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
+}
+
+gin::Handle<WebContents> WebContentsFromFrame(v8::Isolate* isolate,
+                                              WebFrameMain* web_frame) {
+  content::RenderFrameHost* rfh = web_frame->render_frame_host();
+  content::WebContents* source = content::WebContents::FromRenderFrameHost(rfh);
+  WebContents* contents = WebContents::From(source);
   return contents ? gin::CreateHandle(isolate, contents)
                   : gin::Handle<WebContents>();
 }
@@ -4194,6 +4209,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
+  dict.SetMethod("fromFrame", &WebContentsFromFrame);
   dict.SetMethod("fromDevToolsTargetId", &WebContentsFromDevToolsTargetID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }
