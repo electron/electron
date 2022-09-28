@@ -21,5 +21,5 @@ jobs:
             This issue has been automatically marked as stale. **If this issue is still affecting you, please leave any comment** (for example, "bump"), and we'll keep it open. If you have any new additional information—in particular, if this is still reproducible in the [latest version of Electron](https://www.electronjs.org/releases/stable) or in the [beta](https://www.electronjs.org/releases/beta)—please include it with your comment!
           close-issue-message: >
             This issue has been closed due to inactivity, and will not be monitored.  If this is a bug and you can reproduce this issue on a [supported version of Electron](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline) please open a new issue and include instructions for reproducing the issue.
-          exempt-issue-labels: discussion,security 🔒,enhancement :sparkles:
+          exempt-issue-labels: "discussion,security \ud83d\udd12,enhancement :sparkles:"
           only-pr-labels: not-a-real-label
