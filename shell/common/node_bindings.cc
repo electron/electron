@@ -434,7 +434,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       process_type = "worker";
       break;
     case BrowserEnvironment::kUtility:
-      process_type = "utility_process";
+      process_type = "utility";
       break;
   }
 
