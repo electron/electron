@@ -424,7 +424,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
   pid_ = process.Pid();
   GetAllUtilityProcessWrappers().AddWithID(this, pid_);
   // Emit 'spawn' event
-  Emit("spawn");
+  EmitWithoutCustomEvent("spawn");
 }
 
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
@@ -439,7 +439,7 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
   if (stderr_reader_.get())
     PipeIOBase::Shutdown(std::move(stderr_reader_));
   // Emit 'exit' event
-  Emit("exit", 0 /* exit_code */);
+  EmitWithoutCustomEvent("exit", 0 /* exit_code */);
   Unpin();
 }
 
@@ -505,7 +505,7 @@ void UtilityProcessWrapper::ReceivePostMessage(
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
-  Emit("message", message_value);
+  EmitWithoutCustomEvent("message", message_value);
 }
 
 void UtilityProcessWrapper::HandleMessage(ReaderType type,

@@ -169,11 +169,6 @@ declare namespace NodeJS {
     on(eventName: 'download-progress', listener: (event: any, current: number) => void): this;
   }
 
-  interface ParentPort extends EventEmitter {
-    postMessage(message: any): void;
-    on(eventName: 'message', listener: (event: any, ports: any[]) => void): this;
-  }
-
   interface Process {
     internalBinding?(name: string): any;
     _linkedBinding(name: string): any;

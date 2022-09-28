@@ -14,7 +14,7 @@ require('../common/reset-search-paths');
 // Import common settings.
 require('@electron/internal/common/init');
 
-const parentPort: NodeJS.ParentPort = new EventEmitter() as any;
+const parentPort: Electron.ParentPort = new EventEmitter() as any;
 parentPort.postMessage = v8Util.getHiddenValue(process, '_postMessage');
 
 v8Util.setHiddenValue(global, 'messagechannel', {

@@ -137,25 +137,8 @@ This property is only available in the renderer process.
 
 ### `process.parentPort`
 
-A `MessagePort` if this is a [`UtilityProcess`](utility-process.md) allowing communication
-with the parent process. Messages sent using `process.parentPort.postMessage` are available in
-the parent process using [`utilityProcess.on('message')`](utility-process.md#event-message) and messages sent
-from the parent process using [`utilityProcess.postMessage()`](utility-process.md#childpostmessagemessage-transfer) are available
-in this process using `process.parentPort.on('message')`.
-
-```js
-// Main process
-const child = new UtilityProcess(path.join(__dirname, 'test.js'))
-child.postMessage({ message: 'hello' })
-child.on('message', (ev, data) => {
-  console.log(data) // hello world!
-})
-
-// Child process
-process.parentPort.on('message', (e) => {
-  process.parentPort.postMessage(`${e.data} world!`)
-})
-```
+A [`Electron.ParentPort`](parent-port.md) property if this is a [`UtilityProcess`](utility-process.md)
+(or `null` otherwise) allowing communication with the parent process.
 
 ## Methods
 

@@ -59,7 +59,7 @@ describe('UtilityProcess module', () => {
 
     it('emits \'exit\' when child process exits gracefully', async () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'empty.js'));
-      const [, code] = await emittedOnce(child, 'exit');
+      const [code] = await emittedOnce(child, 'exit');
       expect(code).to.equal(0);
     });
 
@@ -178,7 +178,7 @@ describe('UtilityProcess module', () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'post-message.js'));
       await emittedOnce(child, 'spawn');
       child.postMessage(result);
-      const [, data] = await emittedOnce(child, 'message');
+      const [data] = await emittedOnce(child, 'message');
       expect(data).to.equal(result);
       const exit = emittedOnce(child, 'exit');
       expect(child.kill()).to.be.true();
@@ -283,7 +283,7 @@ describe('UtilityProcess module', () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'receive-message.js'));
       await emittedOnce(child, 'spawn');
       child.postMessage('', [childPort1]);
-      const [, data] = await emittedOnce(child, 'message');
+      const [data] = await emittedOnce(child, 'message');
       expect(data).to.equal(result);
       // Cleanup.
       const exit = emittedOnce(child, 'exit');
@@ -295,7 +295,7 @@ describe('UtilityProcess module', () => {
     ifit(process.platform === 'linux')('allows executing a setuid binary with child_process', async () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'suid.js'));
       await emittedOnce(child, 'spawn');
-      const [, data] = await emittedOnce(child, 'message');
+      const [data] = await emittedOnce(child, 'message');
       expect(data).to.not.be.empty();
       const exit = emittedOnce(child, 'exit');
       expect(child.kill()).to.be.true();

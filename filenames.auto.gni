@@ -36,6 +36,7 @@ auto_filenames = {
     "docs/api/net-log.md",
     "docs/api/net.md",
     "docs/api/notification.md",
+    "docs/api/parent-port.md",
     "docs/api/power-monitor.md",
     "docs/api/power-save-blocker.md",
     "docs/api/process.md",

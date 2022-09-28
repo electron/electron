@@ -67,15 +67,16 @@ process.parentPort.once('message', (e) => {
 Returns `boolean`
 
 Terminates the process gracefully. On POSIX, it uses SIGTERM
-but will ensure to reap the process on exit. This function returns
-true if kill succeeds, and false otherwise.
+but will ensure the process is reaped on exit. This function returns
+true if the kill is successful, and false otherwise.
 
 ### Instance Properties
 
 #### `child.pid`
 
 A `Integer | undefined` representing the process identifier (PID) of the child process.
-If the child process fails to spawn due to errors, then the value is `undefined`.
+If the child process fails to spawn due to errors, then the value is `undefined`. When
+the child process exits, then the value is `undefined` after the `exit` event is emitted.
 
 #### `child.stdout`
 
@@ -108,7 +109,6 @@ Emitted once the child process has spawned successfully.
 
 Returns:
 
-* `event` Event
 * `code` number - Contains the exit code for
 the process obtained from waitpid on posix, or GetExitCodeProcess on windows.
 
@@ -118,7 +118,6 @@ Emitted after the child process ends.
 
 Returns:
 
-* `event` Event
 * `message` any
 
 Emitted when the child process sends a message using [`process.parentPort.postMessage()`](process.md#processparentport).
