@@ -226,7 +226,7 @@ to the main process through the `'ping'` channel you just defined.
 ```js title='renderer.js'
 const func = async () => {
   const response = await window.versions.ping()
-  console.log(response) // prints out 'pong'
+  console.log(response) // prints out 'ping'
 }
 
 func()
