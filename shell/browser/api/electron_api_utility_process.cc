@@ -578,7 +578,7 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
 
     opts.Get("serviceName", &display_name);
 
-    std::vector<std::string> stdio_arr{"ignore", "pipe", "pipe"};
+    std::vector<std::string> stdio_arr{"ignore", "inherit", "inherit"};
     opts.Get("stdio", &stdio_arr);
     for (size_t i = 0; i < 3; i++) {
       IOType type;

@@ -20,7 +20,7 @@ Process: [Main](../glossary.md#main-process)<br />
 * `options` Object (optional)
   * `env` Object (optional) - Environment key-value pairs. Default is `process.env`.
   * `execArgv` string[] (optional) - List of string arguments passed to the executable. Default is `process.execArgv`.
-  * `stdio` (string[] | string) (optional) - Child's stdout and stderr configuration. Default is `pipe`.
+  * `stdio` (string[] | string) (optional) - Child's stdout and stderr configuration. Default is `inherit`.
     String value can be one of `pipe`, `ignore`, `inherit`, for more details on these values you can refer to
     [stdio][] documentation from Node.js. Currently this option does not allow configuring
     stdin and is always set to `ignore`. For example, the supported values will be processed as following:
@@ -80,9 +80,9 @@ the child process exits, then the value is `undefined` after the `exit` event is
 
 #### `child.stdout`
 
-A `NodeJS.ReadableStream | null | undefined` that represents the child process's stdout.
+A `NodeJS.ReadableStream | null` that represents the child process's stdout.
 If the child was spawned with options.stdio[1] set to anything other than 'pipe', then this will be `null`.
-The property will be `undefined` if the child process could not be successfully spawned.
+When the child process exits, then the value is `null` after the `exit` event is emitted.
 
 ```js
 // Main process
@@ -95,9 +95,9 @@ child.stdout.on('data', (data) => {
 
 #### `child.stderr`
 
-A `NodeJS.ReadableStream | null | undefined` that represents the child process's stderr.
+A `NodeJS.ReadableStream | null` that represents the child process's stderr.
 If the child was spawned with options.stdio[2] set to anything other than 'pipe', then this will be `null`.
-The property will be `undefined` if the child process could not be successfully spawned.
+When the child process exits, then the value is `null` after the `exit` event is emitted.
 
 ### Instance Events
 

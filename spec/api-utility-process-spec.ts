@@ -105,16 +105,12 @@ describe('UtilityProcess module', () => {
   });
 
   describe('stdout property', () => {
-    it('is valid when child process launches with default stdio', async () => {
+    it('is null when child process launches with default stdio', async () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'log.js'));
       await emittedOnce(child, 'spawn');
-      expect(child.stdout).to.not.be.null();
-      let log = '';
-      child.stdout!.on('data', (chunk) => {
-        log += chunk.toString('utf8');
-      });
+      expect(child.stdout).to.be.null();
+      expect(child.stderr).to.be.null();
       await emittedOnce(child, 'exit');
-      expect(log).to.equal('hello\n');
     });
 
     it('is null when child process launches with ignore stdio configuration', async () => {
@@ -127,28 +123,28 @@ describe('UtilityProcess module', () => {
       await emittedOnce(child, 'exit');
     });
 
-    it('is null when child process launches with inherit stdio configuration', async () => {
+    it('is valid when child process launches with pipe stdio configuration', async () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'log.js'), [], {
-        stdio: 'inherit'
+        stdio: 'pipe'
       });
       await emittedOnce(child, 'spawn');
-      expect(child.stdout).to.be.null();
-      expect(child.stderr).to.be.null();
+      expect(child.stdout).to.not.be.null();
+      let log = '';
+      child.stdout!.on('data', (chunk) => {
+        log += chunk.toString('utf8');
+      });
       await emittedOnce(child, 'exit');
+      expect(log).to.equal('hello\n');
     });
   });
 
   describe('stderr property', () => {
-    it('is valid when child process launches with default stdio', async () => {
+    it('is null when child process launches with default stdio', async () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'log.js'));
       await emittedOnce(child, 'spawn');
-      expect(child.stderr).to.not.be.null();
-      let log = '';
-      child.stderr!.on('data', (chunk) => {
-        log += chunk.toString('utf8');
-      });
+      expect(child.stdout).to.be.null();
+      expect(child.stderr).to.be.null();
       await emittedOnce(child, 'exit');
-      expect(log).to.equal('world');
     });
 
     it('is null when child process launches with ignore stdio configuration', async () => {
@@ -157,18 +153,21 @@ describe('UtilityProcess module', () => {
       });
       await emittedOnce(child, 'spawn');
       expect(child.stderr).to.be.null();
-      expect(child.stdout).to.not.be.null();
       await emittedOnce(child, 'exit');
     });
 
-    it('is null when child process launches with inherit stdio configuration', async () => {
+    it('is valid when child process launches with pipe stdio configuration', async () => {
       const child = new UtilityProcess(path.join(fixturesPath, 'log.js'), [], {
-        stdio: ['ignore', 'pipe', 'inherit']
+        stdio: ['ignore', 'pipe', 'pipe']
       });
       await emittedOnce(child, 'spawn');
-      expect(child.stderr).to.be.null();
-      expect(child.stdout).to.not.be.null();
+      expect(child.stderr).to.not.be.null();
+      let log = '';
+      child.stderr!.on('data', (chunk) => {
+        log += chunk.toString('utf8');
+      });
       await emittedOnce(child, 'exit');
+      expect(log).to.equal('world');
     });
   });
 
@@ -189,6 +188,7 @@ describe('UtilityProcess module', () => {
   describe('behavior', () => {
     it('supports starting the v8 inspector with --inspect-brk', (done) => {
       const child = new UtilityProcess(path.join(fixturesPath, 'log.js'), [], {
+        stdio: 'pipe',
         execArgv: ['--inspect-brk']
       });
 
@@ -213,6 +213,7 @@ describe('UtilityProcess module', () => {
 
     it('supports starting the v8 inspector with --inspect and a provided port', (done) => {
       const child = new UtilityProcess(path.join(fixturesPath, 'log.js'), [], {
+        stdio: 'pipe',
         execArgv: ['--inspect=17364']
       });
 

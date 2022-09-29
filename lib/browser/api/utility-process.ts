@@ -10,7 +10,7 @@ class IOReadable extends Readable {
   #data: (Buffer | null)[] = [];
   #resume: (() => void) | null = null;
 
-  storeInternalData (chunk: Buffer | null, resume: (() => void) | null) {
+  _storeInternalData (chunk: Buffer | null, resume: (() => void) | null) {
     this.#resume = resume;
     this.#data.push(chunk);
     this.#pushInternalData();
@@ -36,8 +36,8 @@ class IOReadable extends Readable {
 
 export default class UtilityProcess extends EventEmitter {
   #handle: ElectronInternal.UtilityProcessWrapper | null;
-  #stdout: IOReadable | null | undefined = new IOReadable();
-  #stderr: IOReadable | null | undefined = new IOReadable();
+  #stdout: IOReadable | null = null;
+  #stderr: IOReadable | null = null;
   constructor (modulePath: string, args?: string[], options?: Electron.UtilityProcessConstructorOptions) {
     super();
 
@@ -85,10 +85,11 @@ export default class UtilityProcess extends EventEmitter {
       switch (options.stdio) {
         case 'inherit':
         case 'ignore':
-          this.#stdout = null;
-          this.#stderr = null;
-          // falls through
+          stdio.push('ignore', options.stdio, options.stdio);
+          break;
         case 'pipe':
+          this.#stdout = new IOReadable();
+          this.#stderr = new IOReadable();
           stdio.push('ignore', options.stdio, options.stdio);
           break;
         default:
@@ -102,12 +103,16 @@ export default class UtilityProcess extends EventEmitter {
         }
         if (options.stdio[1] === 'ignore' || options.stdio[1] === 'inherit') {
           this.#stdout = null;
-        } else if (options.stdio[1] !== 'pipe') {
+        } else if (options.stdio[1] === 'pipe') {
+          this.#stdout = new IOReadable();
+        } else {
           throw new Error('stdout configuration must be of the following values: inherit, pipe, ignore');
         }
         if (options.stdio[2] === 'ignore' || options.stdio[2] === 'inherit') {
           this.#stderr = null;
-        } else if (options.stdio[2] !== 'pipe') {
+        } else if (options.stdio[2] === 'pipe') {
+          this.#stderr = new IOReadable();
+        } else {
           throw new Error('stderr configuration must be of the following values: inherit, pipe, ignore');
         }
       } else {
@@ -133,10 +138,10 @@ export default class UtilityProcess extends EventEmitter {
         }
         return false;
       } else if (channel === 'stdout' && this.#stdout) {
-        this.#stdout.storeInternalData(Buffer.from(args[1]), args[2]);
+        this.#stdout._storeInternalData(Buffer.from(args[1]), args[2]);
         return false;
       } else if (channel === 'stderr' && this.#stderr) {
-        this.#stderr.storeInternalData(Buffer.from(args[1]), args[2]);
+        this.#stderr._storeInternalData(Buffer.from(args[1]), args[2]);
         return false;
       } else {
         return this.emit(channel, ...args);
@@ -149,16 +154,10 @@ export default class UtilityProcess extends EventEmitter {
   }
 
   get stdout () {
-    if (this.#handle === null) {
-      return undefined;
-    }
     return this.#stdout;
   }
 
   get stderr () {
-    if (this.#handle === null) {
-      return undefined;
-    }
     return this.#stderr;
   }
 
