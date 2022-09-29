@@ -125,7 +125,7 @@ class LinuxUiGetterImpl : public ui::LinuxUiGetter {
     return GetForProfile(nullptr);
   }
   ui::LinuxUiTheme* GetForProfile(Profile* profile) override {
-    return ui::GetLinuxUiTheme(ui::SystemTheme::kDefault);
+    return ui::GetLinuxUiTheme(ui::SystemTheme::kGtk);
   }
 };
 #endif
@@ -399,6 +399,7 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
   auto* linux_ui = ui::GetDefaultLinuxUi();
+  CHECK(linux_ui);
   linux_ui_getter_ = std::make_unique<LinuxUiGetterImpl>();
 
   // Try loading gtk symbols used by Electron.
@@ -419,8 +420,9 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // Update the native theme when GTK theme changes. The GetNativeTheme
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
-  ui::LinuxUiTheme::GetForProfile(nullptr)->GetNativeTheme()->AddObserver(
-      dark_theme_observer_.get());
+  auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
+  CHECK(linux_ui_theme);
+  linux_ui_theme->GetNativeTheme()->AddObserver(dark_theme_observer_.get());
   ui::LinuxUi::SetInstance(linux_ui);
 
   // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
