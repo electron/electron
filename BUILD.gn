@@ -902,6 +902,21 @@ if (is_mac) {
       ]
     }
 
+    # set LC_ID_DYLIB current version so it's available in crash dumps.
+    # ld(1): The format of number is X[.Y[.Z]] where X must be a positive
+    # non-zero number less than or equal to 65535,
+    # and .Y and .Z are optional and if present must be non-negative
+    # numbers less than or equal to 255.
+    electron_version_regions = string_split(electron_version, "-")
+    electron_version_parts = string_split(electron_version_regions[0], ".")
+    electron_dylib_version =
+        "${electron_version_parts[0]}" +
+        ".${electron_version_parts[1]}.${electron_version_parts[2]}"
+    ldflags += [
+      "-current_version",
+      electron_dylib_version,
+    ]
+
     # For component ffmpeg under non-component build, it is linked from
     # @loader_path. However the ffmpeg.dylib is moved to a different place
     # when generating app bundle, and we should change to link from @rpath.
