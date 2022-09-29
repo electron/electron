@@ -40,6 +40,10 @@ namespace device {
 class GeolocationManager;
 }
 
+namespace ui {
+class LinuxUiGetter;
+}
+
 namespace electron {
 
 class Browser;
@@ -147,6 +151,8 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #if BUILDFLAG(IS_LINUX)
   // Used to notify the native theme of changes to dark mode.
   std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
+
+  std::unique_ptr<ui::LinuxUiGetter> linux_ui_getter_;
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;
