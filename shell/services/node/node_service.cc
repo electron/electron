@@ -115,7 +115,7 @@ void NodeService::PostMessage(v8::Local<v8::Value> message_value) {
   blink::TransferableMessage transferable_message;
   electron::SerializeV8Value(isolate, message_value, &transferable_message);
   node_service_host_remote_->ReceivePostMessage(
-      base::Process::Current().Pid(), std::move(transferable_message));
+      std::move(transferable_message));
 }
 
 void NodeService::ReceivePostMessage(blink::TransferableMessage message) {

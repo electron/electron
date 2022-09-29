@@ -1658,10 +1658,12 @@ bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
 }
 
 void ElectronBrowserClient::BindUtilityHostReceiver(
+    content::UtilityProcessHost* utility_process_host,
     mojo::GenericPendingReceiver receiver) {
-  if (auto r = receiver.As<node::mojom::NodeServiceHost>()) {
-    static base::NoDestructor<NodeServiceHostImpl> node_service_host;
-    node_service_host->BindReceiver(std::move(r));
+  if (auto host_receiver = receiver.As<node::mojom::NodeServiceHost>()) {
+    mojo::MakeSelfOwnedReceiver(
+        std::make_unique<NodeServiceHostImpl>(utility_process_host),
+        std::move(host_receiver));
     return;
   }
 }

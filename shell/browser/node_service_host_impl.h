@@ -5,31 +5,30 @@
 #ifndef ELECTRON_SHELL_BROWSER_NODE_SERVICE_HOST_IMPL_H_
 #define ELECTRON_SHELL_BROWSER_NODE_SERVICE_HOST_IMPL_H_
 
+#include "base/memory/raw_ptr.h"
 #include "base/sequence_checker.h"
-#include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
+
+namespace content {
+class UtilityProcessHost;
+}  // namespace content
 
 namespace electron {
 
 class NodeServiceHostImpl : public node::mojom::NodeServiceHost {
  public:
-  NodeServiceHostImpl();
+  NodeServiceHostImpl(content::UtilityProcessHost* utility_process_host);
 
   NodeServiceHostImpl(const NodeServiceHostImpl&) = delete;
   NodeServiceHostImpl& operator=(const NodeServiceHostImpl&) = delete;
 
   ~NodeServiceHostImpl() override;
 
-  void BindReceiver(
-      mojo::PendingReceiver<node::mojom::NodeServiceHost> receiver);
-
   // node::mojom::NodeServiceHost:
-  void ReceivePostMessage(base::ProcessId pid,
-                          blink::TransferableMessage message) override;
+  void ReceivePostMessage(blink::TransferableMessage message) override;
 
  private:
-  mojo::ReceiverSet<node::mojom::NodeServiceHost> receivers_;
+  raw_ptr<content::UtilityProcessHost> utility_process_host_;
   SEQUENCE_CHECKER(sequence_checker_);
 };
 

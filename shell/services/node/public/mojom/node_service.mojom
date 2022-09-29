@@ -5,7 +5,6 @@
 module node.mojom;
 
 import "mojo/public/mojom/base/file_path.mojom";
-import "mojo/public/mojom/base/process_id.mojom";
 import "sandbox/policy/mojom/sandbox.mojom";
 import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
 
@@ -29,6 +28,5 @@ interface NodeService {
 };
 
 interface NodeServiceHost {
-  ReceivePostMessage(mojo_base.mojom.ProcessId pid,
-                     blink.mojom.TransferableMessage message);
+  ReceivePostMessage(blink.mojom.TransferableMessage message);
 };

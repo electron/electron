@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 29 Sep 2022 22:25:47 +0900
+Subject: feat: expose utility host in browser interface binder
+
+Provide process host in the browser process as argument
+when receiving an interface request from the corresponding
+utility process.
+
+diff --git a/content/browser/utility_process_host_receiver_bindings.cc b/content/browser/utility_process_host_receiver_bindings.cc
+index 475cf80b51cd370e073f0b5697b28dcbb2f991b6..6bb8026ba48e38edb0486ab3fb0fdc009ce36cfe 100644
+--- a/content/browser/utility_process_host_receiver_bindings.cc
++++ b/content/browser/utility_process_host_receiver_bindings.cc
+@@ -25,7 +25,8 @@ void UtilityProcessHost::BindHostReceiver(
+     return;
+   }
+ #endif
+-  GetContentClient()->browser()->BindUtilityHostReceiver(std::move(receiver));
++  GetContentClient()->browser()->BindUtilityHostReceiver(
++      this, std::move(receiver));
+ }
+ 
+ }  // namespace content
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 8ee5503e252bb8dffebbee358c76ef51ada6b41d..e933901afd5b081550cdc18a54cbcddb23eb9224 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -229,6 +229,7 @@ class SpeechRecognitionManagerDelegate;
+ class StoragePartition;
+ class TracingDelegate;
+ class TtsPlatform;
++class UtilityProcessHost;
+ class URLLoaderRequestInterceptor;
+ class UsbDelegate;
+ class VideoOverlayWindow;
+@@ -1248,7 +1249,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+ 
+   // Handles an unhandled incoming interface binding request from a Utility
+   // process. Called on the IO thread.
+-  virtual void BindUtilityHostReceiver(mojo::GenericPendingReceiver receiver) {}
++  virtual void BindUtilityHostReceiver(
++      UtilityProcessHost* utility_process_host,
++      mojo::GenericPendingReceiver receiver) {}
+ 
+   // Called on the main thread to handle an unhandled interface receiver binding
+   // request from a render process. See |RenderThread::BindHostReceiver()|.
