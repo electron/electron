@@ -282,8 +282,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #elif BUILDFLAG(IS_POSIX)
   base::FileHandleMappingVector fds_to_remap;
 #endif
-  for (const auto& [handle, type] : stdio) {
-    if (type == IOType::PIPE) {
+  for (const auto& [io_handle, io_type] : stdio) {
+    if (io_type == IOType::PIPE) {
 #if BUILDFLAG(IS_WIN)
       HANDLE read = nullptr;
       HANDLE write = nullptr;
@@ -291,63 +291,69 @@ UtilityProcessWrapper::UtilityProcessWrapper(
         PLOG(ERROR) << "pipe creation failed";
         return;
       }
+      if (io_handle == IOHandle::STDOUT) {
+        stdout_write.Set(write);
+        stdout_reader_ = std::make_unique<StdoutPipeReader>(
+            weak_factory_.GetWeakPtr(), read);
+        if (!stdout_reader_->Start()) {
+          PLOG(ERROR) << "stdout output watcher thread failed to start.";
+          PipeIOBase::Shutdown(std::move(stdout_reader_));
+          CloseHandle(write);
+          return;
+        }
+      } else if (io_handle == IOHandle::STDERR) {
+        stderr_write.Set(write);
+        stderr_reader_ = std::make_unique<StderrPipeReader>(
+            weak_factory_.GetWeakPtr(), read);
+        if (!stderr_reader_->Start()) {
+          PLOG(ERROR) << "stderr output watcher thread failed to start.";
+          PipeIOBase::Shutdown(std::move(stderr_reader_));
+          CloseHandle(write);
+          return;
+        }
+      }
 #elif BUILDFLAG(IS_POSIX)
       int pipe_fd[2];
       if (HANDLE_EINTR(pipe(pipe_fd)) < 0) {
         PLOG(ERROR) << "pipe creation failed";
         return;
       }
-#endif
-      if (handle == IOHandle::STDOUT) {
-#if BUILDFLAG(IS_WIN)
-        stdout_write.Set(write);
-        stdout_reader_ = std::make_unique<StdoutPipeReader>(
-            weak_factory_.GetWeakPtr(), read);
-#elif BUILDFLAG(IS_POSIX)
+      if (io_handle == IOHandle::STDOUT) {
         fds_to_remap.push_back(std::make_pair(pipe_fd[1], STDOUT_FILENO));
         stdout_reader_ = std::make_unique<StdoutPipeReader>(
             weak_factory_.GetWeakPtr(), pipe_fd[0]);
-#endif
         if (!stdout_reader_->Start()) {
           PLOG(ERROR) << "stdout output watcher thread failed to start.";
           PipeIOBase::Shutdown(std::move(stdout_reader_));
-#if BUILDFLAG(IS_WIN)
-          CloseHandle(write);
-#elif BUILDFLAG(IS_POSIX)
           IGNORE_EINTR(close(pipe_fd[1]));
-#endif
           return;
         }
-      } else if (handle == IOHandle::STDERR) {
-#if BUILDFLAG(IS_WIN)
-        stderr_write.Set(write);
-        stderr_reader_ = std::make_unique<StderrPipeReader>(
-            weak_factory_.GetWeakPtr(), read);
-#elif BUILDFLAG(IS_POSIX)
+      } else if (io_handle == IOHandle::STDERR) {
         fds_to_remap.push_back(std::make_pair(pipe_fd[1], STDERR_FILENO));
         stderr_reader_ = std::make_unique<StderrPipeReader>(
             weak_factory_.GetWeakPtr(), pipe_fd[0]);
-#endif
         if (!stderr_reader_->Start()) {
           PLOG(ERROR) << "stderr output watcher thread failed to start.";
           PipeIOBase::Shutdown(std::move(stderr_reader_));
-#if BUILDFLAG(IS_WIN)
-          CloseHandle(write);
-#elif BUILDFLAG(IS_POSIX)
           IGNORE_EINTR(close(pipe_fd[1]));
-#endif
           return;
         }
       }
-    } else if (type == IOType::IGNORE) {
+#endif
+    } else if (io_type == IOType::IGNORE) {
 #if BUILDFLAG(IS_WIN)
       HANDLE handle =
           CreateFileW(L"NUL", FILE_GENERIC_WRITE | FILE_READ_ATTRIBUTES,
                       FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
                       OPEN_EXISTING, 0, nullptr);
       if (handle == INVALID_HANDLE_VALUE) {
-        PLOG(ERROR) << "stdout failed to create null handle";
+        PLOG(ERROR) << "Failed to create null handle";
         return;
+      }
+      if (io_handle == IOHandle::STDOUT) {
+        stdout_write.Set(handle);
+      } else if (io_handle == IOHandle::STDERR) {
+        stderr_write.Set(handle);
       }
 #elif BUILDFLAG(IS_POSIX)
       int devnull = open("/dev/null", O_WRONLY);
@@ -355,20 +361,12 @@ UtilityProcessWrapper::UtilityProcessWrapper(
         PLOG(ERROR) << "failed to open /dev/null";
         return;
       }
-#endif
-      if (handle == IOHandle::STDOUT) {
-#if BUILDFLAG(IS_WIN)
-        stdout_write.Set(handle);
-#elif BUILDFLAG(IS_POSIX)
+      if (io_handle == IOHandle::STDOUT) {
         fds_to_remap.push_back(std::make_pair(devnull, STDOUT_FILENO));
-#endif
-      } else if (handle == IOHandle::STDERR) {
-#if BUILDFLAG(IS_WIN)
-        stderr_write.Set(handle);
-#elif BUILDFLAG(IS_POSIX)
+      } else if (io_handle == IOHandle::STDERR) {
         fds_to_remap.push_back(std::make_pair(devnull, STDERR_FILENO));
-#endif
       }
+#endif
     }
   }
 

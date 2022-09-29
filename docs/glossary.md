@@ -199,6 +199,7 @@ available in "core".
 The utility process is a child of the main process that allows running any
 untrusted services that cannot be run in the main process. Chromium uses this
 process to perform network I/O, audio/video processing, device inputs etc.
+In Electron, you can create this process using [UtilityProcess] API.
 
 See also: [process](#process), [main process](#main-process)
 
@@ -239,4 +240,5 @@ embedded content.
 [renderer]: #renderer-process
 [userland]: #userland
 [using native node modules]: tutorial/using-native-node-modules.md
+[UtilityProcess]: api/utility-process.md
 [v8]: #v8

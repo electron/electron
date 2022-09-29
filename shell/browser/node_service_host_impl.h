@@ -17,7 +17,8 @@ namespace electron {
 
 class NodeServiceHostImpl : public node::mojom::NodeServiceHost {
  public:
-  NodeServiceHostImpl(content::UtilityProcessHost* utility_process_host);
+  explicit NodeServiceHostImpl(
+      content::UtilityProcessHost* utility_process_host);
 
   NodeServiceHostImpl(const NodeServiceHostImpl&) = delete;
   NodeServiceHostImpl& operator=(const NodeServiceHostImpl&) = delete;
