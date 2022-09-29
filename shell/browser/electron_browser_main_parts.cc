@@ -116,6 +116,7 @@ namespace electron {
 
 namespace {
 
+#if BUILDFLAG(IS_LINUX)
 class LinuxUiGetterImpl : public ui::LinuxUiGetter {
  public:
   LinuxUiGetterImpl() = default;
@@ -127,6 +128,7 @@ class LinuxUiGetterImpl : public ui::LinuxUiGetter {
     return ui::GetLinuxUiTheme(ui::SystemTheme::kDefault);
   }
 };
+#endif
 
 template <typename T>
 void Erase(T* container, typename T::iterator iter) {
