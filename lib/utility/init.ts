@@ -24,16 +24,11 @@ v8Util.setHiddenValue(global, 'messagechannel', {
   }
 });
 
-let _parentPort = parentPort;
 Object.defineProperty(process, 'parentPort', {
   get () {
-    return _parentPort;
+    return parentPort;
   },
-  set (value) {
-    _parentPort = value;
-  },
-  enumerable: false,
-  configurable: true
+  enumerable: true
 });
 
 // Finally load entry script.

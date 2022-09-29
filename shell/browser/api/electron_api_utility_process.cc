@@ -539,54 +539,63 @@ raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
 // static
 gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
     gin::Arguments* args) {
-  gin_helper::Dictionary opts;
-  if (!args->GetNext(&opts)) {
+  gin_helper::Dictionary dict;
+  if (!args->GetNext(&dict)) {
     args->ThrowTypeError("Options must be an object.");
     return gin::Handle<UtilityProcessWrapper>();
   }
+
+  std::u16string display_name;
+  bool use_plugin_helper = false;
+  std::map<IOHandle, IOType> stdio;
   node::mojom::NodeServiceParamsPtr params =
       node::mojom::NodeServiceParams::New();
-  opts.Get("modulePath", &params->script);
-  if (opts.Has("args") && !opts.Get("args", &params->args)) {
+  dict.Get("modulePath", &params->script);
+  if (dict.Has("args") && !dict.Get("args", &params->args)) {
     args->ThrowTypeError("Invalid value for args");
     return gin::Handle<UtilityProcessWrapper>();
   }
-  std::map<std::string, std::string> env_map;
-  if (opts.Has("env")) {
-    if (opts.Get("env", &env_map)) {
-      for (auto const& env : env_map) {
-        params->environment.push_back(
-            node::mojom::EnvironmentVariable::New(env.first, env.second));
+
+  gin_helper::Dictionary opts;
+  if (dict.Get("options", &opts)) {
+    std::map<std::string, std::string> env_map;
+    if (opts.Has("env")) {
+      if (opts.Get("env", &env_map)) {
+        for (auto const& env : env_map) {
+          params->environment.push_back(
+              node::mojom::EnvironmentVariable::New(env.first, env.second));
+        }
+      } else {
+        args->ThrowTypeError("Invalid value for env");
+        return gin::Handle<UtilityProcessWrapper>();
       }
-    } else {
-      args->ThrowTypeError("Invalid value for env");
+    }
+
+    if (opts.Has("execArgv") && !opts.Get("execArgv", &params->exec_args)) {
+      args->ThrowTypeError("Invalid value for execArgv");
       return gin::Handle<UtilityProcessWrapper>();
     }
-  }
-  if (opts.Has("execArgv") && !opts.Get("execArgv", &params->exec_args)) {
-    args->ThrowTypeError("Invalid value for execArgv");
-    return gin::Handle<UtilityProcessWrapper>();
-  }
-  std::u16string display_name;
-  opts.Get("serviceName", &display_name);
-  std::map<IOHandle, IOType> stdio;
-  std::vector<std::string> stdio_arr{"ignore", "pipe", "pipe"};
-  opts.Get("stdio", &stdio_arr);
-  for (size_t i = 0; i < 3; i++) {
-    IOType type;
-    if (stdio_arr[i] == "ignore")
-      type = IOType::IGNORE;
-    else if (stdio_arr[i] == "inherit")
-      type = IOType::INHERIT;
-    else if (stdio_arr[i] == "pipe")
-      type = IOType::PIPE;
 
-    stdio.emplace(static_cast<IOHandle>(i), type);
-  }
-  bool use_plugin_helper = false;
+    opts.Get("serviceName", &display_name);
+
+    std::vector<std::string> stdio_arr{"ignore", "pipe", "pipe"};
+    opts.Get("stdio", &stdio_arr);
+    for (size_t i = 0; i < 3; i++) {
+      IOType type;
+      if (stdio_arr[i] == "ignore")
+        type = IOType::IGNORE;
+      else if (stdio_arr[i] == "inherit")
+        type = IOType::INHERIT;
+      else if (stdio_arr[i] == "pipe")
+        type = IOType::PIPE;
+
+      stdio.emplace(static_cast<IOHandle>(i), type);
+    }
+
 #if BUILDFLAG(IS_MAC)
-  opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
+    opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
 #endif
+  }
   auto handle = gin::CreateHandle(
       args->isolate(),
       new UtilityProcessWrapper(std::move(params), display_name,

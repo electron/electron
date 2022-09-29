@@ -255,6 +255,12 @@ declare namespace ElectronInternal {
     loader: ModuleLoader;
   }
 
+  interface UtilityProcessWrapper extends NodeJS.EventEmitter {
+    readonly pid: (number) | (undefined);
+    kill(): boolean;
+    postMessage(message: any, transfer?: any[]): void;
+  }
+
   class WebViewElement extends HTMLElement {
     static observedAttributes: Array<string>;
 
