@@ -63,10 +63,10 @@ index 366870e27981debdf7dc5ed0fa191c3b4f8268a7..dc2111daff67b7812dca687bbdfd65b5
    void SetEnableReferrers(bool enable_referrers) override;
    void SetEnablePreconnect(bool enable_preconnect) override;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 45b883c568ef7b4398ff9f06c3efc26bca596f4a..1fb807f7e2fa8bd77571d889e06ff561f3d21de1 100644
+index cb0c5625d50301ea33f7baf3919cde276df6106f..25cd848fb9f04aa86a2c4b3bc4ee2d4a0b3c75c1 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1108,6 +1108,9 @@ interface NetworkContext {
+@@ -1107,6 +1107,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  

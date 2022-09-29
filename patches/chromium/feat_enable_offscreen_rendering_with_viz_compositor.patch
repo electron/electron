@@ -549,10 +549,10 @@ index c837cc126bce8cd5b82c96940fdb7cfd4f51bc27..63990dce7076b995a2fb0b0d1711d1a8
  
    // Notifies that a swap has occurred and provides information about the pixel
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 00c6c46a02df3e7724da90ac0d970215d152a105..1f545a42707349befe31a347ac121ea412893020 100644
+index 5776b0b65c8471c7d3c82ae37f708c87fa42136f..0eae85007fe5629d15286b22e87866469b6fec31 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -31,6 +31,7 @@ struct RootCompositorFrameSinkParams {
+@@ -30,6 +30,7 @@ struct RootCompositorFrameSinkParams {
    bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;
@@ -572,7 +572,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 4cb37cf1c0fd1c3247590aaa4190b81ed776fe2e..81acb3fa0255912a0d2a86bb77947bcaaa3dc14b 100644
+index ad691e760c31c3224631e334393a7ad3fdf11705..d624575f33126ae9ae5ffd0b11a843d484837de7 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -86,6 +86,7 @@ class DisplayPrivate;
@@ -610,7 +610,7 @@ index 4cb37cf1c0fd1c3247590aaa4190b81ed776fe2e..81acb3fa0255912a0d2a86bb77947bca
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -485,6 +499,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -486,6 +500,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  

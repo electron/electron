@@ -81,18 +81,18 @@ index 3c81eb68a21e2762173d6de055f6fedff457c4b6..8da97492aa055c384a539de4701d7b21
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 3775a2cb9738497964170ecf6eac062d70d1d0fb..f72ebfa0d60de7a939759cccfedd67383e695da1 100644
+index dd8e82d32cba09733b98f48ff08e750b4dec82d2..0680b97af6a933c060d759740da2a2942c7ca1a6 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
-@@ -8,6 +8,7 @@ import "mojo/public/mojom/base/time.mojom";
- import "mojo/public/mojom/base/unguessable_token.mojom";
+@@ -9,6 +9,7 @@ import "mojo/public/mojom/base/unguessable_token.mojom";
+ import "services/network/public/mojom/alternate_protocol_usage.mojom";
  import "services/network/public/mojom/fetch_api.mojom";
  import "services/network/public/mojom/ip_address_space.mojom";
 +import "services/network/public/mojom/http_raw_headers.mojom";
  import "services/network/public/mojom/ip_endpoint.mojom";
  import "services/network/public/mojom/load_timing_info.mojom";
  import "services/network/public/mojom/network_param.mojom";
-@@ -28,6 +29,9 @@ struct URLResponseHead {
+@@ -29,6 +30,9 @@ struct URLResponseHead {
    // The response headers or NULL if the URL type does not support headers.
    HttpResponseHeaders headers;
  
@@ -103,7 +103,7 @@ index 3775a2cb9738497964170ecf6eac062d70d1d0fb..f72ebfa0d60de7a939759cccfedd6738
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index cf5c26f05ddea94e45dee695936724056babb54a..6af744790dff0e8006bd7b59203011a3ad637b18 100644
+index 7e7032d83da30c95a01e5f240934a5aec81c8345..05095deaccf5ce111e3fc4ee4d304e17e55485a9 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -606,6 +606,7 @@ URLLoader::URLLoader(
@@ -123,7 +123,7 @@ index cf5c26f05ddea94e45dee695936724056babb54a..6af744790dff0e8006bd7b59203011a3
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1571,6 +1572,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1572,6 +1573,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

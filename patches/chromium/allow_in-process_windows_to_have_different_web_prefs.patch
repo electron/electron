@@ -153,18 +153,18 @@ index e3290deda800c0807f5c9dd0d8360c15f9b56554..eff323e0c2a660b965f2c834ac4d0ae7
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index c91288cac38c7b7b04a378d0840b60260d5c0738..85718e2d9cc851ad81c335b803a13c67e5780b27 100644
+index b370a37da63b26937cf07a7be121e56887ef99a5..4577bfba785f052ebb05be0ef15455c8a1d10aee 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-@@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";
+@@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";
+ import "third_party/blink/public/mojom/v8_cache_options.mojom";
  import "url/mojom/url.mojom";
- import "url/mojom/origin.mojom";
  import "mojo/public/mojom/base/string16.mojom";
 +import "mojo/public/mojom/base/file_path.mojom";
  
  enum PointerType {
    kPointerNone                              = 1,             // 1 << 0
-@@ -209,6 +210,19 @@ struct WebPreferences {
+@@ -208,6 +209,19 @@ struct WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;
