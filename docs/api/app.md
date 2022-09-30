@@ -622,9 +622,10 @@ Returns `string` - The current application directory.
     * `~/Library/Application Support` on macOS
   * `userData` The directory for storing your app's configuration files, which
     by default is the `appData` directory appended with your app's name. Some
-    environments may synchronizes this directory to cloud.
+    environments may synchronize this directory to the cloud. For more information,
+    read [where to store app data](../tutorial/where-to-store-app-data.md).
   * `localUserData` Similar to `userData` for storing configuration files. On
-    Linux and macOS it is an alias to `userData`, on Windows it points to
+    Linux and macOS it is an alias to `userData`. On Windows it points to
     `%LOCALAPPDATA%` directory appended with your app's name. On Windows this
     directory will not be synchronized to cloud.
   * `cache` Per-user cache directory, which by default points to:
@@ -694,9 +695,8 @@ and other files like cookies and localStorage will be stored under the
 `sessionData` directory. If you want to change this location, you have to
 override the paths before the `ready` event of the `app` module is emitted.
 
-For most apps it is recommended to change the location of `sessionData`
-directory, for more please read
-[where to store app data](../tutorial/where-to-store-app-data.md).
+Most apps should change the location of `sessionData`. For more information, please
+read [where to store app data](../tutorial/where-to-store-app-data.md).
 
 ### `app.getVersion()`
 

@@ -1,7 +1,6 @@
 # Where to Store App Data
 
-This tutorial provides guidance on where to store user data properly depending
-on the data's type.
+This tutorial provides guidance on where to store different types of user data.
 
 ## User data paths
 
@@ -11,10 +10,10 @@ most commonly to store user data: `userData`, `localUserData`, and `userCache`.
 
 ### `userData`
 
-The `userData` path is where app should store persistent user data, such as
+The `userData` path is where apps should store persistent user data, such as
 config files and authentication information. Generally you should not write
-large files in this location as some environments may choose to synchronize
-files in this location to cloud, especially on Windows.
+large files in this location as some environments, such as Windows,
+may choose to synchronize files in this location to the cloud.
 
 By default, it points to:
 
@@ -77,7 +76,7 @@ apps that open remote websites with `BrowserWindow`, because disk spaces used by
 very large `userData` directory, which is annoying for users who synchronize the
 content of `userData` to cloud.
 
-So for new apps you should change `sessionCache` to `userCache` to avoid
+So new apps are recommended to change `sessionCache` to `userCache` to avoid
 polluting `userCache` directory with cache data.
 
 ```javascript
