@@ -1,0 +1,80 @@
+From 9bebe8549a3642672829236b40bad289d1d13a3a Mon Sep 17 00:00:00 2001
+From: Xiaocheng Hu <xiaochengh@chromium.org>
+Date: Wed, 28 Sep 2022 19:09:02 +0000
+Subject: [PATCH] [M106] Ensure iterator validity in CustomElementRegistry::DefineInternal()
+
+Currently, this function first resolves a promise, and then erases an
+iterator from a hash map, but the promise resolving may run synchronous
+JavaScript that invalidates the iterator.
+
+This patch switches the ordering so that we always use the iterator when
+it's valid.
+
+(cherry picked from commit ed87ab54b29898a96a87e8fd497425db32539350)
+
+(cherry picked from commit b0bfc4334369bd1d44bc6507dfefc012afb7e12d)
+
+Fixed: 1366813
+Change-Id: Iaa6631db5f3ad47049f46ddf909f18a49e5880c0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3915346
+Commit-Queue: Xiaocheng Hu <xiaochengh@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/main@{#1050816}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3922738
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Auto-Submit: Xiaocheng Hu <xiaochengh@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/5304@{#203}
+Cr-Original-Branched-From: 5d7b1fc9cb7103d9c82eed647cf4be38cf09738b-refs/heads/main@{#1047731}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3924290
+Cr-Commit-Position: refs/branch-heads/5249@{#686}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+---
+
+diff --git a/third_party/blink/renderer/core/html/custom/custom_element_registry.cc b/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
+index 96e2b6f..cbfdcfe 100644
+--- a/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
++++ b/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
+@@ -217,8 +217,11 @@
+   // 16: when-defined promise processing
+   const auto& entry = when_defined_promise_map_.find(name);
+   if (entry != when_defined_promise_map_.end()) {
+-    entry->value->Resolve(definition->GetConstructorForScript());
++    ScriptPromiseResolver* resolver = entry->value;
+     when_defined_promise_map_.erase(entry);
++    // Resolve() may run synchronous JavaScript that invalidates iterators of
++    // |when_defined_promise_map_|, so it must be called after erasing |entry|.
++    resolver->Resolve(definition->GetConstructorForScript());
+   }
+ 
+   return definition;
+diff --git a/third_party/blink/web_tests/external/wpt/custom-elements/when-defined-reentry-crash.html b/third_party/blink/web_tests/external/wpt/custom-elements/when-defined-reentry-crash.html
+new file mode 100644
+index 0000000..38614cb
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/custom-elements/when-defined-reentry-crash.html
+@@ -0,0 +1,25 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Check for crashes when a whenDefined promise resolving re-entries</title>
++<meta name="author" href="mailto:xiaochengh@chromium.org">
++<link rel="help" href="https://html.spec.whatwg.org/multipage/custom-elements.html#custom-elements-api">
++<link rel="help" href="https://bugs.chromium.org/p/chromium/issues/detail?id=1366813">
++<script>
++class CustomElement extends HTMLElement {}
++
++Object.prototype.__defineGetter__("then", main);
++
++let depth = 0;
++function main() {
++  if (depth > 1) return;
++  ++depth;
++  customElements.whenDefined("custom-a"); // Causes re-entry of main()
++  try { customElements.define("custom-a", CustomElement) } catch (e) {}
++  customElements.whenDefined("custom-b");
++  --depth;
++}
++
++main();
++</script>
++
++Test passes if it does not crash.
