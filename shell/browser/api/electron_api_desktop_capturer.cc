@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_desktop_capturer.h"
 
+#include <map>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -24,11 +25,124 @@
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 
+#if defined(USE_OZONE)
+#include "ui/ozone/buildflags.h"
+#if BUILDFLAG(OZONE_PLATFORM_X11)
+#define USE_OZONE_PLATFORM_X11
+#endif
+#endif
+
 #if BUILDFLAG(IS_WIN)
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
 #include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
+#elif BUILDFLAG(IS_LINUX)
+#if defined(USE_OZONE_PLATFORM_X11)
+#include "base/logging.h"
+#include "ui/base/x/x11_display_util.h"
+#include "ui/base/x/x11_util.h"
+#include "ui/display/util/edid_parser.h"  // nogncheck
+#include "ui/gfx/x/randr.h"
+#include "ui/gfx/x/x11_atom_cache.h"
+#include "ui/gfx/x/xproto_util.h"
+#endif  // defined(USE_OZONE_PLATFORM_X11)
 #endif  // BUILDFLAG(IS_WIN)
+
+#if BUILDFLAG(IS_LINUX)
+// Private function in ui/base/x/x11_display_util.cc
+std::map<x11::RandR::Output, int> GetMonitors(int version,
+                                              x11::RandR* randr,
+                                              x11::Window window) {
+  std::map<x11::RandR::Output, int> output_to_monitor;
+  if (version >= 105) {
+    if (auto reply = randr->GetMonitors({window}).Sync()) {
+      for (size_t monitor = 0; monitor < reply->monitors.size(); monitor++) {
+        for (x11::RandR::Output output : reply->monitors[monitor].outputs)
+          output_to_monitor[output] = monitor;
+      }
+    }
+  }
+  return output_to_monitor;
+}
+// Get the EDID data from the |output| and stores to |edid|.
+// Private function in ui/base/x/x11_display_util.cc
+std::vector<uint8_t> GetEDIDProperty(x11::RandR* randr,
+                                     x11::RandR::Output output) {
+  constexpr const char kRandrEdidProperty[] = "EDID";
+  auto future = randr->GetOutputProperty(x11::RandR::GetOutputPropertyRequest{
+      .output = output,
+      .property = x11::GetAtom(kRandrEdidProperty),
+      .long_length = 128});
+  auto response = future.Sync();
+  std::vector<uint8_t> edid;
+  if (response && response->format == 8 && response->type != x11::Atom::None)
+    edid = std::move(response->data);
+  return edid;
+}
+
+// Find the mapping from monitor name atom to the display identifier
+// that the screen API uses. Based on the logic in BuildDisplaysFromXRandRInfo
+// in ui/base/x/x11_display_util.cc
+std::map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
+  auto* connection = x11::Connection::Get();
+  auto& randr = connection->randr();
+  auto x_root_window = ui::GetX11RootWindow();
+  int version = ui::GetXrandrVersion();
+
+  std::map<int32_t, uint32_t> monitor_atom_to_display;
+
+  auto resources = randr.GetScreenResourcesCurrent({x_root_window}).Sync();
+  if (!resources) {
+    LOG(ERROR) << "XRandR returned no displays; don't know how to map ids";
+    return monitor_atom_to_display;
+  }
+
+  std::map<x11::RandR::Output, int> output_to_monitor =
+      GetMonitors(version, &randr, x_root_window);
+  auto monitors_reply = randr.GetMonitors({x_root_window}).Sync();
+
+  for (size_t i = 0; i < resources->outputs.size(); i++) {
+    x11::RandR::Output output_id = resources->outputs[i];
+    auto output_info =
+        randr.GetOutputInfo({output_id, resources->config_timestamp}).Sync();
+    if (!output_info)
+      continue;
+
+    if (output_info->connection != x11::RandR::RandRConnection::Connected)
+      continue;
+
+    if (output_info->crtc == static_cast<x11::RandR::Crtc>(0))
+      continue;
+
+    auto crtc =
+        randr.GetCrtcInfo({output_info->crtc, resources->config_timestamp})
+            .Sync();
+    if (!crtc)
+      continue;
+    display::EdidParser edid_parser(
+        GetEDIDProperty(&randr, static_cast<x11::RandR::Output>(output_id)));
+    auto output_32 = static_cast<uint32_t>(output_id);
+    int64_t display_id =
+        output_32 > 0xff ? 0 : edid_parser.GetIndexBasedDisplayId(output_32);
+    // It isn't ideal, but if we can't parse the EDID data, fall back on the
+    // display number.
+    if (!display_id)
+      display_id = i;
+
+    // Find the mapping between output identifier and the monitor name atom
+    // Note this isn't the atom string, but the numeric atom identifier,
+    // since this is what the WebRTC system uses as the display identifier
+    auto output_monitor_iter = output_to_monitor.find(output_id);
+    if (output_monitor_iter != output_to_monitor.end()) {
+      x11::Atom atom =
+          monitors_reply->monitors[output_monitor_iter->second].name;
+      monitor_atom_to_display[static_cast<int32_t>(atom)] = display_id;
+    }
+  }
+
+  return monitor_atom_to_display;
+}
+#endif
 
 namespace gin {
 
@@ -180,10 +294,22 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     for (auto& source : screen_sources) {
       source.display_id = base::NumberToString(source.media_list_source.id.id);
     }
+#elif BUILDFLAG(IS_LINUX)
+#if defined(USE_OZONE_PLATFORM_X11)
+    // On Linux, with X11, the source id is the numeric value of the
+    // display name atom and the display id is either the EDID or the
+    // loop index when that display was found (see
+    // BuildDisplaysFromXRandRInfo in ui/base/x/x11_display_util.cc)
+    std::map<int32_t, uint32_t> monitor_atom_to_display_id =
+        MonitorAtomIdToDisplayId();
+    for (auto& source : screen_sources) {
+      auto display_id_iter =
+          monitor_atom_to_display_id.find(source.media_list_source.id.id);
+      if (display_id_iter != monitor_atom_to_display_id.end())
+        source.display_id = base::NumberToString(display_id_iter->second);
+    }
+#endif  // defined(USE_OZONE_PLATFORM_X11)
 #endif  // BUILDFLAG(IS_WIN)
-    // TODO(ajmacd): Add Linux support. The IDs across APIs differ but Chrome
-    // only supports capturing the entire desktop on Linux. Revisit this if
-    // individual screen support is added.
     std::move(screen_sources.begin(), screen_sources.end(),
               std::back_inserter(captured_sources_));
   }
