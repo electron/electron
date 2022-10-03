@@ -1,0 +1,34 @@
+From 2f6a2939514fbfbcb9c84bc243d977741f9d4c7f Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Thu, 01 Sep 2022 15:35:33 +0200
+Subject: [PATCH] Merged: [compiler] fix typing of [[DateValue]]
+
+Bug: chromium:1356308
+(cherry picked from commit ae329407989f1e4689baba7a7827863057d688a9)
+
+Change-Id: I1e132e96325296d180488774ef183daa36dc22c7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3915224
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.6@{#25}
+Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
+Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
+---
+
+diff --git a/src/compiler/type-cache.h b/src/compiler/type-cache.h
+index 00c3ba47..b28588c 100644
+--- a/src/compiler/type-cache.h
++++ b/src/compiler/type-cache.h
+@@ -130,9 +130,10 @@
+   Type const kStringLengthType = CreateRange(0.0, String::kMaxLength);
+ 
+   // A time value always contains a tagged number in the range
+-  // [-kMaxTimeInMs, kMaxTimeInMs].
+-  Type const kTimeValueType =
+-      CreateRange(-DateCache::kMaxTimeInMs, DateCache::kMaxTimeInMs);
++  // [-kMaxTimeInMs, kMaxTimeInMs] or -0.
++  Type const kTimeValueType = Type::Union(
++      CreateRange(-DateCache::kMaxTimeInMs, DateCache::kMaxTimeInMs),
++      Type::MinusZero(), zone());
+ 
+   // The JSDate::day property always contains a tagged number in the range
+   // [1, 31] or NaN.
