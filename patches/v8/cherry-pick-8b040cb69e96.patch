@@ -1,7 +1,7 @@
-From 8b040cb69e96ab93843b403be29cd8c8daacaef1 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jakob Kummerow <jkummerow@chromium.org>
 Date: Fri, 23 Sep 2022 13:13:37 +0200
-Subject: [PATCH] [wasm][liftoff] Fix a register reuse corner case
+Subject: Fix a register reuse corner case
 
 Fixed: chromium:1366399
 (cherry picked from commit 6c214db445827707d65be08d177c9a4257a03a7b)
@@ -12,13 +12,12 @@ Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.6@{#29}
 Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
 Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
----
 
 diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
-index 4b51d64..291d171 100644
+index 34b51e37c650274ec89a1930c4a9d9443f9838a2..508a91ecb8aa068b942fe445e186267832378cef 100644
 --- a/src/wasm/baseline/liftoff-compiler.cc
 +++ b/src/wasm/baseline/liftoff-compiler.cc
-@@ -1451,9 +1451,11 @@
+@@ -1417,9 +1417,11 @@ class LiftoffCompiler {
          __ MergeFullStackWith(c->label_state, *__ cache_state());
          __ emit_jump(c->label.get());
        }
@@ -32,7 +31,7 @@ index 4b51d64..291d171 100644
        __ cache_state()->Steal(c->label_state);
      } else if (c->reachable()) {
        // No merge yet at the end of the if, but we need to create a merge for
-@@ -1465,9 +1467,11 @@
+@@ -1431,9 +1433,11 @@ class LiftoffCompiler {
                                 c->stack_depth + c->num_exceptions);
        __ MergeFullStackWith(c->label_state, *__ cache_state());
        __ emit_jump(c->label.get());
