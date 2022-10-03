@@ -125,3 +125,4 @@ cherry-pick-2083e894852c.patch
 cherry-pick-51daffbf5cd8.patch
 dpwa_enable_window_controls_overlay_by_default.patch
 create_browser_v8_snapshot_file_name_fuse.patch
+cherry-pick-fefd6198da31.patch
