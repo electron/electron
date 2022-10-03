@@ -1,7 +1,7 @@
-From 1eb1e18ad41d85cab74e7ddbd325bf1700fc13dc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anders Hartvoll Ruud <andruud@chromium.org>
 Date: Tue, 20 Sep 2022 17:43:47 +0000
-Subject: [PATCH] Add CSSTokenizer-created strings to CSSVariableData's backing strings
+Subject: Add CSSTokenizer-created strings to CSSVariableData's backing strings
 
 When computing the value of a registered custom property, we create
 a CSSVariableData object equivalent to the computed CSSValue by
@@ -27,10 +27,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3905727
 Auto-Submit: Anders Hartvoll Ruud <andruud@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5249@{#518}
 Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
----
 
 diff --git a/third_party/blink/renderer/core/css/css_variable_data.cc b/third_party/blink/renderer/core/css/css_variable_data.cc
-index a28a398..b22f1ed 100644
+index a2294cc70c59ac0357dddf0f7719cc3c09d23554..b3a61b312eb5f0360e8aa4cb706c60f0085fead9 100644
 --- a/third_party/blink/renderer/core/css/css_variable_data.cc
 +++ b/third_party/blink/renderer/core/css/css_variable_data.cc
 @@ -4,6 +4,7 @@
@@ -41,7 +40,7 @@ index a28a398..b22f1ed 100644
  #include "third_party/blink/renderer/core/css/css_syntax_definition.h"
  #include "third_party/blink/renderer/core/css/parser/css_parser_context.h"
  #include "third_party/blink/renderer/platform/wtf/text/character_names.h"
-@@ -110,6 +111,51 @@
+@@ -109,6 +110,51 @@ void CSSVariableData::ConsumeAndUpdateTokens(const CSSParserTokenRange& range) {
      UpdateTokens<UChar>(range, backing_string, tokens_);
  }
  
@@ -93,7 +92,7 @@ index a28a398..b22f1ed 100644
  CSSVariableData::CSSVariableData(const CSSTokenizedValue& tokenized_value,
                                   bool is_animation_tainted,
                                   bool needs_variable_resolution,
-@@ -121,6 +167,9 @@
+@@ -120,6 +166,9 @@ CSSVariableData::CSSVariableData(const CSSTokenizedValue& tokenized_value,
        base_url_(base_url.IsValid() ? base_url.GetString() : String()),
        charset_(charset) {
    ConsumeAndUpdateTokens(tokenized_value.range);
@@ -104,10 +103,10 @@ index a28a398..b22f1ed 100644
  
  const CSSValue* CSSVariableData::ParseForSyntax(
 diff --git a/third_party/blink/renderer/core/css/css_variable_data.h b/third_party/blink/renderer/core/css/css_variable_data.h
-index f042f85..7be7d20 100644
+index 1f0d35e394d9fda2a072cf68753cd3d98f36a5c0..ed9b6891edf99517ec59dcca0cf896c701699b32 100644
 --- a/third_party/blink/renderer/core/css/css_variable_data.h
 +++ b/third_party/blink/renderer/core/css/css_variable_data.h
-@@ -100,11 +100,18 @@
+@@ -99,11 +99,18 @@ class CORE_EXPORT CSSVariableData : public RefCounted<CSSVariableData> {
          has_font_units_(has_font_units),
          has_root_font_units_(has_root_font_units),
          base_url_(base_url),
@@ -128,22 +127,22 @@ index f042f85..7be7d20 100644
    // tokens_ may have raw pointers to string data, we store the String objects
    // owning that data in backing_strings_ to keep it alive alongside the
 diff --git a/third_party/blink/renderer/core/css/parser/css_tokenizer.h b/third_party/blink/renderer/core/css/parser/css_tokenizer.h
-index ddfceec..12fa0ef 100644
+index 817bcbd4b6b9a9a5519bb92d6870c5b16a19278f..682a44a478bcd0ee3aa1638601650fd420033625 100644
 --- a/third_party/blink/renderer/core/css/parser/css_tokenizer.h
 +++ b/third_party/blink/renderer/core/css/parser/css_tokenizer.h
-@@ -101,6 +101,7 @@
+@@ -33,6 +33,7 @@ class CORE_EXPORT CSSTokenizer {
    wtf_size_t Offset() const { return input_.Offset(); }
    wtf_size_t PreviousOffset() const { return prev_offset_; }
    StringView StringRangeAt(wtf_size_t start, wtf_size_t length) const;
 +  const Vector<String>& StringPool() const { return string_pool_; }
-   CSSParserToken TokenizeSingle();
-   CSSParserToken TokenizeSingleWithComments();
  
+  private:
+   CSSParserToken TokenizeSingle();
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 50cedb1..cc3fca5 100644
+index 766527f44876dd7a0a74f31c12cb4cf2655cf606..e71854dcef2a06629088fe7b2546cc12880a8230 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -2169,6 +2169,10 @@
+@@ -2152,6 +2152,10 @@ StyleBuilderConverter::ConvertRegisteredPropertyVariableData(
  
    Vector<String> backing_strings;
    backing_strings.push_back(text);
@@ -154,21 +153,10 @@ index 50cedb1..cc3fca5 100644
  
    const bool has_font_units = false;
    const bool has_root_font_units = false;
-diff --git a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
-index f03b257..1684952 100644
---- a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
-+++ b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
-@@ -167,4 +167,6 @@
- test_computed_value('<resolution>', '96dpi', '1dppx');
- test_computed_value('<resolution>', 'calc(1dppx + 96dpi)', '2dppx');
- 
-+test_computed_value('*', 'url(why)', 'url(why)');
-+
- </script>
-diff --git a/third_party/blink/web_tests/platform/generic/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt b/third_party/blink/web_tests/platform/generic/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
-index 3823a75..eeed0df 100644
---- a/third_party/blink/web_tests/platform/generic/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
-+++ b/third_party/blink/web_tests/platform/generic/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
+index 3823a752b99f506d11c50aee36474c6c51c849cd..eeed0dfc0def17b1ba636f7f6a076caf770e1327 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
 @@ -1,5 +1,5 @@
  This is a testharness.js-based test.
 -Found 60 tests; 59 PASS, 1 FAIL, 0 TIMEOUT, 0 NOTRUN.
@@ -176,10 +164,21 @@ index 3823a75..eeed0df 100644
  PASS <length> values computed are correctly via var()-reference
  PASS <length> values computed are correctly via var()-reference when font-size is inherited
  PASS <length> values are computed correctly when font-size is inherited [14em]
-@@ -60,5 +60,6 @@
+@@ -60,5 +60,6 @@ PASS * values are computed correctly [50dpi]
  PASS <resolution> values are computed correctly [1dppx]
  PASS <resolution> values are computed correctly [96dpi]
  FAIL <resolution> values are computed correctly [calc(1dppx + 96dpi)] assert_equals: expected "2dppx" but got "0dppx"
 +PASS * values are computed correctly [url(why)]
  Harness: the test ran to completion.
  
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
+index f03b257246e520bd93055203a5cb27188babc8ca..168495247a3b16a2203fb361f662b6db83044d09 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
+@@ -167,4 +167,6 @@ test_computed_value('<resolution>', '1dppx', '1dppx');
+ test_computed_value('<resolution>', '96dpi', '1dppx');
+ test_computed_value('<resolution>', 'calc(1dppx + 96dpi)', '2dppx');
+ 
++test_computed_value('*', 'url(why)', 'url(why)');
++
+ </script>
