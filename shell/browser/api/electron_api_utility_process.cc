@@ -275,6 +275,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     node::mojom::NodeServiceParamsPtr params,
     std::u16string display_name,
     std::map<IOHandle, IOType> stdio,
+    base::EnvironmentMap env_map,
+    base::FilePath current_working_directory,
     bool use_plugin_helper) {
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
@@ -380,6 +382,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                                ? std::u16string(u"Node Utility Process")
                                : display_name)
           .WithExtraCommandLineSwitches(params->exec_args)
+          .WithCurrentDirectory(current_working_directory)
+          .WithEnvironment(env_map, true /*clear_environment*/)
 #if BUILDFLAG(IS_WIN)
           .WithStdoutHandle(std::move(stdout_write))
           .WithStderrHandle(std::move(stderr_write))
@@ -548,6 +552,8 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   std::u16string display_name;
   bool use_plugin_helper = false;
   std::map<IOHandle, IOType> stdio;
+  base::FilePath current_working_directory;
+  base::EnvironmentMap env_map;
   node::mojom::NodeServiceParamsPtr params =
       node::mojom::NodeServiceParams::New();
   dict.Get("modulePath", &params->script);
@@ -558,17 +564,9 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
 
   gin_helper::Dictionary opts;
   if (dict.Get("options", &opts)) {
-    std::map<std::string, std::string> env_map;
-    if (opts.Has("env")) {
-      if (opts.Get("env", &env_map)) {
-        for (auto const& env : env_map) {
-          params->environment.push_back(
-              node::mojom::EnvironmentVariable::New(env.first, env.second));
-        }
-      } else {
-        args->ThrowTypeError("Invalid value for env");
-        return gin::Handle<UtilityProcessWrapper>();
-      }
+    if (opts.Has("env") && !opts.Get("env", &env_map)) {
+      args->ThrowTypeError("Invalid value for env");
+      return gin::Handle<UtilityProcessWrapper>();
     }
 
     if (opts.Has("execArgv") && !opts.Get("execArgv", &params->exec_args)) {
@@ -577,6 +575,7 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
     }
 
     opts.Get("serviceName", &display_name);
+    opts.Get("cwd", &current_working_directory);
 
     std::vector<std::string> stdio_arr{"ignore", "inherit", "inherit"};
     opts.Get("stdio", &stdio_arr);
@@ -599,7 +598,8 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   auto handle = gin::CreateHandle(
       args->isolate(),
       new UtilityProcessWrapper(std::move(params), display_name,
-                                std::move(stdio), use_plugin_helper));
+                                std::move(stdio), env_map,
+                                current_working_directory, use_plugin_helper));
   handle->Pin(args->isolate());
   return handle;
 }

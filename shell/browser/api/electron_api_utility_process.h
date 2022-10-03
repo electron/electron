@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/containers/id_map.h"
+#include "base/environment.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process_handle.h"
 #include "gin/wrappable.h"
@@ -66,6 +67,8 @@ class UtilityProcessWrapper
   UtilityProcessWrapper(node::mojom::NodeServiceParamsPtr params,
                         std::u16string display_name,
                         std::map<IOHandle, IOType> stdio,
+                        base::EnvironmentMap env_map,
+                        base::FilePath current_working_directory,
                         bool use_plugin_helper);
   void OnServiceProcessLaunched(const base::Process& process);
 

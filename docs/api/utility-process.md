@@ -14,12 +14,13 @@ Process: [Main](../glossary.md#main-process)<br />
 
 ### `new UtilityProcess(modulePath[, args][, options])`
 
-* `modulePath` string - Absolute path to the script that should run as entrypoint in the child process.
+* `modulePath` string - Path to the script that should run as entrypoint in the child process.
 * `args` string[] (optional) - List of string arguments that will be available as `process.argv`
   in the child process.
 * `options` Object (optional)
   * `env` Object (optional) - Environment key-value pairs. Default is `process.env`.
   * `execArgv` string[] (optional) - List of string arguments passed to the executable. Default is `process.execArgv`.
+  * `cwd` string (optional) - Current working directory of the child process.
   * `stdio` (string[] | string) (optional) - Child's stdout and stderr configuration. Default is `inherit`.
     String value can be one of `pipe`, `ignore`, `inherit`, for more details on these values you can refer to
     [stdio][] documentation from Node.js. Currently this option does not allow configuring

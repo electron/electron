@@ -255,19 +255,6 @@ describe('UtilityProcess module', () => {
       expect(output).to.include(result);
     });
 
-    it('throws an error when script path is outside application for packaged apps', async () => {
-      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'fake-packaged-app')], {
-        env: {
-          ELECTRON_FORCE_IS_PACKAGED: '1',
-          ...process.env
-        }
-      });
-      let output = '';
-      appProcess.stdout.on('data', (data: Buffer) => { output += data; });
-      await emittedOnce(appProcess.stdout, 'end');
-      expect(output).to.contain('Cannot load entry script from outisde the application.');
-    });
-
     it('can establish communication channel with sandboxed renderer', async () => {
       const result = 'Message from sandboxed renderer';
       const w = new BrowserWindow({

@@ -1,7 +1,5 @@
 import { EventEmitter } from 'events';
 import { Readable } from 'stream';
-import * as path from 'path';
-import { app } from 'electron/main';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { createProcessWrapper } = process._linkedBinding('electron_browser_utility_process');
 
@@ -45,12 +43,6 @@ export default class UtilityProcess extends EventEmitter {
       throw new Error('Missing UtilityProcess entry script.');
     }
 
-    const relativeEntryPath = path.relative(process.resourcesPath, modulePath);
-
-    if (app.isPackaged && relativeEntryPath && relativeEntryPath.startsWith('..')) {
-      throw new Error('Cannot load entry script from outisde the application.');
-    }
-
     if (args == null) {
       args = [];
     } else if (typeof args === 'object' && !Array.isArray(args)) {
@@ -77,6 +69,12 @@ export default class UtilityProcess extends EventEmitter {
     if (options.serviceName != null) {
       if (typeof options.serviceName !== 'string') {
         throw new Error('serviceName must be a string.');
+      }
+    }
+
+    if (options.cwd != null) {
+      if (typeof options.cwd !== 'string') {
+        throw new Error('cwd path must be a string.');
       }
     }
 

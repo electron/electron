@@ -55,13 +55,6 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   if (NodeBindings::IsInitialized())
     return;
 
-  if (!params->environment.empty()) {
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
-    for (const auto& variable : params->environment) {
-      env->SetVar(variable->name, variable->value);
-    }
-  }
-
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
   v8::HandleScope scope(js_env_->isolate());
