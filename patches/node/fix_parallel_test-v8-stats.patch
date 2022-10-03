@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Thu, 29 Sep 2022 16:30:17 -0700
+Subject: fix parallel/test-v8-stats
+
+new heap spaces were added in v8, this updates the expectations to
+match. node should eventually have this too once they roll up the newer
+v8.
+
+diff --git a/test/parallel/test-v8-stats.js b/test/parallel/test-v8-stats.js
+index 7503a08c5a67fa4bead4f768242b47f418ebfc85..98ad11f11f9b9bf5699801814f8234e84dfaf638 100644
+--- a/test/parallel/test-v8-stats.js
++++ b/test/parallel/test-v8-stats.js
+@@ -46,6 +46,8 @@ const expectedHeapSpaces = [
+   'new_space',
+   'old_space',
+   'read_only_space',
++  'shared_large_object_space',
++  'shared_space'
+ ];
+ const heapSpaceStatistics = v8.getHeapSpaceStatistics();
+ const actualHeapSpaceNames = heapSpaceStatistics.map((s) => s.space_name);

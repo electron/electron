@@ -13,7 +13,7 @@ other protocols to register their streaming behavior. MultibufferDataSource::Ass
 then refers to the list so that it can correctly determine the data source's settings.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index c881e7951d10c48faac556661018423dff12b102..0f5408f3ddc65b856e62a05d3fe48a4397827cba 100644
+index 2201f930953ed125a0439bafb26e27b42de11003..7372476a7a794d5de8ee01858690f77af8875501 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -11,8 +11,10 @@
@@ -65,7 +65,7 @@ index c881e7951d10c48faac556661018423dff12b102..0f5408f3ddc65b856e62a05d3fe48a43
  
  void MultiBufferDataSource::SetReader(MultiBufferReader* reader) {
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
-index cb5d1951af2ff71cc6c7905235d85d6cbc541ae7..292bcf55be733a5cc1e32e11bd00e9acebdbfcbf 100644
+index fd7d59b9c50d0142a3d17a43b348f66f7f868674..e2361792eb6f9ba1e46018283634e2b9293916ec 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 @@ -33,6 +33,8 @@ namespace blink {
