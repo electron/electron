@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 645d50cd3d50581fa0d13d1dc67158b60b628327..4adc497c5959c7d499ebc82189b4c654c64f2a17 100644
+index 86791679979e715308090c5868cac9d54169d812..92d1c191249a2922a9a1196fabfc61461aeda944 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
 @@ -142,6 +142,19 @@ WebPreferences::WebPreferences()
@@ -32,7 +32,7 @@ index 645d50cd3d50581fa0d13d1dc67158b60b628327..4adc497c5959c7d499ebc82189b4c654
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index b71bd477dac6fb5dde6a5c68b0acb066bfa47c32..a1607db91e9c373691a526988d098695cb72cc0c 100644
+index f8792c52abc09a8fadbd4f3a478ce29c7f49c1a7..6e41b0be6aa017521efe73dc6c80cf76d3059e0c 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -148,6 +148,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -56,7 +56,7 @@ index b71bd477dac6fb5dde6a5c68b0acb066bfa47c32..a1607db91e9c373691a526988d098695
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index b8023168b7be3f74e376c7a22f3519defa4eb01d..56c8f4f96203e4c8c963afda7244bac261a8519a 100644
+index cac389c5ebd303945d958336e0c3601fdc2d7152..0c56b1d9e3c94559abd77325e3e5791e46d72867 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -88,7 +88,7 @@ index b8023168b7be3f74e376c7a22f3519defa4eb01d..56c8f4f96203e4c8c963afda7244bac2
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 59571fe4cbf8a75b3fd62d31bbd3bf693e1003a2..c1ca3d5343c66402143dcb5c9b809361ec17b498 100644
+index e3290deda800c0807f5c9dd0d8360c15f9b56554..eff323e0c2a660b965f2c834ac4d0ae795528268 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -153,18 +153,18 @@ index 59571fe4cbf8a75b3fd62d31bbd3bf693e1003a2..c1ca3d5343c66402143dcb5c9b809361
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 3cba12472e2856d43076e5f171486b32673156eb..fb2fbea01bbd9f5bc05663e80aaae84460204374 100644
+index b370a37da63b26937cf07a7be121e56887ef99a5..4577bfba785f052ebb05be0ef15455c8a1d10aee 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-@@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";
+@@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";
+ import "third_party/blink/public/mojom/v8_cache_options.mojom";
  import "url/mojom/url.mojom";
- import "url/mojom/origin.mojom";
  import "mojo/public/mojom/base/string16.mojom";
 +import "mojo/public/mojom/base/file_path.mojom";
  
  enum PointerType {
    kPointerNone                              = 1,             // 1 << 0
-@@ -209,6 +210,19 @@ struct WebPreferences {
+@@ -208,6 +209,19 @@ struct WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;

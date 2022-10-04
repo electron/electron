@@ -59,6 +59,7 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
   void OnSourceThumbnailChanged(int index) override {}
   void OnSourcePreviewChanged(size_t index) override {}
   void OnDelegatedSourceListSelection() override {}
+  void OnDelegatedSourceListDismissed() override {}
 
  private:
   void UpdateSourcesList(DesktopMediaList* list);

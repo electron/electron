@@ -67,7 +67,8 @@ const char ClientFrameViewLinux::kViewClassName[] = "ClientFrameView";
 
 ClientFrameViewLinux::ClientFrameViewLinux()
     : theme_(ui::NativeTheme::GetInstanceForNativeUi()),
-      nav_button_provider_(ui::LinuxUi::instance()->CreateNavButtonProvider()),
+      nav_button_provider_(
+          ui::LinuxUiTheme::GetForProfile(nullptr)->CreateNavButtonProvider()),
       nav_buttons_{
           NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kClose,
                     views::FrameButton::kClose, &views::Widget::Close,
@@ -103,14 +104,14 @@ ClientFrameViewLinux::ClientFrameViewLinux()
 
   native_theme_observer_.Observe(theme_);
 
-  if (ui::LinuxUi* ui = ui::LinuxUi::instance()) {
+  if (ui::LinuxUiTheme* ui = ui::LinuxUiTheme::GetForProfile(nullptr)) {
     ui->AddWindowButtonOrderObserver(this);
     OnWindowButtonOrderingChange();
   }
 }
 
 ClientFrameViewLinux::~ClientFrameViewLinux() {
-  if (ui::LinuxUi* ui = ui::LinuxUi::instance())
+  if (ui::LinuxUiTheme* ui = ui::LinuxUiTheme::GetForProfile(nullptr))
     ui->RemoveWindowButtonOrderObserver(this);
   theme_->RemoveObserver(this);
 }
@@ -130,8 +131,9 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
           window->GetAcceleratedWidget()));
   host_supports_client_frame_shadow_ = tree_host->SupportsClientFrameShadow();
 
-  frame_provider_ = ui::LinuxUi::instance()->GetWindowFrameProvider(
-      !host_supports_client_frame_shadow_, frame_->IsMaximized());
+  frame_provider_ =
+      ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
+          !host_supports_client_frame_shadow_, frame_->IsMaximized());
 
   UpdateWindowTitle();
 
@@ -274,8 +276,9 @@ void ClientFrameViewLinux::Layout() {
     return;
   }
 
-  frame_provider_ = ui::LinuxUi::instance()->GetWindowFrameProvider(
-      !host_supports_client_frame_shadow_, frame_->IsMaximized());
+  frame_provider_ =
+      ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
+          !host_supports_client_frame_shadow_, frame_->IsMaximized());
 
   UpdateButtonImages();
   LayoutButtons();
