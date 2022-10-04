@@ -9,17 +9,10 @@
 
 #include "base/bind.h"
 #include "base/files/file_util.h"
-#include "base/memory/ref_counted_memory.h"
 #include "base/no_destructor.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process.h"
-#include "base/synchronization/atomic_flag.h"
-#include "base/task/sequenced_task_runner.h"
-#include "base/task/thread_pool.h"
-#include "base/threading/thread.h"
-#include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/child_process_host.h"
 #include "content/public/common/result_codes.h"
@@ -27,7 +20,6 @@
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "net/server/http_connection.h"  // nogncheck TODO(deepak1556): Remove dependency on this header.
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -54,217 +46,6 @@ GetAllUtilityProcessWrappers() {
       s_all_utility_process_wrappers;
   return *s_all_utility_process_wrappers;
 }
-
-// Pipe reader logic is derived from content::DevToolsPipeHandler.
-class PipeIOBase {
- public:
-  explicit PipeIOBase(const char* thread_name)
-      : thread_(new base::Thread(thread_name)) {}
-
-  virtual ~PipeIOBase() = default;
-  virtual void StartReadLoop() {}
-
-  bool Start() {
-    base::Thread::Options options;
-    options.message_pump_type = base::MessagePumpType::IO;
-    if (!thread_->StartWithOptions(std::move(options)))
-      return false;
-    StartReadLoop();
-    return true;
-  }
-
-  bool is_shutting_down() { return shutting_down_.IsSet(); }
-
-  static void Shutdown(std::unique_ptr<PipeIOBase> pipe_io) {
-    if (!pipe_io)
-      return;
-    auto thread = std::move(pipe_io->thread_);
-    pipe_io->shutting_down_.Set();
-    pipe_io->ClosePipe();
-    // Post self destruction on the custom thread if it's running.
-    if (thread->task_runner()) {
-      thread->task_runner()->DeleteSoon(FROM_HERE, std::move(pipe_io));
-    } else {
-      pipe_io.reset();
-    }
-    // Post background task that would join and destroy the thread.
-    base::ThreadPool::CreateSequencedTaskRunner(
-        {base::MayBlock(), base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN,
-         base::WithBaseSyncPrimitives(), base::TaskPriority::BEST_EFFORT})
-        ->DeleteSoon(FROM_HERE, std::move(thread));
-  }
-
- protected:
-  virtual void ClosePipe() = 0;
-
-  std::unique_ptr<base::Thread> thread_;
-  base::AtomicFlag shutting_down_;
-};
-
-class PipeReaderBase : public PipeIOBase {
- public:
-  PipeReaderBase(const char* thread_name,
-#if BUILDFLAG(IS_WIN)
-                 HANDLE read_handle
-#else
-                 int read_fd
-#endif
-                 )
-      : PipeIOBase(thread_name) {
-#if BUILDFLAG(IS_WIN)
-    read_handle_ = read_handle;
-#else
-    read_fd_ = read_fd;
-#endif
-    read_buffer_ = new net::HttpConnection::ReadIOBuffer();
-    read_buffer_->set_max_buffer_size(4096);
-  }
-
-  void StartReadLoop() override {
-    thread_->task_runner()->PostTask(
-        FROM_HERE,
-        base::BindOnce(&PipeReaderBase::ReadInternal, base::Unretained(this)));
-  }
-
- protected:
-  void ClosePipe() override {
-// Concurrently discard the pipe handles to successfully join threads.
-#if BUILDFLAG(IS_WIN)
-    // Cancel pending synchronous read.
-    CancelIoEx(read_handle_, nullptr);
-    CloseHandle(read_handle_);
-#else
-    shutdown(read_fd_, SHUT_RDWR);
-#endif
-  }
-
-  size_t ReadBytes(void* buffer, size_t size) {
-    size_t bytes_read = 0;
-    while (bytes_read < size) {
-#if BUILDFLAG(IS_WIN)
-      DWORD size_read = 0;
-      bool had_error =
-          !ReadFile(read_handle_, static_cast<char*>(buffer) + bytes_read,
-                    size - bytes_read, &size_read, nullptr);
-#else
-      int size_read = read(read_fd_, static_cast<char*>(buffer) + bytes_read,
-                           size - bytes_read);
-      if (size_read < 0 && errno == EINTR)
-        continue;
-      bool had_error = size_read <= 0;
-#endif
-      if (had_error) {
-        if (!shutting_down_.IsSet()) {
-          ShutdownReader();
-        }
-        return 0;
-      }
-      bytes_read += size_read;
-      break;
-    }
-    return bytes_read;
-  }
-
-  virtual void HandleMessage(std::vector<uint8_t> message) = 0;
-  virtual void ShutdownReader() = 0;
-
- private:
-  void ReadInternal() {
-    if (read_buffer_->RemainingCapacity() == 0 &&
-        !read_buffer_->IncreaseCapacity()) {
-      LOG(ERROR) << "Connection closed, not enough capacity";
-      ShutdownReader();
-      return;
-    }
-    size_t bytes_read =
-        ReadBytes(read_buffer_->data(), read_buffer_->RemainingCapacity());
-    if (!bytes_read) {
-      return;
-    }
-    read_buffer_->DidRead(bytes_read);
-    HandleMessage(std::vector<uint8_t>(
-        read_buffer_->StartOfBuffer(),
-        read_buffer_->StartOfBuffer() + read_buffer_->GetSize()));
-    read_buffer_->DidConsume(bytes_read);
-  }
-
-  scoped_refptr<net::HttpConnection::ReadIOBuffer> read_buffer_;
-#if BUILDFLAG(IS_WIN)
-  HANDLE read_handle_;
-#else
-  int read_fd_;
-#endif
-};
-
-class StdoutPipeReader : public PipeReaderBase {
- public:
-  StdoutPipeReader(
-      base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper,
-#if BUILDFLAG(IS_WIN)
-      HANDLE read_handle)
-      : PipeReaderBase("UtilityProcessStdoutReadThread", read_handle),
-#else
-      int read_fd)
-      : PipeReaderBase("UtilityProcessStdoutReadThread", read_fd),
-#endif
-        utility_process_wrapper_(std::move(utility_process_wrapper)) {
-  }
-
- private:
-  void HandleMessage(std::vector<uint8_t> message) override {
-    content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE,
-        base::BindOnce(&api::UtilityProcessWrapper::HandleStdioMessage,
-                       utility_process_wrapper_,
-                       api::UtilityProcessWrapper::IOHandle::STDOUT,
-                       std::move(message)));
-  }
-
-  void ShutdownReader() override {
-    content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE,
-        base::BindOnce(&api::UtilityProcessWrapper::ShutdownStdioReader,
-                       utility_process_wrapper_,
-                       api::UtilityProcessWrapper::IOHandle::STDOUT));
-  }
-
-  base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper_;
-};
-
-class StderrPipeReader : public PipeReaderBase {
- public:
-  StderrPipeReader(
-      base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper,
-#if BUILDFLAG(IS_WIN)
-      HANDLE read_handle)
-      : PipeReaderBase("UtilityProcessStderrReadThread", read_handle),
-#else
-      int read_fd)
-      : PipeReaderBase("UtilityProcessStderrReadThread", read_fd),
-#endif
-        utility_process_wrapper_(std::move(utility_process_wrapper)) {
-  }
-
- private:
-  void HandleMessage(std::vector<uint8_t> message) override {
-    content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE,
-        base::BindOnce(&api::UtilityProcessWrapper::HandleStdioMessage,
-                       utility_process_wrapper_,
-                       api::UtilityProcessWrapper::IOHandle::STDERR,
-                       std::move(message)));
-  }
-
-  void ShutdownReader() override {
-    content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE,
-        base::BindOnce(&api::UtilityProcessWrapper::ShutdownStdioReader,
-                       utility_process_wrapper_,
-                       api::UtilityProcessWrapper::IOHandle::STDERR));
-  }
-
-  base::WeakPtr<api::UtilityProcessWrapper> utility_process_wrapper_;
-};
 
 namespace api {
 
@@ -295,24 +76,14 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       }
       if (io_handle == IOHandle::STDOUT) {
         stdout_write.Set(write);
-        stdout_reader_ = std::make_unique<StdoutPipeReader>(
-            weak_factory_.GetWeakPtr(), read);
-        if (!stdout_reader_->Start()) {
-          PLOG(ERROR) << "stdout output watcher thread failed to start.";
-          PipeIOBase::Shutdown(std::move(stdout_reader_));
-          CloseHandle(write);
-          return;
-        }
+        stdout_read_handle_ = read;
+        stdout_read_fd_ =
+            _open_osfhandle(reinterpret_cast<intptr_t>(read), _O_RDONLY);
       } else if (io_handle == IOHandle::STDERR) {
         stderr_write.Set(write);
-        stderr_reader_ = std::make_unique<StderrPipeReader>(
-            weak_factory_.GetWeakPtr(), read);
-        if (!stderr_reader_->Start()) {
-          PLOG(ERROR) << "stderr output watcher thread failed to start.";
-          PipeIOBase::Shutdown(std::move(stderr_reader_));
-          CloseHandle(write);
-          return;
-        }
+        stderr_read_handle_ = read;
+        stderr_read_fd_ =
+            _open_osfhandle(reinterpret_cast<intptr_t>(read), _O_RDONLY);
       }
 #elif BUILDFLAG(IS_POSIX)
       int pipe_fd[2];
@@ -322,24 +93,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       }
       if (io_handle == IOHandle::STDOUT) {
         fds_to_remap.push_back(std::make_pair(pipe_fd[1], STDOUT_FILENO));
-        stdout_reader_ = std::make_unique<StdoutPipeReader>(
-            weak_factory_.GetWeakPtr(), pipe_fd[0]);
-        if (!stdout_reader_->Start()) {
-          PLOG(ERROR) << "stdout output watcher thread failed to start.";
-          PipeIOBase::Shutdown(std::move(stdout_reader_));
-          IGNORE_EINTR(close(pipe_fd[1]));
-          return;
-        }
+        stdout_read_fd_ = pipe_fd[0];
       } else if (io_handle == IOHandle::STDERR) {
         fds_to_remap.push_back(std::make_pair(pipe_fd[1], STDERR_FILENO));
-        stderr_reader_ = std::make_unique<StderrPipeReader>(
-            weak_factory_.GetWeakPtr(), pipe_fd[0]);
-        if (!stderr_reader_->Start()) {
-          PLOG(ERROR) << "stderr output watcher thread failed to start.";
-          PipeIOBase::Shutdown(std::move(stderr_reader_));
-          IGNORE_EINTR(close(pipe_fd[1]));
-          return;
-        }
+        stderr_read_fd_ = pipe_fd[0];
       }
 #endif
     } else if (io_type == IOType::IGNORE) {
@@ -415,6 +172,12 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
   GetAllUtilityProcessWrappers().AddWithID(this, pid_);
+  if (stdout_read_fd_ != -1) {
+    EmitWithoutCustomEvent("stdout", stdout_read_fd_);
+  }
+  if (stderr_read_fd_ != -1) {
+    EmitWithoutCustomEvent("stderr", stderr_read_fd_);
+  }
   // Emit 'spawn' event
   EmitWithoutCustomEvent("spawn");
 }
@@ -429,11 +192,6 @@ void UtilityProcessWrapper::Shutdown(int exit_code) {
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();
-  // Shutdown output readers before exit event..
-  if (stdout_reader_.get())
-    PipeIOBase::Shutdown(std::move(stdout_reader_));
-  if (stderr_reader_.get())
-    PipeIOBase::Shutdown(std::move(stderr_reader_));
   // Emit 'exit' event
   EmitWithoutCustomEvent("exit", exit_code);
   Unpin();
@@ -502,38 +260,6 @@ void UtilityProcessWrapper::ReceivePostMessage(
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
   EmitWithoutCustomEvent("message", message_value);
-}
-
-void UtilityProcessWrapper::HandleStdioMessage(IOHandle handle,
-                                               std::vector<uint8_t> message) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto array_buffer = v8::ArrayBuffer::New(isolate, message.size());
-  auto backing_store = array_buffer->GetBackingStore();
-  memcpy(backing_store->Data(), message.data(), message.size());
-  if (handle == IOHandle::STDOUT) {
-    Emit("stdout", array_buffer,
-         base::BindRepeating(&UtilityProcessWrapper::ResumeStdioReading,
-                             weak_factory_.GetWeakPtr(), stdout_reader_.get()));
-  } else {
-    Emit("stderr", array_buffer,
-         base::BindRepeating(&UtilityProcessWrapper::ResumeStdioReading,
-                             weak_factory_.GetWeakPtr(), stderr_reader_.get()));
-  }
-}
-
-void UtilityProcessWrapper::ResumeStdioReading(PipeReaderBase* pipe_io) {
-  if (!pipe_io->is_shutting_down()) {
-    pipe_io->StartReadLoop();
-  }
-}
-
-void UtilityProcessWrapper::ShutdownStdioReader(IOHandle handle) {
-  if (handle == IOHandle::STDOUT) {
-    PipeIOBase::Shutdown(std::move(stdout_reader_));
-  } else {
-    PipeIOBase::Shutdown(std::move(stderr_reader_));
-  }
 }
 
 // static

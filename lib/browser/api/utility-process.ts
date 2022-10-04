@@ -1,41 +1,13 @@
 import { EventEmitter } from 'events';
-import { Readable } from 'stream';
+import { PassThrough } from 'stream';
+import { createReadStream } from 'fs';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { createProcessWrapper } = process._linkedBinding('electron_browser_utility_process');
 
-class IOReadable extends Readable {
-  #shouldPush: boolean = false;
-  #data: (Buffer | null)[] = [];
-  #resume: (() => void) | null = null;
-
-  _storeInternalData (chunk: Buffer | null, resume: (() => void) | null) {
-    this.#resume = resume;
-    this.#data.push(chunk);
-    this.#pushInternalData();
-  }
-
-  #pushInternalData () {
-    while (this.#shouldPush && this.#data.length > 0) {
-      const chunk = this.#data.shift();
-      this.#shouldPush = this.push(chunk);
-    }
-    if (this.#shouldPush && this.#resume) {
-      const resume = this.#resume;
-      this.#resume = null;
-      resume();
-    }
-  }
-
-  _read () {
-    this.#shouldPush = true;
-    this.#pushInternalData();
-  }
-}
-
 export default class UtilityProcess extends EventEmitter {
   #handle: ElectronInternal.UtilityProcessWrapper | null;
-  #stdout: IOReadable | null = null;
-  #stderr: IOReadable | null = null;
+  #stdout: any = null;
+  #stderr: any = null;
   constructor (modulePath: string, args?: string[], options?: Electron.UtilityProcessConstructorOptions) {
     super();
 
@@ -86,8 +58,8 @@ export default class UtilityProcess extends EventEmitter {
           stdio.push('ignore', options.stdio, options.stdio);
           break;
         case 'pipe':
-          this.#stdout = new IOReadable();
-          this.#stderr = new IOReadable();
+          this.#stderr = new PassThrough();
+          this.#stdout = new PassThrough();
           stdio.push('ignore', options.stdio, options.stdio);
           break;
         default:
@@ -99,18 +71,16 @@ export default class UtilityProcess extends EventEmitter {
         if (options.stdio[0] !== 'ignore') {
           throw new Error('stdin value other than ignore is not supported.');
         }
-        if (options.stdio[1] === 'ignore' || options.stdio[1] === 'inherit') {
-          this.#stdout = null;
-        } else if (options.stdio[1] === 'pipe') {
-          this.#stdout = new IOReadable();
-        } else {
+
+        if (options.stdio[1] === 'pipe') {
+          this.#stdout = new PassThrough();
+        } else if (options.stdio[1] !== 'ignore' && options.stdio[1] !== 'inherit') {
           throw new Error('stdout configuration must be of the following values: inherit, pipe, ignore');
         }
-        if (options.stdio[2] === 'ignore' || options.stdio[2] === 'inherit') {
-          this.#stderr = null;
-        } else if (options.stdio[2] === 'pipe') {
-          this.#stderr = new IOReadable();
-        } else {
+
+        if (options.stdio[2] === 'pipe') {
+          this.#stderr = new PassThrough();
+        } else if (options.stdio[2] !== 'ignore' && options.stdio[2] !== 'inherit') {
           throw new Error('stderr configuration must be of the following values: inherit, pipe, ignore');
         }
       } else {
@@ -136,10 +106,10 @@ export default class UtilityProcess extends EventEmitter {
         }
         return false;
       } else if (channel === 'stdout' && this.#stdout) {
-        this.#stdout._storeInternalData(Buffer.from(args[1]), args[2]);
+        createReadStream('', { fd: args[0] }).pipe(this.#stdout);
         return false;
-      } else if (channel === 'stderr' && this.#stderr) {
-        this.#stderr._storeInternalData(Buffer.from(args[1]), args[2]);
+      } else if (channel === 'stderr' && this.stderr) {
+        createReadStream('', { fd: args[0] }).pipe(this.#stderr);
         return false;
       } else {
         return this.emit(channel, ...args);

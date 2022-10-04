@@ -33,8 +33,6 @@ class Process;
 
 namespace electron {
 
-class PipeReaderBase;
-
 namespace api {
 
 class UtilityProcessWrapper
@@ -44,6 +42,7 @@ class UtilityProcessWrapper
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
   enum IOType { PIPE, INHERIT, IGNORE };
+
   ~UtilityProcessWrapper() override;
   static gin::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
   static raw_ptr<UtilityProcessWrapper> FromProcessId(base::ProcessId pid);
@@ -58,9 +57,6 @@ class UtilityProcessWrapper
   const char* GetTypeName() override;
 
   void ReceivePostMessage(blink::TransferableMessage message);
-  void HandleStdioMessage(IOHandle handle, std::vector<uint8_t> message);
-  void ShutdownStdioReader(IOHandle handle);
-  void ResumeStdioReading(PipeReaderBase* pipe_io);
   void Shutdown(int exit_code);
 
  private:
@@ -77,9 +73,15 @@ class UtilityProcessWrapper
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
   base::ProcessId pid_ = base::kNullProcessId;
+#if BUILDFLAG(IS_WIN)
+  // Non-owning handles, these will be closed when the
+  // corresponding FD are closed via _close.
+  HANDLE stdout_read_handle_;
+  HANDLE stderr_read_handle_;
+#endif
+  int stdout_read_fd_ = -1;
+  int stderr_read_fd_ = -1;
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
-  std::unique_ptr<PipeReaderBase> stdout_reader_;
-  std::unique_ptr<PipeReaderBase> stderr_reader_;
   base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
 };
 
