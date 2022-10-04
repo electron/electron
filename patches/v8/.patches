@@ -12,3 +12,4 @@ allow_disabling_of_v8_sandboxed_pointers.patch
 chore_disable_is_execution_terminating_dcheck.patch
 ext-code-space_fix_coderange_allocation_logic.patch
 cherry-pick-8b040cb69e96.patch
+cherry-pick-2f6a2939514f.patch
