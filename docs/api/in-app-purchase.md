@@ -21,10 +21,11 @@ Returns:
 
 The `inAppPurchase` module has the following methods:
 
-### `inAppPurchase.purchaseProduct(productID[, quantity])`
+### `inAppPurchase.purchaseProduct(productID[, quantity, userID])`
 
 * `productID` string - The identifiers of the product to purchase. (The identifier of `com.example.app.product1` is `product1`).
 * `quantity` Integer (optional) - The number of items the user wants to purchase.
+* `userID` string (optional) - The string that associates the transaction with a user account on your service (applicationUsername).
 
 Returns `Promise<boolean>` - Returns `true` if the product is valid and added to the payment queue.
 
