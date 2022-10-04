@@ -46,6 +46,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
       const std::string& process_type,
       content::MainFunctionParams main_function_params) override;
   bool ShouldCreateFeatureList(InvokedIn invoked_in) override;
+  bool ShouldInitializeMojo(InvokedIn invoked_in) override;
   bool ShouldLockSchemeRegistry() override;
 #if BUILDFLAG(IS_LINUX)
   void ZygoteForked() override;

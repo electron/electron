@@ -34,18 +34,19 @@ bool MonitorHasAutohideTaskbarForEdge(UINT edge, HMONITOR monitor) {
   HWND taskbar = reinterpret_cast<HWND>(
       SHAppBarMessage(ABM_GETAUTOHIDEBAR, &taskbar_data));
   if (!::IsWindow(taskbar)) {
-    APPBARDATA taskbar_data = {sizeof(APPBARDATA), 0, 0, 0};
-    unsigned int taskbar_state = SHAppBarMessage(ABM_GETSTATE, &taskbar_data);
+    APPBARDATA new_taskbar_data = {sizeof(APPBARDATA), 0, 0, 0};
+    unsigned int taskbar_state =
+        SHAppBarMessage(ABM_GETSTATE, &new_taskbar_data);
     if (!(taskbar_state & ABS_AUTOHIDE))
       return false;
 
-    taskbar_data.hWnd = ::FindWindow(L"Shell_TrayWnd", NULL);
-    if (!::IsWindow(taskbar_data.hWnd))
+    new_taskbar_data.hWnd = ::FindWindow(L"Shell_TrayWnd", NULL);
+    if (!::IsWindow(new_taskbar_data.hWnd))
       return false;
 
-    SHAppBarMessage(ABM_GETTASKBARPOS, &taskbar_data);
-    if (taskbar_data.uEdge == edge)
-      taskbar = taskbar_data.hWnd;
+    SHAppBarMessage(ABM_GETTASKBARPOS, &new_taskbar_data);
+    if (new_taskbar_data.uEdge == edge)
+      taskbar = new_taskbar_data.hWnd;
   }
 
   // There is a potential race condition here:

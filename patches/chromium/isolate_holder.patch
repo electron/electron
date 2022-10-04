@@ -15,7 +15,7 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index c254b045494936eca14ce947e1c2de3327820aa2..63c9b9681fcc4e1e9a9590d59d74349bb8aee3b1 100644
+index c74b81af691aee95609913519e36498ec578620a..7e1e6ad49ebddb9a4d86789939663b8208d057d5 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -73,7 +73,8 @@ IsolateHolder::IsolateHolder(
@@ -57,7 +57,7 @@ index c254b045494936eca14ce947e1c2de3327820aa2..63c9b9681fcc4e1e9a9590d59d74349b
                                                     access_mode_, task_runner);
    //  TODO(https://crbug.com/1347092): Refactor such that caller need not
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index f8e5d0246b92fd2f1316313e13ccda7ef6c57495..196e030be4ba5bb5f04aaef0acf8cabe0de93a67 100644
+index c9bc6e5dd7e1cf8d198afcd21cbb24970337a50f..688f10fa48511818848f6177a1a20a19ebd54f99 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -83,13 +83,15 @@ class GIN_EXPORT IsolateHolder {

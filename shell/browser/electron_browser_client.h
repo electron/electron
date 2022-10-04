@@ -87,6 +87,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map) override;
   void RegisterBrowserInterfaceBindersForServiceWorker(
       content::BrowserContext* browser_context,
+      const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
       mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
           map) override;
 #if BUILDFLAG(IS_LINUX)

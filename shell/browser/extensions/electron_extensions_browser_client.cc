@@ -120,6 +120,29 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
   }
 }
 
+content::BrowserContext*
+ElectronExtensionsBrowserClient::GetRedirectedContextInIncognito(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return GetOriginalContext(context);
+}
+
+content::BrowserContext*
+ElectronExtensionsBrowserClient::GetContextForRegularAndIncognito(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return context;
+}
+
+content::BrowserContext* ElectronExtensionsBrowserClient::GetRegularProfile(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return context->IsOffTheRecord() ? nullptr : context;
+}
+
 bool ElectronExtensionsBrowserClient::IsGuestSession(
     BrowserContext* context) const {
   return false;

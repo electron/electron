@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "content/browser/utility_process_host.h"
+#include "content/browser/utility_process_host.h"  // nogncheck
 #include "content/public/browser/child_process_data.h"
 #include "shell/browser/api/electron_api_utility_process.h"
 

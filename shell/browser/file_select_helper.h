@@ -200,7 +200,7 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   scoped_refptr<content::FileSelectListener> listener_;
 
   // Dialog box used for choosing files to upload from file form fields.
-  scoped_refptr<ui::SelectFileDialog> select_file_dialog_;
+  std::unique_ptr<ui::SelectFileDialog> select_file_dialog_;
   std::unique_ptr<ui::SelectFileDialog::FileTypeInfo> select_file_types_;
 
   // The type of file dialog last shown. This is SELECT_NONE if an
