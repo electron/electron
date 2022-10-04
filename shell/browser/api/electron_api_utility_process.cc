@@ -383,7 +383,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                                : display_name)
           .WithExtraCommandLineSwitches(params->exec_args)
           .WithCurrentDirectory(current_working_directory)
-          .WithEnvironment(env_map, true /*clear_environment*/)
+          // Inherit parent process environment when there is no custom
+          // environment provided by the user.
+          .WithEnvironment(env_map,
+                           env_map.empty() ? false : true /*clear_environment*/)
 #if BUILDFLAG(IS_WIN)
           .WithStdoutHandle(std::move(stdout_write))
           .WithStderrHandle(std::move(stderr_write))

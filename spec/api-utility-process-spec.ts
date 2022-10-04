@@ -289,5 +289,46 @@ describe('UtilityProcess module', () => {
       expect(child.kill()).to.be.true();
       await exit;
     });
+
+    it('inherits parent env as default', async () => {
+      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'env-app')], {
+        env: {
+          FROM: 'parent',
+          ...process.env
+        }
+      });
+      let output = '';
+      appProcess.stdout.on('data', (data: Buffer) => { output += data; });
+      await emittedOnce(appProcess.stdout, 'end');
+      expect(output).to.equal('parent');
+    });
+
+    it('does not inherit parent env when custom env is provided', async () => {
+      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'env-app'), '--create-custom-env'], {
+        env: {
+          FROM: 'parent',
+          ...process.env
+        }
+      });
+      let output = '';
+      appProcess.stdout.on('data', (data: Buffer) => { output += data; });
+      await emittedOnce(appProcess.stdout, 'end');
+      expect(output).to.equal('child');
+    });
+
+    it('changes working directory with cwd', async () => {
+      const child = new UtilityProcess('./log.js', [], {
+        cwd: fixturesPath,
+        stdio: ['ignore', 'pipe', 'ignore']
+      });
+      await emittedOnce(child, 'spawn');
+      expect(child.stdout).to.not.be.null();
+      let log = '';
+      child.stdout!.on('data', (chunk) => {
+        log += chunk.toString('utf8');
+      });
+      await emittedOnce(child, 'exit');
+      expect(log).to.equal('hello\n');
+    });
   });
 });
