@@ -11,3 +11,4 @@ revert_runtime_dhceck_terminating_exception_in_microtasks.patch
 allow_disabling_of_v8_sandboxed_pointers.patch
 chore_disable_is_execution_terminating_dcheck.patch
 ext-code-space_fix_coderange_allocation_logic.patch
+cherry-pick-2f6a2939514f.patch
