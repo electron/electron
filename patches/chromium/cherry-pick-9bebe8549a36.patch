@@ -1,7 +1,7 @@
-From 9bebe8549a3642672829236b40bad289d1d13a3a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xiaocheng Hu <xiaochengh@chromium.org>
 Date: Wed, 28 Sep 2022 19:09:02 +0000
-Subject: [PATCH] [M106] Ensure iterator validity in CustomElementRegistry::DefineInternal()
+Subject: Ensure iterator validity in CustomElementRegistry::DefineInternal()
 
 Currently, this function first resolves a promise, and then erases an
 iterator from a hash map, but the promise resolving may run synchronous
@@ -28,28 +28,26 @@ Cr-Original-Branched-From: 5d7b1fc9cb7103d9c82eed647cf4be38cf09738b-refs/heads/m
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3924290
 Cr-Commit-Position: refs/branch-heads/5249@{#686}
 Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
----
 
 diff --git a/third_party/blink/renderer/core/html/custom/custom_element_registry.cc b/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
-index 96e2b6f..cbfdcfe 100644
+index 5a63b6f0fd74d8c836c805e4d03e7be0b0205f15..2ac6e684c316e40f5d1fd3ec97f5b20edbc3c186 100644
 --- a/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
 +++ b/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
-@@ -217,8 +217,11 @@
+@@ -217,8 +217,10 @@ CustomElementDefinition* CustomElementRegistry::DefineInternal(
    // 16: when-defined promise processing
    const auto& entry = when_defined_promise_map_.find(name);
    if (entry != when_defined_promise_map_.end()) {
--    entry->value->Resolve(definition->GetConstructorForScript());
-+    ScriptPromiseResolver* resolver = entry->value;
+-    entry->value->Resolve();
      when_defined_promise_map_.erase(entry);
 +    // Resolve() may run synchronous JavaScript that invalidates iterators of
 +    // |when_defined_promise_map_|, so it must be called after erasing |entry|.
-+    resolver->Resolve(definition->GetConstructorForScript());
++    resolver->Resolve();
    }
  
    return definition;
 diff --git a/third_party/blink/web_tests/external/wpt/custom-elements/when-defined-reentry-crash.html b/third_party/blink/web_tests/external/wpt/custom-elements/when-defined-reentry-crash.html
 new file mode 100644
-index 0000000..38614cb
+index 0000000000000000000000000000000000000000..38614cbbd7836a955c40ea64165a22bcb44f7e63
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/custom-elements/when-defined-reentry-crash.html
 @@ -0,0 +1,25 @@
