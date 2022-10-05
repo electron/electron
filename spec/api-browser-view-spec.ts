@@ -128,6 +128,25 @@ describe('BrowserView module', () => {
       }).to.throw(/Invalid auto resize options/);
     });
 
+    it('does not resize when the BrowserView has no AutoResize', () => {
+      view = new BrowserView();
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 0, width: 400, height: 200 });
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 200
+      });
+      w.setSize(800, 400);
+      expect(view.getBounds()).to.deep.equal({
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 200
+      });
+    });
+
     it('resizes horizontally when the window is resized horizontally', () => {
       view = new BrowserView();
       view.setAutoResize({ width: true, height: false });
