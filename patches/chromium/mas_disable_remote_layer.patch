@@ -50,10 +50,10 @@ index 1d20388c0acf533efe74dbaed9abae49ae7d6953..c08f4b8482e5cf1cb1afae71168059e9
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index ef6930b8b9aea2aed8890f056e8117beec5f75e2..88d498279b66facffb9078c52d4e3f74fbac44d7 100644
+index a20442bf19b17f43531151f879be067e7145c38f..d6c7699d9419da759c73fb2427ec4c52ad87a96f 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -60,6 +60,7 @@
+@@ -61,6 +61,7 @@
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
  
@@ -61,7 +61,7 @@ index ef6930b8b9aea2aed8890f056e8117beec5f75e2..88d498279b66facffb9078c52d4e3f74
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -68,6 +69,7 @@
+@@ -69,6 +70,7 @@
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -69,7 +69,7 @@ index ef6930b8b9aea2aed8890f056e8117beec5f75e2..88d498279b66facffb9078c52d4e3f74
  }
  
  ImageTransportSurfaceOverlayMac::~ImageTransportSurfaceOverlayMac() {
-@@ -145,7 +147,9 @@
+@@ -146,7 +148,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
@@ -79,7 +79,7 @@ index ef6930b8b9aea2aed8890f056e8117beec5f75e2..88d498279b66facffb9078c52d4e3f74
      } else {
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
-@@ -379,6 +383,7 @@
+@@ -372,6 +376,7 @@
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
  
@@ -87,7 +87,7 @@ index ef6930b8b9aea2aed8890f056e8117beec5f75e2..88d498279b66facffb9078c52d4e3f74
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -387,6 +392,7 @@
+@@ -380,6 +385,7 @@
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -95,7 +95,7 @@ index ef6930b8b9aea2aed8890f056e8117beec5f75e2..88d498279b66facffb9078c52d4e3f74
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -465,7 +471,9 @@
+@@ -458,7 +464,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
