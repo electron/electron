@@ -52,8 +52,9 @@ if (process.type === 'renderer') {
 }
 
 const originalResolveFilename = Module._resolveFilename;
+const electronModuleNames = new Set(['electron', 'electron/main', 'electron/renderer', 'electron/common']);
 Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean, options?: { paths: Array<string>}) {
-  if (request === 'electron' || request.startsWith('electron/')) {
+  if (electronModuleNames.has(request)) {
     return 'electron';
   } else {
     return originalResolveFilename(request, parent, isMain, options);
