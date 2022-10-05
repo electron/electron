@@ -203,7 +203,7 @@ describe('BrowserView module', () => {
       expect(view.getBounds()).to.deep.equal({
         x: 0,
         y: 0,
-        width: 400,
+        width: 600,
         height: 100
       });
     });
