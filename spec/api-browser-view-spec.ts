@@ -56,11 +56,12 @@ describe('BrowserView module', () => {
       view.setBackgroundColor('#000');
     });
 
-    it('throws for invalid args', () => {
+    // We now treat invalid args as "no background".
+    it('does not throw for invalid args', () => {
       view = new BrowserView();
       expect(() => {
-        view.setBackgroundColor(null as any);
-      }).to.throw(/conversion failure/);
+        view.setBackgroundColor({} as any);
+      }).not.to.throw();
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
