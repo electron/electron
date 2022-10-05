@@ -11,7 +11,7 @@ component code in the resource prefetch predictor code since it is unused and in
 it causes compilation problems on Windows.
 
 diff --git a/chrome/browser/predictors/resource_prefetch_predictor.cc b/chrome/browser/predictors/resource_prefetch_predictor.cc
-index c4b64a7812bac4534371887eb7e0a07ec9cab8ff..b827d69964d824540ea70f66c467e91be8391e6c 100644
+index 603c4094711700a5ae5b3769f161fc9149ccac75..e54844f7d331d60b9780d89747ecc333a4176c5d 100644
 --- a/chrome/browser/predictors/resource_prefetch_predictor.cc
 +++ b/chrome/browser/predictors/resource_prefetch_predictor.cc
 @@ -100,10 +100,12 @@ PreconnectPrediction& PreconnectPrediction::operator=(
@@ -28,7 +28,7 @@ index c4b64a7812bac4534371887eb7e0a07ec9cab8ff..b827d69964d824540ea70f66c467e91b
  ////////////////////////////////////////////////////////////////////////////////
  // ResourcePrefetchPredictor static functions.
 diff --git a/chrome/browser/predictors/resource_prefetch_predictor.h b/chrome/browser/predictors/resource_prefetch_predictor.h
-index 53a23990019accc0504a25dae935c53348c7eaa7..ef6667ce8bbc062dbfb8d2e2cdb6886b3e994b76 100644
+index 60b0eaabd98695838fffd9a7255fd017fe2a01f0..a3d12988d28ef5be0507994d0ef3922aea44b22c 100644
 --- a/chrome/browser/predictors/resource_prefetch_predictor.h
 +++ b/chrome/browser/predictors/resource_prefetch_predictor.h
 @@ -26,7 +26,9 @@

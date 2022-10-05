@@ -7,10 +7,10 @@ With WCO, allow chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 8f79b6a75929a331cb11cb728a832ba01f48c7a4..e42f8777733c0a26cd72a6f5b4588537b6f1a381 100644
+index c6649fee262eb8c106d18875c6d739b1a944127e..bf66b64b6c717e640fd8bf855c5607d43423101c 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1171,6 +1171,10 @@ void DesktopWindowTreeHostWin::HandleWindowScaleFactorChanged(
+@@ -1205,6 +1205,10 @@ void DesktopWindowTreeHostWin::HandleWindowScaleFactorChanged(
    }
  }
  
@@ -22,10 +22,10 @@ index 8f79b6a75929a331cb11cb728a832ba01f48c7a4..e42f8777733c0a26cd72a6f5b4588537
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 166ade2f988de2ba4b86aa74d315aeb70a37b768..efd7d0953f9ad4c3cd06f97d4d99ceca056e1caf 100644
+index cec35ceb254777e447047e48fba11dd8d38af97d..17cf2b79963079e66050e29411baa5a398c8d68a 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -263,6 +263,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -265,6 +265,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void HandleWindowSizeChanging() override;
    void HandleWindowSizeUnchanged() override;
    void HandleWindowScaleFactorChanged(float window_scale_factor) override;
@@ -34,7 +34,7 @@ index 166ade2f988de2ba4b86aa74d315aeb70a37b768..efd7d0953f9ad4c3cd06f97d4d99ceca
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 696062d4dfe06937bed5902b543b627be63b773a..a8b66dcfab91e3f2c86afdd31e207db474ee4ac1 100644
+index aacb580a7506f2c86769251ad00d8679870a454a..400278ab26a4e095fd837fcf84c952a1297b173d 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -3140,15 +3140,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
@@ -60,7 +60,7 @@ index 696062d4dfe06937bed5902b543b627be63b773a..a8b66dcfab91e3f2c86afdd31e207db4
    }
  
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 5dbb192d0840ca0ded61397c399b774a8cb05cce..098a9c3140e9e140fdc8f0dc9cf4e8ec84451221 100644
+index 233dd12f86c20a7f5169caab998993f614e8bc7e..3bf6fc95a653f1783510378ffeef5b18da42e559 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
 @@ -258,6 +258,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {

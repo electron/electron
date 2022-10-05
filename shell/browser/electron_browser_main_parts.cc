@@ -80,6 +80,7 @@
 #include "ui/gtk/gtk_util.h"    // nogncheck
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
+#include "ui/linux/linux_ui_getter.h"
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -114,6 +115,20 @@
 namespace electron {
 
 namespace {
+
+#if BUILDFLAG(IS_LINUX)
+class LinuxUiGetterImpl : public ui::LinuxUiGetter {
+ public:
+  LinuxUiGetterImpl() = default;
+  ~LinuxUiGetterImpl() override = default;
+  ui::LinuxUiTheme* GetForWindow(aura::Window* window) override {
+    return GetForProfile(nullptr);
+  }
+  ui::LinuxUiTheme* GetForProfile(Profile* profile) override {
+    return ui::GetLinuxUiTheme(ui::SystemTheme::kGtk);
+  }
+};
+#endif
 
 template <typename T>
 void Erase(T* container, typename T::iterator iter) {
@@ -384,6 +399,8 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
   auto* linux_ui = ui::GetDefaultLinuxUi();
+  CHECK(linux_ui);
+  linux_ui_getter_ = std::make_unique<LinuxUiGetterImpl>();
 
   // Try loading gtk symbols used by Electron.
   electron::InitializeElectron_gtk(gtk::GetLibGtk());
@@ -403,7 +420,9 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // Update the native theme when GTK theme changes. The GetNativeTheme
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
-  linux_ui->GetNativeTheme()->AddObserver(dark_theme_observer_.get());
+  auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
+  CHECK(linux_ui_theme);
+  linux_ui_theme->GetNativeTheme()->AddObserver(dark_theme_observer_.get());
   ui::LinuxUi::SetInstance(linux_ui);
 
   // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager

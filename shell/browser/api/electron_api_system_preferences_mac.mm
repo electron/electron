@@ -294,14 +294,14 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
 }
 
 void SystemPreferences::RegisterDefaults(gin::Arguments* args) {
-  base::Value::Dict value;
+  base::Value::Dict dict_value;
 
-  if (!args->GetNext(&value)) {
+  if (!args->GetNext(&dict_value)) {
     args->ThrowError();
     return;
   }
   @try {
-    NSDictionary* dict = DictionaryValueToNSDictionary(std::move(value));
+    NSDictionary* dict = DictionaryValueToNSDictionary(std::move(dict_value));
     for (id key in dict) {
       id value = [dict objectForKey:key];
       if ([value isKindOfClass:[NSNull class]] || value == nil) {

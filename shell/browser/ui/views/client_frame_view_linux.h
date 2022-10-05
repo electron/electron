@@ -130,10 +130,10 @@ class ClientFrameViewLinux : public FramelessView,
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       native_theme_observer_{this};
-  base::ScopedObservation<ui::LinuxUi,
+  base::ScopedObservation<ui::LinuxUiTheme,
                           ui::WindowButtonOrderObserver,
-                          &ui::LinuxUi::AddWindowButtonOrderObserver,
-                          &ui::LinuxUi::RemoveWindowButtonOrderObserver>
+                          &ui::LinuxUiTheme::AddWindowButtonOrderObserver,
+                          &ui::LinuxUiTheme::RemoveWindowButtonOrderObserver>
       window_button_order_observer_{this};
 
   base::CallbackListSubscription paint_as_active_changed_subscription_;

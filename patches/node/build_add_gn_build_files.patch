@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..3ae9b93649bb404fbf04dea52ecaa7d664ff03ee
+index 0000000000000000000000000000000000000000..a47875642d8f825c84ba1e82e3892a97e98e76e4
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,440 @@
+@@ -0,0 +1,438 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -123,8 +123,6 @@ index 0000000000000000000000000000000000000000..3ae9b93649bb404fbf04dea52ecaa7d6
 +  } else {
 +    defines += [ "HAVE_OPENSSL=0" ]
 +  }
-+  # boringssl does not support SSL_trace, let's disable it
-+  defines += ["OPENSSL_NO_SSL_TRACE=1"]
 +  if (v8_enable_i18n_support) {
 +    defines += [ "NODE_HAVE_I18N_SUPPORT=1" ]
 +  } else {
