@@ -159,15 +159,15 @@ index 6161e89321162f0a9d0e7f939bd79243200ea5f2..366870e27981debdf7dc5ed0fa191c3b
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -832,6 +835,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -830,6 +833,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
 +  RemoteCertVerifier* remote_cert_verifier_ = nullptr;
 +
-   // CertNetFetcher used by the context's CertVerifier. May be nullptr if
-   // CertNetFetcher is not used by the current platform, or if the actual
-   // net::CertVerifier is instantiated outside of the network service.
+   // Created on-demand. Null if unused.
+   std::unique_ptr<HostResolver> internal_host_resolver_;
+   // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
 index 2fa526f526e36255ae043047177c7e099bb50359..cb0c5625d50301ea33f7baf3919cde276df6106f 100644
 --- a/services/network/public/mojom/network_context.mojom
