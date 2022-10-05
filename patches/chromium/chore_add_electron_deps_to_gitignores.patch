@@ -6,7 +6,7 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index 109e9f4361ef7682f5223f7aacb33940e206fa3c..c9d27e1e522adef49b3dd268224ecefaffdf6cc2 100644
+index 109e9f4361ef7..c9d27e1e522ad 100644
 --- a/.gitignore
 +++ b/.gitignore
 @@ -231,6 +231,7 @@ vs-chromium-project.txt
@@ -18,7 +18,7 @@ index 109e9f4361ef7682f5223f7aacb33940e206fa3c..c9d27e1e522adef49b3dd268224ecefa
  /google_apis/internal
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index e83145bd5b7301167ece2fc96a0710e9419638d4..4bbd7bac9dcc1b925a33bd4a675d065d073df502 100644
+index 0c5b9f5d9d804..032a9abeb8217 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -84,6 +84,7 @@
@@ -29,15 +29,15 @@ index e83145bd5b7301167ece2fc96a0710e9419638d4..4bbd7bac9dcc1b925a33bd4a675d065d
  /elfutils/src
  /emoji-segmenter/src
  /emoji-metadata/src
-@@ -180,6 +181,7 @@
- /mocha
+@@ -182,6 +183,7 @@
+ /js_code_coverage/node_modules
  /mockito/src
  /nacl_sdk_binaries/
 +/nan
  /nasm
  /nearby/src
  /neon_2_sse/src
-@@ -244,6 +246,7 @@
+@@ -245,6 +247,7 @@
  /speex
  /sqlite/src
  /sqlite4java/lib/
