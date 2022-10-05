@@ -1,7 +1,7 @@
-From c83640db21b50541ad7e73cdeffc8541d0b329ee Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <samuel.r.attard@gmail.com>
-Date: Wed, 05 Oct 2022 06:03:23 +0000
-Subject: [PATCH] build: set DTSDKBuild correctly when generating plist files
+Date: Wed, 5 Oct 2022 06:03:23 +0000
+Subject: build: set DTSDKBuild correctly when generating plist files
 
 Currently we set DTSDKBuild to the version of the SDK used to build
 Chromium.  This value is supposed to be the build version (this is
@@ -9,13 +9,12 @@ what xcode sets it to for instance).  We read this value out of the
 SDK directly and use it instead.
 
 Change-Id: Ieb7990f13095683ad8c026f027b2605ae39523a4
----
 
 diff --git a/build/config/mac/mac_sdk.gni b/build/config/mac/mac_sdk.gni
-index 98bedab..d39350e 100644
+index 98bedab98c2cd808387bca779221fab7297b37ee..d39350ed74d5c9493006266375664a9808e97af7 100644
 --- a/build/config/mac/mac_sdk.gni
 +++ b/build/config/mac/mac_sdk.gni
-@@ -40,6 +40,11 @@
+@@ -40,6 +40,11 @@ declare_args() {
    # will fail.
    mac_sdk_official_version = "12.3"
  
@@ -27,7 +26,7 @@ index 98bedab..d39350e 100644
    # Production builds should use hermetic Xcode. If you want to do production
    # builds with system Xcode to test new SDKs, set this.
    # Don't set this on any bots.
-@@ -103,11 +108,13 @@
+@@ -103,11 +108,13 @@ if (use_system_xcode) {
    find_sdk_args = [
      "--print_sdk_path",
      "--print_bin_path",
@@ -42,7 +41,7 @@ index 98bedab..d39350e 100644
    if (mac_sdk_path == "") {
      mac_sdk_path = find_sdk_lines[0]
      mac_bin_path = find_sdk_lines[1]
-@@ -116,6 +123,7 @@
+@@ -116,6 +123,7 @@ if (use_system_xcode) {
    }
  } else {
    mac_sdk_version = mac_sdk_official_version
@@ -51,10 +50,10 @@ index 98bedab..d39350e 100644
    _sdk = "MacOSX${mac_sdk_version}.sdk"
    mac_sdk_path = _dev + "/Platforms/MacOSX.platform/Developer/SDKs/$_sdk"
 diff --git a/build/config/mac/rules.gni b/build/config/mac/rules.gni
-index fbd84cc..f613a04 100644
+index fbd84cc68bf6b19cf99d4010331bb469a1d33194..f613a049bdfa643d01b05e3cfcae72dc5ad9da97 100644
 --- a/build/config/mac/rules.gni
 +++ b/build/config/mac/rules.gni
-@@ -41,7 +41,7 @@
+@@ -41,7 +41,7 @@ template("mac_info_plist") {
    apple_info_plist(target_name) {
      format = "xml1"
      extra_substitutions = [
@@ -64,10 +63,10 @@ index fbd84cc..f613a04 100644
        "MACOSX_DEPLOYMENT_TARGET=$mac_deployment_target",
        "CHROMIUM_MIN_SYSTEM_VERSION=$mac_min_system_version",
 diff --git a/build/mac/find_sdk.py b/build/mac/find_sdk.py
-index bb36874f..50c1e3c 100755
+index bb36874fd44d441d07c9f150288c1d21b215d550..50c1e3c1db90ede392ba6f7903fe48e8e5de2d77 100755
 --- a/build/mac/find_sdk.py
 +++ b/build/mac/find_sdk.py
-@@ -24,6 +24,7 @@
+@@ -24,6 +24,7 @@ Sample Output:
  from __future__ import print_function
  
  import os
@@ -75,7 +74,7 @@ index bb36874f..50c1e3c 100755
  import re
  import subprocess
  import sys
-@@ -51,6 +52,9 @@
+@@ -51,6 +52,9 @@ def main():
    parser.add_option("--print_bin_path",
                      action="store_true", dest="print_bin_path", default=False,
                      help="Additionally print the path the toolchain bin dir.")
@@ -85,7 +84,7 @@ index bb36874f..50c1e3c 100755
    options, args = parser.parse_args()
    if len(args) != 1:
      parser.error('Please specify a minimum SDK version')
-@@ -80,20 +84,30 @@
+@@ -80,20 +84,30 @@ def main():
    if not sdks:
      raise Exception('No %s+ SDK found' % min_sdk_version)
    best_sdk = sorted(sdks, key=parse_version)[0]
