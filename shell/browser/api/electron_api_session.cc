@@ -162,6 +162,30 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
+base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
+                                    std::string const& pac_url,
+                                    std::string const& proxy_server,
+                                    std::string const& bypass_list) {
+  if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
+    return ProxyConfigDictionary::CreateDirect();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
+    return ProxyConfigDictionary::CreateSystem();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
+    return ProxyConfigDictionary::CreateAutoDetect();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
+    const bool pac_mandatory = true;
+    return ProxyConfigDictionary::CreatePacScript(pac_url, pac_mandatory);
+  }
+
+  return ProxyConfigDictionary::CreateFixedServers(proxy_server, bypass_list);
+}
+
 }  // namespace
 
 namespace gin {
@@ -517,22 +541,10 @@ v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
     }
   }
 
-  base::Value proxy_config;
-  if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
-    proxy_config = ProxyConfigDictionary::CreateDirect();
-  } else if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
-    proxy_config = ProxyConfigDictionary::CreateSystem();
-  } else if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
-    proxy_config = ProxyConfigDictionary::CreateAutoDetect();
-  } else if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
-    proxy_config = ProxyConfigDictionary::CreatePacScript(
-        pac_url, true /* pac_mandatory */);
-  } else {
-    proxy_config =
-        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list);
-  }
   browser_context_->in_memory_pref_store()->SetValue(
-      proxy_config::prefs::kProxy, std::move(proxy_config),
+      proxy_config::prefs::kProxy,
+      base::Value{
+          createProxyConfig(proxy_mode, pac_url, proxy_rules, bypass_list)},
       WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
