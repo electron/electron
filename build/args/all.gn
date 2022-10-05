@@ -47,4 +47,4 @@ enable_cet_shadow_stack = false
 is_cfi = false
 
 # TODO: fix this once sysroots have been updated.
-use_qt = false
+use_qt = true
