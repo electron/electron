@@ -517,23 +517,19 @@ v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
     }
   }
 
-  std::unique_ptr<base::Value> proxy_config;
+  base::Value proxy_config;
   if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateDirect());
+    proxy_config = ProxyConfigDictionary::CreateDirect();
   } else if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateSystem());
+    proxy_config = ProxyConfigDictionary::CreateSystem();
   } else if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
-    proxy_config = std::make_unique<base::Value>(
-        ProxyConfigDictionary::CreateAutoDetect());
+    proxy_config = ProxyConfigDictionary::CreateAutoDetect();
   } else if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
-            pac_url, true /* pac_mandatory */));
+    proxy_config = ProxyConfigDictionary::CreatePacScript(
+        pac_url, true /* pac_mandatory */);
   } else {
-    proxy_config = std::make_unique<base::Value>(
-        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list));
+    proxy_config =
+        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list);
   }
   browser_context_->in_memory_pref_store()->SetValue(
       proxy_config::prefs::kProxy, std::move(proxy_config),
