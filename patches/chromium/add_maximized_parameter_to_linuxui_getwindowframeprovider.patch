@@ -174,3 +174,30 @@ index 4c5e4e19fc94c62717d4983c0dc056628c59bd4d..fa9be339b2004df224d46431e3fcced3
  
    const base::ObserverList<WindowButtonOrderObserver>::Unchecked&
    window_button_order_observer_list() const {
+	diff --git a/ui/qt/qt_ui.cc b/ui/qt/qt_ui.cc
+index 431096efc5cd0..f536af0a6ba52 100644
+--- a/ui/qt/qt_ui.cc
++++ b/ui/qt/qt_ui.cc
+@@ -281,7 +281,7 @@ std::unique_ptr<ui::NavButtonProvider> QtUi::CreateNavButtonProvider() {
+   return nullptr;
+ }
+ 
+-ui::WindowFrameProvider* QtUi::GetWindowFrameProvider(bool solid_frame) {
++ui::WindowFrameProvider* QtUi::GetWindowFrameProvider(bool solid_frame, bool maximized) {
+   // QT prefers server-side decorations.
+   return nullptr;
+ }
+diff --git a/ui/qt/qt_ui.h b/ui/qt/qt_ui.h
+index fa84a22ac8685..234fb3baf1597 100644
+--- a/ui/qt/qt_ui.h
++++ b/ui/qt/qt_ui.h
+@@ -79,7 +79,7 @@ class QtUi : public ui::LinuxUiAndTheme, QtInterface::Delegate {
+       WindowFrameActionSource source) override;
+   bool PreferDarkTheme() const override;
+   std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+-  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame) override;
++  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame, bool maximized) override;
+   // QtInterface::Delegate:
+   void FontChanged() override;
+   void ThemeChanged() override;
+
