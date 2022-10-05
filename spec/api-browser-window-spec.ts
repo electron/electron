@@ -1737,6 +1737,36 @@ describe('BrowserWindow module', () => {
       expect(image.isEmpty()).to.equal(true);
     });
 
+    ifit(process.platform === 'darwin')('honors the stayHidden argument', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong');
+        expect(visibilityState).to.equal('visible');
+        expect(hidden).to.be.false('hidden');
+      }
+
+      w.hide();
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong');
+        expect(visibilityState).to.equal('hidden');
+        expect(hidden).to.be.true('hidden');
+      }
+
+      await w.capturePage({ x: 0, y: 0, width: 0, height: 0 }, { stayHidden: true });
+
+      const visible = await w.webContents.executeJavaScript('document.visibilityState');
+      expect(visible).to.equal('hidden');
+    });
+
     it('resolves after the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixtures, 'pages', 'a.html'));
