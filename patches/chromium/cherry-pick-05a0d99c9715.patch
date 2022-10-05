@@ -1,7 +1,7 @@
-From 05a0d99c971514184d92dd261304cf8c4fe98cac Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Bokan <bokan@chromium.org>
 Date: Thu, 28 Jul 2022 18:09:13 +0000
-Subject: [PATCH] Prevent handling input for provisional frames
+Subject: Prevent handling input for provisional frames
 
 Bug: 1347644,1322812
 Change-Id: Ifd60f6aa593ce23ca6cbb65552fc9fb8f8690035
@@ -9,13 +9,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3791883
 Commit-Queue: David Bokan <bokan@chromium.org>
 Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1029361}
----
 
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-index 216a32c..ea5e502 100644
+index fe775337fbc22817d7489df143821eea2d9425ec..13a241273090e54fabdba9d82510e36d2386c4a4 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-@@ -2521,10 +2521,15 @@
+@@ -2460,10 +2460,15 @@ WebInputEventResult WebFrameWidgetImpl::HandleInputEvent(
    DCHECK(!WebInputEvent::IsTouchEventType(input_event.GetType()));
    CHECK(LocalRootImpl());
  
