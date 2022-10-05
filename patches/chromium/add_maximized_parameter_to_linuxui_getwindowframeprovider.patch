@@ -174,8 +174,8 @@ index 4c5e4e19fc94c62717d4983c0dc056628c59bd4d..fa9be339b2004df224d46431e3fcced3
  
    const base::ObserverList<WindowButtonOrderObserver>::Unchecked&
    window_button_order_observer_list() const {
-	diff --git a/ui/qt/qt_ui.cc b/ui/qt/qt_ui.cc
-index 431096efc5cd0..f536af0a6ba52 100644
+diff --git a/ui/qt/qt_ui.cc b/ui/qt/qt_ui.cc
+index 431096efc5cd083a21c7122402b00fa000c3b3ce..f536af0a6ba52df4d0666ce9ca9eb0f700f0a618 100644
 --- a/ui/qt/qt_ui.cc
 +++ b/ui/qt/qt_ui.cc
 @@ -281,7 +281,7 @@ std::unique_ptr<ui::NavButtonProvider> QtUi::CreateNavButtonProvider() {
@@ -188,7 +188,7 @@ index 431096efc5cd0..f536af0a6ba52 100644
    return nullptr;
  }
 diff --git a/ui/qt/qt_ui.h b/ui/qt/qt_ui.h
-index fa84a22ac8685..234fb3baf1597 100644
+index fa84a22ac868500c7f243a79e0757531ce1cfba7..234fb3baf159792bc0612f2edf611c5eb0a72469 100644
 --- a/ui/qt/qt_ui.h
 +++ b/ui/qt/qt_ui.h
 @@ -79,7 +79,7 @@ class QtUi : public ui::LinuxUiAndTheme, QtInterface::Delegate {
@@ -200,4 +200,3 @@ index fa84a22ac8685..234fb3baf1597 100644
    // QtInterface::Delegate:
    void FontChanged() override;
    void ThemeChanged() override;
-
