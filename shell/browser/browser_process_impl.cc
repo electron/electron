@@ -54,16 +54,15 @@ void BrowserProcessImpl::ApplyProxyModeFromCommandLine(
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   if (command_line->HasSwitch(switches::kNoProxyServer)) {
-    pref_store->SetValue(
-        proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateDirect()),
-        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+    pref_store->SetValue(proxy_config::prefs::kProxy,
+                         base::Value(ProxyConfigDictionary::CreateDirect()),
+                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   } else if (command_line->HasSwitch(switches::kProxyPacUrl)) {
     std::string pac_script_url =
         command_line->GetSwitchValueASCII(switches::kProxyPacUrl);
     pref_store->SetValue(
         proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
+        base::Value(ProxyConfigDictionary::CreatePacScript(
             pac_script_url, false /* pac_mandatory */)),
         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   } else if (command_line->HasSwitch(switches::kProxyAutoDetect)) {
@@ -78,7 +77,7 @@ void BrowserProcessImpl::ApplyProxyModeFromCommandLine(
         command_line->GetSwitchValueASCII(switches::kProxyBypassList);
     pref_store->SetValue(
         proxy_config::prefs::kProxy,
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateFixedServers(
+        base::Value(ProxyConfigDictionary::CreateFixedServers(
             proxy_server, bypass_list)),
         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   }
