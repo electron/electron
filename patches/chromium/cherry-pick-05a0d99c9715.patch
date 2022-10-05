@@ -1,0 +1,35 @@
+From 05a0d99c971514184d92dd261304cf8c4fe98cac Mon Sep 17 00:00:00 2001
+From: David Bokan <bokan@chromium.org>
+Date: Thu, 28 Jul 2022 18:09:13 +0000
+Subject: [PATCH] Prevent handling input for provisional frames
+
+Bug: 1347644,1322812
+Change-Id: Ifd60f6aa593ce23ca6cbb65552fc9fb8f8690035
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3791883
+Commit-Queue: David Bokan <bokan@chromium.org>
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1029361}
+---
+
+diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+index 216a32c..ea5e502 100644
+--- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+@@ -2521,10 +2521,15 @@
+   DCHECK(!WebInputEvent::IsTouchEventType(input_event.GetType()));
+   CHECK(LocalRootImpl());
+ 
++  // Clients shouldn't be dispatching events to a provisional frame but this
++  // can happen. Ensure that event handling can assume we're in a committed
++  // frame.
++  if (IsProvisional())
++    return WebInputEventResult::kHandledSuppressed;
++
+   // Only record metrics for the root frame.
+-  if (ForTopMostMainFrame()) {
++  if (ForTopMostMainFrame())
+     GetPage()->GetVisualViewport().StartTrackingPinchStats();
+-  }
+ 
+   // If a drag-and-drop operation is in progress, ignore input events except
+   // PointerCancel and GestureLongPress.
