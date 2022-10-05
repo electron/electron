@@ -1,5 +1,6 @@
 import { BaseWindow, WebContents, Event, TouchBar, BrowserView } from 'electron/main';
 import type { BrowserWindow as BWT } from 'electron/main';
+import * as deprecate from '@electron/internal/common/deprecate';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
 Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
@@ -45,6 +46,28 @@ BrowserWindow.prototype._init = function (this: BWT) {
   }
 
   this._browserViews = [];
+
+  const warn = deprecate.warnOnceMessage('\'scroll-touch-{begin,end,edge}\' are deprecated and will be removed. Please use the WebContents \'input-event\' event instead.');
+  this.webContents.on('input-event', (_, e) => {
+    if (e.type === 'gestureScrollBegin') {
+      if (this.listenerCount('scroll-touch-begin') !== 0) {
+        warn();
+        this.emit('scroll-touch-edge');
+        this.emit('scroll-touch-begin');
+      }
+    } else if (e.type === 'gestureScrollUpdate') {
+      if (this.listenerCount('scroll-touch-edge') !== 0) {
+        warn();
+        this.emit('scroll-touch-edge');
+      }
+    } else if (e.type === 'gestureScrollEnd') {
+      if (this.listenerCount('scroll-touch-end') !== 0) {
+        warn();
+        this.emit('scroll-touch-edge');
+        this.emit('scroll-touch-end');
+      }
+    }
+  });
 
   // Notify the creation of the window.
   const event = process._linkedBinding('electron_browser_event').createEmpty();

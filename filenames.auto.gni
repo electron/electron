@@ -143,6 +143,7 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/web-view-methods.ts",
+    "lib/common/webpack-globals-provider.ts",
     "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.ts",
     "lib/renderer/api/ipc-renderer.ts",

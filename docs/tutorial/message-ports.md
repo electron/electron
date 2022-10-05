@@ -101,7 +101,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  const secondaryWindow = BrowserWindow({
+  const secondaryWindow = new BrowserWindow({
     show: false,
     webPreferences: {
       contextIsolation: false,
@@ -144,7 +144,7 @@ to use `contextIsolation` and set up specific contextBridge calls for each of yo
 expected messages, but for the simplicity of this example we don't. You can find an
 example of context isolation further down this page at [Communicating directly between the main process and the main world of a context-isolated page](#communicating-directly-between-the-main-process-and-the-main-world-of-a-context-isolated-page)
 
-That means window.messagePort is globally available and you can call
+That means window.electronMessagePort is globally available and you can call
 `postMessage` on it from anywhere in your app to send a message to the other
 renderer.
 
@@ -272,7 +272,7 @@ const makeStreamingRequest = (element, callback) => {
 }
 
 makeStreamingRequest(42, (data) => {
-  console.log('got response data:', event.data)
+  console.log('got response data:', data)
 })
 // We will see "got response data: 42" 10 times.
 ```

@@ -507,6 +507,8 @@ filenames = {
     "shell/browser/web_view_guest_delegate.h",
     "shell/browser/web_view_manager.cc",
     "shell/browser/web_view_manager.h",
+    "shell/browser/webauthn/electron_authenticator_request_delegate.cc",
+    "shell/browser/webauthn/electron_authenticator_request_delegate.h",
     "shell/browser/window_list.cc",
     "shell/browser/window_list.h",
     "shell/browser/window_list_observer.h",

@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 0947bc416a00ac23c1d26fdc85baf28e634f419e..57639004908694d5d4a247ee23446b05b9ac0b14 100644
+index d3c552ed96023475de1215c505978278f04766ec..0606b76ac16553ed446f3e3b5d3369aa1c32d72c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1764,9 +1764,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1765,9 +1765,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              cmd_line.get(), IsJitDisabled());
@@ -42,7 +42,7 @@ index 0947bc416a00ac23c1d26fdc85baf28e634f419e..57639004908694d5d4a247ee23446b05
  
      auto file_data = std::make_unique<ChildProcessLauncherFileData>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 02542d2d1c739cd4452381a11759fd23c513b551..68f69a75177792956c3e41fc85f6023452191367 100644
+index 81f25ee3d7eb26a336cae05bd158e3cd1ec07257..9d95eccc579e0778f0b3f3a3a31817380e3989c2 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -31,6 +31,9 @@ namespace content {
@@ -66,7 +66,7 @@ index 02542d2d1c739cd4452381a11759fd23c513b551..68f69a75177792956c3e41fc85f60234
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index d820cb4ff004194d9c18bfddaf90bf520e8446ff..0dcffcf367b5d08bb31b68e648c1f4ce3aa15600 100644
+index 736b46ec59d495c9e5639fa53d2d76e8510d091c..bc37668adab98027d61f684c95b81d8c1dc893cd 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate

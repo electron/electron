@@ -247,14 +247,6 @@ void BaseWindow::OnWindowLeaveFullScreen() {
   Emit("leave-full-screen");
 }
 
-void BaseWindow::OnWindowScrollTouchBegin() {
-  Emit("scroll-touch-begin");
-}
-
-void BaseWindow::OnWindowScrollTouchEnd() {
-  Emit("scroll-touch-end");
-}
-
 void BaseWindow::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
