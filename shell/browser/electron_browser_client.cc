@@ -1508,9 +1508,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
 ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
     content::NavigationUIData* navigation_ui_data,
-    int frame_tree_node_id,
-    const scoped_refptr<network::SharedURLLoaderFactory>&
-        network_loader_factory) {
+    int frame_tree_node_id) {
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
       interceptors;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
