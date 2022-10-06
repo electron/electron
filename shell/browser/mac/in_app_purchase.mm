@@ -30,7 +30,7 @@
 
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
               quantity:(NSInteger)quantity
-                username:(NSString)username;
+              username:(NSString)username;
 
 - (void)purchaseProduct:(NSString*)productID;
 
@@ -48,7 +48,7 @@
  */
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
               quantity:(NSInteger)quantity
-                username:(NSString)username {
+              username:(NSString)username {
   if ((self = [super init])) {
     callback_ = std::move(callback);
     quantity_ = quantity;
@@ -191,10 +191,10 @@ void PurchaseProduct(const std::string& productID,
                      int quantity,
                      const std::string& username,
                      InAppPurchaseCallback callback) {
-  auto* iap =
-      [[InAppPurchase alloc] initWithCallback:std::move(callback)
-                                     quantity:quantity
-                                       username:base::SysUTF8ToNSString(username)];
+  auto* iap = [[InAppPurchase alloc]
+      initWithCallback:std::move(callback)
+              quantity:quantity
+              username:base::SysUTF8ToNSString(username)];
 
   [iap purchaseProduct:base::SysUTF8ToNSString(productID)];
 }
