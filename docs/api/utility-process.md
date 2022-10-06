@@ -15,7 +15,7 @@ Process: [Main](../glossary.md#main-process)<br />
   in the child process.
 * `options` Object (optional)
   * `env` Object (optional) - Environment key-value pairs. Default is `process.env`.
-  * `execArgv` string[] (optional) - List of string arguments passed to the executable. Default is `process.execArgv`.
+  * `execArgv` string[] (optional) - List of string arguments passed to the executable.
   * `cwd` string (optional) - Current working directory of the child process.
   * `stdio` (string[] | string) (optional) - Child's stdout and stderr configuration. Default is `inherit`.
     String value can be one of `pipe`, `ignore`, `inherit`, for more details on these values you can refer to

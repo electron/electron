@@ -32,10 +32,10 @@ class ForkUtilityProcess extends EventEmitter {
       throw new Error('Options cannot be undefined.');
     }
 
-    if (options.execArgv == null) {
-      options.execArgv = process.execArgv;
-    } else if (!Array.isArray(options.execArgv)) {
-      throw new Error('execArgv must be an array of strings.');
+    if (options.execArgv != null) {
+      if (!Array.isArray(options.execArgv)) {
+        throw new Error('execArgv must be an array of strings.');
+      }
     }
 
     if (options.serviceName != null) {
