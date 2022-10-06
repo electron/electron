@@ -25,12 +25,12 @@
  @private
   in_app_purchase::InAppPurchaseCallback callback_;
   NSInteger quantity_;
-  NSString userId_;
+  NSString username_;
 }
 
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
               quantity:(NSInteger)quantity
-                userId:(NSString)userId;
+                username:(NSString)username;
 
 - (void)purchaseProduct:(NSString*)productID;
 
@@ -48,11 +48,11 @@
  */
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
               quantity:(NSInteger)quantity
-                userId:(NSString)userId {
+                username:(NSString)username {
   if ((self = [super init])) {
     callback_ = std::move(callback);
     quantity_ = quantity;
-    userId_ = userId;
+    username_ = username;
   }
 
   return self;
@@ -111,8 +111,8 @@
   // when the transaction is finished).
   SKMutablePayment* payment = [SKMutablePayment paymentWithProduct:product];
   payment.quantity = quantity_;
-  if ([userId_ length] > 0)
-    payment.applicationUsername = userId_;
+  if ([username_ length] > 0)
+    payment.applicationUsername = username_;
 
   [[SKPaymentQueue defaultQueue] addPayment:payment];
 
@@ -189,12 +189,12 @@ std::string GetReceiptURL() {
 
 void PurchaseProduct(const std::string& productID,
                      int quantity,
-                     const std::string& userID,
+                     const std::string& username,
                      InAppPurchaseCallback callback) {
   auto* iap =
       [[InAppPurchase alloc] initWithCallback:std::move(callback)
                                      quantity:quantity
-                                       userId:base::SysUTF8ToNSString(userID)];
+                                       username:base::SysUTF8ToNSString(username)];
 
   [iap purchaseProduct:base::SysUTF8ToNSString(productID)];
 }

@@ -29,7 +29,7 @@ std::string GetReceiptURL();
 
 void PurchaseProduct(const std::string& productID,
                      int quantity,
-                     const std::string& userID,
+                     const std::string& username,
                      InAppPurchaseCallback callback);
 
 }  // namespace in_app_purchase
