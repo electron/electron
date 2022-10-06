@@ -81,6 +81,68 @@ describe('modules support', () => {
       });
     });
 
+    describe('require(\'electron/...\')', () => {
+      it('require(\'electron/lol\') should throw in the main process', () => {
+        expect(() => {
+          require('electron/lol');
+        }).to.throw(/Uncaught Error: Cannot find module 'electron\/lol'/);
+      });
+
+      it('require(\'electron/lol\') should throw in the renderer process', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+        w.loadURL('about:blank');
+        await expect(w.webContents.executeJavaScript('{ require(\'electron/lol\'); null }')).to.eventually.be.rejected();
+      });
+
+      it('require(\'electron\') should not throw in the main process', () => {
+        expect(() => {
+          require('electron');
+        }).to.not.throw();
+      });
+
+      it('require(\'electron\') should not throw in the renderer process', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+        w.loadURL('about:blank');
+        await expect(w.webContents.executeJavaScript('{ require(\'electron\'); null }')).to.be.fulfilled();
+      });
+
+      it('require(\'electron/main\') should not throw in the main process', () => {
+        expect(() => {
+          require('electron/main');
+        }).to.not.throw();
+      });
+
+      it('require(\'electron/main\') should not throw in the renderer process', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+        w.loadURL('about:blank');
+        await expect(w.webContents.executeJavaScript('{ require(\'electron/main\'); null }')).to.be.fulfilled();
+      });
+
+      it('require(\'electron/renderer\') should not throw in the main process', () => {
+        expect(() => {
+          require('electron/renderer');
+        }).to.not.throw();
+      });
+
+      it('require(\'electron/renderer\') should not throw in the renderer process', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+        w.loadURL('about:blank');
+        await expect(w.webContents.executeJavaScript('{ require(\'electron/renderer\'); null }')).to.be.fulfilled();
+      });
+
+      it('require(\'electron/common\') should not throw in the main process', () => {
+        expect(() => {
+          require('electron/common');
+        }).to.not.throw();
+      });
+
+      it('require(\'electron/common\') should not throw in the renderer process', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+        w.loadURL('about:blank');
+        await expect(w.webContents.executeJavaScript('{ require(\'electron/common\'); null }')).to.be.fulfilled();
+      });
+    });
+
     describe('coffeescript', () => {
       it('can be registered and used to require .coffee files', () => {
         expect(() => {

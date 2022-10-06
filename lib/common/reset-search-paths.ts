@@ -42,6 +42,8 @@ const makeElectronModule = (name: string) => {
   Module._cache[name] = electronModule;
 };
 
+// These module aliases are for TypeScript purposes. It is intentional they
+// work everywhere, they're superficial for TypeScript only.
 makeElectronModule('electron');
 makeElectronModule('electron/common');
 if (process.type === 'browser') {
