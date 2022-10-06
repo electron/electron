@@ -54,7 +54,10 @@ WebContentsView::~WebContentsView() {
 }
 
 gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, api_web_contents_);
+  if (api_web_contents_)
+    return gin::CreateHandle(isolate, api_web_contents_);
+  else
+    return gin::Handle<WebContents>();
 }
 
 void WebContentsView::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
