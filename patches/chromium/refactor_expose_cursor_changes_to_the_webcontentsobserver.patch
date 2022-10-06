@@ -30,7 +30,7 @@ index 5f1eea557b549a6db081ff925ba9995b0591d9fa..62c5ef52ec774623f2cfc7c269973a26
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 76b5303e56e0a4c6e52991e6206b402bbe4afbf0..c9266d1c7277ae8058d3a5b3a3ace8ca6f17c7ce 100644
+index a81933bcbb926659ba9dc8c775ce022a0f7bdafb..bc0d1fab2160fa476c875a6a5e549c878c855795 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -2093,6 +2093,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
