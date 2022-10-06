@@ -17,19 +17,18 @@ import { setTimeout } from 'timers/promises';
 const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
+const certPath = path.join(fixturesPath, 'certificates');
 
 describe('reporting api', () => {
-  // FIXME(nornagon): this started failing a lot on CI. Figure out why and fix
-  // it.
-  it('sends a report for a deprecation', async () => {
-    const reports = new EventEmitter();
+  it('sends a report for an intervention', async () => {
+    const reporting = new EventEmitter();
 
     // The Reporting API only works on https with valid certs. To dodge having
     // to set up a trusted certificate, hack the validator.
     session.defaultSession.setCertificateVerifyProc((req, cb) => {
       cb(0);
     });
-    const certPath = path.join(fixturesPath, 'certificates');
+
     const options = {
       key: fs.readFileSync(path.join(certPath, 'server.key')),
       cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -42,35 +41,35 @@ describe('reporting api', () => {
     };
 
     const server = https.createServer(options, (req, res) => {
-      if (req.url === '/report') {
+      if (req.url?.endsWith('report')) {
         let data = '';
         req.on('data', (d) => { data += d.toString('utf-8'); });
         req.on('end', () => {
-          reports.emit('report', JSON.parse(data));
+          reporting.emit('report', JSON.parse(data));
         });
       }
-      res.setHeader('Report-To', JSON.stringify({
-        group: 'default',
-        max_age: 120,
-        endpoints: [{ url: `https://localhost:${(server.address() as any).port}/report` }]
-      }));
+
+      const { port } = server.address() as any;
+      res.setHeader('Reporting-Endpoints', `default="https://localhost:${port}/report"`);
       res.setHeader('Content-Type', 'text/html');
-      // using the deprecated `webkitRequestAnimationFrame` will trigger a
-      // "deprecation" report.
-      res.end('<script>webkitRequestAnimationFrame(() => {})</script>');
+
+      res.end('<script>window.navigator.vibrate(1)</script>');
     });
-    const { url } = await listen(server);
-    const bw = new BrowserWindow({
-      show: false
-    });
+
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    const bw = new BrowserWindow({ show: false });
+
     try {
-      const reportGenerated = once(reports, 'report');
-      await bw.loadURL(url);
-      const [report] = await reportGenerated;
-      expect(report).to.be.an('array');
-      expect(report[0].type).to.equal('deprecation');
-      expect(report[0].url).to.equal(`${url}/a`);
-      expect(report[0].body.id).to.equal('PrefixedRequestAnimationFrame');
+      const reportGenerated = once(reporting, 'report');
+      await bw.loadURL(`https://localhost:${(server.address() as any).port}/a`);
+
+      const [reports] = await reportGenerated;
+      expect(reports).to.be.an('array').with.lengthOf(1);
+      const { type, url, body } = reports[0];
+      expect(type).to.equal('intervention');
+      expect(url).to.equal(url);
+      expect(body.id).to.equal('NavigatorVibrate');
+      expect(body.message).to.match(/Blocked call to navigator.vibrate because user hasn't tapped on the frame or any embedded frame yet/);
     } finally {
       bw.destroy();
       server.close();
