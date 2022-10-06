@@ -181,6 +181,7 @@ const LINTERS = [{
     const patchesConfig = path.resolve(patchesDir, 'config.json');
     // If the config does not exist, that's a problem
     if (!fs.existsSync(patchesConfig)) {
+      console.error(`Patches config file: "${patchesConfig}" does not exist`);
       process.exit(1);
     }
 
@@ -188,34 +189,48 @@ const LINTERS = [{
     for (const key of Object.keys(config)) {
       // The directory the config points to should exist
       const targetPatchesDir = path.resolve(__dirname, '../../..', key);
-      if (!fs.existsSync(targetPatchesDir)) throw new Error(`target patch directory: "${targetPatchesDir}" does not exist`);
+      if (!fs.existsSync(targetPatchesDir)) {
+        console.error(`target patch directory: "${targetPatchesDir}" does not exist`);
+        process.exit(1);
+      }
       // We need a .patches file
       const dotPatchesPath = path.resolve(targetPatchesDir, '.patches');
-      if (!fs.existsSync(dotPatchesPath)) throw new Error(`.patches file: "${dotPatchesPath}" does not exist`);
+      if (!fs.existsSync(dotPatchesPath)) {
+        console.error(`.patches file: "${dotPatchesPath}" does not exist`);
+        process.exit(1);
+      }
 
       // Read the patch list
       const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
       const patchFileSet = new Set(patchFileList);
       patchFileList.reduce((seen, file) => {
         if (seen.has(file)) {
-          throw new Error(`'${file}' is listed in ${dotPatchesPath} more than once`);
+          console.error(`'${file}' is listed in ${dotPatchesPath} more than once`);
+          process.exit(1);
         }
         return seen.add(file);
       }, new Set());
-      if (patchFileList.length !== patchFileSet.size) throw new Error('each patch file should only be in the .patches file once');
+
+      if (patchFileList.length !== patchFileSet.size) {
+        console.error('Each patch file should only be in the .patches file once');
+        process.exit(1);
+      }
+
       for (const file of fs.readdirSync(targetPatchesDir)) {
         // Ignore the .patches file and READMEs
         if (file === '.patches' || file === 'README.md') continue;
 
         if (!patchFileSet.has(file)) {
-          throw new Error(`Expected the .patches file at "${dotPatchesPath}" to contain a patch file ("${file}") present in the directory but it did not`);
+          console.error(`Expected the .patches file at "${dotPatchesPath}" to contain a patch file ("${file}") present in the directory but it did not`);
+          process.exit(1);
         }
         patchFileSet.delete(file);
       }
 
       // If anything is left in this set, it means it did not exist on disk
       if (patchFileSet.size > 0) {
-        throw new Error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`);
+        console.error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`);
+        process.exit(1);
       }
     }
 

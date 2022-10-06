@@ -381,11 +381,13 @@ base::IDMap<WebContents*>& GetAllWebContents() {
   return *s_all_web_contents;
 }
 
-// Called when CapturePage is done.
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
+                       base::ScopedClosureRunner capture_handle,
                        const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
+
+  capture_handle.RunAndReset();
 }
 
 absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
@@ -3157,12 +3159,21 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 }
 
 v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
-  gfx::Rect rect;
   gin_helper::Promise<gfx::Image> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  // get rect arguments if they exist
+  gfx::Rect rect;
   args->GetNext(&rect);
+
+  bool stay_hidden = false;
+  bool stay_awake = false;
+  if (args && args->Length() == 2) {
+    gin_helper::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("stayHidden", &stay_hidden);
+      options.Get("stayAwake", &stay_awake);
+    }
+  }
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
@@ -3182,6 +3193,9 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   }
 #endif  // BUILDFLAG(IS_MAC)
 
+  auto capture_handle = web_contents()->IncrementCapturerCount(
+      rect.size(), stay_hidden, stay_awake);
+
   // Capture full page if user doesn't specify a |rect|.
   const gfx::Size view_size =
       rect.IsEmpty() ? view->GetViewBounds().size() : rect.size();
@@ -3198,11 +3212,18 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::BindOnce(&OnCapturePageDone, std::move(promise)));
+                        base::BindOnce(&OnCapturePageDone, std::move(promise),
+                                       std::move(capture_handle)));
   return handle;
 }
 
+// TODO(codebytere): remove in Electron v23.
 void WebContents::IncrementCapturerCount(gin::Arguments* args) {
+  EmitWarning(node::Environment::GetCurrent(args->isolate()),
+              "webContents.incrementCapturerCount() is deprecated and will be "
+              "removed in v23",
+              "electron");
+
   gfx::Size size;
   bool stay_hidden = false;
   bool stay_awake = false;
@@ -3219,7 +3240,13 @@ void WebContents::IncrementCapturerCount(gin::Arguments* args) {
                     .Release();
 }
 
+// TODO(codebytere): remove in Electron v23.
 void WebContents::DecrementCapturerCount(gin::Arguments* args) {
+  EmitWarning(node::Environment::GetCurrent(args->isolate()),
+              "webContents.decrementCapturerCount() is deprecated and will be "
+              "removed in v23",
+              "electron");
+
   bool stay_hidden = false;
   bool stay_awake = false;
 
