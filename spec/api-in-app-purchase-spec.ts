@@ -39,12 +39,17 @@ describe('inAppPurchase module', function () {
   // without relying on a remote service.
   xdescribe('handles product purchases', () => {
     it('purchaseProduct() fails when buying invalid product', async () => {
+      const success = await inAppPurchase.purchaseProduct('non-exist');
+      expect(success).to.be.false('failed to purchase non-existent product');
+    });
+
+    it('purchaseProduct() accepts optional (Integer) argument', async () => {
       const success = await inAppPurchase.purchaseProduct('non-exist', 1);
       expect(success).to.be.false('failed to purchase non-existent product');
     });
 
-    it('purchaseProduct() accepts optional arguments', async () => {
-      const success = await inAppPurchase.purchaseProduct('non-exist');
+    it('purchaseProduct() accepts optional (Object) argument', async () => {
+      const success = await inAppPurchase.purchaseProduct('non-exist', {quantity: 1, username: 'username'});
       expect(success).to.be.false('failed to purchase non-existent product');
     });
 
