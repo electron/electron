@@ -1,18 +1,14 @@
-# UtilityProcess
+# utilityProcess
 
-`UtilityProcess` creates a child process with
+`utilityProcess` creates a child process with
 Node.js and Message ports enabled. It provides the equivalent of [`child_process.fork`][] API from Node.js
 but instead uses [Services API][] from Chromium to launch the child process.
 
-`UtilityProcess` is an [EventEmitter][event-emitter].
-
-## Class: UtilityProcess
-
-> Child process with Node.js integration spawned by Chromium.
-
 Process: [Main](../glossary.md#main-process)<br />
 
-### `new UtilityProcess(modulePath[, args][, options])`
+## Methods
+
+### `utilityProcess.fork(modulePath[, args][, options])`
 
 * `modulePath` string - Path to the script that should run as entrypoint in the child process.
 * `args` string[] (optional) - List of string arguments that will be available as `process.argv`
@@ -38,6 +34,15 @@ Process: [Main](../glossary.md#main-process)<br />
     to load unsigned libraries. Unless you specifically need this capability, it is best to leave this disabled.
     Default is `false`.
 
+Returns [`UtilityProcess`](utility-process.md#class-utilityprocess)
+
+## Class: UtilityProcess
+
+> Instances of the `UtilityProcess` represent the Chromium spawned child process
+> with Node.js integration.
+
+`UtilityProcess` is an [EventEmitter][event-emitter].
+
 ### Instance Methods
 
 #### `child.postMessage(message, [transfer])`
@@ -53,7 +58,7 @@ For example:
 ```js
 // Main process
 const { port1, port2 } = new MessageChannelMain()
-const child = new UtilityProcess(path.join(__dirname, 'test.js'))
+const child = utilityProcess.fork(path.join(__dirname, 'test.js'))
 child.postMessage({ message: 'hello' }, [port1])
 
 // Child process
@@ -88,7 +93,7 @@ When the child process exits, then the value is `null` after the `exit` event is
 ```js
 // Main process
 const { port1, port2 } = new MessageChannelMain()
-const child = new UtilityProcess(path.join(__dirname, 'test.js'))
+const child = utilityProcess.fork(path.join(__dirname, 'test.js'))
 child.stdout.on('data', (data) => {
   console.log(`Received chunk ${data}`)
 })

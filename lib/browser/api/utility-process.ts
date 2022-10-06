@@ -2,13 +2,13 @@ import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 import { createReadStream } from 'fs';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-const { createProcessWrapper } = process._linkedBinding('electron_browser_utility_process');
+const { _fork } = process._linkedBinding('electron_browser_utility_process');
 
-export default class UtilityProcess extends EventEmitter {
+class ForkUtilityProcess extends EventEmitter {
   #handle: ElectronInternal.UtilityProcessWrapper | null;
   #stdout: any = null;
   #stderr: any = null;
-  constructor (modulePath: string, args?: string[], options?: Electron.UtilityProcessConstructorOptions) {
+  constructor (modulePath: string, args?: string[], options?: Electron.ForkOptions) {
     super();
 
     if (!modulePath) {
@@ -88,7 +88,7 @@ export default class UtilityProcess extends EventEmitter {
       }
     }
 
-    this.#handle = createProcessWrapper({ options, modulePath, args });
+    this.#handle = _fork({ options, modulePath, args });
     this.#handle!.emit = (channel: string | symbol, ...args: any[]) => {
       if (channel === 'exit') {
         try {
@@ -143,4 +143,8 @@ export default class UtilityProcess extends EventEmitter {
     }
     return this.#handle.kill();
   }
+}
+
+export function fork (modulePath: string, args?: string[], options?: Electron.ForkOptions) {
+  return new ForkUtilityProcess(modulePath, args, options);
 }

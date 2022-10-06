@@ -395,8 +395,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("createProcessWrapper",
-                 &electron::api::UtilityProcessWrapper::Create);
+  dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);
 }
 
 }  // namespace

@@ -1,17 +1,17 @@
-const { app, UtilityProcess } = require('electron');
+const { app, utilityProcess } = require('electron');
 const path = require('path');
 
 app.whenReady().then(() => {
   let child = null;
   if (app.commandLine.hasSwitch('create-custom-env')) {
-    child = new UtilityProcess(path.join(__dirname, 'test.js'), {
+    child = utilityProcess.fork(path.join(__dirname, 'test.js'), {
       stdio: 'inherit',
       env: {
         FROM: 'child'
       }
     });
   } else {
-    child = new UtilityProcess(path.join(__dirname, 'test.js'), {
+    child = utilityProcess.fork(path.join(__dirname, 'test.js'), {
       stdio: 'inherit'
     });
   }
