@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Wed, 5 Oct 2022 06:03:23 +0000
+Subject: build: set DTSDKBuild correctly when generating plist files
+
+Currently we set DTSDKBuild to the version of the SDK used to build
+Chromium.  This value is supposed to be the build version (this is
+what xcode sets it to for instance).  We read this value out of the
+SDK directly and use it instead.
+
+Change-Id: Ieb7990f13095683ad8c026f027b2605ae39523a4
+
+diff --git a/build/config/mac/mac_sdk.gni b/build/config/mac/mac_sdk.gni
+index 43577925d2ef9cd79970d8307104e0abc1756583..0819d4cc1b17f216eae8c1a562b0301ba6298d57 100644
+--- a/build/config/mac/mac_sdk.gni
++++ b/build/config/mac/mac_sdk.gni
+@@ -40,6 +40,11 @@ declare_args() {
+   # will fail.
+   mac_sdk_official_version = "12.3"
+ 
++  # The SDK build version used when making official builds.  This is a single
++  # exact version found at "System/Library/CoreServices/SystemVersion.plist"
++  # inside the SDK.
++  mac_sdk_official_build_version = "21E226"
++
+   # Production builds should use hermetic Xcode. If you want to do production
+   # builds with system Xcode to test new SDKs, set this.
+   # Don't set this on any bots.
+@@ -103,11 +108,13 @@ if (use_system_xcode) {
+   find_sdk_args = [
+     "--print_sdk_path",
+     "--print_bin_path",
++    "--print_sdk_build",
+     mac_sdk_min,
+   ]
+   find_sdk_lines =
+       exec_script("//build/mac/find_sdk.py", find_sdk_args, "list lines")
+-  mac_sdk_version = find_sdk_lines[2]
++  mac_sdk_version = find_sdk_lines[3]
++  mac_sdk_build_version = find_sdk_lines[2]
+   if (mac_sdk_path == "") {
+     mac_sdk_path = find_sdk_lines[0]
+     mac_bin_path = find_sdk_lines[1]
+@@ -116,6 +123,7 @@ if (use_system_xcode) {
+   }
+ } else {
+   mac_sdk_version = mac_sdk_official_version
++  mac_sdk_build_version = mac_sdk_official_build_version
+   _dev = _hermetic_xcode_path + "/Contents/Developer"
+   _sdk = "MacOSX${mac_sdk_version}.sdk"
+   mac_sdk_path = _dev + "/Platforms/MacOSX.platform/Developer/SDKs/$_sdk"
+diff --git a/build/config/mac/rules.gni b/build/config/mac/rules.gni
+index 03073f830401c4891376a3b59e2e7a870e3d34b7..04d403054c1a83fcbbc70be7cfd239ecbec315d3 100644
+--- a/build/config/mac/rules.gni
++++ b/build/config/mac/rules.gni
+@@ -41,7 +41,7 @@ template("mac_info_plist") {
+   apple_info_plist(target_name) {
+     format = "xml1"
+     extra_substitutions = [
+-      "MAC_SDK_BUILD=$mac_sdk_version",
++      "MAC_SDK_BUILD=$mac_sdk_build_version",
+       "MAC_SDK_NAME=$mac_sdk_name$mac_sdk_version",
+       "MACOSX_DEPLOYMENT_TARGET=$mac_deployment_target",
+       "CHROMIUM_MIN_SYSTEM_VERSION=$mac_min_system_version",
+diff --git a/build/mac/find_sdk.py b/build/mac/find_sdk.py
+index d86f3109357a9246d570cb02992dc82552ba7c20..b2400c7e8c70957e364444f509880900ce3b641f 100755
+--- a/build/mac/find_sdk.py
++++ b/build/mac/find_sdk.py
+@@ -24,6 +24,7 @@ Sample Output:
+ from __future__ import print_function
+ 
+ import os
++import plistlib
+ import re
+ import subprocess
+ import sys
+@@ -51,6 +52,9 @@ def main():
+   parser.add_option("--print_bin_path",
+                     action="store_true", dest="print_bin_path", default=False,
+                     help="Additionally print the path the toolchain bin dir.")
++  parser.add_option("--print_sdk_build",
++                    action="store_true", dest="print_sdk_build", default=False,
++                    help="Additionally print the build version of the SDK.")
+   options, args = parser.parse_args()
+   if len(args) != 1:
+     parser.error('Please specify a minimum SDK version')
+@@ -80,20 +84,30 @@ def main():
+   if not sdks:
+     raise Exception('No %s+ SDK found' % min_sdk_version)
+   best_sdk = sorted(sdks, key=parse_version)[0]
++  sdk_name = 'MacOSX' + best_sdk + '.sdk'
++  sdk_path = os.path.join(sdk_dir, sdk_name)
+ 
+   if options.print_sdk_path:
+-    sdk_name = 'MacOSX' + best_sdk + '.sdk'
+-    print(os.path.join(sdk_dir, sdk_name))
++    print(sdk_path)
+ 
+   if options.print_bin_path:
+     bin_path = 'Toolchains/XcodeDefault.xctoolchain/usr/bin/'
+     print(os.path.join(dev_dir, bin_path))
+ 
+-  return best_sdk
++  if options.print_sdk_build:
++    system_version_plist = os.path.join(sdk_path,
++      'System/Library/CoreServices/SystemVersion.plist')
++    with open(system_version_plist, 'rb') as f:
++      system_version_info = plistlib.load(f)
++      if 'ProductBuildVersion' not in system_version_info:
++        raise Exception('Failed to determine ProductBuildVersion' +
++                        'for SDK at path %s' % system_version_plist)
++      print(system_version_info['ProductBuildVersion'])
++
++  print(best_sdk)
+ 
+ 
+ if __name__ == '__main__':
+   if sys.platform != 'darwin':
+     raise Exception("This script only runs on Mac")
+-  print(main())
+-  sys.exit(0)
++  sys.exit(main())
