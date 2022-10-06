@@ -4,6 +4,12 @@
 
 #include "shell/browser/api/electron_api_view.h"
 
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "gin/data_object_builder.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"
@@ -15,9 +21,6 @@
 #include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/layout_manager_base.h"
-
-#include <algorithm>
-#include <limits>
 
 namespace gin {
 
@@ -144,7 +147,7 @@ using LayoutCallback = base::RepeatingCallback<views::ProposedLayout(
 
 class JSLayoutManager : public views::LayoutManagerBase {
  public:
-  JSLayoutManager(LayoutCallback layout_callback)
+  explicit JSLayoutManager(LayoutCallback layout_callback)
       : layout_callback_(std::move(layout_callback)) {}
   ~JSLayoutManager() override {}
 
