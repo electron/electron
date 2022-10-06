@@ -33,7 +33,9 @@ Returns:
   * `data` any
   * `ports` MessagePortMain[]
 
-Emitted when the process receives a message.
+Emitted when the process receives a message. Messages received on
+this port will be queued up until a handler is registered for this
+event.
 
 ## Methods
 

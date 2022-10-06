@@ -96,7 +96,6 @@
 #include "shell/browser/net/proxying_websocket.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/network_hints_handler_impl.h"
-#include "shell/browser/node_service_host_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
 #include "shell/browser/protocol_registry.h"
@@ -1655,17 +1654,6 @@ base::FilePath ElectronBrowserClient::GetFontLookupTableCacheDir() {
 bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;
-}
-
-void ElectronBrowserClient::BindUtilityHostReceiver(
-    content::UtilityProcessHost* utility_process_host,
-    mojo::GenericPendingReceiver receiver) {
-  if (auto host_receiver = receiver.As<node::mojom::NodeServiceHost>()) {
-    mojo::MakeSelfOwnedReceiver(
-        std::make_unique<NodeServiceHostImpl>(utility_process_host),
-        std::move(host_receiver));
-    return;
-  }
 }
 
 void ElectronBrowserClient::BindHostReceiverForRenderer(

@@ -183,6 +183,20 @@ describe('UtilityProcess module', () => {
       expect(child.kill()).to.be.true();
       await exit;
     });
+
+    it('supports queuing messages on the receiving end', async () => {
+      const child = new UtilityProcess(path.join(fixturesPath, 'post-message-queue.js'));
+      const p = emittedOnce(child, 'spawn');
+      child.postMessage('This message');
+      child.postMessage(' is');
+      child.postMessage(' queued');
+      await p;
+      const [data] = await emittedOnce(child, 'message');
+      expect(data).to.equal('This message is queued');
+      const exit = emittedOnce(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
+    });
   });
 
   describe('behavior', () => {

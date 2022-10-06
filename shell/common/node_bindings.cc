@@ -88,7 +88,8 @@
   V(electron_renderer_context_bridge)    \
   V(electron_renderer_crash_reporter)    \
   V(electron_renderer_ipc)               \
-  V(electron_renderer_web_frame)
+  V(electron_renderer_web_frame)         \
+  V(electron_utility_parent_port)
 
 #define ELECTRON_VIEWS_MODULES(V) V(electron_browser_image_view)
 

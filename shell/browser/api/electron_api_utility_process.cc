@@ -28,6 +28,8 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
+#include "third_party/blink/public/common/messaging/message_port_descriptor.h"
+#include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 
 #if BUILDFLAG(IS_POSIX)
 #include "base/posix/eintr_wrapper.h"
@@ -162,6 +164,22 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   node_service_remote_.set_disconnect_with_reason_handler(
       base::BindOnce(&UtilityProcessWrapper::OnServiceProcessDisconnected,
                      weak_factory_.GetWeakPtr()));
+
+  // We use a separate message pipe to support postMessage API
+  // instead of the existing receiver interface so that we can
+  // support queuing of messages without having to block other
+  // interfaces.
+  blink::MessagePortDescriptorPair pipe;
+  host_port_ = pipe.TakePort0();
+  params->port = pipe.TakePort1();
+  connector_ = std::make_unique<mojo::Connector>(
+      host_port_.TakeHandleToEntangleWithEmbedder(),
+      mojo::Connector::SINGLE_THREADED_SEND,
+      base::ThreadTaskRunnerHandle::Get());
+  connector_->set_incoming_receiver(this);
+  connector_->set_connection_error_handler(base::BindOnce(
+      &UtilityProcessWrapper::CloseConnectorPort, weak_factory_.GetWeakPtr()));
+
   node_service_remote_->Initialize(std::move(params));
 }
 
@@ -188,10 +206,20 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
   Shutdown(0 /* exit_code */);
 }
 
+void UtilityProcessWrapper::CloseConnectorPort() {
+  if (!connector_closed_ && connector_->is_valid()) {
+    host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
+    connector_ = nullptr;
+    host_port_.Reset();
+    connector_closed_ = true;
+  }
+}
+
 void UtilityProcessWrapper::Shutdown(int exit_code) {
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();
+  CloseConnectorPort();
   // Emit 'exit' event
   EmitWithoutCustomEvent("exit", exit_code);
   Unpin();
@@ -227,7 +255,9 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
   if (threw_exception)
     return;
 
-  node_service_remote_->ReceivePostMessage(std::move(transferable_message));
+  mojo::Message mojo_message = blink::mojom::TransferableMessage::WrapAsMessage(
+      std::move(transferable_message));
+  connector_->Accept(&mojo_message);
 }
 
 bool UtilityProcessWrapper::Kill() const {
@@ -253,13 +283,19 @@ v8::Local<v8::Value> UtilityProcessWrapper::GetOSProcessId(
   return gin::ConvertToV8(isolate, pid_);
 }
 
-void UtilityProcessWrapper::ReceivePostMessage(
-    blink::TransferableMessage message) {
+bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
+  blink::TransferableMessage message;
+  if (!blink::mojom::TransferableMessage::DeserializeFromMessage(
+          std::move(*mojo_message), &message)) {
+    return false;
+  }
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
   EmitWithoutCustomEvent("message", message_value);
+  return true;
 }
 
 // static

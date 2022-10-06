@@ -456,8 +456,6 @@ filenames = {
     "shell/browser/net/web_request_api_interface.h",
     "shell/browser/network_hints_handler_impl.cc",
     "shell/browser/network_hints_handler_impl.h",
-    "shell/browser/node_service_host_impl.cc",
-    "shell/browser/node_service_host_impl.h",
     "shell/browser/notifications/notification.cc",
     "shell/browser/notifications/notification.h",
     "shell/browser/notifications/notification_delegate.h",
@@ -685,6 +683,8 @@ filenames = {
     "shell/renderer/web_worker_observer.h",
     "shell/services/node/node_service.cc",
     "shell/services/node/node_service.h",
+    "shell/services/node/parent_port.cc",
+    "shell/services/node/parent_port.h",
     "shell/utility/electron_content_utility_client.cc",
     "shell/utility/electron_content_utility_client.h",
   ]

@@ -1,7 +1,5 @@
-import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-import * as events from 'events';
+import { ParentPort } from '@electron/internal/utility/parent-port';
 const Module = require('module');
-const { EventEmitter } = events;
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
 // We modified the original process.argv to let node.js load the init.js,
@@ -14,22 +12,43 @@ require('../common/reset-search-paths');
 // Import common settings.
 require('@electron/internal/common/init');
 
-const parentPort: Electron.ParentPort = new EventEmitter() as any;
-parentPort.postMessage = v8Util.getHiddenValue(process, '_postMessage');
+const parentPort: any = new ParentPort();
+Object.defineProperty(process, 'parentPort', {
+  enumerable: true,
+  writable: false,
+  value: parentPort
+});
 
-v8Util.setHiddenValue(global, 'messagechannel', {
-  didReceiveMessage (event: any, ports: any[]) {
-    event.ports = ports.map(p => new MessagePortMain(p));
-    (parentPort as events.EventEmitter).emit('message', event);
+// Based on third_party/electron_node/lib/internal/worker/io.js
+parentPort.on('newListener', (name: string) => {
+  if (name === 'message' && parentPort.listenerCount('message') === 0) {
+    parentPort.start();
   }
 });
 
-Object.defineProperty(process, 'parentPort', {
-  get () {
-    return parentPort;
-  },
-  enumerable: true
+parentPort.on('removeListener', (name: string) => {
+  if (name === 'message' && parentPort.listenerCount('message') === 0) {
+    parentPort.pause();
+  }
 });
+
+const origNewListener = parentPort[Symbol('kNewListener')];
+parentPort[Symbol('kNewListener')] = function (size: number, type: string, ...args: any[]) {
+  if (type === 'message' && (size - 1) === 0) {
+    parentPort.start();
+  }
+  args.unshift(size, type);
+  Reflect.apply(origNewListener, this, args);
+};
+
+const origRemoveListener = parentPort[Symbol('kRemoveListener')];
+parentPort[Symbol('kRemoveListener')] = function (size: number, type: string, ...args: any[]) {
+  if (type === 'message' && size === 0) {
+    parentPort.pause();
+  }
+  args.unshift(size, type);
+  Reflect.apply(origRemoveListener, this, args);
+};
 
 // Finally load entry script.
 const entryScript = v8Util.getHiddenValue(process, '_serviceStartupScript');
