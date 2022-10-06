@@ -22,16 +22,16 @@ class NodeService : public node::mojom::NodeService {
  public:
   explicit NodeService(
       mojo::PendingReceiver<node::mojom::NodeService> receiver);
+  ~NodeService() override;
 
   NodeService(const NodeService&) = delete;
   NodeService& operator=(const NodeService&) = delete;
-
-  ~NodeService() override;
 
   // mojom::NodeService implementation:
   void Initialize(node::mojom::NodeServiceParamsPtr params) override;
 
  private:
+  bool node_env_stopped_ = false;
   std::unique_ptr<JavascriptEnvironment> js_env_;
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<ElectronBindings> electron_bindings_;

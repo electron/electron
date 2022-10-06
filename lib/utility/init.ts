@@ -2,9 +2,10 @@ import { ParentPort } from '@electron/internal/utility/parent-port';
 const Module = require('module');
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
+const entryScript: string = v8Util.getHiddenValue(process, '_serviceStartupScript');
 // We modified the original process.argv to let node.js load the init.js,
 // we need to restore it here.
-process.argv.splice(1, 1, process._serviceStartupScript);
+process.argv.splice(1, 1, entryScript);
 
 // Clear search paths.
 require('../common/reset-search-paths');
@@ -51,6 +52,5 @@ parentPort[Symbol('kRemoveListener')] = function (size: number, type: string, ..
 };
 
 // Finally load entry script.
-const entryScript = v8Util.getHiddenValue(process, '_serviceStartupScript');
 process._firstFileName = Module._resolveFilename(entryScript, null, false);
 Module._load(entryScript, Module, true);

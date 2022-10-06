@@ -30,8 +30,7 @@ NodeService::NodeService(
 }
 
 NodeService::~NodeService() {
-  // Destroy node platform.
-  if (NodeBindings::IsInitialized()) {
+  if (!node_env_stopped_) {
     node_env_->env()->set_trace_sync_io(false);
     js_env_->OnMessageLoopDestroying();
     node::Stop(node_env_->env());
@@ -63,6 +62,16 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
       js_env_->context(), js_env_->platform(), params->args, params->exec_args);
   node_env_ = std::make_unique<NodeEnvironment>(env);
 
+  node::SetProcessExitHandler(env,
+                              [this](node::Environment* env, int exit_code) {
+                                // Destroy node platform.
+                                env->set_trace_sync_io(false);
+                                js_env_->OnMessageLoopDestroying();
+                                node::Stop(env);
+                                node_env_stopped_ = true;
+                                receiver_.ResetWithReason(exit_code, "");
+                              });
+
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
   // Add Electron extended APIs.
@@ -72,14 +81,14 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   gin_helper::Dictionary process(env->isolate(), env->process_object());
   process.SetHidden("_serviceStartupScript", params->script);
 
-  // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  // Setup microtask runner.
+  js_env_->OnMessageLoopCreated();
 
   // Wrap the uv loop with global env.
   node_bindings_->set_uv_env(env);
 
-  // Setup microtask runner.
-  js_env_->OnMessageLoopCreated();
+  // Load everything.
+  node_bindings_->LoadEnvironment(env);
 
   // Run entry script.
   node_bindings_->PrepareEmbedThread();

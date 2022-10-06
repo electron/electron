@@ -9,7 +9,7 @@ _This object is not exported from the `'electron'` module. It is only available 
 
 ```js
 // Main process
-const child = new UtilityProcess(path.join(__dirname, 'test.js'))
+const child = utilityProcess.fork(path.join(__dirname, 'test.js'))
 child.postMessage({ message: 'hello' })
 child.on('message', (data) => {
   console.log(data) // hello world!

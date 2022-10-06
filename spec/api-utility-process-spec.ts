@@ -78,6 +78,19 @@ describe('utilityProcess module', () => {
       expect(child1.kill()).to.be.true();
       await emittedOnce(child1, 'exit');
     });
+
+    it('emits \'exit\' when there is uncaught exception', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'exception.js'));
+      const [code] = await emittedOnce(child, 'exit');
+      expect(code).to.equal(1);
+    });
+
+    it('emits \'exit\' when process.exit is called', async () => {
+      const exitCode = 2;
+      const child = utilityProcess.fork(path.join(fixturesPath, 'custom-exit.js'), [`--exitCode=${exitCode}`]);
+      const [code] = await emittedOnce(child, 'exit');
+      expect(code).to.equal(exitCode);
+    });
   });
 
   describe('kill() API', () => {

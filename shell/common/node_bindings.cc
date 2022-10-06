@@ -530,9 +530,14 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   // We don't want to abort either in the renderer or browser processes.
   // We already listen for uncaught exceptions and handle them there.
-  is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
-    return false;
-  };
+  // For utility process we expect the process to behave as standard
+  // Node.js runtime and abort the process with appropriate exit
+  // code depending on a handler being set for `uncaughtException` event.
+  if (browser_env_ != BrowserEnvironment::kUtility) {
+    is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
+      return false;
+    };
+  }
 
   // Use a custom callback here to allow us to leverage Blink's logic in the
   // renderer process.

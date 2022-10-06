@@ -203,7 +203,12 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
     uint32_t error_code,
     const std::string& description) {
-  Shutdown(0 /* exit_code */);
+  if (pid_ != base::kNullProcessId)
+    GetAllUtilityProcessWrappers().Remove(pid_);
+  CloseConnectorPort();
+  // Emit 'exit' event
+  EmitWithoutCustomEvent("exit", error_code);
+  Unpin();
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
