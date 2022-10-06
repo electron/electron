@@ -243,8 +243,8 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
   std::vector<gin::Handle<MessagePort>> wrapped_ports;
   if (args->GetNext(&transferables)) {
     if (!gin::ConvertFromV8(args->isolate(), transferables, &wrapped_ports)) {
-      args->isolate()->ThrowException(v8::Exception::Error(
-          gin::StringToV8(args->isolate(), "Invalid value for transfer")));
+      gin_helper::ErrorThrower(args->isolate())
+          .ThrowTypeError("Invalid value for transfer");
       return;
     }
   }

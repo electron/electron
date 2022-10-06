@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_SERVICES_NODE_PARENT_PORT_H_
 #define ELECTRON_SHELL_SERVICES_NODE_PARENT_PORT_H_
 
+#include <memory>
+
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
