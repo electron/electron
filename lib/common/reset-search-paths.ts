@@ -42,8 +42,6 @@ const makeElectronModule = (name: string) => {
   Module._cache[name] = electronModule;
 };
 
-// These module aliases are for TypeScript purposes. It is intentional they
-// work everywhere, they're superficial for TypeScript only.
 makeElectronModule('electron');
 makeElectronModule('electron/common');
 if (process.type === 'browser') {
@@ -54,6 +52,13 @@ if (process.type === 'renderer') {
 }
 
 const originalResolveFilename = Module._resolveFilename;
+
+// 'electron/main', 'electron/renderer' and 'electron/common' are module aliases
+// of the 'electron' module for TypeScript purposes, i.e., the types for
+// 'electron/main' consist of only main process modules, etc. It is intentional
+// that these can be `require()`-ed from both the main process as well as the
+// renderer process regardless of the names, they're superficial for TypeScript
+// only.
 const electronModuleNames = new Set(['electron', 'electron/main', 'electron/renderer', 'electron/common']);
 Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean, options?: { paths: Array<string>}) {
   if (electronModuleNames.has(request)) {
