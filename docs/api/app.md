@@ -507,7 +507,7 @@ gets emitted.
 **Note:** Extra command line arguments might be added by Chromium,
 such as `--original-process-start-time`.
 
-### Event: 'notification-activation' _macOS_ _Windows_
+### Event: 'notification-activation' _Windows_
 
 Returns:
 
@@ -625,7 +625,7 @@ Hides all application windows without minimizing them.
 
 ### `app.isHidden()` _macOS_
 
-Returns `boolean` - `true` if the application—including all of its windows—is hidden (e.g. with `Command-H`), `false` otherwise.
+Returns `boolean` - `true` if the application???including all of its windows???is hidden (e.g. with `Command-H`), `false` otherwise.
 
 ### `app.show()` _macOS_
 
@@ -1147,8 +1147,8 @@ Sets the activation policy for a given app.
 Activation policy types:
 
 * 'regular' - The application is an ordinary app that appears in the Dock and may have a user interface.
-* 'accessory' - The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
-* 'prohibited' - The application doesn’t appear in the Dock and may not create windows or be activated.
+* 'accessory' - The application doesn???t appear in the Dock and doesn???t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
+* 'prohibited' - The application doesn???t appear in the Dock and may not create windows or be activated.
 
 ### `app.importCertificate(options, callback)` _Linux_
 
@@ -1176,7 +1176,7 @@ indicates success while any other value indicates failure according to Chromium 
     available, and insecure DNS lookups will be performed as a fallback. When
     "secure", only DoH lookups will be performed. Defaults to "automatic".
   * `secureDnsServers` string[]&#32;(optional) - A list of DNS-over-HTTP
-    server templates. See [RFC8484 § 3][] for details on the template format.
+    server templates. See [RFC8484 ?? 3][] for details on the template format.
     Most servers support the POST method; the template for such servers is
     simply a URI. Note that for [some DNS providers][doh-providers], the
     resolver will automatically upgrade to DoH unless DoH is explicitly
@@ -1215,7 +1215,7 @@ app.configureHostResolver({
 This API must be called after the `ready` event is emitted.
 
 [doh-providers]: https://source.chromium.org/chromium/chromium/src/+/main:net/dns/public/doh_provider_entry.cc;l=31?q=%22DohProviderEntry::GetList()%22&ss=chromium%2Fchromium%2Fsrc
-[RFC8484 § 3]: https://datatracker.ietf.org/doc/html/rfc8484#section-3
+[RFC8484 ?? 3]: https://datatracker.ietf.org/doc/html/rfc8484#section-3
 
 ### `app.disableHardwareAcceleration()`
 
@@ -1431,7 +1431,7 @@ Returns `Function` - This function **must** be called once you have finished acc
 ```js
 // Start accessing the file.
 const stopAccessingSecurityScopedResource = app.startAccessingSecurityScopedResource(data)
-// You can now access the file outside of the sandbox 🎉
+// You can now access the file outside of the sandbox ????
 
 // Remember to stop accessing the file once you've finished with it.
 stopAccessingSecurityScopedResource()
