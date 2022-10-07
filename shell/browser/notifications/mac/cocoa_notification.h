@@ -24,10 +24,8 @@ class CocoaNotification : public Notification {
   // Notification:
   void Show(const NotificationOptions& options) override;
   void Dismiss() override;
-  void Destroy() override;
 
   void NotificationDisplayed();
-  void NotificationClicked();
   void NotificationReplied(const std::string& reply);
   void NotificationActivated();
   void NotificationActivated(NSUserNotificationAction* action);
@@ -37,14 +35,10 @@ class CocoaNotification : public Notification {
 
  private:
   void LogAction(const char* action);
-  // SAP-14036 upgrade for persistent notifications support
-  bool is_persistent_;
-  bool allow_destroy_;
 
   base::scoped_nsobject<NSUserNotification> notification_;
   std::map<std::string, unsigned> additional_action_indices_;
-  void deliverXPCNotification(NSUserNotification* notification);
-  void removeXPCNotification(NSUserNotification* notification);
+  unsigned action_index_;
 };
 
 }  // namespace electron

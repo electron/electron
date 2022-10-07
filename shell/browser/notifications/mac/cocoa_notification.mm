@@ -11,8 +11,6 @@
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "shell/browser/notifications/mac/notification_center_delegate.h"
-#include "shell/browser/notifications/mac/notification_presenter_mac.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -21,20 +19,16 @@ namespace electron {
 
 CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
                                      NotificationPresenter* presenter)
-    : Notification(delegate, presenter),
-      is_persistent_(false),
-      allow_destroy_(false) {}
+    : Notification(delegate, presenter) {}
 
 CocoaNotification::~CocoaNotification() {
-  // SAP-14881 - Persistent notification on macOS
-  // exclusion auto deletion notifications to allow cold start from toast for
-  // the App
-  if (allow_destroy_)
-    Dismiss();
+  if (notification_)
+    [NSUserNotificationCenter.defaultUserNotificationCenter
+        removeDeliveredNotification:notification_];
 }
 
 void CocoaNotification::Show(const NotificationOptions& options) {
-  notification_.reset([[[NSUserNotification alloc] init] retain]);
+  notification_.reset([[NSUserNotification alloc] init]);
 
   NSString* identifier =
       [NSString stringWithFormat:@"%@:notification:%@",
@@ -66,50 +60,40 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
   [notification_ setHasActionButton:false];
 
+  int i = 0;
+  action_index_ = UINT_MAX;
   NSMutableArray* additionalActions =
       [[[NSMutableArray alloc] init] autorelease];
-
-  NSString* replyKey_ = @"";
   for (const auto& action : options.actions) {
-    // SAP-15908 - Refine notification-activation for cold start in macOS
-    if (action.type == electron::NotificationAction::sTYPE_TEXT)
-      replyKey_ = [[NSString alloc]
-          initWithBytes:action.arg.data()
-                 length:action.arg.length() * sizeof(action.arg[0])
-               encoding:NSUTF16LittleEndianStringEncoding];
-    // SAP-15259 - Add the reply field on a notification
-    if (action.type != electron::NotificationAction::sTYPE_BUTTON)
-      continue;
-    // SAP-14881 - Persistent notification on macOS
-    NSString* actionIdentifier = [[NSString alloc]
-        initWithBytes:action.arg.data()
-               length:action.arg.length() * sizeof(action.arg[0])
-             encoding:NSUTF16LittleEndianStringEncoding];
-    NSUserNotificationAction* notificationAction = [NSUserNotificationAction
-        actionWithIdentifier:actionIdentifier
-                       title:base::SysUTF16ToNSString(action.text)];
-    [additionalActions addObject:notificationAction];
-    additional_action_indices_.insert(
-        std::make_pair(base::SysNSStringToUTF8(actionIdentifier),
-                       additional_action_indices_.size()));
+    if (action.type == u"button") {
+      if (action_index_ == UINT_MAX) {
+        // First button observed is the displayed action
+        [notification_ setHasActionButton:true];
+        [notification_
+            setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
+        action_index_ = i;
+      } else {
+        // All of the rest are appended to the list of additional actions
+        NSString* actionIdentifier =
+            [NSString stringWithFormat:@"%@Action%d", identifier, i];
+        NSUserNotificationAction* notificationAction = [NSUserNotificationAction
+            actionWithIdentifier:actionIdentifier
+                           title:base::SysUTF16ToNSString(action.text)];
+        [additionalActions addObject:notificationAction];
+        additional_action_indices_.insert(
+            std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
+      }
+    }
+    i++;
   }
-
   if ([additionalActions count] > 0) {
-    [notification_ setHasActionButton:true];
-    // SAP-14881 - Persistent notification on macOS
-    [notification_ setActionButtonTitle:@"More"];
-    [notification_ setValue:@YES forKey:@"_alwaysShowAlternateActionMenu"];
     [notification_ setAdditionalActions:additionalActions];
   }
 
-  NSMutableDictionary* userInfo = [[NSMutableDictionary alloc] init];
   if (options.has_reply) {
     [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(
                                               options.reply_placeholder)];
     [notification_ setHasReplyButton:true];
-
-    // SAP-15908 - Refine notification-activation for cold start in macOS
-    [userInfo setObject:replyKey_ forKey:@"_replyKey"];
   }
 
   if (!options.close_button_text.empty()) {
@@ -117,84 +101,18 @@ void CocoaNotification::Show(const NotificationOptions& options) {
                                            options.close_button_text)];
   }
 
-  if (!options.data.empty()) {
-    // SAP-14775 - Support data property
-    NSString* dataStr = [[NSString alloc]
-        initWithBytes:options.data.c_str()
-               length:options.data.length() * sizeof(options.data[0])
-             encoding:NSUTF16LittleEndianStringEncoding];
-    // https://developer.apple.com/documentation/foundation/nsusernotification/1415675-userinfo?language=objc
-    // The userInfo content must be of reasonable serialized size (less than
-    // 1KB) or an exception is thrown.
-    [userInfo setObject:dataStr forKey:@"_data"];
-  }
-  [notification_ setUserInfo:userInfo];
-
-  // SAP-14036 upgrade for persistent notifications support
-  is_persistent_ = options.is_persistent;
-
-  if (is_persistent_) {
-    deliverXPCNotification(notification_);
-  } else {
-    [NSUserNotificationCenter.defaultUserNotificationCenter
-        deliverNotification:notification_];
-  }
-  NSLog(@"CocoaNotification::Show : %@", notification_.get());
-}
-
-void CocoaNotification::deliverXPCNotification(
-    NSUserNotification* notification) {
-  NotificationPresenterMac* presenter_ =
-      (NotificationPresenterMac*)CocoaNotification::presenter();
-  NotificationCenterDelegate* delegate_ = presenter_->delegate();
-  [[[delegate_ connection] remoteObjectProxy] deliverNotification:notification];
-  // Code bellow is diagnostics and will be removed after XPC will be fully
-  // tested
-  [[[delegate_ connection] remoteObjectProxy]
-      upperCaseString:notification.title
-            withReply:^(NSString* aString) {
-              // We have received a response. Update our text field, but do it
-              // on the main thread.
-              NSLog(@"Result string was: %@", aString);
-            }];
-}
-
-void CocoaNotification::removeXPCNotification(
-    NSUserNotification* notification) {
-  NotificationPresenterMac* presenter_ =
-      (NotificationPresenterMac*)CocoaNotification::presenter();
-  NotificationCenterDelegate* delegate_ = presenter_->delegate();
-  [[[delegate_ connection] remoteObjectProxy]
-      removeDeliveredNotification:notification];
-  // Code bellow is diagnostics and will be removed after XPC will be fully
-  // tested
-  [[[delegate_ connection] remoteObjectProxy]
-      upperCaseString:notification.title
-            withReply:^(NSString* aString) {
-              // We have received a response. Update our text field, but do it
-              // on the main thread.
-              NSLog(@"Result string was: %@", aString);
-            }];
+  [NSUserNotificationCenter.defaultUserNotificationCenter
+      deliverNotification:notification_];
 }
 
 void CocoaNotification::Dismiss() {
-  if (notification_) {
-    if (is_persistent_) {
-      removeXPCNotification(notification_);
-    } else {
-      [NSUserNotificationCenter.defaultUserNotificationCenter
-          removeDeliveredNotification:notification_];
-    }
-  }
+  if (notification_)
+    [NSUserNotificationCenter.defaultUserNotificationCenter
+        removeDeliveredNotification:notification_];
 
   NotificationDismissed();
 
   notification_.reset(nil);
-}
-
-void CocoaNotification::Destroy() {
-  allow_destroy_ = true;
-  Notification::Destroy();
 }
 
 void CocoaNotification::NotificationDisplayed() {
@@ -202,16 +120,6 @@ void CocoaNotification::NotificationDisplayed() {
     delegate()->NotificationDisplayed();
 
   this->LogAction("displayed");
-}
-
-void CocoaNotification::NotificationClicked() {
-  // SAP-14036 upgrade for persistent notifications support
-  if (!is_persistent_)
-    Notification::NotificationClicked();
-  else if (delegate())
-    delegate()->NotificationAction(-1);  // simple click
-
-  this->LogAction("clicked");
 }
 
 void CocoaNotification::NotificationReplied(const std::string& reply) {
@@ -223,7 +131,7 @@ void CocoaNotification::NotificationReplied(const std::string& reply) {
 
 void CocoaNotification::NotificationActivated() {
   if (delegate())
-    delegate()->NotificationAction(0);
+    delegate()->NotificationAction(action_index_);
 
   this->LogAction("button clicked");
 }
@@ -231,7 +139,7 @@ void CocoaNotification::NotificationActivated() {
 void CocoaNotification::NotificationActivated(
     NSUserNotificationAction* action) {
   if (delegate()) {
-    int index = -1;
+    unsigned index = action_index_;
     std::string identifier = base::SysNSStringToUTF8(action.identifier);
     for (const auto& it : additional_action_indices_) {
       if (it.first == identifier) {
@@ -248,7 +156,7 @@ void CocoaNotification::NotificationActivated(
 
 void CocoaNotification::NotificationDismissed() {
   if (delegate())
-    delegate()->NotificationClosed(is_persistent_);
+    delegate()->NotificationClosed();
 
   this->LogAction("dismissed");
 }

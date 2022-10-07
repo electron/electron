@@ -48,18 +48,5 @@ Notification* NotificationPresenterMac::CreateNotificationObject(
     NotificationDelegate* delegate) {
   return new CocoaNotification(delegate, this);
 }
-/*
-void NotificationPresenterMac::TestXPC(NSString *message)
-{
-  [[connectionToService_ remoteObjectProxy] upperCaseString:message
-withReply:^(NSString *aString) {
-      // We have received a response. Update our text field, but do it on the
-main thread. NSLog(@"Result string was: %@", aString);
-  }];
-}
 
-void NotificationPresenterMac::ShowNotification(NSUserNotification* notif){
-  [[connectionToService_ remoteObjectProxy] deliverNSUserNotification:notif];
-}
-*/
 }  // namespace electron
