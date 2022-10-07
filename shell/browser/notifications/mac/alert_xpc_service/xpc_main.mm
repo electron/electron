@@ -43,13 +43,7 @@
 - (BOOL)userNotificationCenter:(NSUserNotificationCenter*)center
      shouldPresentNotification:(NSUserNotification*)notification {
   // Display notifications even if the app is active.
-  // SAP-20223 [N] TECH [MACOS] To support renotify on macOS
-  NSDictionary* userInfo = notification.userInfo;
-  NSString* shouldBePresented =
-      userInfo && [userInfo valueForKey:@"_shouldBePresented"]
-          ? userInfo[@"_shouldBePresented"]
-          : @"YES";
-  return [shouldBePresented isEqualToString:@"YES"] ? YES : NO;
+  return YES;
 }
 
 - (BOOL)listener:(NSXPCListener*)listener
