@@ -85,7 +85,7 @@ describe('modules support', () => {
       it('require(\'electron/lol\') should throw in the main process', () => {
         expect(() => {
           require('electron/lol');
-        }).to.throw(/Uncaught Error: Cannot find module 'electron\/lol'/);
+        }).to.throw(/Cannot find module 'electron\/lol'/);
       });
 
       it('require(\'electron/lol\') should throw in the renderer process', async () => {
