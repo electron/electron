@@ -49,7 +49,7 @@ describe('inAppPurchase module', function () {
     });
 
     it('purchaseProduct() accepts optional (Object) argument', async () => {
-      const success = await inAppPurchase.purchaseProduct('non-exist', {quantity: 1, username: 'username'});
+      const success = await inAppPurchase.purchaseProduct('non-exist', { quantity: 1, username: 'username' });
       expect(success).to.be.false('failed to purchase non-existent product');
     });
 
