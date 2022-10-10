@@ -1359,12 +1359,16 @@ void NativeWindowMac::SetVibrancy(const std::string& type, bool animate) {
     vibrancy_type_ = type;
 
     if (animate) {
+      __weak auto weak_delegate = window_delegate_.get();
       [NSAnimationContext
           runAnimationGroup:^(NSAnimationContext* context) {
             context.duration = 0.3;
             vibrantView.animator.alphaValue = 0.0;
           }
           completionHandler:^{
+            if (!weak_delegate)
+              return;
+
             if (vibrancy_type_.empty()) {
               [vibrantView removeFromSuperview];
               [window_ setVibrantView:nil];
