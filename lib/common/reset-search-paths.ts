@@ -44,15 +44,18 @@ const makeElectronModule = (name: string) => {
 
 makeElectronModule('electron');
 makeElectronModule('electron/common');
+const electronModuleNames = new Set(['electron', 'electron/common']);
+
 if (process.type === 'browser') {
   makeElectronModule('electron/main');
+  electronModuleNames.add('electron/main');
 }
 if (process.type === 'renderer') {
   makeElectronModule('electron/renderer');
+  electronModuleNames.add('electron/renderer');
 }
 
 const originalResolveFilename = Module._resolveFilename;
-const electronModuleNames = new Set(['electron', 'electron/main', 'electron/renderer', 'electron/common']);
 Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean, options?: { paths: Array<string>}) {
   if (electronModuleNames.has(request)) {
     return 'electron';
