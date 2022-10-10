@@ -439,7 +439,6 @@ base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
 
 content::ContentClient* ElectronMainDelegate::CreateContentClient() {
   content_client_ = std::make_unique<ElectronContentClient>();
-  SetContentClient(content_client_.get());
   return content_client_.get();
 }
 
