@@ -23,7 +23,7 @@ if (!gotTheLock) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     }
-    
+
     dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop().slice(0,-1)}`)
   })
 
@@ -31,7 +31,7 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     createWindow()
   })
-  
+
   app.on('open-url', (event, url) => {
     dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
   })

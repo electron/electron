@@ -76,7 +76,7 @@ describe('contextBridge', () => {
         const gc=require('vm').runInNewContext('gc');
         renderer_1.webFrame.setIsolatedWorldInfo(${worldId}, {
           name: "Isolated World"
-        });  
+        });
         renderer_1.contextBridge.exposeInIsolatedWorld(${worldId}, 'GCRunner', {
           run: () => gc()
         });`}
