@@ -36,6 +36,8 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <fcntl.h>
+#include <io.h>
 #include "base/win/windows_types.h"
 #endif
 
@@ -68,12 +70,22 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   base::FileHandleMappingVector fds_to_remap;
 #endif
   for (const auto& [io_handle, io_type] : stdio) {
-    if (io_type == IOType::PIPE) {
+    if (io_type == IOType::IO_PIPE) {
 #if BUILDFLAG(IS_WIN)
       HANDLE read = nullptr;
       HANDLE write = nullptr;
-      if (!::CreatePipe(&read, &write, nullptr, 0)) {
+      SECURITY_ATTRIBUTES sa_attr;
+      // Set the bInheritHandle flag so pipe handles are inherited.
+      sa_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+      sa_attr.bInheritHandle = TRUE;
+      sa_attr.lpSecurityDescriptor = nullptr;
+      if (!::CreatePipe(&read, &write, &sa_attr, 0)) {
         PLOG(ERROR) << "pipe creation failed";
+        return;
+      }
+      // Ensure the read handle to the pipes are not inherited.
+      if (!SetHandleInformation(read, HANDLE_FLAG_INHERIT, 0)) {
+        NOTREACHED() << "Failed to disable pipe inheritance";
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -101,7 +113,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
         stderr_read_fd_ = pipe_fd[0];
       }
 #endif
-    } else if (io_type == IOType::IGNORE) {
+    } else if (io_type == IOType::IO_IGNORE) {
 #if BUILDFLAG(IS_WIN)
       HANDLE handle =
           CreateFileW(L"NUL", FILE_GENERIC_WRITE | FILE_READ_ATTRIBUTES,
@@ -352,11 +364,11 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
     for (size_t i = 0; i < 3; i++) {
       IOType type;
       if (stdio_arr[i] == "ignore")
-        type = IOType::IGNORE;
+        type = IOType::IO_IGNORE;
       else if (stdio_arr[i] == "inherit")
-        type = IOType::INHERIT;
+        type = IOType::IO_INHERIT;
       else if (stdio_arr[i] == "pipe")
-        type = IOType::PIPE;
+        type = IOType::IO_PIPE;
 
       stdio.emplace(static_cast<IOHandle>(i), type);
     }

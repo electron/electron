@@ -5,16 +5,17 @@ app.whenReady().then(() => {
   let child = null;
   if (app.commandLine.hasSwitch('create-custom-env')) {
     child = utilityProcess.fork(path.join(__dirname, 'test.js'), {
-      stdio: 'inherit',
       env: {
         FROM: 'child'
       }
     });
   } else {
-    child = utilityProcess.fork(path.join(__dirname, 'test.js'), {
-      stdio: 'inherit'
-    });
+    child = utilityProcess.fork(path.join(__dirname, 'test.js'));
   }
+  child.on('message', (data) => {
+    process.stdout.write(data);
+    process.stdout.end();
+  });
   child.on('exit', () => {
     app.quit();
   });

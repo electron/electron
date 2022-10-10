@@ -1,3 +1,2 @@
-process.stdout.write(process.env.FROM);
-process.stdout.end();
+process.parentPort.postMessage(process.env.FROM);
 process.exit(0);

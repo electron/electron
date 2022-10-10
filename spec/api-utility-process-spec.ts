@@ -162,7 +162,7 @@ describe('utilityProcess module', () => {
 
     it('is null when child process launches with ignore stdio configuration', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
-        stdio: ['ignore', 'pipe', 'ignore']
+        stdio: 'ignore'
       });
       await emittedOnce(child, 'spawn');
       expect(child.stderr).to.be.null();
@@ -273,9 +273,9 @@ describe('utilityProcess module', () => {
       expect(output).to.equal(result);
     });
 
-    it('supports redirecting stderr to parent process', async () => {
+    ifit(process.platform !== 'win32')('supports redirecting stderr to parent process', async () => {
       const result = 'Error from utility process';
-      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stderr'), `--payload=${result}`, '--enable-logging=stderr']);
+      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stderr'), `--payload=${result}`]);
       let output = '';
       appProcess.stderr.on('data', (data: Buffer) => { output += data; });
       await emittedOnce(appProcess, 'exit');
@@ -327,7 +327,8 @@ describe('utilityProcess module', () => {
       let output = '';
       appProcess.stdout.on('data', (data: Buffer) => { output += data; });
       await emittedOnce(appProcess.stdout, 'end');
-      expect(output).to.equal('parent');
+      const result = process.platform === 'win32' ? '\r\nparent' : 'parent';
+      expect(output).to.equal(result);
     });
 
     it('does not inherit parent env when custom env is provided', async () => {
@@ -340,7 +341,8 @@ describe('utilityProcess module', () => {
       let output = '';
       appProcess.stdout.on('data', (data: Buffer) => { output += data; });
       await emittedOnce(appProcess.stdout, 'end');
-      expect(output).to.equal('child');
+      const result = process.platform === 'win32' ? '\r\nchild' : 'child';
+      expect(output).to.equal(result);
     });
 
     it('changes working directory with cwd', async () => {

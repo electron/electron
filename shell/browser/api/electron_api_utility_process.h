@@ -44,7 +44,7 @@ class UtilityProcessWrapper
       public mojo::MessageReceiver {
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
-  enum IOType { PIPE, INHERIT, IGNORE };
+  enum class IOType { IO_PIPE, IO_INHERIT, IO_IGNORE };
 
   ~UtilityProcessWrapper() override;
   static gin::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);

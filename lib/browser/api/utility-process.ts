@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
-import { createReadStream } from 'fs';
+import { Socket } from 'net';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { _fork } = process._linkedBinding('electron_browser_utility_process');
 
@@ -106,10 +106,10 @@ class ForkUtilityProcess extends EventEmitter {
         }
         return false;
       } else if (channel === 'stdout' && this.#stdout) {
-        createReadStream('', { fd: args[0] }).pipe(this.#stdout);
+        new Socket({ fd: args[0], readable: true }).pipe(this.#stdout);
         return false;
       } else if (channel === 'stderr' && this.stderr) {
-        createReadStream('', { fd: args[0] }).pipe(this.#stderr);
+        new Socket({ fd: args[0], readable: true }).pipe(this.#stderr);
         return false;
       } else {
         return this.emit(channel, ...args);

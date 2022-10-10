@@ -392,7 +392,11 @@ void NodeBindings::Initialize() {
   std::vector<std::string> argv = {"electron"};
   std::vector<std::string> exec_argv;
   std::vector<std::string> errors;
-  uint64_t process_flags = node::ProcessFlags::kEnableStdioInheritance;
+  uint64_t process_flags = node::ProcessFlags::kNoFlags;
+  // We do not want the child processes spawned from the utility process
+  // to inherit the custom stdio handles created for the parent.
+  if (browser_env_ != BrowserEnvironment::kUtility)
+    process_flags |= node::ProcessFlags::kEnableStdioInheritance;
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessFlags::kDisableNodeOptionsEnv;
 
