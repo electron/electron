@@ -130,7 +130,7 @@ index b93b67f131e1e58118e32d2c9b29e472a28d4664..614799cdf828abea2d01331fb11f6c01
  
 +template <typename NativeFrameType>
 +void FrameQueueUnderlyingSource<NativeFrameType>::ClearTransferredSource() {
-+  base::AutoLock locker(lock_);
++  MutexLocker locker(mutex_);
 +  transferred_source_.Clear();
 +}
 +
