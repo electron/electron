@@ -109,7 +109,7 @@ index 6d33945b7c840e55ae73a1efd1f1cf33ccfaaa71..336073235ba7f6c05cf2cf19fccbfac0
  };
  
 diff --git a/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.cc b/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.cc
-index b93b67f131e1e58118e32d2c9b29e472a28d4664..614799cdf828abea2d01331fb11f6c0193378ec7 100644
+index b93b67f131e1e58118e32d2c9b29e472a28d4664..fcd676b3035e19c6e0b28ee1c44109c6737a1c35 100644
 --- a/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.cc
 +++ b/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.cc
 @@ -266,15 +266,22 @@ double FrameQueueUnderlyingSource<NativeFrameType>::DesiredSizeForTesting()
