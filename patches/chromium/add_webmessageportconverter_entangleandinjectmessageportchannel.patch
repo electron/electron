@@ -8,7 +8,7 @@ accessing Blink internals. Its inverse, which already exists, is used in
 Android WebView.
 
 diff --git a/third_party/blink/public/web/web_message_port_converter.h b/third_party/blink/public/web/web_message_port_converter.h
-index 70270faafcae01aba19d2be9ece3821c1c75dc29..809ec708c3faa9deb69ff17d499e645540358b88 100644
+index a58ddcc8f6e79d3288d0c645875c8b1bbdaaf209..1283bd18cce78bc5eaad71b3fad01031b54d1ab3 100644
 --- a/third_party/blink/public/web/web_message_port_converter.h
 +++ b/third_party/blink/public/web/web_message_port_converter.h
 @@ -13,6 +13,7 @@ class Isolate;
@@ -19,9 +19,9 @@ index 70270faafcae01aba19d2be9ece3821c1c75dc29..809ec708c3faa9deb69ff17d499e6455
  }  // namespace v8
  
  namespace blink {
-@@ -25,6 +26,9 @@ class WebMessagePortConverter {
+@@ -25,6 +26,9 @@ class BLINK_EXPORT WebMessagePortConverter {
    // neutered, it will return nullopt.
-   BLINK_EXPORT static absl::optional<MessagePortChannel>
+   static absl::optional<MessagePortChannel>
    DisentangleAndExtractMessagePortChannel(v8::Isolate*, v8::Local<v8::Value>);
 +
 +  BLINK_EXPORT static v8::Local<v8::Value>
@@ -30,7 +30,7 @@ index 70270faafcae01aba19d2be9ece3821c1c75dc29..809ec708c3faa9deb69ff17d499e6455
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/exported/web_message_port_converter.cc b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
-index 0f9377d28fdf8dd6511fbf025493367205ff74d6..5b04fb60cbd079b7d589ca14dfbb351fd2492f74 100644
+index f440ee59be4ed14760f2948751f31f7ea3d42e2a..654fbb2d12c9fe7cb362d792ede64c9d1f8c099f 100644
 --- a/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 +++ b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 @@ -6,6 +6,7 @@

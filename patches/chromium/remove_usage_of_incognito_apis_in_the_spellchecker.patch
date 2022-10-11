@@ -9,7 +9,7 @@ change to move more of //chrome spellchecker logic into //components so
 that we can further separate our dependency from //chrome.
 
 diff --git a/chrome/browser/profiles/profile_keyed_service_factory.cc b/chrome/browser/profiles/profile_keyed_service_factory.cc
-index f2bbec66cc2d83a391dff09046f2552581782ecc..a631da03d2c431d52886ef913d5bceca4850d04c 100644
+index f14db439624e395bd6cd9d10d5aff480e0384293..ec860cd4033ac09f96be031147d70d2ccefb06c8 100644
 --- a/chrome/browser/profiles/profile_keyed_service_factory.cc
 +++ b/chrome/browser/profiles/profile_keyed_service_factory.cc
 @@ -22,6 +22,9 @@ ProfileKeyedServiceFactory::~ProfileKeyedServiceFactory() = default;
@@ -23,7 +23,7 @@ index f2bbec66cc2d83a391dff09046f2552581782ecc..a631da03d2c431d52886ef913d5bceca
 +#endif
  }
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 0e5aa496024e94b236ef84b8ef93573df5e22ecd..b6df3dcbef3600d64206bb57cc488e56f0235e39 100644
+index e777c85cefe9b4280d48bd5d2ca15b20dea0ef85..1465c3b3168f0d1d62c075815c617193f2a12883 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -153,6 +153,7 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {

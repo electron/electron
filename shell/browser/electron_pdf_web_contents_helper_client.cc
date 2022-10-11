@@ -21,12 +21,12 @@ content::RenderFrameHost* ElectronPDFWebContentsHelperClient::FindPdfFrame(
 }
 
 void ElectronPDFWebContentsHelperClient::UpdateContentRestrictions(
-    content::WebContents* contents,
+    content::RenderFrameHost* render_frame_host,
     int content_restrictions) {}
 void ElectronPDFWebContentsHelperClient::OnPDFHasUnsupportedFeature(
     content::WebContents* contents) {}
 void ElectronPDFWebContentsHelperClient::OnSaveURL(
     content::WebContents* contents) {}
 void ElectronPDFWebContentsHelperClient::SetPluginCanSave(
-    content::WebContents* contents,
+    content::RenderFrameHost* render_frame_host,
     bool can_save) {}

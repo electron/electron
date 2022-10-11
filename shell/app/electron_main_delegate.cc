@@ -21,6 +21,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
+#include "content/public/app/initialize_mojo_core.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
@@ -316,9 +317,6 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
       ::switches::kDisableGpuMemoryBufferCompositorResources);
 #endif
 
-  content_client_ = std::make_unique<ElectronContentClient>();
-  SetContentClient(content_client_.get());
-
   return absl::nullopt;
 }
 
@@ -417,6 +415,8 @@ absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
   InitializeFeatureList();
+  // Initialize mojo core as soon as we have a valid feature list
+  content::InitializeMojoCore();
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
@@ -435,6 +435,11 @@ base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
     return "browser_v8_context_snapshot.bin";
   }
   return ContentMainDelegate::GetBrowserV8SnapshotFilename();
+}
+
+content::ContentClient* ElectronMainDelegate::CreateContentClient() {
+  content_client_ = std::make_unique<ElectronContentClient>();
+  return content_client_.get();
 }
 
 content::ContentBrowserClient*
@@ -479,6 +484,10 @@ ElectronMainDelegate::RunProcess(
 
 bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {
   return absl::holds_alternative<InvokedInChildProcess>(invoked_in);
+}
+
+bool ElectronMainDelegate::ShouldInitializeMojo(InvokedIn invoked_in) {
+  return ShouldCreateFeatureList(invoked_in);
 }
 
 bool ElectronMainDelegate::ShouldLockSchemeRegistry() {

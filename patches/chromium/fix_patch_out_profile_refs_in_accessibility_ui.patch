@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 28366584e6a3cc2655e5bc7417c4e52b9d0f4163..9bd2c7051ac1cd9d022eabb07497e19f0c3af54b 100644
+index a5d85cc43e916455d4d8d1506e02c38f6d768315..7163b83b3a78c1c1ed0880f8c96f8847e4b0bae2 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -21,7 +21,10 @@
@@ -124,7 +124,7 @@ index 28366584e6a3cc2655e5bc7417c4e52b9d0f4163..9bd2c7051ac1cd9d022eabb07497e19f
 +#endif
  }
 diff --git a/chrome/browser/accessibility/accessibility_ui.h b/chrome/browser/accessibility/accessibility_ui.h
-index 8ae101cdb4de8ea570e3af6e05e9124b51a9f14c..2706f8ad05a6bee71b68f59406eb0bd3391a3fcd 100644
+index 94fdbf91a5f6e03a259eb970f1d402a6d3cc12e4..2be0cbce1090b7dccad7ef483baa68fbc4235964 100644
 --- a/chrome/browser/accessibility/accessibility_ui.h
 +++ b/chrome/browser/accessibility/accessibility_ui.h
 @@ -22,6 +22,8 @@ struct AXEventNotificationDetails;
