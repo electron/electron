@@ -317,9 +317,6 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
       ::switches::kDisableGpuMemoryBufferCompositorResources);
 #endif
 
-  content_client_ = std::make_unique<ElectronContentClient>();
-  SetContentClient(content_client_.get());
-
   return absl::nullopt;
 }
 
@@ -438,6 +435,11 @@ base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
     return "browser_v8_context_snapshot.bin";
   }
   return ContentMainDelegate::GetBrowserV8SnapshotFilename();
+}
+
+content::ContentClient* ElectronMainDelegate::CreateContentClient() {
+  content_client_ = std::make_unique<ElectronContentClient>();
+  return content_client_.get();
 }
 
 content::ContentBrowserClient*
