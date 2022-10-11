@@ -4,6 +4,8 @@
 
 #include "shell/common/gin_converters/gfx_converter.h"
 
+#include <string>
+
 #include "gin/data_object_builder.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
