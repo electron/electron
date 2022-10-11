@@ -49,8 +49,4 @@ fix_override_createjob_in_node_platform.patch
 buffer_fix_atob_input_validation.patch
 v8_api_advance_api_deprecation.patch
 enable_-wunqualified-std-cast-call.patch
-fixup_for_error_declaration_shadows_a_local_variable.patch
-fixup_for_wc_98-compat-extra-semi.patch
-drop_deserializerequest_move_constructor_for_c_20_compat.patch
-fix_parallel_test-v8-stats.patch
 fix_expose_the_built-in_electron_module_via_the_esm_loader.patch
