@@ -20,7 +20,8 @@
 
 - (NSDragOperation)draggingSession:(NSDraggingSession*)session
     sourceOperationMaskForDraggingContext:(NSDraggingContext)context {
-  return NSDragOperationEvery;
+  return context == NSDraggingContextOutsideApplication ? NSDragOperationCopy
+                                                        : NSDragOperationEvery;
 }
 
 @end
@@ -70,7 +71,7 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   NSEvent* dragEvent =
       [NSEvent mouseEventWithType:NSEventTypeLeftMouseDragged
                          location:position
-                    modifierFlags:NSEventMaskLeftMouseDragged
+                    modifierFlags:0
                         timestamp:eventTime
                      windowNumber:[[native_view window] windowNumber]
                           context:nil
