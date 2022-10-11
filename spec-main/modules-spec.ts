@@ -183,4 +183,16 @@ describe('modules support', () => {
       });
     });
   });
+
+  describe('esm', () => {
+    it('can load the built-in "electron" module via ESM import', async () => {
+      await expect(import('electron')).to.eventually.be.ok();
+    });
+
+    it('the built-in "electron" module loaded via ESM import has the same exports as the CJS module', async () => {
+      const esmElectron = await import('electron');
+      const cjsElectron = require('electron');
+      expect(Object.keys(esmElectron)).to.deep.equal(Object.keys(cjsElectron));
+    });
+  });
 });

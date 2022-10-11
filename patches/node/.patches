@@ -49,3 +49,4 @@ fix_override_createjob_in_node_platform.patch
 buffer_fix_atob_input_validation.patch
 v8_api_advance_api_deprecation.patch
 enable_-wunqualified-std-cast-call.patch
+fix_expose_the_built-in_electron_module_via_the_esm_loader.patch
