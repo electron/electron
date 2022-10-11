@@ -25,7 +25,7 @@ void DrawRect(gfx::Canvas* canvas,
 
 void DrawRoundRect(gfx::Canvas* canvas,
                    const gfx::Rect& rect,
-                   int radius,
+                   float radius,
                    const cc::PaintFlags& flags) {
   gfx::RectF rect_f(rect);
   float stroke_half_width = flags.getStrokeWidth() / 2;
@@ -74,7 +74,7 @@ void WinIconPainter::PaintMaximizeIcon(gfx::Canvas* canvas,
 void WinIconPainter::PaintRestoreIcon(gfx::Canvas* canvas,
                                       const gfx::Rect& symbol_rect,
                                       const cc::PaintFlags& flags) {
-  const int separation = std::floor(2 * canvas->image_scale());
+  const int separation = base::ClampFloor(2 * canvas->image_scale());
   gfx::Rect icon_rect = symbol_rect;
   icon_rect.Inset(gfx::Insets::TLBR(separation, 0, 0, separation));
 
@@ -113,14 +113,14 @@ void Win11IconPainter::PaintMaximizeIcon(gfx::Canvas* canvas,
   cc::PaintFlags paint_flags = flags;
   paint_flags.setAntiAlias(true);
 
-  const float corner_radius = 2 * canvas->image_scale();
+  const float corner_radius = canvas->image_scale();
   DrawRoundRect(canvas, symbol_rect, corner_radius, flags);
 }
 
 void Win11IconPainter::PaintRestoreIcon(gfx::Canvas* canvas,
                                         const gfx::Rect& symbol_rect,
                                         const cc::PaintFlags& flags) {
-  const int separation = std::floor(2 * canvas->image_scale());
+  const int separation = base::ClampFloor(2 * canvas->image_scale());
   gfx::Rect icon_rect = symbol_rect;
   icon_rect.Inset(gfx::Insets::TLBR(separation, 0, 0, separation));
 
@@ -128,14 +128,11 @@ void Win11IconPainter::PaintRestoreIcon(gfx::Canvas* canvas,
   paint_flags.setAntiAlias(true);
 
   // Bottom left ("in front") rounded square.
-  const float bottom_rect_radius = 1 * canvas->image_scale();
+  const float bottom_rect_radius = canvas->image_scale();
   DrawRoundRect(canvas, icon_rect, bottom_rect_radius, flags);
 
   // Top right ("behind") top+right edges of rounded square (2.5x).
   icon_rect.Offset(separation, -separation);
-  // Apply inset to left+bottom edges since we don't draw arcs for those edges
-  constexpr int top_rect_inset = 1;
-  icon_rect.Inset(gfx::Insets::TLBR(0, top_rect_inset, top_rect_inset, 0));
 
   const float top_rect_radius = 2.5f * canvas->image_scale();
   DrawRoundRectEdges(canvas, icon_rect, top_rect_radius, flags);
