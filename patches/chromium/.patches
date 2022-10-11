@@ -142,5 +142,6 @@ cherry-pick-9b5207569882.patch
 dpwa_enable_window_controls_overlay_by_default.patch
 cherry-pick-eb4d31309df7.patch
 add_electron_deps_to_license_credits_file.patch
+cherry-pick-fefd6198da31.patch
 cherry-pick-1eb1e18ad41d.patch
 cherry-pick-9bebe8549a36.patch
