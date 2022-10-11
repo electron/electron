@@ -124,8 +124,6 @@ BrowserWindow::~BrowserWindow() {
     // Cleanup the observers if user destroyed this instance directly instead of
     // gracefully closing content::WebContents.
     api_web_contents_->RemoveObserver(this);
-    // Destroy the WebContents.
-    OnCloseContents();
     api_web_contents_->Destroy();
   }
 }
@@ -150,10 +148,6 @@ void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
 void BrowserWindow::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   CloseImmediately();
-}
-
-void BrowserWindow::OnCloseContents() {
-  api_web_contents_->Destroy();
 }
 
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {

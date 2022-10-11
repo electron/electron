@@ -1204,9 +1204,6 @@ void WebContents::CloseContents(content::WebContents* source) {
     autofill_driver_factory->CloseAllPopups();
   }
 
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnCloseContents();
-
   Destroy();
 }
 
