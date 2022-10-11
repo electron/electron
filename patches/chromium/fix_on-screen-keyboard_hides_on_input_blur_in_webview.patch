@@ -15,7 +15,7 @@ node does not change in this case.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.cc b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-index beb340cc38c2f82c224793b26813bead85817c85..f43fbd03646406255845cfbb02ce31d3602edf2a 100644
+index 4e6d62be68d59c8a49159fda4d1e68f101a6f0a3..cfd5a01ea84a1f454a5172da3e96e66a50c82939 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
 @@ -992,6 +992,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
@@ -32,7 +32,7 @@ index beb340cc38c2f82c224793b26813bead85817c85..f43fbd03646406255845cfbb02ce31d3
    if (!text_input_manager_)
      return ui::TEXT_INPUT_TYPE_NONE;
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.h b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-index f7f9a981003ba1e3fefc9fc0f2b2bcf921c0a4d5..cd69daf186a6ec22fb70a2a36568e544524d025f 100644
+index 70b151bcb8e3b1964d316bf2e169dbe0f28f24c7..c3857298974a0c2761efcd3924587607997e3117 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.h
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.h
 @@ -181,6 +181,8 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
@@ -45,10 +45,10 @@ index f7f9a981003ba1e3fefc9fc0f2b2bcf921c0a4d5..cd69daf186a6ec22fb70a2a36568e544
    // RenderFrameMetadataProvider::Observer implementation.
    void OnRenderFrameMetadataChangedBeforeActivation(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6c99fee1af1bcd64f3e6647132bd132f0ea111ec..a5d175b17cdae078997bf081fa36106bb5885779 100644
+index 74993d461cbd0885a709cf8b663b9c69650aa3cf..940045d9bbb62676811f55f5d30a93a352f43ede 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -7926,7 +7926,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -7928,7 +7928,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =
