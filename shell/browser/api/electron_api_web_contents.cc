@@ -1328,7 +1328,7 @@ void WebContents::EnterFullscreenModeForTab(
   auto callback =
       base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
                           base::Unretained(this), requesting_frame, options);
-  permission_helper->RequestFullscreenPermission(callback);
+  permission_helper->RequestFullscreenPermission(requesting_frame, callback);
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
