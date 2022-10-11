@@ -1349,15 +1349,31 @@ void NativeWindowMac::UpdateWindowOriginalFrame() {
   original_frame_ = [window_ frame];
 }
 
-void NativeWindowMac::SetVibrancy(const std::string& type) {
+void NativeWindowMac::SetVibrancy(const std::string& type, bool animate) {
   NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (type.empty()) {
     if (vibrantView == nil)
       return;
 
-    [vibrantView removeFromSuperview];
-    [window_ setVibrantView:nil];
+    vibrancy_type_ = type;
+
+    if (animate) {
+      [NSAnimationContext
+          runAnimationGroup:^(NSAnimationContext* context) {
+            context.duration = 0.3;
+            vibrantView.animator.alphaValue = 0.0;
+          }
+          completionHandler:^{
+            if (vibrancy_type_.empty()) {
+              [vibrantView removeFromSuperview];
+              [window_ setVibrantView:nil];
+            }
+          }];
+    } else {
+      [vibrantView removeFromSuperview];
+      [window_ setVibrantView:nil];
+    }
 
     return;
   }
@@ -1445,6 +1461,16 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
                              relativeTo:nil];
 
       UpdateVibrancyRadii(IsFullscreen());
+    }
+
+    if (animate) {
+      [vibrantView setAlphaValue:0.0];
+      [NSAnimationContext
+          runAnimationGroup:^(NSAnimationContext* context) {
+            context.duration = 0.3;
+            vibrantView.animator.alphaValue = 1.0;
+          }
+          completionHandler:nil];
     }
 
     [vibrantView setMaterial:vibrancyType];

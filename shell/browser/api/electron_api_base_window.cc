@@ -855,9 +855,15 @@ void BaseWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
 }
 
-void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+void BaseWindow::SetVibrancy(v8::Isolate* isolate,
+                             v8::Local<v8::Value> value,
+                             gin_helper::Arguments* args) {
   std::string type = gin::V8ToString(isolate, value);
-  window_->SetVibrancy(type);
+
+  bool animate = false;
+  args->GetNext(&animate);
+
+  window_->SetVibrancy(type, animate);
 }
 
 #if BUILDFLAG(IS_MAC)
