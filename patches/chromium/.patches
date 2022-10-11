@@ -124,3 +124,4 @@ fix_the_gn_gen_for_components_segmentation_platform.patch
 fix_crash_loading_non-standard_schemes_in_iframes.patch
 create_browser_v8_snapshot_file_name_fuse.patch
 cherry-pick-c83640db21b5.patch
+fix_on-screen-keyboard_hides_on_input_blur_in_webview.patch
