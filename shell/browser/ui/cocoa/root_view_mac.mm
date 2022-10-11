@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 
+#include <memory>
+
 #include "shell/browser/native_window.h"
 #include "ui/views/layout/fill_layout.h"
 
