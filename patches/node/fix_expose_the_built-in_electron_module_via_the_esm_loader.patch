@@ -18,10 +18,10 @@ index 5ae0e17dcfb5e24a1a117c33c4d42891686e693f..619fe6cef3b02eb575410225f41d3e7d
  
  function getDataProtocolModuleFormat(parsed) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9bb85947ac 100644
+index 3576f75f0a40a64dceb7e2649b344b83ebc04b39..314fbb78931eef154a1e47c655e2d4bafe11bac3 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -883,6 +883,8 @@ function parsePackageName(specifier, base) {
+@@ -888,6 +888,8 @@ function parsePackageName(specifier, base) {
    return { packageName, packageSubpath, isScoped };
  }
  
@@ -30,9 +30,9 @@ index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9b
  /**
   * @param {string} specifier
   * @param {string | URL | undefined} base
-@@ -895,6 +897,10 @@ function packageResolve(specifier, base, conditions) {
+@@ -898,6 +900,10 @@ function packageResolve(specifier, base, conditions) {
+   if (NativeModule.canBeRequiredByUsers(specifier))
      return new URL('node:' + specifier);
-   }
  
 +  if (electronSpecifiers.has(specifier)) {
 +    return new URL('electron:electron');
@@ -41,7 +41,7 @@ index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9b
    const { packageName, packageSubpath, isScoped } =
      parsePackageName(specifier, base);
  
-@@ -1095,7 +1101,7 @@ function checkIfDisallowedImport(specifier, parsed, parsedParentURL) {
+@@ -1099,7 +1105,7 @@ function checkIfDisallowedImport(specifier, parsed, parsedParentURL) {
  
  function throwIfUnsupportedURLProtocol(url) {
    if (url.protocol !== 'file:' && url.protocol !== 'data:' &&
@@ -51,7 +51,7 @@ index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9b
    }
  }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 8fb3c96f8dc4c535c3898755f7846ae24d9867c4..bda3ca0797e8f1b1d69295c2276c0f841cae99f2 100644
+index d7f4c7edec63d3ce500955a37c6eac00e3e524fd..b97cac53365b121f8e232f0085ff166511c3dda3 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -155,7 +155,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
@@ -73,10 +73,10 @@ index 8fb3c96f8dc4c535c3898755f7846ae24d9867c4..bda3ca0797e8f1b1d69295c2276c0f84
            exportName === 'default')
          continue;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 22bff28595f6f5b109ae47c79aa1f5ac463ec6c3..d4eb2e044cc1152f48c92d0503f9216e3aad5f4b 100644
+index 939374a495856cf2b9c573fa98dc1895eee5e143..c37258ac29e8b7558c1f9a2af7ba6bdd0eab1355 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1432,6 +1432,8 @@ function fileURLToPath(path) {
+@@ -1418,6 +1418,8 @@ function fileURLToPath(path) {
      path = new URL(path);
    else if (!isURLInstance(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
