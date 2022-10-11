@@ -41,6 +41,7 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
 
   // views::ViewObserver
   void OnViewBoundsChanged(views::View* observed_view) override;
+  void OnViewIsDeleting(views::View* observed_view) override;
 #endif
 
   views::View* view() const { return view_; }

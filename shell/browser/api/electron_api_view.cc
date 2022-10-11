@@ -170,6 +170,8 @@ View::View(views::View* view) : view_(view) {
 View::View() : View(new views::View()) {}
 
 View::~View() {
+  if (!view_)
+    return;
   view_->RemoveObserver(this);
   if (delete_view_)
     delete view_;
@@ -181,30 +183,35 @@ void View::AddChildView(gin::Handle<View> child) {
 }
 
 void View::AddChildViewAt(gin::Handle<View> child, size_t index) {
+  CHECK(view_);
   if (index > child_views_.size())
     return;
   child_views_.emplace(child_views_.begin() + index,     // index
                        isolate(), child->GetWrapper());  // v8::Global(args...)
-  view()->AddChildViewAt(child->view(), index);
+  view_->AddChildViewAt(child->view(), index);
 }
 
 void View::RemoveChildView(gin::Handle<View> child) {
+  CHECK(view_);
   auto it = std::find(child_views_.begin(), child_views_.end(), child.ToV8());
   if (it != child_views_.end()) {
-    view()->RemoveChildView(child->view());
+    view_->RemoveChildView(child->view());
     child_views_.erase(it);
   }
 }
 
 void View::SetBounds(const gfx::Rect& bounds) {
-  view()->SetBoundsRect(bounds);
+  CHECK(view_);
+  view_->SetBoundsRect(bounds);
 }
 
 gfx::Rect View::GetBounds() {
-  return view()->bounds();
+  CHECK(view_);
+  return view_->bounds();
 }
 
 void View::SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value) {
+  CHECK(view_);
   gin_helper::Dictionary dict(isolate, value);
   LayoutCallback calculate_proposed_layout;
   if (dict.Get("calculateProposedLayout", &calculate_proposed_layout)) {
@@ -260,11 +267,17 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 }
 
 void View::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
-  view()->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
+  CHECK(view_);
+  view_->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
 }
 
 void View::OnViewBoundsChanged(views::View* observed_view) {
   Emit("bounds-changed");
+}
+
+void View::OnViewIsDeleting(views::View* observed_view) {
+  DCHECK_EQ(observed_view, view_);
+  view_ = nullptr;
 }
 #endif
 
