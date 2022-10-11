@@ -1911,9 +1911,13 @@ describe('webContents module', () => {
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
     let w: BrowserWindow;
 
-    beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
-      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+    beforeEach(() => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      });
     });
 
     afterEach(closeAllWindows);
@@ -1932,6 +1936,8 @@ describe('webContents module', () => {
         preferCSSPageSize: 'no'
       };
 
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
       // These will hard crash in Chromium unless we type-check
       for (const [key, value] of Object.entries(badTypes)) {
         const param = { [key]: value };
@@ -1939,12 +1945,9 @@ describe('webContents module', () => {
       }
     });
 
-    it('can print to PDF', async () => {
-      const data = await w.webContents.printToPDF({});
-      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
-    });
-
     it('does not crash when called multiple times in parallel', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
       const promises = [];
       for (let i = 0; i < 3; i++) {
         promises.push(w.webContents.printToPDF({}));
@@ -1957,6 +1960,8 @@ describe('webContents module', () => {
     });
 
     it('does not crash when called multiple times in sequence', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
       const results = [];
       for (let i = 0; i < 3; i++) {
         const result = await w.webContents.printToPDF({});
@@ -1968,30 +1973,94 @@ describe('webContents module', () => {
       }
     });
 
-    describe('using a large document', () => {
-      beforeEach(async () => {
-        w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
-        await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
-      });
+    it('can print a PDF with default settings', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
 
-      afterEach(closeAllWindows);
+      const data = await w.webContents.printToPDF({});
+      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+    });
 
-      it('respects custom settings', async () => {
-        const data = await w.webContents.printToPDF({
-          pageRanges: '1-3',
-          landscape: true
-        });
+    it('with custom page sizes', async () => {
+      const paperFormats: Record<string, ElectronInternal.PageSize> = {
+        letter: { width: 8.5, height: 11 },
+        legal: { width: 8.5, height: 14 },
+        tabloid: { width: 11, height: 17 },
+        ledger: { width: 17, height: 11 },
+        a0: { width: 33.1, height: 46.8 },
+        a1: { width: 23.4, height: 33.1 },
+        a2: { width: 16.54, height: 23.4 },
+        a3: { width: 11.7, height: 16.54 },
+        a4: { width: 8.27, height: 11.7 },
+        a5: { width: 5.83, height: 8.27 },
+        a6: { width: 4.13, height: 5.83 }
+      };
+
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+
+      for (const format of Object.keys(paperFormats)) {
+        const data = await w.webContents.printToPDF({ pageSize: format });
 
         const doc = await pdfjs.getDocument(data).promise;
+        const page = await doc.getPage(1);
 
-        // Check that correct # of pages are rendered.
-        expect(doc.numPages).to.equal(3);
+        // page.view is [top, left, width, height].
+        const width = page.view[2] / 72;
+        const height = page.view[3] / 72;
 
-        // Check that PDF is generated in landscape mode.
-        const firstPage = await doc.getPage(1);
-        const { width, height } = firstPage.getViewport({ scale: 100 });
-        expect(width).to.be.greaterThan(height);
+        const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
+
+        expect(approxEq(width, paperFormats[format].width)).to.be.true();
+        expect(approxEq(height, paperFormats[format].height)).to.be.true();
+      }
+    });
+
+    it('with custom header and footer', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+
+      const data = await w.webContents.printToPDF({
+        displayHeaderFooter: true,
+        headerTemplate: '<div>I\'m a PDF header</div>',
+        footerTemplate: '<div>I\'m a PDF footer</div>'
       });
+
+      const doc = await pdfjs.getDocument(data).promise;
+      const page = await doc.getPage(1);
+
+      const { items } = await page.getTextContent();
+
+      // Check that generated PDF contains a header.
+      const containsText = (text: RegExp) => items.some(({ str }: { str: string }) => str.match(text));
+
+      expect(containsText(/I'm a PDF header/)).to.be.true();
+      expect(containsText(/I'm a PDF footer/)).to.be.true();
+    });
+
+    it('in landscape mode', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+
+      const data = await w.webContents.printToPDF({ landscape: true });
+      const doc = await pdfjs.getDocument(data).promise;
+      const page = await doc.getPage(1);
+
+      // page.view is [top, left, width, height].
+      const width = page.view[2];
+      const height = page.view[3];
+
+      expect(width).to.be.greaterThan(height);
+    });
+
+    it('with custom page ranges', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-large.html'));
+
+      const data = await w.webContents.printToPDF({
+        pageRanges: '1-3',
+        landscape: true
+      });
+
+      const doc = await pdfjs.getDocument(data).promise;
+
+      // Check that correct # of pages are rendered.
+      expect(doc.numPages).to.equal(3);
     });
   });
 
