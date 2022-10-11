@@ -261,6 +261,12 @@ declare namespace ElectronInternal {
     postMessage(message: any, transfer?: any[]): void;
   }
 
+  interface ParentPort extends NodeJS.EventEmitter {
+    start(): void;
+    pause(): void;
+    postMessage(message: any): void;
+  }
+
   class WebViewElement extends HTMLElement {
     static observedAttributes: Array<string>;
 

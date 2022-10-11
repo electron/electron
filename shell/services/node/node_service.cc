@@ -87,7 +87,13 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   // Wrap the uv loop with global env.
   node_bindings_->set_uv_env(env);
 
-  // Load everything.
+  // LoadEnvironment should be called after setting up
+  // JavaScriptEnvironment including the microtask runner
+  // since this call will start compilation and execution
+  // of the entry script. If there is an uncaught exception
+  // the exit handler set above will be triggered and it expects
+  // both Node Env and JavaScriptEnviroment are setup to perform
+  // a clean shutdown of this process.
   node_bindings_->LoadEnvironment(env);
 
   // Run entry script.

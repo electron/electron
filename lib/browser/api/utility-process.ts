@@ -1,13 +1,13 @@
 import { EventEmitter } from 'events';
-import { PassThrough } from 'stream';
+import { Duplex, PassThrough } from 'stream';
 import { Socket } from 'net';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { _fork } = process._linkedBinding('electron_browser_utility_process');
 
 class ForkUtilityProcess extends EventEmitter {
   #handle: ElectronInternal.UtilityProcessWrapper | null;
-  #stdout: any = null;
-  #stderr: any = null;
+  #stdout: Duplex | null = null;
+  #stderr: Duplex | null = null;
   constructor (modulePath: string, args?: string[], options?: Electron.ForkOptions) {
     super();
 
@@ -107,10 +107,10 @@ class ForkUtilityProcess extends EventEmitter {
         return false;
       } else if (channel === 'stdout' && this.#stdout) {
         new Socket({ fd: args[0], readable: true }).pipe(this.#stdout);
-        return false;
-      } else if (channel === 'stderr' && this.stderr) {
+        return true;
+      } else if (channel === 'stderr' && this.#stderr) {
         new Socket({ fd: args[0], readable: true }).pipe(this.#stderr);
-        return false;
+        return true;
       } else {
         return this.emit(channel, ...args);
       }

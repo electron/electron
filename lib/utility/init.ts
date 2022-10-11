@@ -13,7 +13,7 @@ require('../common/reset-search-paths');
 // Import common settings.
 require('@electron/internal/common/init');
 
-const parentPort: any = new ParentPort();
+const parentPort: ParentPort = new ParentPort();
 Object.defineProperty(process, 'parentPort', {
   enumerable: true,
   writable: false,
@@ -32,24 +32,6 @@ parentPort.on('removeListener', (name: string) => {
     parentPort.pause();
   }
 });
-
-const origNewListener = parentPort[Symbol('kNewListener')];
-parentPort[Symbol('kNewListener')] = function (size: number, type: string, ...args: any[]) {
-  if (type === 'message' && (size - 1) === 0) {
-    parentPort.start();
-  }
-  args.unshift(size, type);
-  Reflect.apply(origNewListener, this, args);
-};
-
-const origRemoveListener = parentPort[Symbol('kRemoveListener')];
-parentPort[Symbol('kRemoveListener')] = function (size: number, type: string, ...args: any[]) {
-  if (type === 'message' && size === 0) {
-    parentPort.pause();
-  }
-  args.unshift(size, type);
-  Reflect.apply(origRemoveListener, this, args);
-};
 
 // Finally load entry script.
 process._firstFileName = Module._resolveFilename(entryScript, null, false);

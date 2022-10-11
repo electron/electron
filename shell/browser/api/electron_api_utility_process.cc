@@ -74,7 +74,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #if BUILDFLAG(IS_WIN)
       HANDLE read = nullptr;
       HANDLE write = nullptr;
-      SECURITY_ATTRIBUTES sa_attr;
+      SECURITY_ATTRIBUTES sa_attr = {};
       // Set the bInheritHandle flag so pipe handles are inherited.
       sa_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
       sa_attr.bInheritHandle = TRUE;
