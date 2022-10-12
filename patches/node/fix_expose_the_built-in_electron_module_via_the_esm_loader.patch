@@ -6,17 +6,17 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 5ae0e17dcfb5e24a1a117c33c4d42891686e693f..619fe6cef3b02eb575410225f41d3e7d51f37b93 100644
+index a7329d279bb07542d3f4027e0c8e2b035d493e5b..5cff70923b4ea7a4df918b2d3d1fbc7106159218 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
-@@ -31,6 +31,7 @@ const protocolHandlers = ObjectAssign(ObjectCreate(null), {
+@@ -30,6 +30,7 @@ const protocolHandlers = {
    'http:': getHttpProtocolModuleFormat,
    'https:': getHttpProtocolModuleFormat,
    'node:'() { return 'builtin'; },
 +  'electron:'() { return 'commonjs'; },
- });
+ };
  
- function getDataProtocolModuleFormat(parsed) {
+ /**
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
 index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9bb85947ac 100644
 --- a/lib/internal/modules/esm/resolve.js
