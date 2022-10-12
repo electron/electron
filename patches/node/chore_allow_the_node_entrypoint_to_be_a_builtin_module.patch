@@ -7,10 +7,10 @@ This allows embedders to tell Node.js what the first "real" file is  when
 they use themselves as the entry point. We should try to upstream some form
 of this.
 
-diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
+diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
 index 25a8464e4833ff4655db2fe37f4bd482dc147865..4b1f1b05b6c67f206f87618792fa528deb238d8d 100644
---- a/lib/internal/bootstrap/pre_execution.js
-+++ b/lib/internal/bootstrap/pre_execution.js
+--- a/lib/internal/process/pre_execution.js
++++ b/lib/internal/process/pre_execution.js
 @@ -122,11 +122,13 @@ function patchProcessObject(expandArgv1) {
    if (expandArgv1 && process.argv[1] &&
        !StringPrototypeStartsWith(process.argv[1], '-')) {
