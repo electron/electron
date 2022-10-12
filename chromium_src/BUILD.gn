@@ -6,6 +6,7 @@ import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//electron/buildflags/buildflags.gni")
+import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 
@@ -372,15 +373,20 @@ source_set("plugins") {
   deps += [
     "//components/strings",
     "//media:media_buildflags",
-    "//ppapi/buildflags",
-    "//ppapi/host",
-    "//ppapi/proxy",
-    "//ppapi/proxy:ipc",
-    "//ppapi/shared_impl",
     "//services/device/public/mojom",
     "//skia",
     "//storage/browser",
   ]
+
+  if (enable_ppapi) {
+    deps += [
+      "//ppapi/buildflags",
+      "//ppapi/host",
+      "//ppapi/proxy",
+      "//ppapi/proxy:ipc",
+      "//ppapi/shared_impl",
+    ]
+  }
 }
 
 # This source set is just so we don't have to depend on all of //chrome/browser
