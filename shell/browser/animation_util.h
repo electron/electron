@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_ANIMATION_UTIL_H_
-#define ELECTRON_SHELL_ANIMATION_UTIL_H_
+#ifndef ELECTRON_SHELL_BROWSER_ANIMATION_UTIL_H_
+#define ELECTRON_SHELL_BROWSER_ANIMATION_UTIL_H_
 
 #include "build/build_config.h"
 
@@ -15,4 +15,4 @@ class ScopedCAActionDisabler {
 };
 #endif
 
-#endif
+#endif  // ELECTRON_SHELL_BROWSER_ANIMATION_UTIL_H_
