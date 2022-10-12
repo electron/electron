@@ -7,10 +7,10 @@ Subject: feat: add kNoStartDebugSignalHandler to Environment to prevent
 This patch should be upstreamed, it allows embedders to prevent the call to StartDebugSignalHandler which handles SIGUSR1 and starts the inspector agent.  Apps that have --inspect disabled also don't want SIGUSR1 to have this affect.
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 71d3b65729a71caf157555bc6bba88eb3c3656e1..62c53acdb5f9c98fb7eade00802de2946f5c600c 100644
+index cbe4b734b1c0cc88683c8bc27a4e89d7a1583b22..b2fcaa091924606da5604d194dcb7e445fa736b3 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -672,6 +672,10 @@ inline bool Environment::no_global_search_paths() const {
+@@ -671,6 +671,10 @@ inline bool Environment::no_global_search_paths() const {
           !options_->global_search_paths;
  }
  
@@ -18,21 +18,22 @@ index 71d3b65729a71caf157555bc6bba88eb3c3656e1..62c53acdb5f9c98fb7eade00802de294
 +  return (flags_ & EnvironmentFlags::kNoStartDebugSignalHandler) == 0;
 +}
 +
- bool Environment::filehandle_close_warning() const {
-   return emit_filehandle_warning_;
- }
+ inline bool Environment::no_browser_globals() const {
+   // configure --no-browser-globals
+ #ifdef NODE_NO_BROWSER_GLOBALS
 diff --git a/src/env.h b/src/env.h
-index ae234a99eb2d5f4f8f953b077f6261c8052f6346..6b18b6efd231d986c391a16966fdbc82a5d99eda 100644
+index 59dd7c8d9e172493d79be21079598a08629be128..417f0b3657cb068e7708cbeb787f8cb116501876 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1203,6 +1203,7 @@ class Environment : public MemoryRetainer {
+@@ -1233,6 +1233,7 @@ class Environment : public MemoryRetainer {
    inline bool tracks_unmanaged_fds() const;
    inline bool hide_console_windows() const;
    inline bool no_global_search_paths() const;
 +  inline bool should_start_debug_signal_handler() const;
+   inline bool no_browser_globals() const;
    inline uint64_t thread_id() const;
    inline worker::Worker* worker_context() const;
-   Environment* worker_parent_env() const;
+
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
 index 34bb11e7d7122cd2c659d45834be6889abec4ac1..f708933d8bd6a6dc6741d6af22665b37c56e333a 100644
 --- a/src/inspector_agent.cc
