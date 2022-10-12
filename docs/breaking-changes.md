@@ -103,7 +103,7 @@ w.capturePage().then(image => {
 })
 ```
 
-### Removed: `webContents.decrementCapturerCount(stayHidden, stayAwake)`
+### Deprecated: `webContents.decrementCapturerCount(stayHidden, stayAwake)`
 
 `webContents.decrementCapturerCount(stayHidden, stayAwake)` has been deprecated.
 It is now automatically handled by `webContents.capturePage` when a page capture completes.
