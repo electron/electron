@@ -1876,16 +1876,17 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index aea46f3dad19d604d76b6726ce46141be48746c4..8620780de82f08940c40bddc449d281e4e348736 100644
+index 5403dd847814737132dfd004daddee0efc1bc34d..b0d61b4fc6eef7d68b6e0d83bf0072961951f0df 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
   * version matching should open a pull request to reserve a number in this
   * registry.
   */
+-#define NODE_MODULE_VERSION 108
 +// Electron sets NODE_MODULE_VERSION in their GN configuration
 +#ifndef NODE_MODULE_VERSION
- #define NODE_MODULE_VERSION 93
++ #define NODE_MODULE_VERSION 108
 +#endif
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
@@ -2003,10 +2004,10 @@ index 0000000000000000000000000000000000000000..2a92eccfa582df361f2a889c0d9b32c1
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index a6d1f8b3caa8e24148b1930ea109508f8e612735..c80c1b8202ba59bd63340baca36df8bca5e1f81d 100755
+index 9d5f4a48bca2c926b3ffb3c51c070222d4f7ce7b..b1d72622f0aaaada5ee62c561c3831cd7b08a30c 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -202,17 +202,72 @@ def files(action):
+@@ -202,59 +202,71 @@ def files(action):
  def headers(action):
    def wanted_v8_headers(files_arg, dest):
      v8_headers = [
@@ -2015,10 +2016,53 @@ index a6d1f8b3caa8e24148b1930ea109508f8e612735..c80c1b8202ba59bd63340baca36df8bc
 -      'deps/v8/include/libplatform/libplatform-export.h',
 -      'deps/v8/include/libplatform/v8-tracing.h',
 -      'deps/v8/include/v8.h',
+-      'deps/v8/include/v8-array-buffer.h',
+-      'deps/v8/include/v8-callbacks.h',
+-      'deps/v8/include/v8-container.h',
+-      'deps/v8/include/v8-context.h',
+-      'deps/v8/include/v8-data.h',
+-      'deps/v8/include/v8-date.h',
+-      'deps/v8/include/v8-debug.h',
+-      'deps/v8/include/v8-embedder-heap.h',
+-      'deps/v8/include/v8-embedder-state-scope.h',
+-      'deps/v8/include/v8-exception.h',
+-      'deps/v8/include/v8-extension.h',
+-      'deps/v8/include/v8-external.h',
+-      'deps/v8/include/v8-forward.h',
+-      'deps/v8/include/v8-function-callback.h',
+-      'deps/v8/include/v8-function.h',
+-      'deps/v8/include/v8-initialization.h',
 -      'deps/v8/include/v8-internal.h',
+-      'deps/v8/include/v8-isolate.h',
+-      'deps/v8/include/v8-json.h',
+-      'deps/v8/include/v8-local-handle.h',
+-      'deps/v8/include/v8-locker.h',
+-      'deps/v8/include/v8-maybe.h',
+-      'deps/v8/include/v8-memory-span.h',
+-      'deps/v8/include/v8-message.h',
+-      'deps/v8/include/v8-microtask-queue.h',
+-      'deps/v8/include/v8-microtask.h',
+-      'deps/v8/include/v8-object.h',
+-      'deps/v8/include/v8-persistent-handle.h',
 -      'deps/v8/include/v8-platform.h',
+-      'deps/v8/include/v8-primitive-object.h',
+-      'deps/v8/include/v8-primitive.h',
 -      'deps/v8/include/v8-profiler.h',
+-      'deps/v8/include/v8-promise.h',
+-      'deps/v8/include/v8-proxy.h',
+-      'deps/v8/include/v8-regexp.h',
+-      'deps/v8/include/v8-script.h',
+-      'deps/v8/include/v8-snapshot.h',
+-      'deps/v8/include/v8-statistics.h',
+-      'deps/v8/include/v8-template.h',
+-      'deps/v8/include/v8-traced-handle.h',
+-      'deps/v8/include/v8-typed-array.h',
+-      'deps/v8/include/v8-unwinder.h',
+-      'deps/v8/include/v8-value-serializer.h',
+-      'deps/v8/include/v8-value.h',
 -      'deps/v8/include/v8-version.h',
+-      'deps/v8/include/v8-wasm.h',
+-      'deps/v8/include/v8-weak-callback-info.h',
 -      'deps/v8/include/v8config.h',
 +      '../../v8/include/cppgc/common.h',
 +      '../../v8/include/libplatform/libplatform.h',
@@ -2088,8 +2132,7 @@ index a6d1f8b3caa8e24148b1930ea109508f8e612735..c80c1b8202ba59bd63340baca36df8bc
 +    v8_headers = [h.replace('deps/', '../../') for h in v8_headers]
      files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
- 
-@@ -239,7 +294,7 @@ def headers(action):
+@@ -282,7 +293,7 @@ def headers(action):
    if sys.platform.startswith('aix'):
      action(['out/Release/node.exp'], 'include/node/')
  
