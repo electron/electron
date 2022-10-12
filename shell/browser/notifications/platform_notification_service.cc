@@ -134,7 +134,8 @@ void PlatformNotificationService::GetDisplayedNotifications(
 
 int64_t PlatformNotificationService::ReadNextPersistentNotificationId() {
   // Electron doesn't support persistent notifications.
-  return 0;
+  static size_t counter = 0;
+  return counter++;
 }
 
 void PlatformNotificationService::RecordNotificationUkmEvent(
