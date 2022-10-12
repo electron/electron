@@ -6,26 +6,24 @@ Subject: fix serdes test
 The V8 wire format version changed.
 
 diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
-index ef9ef5945dba3b0748d5d0671f87eb20984de3c4..12f20ed1c9d386122dd20fdd84a7a0c9b9079ee1 100644
+index 1b6638ac1a90bdcec618b6c7b2a51c21fe6b548e..b1de15453ae41f6f6548dc843a95edb5999fdf72 100644
 --- a/test/parallel/test-v8-serdes.js
 +++ b/test/parallel/test-v8-serdes.js
-@@ -163,7 +163,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
- }
+@@ -164,11 +164,11 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
  
  {
+   // Test that an old serialized value can still be deserialized.
 -  const buf = Buffer.from('ff0d6f2203666f6f5e007b01', 'hex');
-+  const buf = Buffer.from('ff0e6f2203666f6f5e007b01', 'hex');
++  const buf = Buffer.from('ff0f6f2203666f6f5e007b01', 'hex');
  
    const des = new v8.DefaultDeserializer(buf);
    des.readHeader();
-@@ -174,13 +174,13 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
-   ser.writeValue(des.readValue());
- 
-   assert.deepStrictEqual(buf, ser.releaseBuffer());
 -  assert.strictEqual(des.getWireFormatVersion(), 0x0d);
-+  assert.strictEqual(des.getWireFormatVersion(), 0x0e);
- }
++  assert.strictEqual(des.getWireFormatVersion(), 0x0f);
  
+   const value = des.readValue();
+   assert.strictEqual(value, value.foo);
+@@ -203,7 +203,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
  {
    // Unaligned Uint16Array read, with padding in the underlying array buffer.
    let buf = Buffer.alloc(32 + 9);
