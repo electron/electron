@@ -123,3 +123,4 @@ create_browser_v8_snapshot_file_name_fuse.patch
 feat_configure_launch_options_for_service_process.patch
 feat_ensure_mas_builds_of_the_same_application_can_use_safestorage.patch
 cherry-pick-c83640db21b5.patch
+fix_on-screen-keyboard_hides_on_input_blur_in_webview.patch
