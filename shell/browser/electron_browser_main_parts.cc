@@ -278,11 +278,14 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
-  // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  // Create explicit microtasks runner.
+  js_env_->CreateMicrotasksRunner();
 
   // Wrap the uv loop with global env.
   node_bindings_->set_uv_env(env);
+
+  // Load everything.
+  node_bindings_->LoadEnvironment(env);
 
   // We already initialized the feature list in PreEarlyInitialization(), but
   // the user JS script would not have had a chance to alter the command-line
@@ -508,7 +511,6 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
 void ElectronBrowserMainParts::WillRunMainMessageLoop(
     std::unique_ptr<base::RunLoop>& run_loop) {
-  js_env_->OnMessageLoopCreated();
   exit_code_ = content::RESULT_CODE_NORMAL_EXIT;
   Browser::Get()->SetMainMessageLoopQuitClosure(
       run_loop->QuitWhenIdleClosure());
@@ -602,7 +604,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
   node_env_->env()->set_trace_sync_io(false);
-  js_env_->OnMessageLoopDestroying();
+  js_env_->DestroyMicrotasksRunner();
   node::Stop(node_env_->env());
   node_env_.reset();
 

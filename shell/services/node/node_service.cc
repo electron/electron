@@ -32,7 +32,7 @@ NodeService::NodeService(
 NodeService::~NodeService() {
   if (!node_env_stopped_) {
     node_env_->env()->set_trace_sync_io(false);
-    js_env_->OnMessageLoopDestroying();
+    js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_->env());
   }
 }
@@ -66,7 +66,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
                               [this](node::Environment* env, int exit_code) {
                                 // Destroy node platform.
                                 env->set_trace_sync_io(false);
-                                js_env_->OnMessageLoopDestroying();
+                                js_env_->DestroyMicrotasksRunner();
                                 node::Stop(env);
                                 node_env_stopped_ = true;
                                 receiver_.ResetWithReason(exit_code, "");
@@ -82,7 +82,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   process.SetHidden("_serviceStartupScript", params->script);
 
   // Setup microtask runner.
-  js_env_->OnMessageLoopCreated();
+  js_env_->CreateMicrotasksRunner();
 
   // Wrap the uv loop with global env.
   node_bindings_->set_uv_env(env);

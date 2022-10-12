@@ -74,18 +74,18 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #if BUILDFLAG(IS_WIN)
       HANDLE read = nullptr;
       HANDLE write = nullptr;
-      SECURITY_ATTRIBUTES sa_attr = {};
-      // Set the bInheritHandle flag so pipe handles are inherited.
-      sa_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
-      sa_attr.bInheritHandle = TRUE;
-      sa_attr.lpSecurityDescriptor = nullptr;
-      if (!::CreatePipe(&read, &write, &sa_attr, 0)) {
+      // Ideally we would create with SECURITY_ATTRIBUTES.bInheritHandles
+      // set to TRUE so that the write handle can be duplicated into the
+      // child process for use,
+      // See
+      // https://learn.microsoft.com/en-us/windows/win32/procthread/inheritance#inheriting-handles
+      // for inheritance behavior of child process. But we don't do it here
+      // since base::Launch already takes of setting the
+      // inherit attribute when configuring
+      // `base::LaunchOptions::handles_to_inherit` Refs
+      // https://source.chromium.org/chromium/chromium/src/+/main:base/process/launch_win.cc;l=303-332
+      if (!::CreatePipe(&read, &write, nullptr, 0)) {
         PLOG(ERROR) << "pipe creation failed";
-        return;
-      }
-      // Ensure the read handle to the pipes are not inherited.
-      if (!SetHandleInformation(read, HANDLE_FLAG_INHERIT, 0)) {
-        NOTREACHED() << "Failed to disable pipe inheritance";
         return;
       }
       if (io_handle == IOHandle::STDOUT) {

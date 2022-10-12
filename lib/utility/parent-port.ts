@@ -7,7 +7,7 @@ export class ParentPort extends EventEmitter {
   constructor () {
     super();
     this.#port = createParentPort();
-    this.#port.emit = (channel: string | symbol, event: {ports: any[]}) => {
+    this.#port.emit = (channel: string | symbol, event: { ports: any[] }) => {
       if (channel === 'message') {
         event = { ...event, ports: event.ports.map(p => new MessagePortMain(p)) };
       }

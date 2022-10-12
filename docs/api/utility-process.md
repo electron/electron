@@ -17,12 +17,12 @@ Process: [Main](../glossary.md#main-process)<br />
   * `env` Object (optional) - Environment key-value pairs. Default is `process.env`.
   * `execArgv` string[] (optional) - List of string arguments passed to the executable.
   * `cwd` string (optional) - Current working directory of the child process.
-  * `stdio` (string[] | string) (optional) - Allows configuring the mode for stdout and stderr
+  * `stdio` (string[] | string) (optional) - Allows configuring the mode for `stdout` and `stderr`
     of the child process. Default is `inherit`.
     String value can be one of `pipe`, `ignore`, `inherit`, for more details on these values you can refer to
-    [stdio][] documentation from Node.js. Currently this option only supports a subset of values listed in
-    [stdio][] documentation, support for other values will be extended when this API allows passing additional FDs
-    to the child process. Also this option does not support configuring stdin and is always set to `ignore`.
+    [stdio][] documentation from Node.js. Currently this option only supports configuring `stdout` and
+    `stderr` to either `pipe`, `inherit` or `ignore`. Configuring `stdin` is not supported; `stdin` will
+    always be ignored.
     For example, the supported values will be processed as following:
     * `pipe`: equivalent to ['ignore', 'pipe', 'pipe'] (the default)
     * `ignore`: equivalent to 'ignore', 'ignore', 'ignore']
