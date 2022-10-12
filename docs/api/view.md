@@ -29,7 +29,8 @@ Objects created with `new View` emit the following events:
 
 #### Event: 'bounds-changed'
 
-**TODO**
+Emitted when the view's bounds have changed in response to being laid out. The
+new bounds can be retrieved with [`view.getBounds()`](#viewgetbounds).
 
 ### Instance Methods
 
@@ -80,7 +81,7 @@ Examples of valid `color` values:
   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
     * e.g. `blueviolet` or `red`
 
-**Note:** Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBA` or `RGA`.
+**Note:** Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.
 
 #### `view.setVisible(visible)`
 
@@ -93,3 +94,5 @@ Objects created with `new View` have the following properties:
 #### `view.children` _Readonly_
 
 A `View[]` property representing the child views of this view.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
