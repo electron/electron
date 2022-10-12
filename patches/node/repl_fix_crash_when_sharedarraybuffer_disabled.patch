@@ -25,28 +25,27 @@ index a771b1813731edf4f0dd60f3505799e389f1d876..b9461677e2d7d1df192e752496e62cca
    bench.start();
    for (let i = 0; i < n; i++)
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index e21c1b1fe2cc7f55d3782419913568f51f1a87ea..1b6a8242bbd9eeb901950f1b9016bc2b85af5951 100644
+index f7ead4084ed4ed6a682bc62e7ad6fc350381d3b9..200da882076c9e099b221a33b4b933a6db906640 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
-@@ -9,7 +9,7 @@ const {
-   ArrayPrototypeSplice,
+@@ -10,7 +10,7 @@ const {
    ObjectDefineProperty,
-   PromisePrototypeCatch,
+   PromisePrototypeThen,
+   RegExpPrototypeExec,
 -  globalThis: { Atomics },
 +  globalThis: { Atomics, SharedArrayBuffer },
  } = primordials;
  
  const {
-@@ -150,6 +150,9 @@ port.on('message', (message) => {
-     const originalCwd = process.cwd;
+@@ -156,6 +156,8 @@ port.on('message', (message) => {
  
      process.cwd = function() {
+       const currentCounter = Atomics.load(cwdCounter, 0);
 +      // SharedArrayBuffers can be disabled with --no-harmony-sharedarraybuffer.
 +      if (typeof SharedArrayBuffer === 'undefined') return originalCwd();
-+
-       const currentCounter = Atomics.load(cwdCounter, 0);
        if (currentCounter === lastCounter)
          return cachedCwd;
+       lastCounter = currentCounter;
 diff --git a/lib/internal/worker.js b/lib/internal/worker.js
 index 8e396195209b83dff572792a78ee75d12d1f6610..4bb09b6ab5c31206a622814cbcd793c434b885d4 100644
 --- a/lib/internal/worker.js
