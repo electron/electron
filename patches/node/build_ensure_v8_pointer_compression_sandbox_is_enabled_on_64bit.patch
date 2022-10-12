@@ -8,7 +8,7 @@ Aligns common.gypi with the current build flag state of //v8.
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
 diff --git a/common.gypi b/common.gypi
-index fcd55b95b44050e4d88eeb0d3100ba6e6a5d5e78..a80b57fbba17b5025351ef41dd83f62832bbd781 100644
+index 4fd15f8e80ba82f69aa651a78dd4d567b5e34c5d..d92f1daeb4fd78c4ec66ace0102b09db118f779a 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@
@@ -17,9 +17,9 @@ index fcd55b95b44050e4d88eeb0d3100ba6e6a5d5e78..a80b57fbba17b5025351ef41dd83f628
      'v8_enable_31bit_smis_on_64bit_arch%': 0,
 +    'v8_enable_sandbox%': 0,
  
-     # Disable V8 untrusted code mitigations.
-     # See https://github.com/v8/v8/wiki/Untrusted-code-mitigations
-@@ -132,6 +133,7 @@
+     # Disable v8 hugepage by default.
+     'v8_enable_hugepage%': 0,
+@@ -125,6 +126,7 @@
        ['target_arch in "arm ia32 mips mipsel ppc"', {
          'v8_enable_pointer_compression': 0,
          'v8_enable_31bit_smis_on_64bit_arch': 0,
@@ -27,7 +27,7 @@ index fcd55b95b44050e4d88eeb0d3100ba6e6a5d5e78..a80b57fbba17b5025351ef41dd83f628
        }],
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
-@@ -396,9 +398,14 @@
+@@ -395,9 +397,12 @@
        ['v8_enable_pointer_compression == 1', {
          'defines': [
            'V8_COMPRESS_POINTERS',
@@ -36,22 +36,21 @@ index fcd55b95b44050e4d88eeb0d3100ba6e6a5d5e78..a80b57fbba17b5025351ef41dd83f628
          ],
        }],
 +      ['v8_enable_sandbox == 1', {
-+        'defines': [
-+          'V8_ENABLE_SANDBOX',
-+        ]
++        'defines': ['V8_ENABLE_SANDBOX']
 +      }],
        ['v8_enable_pointer_compression == 1 or v8_enable_31bit_smis_on_64bit_arch == 1', {
          'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
        }],
 diff --git a/configure.py b/configure.py
-index 1a7023dece588631b8281c67b223204c1ebb5ee7..08894bf3908916d1cb639810c5e1b2afae74ff4d 100755
+index a4e5723067f286d4a836f329d0049b6bbaac9419..1b7a721585764aecfd855ee47c47a3bd235d2ef3 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1459,6 +1459,7 @@ def configure_v8(o):
+@@ -1477,6 +1477,7 @@ def configure_v8(o):
    o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
    o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 +  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_shared_ro_heap'] = 0 if options.enable_pointer_compression else 1
    o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
    o['variables']['node_use_v8_platform'] = b(not options.without_v8_platform)
-   o['variables']['node_use_bundled_v8'] = b(not options.without_bundled_v8)
+ 
