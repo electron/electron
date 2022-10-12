@@ -51,3 +51,4 @@ test_remove_experimental-wasm-threads_flag.patch
 api_pass_oomdetails_to_oomerrorcallback.patch
 src_iwyu_in_cleanup_queue_cc.patch
 fix_expose_lookupandcompile_with_parameters.patch
+api_pass_oomdetails_to_oomerrorcallback.patch
