@@ -652,7 +652,7 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
     });
 
-    it('should not crash when nodeIntegration is enabled', (done) => {
+    it('should not allow nodeIntegrationInWorker', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -663,21 +663,19 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(`unexpected error : ${message}`);
-        } else if (channel === 'response') {
-          expect(message).to.equal('Hello from serviceWorker!');
-          session.fromPartition('sw-file-scheme-worker-spec').clearStorageData({
-            storages: ['serviceworkers']
-          }).then(() => done());
-        }
-      });
+      await w.loadURL(`file://${fixturesPath}/pages/service-worker/empty.html`);
 
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+      const data = await w.webContents.executeJavaScript(`
+        navigator.serviceWorker.register('worker-no-node.js', {
+          scope: './'
+        }).then(() => navigator.serviceWorker.ready)
+
+        new Promise((resolve) => {
+          navigator.serviceWorker.onmessage = event => resolve(event.data);
+        });
+      `);
+
+      expect(data).to.equal('undefined undefined undefined undefined');
     });
   });
 
@@ -789,11 +787,22 @@ describe('chromium features', () => {
         expect(data).to.equal('undefined undefined undefined undefined');
       });
 
-      it('has node integration with nodeIntegrationInWorker', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false } });
-        w.loadURL(`file://${fixturesPath}/pages/shared_worker.html`);
-        const [, data] = await emittedOnce(ipcMain, 'worker-result');
-        expect(data).to.equal('object function object function');
+      it('does not have node integration with nodeIntegrationInWorker', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false
+          }
+        });
+
+        await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        const data = await w.webContents.executeJavaScript(`
+          const worker = new SharedWorker('../workers/shared_worker_node.js');
+          new Promise((resolve) => { worker.port.onmessage = e => resolve(e.data); })
+        `);
+        expect(data).to.equal('undefined undefined undefined undefined');
       });
     });
   });
