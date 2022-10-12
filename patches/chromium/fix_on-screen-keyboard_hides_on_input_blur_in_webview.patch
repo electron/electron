@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kyrylo Hrechykhin <khrechykhin@microsoft.com>
+Date: Thu, 6 Oct 2022 18:30:53 +0200
+Subject: fix: on-screen-keyboard hides on input blur in webview
+
+Changes introduced by this patch fix issue where OSK does not hide on
+input rendered inside webview is blurred. This patch should be removed
+when proper fix in chromium repo is available.
+
+Note: the issue still occurs if input rendered in webview blurred due
+to touch outside of webview. It is caused by webview implementation
+details. Specificaly due to webview has its own tree nodes and focused
+node does not change in this case.
+
+chromium-bug: https://crbug.com/1369605
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.cc b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
+index c56d5c06ca3eb5e2c11bd1af00a8667bfa422dc9..bccc940958180481947a5a5ee82562bd99d28b78 100644
+--- a/content/browser/renderer_host/render_widget_host_view_child_frame.cc
++++ b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
+@@ -985,6 +985,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
+   return viz::ScopedSurfaceIdAllocator(std::move(allocation_task));
+ }
+ 
++void RenderWidgetHostViewChildFrame::FocusedNodeChanged(
++    bool is_editable_node,
++    const gfx::Rect& node_bounds_in_screen) {
++  NOTREACHED();
++}
++
+ ui::TextInputType RenderWidgetHostViewChildFrame::GetTextInputType() const {
+   if (!text_input_manager_)
+     return ui::TEXT_INPUT_TYPE_NONE;
+diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.h b/content/browser/renderer_host/render_widget_host_view_child_frame.h
+index 457dabe428e84230b2e831e9281feee06e7c8e76..9436d55b390ac6fa16398efebad0a87beef6e959 100644
+--- a/content/browser/renderer_host/render_widget_host_view_child_frame.h
++++ b/content/browser/renderer_host/render_widget_host_view_child_frame.h
+@@ -178,6 +178,8 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
+   void DisableAutoResize(const gfx::Size& new_size) override;
+   viz::ScopedSurfaceIdAllocator DidUpdateVisualProperties(
+       const cc::RenderFrameMetadata& metadata) override;
++  void FocusedNodeChanged(bool is_editable_node,
++      const gfx::Rect& node_bounds_in_screen) override;
+ 
+   // RenderFrameMetadataProvider::Observer implementation.
+   void OnRenderFrameMetadataChangedBeforeActivation(
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 8982a2a4d2be23e56472b17e9d59e289e8255336..92f73106ba8c9559281add6fe7a2f2a613ca3cdc 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -7891,7 +7891,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+                         "WebContentsImpl::OnFocusedElementChangedInFrame",
+                         "render_frame_host", frame);
+   RenderWidgetHostViewBase* root_view =
+-      static_cast<RenderWidgetHostViewBase*>(GetRenderWidgetHostView());
++      static_cast<RenderWidgetHostViewBase*>(GetTopLevelRenderWidgetHostView());
+   if (!root_view || !frame->GetView())
+     return;
+   // Convert to screen coordinates from window coordinates by adding the
