@@ -104,7 +104,7 @@ index 3bf480f8f0c77d440324cf8847f4a214521f8162..40b6e311a14f5e824f8f0aff3121221e
      if (!Set(env->context(),
               obj,
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index dd69323b80076d7333b80453c9cc9ef5b680ce27..33331ddf8586df69508f62d3bd8e80d3a04acbe0 100644
+index dd69323b80076d7333b80453c9cc9ef5b680ce27..6431b768c83fa27b2287588e936f93ae00169ad5 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -154,13 +154,11 @@ bool DiffieHellman::Init(BignumPointer&& bn_p, int g) {
@@ -148,7 +148,18 @@ index dd69323b80076d7333b80453c9cc9ef5b680ce27..33331ddf8586df69508f62d3bd8e80d3
      return false;
    }
    BIGNUM* bn_p =
-@@ -559,15 +554,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -219,8 +214,10 @@ typedef BignumPointer (*StandardizedGroupInstantiator)();
+ inline StandardizedGroupInstantiator FindDiffieHellmanGroup(const char* name) {
+ #define V(n, p)                                                                \
+   if (StringEqualNoCase(name, n)) return InstantiateStandardizedGroup<p>
++#ifndef OPENSSL_IS_BORINGSSL
+   V("modp1", BN_get_rfc2409_prime_768);
+   V("modp2", BN_get_rfc2409_prime_1024);
++#endif
+   V("modp5", BN_get_rfc3526_prime_1536);
+   V("modp14", BN_get_rfc3526_prime_2048);
+   V("modp15", BN_get_rfc3526_prime_3072);
+@@ -559,15 +556,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
      }
  
@@ -169,7 +180,7 @@ index dd69323b80076d7333b80453c9cc9ef5b680ce27..33331ddf8586df69508f62d3bd8e80d3
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -581,6 +581,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -581,6 +583,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      }
  
      key_params = EVPKeyPointer(raw_params);
