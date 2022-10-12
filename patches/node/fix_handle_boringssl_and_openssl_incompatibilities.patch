@@ -148,40 +148,38 @@ index c02e22bb542ff529e4d4fa32de63a07704b02b8e..38220d2e0d1a695f67bf7b9cb79a73fa
      return false;
    }
    BIGNUM* bn_p =
-@@ -527,16 +522,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
-     if (!BN_set_word(bn_g.get(), params->params.generator) ||
-         !DH_set0_pqg(dh.get(), prime, nullptr, bn_g.get()))
+@@ -559,15 +559,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
--
+     }
+ 
 +#ifndef OPENSSL_IS_BORINGSSL
-     params->params.prime_fixed_value.release();
+     prime_fixed_value->release();
      bn_g.release();
  
      key_params = EVPKeyPointer(EVP_PKEY_new());
      CHECK(key_params);
-     EVP_PKEY_assign_DH(key_params.get(), dh.release());
+     CHECK_EQ(EVP_PKEY_assign_DH(key_params.get(), dh.release()), 1);
 +#else
 +    return EVPKeyCtxPointer();
 +#endif
-   } else {
+   } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
      EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DH, nullptr));
      EVP_PKEY* raw_params = nullptr;
 +#ifndef OPENSSL_IS_BORINGSSL
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -548,8 +547,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
-         EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0) {
-       return EVPKeyCtxPointer();
+@@ -581,6 +586,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      }
--
+ 
      key_params = EVPKeyPointer(raw_params);
 +#else
 +    return EVPKeyCtxPointer();
 +#endif
+   } else {
+     UNREACHABLE();
    }
- 
-   EVPKeyCtxPointer ctx(EVP_PKEY_CTX_new(key_params.get(), nullptr));
+
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
 index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42a461b689 100644
 --- a/src/crypto/crypto_dsa.cc
@@ -269,12 +267,12 @@ index 652f6e0b12e2d56f33b1c18b80ec211b9c6bd5e9..840fe824617b951d4f4421155c5e1ce7
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -698,7 +689,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -671,7 +671,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
--  char* data = static_cast<char*>(OPENSSL_secure_malloc(len));
-+  char* data = static_cast<char*>(OPENSSL_malloc(len));
+-  void* data = OPENSSL_secure_zalloc(len);
++  void* data = OPENSSL_malloc(len);
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
@@ -311,8 +309,8 @@ index 46d9be0dfcfdcf778ebaf0337517b7da3f68bc9b..435762f7df47459dc4e6e73a7c3d2376
 -#if HAVE_OPENSSL
 +#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
  #include <openssl/opensslv.h>
- #endif  // HAVE_OPENSSL
- 
+ #if NODE_OPENSSL_HAS_QUIC
+ #include <openssl/quic.h>
 diff --git a/src/node_metadata.h b/src/node_metadata.h
 index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e324183b42be2 100644
 --- a/src/node_metadata.h
@@ -324,8 +322,8 @@ index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e3241
 -#if HAVE_OPENSSL
 +#if 0
  #include <openssl/crypto.h>
- #endif  // HAVE_OPENSSL
- 
+ #if NODE_OPENSSL_HAS_QUIC
+ #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
 index b82100b6907891063a37023e6ad21f79fffade1e..d78005d41bebff4e8729400cf08ab67d27098448 100644
 --- a/src/node_options.cc
