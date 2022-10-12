@@ -27,4 +27,32 @@ index 23d4dbcf6cd8e1e3e4a509672e203323d81e736c..a951a526a1901ec8d83f63df5de8c8f3
  function patchProcessObject(expandArgv1) {
    const binding = internalBinding('process_methods');
    binding.patchProcessObject(process);
-
+@@ -627,6 +627,7 @@ module.exports = {
+   loadPreloadModules,
+   setupTraceCategoryState,
+   setupInspectorHooks,
++  setupAsarSupport,
+   initializeReport,
+   initializeCJSLoader,
+   initializeWASI,
+diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
+index 1b6a8242bbd9eeb901950f1b9016bc2b85af5951..af32601bc4bf0c7c61ee3ca0500bf26255081458 100644
+--- a/lib/internal/main/worker_thread.js
++++ b/lib/internal/main/worker_thread.js
+@@ -31,6 +31,7 @@ const {
+   initializeReport,
+   initializeSourceMapsHandlers,
+   loadPreloadModules,
++  setupAsarSupport,
+   setupTraceCategoryState,
+   markBootstrapComplete
+ } = require('internal/process/pre_execution');
+@@ -166,6 +167,8 @@ port.on('message', (message) => {
+     };
+     workerIo.sharedCwdCounter = cwdCounter;
+ 
++    setupAsarSupport();
++
+     const CJSLoader = require('internal/modules/cjs/loader');
+     assert(!CJSLoader.hasLoadedAnyUserCJSModule);
+     loadPreloadModules();
