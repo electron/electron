@@ -1,0 +1,305 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Wagner <benjaminwagner@google.com>
+Date: Tue, 20 Sep 2022 18:38:53 +0000
+Subject: Fix races in FrameQueueUnderlyingSource related to
+ CrossThreadPersistent
+
+The repro in bug 1323488 unfortunately does not reliably reproduce
+the races when run as a web test. I was also not able to repro the
+races in a unit test.
+
+There are actually three fixes in this CL; it was easiest to fix them
+all together so that I can run the repro locally for an extended period
+without it being stopped by a crash.
+
+The underlying cause for all three races is that CrossThreadPersistent
+can refer to an object whose heap has already been destroyed. When
+accessed on the thread corresponding to that heap, there is no race,
+but when accessed from a different thread, there is a period of time
+after the heap is destroyed before the CrossThreadPersistent is
+cleared.
+
+1. The FrameQueueUnderlyingSource::transferred_source_ member's pointer
+   is accessed in FrameQueueUnderlyingSource::Close. This CL adds a
+   callback to clear the pointer in
+   TransferredFrameQueueUnderlyingSource::ContextDestroyed.
+
+2. The TransferredFrameQueueUnderlyingSource constructor takes a raw
+   pointer to the original FrameQueueUnderlyingSource, which is
+   associated with a different thread. GC won't be able to update this
+   raw pointer since it's on the wrong stack. This CL changes the raw
+   pointer to a CrossThreadPersistent which is visible to GC.
+
+3. Same as 2, but for the callstack ConnectHostCallback,
+   MediaStream(Audio|Video)TrackUnderlyingSource::OnSourceTransferStarted
+   and FrameQueueUnderlyingSource::TransferSource.
+
+(cherry picked from commit 63ce9c40e1a67395278dfc70ecfb545a818747bb)
+
+Bug: 1323488
+Change-Id: Id63484eebefd2e003959b25bd752ac8263caab4f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3865452
+Commit-Queue: Ben Wagner <benjaminwagner@google.com>
+Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+Auto-Submit: Ben Wagner <benjaminwagner@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1041434}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3908010
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Reviewed-by: Srinivas Sista <srinivassista@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5249@{#521}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.cc b/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.cc
+index 2cc89e8cd32421bf80b262bac2e4a7cb685db62f..ab41fa086ad9eb8c1cd66db74ea1f05a66ac56a4 100644
+--- a/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.cc
++++ b/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.cc
+@@ -19,10 +19,13 @@ FrameQueueTransferringOptimizer<NativeFrameType>::
+         FrameQueueHost* host,
+         scoped_refptr<base::SequencedTaskRunner> host_runner,
+         wtf_size_t max_queue_size,
+-        ConnectHostCallback connect_host_callback)
++        ConnectHostCallback connect_host_callback,
++        CrossThreadOnceClosure transferred_source_destroyed_callback)
+     : host_(host),
+       host_runner_(std::move(host_runner)),
+       connect_host_callback_(std::move(connect_host_callback)),
++      transferred_source_destroyed_callback_(
++          std::move(transferred_source_destroyed_callback)),
+       max_queue_size_(max_queue_size) {}
+ 
+ template <typename NativeFrameType>
+@@ -40,7 +43,8 @@ FrameQueueTransferringOptimizer<NativeFrameType>::PerformInProcessOptimization(
+ 
+   auto* source = MakeGarbageCollected<
+       TransferredFrameQueueUnderlyingSource<NativeFrameType>>(
+-      script_state, host, host_runner_);
++      script_state, host, host_runner_,
++      std::move(transferred_source_destroyed_callback_));
+ 
+   PostCrossThreadTask(
+       *host_runner_, FROM_HERE,
+diff --git a/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.h b/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.h
+index 6d33945b7c840e55ae73a1efd1f1cf33ccfaaa71..336073235ba7f6c05cf2cf19fccbfac0be9597c9 100644
+--- a/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.h
++++ b/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.h
+@@ -25,13 +25,15 @@ class FrameQueueTransferringOptimizer final
+ 
+   using ConnectHostCallback = CrossThreadOnceFunction<void(
+       scoped_refptr<base::SequencedTaskRunner>,
+-      TransferredFrameQueueUnderlyingSource<NativeFrameType>*)>;
++      CrossThreadPersistent<
++          TransferredFrameQueueUnderlyingSource<NativeFrameType>>)>;
+ 
+   FrameQueueTransferringOptimizer(
+       FrameQueueHost*,
+       scoped_refptr<base::SequencedTaskRunner> host_runner,
+       wtf_size_t max_queue_size,
+-      ConnectHostCallback callback);
++      ConnectHostCallback connect_host_callback,
++      CrossThreadOnceFunction<void()> transferred_source_destroyed_callback);
+   ~FrameQueueTransferringOptimizer() override = default;
+ 
+   UnderlyingSourceBase* PerformInProcessOptimization(
+@@ -41,6 +43,7 @@ class FrameQueueTransferringOptimizer final
+   CrossThreadWeakPersistent<FrameQueueHost> host_;
+   scoped_refptr<base::SequencedTaskRunner> host_runner_;
+   ConnectHostCallback connect_host_callback_;
++  CrossThreadOnceFunction<void()> transferred_source_destroyed_callback_;
+   wtf_size_t max_queue_size_;
+ };
+ 
+diff --git a/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.cc b/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.cc
+index b93b67f131e1e58118e32d2c9b29e472a28d4664..fcd676b3035e19c6e0b28ee1c44109c6737a1c35 100644
+--- a/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.cc
++++ b/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.cc
+@@ -266,15 +266,22 @@ double FrameQueueUnderlyingSource<NativeFrameType>::DesiredSizeForTesting()
+ 
+ template <typename NativeFrameType>
+ void FrameQueueUnderlyingSource<NativeFrameType>::TransferSource(
+-    FrameQueueUnderlyingSource<NativeFrameType>* transferred_source) {
++    CrossThreadPersistent<FrameQueueUnderlyingSource<NativeFrameType>>
++        transferred_source) {
+   DCHECK(realm_task_runner_->RunsTasksInCurrentSequence());
+   MutexLocker locker(mutex_);
+   DCHECK(!transferred_source_);
+-  transferred_source_ = transferred_source;
++  transferred_source_ = std::move(transferred_source);
+   CloseController();
+   frame_queue_handle_.Invalidate();
+ }
+ 
++template <typename NativeFrameType>
++void FrameQueueUnderlyingSource<NativeFrameType>::ClearTransferredSource() {
++  MutexLocker locker(mutex_);
++  transferred_source_.Clear();
++}
++
+ template <typename NativeFrameType>
+ void FrameQueueUnderlyingSource<NativeFrameType>::CloseController() {
+   DCHECK(realm_task_runner_->RunsTasksInCurrentSequence());
+diff --git a/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.h b/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.h
+index 7e097b4eb6e9085be73ceb7fd84a4588baf64471..3908909d04f5b6cf4a9be4a3a3e004c3775a3d42 100644
+--- a/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.h
++++ b/third_party/blink/renderer/modules/breakout_box/frame_queue_underlying_source.h
+@@ -85,7 +85,13 @@ class FrameQueueUnderlyingSource
+   // QueueFrame(). |transferred_source| will pull frames from the same circular
+   // queue. Must be called on |realm_task_runner_|.
+   void TransferSource(
+-      FrameQueueUnderlyingSource<NativeFrameType>* transferred_source);
++      CrossThreadPersistent<FrameQueueUnderlyingSource<NativeFrameType>>
++          transferred_source);
++
++  // Due to a potential race condition between |transferred_source_|'s heap
++  // being destroyed and the Close() method being called, we need to explicitly
++  // clear |transferred_source_| when its context is being destroyed.
++  void ClearTransferredSource();
+ 
+  protected:
+   bool MustUseMonitor() const;
+diff --git a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
+index bfc966452e4134e5133d559698497ce82f89aad4..da9a4bffc3a8c9ec5a1595a7cd78110bfadbfb5e 100644
+--- a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
++++ b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.cc
+@@ -93,14 +93,17 @@ MediaStreamAudioTrackUnderlyingSource::GetTransferringOptimizer() {
+       this, GetRealmRunner(), MaxQueueSize(),
+       CrossThreadBindOnce(
+           &MediaStreamAudioTrackUnderlyingSource::OnSourceTransferStarted,
++          WrapCrossThreadWeakPersistent(this)),
++      CrossThreadBindOnce(
++          &MediaStreamAudioTrackUnderlyingSource::ClearTransferredSource,
+           WrapCrossThreadWeakPersistent(this)));
+ }
+ 
+ void MediaStreamAudioTrackUnderlyingSource::OnSourceTransferStarted(
+     scoped_refptr<base::SequencedTaskRunner> transferred_runner,
+-    TransferredAudioDataQueueUnderlyingSource* source) {
++    CrossThreadPersistent<TransferredAudioDataQueueUnderlyingSource> source) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  TransferSource(source);
++  TransferSource(std::move(source));
+   RecordBreakoutBoxUsage(BreakoutBoxUsage::kReadableAudioWorker);
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
+index 19a290ea6b83e4b56b8d96cb7632fca55bd65fd0..73c16dc5ff3855e258e1e70397def478485f1481 100644
+--- a/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
++++ b/third_party/blink/renderer/modules/breakout_box/media_stream_audio_track_underlying_source.h
+@@ -56,7 +56,7 @@ class MODULES_EXPORT MediaStreamAudioTrackUnderlyingSource
+   void DisconnectFromTrack();
+   void OnSourceTransferStarted(
+       scoped_refptr<base::SequencedTaskRunner> transferred_runner,
+-      TransferredAudioDataQueueUnderlyingSource* source);
++      CrossThreadPersistent<TransferredAudioDataQueueUnderlyingSource> source);
+ 
+   // Only used to prevent the gargabe collector from reclaiming the media
+   // stream track processor that created |this|.
+diff --git a/third_party/blink/renderer/modules/breakout_box/media_stream_video_track_underlying_source.cc b/third_party/blink/renderer/modules/breakout_box/media_stream_video_track_underlying_source.cc
+index bcb941aca4e4d0729dc1253e01ef477fdaae1877..e748bf6eaf8f9d1acf8519c38a5a8cb53b031d0e 100644
+--- a/third_party/blink/renderer/modules/breakout_box/media_stream_video_track_underlying_source.cc
++++ b/third_party/blink/renderer/modules/breakout_box/media_stream_video_track_underlying_source.cc
+@@ -66,6 +66,9 @@ MediaStreamVideoTrackUnderlyingSource::GetStreamTransferOptimizer() {
+       this, GetRealmRunner(), MaxQueueSize(),
+       CrossThreadBindOnce(
+           &MediaStreamVideoTrackUnderlyingSource::OnSourceTransferStarted,
++          WrapCrossThreadWeakPersistent(this)),
++      CrossThreadBindOnce(
++          &MediaStreamVideoTrackUnderlyingSource::ClearTransferredSource,
+           WrapCrossThreadWeakPersistent(this)));
+ }
+ 
+@@ -76,9 +79,9 @@ MediaStreamVideoTrackUnderlyingSource::GetIOTaskRunner() {
+ 
+ void MediaStreamVideoTrackUnderlyingSource::OnSourceTransferStarted(
+     scoped_refptr<base::SequencedTaskRunner> transferred_runner,
+-    TransferredVideoFrameQueueUnderlyingSource* source) {
++    CrossThreadPersistent<TransferredVideoFrameQueueUnderlyingSource> source) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  TransferSource(source);
++  TransferSource(std::move(source));
+   RecordBreakoutBoxUsage(BreakoutBoxUsage::kReadableVideoWorker);
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/breakout_box/media_stream_video_track_underlying_source.h b/third_party/blink/renderer/modules/breakout_box/media_stream_video_track_underlying_source.h
+index 1bbd4f6bbf20eaf168bf1319f1b35819dabe3cce..8964eb5eb83964c4bb2633092a12cb144da4e9b0 100644
+--- a/third_party/blink/renderer/modules/breakout_box/media_stream_video_track_underlying_source.h
++++ b/third_party/blink/renderer/modules/breakout_box/media_stream_video_track_underlying_source.h
+@@ -59,8 +59,9 @@ class MODULES_EXPORT MediaStreamVideoTrackUnderlyingSource
+   bool StartFrameDelivery() override;
+   void StopFrameDelivery() override;
+ 
+-  void OnSourceTransferStarted(scoped_refptr<base::SequencedTaskRunner>,
+-                               TransferredVideoFrameQueueUnderlyingSource*);
++  void OnSourceTransferStarted(
++      scoped_refptr<base::SequencedTaskRunner>,
++      CrossThreadPersistent<TransferredVideoFrameQueueUnderlyingSource>);
+ 
+   void OnFrameFromTrack(
+       scoped_refptr<media::VideoFrame> media_frame,
+diff --git a/third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.cc b/third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.cc
+index 5c62b8f1b752c24f8b8d0048d646ea64dba0e49c..e38173482d455788861a1d831dd3422119d4d4d6 100644
+--- a/third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.cc
++++ b/third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.cc
+@@ -15,11 +15,14 @@ template <typename NativeFrameType>
+ TransferredFrameQueueUnderlyingSource<NativeFrameType>::
+     TransferredFrameQueueUnderlyingSource(
+         ScriptState* script_state,
+-        FrameQueueHost* host,
+-        scoped_refptr<base::SequencedTaskRunner> host_runner)
++        CrossThreadPersistent<FrameQueueHost> host,
++        scoped_refptr<base::SequencedTaskRunner> host_runner,
++        CrossThreadOnceClosure transferred_source_destroyed_callback)
+     : FrameQueueUnderlyingSource<NativeFrameType>(script_state, host),
+       host_runner_(host_runner),
+-      host_(host) {}
++      host_(std::move(host)),
++      transferred_source_destroyed_callback_(
++          std::move(transferred_source_destroyed_callback)) {}
+ 
+ template <typename NativeFrameType>
+ bool TransferredFrameQueueUnderlyingSource<
+@@ -44,6 +47,13 @@ void TransferredFrameQueueUnderlyingSource<
+                       CrossThreadBindOnce(&FrameQueueHost::Close, host_));
+ }
+ 
++template <typename NativeFrameType>
++void TransferredFrameQueueUnderlyingSource<
++    NativeFrameType>::ContextDestroyed() {
++  std::move(transferred_source_destroyed_callback_).Run();
++  FrameQueueUnderlyingSource<NativeFrameType>::ContextDestroyed();
++}
++
+ template <typename NativeFrameType>
+ void TransferredFrameQueueUnderlyingSource<NativeFrameType>::Trace(
+     Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.h b/third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.h
+index 5f8a36719407a404756d672530c0b9fcff9d6924..7cd3270fbb3cf5b0e2c09b16000ea5c0e4247866 100644
+--- a/third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.h
++++ b/third_party/blink/renderer/modules/breakout_box/transferred_frame_queue_underlying_source.h
+@@ -19,8 +19,9 @@ class TransferredFrameQueueUnderlyingSource
+ 
+   TransferredFrameQueueUnderlyingSource(
+       ScriptState*,
+-      FrameQueueHost*,
+-      scoped_refptr<base::SequencedTaskRunner> host_runner);
++      CrossThreadPersistent<FrameQueueHost>,
++      scoped_refptr<base::SequencedTaskRunner> host_runner,
++      CrossThreadOnceClosure transferred_source_destroyed_callback);
+   ~TransferredFrameQueueUnderlyingSource() override = default;
+ 
+   TransferredFrameQueueUnderlyingSource(
+@@ -32,11 +33,15 @@ class TransferredFrameQueueUnderlyingSource
+   bool StartFrameDelivery() override;
+   void StopFrameDelivery() override;
+ 
++  // ExecutionLifecycleObserver
++  void ContextDestroyed() override;
++
+   void Trace(Visitor*) const override;
+ 
+  private:
+   scoped_refptr<base::SequencedTaskRunner> host_runner_;
+   CrossThreadPersistent<FrameQueueHost> host_;
++  CrossThreadOnceClosure transferred_source_destroyed_callback_;
+ };
+ 
+ extern template class MODULES_EXTERN_TEMPLATE_EXPORT
