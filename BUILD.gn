@@ -404,9 +404,6 @@ source_set("electron_lib") {
     "//media/mojo/mojom",
     "//net:extras",
     "//net:net_resources",
-    "//ppapi/host",
-    "//ppapi/proxy",
-    "//ppapi/shared_impl",
     "//printing/buildflags",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/cpp/hid",
@@ -622,6 +619,14 @@ source_set("electron_lib") {
     sources += [
       "shell/renderer/pepper_helper.cc",
       "shell/renderer/pepper_helper.h",
+    ]
+  }
+
+  if (enable_ppapi) {
+    deps += [
+      "//ppapi/host",
+      "//ppapi/proxy",
+      "//ppapi/shared_impl",
     ]
   }
 

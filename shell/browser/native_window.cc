@@ -14,11 +14,13 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_features.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -682,6 +684,11 @@ void NativeWindow::NotifyWindowMessage(UINT message,
     observer.OnWindowMessage(message, w_param, l_param);
 }
 #endif
+
+void NativeWindow::UpdateDraggableRegions(
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
+}
 
 views::Widget* NativeWindow::GetWidget() {
   return widget();

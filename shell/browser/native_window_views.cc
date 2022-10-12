@@ -18,7 +18,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/root_view.h"
@@ -1465,11 +1464,6 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
     content_bounds.set_height(content_bounds.height() - menu_bar_height);
   }
   return content_bounds;
-}
-
-void NativeWindowViews::UpdateDraggableRegions(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 #if BUILDFLAG(IS_WIN)

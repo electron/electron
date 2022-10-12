@@ -110,11 +110,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Install the content view after BaseWindow's JS code is initialized.
   SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
 
-#if BUILDFLAG(IS_MAC)
-  OverrideNSWindowContentView(
-      web_contents->inspectable_web_contents()->GetView());
-#endif
-
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
 }
@@ -157,7 +152,10 @@ void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
 
 void BrowserWindow::OnDraggableRegionsUpdated(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
-  UpdateDraggableRegions(regions);
+  if (window_->has_frame())
+    return;
+
+  window_->UpdateDraggableRegions(regions);
 }
 
 void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
@@ -245,14 +243,6 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 #endif
 }
 
-void BrowserWindow::OnWindowResize() {
-#if BUILDFLAG(IS_MAC)
-  if (!draggable_regions_.empty())
-    UpdateDraggableRegions(draggable_regions_);
-#endif
-  BaseWindow::OnWindowResize();
-}
-
 void BrowserWindow::OnWindowLeaveFullScreen() {
 #if BUILDFLAG(IS_MAC)
   if (web_contents()->IsFullscreen())
@@ -308,10 +298,6 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
       web_preferences->SetBackgroundColor(ParseCSSColor(color_name));
     }
   }
-}
-
-void BrowserWindow::OnDevToolsResized() {
-  UpdateDraggableRegions(draggable_regions_);
 }
 
 void BrowserWindow::FocusOnWebView() {

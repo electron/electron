@@ -38,6 +38,7 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
   void SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value);
   std::vector<v8::Local<v8::Value>> GetChildren();
   void SetBackgroundColor(absl::optional<WrappedSkColor> color);
+  void SetVisible(bool visible);
 
   // views::ViewObserver
   void OnViewBoundsChanged(views::View* observed_view) override;

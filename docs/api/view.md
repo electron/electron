@@ -82,6 +82,10 @@ Examples of valid `color` values:
 
 **Note:** Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBA` or `RGA`.
 
+#### `view.setVisible(visible)`
+
+* `visible` boolean - If false, the view will be hidden from display.
+
 ### Instance Properties
 
 Objects created with `new View` have the following properties:

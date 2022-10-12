@@ -10,11 +10,11 @@ export default class BrowserView {
   #lastWindowSize: {width: number, height: number} = { width: 0, height: 0 }
   #autoResizeFlags: AutoResizeOptions = {}
 
-  constructor (options?: WebPreferences) {
-    if (options && 'webContents' in options) {
-      v8Util.setHiddenValue(options, 'webContents', (options as any).webContents);
+  constructor (options?: {webPreferences: WebPreferences}) {
+    if (options?.webPreferences && 'webContents' in options.webPreferences) {
+      v8Util.setHiddenValue(options, 'webContents', (options.webPreferences as any).webContents);
     }
-    this.#webContentsView = new WebContentsView(options);
+    this.#webContentsView = new WebContentsView(options?.webPreferences);
   }
 
   get webContents () {

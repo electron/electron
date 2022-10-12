@@ -4,8 +4,12 @@ import { screen, desktopCapturer, NativeImage } from 'electron';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 
-/** Chroma key green. */
-export const CHROMA_COLOR_HEX = '#00b140';
+export enum HexColors {
+  GREEN = '#00b140',
+  PURPLE = '#6a0dad',
+  RED = '#ff0000',
+  BLUE = '#0000ff'
+};
 
 /**
  * Capture the screen at the given point.
@@ -16,10 +20,10 @@ export const captureScreen = async (point: Electron.Point = { x: 0, y: 0 }): Pro
   const display = screen.getDisplayNearestPoint(point);
   const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: display.size });
   // Toggle to save screen captures for debugging.
-  const DEBUG_CAPTURE = false;
+  const DEBUG_CAPTURE = process.env.DEBUG_CAPTURE || false;
   if (DEBUG_CAPTURE) {
     for (const source of sources) {
-      await fs.promises.writeFile(path.join(fixtures, `screenshot_${source.display_id}.png`), source.thumbnail.toPNG());
+      await fs.promises.writeFile(path.join(fixtures, `screenshot_${source.display_id}_${Date.now()}.png`), source.thumbnail.toPNG());
     }
   }
   const screenCapture = sources.find(source => source.display_id === `${display.id}`);

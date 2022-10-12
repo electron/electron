@@ -271,6 +271,11 @@ void View::SetBackgroundColor(absl::optional<WrappedSkColor> color) {
   view_->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
 }
 
+void View::SetVisible(bool visible) {
+  CHECK(view_);
+  view_->SetVisible(visible);
+}
+
 void View::OnViewBoundsChanged(views::View* observed_view) {
   Emit("bounds-changed");
 }
@@ -323,7 +328,8 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBounds", &View::SetBounds)
       .SetMethod("getBounds", &View::GetBounds)
       .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
-      .SetMethod("setLayout", &View::SetLayout);
+      .SetMethod("setLayout", &View::SetLayout)
+      .SetMethod("setVisible", &View::SetVisible);
 #endif
 }
 
