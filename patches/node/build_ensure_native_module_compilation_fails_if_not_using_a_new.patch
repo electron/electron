@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index a80b57fbba17b5025351ef41dd83f62832bbd781..8441a5270212af7e4643e6b4ee100a22f8e6f51c 100644
+index d92f1daeb4fd78c4ec66ace0102b09db118f779a..ae79e317cc021efdeb4a0a1d462b79ffff206030 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -83,6 +83,8 @@
@@ -19,7 +19,7 @@ index a80b57fbba17b5025351ef41dd83f62832bbd781..8441a5270212af7e4643e6b4ee100a22
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -288,6 +290,7 @@
+@@ -284,6 +286,7 @@
        'V8_DEPRECATION_WARNINGS',
        'V8_IMMINENT_DEPRECATION_WARNINGS',
        '_GLIBCXX_USE_CXX11_ABI=1',
@@ -27,7 +27,7 @@ index a80b57fbba17b5025351ef41dd83f62832bbd781..8441a5270212af7e4643e6b4ee100a22
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -395,6 +398,11 @@
+@@ -394,6 +397,11 @@
            }],
          ],
        }],
@@ -51,9 +51,8 @@ index 1b7a721585764aecfd855ee47c47a3bd235d2ef3..c152ea9f29478729ec3752132140e3ec
    o['variables']['v8_enable_webassembly'] = 1
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
- 
 diff --git a/src/node.h b/src/node.h
-index b6a26f8adf11959f94a00de0cbf9016fcc8707cb..38bbb20968772a4ba6bceddb04a83589f8582fc8 100644
+index 4966df8d4dd0726ba0777b5b8f2f1bfc3071d951..30cfd68159be7f4e22da463ccac5e9bc5ac6e6dd 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

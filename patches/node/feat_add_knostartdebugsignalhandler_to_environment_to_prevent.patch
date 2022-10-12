@@ -33,7 +33,6 @@ index 59dd7c8d9e172493d79be21079598a08629be128..417f0b3657cb068e7708cbeb787f8cb1
    inline bool no_browser_globals() const;
    inline uint64_t thread_id() const;
    inline worker::Worker* worker_context() const;
-
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
 index 34bb11e7d7122cd2c659d45834be6889abec4ac1..f708933d8bd6a6dc6741d6af22665b37c56e333a 100644
 --- a/src/inspector_agent.cc
@@ -52,10 +51,10 @@ index 34bb11e7d7122cd2c659d45834be6889abec4ac1..f708933d8bd6a6dc6741d6af22665b37
      parent_env_->AddCleanupHook([](void* data) {
        Environment* env = static_cast<Environment*>(data);
 diff --git a/src/node.h b/src/node.h
-index 4eee4e96349ee49423d53819dd90a213f6a6e042..b6a26f8adf11959f94a00de0cbf9016fcc8707cb 100644
+index a6407dd1e78c8fa86dfc2a6c40813b1b4d6a6829..4966df8d4dd0726ba0777b5b8f2f1bfc3071d951 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -455,7 +455,11 @@ enum Flags : uint64_t {
+@@ -458,7 +458,11 @@ enum Flags : uint64_t {
    // This control is needed by embedders who may not want to initialize the V8
    // inspector in situations where one has already been created,
    // e.g. Blink's in Chromium.

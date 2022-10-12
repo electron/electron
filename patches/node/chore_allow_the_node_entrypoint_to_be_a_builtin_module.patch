@@ -7,11 +7,29 @@ This allows embedders to tell Node.js what the first "real" file is  when
 they use themselves as the entry point. We should try to upstream some form
 of this.
 
+diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
+index 4b592b0f7d9d481ee746b4e6db07620a27284f17..79b21e33ebf5849d83f462374905357d244224b0 100644
+--- a/lib/internal/modules/cjs/loader.js
++++ b/lib/internal/modules/cjs/loader.js
+@@ -1123,6 +1123,13 @@ Module.prototype._compile = function(content, filename) {
+   if (getOptionValue('--inspect-brk') && process._eval == null) {
+     if (!resolvedArgv) {
+       // We enter the repl if we're not given a filename argument.
++      // process._firstFileName is used by Embedders to tell node what
++      // the first "real" file is when they use themselves as the entry
++      // point
++      if (process._firstFileName) {
++        resolvedArgv = process._firstFileName
++        delete process._firstFileName
++      } else
+       if (process.argv[1]) {
+         try {
+           resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 25a8464e4833ff4655db2fe37f4bd482dc147865..4b1f1b05b6c67f206f87618792fa528deb238d8d 100644
+index db8bf724af5f113c7c86350a210d5eee82879d13..6659f03e9aa45c35d355399597f533ad20232575 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -122,11 +122,13 @@ function patchProcessObject(expandArgv1) {
+@@ -135,11 +135,13 @@ function patchProcessObject(expandArgv1) {
    if (expandArgv1 && process.argv[1] &&
        !StringPrototypeStartsWith(process.argv[1], '-')) {
      // Expand process.argv[1] into a full path.
@@ -30,21 +48,3 @@ index 25a8464e4833ff4655db2fe37f4bd482dc147865..4b1f1b05b6c67f206f87618792fa528d
      }
    }
  
-diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 3a536aab1bdeea6829d76d6af48fdefe0e08908d..4e3388b0b1fe69f8aaff15e651f7f0201208a40f 100644
---- a/lib/internal/modules/cjs/loader.js
-+++ b/lib/internal/modules/cjs/loader.js
-@@ -1100,6 +1100,13 @@ Module.prototype._compile = function(content, filename) {
-   if (getOptionValue('--inspect-brk') && process._eval == null) {
-     if (!resolvedArgv) {
-       // We enter the repl if we're not given a filename argument.
-+      // process._firstFileName is used by Embedders to tell node what
-+      // the first "real" file is when they use themselves as the entry
-+      // point
-+      if (process._firstFileName) {
-+        resolvedArgv = process._firstFileName
-+        delete process._firstFileName
-+      } else
-       if (process.argv[1]) {
-         try {
-           resolvedArgv = Module._resolveFilename(process.argv[1], null, false);

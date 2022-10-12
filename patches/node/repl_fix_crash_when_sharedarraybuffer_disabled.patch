@@ -25,7 +25,7 @@ index a771b1813731edf4f0dd60f3505799e389f1d876..b9461677e2d7d1df192e752496e62cca
    bench.start();
    for (let i = 0; i < n; i++)
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index f7ead4084ed4ed6a682bc62e7ad6fc350381d3b9..200da882076c9e099b221a33b4b933a6db906640 100644
+index cd9ca227b9cac4ff021ce1643000ea4b45163df6..0846afec28ab5fb507eb5f3eb211f635d61dca17 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
 @@ -10,7 +10,7 @@ const {
@@ -37,7 +37,7 @@ index f7ead4084ed4ed6a682bc62e7ad6fc350381d3b9..200da882076c9e099b221a33b4b933a6
  } = primordials;
  
  const {
-@@ -156,6 +156,8 @@ port.on('message', (message) => {
+@@ -157,6 +157,8 @@ port.on('message', (message) => {
  
      process.cwd = function() {
        const currentCounter = Atomics.load(cwdCounter, 0);

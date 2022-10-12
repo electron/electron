@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253f62e51bd 100644
+index 8a7ad50b818448fa14eb4707c1dcec2a1339d2db..b6981c37d5b286e22f24d11751eb05f72ca27619 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -80,6 +80,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -82,6 +82,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -104,12 +104,11 @@ index 51973d7cb15f0650f3e94a7b8c9811c550ee9b0f..1ab08092e8b8ad8a989eaa18f8e573b5
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
-
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index f26422ee106ab7a816750ee717cb18ea454b5b62..5e5798e7e55dbb2df93ef4a8ab6f40aeb85616b4 100644
+index dc3bb15cfb48a8fdca471ac87840a8de30437920..f54555ae83e0bc2a4fc1bd1c6da08b30dfc1c6e4 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -241,7 +241,7 @@ class ByteSource {
+@@ -279,7 +279,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -119,7 +118,7 @@ index f26422ee106ab7a816750ee717cb18ea454b5b62..5e5798e7e55dbb2df93ef4a8ab6f40ae
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index c537a247f55ff070da1988fc8b7309b5692b5c18..59bfb597849cd5a94800d6c83b238ef77245243e 100644
+index 581d52a7d05738133e5c3fad33cb73b7c575ef0b..6a4f24aa1d6853826e7ab5c729918c9048284128 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {
@@ -132,10 +131,10 @@ index c537a247f55ff070da1988fc8b7309b5692b5c18..59bfb597849cd5a94800d6c83b238ef7
      return ret;
  
 diff --git a/src/node_internals.h b/src/node_internals.h
-index f7314c906e580664be445a8912030e17a3ac2fa4..99258ad0aa1e15ea1ba139fd0e83111e1436cc40 100644
+index 1449d2acd327b9cbbe32286ec6b7f6b412e693a2..d626d86c8dd8be78b3035be77867903fa0be68d7 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -97,7 +97,9 @@ bool InitializePrimordials(v8::Local<v8::Context> context);
+@@ -99,7 +99,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -146,7 +145,7 @@ index f7314c906e580664be445a8912030e17a3ac2fa4..99258ad0aa1e15ea1ba139fd0e83111e
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -116,7 +118,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -118,7 +120,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:
@@ -156,7 +155,7 @@ index f7314c906e580664be445a8912030e17a3ac2fa4..99258ad0aa1e15ea1ba139fd0e83111e
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..92d5020f293c98c81d3891a82f7320629bf9f926 100644
+index 45a16d9de43703c2115dde85c9faae3a04be2a88..0cd76078218433b46c17f350e3ba6073987438cf 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,11 @@ using v8::ValueSerializer;

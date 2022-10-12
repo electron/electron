@@ -632,7 +632,7 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index b2c14b1efcd68bd20e9c946106f1ab5fb58627c5..eef0bfe638b641c68fdadd95226a74df044921cb 100644
+index 74c0ff53eb18b749d4018b50d654df943403245b..aab253ca5d4504c445c88cd9519f8385a7b39b91 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,6 +29,7 @@ const keySize = 2048;
@@ -1054,4 +1054,3 @@ index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c
  };
  
  function generateWrappingKeys() {
- 

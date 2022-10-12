@@ -6,7 +6,7 @@ Subject: fix serdes test
 The V8 wire format version changed.
 
 diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
-index 1b6638ac1a90bdcec618b6c7b2a51c21fe6b548e..b1de15453ae41f6f6548dc843a95edb5999fdf72 100644
+index 1b6638ac1a90bdcec618b6c7b2a51c21fe6b548e..5ce5668925f0defb685d77063212f42eb524b3ad 100644
 --- a/test/parallel/test-v8-serdes.js
 +++ b/test/parallel/test-v8-serdes.js
 @@ -164,11 +164,11 @@ const hostObject = new (internalBinding('js_stream').JSStream)();

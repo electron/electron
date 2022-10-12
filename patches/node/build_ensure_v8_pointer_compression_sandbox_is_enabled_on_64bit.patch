@@ -53,4 +53,3 @@ index a4e5723067f286d4a836f329d0049b6bbaac9419..1b7a721585764aecfd855ee47c47a3bd
    o['variables']['v8_enable_shared_ro_heap'] = 0 if options.enable_pointer_compression else 1
    o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
    o['variables']['node_use_v8_platform'] = b(not options.without_v8_platform)
- 

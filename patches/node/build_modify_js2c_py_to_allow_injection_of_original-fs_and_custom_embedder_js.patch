@@ -61,7 +61,7 @@ index fa87a2042c043bb20fedbb83e60cc160c3f9b7e5..7f0a25af306ffefbc51ac43689ed208d
  
    std::vector<std::string> GetBuiltinIds();
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 4d9317527d46ac8c6d8066bfba707233053b8615..83225036208b68087a6066adf1d1948b84c5c234 100755
+index 8ba46c5d78c5c86d9f7b8b6972f3febbe87de61e..38057495e04eba46ca87f6a0ea607f0fff46846e 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -39,6 +39,8 @@ import codecs
@@ -73,7 +73,7 @@ index 4d9317527d46ac8c6d8066bfba707233053b8615..83225036208b68087a6066adf1d1948b
    if is_verbose:
      print(filename)
    with codecs.open(filename, "r", "utf-8") as f:
-@@ -57,13 +57,15 @@ namespace builtins {{
+@@ -57,13 +59,15 @@ namespace builtins {{
  
  {0}
  
@@ -90,7 +90,7 @@ index 4d9317527d46ac8c6d8066bfba707233053b8615..83225036208b68087a6066adf1d1948b
 +#endif
  
  }}  // namespace builtins
-
+ 
 @@ -113,8 +117,8 @@ def GetDefinition(var, source, step=30):
    return definition, len(code_points)
  

@@ -27,4 +27,3 @@ index 6ce21363e1ee6acdd2e48763d0637ef1983e5264..f448bde2a570480a4390daf5392dc9d9
    options.execPath = options.execPath || process.execPath;
  
    // Prepare arguments for fork:
- 
