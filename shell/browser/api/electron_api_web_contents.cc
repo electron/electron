@@ -2855,12 +2855,12 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
       settings.GetDict().FindBool("displayHeaderFooter");
   auto print_background = settings.GetDict().FindBool("shouldPrintBackgrounds");
   auto scale = settings.GetDict().FindDouble("scale");
-  auto paper_width = settings.GetDict().FindInt("paperWidth");
-  auto paper_height = settings.GetDict().FindInt("paperHeight");
-  auto margin_top = settings.GetDict().FindIntByDottedPath("margins.top");
-  auto margin_bottom = settings.GetDict().FindIntByDottedPath("margins.bottom");
-  auto margin_left = settings.GetDict().FindIntByDottedPath("margins.left");
-  auto margin_right = settings.GetDict().FindIntByDottedPath("margins.right");
+  auto paper_width = settings.GetDict().FindDouble("paperWidth");
+  auto paper_height = settings.GetDict().FindDouble("paperHeight");
+  auto margin_top = settings.GetDict().FindDouble("marginTop");
+  auto margin_bottom = settings.GetDict().FindDouble("marginBottom");
+  auto margin_left = settings.GetDict().FindDouble("marginLeft");
+  auto margin_right = settings.GetDict().FindDouble("marginRight");
   auto page_ranges = *settings.GetDict().FindString("pageRanges");
   auto header_template = *settings.GetDict().FindString("headerTemplate");
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
