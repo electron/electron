@@ -123,6 +123,8 @@ filenames = {
   lib_sources_mac = [
     "shell/app/electron_main_delegate_mac.h",
     "shell/app/electron_main_delegate_mac.mm",
+    "shell/browser/animation_util.h",
+    "shell/browser/animation_util_mac.mm",
     "shell/browser/api/electron_api_app_mac.mm",
     "shell/browser/api/electron_api_menu_mac.h",
     "shell/browser/api/electron_api_menu_mac.mm",

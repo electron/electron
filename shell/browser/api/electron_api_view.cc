@@ -22,6 +22,10 @@
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/layout_manager_base.h"
 
+#if BUILDFLAG(IS_MAC)
+#include "shell/browser/animation_util.h"
+#endif
+
 namespace gin {
 
 template <>
@@ -188,6 +192,18 @@ void View::AddChildViewAt(gin::Handle<View> child, size_t index) {
     return;
   child_views_.emplace(child_views_.begin() + index,     // index
                        isolate(), child->GetWrapper());  // v8::Global(args...)
+#if BUILDFLAG(IS_MAC)
+  // Disable the implicit CALayer animations that happen by default when adding
+  // or removing sublayers.
+  // See
+  // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/ReactingtoLayerChanges/ReactingtoLayerChanges.html
+  // and https://github.com/electron/electron/pull/14911
+  // TODO(nornagon): Disabling these CALayer animations (which are specific to
+  // WebContentsView, I think) seems like this is something that remote_cocoa
+  // or views should be taking care of, but isn't. This should be pushed
+  // upstream.
+  ScopedCAActionDisabler disable_animations;
+#endif
   view_->AddChildViewAt(child->view(), index);
 }
 
@@ -195,6 +211,9 @@ void View::RemoveChildView(gin::Handle<View> child) {
   CHECK(view_);
   auto it = std::find(child_views_.begin(), child_views_.end(), child.ToV8());
   if (it != child_views_.end()) {
+#if BUILDFLAG(IS_MAC)
+    ScopedCAActionDisabler disable_animations;
+#endif
     view_->RemoveChildView(child->view());
     child_views_.erase(it);
   }
