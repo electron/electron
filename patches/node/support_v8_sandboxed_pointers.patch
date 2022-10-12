@@ -26,10 +26,10 @@ index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 840fe824617b951d4f4421155c5e1ce79c28525e..b1ae378993723d7a0a71bfe36fc5be94a899082a 100644
+index 51973d7cb15f0650f3e94a7b8c9811c550ee9b0f..1ab08092e8b8ad8a989eaa18f8e573b5948d295f 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -332,10 +332,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -326,10 +326,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -66,7 +66,7 @@ index 840fe824617b951d4f4421155c5e1ce79c28525e..b1ae378993723d7a0a71bfe36fc5be94
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -347,10 +372,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -341,10 +366,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -79,10 +79,10 @@ index 840fe824617b951d4f4421155c5e1ce79c28525e..b1ae378993723d7a0a71bfe36fc5be94
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -680,6 +706,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
- }
- 
- namespace {
+@@ -658,6 +684,16 @@ namespace {
+ // in which case this has the same semantics as
+ // using OPENSSL_malloc. However, if the secure heap is
+ // initialized, SecureBuffer will automatically use it.
 +#if defined(V8_ENABLE_SANDBOX)
 +// When V8 sandboxed pointers are enabled, the secure heap cannot be used as
 +// all ArrayBuffers must be allocated inside the V8 memory cage.
@@ -93,10 +93,10 @@ index 840fe824617b951d4f4421155c5e1ce79c28525e..b1ae378993723d7a0a71bfe36fc5be94
 +  args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
 +}
 +#else
- // SecureBuffer uses openssl to allocate a Uint8Array using
- // OPENSSL_secure_malloc. Because we do not yet actually
- // make use of secure heap, this has the same semantics as
-@@ -707,6 +743,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsUint32());
+   Environment* env = Environment::GetCurrent(args);
+@@ -679,6 +715,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -104,6 +104,7 @@ index 840fe824617b951d4f4421155c5e1ce79c28525e..b1ae378993723d7a0a71bfe36fc5be94
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
+
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
 index f26422ee106ab7a816750ee717cb18ea454b5b62..5e5798e7e55dbb2df93ef4a8ab6f40aeb85616b4 100644
 --- a/src/crypto/crypto_util.h
