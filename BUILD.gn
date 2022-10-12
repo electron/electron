@@ -403,9 +403,6 @@ source_set("electron_lib") {
     "//media/mojo/mojom",
     "//net:extras",
     "//net:net_resources",
-    "//ppapi/host",
-    "//ppapi/proxy",
-    "//ppapi/shared_impl",
     "//printing/buildflags",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/cpp/hid",
@@ -616,7 +613,12 @@ source_set("electron_lib") {
   }
 
   if (enable_plugins) {
-    deps += [ "chromium_src:plugins" ]
+    deps += [
+      "chromium_src:plugins",
+      "//ppapi/host",
+      "//ppapi/proxy",
+      "//ppapi/shared_impl",
+    ]
     sources += [
       "shell/renderer/pepper_helper.cc",
       "shell/renderer/pepper_helper.h",

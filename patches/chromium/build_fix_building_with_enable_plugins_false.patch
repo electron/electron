@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <miburda@microsoft.com>
+Date: Sun, 30 Oct 2022 22:32:39 +0100
+Subject: build: fix building with enable_plugins = false
+
+This issue is fixed in latest Chromium
+
+diff --git a/tools/ipc_fuzzer/message_lib/BUILD.gn b/tools/ipc_fuzzer/message_lib/BUILD.gn
+index 00618d9f81cabd5084218431658fd91d22fb4208..26be64a51fc5767e0ee97681a0b3f2dfd74159fe 100644
+--- a/tools/ipc_fuzzer/message_lib/BUILD.gn
++++ b/tools/ipc_fuzzer/message_lib/BUILD.gn
+@@ -3,6 +3,7 @@
+ # found in the LICENSE file.
+ 
+ import("//components/nacl/features.gni")
++import("//ppapi/buildflags/buildflags.gni")
+ import("//remoting/remoting_enable.gni")
+ 
+ static_library("ipc_message_lib") {
+@@ -22,7 +23,6 @@ static_library("ipc_message_lib") {
+     "//ipc",
+     "//media/cast:net",
+     "//media/gpu/ipc/common",
+-    "//ppapi/proxy:ipc",
+     "//skia",
+     "//third_party/blink/public:blink",
+     "//third_party/blink/public:blink_headers",
+@@ -49,4 +49,7 @@ static_library("ipc_message_lib") {
+   if (enable_remoting) {
+     public_deps += [ "//remoting/host" ]
+   }
++  if (enable_plugins) {
++    public_deps += [ "//ppapi/proxy:ipc" ]
++  }
+ }
