@@ -13,7 +13,7 @@ describe('BrowserView module', () => {
   let view: BrowserView;
 
   beforeEach(() => {
-    expect(webContents.getAllWebContents()).to.have.length(0);
+    expect(webContents.getAllWebContents().length).to.equal(0, 'expected no webContents to exist');
     w = new BrowserWindow({
       show: false,
       width: 400,
@@ -37,7 +37,7 @@ describe('BrowserView module', () => {
       await p;
     }
 
-    expect(webContents.getAllWebContents()).to.have.length(0);
+    expect(webContents.getAllWebContents().length).to.equal(0, 'expected no webContents to exist');
   });
 
   it('can be created with an existing webContents', async () => {
@@ -45,7 +45,7 @@ describe('BrowserView module', () => {
     await wc.loadURL('about:blank');
 
     view = new BrowserView({ webContents: wc } as any);
-    expect(view.webContents).to.equal(wc);
+    expect(view.webContents === wc).to.be.true('view.webContents === wc');
 
     expect(view.webContents.getURL()).to.equal('about:blank');
   });

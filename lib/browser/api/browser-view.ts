@@ -1,4 +1,4 @@
-import { BrowserWindow, AutoResizeOptions, Rectangle, WebContentsView, WebPreferences } from 'electron/main';
+import { BrowserWindow, AutoResizeOptions, Rectangle, WebContentsView, WebPreferences, WebContents } from 'electron/main';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
@@ -10,11 +10,12 @@ export default class BrowserView {
   #lastWindowSize: {width: number, height: number} = { width: 0, height: 0 }
   #autoResizeFlags: AutoResizeOptions = {}
 
-  constructor (options?: {webPreferences: WebPreferences}) {
-    if (options?.webPreferences && 'webContents' in options.webPreferences) {
-      v8Util.setHiddenValue(options, 'webContents', (options.webPreferences as any).webContents);
+  constructor (options: {webPreferences: WebPreferences, webContents?: WebContents} = { webPreferences: {} }) {
+    const { webPreferences = {}, webContents } = options;
+    if (webContents) {
+      v8Util.setHiddenValue(webPreferences, 'webContents', webContents);
     }
-    this.#webContentsView = new WebContentsView(options?.webPreferences);
+    this.#webContentsView = new WebContentsView(webPreferences);
   }
 
   get webContents () {
