@@ -10,16 +10,16 @@ diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
 index 67cbdb9db09ca78f859032696c86f128bad64c46..376680f015d09a2cf3ce62de1fdeb9c5ed4c300b 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -66,6 +66,10 @@ setupBuffer();
- process.domain = null;
+@@ -88,6 +88,10 @@ process.domain = null;
+ }
  process._exiting = false;
  
 +// NOTE: Electron deletes this references before user code runs so that
-+// internalBinding is not leaked to user code
++// internalBinding is not leaked to user code.
 +process.internalBinding = internalBinding;
 +
  // process.config is serialized config.gypi
- const nativeModule = internalBinding('native_module');
+ const nativeModule = internalBinding('builtins');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
 index a65094ec21b0f40ab562608a9eeb36c5626cda31..3a536aab1bdeea6829d76d6af48fdefe0e08908d 100644
