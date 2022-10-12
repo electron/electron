@@ -85,8 +85,8 @@ void ElectronRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  bool initialized = node::InitializeContext(renderer_context);
-  CHECK(initialized);
+  v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
+  CHECK(!initialized.IsNothing());
 
   node::Environment* env =
       node_bindings_->CreateEnvironment(renderer_context, nullptr);

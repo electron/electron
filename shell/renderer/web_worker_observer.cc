@@ -63,8 +63,8 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  bool initialized = node::InitializeContext(worker_context);
-  CHECK(initialized);
+  v8::Maybe<bool> initialized = node::InitializeContext(worker_context);
+  CHECK(!initialized.IsNothing());
   node::Environment* env =
       node_bindings_->CreateEnvironment(worker_context, nullptr);
 
