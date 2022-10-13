@@ -39,6 +39,7 @@
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
+#include "net/base/network_anonymization_key.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
@@ -98,23 +99,6 @@
 
 using content::BrowserThread;
 using content::StoragePartition;
-
-namespace predictors {
-// NOTE(nornagon): this is copied from
-// //chrome/browser/predictors/resource_prefetch_predictor.cc we don't need
-// anything in that file other than this constructor. Without it we get a link
-// error. Probably upstream the constructor should be moved to
-// preconnect_manager.cc.
-PreconnectRequest::PreconnectRequest(
-    const url::Origin& origin,
-    int num_sockets,
-    const net::NetworkIsolationKey& network_isolation_key)
-    : origin(origin),
-      num_sockets(num_sockets),
-      network_isolation_key(network_isolation_key) {
-  DCHECK_GE(num_sockets, 0);
-}
-}  // namespace predictors
 
 namespace {
 
@@ -963,7 +947,8 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
   url::Origin origin = url::Origin::Create(url);
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkIsolationKey(origin, origin)}};
+       net::NetworkAnonymizationKey(net::SchemefulSite(origin),
+                                    net::SchemefulSite(origin))}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
