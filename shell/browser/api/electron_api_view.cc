@@ -182,14 +182,9 @@ View::~View() {
 }
 
 #if BUILDFLAG(ENABLE_VIEWS_API)
-void View::AddChildView(gin::Handle<View> child) {
-  AddChildViewAt(child, child_views_.size());
-}
-
-void View::AddChildViewAt(gin::Handle<View> child, size_t index) {
+void View::AddChildViewAt(gin::Handle<View> child, absl::optional<size_t> maybe_index) {
   CHECK(view_);
-  if (index > child_views_.size())
-    return;
+  size_t index = std::min(child_views_.size(), maybe_index.value_or(child_views_.size()));
   child_views_.emplace(child_views_.begin() + index,     // index
                        isolate(), child->GetWrapper());  // v8::Global(args...)
 #if BUILDFLAG(IS_MAC)
@@ -340,8 +335,7 @@ void View::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "View"));
 #if BUILDFLAG(ENABLE_VIEWS_API)
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("addChildView", &View::AddChildView)
-      .SetMethod("addChildViewAt", &View::AddChildViewAt)
+      .SetMethod("addChildView", &View::AddChildViewAt)
       .SetMethod("removeChildView", &View::RemoveChildView)
       .SetProperty("children", &View::GetChildren)
       .SetMethod("setBounds", &View::SetBounds)

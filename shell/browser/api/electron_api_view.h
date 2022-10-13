@@ -29,8 +29,7 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
                              v8::Local<v8::FunctionTemplate> prototype);
 
 #if BUILDFLAG(ENABLE_VIEWS_API)
-  void AddChildView(gin::Handle<View> child);
-  void AddChildViewAt(gin::Handle<View> child, size_t index);
+  void AddChildViewAt(gin::Handle<View> child, absl::optional<size_t> index);
   void RemoveChildView(gin::Handle<View> child);
 
   void SetBounds(const gfx::Rect& bounds);

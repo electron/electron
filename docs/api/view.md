@@ -36,21 +36,23 @@ new bounds can be retrieved with [`view.getBounds()`](#viewgetbounds).
 
 Objects created with `new View` have the following instance methods:
 
-#### `view.addChildView(view)`
+#### `view.addChildView(view[, index])`
 
-* `view` View - child view to add.
+* `view` View - Child view to add.
+* `index` Integer (optional) - Index at which to insert the child view.
+  Defaults to adding the child at the end of the child list.
 
 #### `view.removeChildView(view)`
 
-* `view` View - child view to remove.
+* `view` View - Child view to remove.
 
 #### `view.setBounds(bounds)`
 
-* `bounds` [Rectangle](structures/rectangle.md) - new bounds of the View.
+* `bounds` [Rectangle](structures/rectangle.md) - New bounds of the View.
 
 #### `view.getBounds()`
 
-Returns [`Rectangle`](structures/rectangle.md) - the bounds of this View, relative to its parent.
+Returns [`Rectangle`](structures/rectangle.md) - The bounds of this View, relative to its parent.
 
 #### `view.setBackgroundColor(color)`
 
