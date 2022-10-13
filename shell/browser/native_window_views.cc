@@ -281,24 +281,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       new ElectronDesktopWindowTreeHostLinux(this, native_widget);
 #endif
 
-  // Ref https://github.com/electron/electron/issues/30760
-  // Set the can_resize param before initializing the widget.
-  // When resizable_ is true, this causes the WS_THICKFRAME style
-  // to be passed into CreateWindowEx and SetWindowLong calls in
-  // WindowImpl::Init and HwndMessageHandler::SizeConstraintsChanged
-  // respectively. As a result, the Windows 7 frame doesn't show,
-  // but it isn't clear why this is the case.
-  // When resizable_ is false, WS_THICKFRAME is not passed into the
-  // SetWindowLong call, so the Windows 7 frame still shows.
-  // One workaround would be to call set_can_resize(true) here,
-  // and then move the SetCanResize(resizable_) call after the
-  // SetWindowLong call around line 365, but that's a much larger change.
-  set_can_resize(true);
   widget()->Init(std::move(params));
-
-  // When the workaround above is not needed anymore, only this
-  // call should be necessary.
-  // With the workaround in place, this call doesn't do anything.
   SetCanResize(resizable_);
 
   bool fullscreen = false;
