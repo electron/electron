@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index e19131ce8fac0b34ef722e63304140786e886bcd..b8d98f7b03762615ce89af57abc51660c4190806 100644
+index e4db8136e957313da28b7ef2bcff4ec91eee5deb..bd4fbda15d8d73d92ec8684a66a4aaeea53990d1 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1882,6 +1882,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -81,10 +81,10 @@ index 5ca2e3b7999fb0c8da4953c6a20352a4b9de675d..86b4f9d2d1882e5706fd559e01442b02
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index e5099bc98105ce82b05d1b45817a80ebbcd51045..c7a3f3e0cde07cc72d175cf690a31796df2f0795 100644
+index f52718f68a21d257fd51fcad6b8fef94cd339673..e4e8885b53ec990729e2ca38cdab5757af4cd1dc 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -224,6 +224,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -230,6 +230,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -93,7 +93,7 @@ index e5099bc98105ce82b05d1b45817a80ebbcd51045..c7a3f3e0cde07cc72d175cf690a31796
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 753f325bc3386adcbf6698c7a221036ec88d8625..2ce0aad69f35ec0e3697920afb75b86ce21e0ac0 100644
+index d0b9284fcd1120722b751a462f7018353e7b07c3..6c6a50e6f5f78a5e1caaf539bde4893b4a8bd0a8 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -200,6 +200,7 @@

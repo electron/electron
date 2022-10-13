@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 484416dbbda7a47598accad8a32998c466dcc390..2e93ff6792f867626a3e44a6881a617667209d23 100644
+index a6b18dea1236535e4c802c4c1abceefb69609b17..76bc010c7a4af291fff8d44c0e5c54b93f355b87 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -980,7 +980,6 @@ if (is_win) {
@@ -34,7 +34,7 @@ index 484416dbbda7a47598accad8a32998c466dcc390..2e93ff6792f867626a3e44a6881a6176
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 7bf40d0645270e3f2062767d8a335e03a94decf2..086203f63bd4c162155154dc1eef228001e4aa7b 100644
+index a1372cc90fc84b159e9952fa747e36360ae1a170..429b93910457675347b3b80e232e71aa4021a3ff 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -90,6 +90,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -53,7 +53,7 @@ index 7bf40d0645270e3f2062767d8a335e03a94decf2..086203f63bd4c162155154dc1eef2280
  
  #endif  // BUILDFLAG(IS_WIN)
  
-@@ -347,8 +349,10 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -351,8 +353,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
  
@@ -65,7 +65,7 @@ index 7bf40d0645270e3f2062767d8a335e03a94decf2..086203f63bd4c162155154dc1eef2280
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode = print_with_reduced_rasterization
-@@ -438,8 +442,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+@@ -442,8 +446,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
    } else {
@@ -121,10 +121,10 @@ index 51bab147b3c353313e91b1ff09b735bfdde9b19a..d311ed33b2cf8fc459af7c3b7dd0c0ff
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/print_job_worker_oop.cc b/chrome/browser/printing/print_job_worker_oop.cc
-index 8a126ddc655271416eda3d035caeb2c6778537b1..a2b6b19846bddf918efb75a53ea58dcfdddbc9d5 100644
+index 6e9486405552e990d6c8fe13691c9951194b9f66..bdf46827498db33c7550a559699e59bdc089d89b 100644
 --- a/chrome/browser/printing/print_job_worker_oop.cc
 +++ b/chrome/browser/printing/print_job_worker_oop.cc
-@@ -356,7 +356,7 @@ void PrintJobWorkerOop::OnFailure() {
+@@ -359,7 +359,7 @@ void PrintJobWorkerOop::OnFailure() {
  }
  
  void PrintJobWorkerOop::ShowErrorDialog() {
@@ -796,10 +796,10 @@ index 51a5497b809cda82b223138f43507172a9f066ae..71227492fd87e577518f3bf55ded37b0
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 43f18c87b3f867eb8c94959eb165abe559571b2a..409ac3f8171d3dd843b5a92608726ff506e17f33 100644
+index a82ab440893d22424366c969d6765a10ee05ea86..a68bc27a93a38f5a1cb0c3dc225def6290dbf688 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2816,8 +2816,9 @@ source_set("browser") {
+@@ -2819,8 +2819,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

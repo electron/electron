@@ -166,7 +166,7 @@ index 644990412b4d67789faffc65c4f1114fa96c8f42..085ceafcda3f66b27cec2aedde86ac7c
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 04a5bbef30bdd1827f455b8288faf9fbd86f103e..1e6b91961c3e32aa223383b444d075ada9688b0b 100644
+index cfec184939ea205dfcc0b1066eeca5c5275596aa..d0dca967df81f6a3d321cd046532bd4cb21e1619 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -180,6 +180,12 @@ source_set("audio") {
