@@ -451,10 +451,10 @@ index 0000000000000000000000000000000000000000..db80a8f00a84bf54f723c21300e7579c
 +}
 diff --git a/deps/base64/BUILD.gn b/deps/base64/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..196d074b914d0a4394c4fb9ca6c4a063a41db72a
+index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60b16ffefc
 --- /dev/null
 +++ b/deps/base64/BUILD.gn
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,204 @@
 +config("base64_config") {
 +  include_dirs = [
 +    "base64/include",
@@ -538,6 +538,8 @@ index 0000000000000000000000000000000000000000..196d074b914d0a4394c4fb9ca6c4a063
 +    "HAVE_SSSE3=1"
 +  ]
 +
++  cflags_c = [ "-Wno-implicit-fallthrough" ]
++
 +  sources = [ "base64/lib/arch/ssse3/ssse3_codec.c" ]
 +
 +  if (!is_win) {
@@ -557,6 +559,8 @@ index 0000000000000000000000000000000000000000..196d074b914d0a4394c4fb9ca6c4a063
 +    "HAVE_SSE41=1"
 +  ]
 +
++  cflags_c = [ "-Wno-implicit-fallthrough" ]
++
 +  sources = [ "base64/lib/arch/sse41/sse41_codec.c" ]
 +
 +  if (!is_win) {
@@ -574,6 +578,8 @@ index 0000000000000000000000000000000000000000..196d074b914d0a4394c4fb9ca6c4a063
 +    "BASE64_STATIC_DEFINE",
 +    "HAVE_SSE42=1"
 +  ]
++
++  cflags_c = [ "-Wno-implicit-fallthrough" ]
 +
 +  sources = [ "base64/lib/arch/sse42/sse42_codec.c" ]
 +
@@ -593,6 +599,8 @@ index 0000000000000000000000000000000000000000..196d074b914d0a4394c4fb9ca6c4a063
 +    "HAVE_AVX=1"
 +  ]
 +
++  cflags_c = [ "-Wno-implicit-fallthrough" ]
++
 +  sources = [ "base64/lib/arch/avx/avx_codec.c" ]
 +
 +  if (!is_win) {
@@ -610,6 +618,8 @@ index 0000000000000000000000000000000000000000..196d074b914d0a4394c4fb9ca6c4a063
 +    "BASE64_STATIC_DEFINE",
 +    "HAVE_AVX2=1"
 +  ]
++
++  cflags_c = [ "-Wno-implicit-fallthrough" ]
 +
 +  sources = [ "base64/lib/arch/avx2/avx2_codec.c" ]
 +
