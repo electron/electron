@@ -144,7 +144,7 @@ NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_{api_name},Initialize)
 In your [`shell/common/node_bindings.cc`](https://github.com/electron/electron/blob/main/shell/common/node_bindings.cc) file, add your node binding name to Electron's built-in modules.
 
 ```cpp title='shell/common/node_bindings.cc'
-#define ELECTRON_BUILTIN_MODULES(V)      \
+#define ELECTRON_BROWSER_MODULES(V)      \
   V(electron_browser_{api_name})
 ```
 
