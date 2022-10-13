@@ -19,8 +19,11 @@
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
+
+class SkRegion;
 
 namespace base {
 class DictionaryValue;
@@ -296,8 +299,6 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowResized();
   void NotifyWindowWillMove(const gfx::Rect& new_bounds, bool* prevent_default);
   void NotifyWindowMoved();
-  void NotifyWindowScrollTouchBegin();
-  void NotifyWindowScrollTouchEnd();
   void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowRotateGesture(float rotation);
   void NotifyWindowSheetBegin();
@@ -343,6 +344,11 @@ class NativeWindow : public base::SupportsUserData,
   FullScreenTransitionType fullscreen_transition_type() const {
     return fullscreen_transition_type_;
   }
+
+  SkRegion const* draggable_region() const { return draggable_region_.get(); }
+
+  void UpdateDraggableRegions(
+      const std::vector<mojom::DraggableRegionPtr>& regions);
 
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
@@ -481,6 +487,10 @@ class NativeWindow : public base::SupportsUserData,
   std::u16string accessible_title_;
 
   gfx::Rect overlay_rect_;
+
+  // For custom drag, the whole window is non-draggable and the draggable region
+  // has to been explicitly provided.
+  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

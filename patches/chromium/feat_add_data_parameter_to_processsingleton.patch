@@ -13,7 +13,7 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 9de82e5422428d6419a24401e0479fbd19a15147..a30b3aae436bbe762ada1bdae69ef83127f0144b 100644
+index 19350d58e817ea8ac7868dd90a08cc25836c9921..5e4a054946c37bed297cc4e952235b83b23756be 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,7 @@
@@ -65,7 +65,7 @@ index 9de82e5422428d6419a24401e0479fbd19a15147..a30b3aae436bbe762ada1bdae69ef831
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index b1721c7034cd082edd2d155b172b8f3aa8d67566..e9419a0b4de2f39730f9478914b307b3bdb45459 100644
+index 455585a9f6d59d65bcfd322f4f925641148cbf55..cbdf10f63c6a96bc48de1ac3e3b8b199170bd0c5 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -607,6 +607,7 @@ class ProcessSingleton::LinuxWatcher
@@ -179,10 +179,10 @@ index b1721c7034cd082edd2d155b172b8f3aa8d67566..e9419a0b4de2f39730f9478914b307b3
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index c375a587abd3d575b5c75a0863b01c9611e8287c..33948d69a4a3bf098187b1c383821d1d67be5818 100644
+index 009b522049adc32144c51842369dc1156bd959fa..8fb7835f6e0a7b2690d13b45179f8de70747e874 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -80,10 +80,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -197,7 +197,7 @@ index c375a587abd3d575b5c75a0863b01c9611e8287c..33948d69a4a3bf098187b1c383821d1d
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -133,6 +135,37 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -134,6 +136,37 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -235,7 +235,7 @@ index c375a587abd3d575b5c75a0863b01c9611e8287c..33948d69a4a3bf098187b1c383821d1d
      return true;
    }
    return false;
-@@ -154,13 +187,14 @@ bool ProcessLaunchNotification(
+@@ -155,13 +188,14 @@ bool ProcessLaunchNotification(
  
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
@@ -253,7 +253,7 @@ index c375a587abd3d575b5c75a0863b01c9611e8287c..33948d69a4a3bf098187b1c383821d1d
    return true;
  }
  
-@@ -261,9 +295,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -267,9 +301,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -265,7 +265,7 @@ index c375a587abd3d575b5c75a0863b01c9611e8287c..33948d69a4a3bf098187b1c383821d1d
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -290,7 +326,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -296,7 +332,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
@@ -275,10 +275,10 @@ index c375a587abd3d575b5c75a0863b01c9611e8287c..33948d69a4a3bf098187b1c383821d1d
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..cfdb2d75532d270e3dd548eb7475a6cdbddf1016 100644
+index b9ebe9bd3b29049c9e95f5dc54f7087515d870f6..1b9e4562347a7a0f2ae8c1bedfa2140643a28892 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
-@@ -36,7 +36,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+@@ -38,7 +38,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
    return base::win::MessageWindow::FindWindow(user_data_dir.value());
  }
  
@@ -289,19 +289,17 @@ index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..cfdb2d75532d270e3dd548eb7475a6cd
    TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
  
    DCHECK(remote_window);
-@@ -50,7 +52,8 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
-   }
+@@ -67,12 +69,29 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+     new_command_line.AppendSwitchNative(switches::kSourceShortcut, si.lpTitle);
  
    // Send the command line to the remote chrome window.
 -  // Format is "START\0<<<current directory>>>\0<<<commandline>>>".
 +  // Format is
 +  // "START\0<current-directory>\0<command-line>\0<additional-data-length>\0<additional-data>".
-   std::wstring to_send(L"START\0", 6);  // want the NULL in the string.
-   base::FilePath cur_dir;
-   if (!base::GetCurrentDirectory(&cur_dir)) {
-@@ -64,6 +67,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
-       base::CommandLine::ForCurrentProcess()->GetCommandLineString());
-   to_send.append(L"\0", 1);  // Null separator.
+   std::wstring to_send = base::StrCat(
+       {base::WStringPiece{L"START\0", 6}, cur_dir.value(),
+        base::WStringPiece{L"\0", 1}, new_command_line.GetCommandLineString(),
+        base::WStringPiece{L"\0", 1}});
  
 +  size_t additional_data_size = additional_data.size_bytes();
 +  if (additional_data_size) {
@@ -323,7 +321,7 @@ index b64ed1d155a30582e48c9cdffcee9d0f25a53a6a..cfdb2d75532d270e3dd548eb7475a6cd
    // window (otherwise it will just flash in the taskbar).
    ::AllowSetForegroundWindow(process_id);
 diff --git a/chrome/browser/win/chrome_process_finder.h b/chrome/browser/win/chrome_process_finder.h
-index 5516673cee019f6060077091e59498bf9038cd6e..8edea5079b46c2cba67833114eb9c21d85cfc22d 100644
+index ddea93de709db5967a353bb73d433737c6aac40c..43c6896923032ffa16a0df4efd48a42f869c15d7 100644
 --- a/chrome/browser/win/chrome_process_finder.h
 +++ b/chrome/browser/win/chrome_process_finder.h
 @@ -7,6 +7,7 @@

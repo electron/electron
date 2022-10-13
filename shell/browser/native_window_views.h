@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "shell/common/api/api.mojom.h"
-#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(USE_OZONE)
@@ -155,9 +153,6 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
-  void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions);
-
   void IncrementChildModals();
   void DecrementChildModals();
 
@@ -176,8 +171,6 @@ class NativeWindowViews : public NativeWindow,
 #elif BUILDFLAG(IS_LINUX)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
-
-  SkRegion* draggable_region() const { return draggable_region_.get(); }
 
 #if BUILDFLAG(IS_WIN)
   TaskbarHost& taskbar_host() { return taskbar_host_; }
@@ -328,10 +321,6 @@ class NativeWindowViews : public NativeWindow,
 
   // Handles unhandled keyboard messages coming back from the renderer process.
   std::unique_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
-
-  // For custom drag, the whole window is non-draggable and the draggable region
-  // has to been explicitly provided.
-  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   // Whether the window should be enabled based on user calls to SetEnabled()
   bool is_enabled_ = true;

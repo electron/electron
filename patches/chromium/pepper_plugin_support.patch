@@ -7,7 +7,7 @@ This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 2425ccd480f4b0f3ac3b9dddb5dbf90639fe515b..6f20e2edd880e34149668ece6e80e79b3da8dc66 100644
+index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2d7e270a9 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -6,17 +6,21 @@
@@ -110,7 +110,7 @@ index 2425ccd480f4b0f3ac3b9dddb5dbf90639fe515b..6f20e2edd880e34149668ece6e80e79b
  }
 +#endif
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index 40fafdbed313800a3f420d9d5a3daf8bbbdb7d95..1367725e04455ba5f299b8341a28f222f51c4cd2 100644
+index 946bbba987594769d371dbdb2ab22582a5d86d9f..01657a210c53c432acee1ba26916b1a6e610a260 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 @@ -19,7 +19,9 @@
@@ -156,7 +156,7 @@ index 40fafdbed313800a3f420d9d5a3daf8bbbdb7d95..1367725e04455ba5f299b8341a28f222
  
  #endif  // CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_ISOLATED_FILE_SYSTEM_MESSAGE_FILTER_H_
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index e3ee403ec5d4d75f22f1853ec8637a0559ce3c43..76232286e02a20bcd578c5ba28af638dfc8f562c 100644
+index 8687c49c7b8b96b1d51eae1a482154c21bb7e20c..983ef9a013184344514b69e8ef2a48a75e67ed01 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 @@ -5,7 +5,9 @@
@@ -186,7 +186,7 @@ index e3ee403ec5d4d75f22f1853ec8637a0559ce3c43..76232286e02a20bcd578c5ba28af638d
    return nullptr;
  }
 diff --git a/chrome/renderer/pepper/pepper_helper.h b/chrome/renderer/pepper/pepper_helper.h
-index 5794ac83e62c7f966920a2692246e7677b297695..01d5a609ad34bb2829bd5714e70930b90c549661 100644
+index 3270fecaeae81ff98995268613cbe4f834195b53..9b8156a8e188f97647288c96d664a2d733e02afd 100644
 --- a/chrome/renderer/pepper/pepper_helper.h
 +++ b/chrome/renderer/pepper/pepper_helper.h
 @@ -5,11 +5,13 @@

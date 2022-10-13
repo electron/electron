@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
-index be17e30aa831282c4be52e788d67993d47eba5df..d5c3988af5be1d9e89330eb5c5195f9b94d13ffc 100644
+index 5fc5b852932b27237a14ca398ee7e43f16947e82..025d9d75adf67f44e846236e571bb3d815c90993 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.cc
 @@ -15,15 +15,19 @@
@@ -101,7 +101,7 @@ index be17e30aa831282c4be52e788d67993d47eba5df..d5c3988af5be1d9e89330eb5c5195f9b
    web_view->SetWebContents(pip_contents);
  
 diff --git a/chrome/browser/ui/views/overlay/document_overlay_window_views.h b/chrome/browser/ui/views/overlay/document_overlay_window_views.h
-index b2b178ccadce82f8d4ec8e5a6dafe1c67bcecd74..603d82a461c4c443ac26c85a46fbd866a42237e6 100644
+index 4a49b767193881e115efb23f969c4b2ad5d9665a..551f580a40377368a490efb4ef7bace223c4ff7e 100644
 --- a/chrome/browser/ui/views/overlay/document_overlay_window_views.h
 +++ b/chrome/browser/ui/views/overlay/document_overlay_window_views.h
 @@ -56,7 +56,6 @@ class DocumentOverlayWindowViews : public OverlayWindowViews,
@@ -113,7 +113,7 @@ index b2b178ccadce82f8d4ec8e5a6dafe1c67bcecd74..603d82a461c4c443ac26c85a46fbd866
    // OverlayWindowViews
    bool ControlsHitTestContainsPoint(const gfx::Point& point) override;
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 590d247e1136b9ac5f766a613e8d91916eb0dda4..453c358d210d48d21a237654143439f2065e98fe 100644
+index 15e2692d469f65ca6dda1085bcafcea53e876304..168700f7732bf5b348aec589597416271c88eb11 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -14,9 +14,11 @@
@@ -128,7 +128,7 @@ index 590d247e1136b9ac5f766a613e8d91916eb0dda4..453c358d210d48d21a237654143439f2
  #include "chrome/grit/generated_resources.h"
  #include "chromeos/ui/base/chromeos_ui_constants.h"
  #include "components/vector_icons/vector_icons.h"
-@@ -37,7 +39,7 @@
+@@ -36,7 +38,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -138,7 +138,7 @@ index 590d247e1136b9ac5f766a613e8d91916eb0dda4..453c358d210d48d21a237654143439f2
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 9ce062e48c356f2ac23feb97c31aabcac8610942..08c27dc6f54c9216098d29b6a5331483722517d2 100644
+index 09819a589cf7f7a619a38a66188206dc56b9f5d6..b2c887710dafb9615739b625ad29229387fdb758 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -15,9 +15,11 @@

@@ -144,6 +144,10 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/native_window_views.h"
+#endif
+
 #if !BUILDFLAG(IS_MAC)
 #include "ui/aura/window.h"
 #else
@@ -176,9 +180,8 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
-#include "shell/browser/native_window_views.h"
 #endif
-#endif
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
@@ -383,11 +386,13 @@ base::IDMap<WebContents*>& GetAllWebContents() {
   return *s_all_web_contents;
 }
 
-// Called when CapturePage is done.
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
+                       base::ScopedClosureRunner capture_handle,
                        const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
+
+  capture_handle.RunAndReset();
 }
 
 absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
@@ -595,18 +600,13 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
 std::map<std::string, std::string> GetAddedFileSystemPaths(
     content::WebContents* web_contents) {
   auto* pref_service = GetPrefService(web_contents);
-  const base::Value* file_system_paths_value =
-      pref_service->GetDictionary(prefs::kDevToolsFileSystemPaths);
+  const base::Value::Dict& file_system_paths =
+      pref_service->GetDict(prefs::kDevToolsFileSystemPaths);
   std::map<std::string, std::string> result;
-  if (file_system_paths_value) {
-    const base::DictionaryValue* file_system_paths_dict;
-    file_system_paths_value->GetAsDictionary(&file_system_paths_dict);
-
-    for (auto it : file_system_paths_dict->DictItems()) {
-      std::string type =
-          it.second.is_string() ? it.second.GetString() : std::string();
-      result[it.first] = type;
-    }
+  for (auto it : file_system_paths) {
+    std::string type =
+        it.second.is_string() ? it.second.GetString() : std::string();
+    result[it.first] = type;
   }
   return result;
 }
@@ -817,6 +817,12 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
   double zoom_factor;
   if (options.Get(options::kZoomFactor, &zoom_factor))
     zoom_controller_->SetDefaultZoomFactor(zoom_factor);
+
+  // Nothing to do with ZoomController, but this function gets called in all
+  // init cases!
+  content::RenderViewHost* host = web_contents->GetRenderViewHost();
+  if (host)
+    host->GetWidget()->AddInputEventObserver(this);
 }
 
 void WebContents::InitWithSessionAndOptions(
@@ -954,6 +960,12 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  if (web_contents()) {
+    content::RenderViewHost* host = web_contents()->GetRenderViewHost();
+    if (host)
+      host->GetWidget()->RemoveInputEventObserver(this);
+  }
+
   if (!inspectable_web_contents_) {
     WebContentsDestroyed();
     return;
@@ -1003,6 +1015,19 @@ void WebContents::Destroy() {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE,
         base::BindOnce(&WebContents::DeleteThisIfAlive, GetWeakPtr()));
+  }
+}
+
+void WebContents::Close(absl::optional<gin_helper::Dictionary> options) {
+  bool dispatch_beforeunload = false;
+  if (options)
+    options->Get("waitForBeforeUnload", &dispatch_beforeunload);
+  if (dispatch_beforeunload &&
+      web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
+    NotifyUserActivation();
+    web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
+  } else {
+    web_contents()->Close();
   }
 }
 
@@ -1180,8 +1205,9 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnSetContentBounds(rect);
+  if (!Emit("content-bounds-updated", rect))
+    for (ExtendedWebContentsObserver& observer : observers_)
+      observer.OnSetContentBounds(rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -1195,6 +1221,8 @@ void WebContents::CloseContents(content::WebContents* source) {
 
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
+
+  Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -1254,7 +1282,12 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
 
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown ||
       event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
-    bool prevent_default = Emit("before-input-event", event);
+    // For backwards compatibility, pretend that `kRawKeyDown` events are
+    // actually `kKeyDown`.
+    content::NativeWebKeyboardEvent tweaked_event(event);
+    if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
+      tweaked_event.SetType(blink::WebInputEvent::Type::kKeyDown);
+    bool prevent_default = Emit("before-input-event", tweaked_event);
     if (prevent_default) {
       return content::KeyboardEventProcessingResult::HANDLED;
     }
@@ -1378,11 +1411,6 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
   Emit("context-menu", std::make_pair(params, &render_frame_host));
 
   return true;
-}
-
-bool WebContents::OnGoToEntryOffset(int offset) {
-  GoToOffset(offset);
-  return false;
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,
@@ -1668,6 +1696,14 @@ void WebContents::OnWebContentsFocused(
 void WebContents::OnWebContentsLostFocus(
     content::RenderWidgetHost* render_widget_host) {
   Emit("blur");
+}
+
+void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
+                                        content::RenderViewHost* new_host) {
+  if (old_host)
+    old_host->GetWidget()->RemoveInputEventObserver(this);
+  if (new_host)
+    new_host->GetWidget()->AddInputEventObserver(this);
 }
 
 void WebContents::DOMContentLoaded(
@@ -2410,14 +2446,6 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
       !owner_window()) {
     state = "detach";
   }
-  bool activate = true;
-  if (args && args->Length() == 1) {
-    gin_helper::Dictionary options;
-    if (args->GetNext(&options)) {
-      options.Get("mode", &state);
-      options.Get("activate", &activate);
-    }
-  }
 
 #if BUILDFLAG(IS_WIN)
   auto* win = static_cast<NativeWindowViews*>(owner_window());
@@ -2426,6 +2454,15 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
   if (win && win->IsWindowControlsOverlayEnabled())
     state = "detach";
 #endif
+
+  bool activate = true;
+  if (args && args->Length() == 1) {
+    gin_helper::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("mode", &state);
+      options.Get("activate", &activate);
+    }
+  }
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
@@ -2820,12 +2857,12 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
       settings.GetDict().FindBool("displayHeaderFooter");
   auto print_background = settings.GetDict().FindBool("shouldPrintBackgrounds");
   auto scale = settings.GetDict().FindDouble("scale");
-  auto paper_width = settings.GetDict().FindInt("paperWidth");
-  auto paper_height = settings.GetDict().FindInt("paperHeight");
-  auto margin_top = settings.GetDict().FindIntByDottedPath("margins.top");
-  auto margin_bottom = settings.GetDict().FindIntByDottedPath("margins.bottom");
-  auto margin_left = settings.GetDict().FindIntByDottedPath("margins.left");
-  auto margin_right = settings.GetDict().FindIntByDottedPath("margins.right");
+  auto paper_width = settings.GetDict().FindDouble("paperWidth");
+  auto paper_height = settings.GetDict().FindDouble("paperHeight");
+  auto margin_top = settings.GetDict().FindDouble("marginTop");
+  auto margin_bottom = settings.GetDict().FindDouble("marginBottom");
+  auto margin_left = settings.GetDict().FindDouble("marginLeft");
+  auto margin_right = settings.GetDict().FindDouble("marginRight");
   auto page_ranges = *settings.GetDict().FindString("pageRanges");
   auto header_template = *settings.GetDict().FindString("headerTemplate");
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
@@ -3045,6 +3082,9 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         blink::WebKeyboardEvent::Type::kRawKeyDown,
         blink::WebInputEvent::Modifiers::kNoModifiers, ui::EventTimeForNow());
     if (gin::ConvertFromV8(isolate, input_event, &keyboard_event)) {
+      // For backwards compatibility, convert `kKeyDown` to `kRawKeyDown`.
+      if (keyboard_event.GetType() == blink::WebKeyboardEvent::Type::kKeyDown)
+        keyboard_event.SetType(blink::WebKeyboardEvent::Type::kRawKeyDown);
       rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }
@@ -3136,12 +3176,21 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 }
 
 v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
-  gfx::Rect rect;
   gin_helper::Promise<gfx::Image> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  // get rect arguments if they exist
+  gfx::Rect rect;
   args->GetNext(&rect);
+
+  bool stay_hidden = false;
+  bool stay_awake = false;
+  if (args && args->Length() == 2) {
+    gin_helper::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("stayHidden", &stay_hidden);
+      options.Get("stayAwake", &stay_awake);
+    }
+  }
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
@@ -3161,6 +3210,9 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   }
 #endif  // BUILDFLAG(IS_MAC)
 
+  auto capture_handle = web_contents()->IncrementCapturerCount(
+      rect.size(), stay_hidden, stay_awake);
+
   // Capture full page if user doesn't specify a |rect|.
   const gfx::Size view_size =
       rect.IsEmpty() ? view->GetViewBounds().size() : rect.size();
@@ -3177,11 +3229,18 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::BindOnce(&OnCapturePageDone, std::move(promise)));
+                        base::BindOnce(&OnCapturePageDone, std::move(promise),
+                                       std::move(capture_handle)));
   return handle;
 }
 
+// TODO(codebytere): remove in Electron v23.
 void WebContents::IncrementCapturerCount(gin::Arguments* args) {
+  EmitWarning(node::Environment::GetCurrent(args->isolate()),
+              "webContents.incrementCapturerCount() is deprecated and will be "
+              "removed in v23",
+              "electron");
+
   gfx::Size size;
   bool stay_hidden = false;
   bool stay_awake = false;
@@ -3198,7 +3257,13 @@ void WebContents::IncrementCapturerCount(gin::Arguments* args) {
                     .Release();
 }
 
+// TODO(codebytere): remove in Electron v23.
 void WebContents::DecrementCapturerCount(gin::Arguments* args) {
+  EmitWarning(node::Environment::GetCurrent(args->isolate()),
+              "webContents.decrementCapturerCount() is deprecated and will be "
+              "removed in v23",
+              "electron");
+
   bool stay_hidden = false;
   bool stay_awake = false;
 
@@ -3434,6 +3499,10 @@ content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetPrimaryMainFrame();
 }
 
+content::RenderFrameHost* WebContents::Opener() {
+  return web_contents()->GetOpener();
+}
+
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
   if (frame)
@@ -3445,6 +3514,10 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   web_preferences->SetImageAnimationPolicy(new_policy);
   web_contents()->OnWebPreferencesChanged();
+}
+
+void WebContents::OnInputEvent(const blink::WebInputEvent& event) {
+  Emit("input-event", event);
 }
 
 v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
@@ -3922,6 +3995,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
   // destroyable.
   return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("destroy", &WebContents::Destroy)
+      .SetMethod("close", &WebContents::Close)
       .SetMethod("getBackgroundThrottling",
                  &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",
@@ -4044,6 +4118,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
+      .SetProperty("opener", &WebContents::Opener)
       .Build();
 }
 
@@ -4158,9 +4233,19 @@ namespace {
 
 using electron::api::GetAllWebContents;
 using electron::api::WebContents;
+using electron::api::WebFrameMain;
 
 gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
   WebContents* contents = WebContents::FromID(id);
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
+}
+
+gin::Handle<WebContents> WebContentsFromFrame(v8::Isolate* isolate,
+                                              WebFrameMain* web_frame) {
+  content::RenderFrameHost* rfh = web_frame->render_frame_host();
+  content::WebContents* source = content::WebContents::FromRenderFrameHost(rfh);
+  WebContents* contents = WebContents::From(source);
   return contents ? gin::CreateHandle(isolate, contents)
                   : gin::Handle<WebContents>();
 }
@@ -4193,6 +4278,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
+  dict.SetMethod("fromFrame", &WebContentsFromFrame);
   dict.SetMethod("fromDevToolsTargetId", &WebContentsFromDevToolsTargetID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }

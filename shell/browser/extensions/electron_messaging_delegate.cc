@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 #include "base/logging.h"
+#include "base/values.h"
 #include "build/build_config.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_context.h"
@@ -40,21 +41,20 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
   return PolicyPermission::DISALLOW;
 }
 
-std::unique_ptr<base::DictionaryValue>
-ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
+absl::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
+    content::WebContents* web_contents) {
   if (web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);
     if (api_contents) {
       api::tabs::Tab tab;
       tab.id = api_contents->ID();
-      tab.url = std::make_unique<std::string>(api_contents->GetURL().spec());
-      tab.title = std::make_unique<std::string>(
-          base::UTF16ToUTF8(api_contents->GetTitle()));
+      tab.url = api_contents->GetURL().spec();
+      tab.title = base::UTF16ToUTF8(api_contents->GetTitle());
       tab.audible = api_contents->IsCurrentlyAudible();
       return tab.ToValue();
     }
   }
-  return nullptr;
+  return absl::nullopt;
 }
 
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(

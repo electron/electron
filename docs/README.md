@@ -68,6 +68,7 @@ an issue:
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
   * [Windows Store](tutorial/windows-store-guide.md)
   * [Snapcraft](tutorial/snapcraft.md)
+  * [ASAR Archives](tutorial/asar-archives.md)
 * [Updates](tutorial/updates.md)
 * [Getting Support](tutorial/support.md)
 
@@ -82,7 +83,6 @@ These individual tutorials expand on topics discussed in the guide above.
 * Electron Releases & Developer Feedback
   * [Versioning Policy](tutorial/electron-versioning.md)
   * [Release Timelines](tutorial/electron-timelines.md)
-* [Testing Widevine CDM](tutorial/testing-widevine-cdm.md)
 
 ---
 

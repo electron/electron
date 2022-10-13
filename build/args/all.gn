@@ -2,7 +2,7 @@ is_electron_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/master/doc/abi_version_registry.json
-node_module_version = 109
+node_module_version = 110
 
 v8_promise_internal_field_count = 1
 v8_embedder_string = "-electron.0"
@@ -45,3 +45,6 @@ enable_cet_shadow_stack = false
 # V8 in the browser process.
 # Ref: https://source.chromium.org/chromium/chromium/src/+/45fba672185aae233e75d6ddc81ea1e0b30db050:v8/BUILD.gn;l=281
 is_cfi = false
+
+# TODO: fix this once sysroots have been updated.
+use_qt = false

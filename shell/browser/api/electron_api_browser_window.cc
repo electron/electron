@@ -14,7 +14,6 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -107,19 +106,10 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Associate with BrowserWindow.
   web_contents->SetOwnerWindow(window());
 
-  auto* host = web_contents->web_contents()->GetRenderViewHost();
-  if (host)
-    host->GetWidget()->AddInputEventObserver(this);
-
   InitWithArgs(args);
 
   // Install the content view after BaseWindow's JS code is initialized.
   SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
-
-#if BUILDFLAG(IS_MAC)
-  OverrideNSWindowContentView(
-      web_contents->inspectable_web_contents()->GetView());
-#endif
 
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
@@ -129,33 +119,11 @@ BrowserWindow::~BrowserWindow() {
   if (api_web_contents_) {
     // Cleanup the observers if user destroyed this instance directly instead of
     // gracefully closing content::WebContents.
-    auto* host = web_contents()->GetRenderViewHost();
-    if (host)
-      host->GetWidget()->RemoveInputEventObserver(this);
     api_web_contents_->RemoveObserver(this);
     // Destroy the WebContents.
     OnCloseContents();
+    api_web_contents_->Destroy();
   }
-}
-
-void BrowserWindow::OnInputEvent(const blink::WebInputEvent& event) {
-  switch (event.GetType()) {
-    case blink::WebInputEvent::Type::kGestureScrollBegin:
-    case blink::WebInputEvent::Type::kGestureScrollUpdate:
-    case blink::WebInputEvent::Type::kGestureScrollEnd:
-      Emit("scroll-touch-edge");
-      break;
-    default:
-      break;
-  }
-}
-
-void BrowserWindow::RenderViewHostChanged(content::RenderViewHost* old_host,
-                                          content::RenderViewHost* new_host) {
-  if (old_host)
-    old_host->GetWidget()->RemoveInputEventObserver(this);
-  if (new_host)
-    new_host->GetWidget()->AddInputEventObserver(this);
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
@@ -182,7 +150,6 @@ void BrowserWindow::WebContentsDestroyed() {
 
 void BrowserWindow::OnCloseContents() {
   BaseWindow::ResetBrowserViews();
-  api_web_contents_->Destroy();
 }
 
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
@@ -192,7 +159,10 @@ void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
 
 void BrowserWindow::OnDraggableRegionsUpdated(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
-  UpdateDraggableRegions(regions);
+  if (window_->has_frame())
+    return;
+
+  window_->UpdateDraggableRegions(regions);
 }
 
 void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
@@ -296,18 +266,6 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 #endif
 }
 
-void BrowserWindow::OnWindowResize() {
-#if BUILDFLAG(IS_MAC)
-  if (!draggable_regions_.empty()) {
-    UpdateDraggableRegions(draggable_regions_);
-  } else {
-    for (InspectableWebContentsView* view : window_->inspectable_views())
-      view->UpdateDraggableRegions(view->GetDraggableRegions());
-  }
-#endif
-  BaseWindow::OnWindowResize();
-}
-
 void BrowserWindow::OnWindowLeaveFullScreen() {
 #if BUILDFLAG(IS_MAC)
   if (web_contents()->IsFullscreen())
@@ -376,42 +334,6 @@ void BrowserWindow::SetBrowserView(
   BaseWindow::ResetBrowserViews();
   if (browser_view)
     BaseWindow::AddBrowserView(*browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  BaseWindow::AddBrowserView(browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
-  BaseWindow::RemoveBrowserView(browser_view);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                                      gin_helper::Arguments* args) {
-  BaseWindow::SetTopBrowserView(browser_view, args);
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::ResetBrowserViews() {
-  BaseWindow::ResetBrowserViews();
-#if BUILDFLAG(IS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
-#endif
-}
-
-void BrowserWindow::OnDevToolsResized() {
-  UpdateDraggableRegions(draggable_regions_);
 }
 
 void BrowserWindow::FocusOnWebView() {
@@ -505,8 +427,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
 
 void BrowserWindow::NotifyWindowUnresponsive() {
   window_unresponsive_closure_.Cancel();
-  if (!window_->IsClosed() && window_->IsEnabled() &&
-      !IsUnresponsiveEventSuppressed()) {
+  if (!window_->IsClosed() && window_->IsEnabled()) {
     Emit("unresponsive");
   }
 }

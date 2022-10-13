@@ -68,8 +68,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                         bool* prevent_default) override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
-  void OnWindowScrollTouchBegin() override;
-  void OnWindowScrollTouchEnd() override;
   void OnWindowSwipe(const std::string& direction) override;
   void OnWindowRotateGesture(float rotation) override;
   void OnWindowSheetBegin() override;

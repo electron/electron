@@ -101,7 +101,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  const secondaryWindow = BrowserWindow({
+  const secondaryWindow = new BrowserWindow({
     show: false,
     webPreferences: {
       contextIsolation: false,
@@ -144,7 +144,7 @@ to use `contextIsolation` and set up specific contextBridge calls for each of yo
 expected messages, but for the simplicity of this example we don't. You can find an
 example of context isolation further down this page at [Communicating directly between the main process and the main world of a context-isolated page](#communicating-directly-between-the-main-process-and-the-main-world-of-a-context-isolated-page)
 
-That means window.messagePort is globally available and you can call
+That means window.electronMessagePort is globally available and you can call
 `postMessage` on it from anywhere in your app to send a message to the other
 renderer.
 
@@ -180,19 +180,16 @@ app.whenReady().then(async () => {
 
   // We can't use ipcMain.handle() here, because the reply needs to transfer a
   // MessagePort.
-  ipcMain.on('request-worker-channel', (event) => {
-    // For security reasons, let's make sure only the frames we expect can
-    // access the worker.
-    if (event.senderFrame === mainWindow.webContents.mainFrame) {
-      // Create a new channel ...
-      const { port1, port2 } = new MessageChannelMain()
-      // ... send one end to the worker ...
-      worker.webContents.postMessage('new-client', null, [port1])
-      // ... and the other end to the main window.
-      event.senderFrame.postMessage('provide-worker-channel', null, [port2])
-      // Now the main window and the worker can communicate with each other
-      // without going through the main process!
-    }
+  // Listen for message sent from the top-level frame
+  mainWindow.webContents.mainFrame.on('request-worker-channel', (event) => {
+    // Create a new channel ...
+    const { port1, port2 } = new MessageChannelMain()
+    // ... send one end to the worker ...
+    worker.webContents.postMessage('new-client', null, [port1])
+    // ... and the other end to the main window.
+    event.senderFrame.postMessage('provide-worker-channel', null, [port2])
+    // Now the main window and the worker can communicate with each other
+    // without going through the main process!
   })
 })
 ```
@@ -272,7 +269,7 @@ const makeStreamingRequest = (element, callback) => {
 }
 
 makeStreamingRequest(42, (data) => {
-  console.log('got response data:', event.data)
+  console.log('got response data:', data)
 })
 // We will see "got response data: 42" 10 times.
 ```

@@ -188,8 +188,7 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params.get());
 
   bool bypass_cache = false;
-  if (params->reload_properties.get() &&
-      params->reload_properties->bypass_cache) {
+  if (params->reload_properties && params->reload_properties->bypass_cache) {
     bypass_cache = *params->reload_properties->bypass_cache;
   }
 
@@ -221,8 +220,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
-  tab.url = std::make_unique<std::string>(
-      contents->web_contents()->GetLastCommittedURL().spec());
+  tab.url = contents->web_contents()->GetLastCommittedURL().spec();
 
   tab.active = contents->IsFocused();
 
@@ -438,7 +436,7 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
 
   // Navigate the tab to a new location if the url is different.
   std::string error;
-  if (params->update_properties.url.get()) {
+  if (params->update_properties.url) {
     std::string updated_url = *params->update_properties.url;
     if (!UpdateURL(updated_url, tab_id, &error))
       return RespondNow(Error(std::move(error)));
@@ -506,8 +504,7 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
-  tab.url = std::make_unique<std::string>(
-      web_contents_->GetLastCommittedURL().spec());
+  tab.url = web_contents_->GetLastCommittedURL().spec();
 
   return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
 }

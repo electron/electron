@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/base/process/process_info_mac.cc b/base/process/process_info_mac.cc
-index 368405f29313d51a6eee16517b634c6d0ea95281..2553a7fbf1e8b4dea796dec3b3e906d265d3ad76 100644
+index 6840358c3187522c63dff66b5a85567aaadc5c12..ef94524eab52719c84e176fde2afd88f85223888 100644
 --- a/base/process/process_info_mac.cc
 +++ b/base/process/process_info_mac.cc
-@@ -5,18 +5,22 @@
+@@ -9,18 +9,22 @@
  #include <stdlib.h>
  #include <unistd.h>
  
@@ -34,7 +34,7 @@ index 368405f29313d51a6eee16517b634c6d0ea95281..2553a7fbf1e8b4dea796dec3b3e906d2
  }
  
 diff --git a/content/common/pseudonymization_salt.cc b/content/common/pseudonymization_salt.cc
-index 28e003bef910abff022def659fe18d4cd0549f8a..530bcbdb5d350f6486dc1e8536f7b279be69e241 100644
+index c7e4ef224e76b4df4fa08bb7fa8dd78605ea8de1..16cb4084ecc5818813022412a00a3b1acc67cc05 100644
 --- a/content/common/pseudonymization_salt.cc
 +++ b/content/common/pseudonymization_salt.cc
 @@ -41,11 +41,13 @@ uint32_t GetPseudonymizationSalt() {
@@ -52,7 +52,7 @@ index 28e003bef910abff022def659fe18d4cd0549f8a..530bcbdb5d350f6486dc1e8536f7b279
      salt = InitializeSalt();
    }
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
-index 894ac47e596c1c96a7e0659be80ed8a5629d0304..eca797a24df79b8502b9698e6ed8830ad1c5cb59 100644
+index add9345fdd076698fc7ec654d7ef1701699639a4..13e615dbbe0fca71acea1f494944262933843f40 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
 +++ b/content/renderer/renderer_main_platform_delegate_mac.mm
 @@ -10,9 +10,11 @@
@@ -84,7 +84,7 @@ index 894ac47e596c1c96a7e0659be80ed8a5629d0304..eca797a24df79b8502b9698e6ed8830a
  
  }  // namespace
 diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
-index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5328781c9 100644
+index f50448237c40710e25644c2f7d44e8d0bc0789c8..fd351c916993a8950b595c103f3f5a4086d5480b 100644
 --- a/content/renderer/theme_helper_mac.mm
 +++ b/content/renderer/theme_helper_mac.mm
 @@ -7,11 +7,11 @@
@@ -122,10 +122,10 @@ index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e02ac49cf 100644
+index 644990412b4d67789faffc65c4f1114fa96c8f42..085ceafcda3f66b27cec2aedde86ac7ca23fcf8f 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -42,6 +42,7 @@
+@@ -43,6 +43,7 @@
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
@@ -133,7 +133,7 @@ index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -55,6 +56,7 @@
+@@ -56,6 +57,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -141,7 +141,7 @@ index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e
  
  namespace {
  
-@@ -114,8 +116,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -115,8 +117,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -152,7 +152,7 @@ index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        low_energy_discovery_manager_(
-@@ -356,8 +360,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -357,8 +361,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -166,10 +166,10 @@ index 69e60d498941c34cfac9e79c7517765bf93849f5..b998ad7cf01c21e93c57e1283cfdcb1e
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index d872796dee0dee4aa14c238f788b962b3f1c9311..4d5f74c18d773755d5d8f7223bc0d5c944467d69 100644
+index 04a5bbef30bdd1827f455b8288faf9fbd86f103e..1e6b91961c3e32aa223383b444d075ada9688b0b 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -176,6 +176,12 @@ source_set("audio") {
+@@ -180,6 +180,12 @@ source_set("audio") {
        "mac/scoped_audio_unit.cc",
        "mac/scoped_audio_unit.h",
      ]
@@ -183,7 +183,7 @@ index d872796dee0dee4aa14c238f788b962b3f1c9311..4d5f74c18d773755d5d8f7223bc0d5c9
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index eb0aff29b2f4fd2b035ef96186fd58d976876b05..8a68a8885ec42715c9b9dab0f04d1b90eb9baa6e 100644
+index 7da5704e2ee919b711b105641f6535b9fe08e396..a2c9e6232d7dc2490833b46b3f257ea1c636f0f1 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -885,7 +885,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
@@ -196,7 +196,7 @@ index eb0aff29b2f4fd2b035ef96186fd58d976876b05..8a68a8885ec42715c9b9dab0f04d1b90
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 025078e112683380b484b7c47f786862f4e48a74..11c81ec36a9793afab0da8578f85378f9ce3a446 100644
+index a8a223d1d9ea6de51a27f148c008ee8be38af29a..7413277bd91e7a08042fc957f89112fcb53d440c 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -130,8 +130,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
@@ -218,7 +218,7 @@ index 025078e112683380b484b7c47f786862f4e48a74..11c81ec36a9793afab0da8578f85378f
    }
  
 diff --git a/sandbox/mac/sandbox_compiler.cc b/sandbox/mac/sandbox_compiler.cc
-index e524aa7b851022abed1edac39e18d8d92e5349b4..718d3f963da5c1a15a1bdb0e6043f89bc0f940f8 100644
+index 5db411212b62b583ae26e9ecd0a87ad5fc5504e8..d5feedb02900a2a323b8a3961b1de21734ad1b65 100644
 --- a/sandbox/mac/sandbox_compiler.cc
 +++ b/sandbox/mac/sandbox_compiler.cc
 @@ -28,6 +28,7 @@ bool SandboxCompiler::InsertStringParam(const std::string& key,
@@ -238,7 +238,7 @@ index e524aa7b851022abed1edac39e18d8d92e5349b4..718d3f963da5c1a15a1bdb0e6043f89b
  }
  
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index e0c31170acd13c9997c6b1d04c6de1420feaf422..0e561f97b33380bfbe52e64c2c4a6988095e8074 100644
+index 1e75790d60789746073828cc22d3863b35ab6f95..68e68bb1bd0b5c897bf385911ab36f5562563974 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
 @@ -64,7 +64,11 @@ void Seatbelt::FreeError(char* errorbuf) {
@@ -254,7 +254,7 @@ index e0c31170acd13c9997c6b1d04c6de1420feaf422..0e561f97b33380bfbe52e64c2c4a6988
  
  }  // namespace sandbox
 diff --git a/sandbox/mac/seatbelt_extension.cc b/sandbox/mac/seatbelt_extension.cc
-index d59a16112d27e2696437163483c44eca414c225c..1ccd20fe7efa3cbae48f99d0660b025283dd370e 100644
+index 18479382a277cb2b25626ec8d31442bfd1377ee6..b048bb27eee1001c2bc34092220150d312ca61c6 100644
 --- a/sandbox/mac/seatbelt_extension.cc
 +++ b/sandbox/mac/seatbelt_extension.cc
 @@ -11,6 +11,7 @@
@@ -313,10 +313,10 @@ index d59a16112d27e2696437163483c44eca414c225c..1ccd20fe7efa3cbae48f99d0660b0252
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index 397f01d7249f491840e5953b65c2d54eb92dc638..a7279e44346cb5b0b26599bd62693ad40a59e84f 100644
+index fe043e6dc2203a9054ae367b70a3854b8560c9c7..8d8ba5065d3c50263650eb2452a0f81449d40a25 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-@@ -87,6 +87,7 @@
+@@ -88,6 +88,7 @@
      }
    }
  
@@ -324,7 +324,7 @@ index 397f01d7249f491840e5953b65c2d54eb92dc638..a7279e44346cb5b0b26599bd62693ad4
    // AXTextMarker
    if (IsAXTextMarker(value)) {
      return AXTextMarkerToBaseValue(value, indexer);
-@@ -95,6 +96,7 @@
+@@ -96,6 +97,7 @@
    // AXTextMarkerRange
    if (IsAXTextMarkerRange(value))
      return AXTextMarkerRangeToBaseValue(value, indexer);

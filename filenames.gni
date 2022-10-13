@@ -124,7 +124,6 @@ filenames = {
     "shell/app/electron_main_delegate_mac.h",
     "shell/app/electron_main_delegate_mac.mm",
     "shell/browser/api/electron_api_app_mac.mm",
-    "shell/browser/api/electron_api_browser_window_mac.mm",
     "shell/browser/api/electron_api_menu_mac.h",
     "shell/browser/api/electron_api_menu_mac.mm",
     "shell/browser/api/electron_api_native_theme_mac.mm",
@@ -211,7 +210,6 @@ filenames = {
   ]
 
   lib_sources_views = [
-    "shell/browser/api/electron_api_browser_window_views.cc",
     "shell/browser/api/electron_api_menu_views.cc",
     "shell/browser/api/electron_api_menu_views.h",
     "shell/browser/native_browser_view_views.cc",
@@ -463,8 +461,6 @@ filenames = {
     "shell/browser/notifications/platform_notification_service.h",
     "shell/browser/plugins/plugin_utils.cc",
     "shell/browser/plugins/plugin_utils.h",
-    "shell/browser/pref_store_delegate.cc",
-    "shell/browser/pref_store_delegate.h",
     "shell/browser/protocol_registry.cc",
     "shell/browser/protocol_registry.h",
     "shell/browser/relauncher.cc",
@@ -508,8 +504,6 @@ filenames = {
     "shell/browser/ui/tray_icon_observer.h",
     "shell/browser/ui/webui/accessibility_ui.cc",
     "shell/browser/ui/webui/accessibility_ui.h",
-    "shell/browser/unresponsive_suppressor.cc",
-    "shell/browser/unresponsive_suppressor.h",
     "shell/browser/web_contents_permission_helper.cc",
     "shell/browser/web_contents_permission_helper.h",
     "shell/browser/web_contents_preferences.cc",
@@ -520,6 +514,8 @@ filenames = {
     "shell/browser/web_view_guest_delegate.h",
     "shell/browser/web_view_manager.cc",
     "shell/browser/web_view_manager.h",
+    "shell/browser/webauthn/electron_authenticator_request_delegate.cc",
+    "shell/browser/webauthn/electron_authenticator_request_delegate.h",
     "shell/browser/window_list.cc",
     "shell/browser/window_list.h",
     "shell/browser/window_list_observer.h",

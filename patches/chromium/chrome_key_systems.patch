@@ -7,7 +7,7 @@ Disable persiste licence support check for widevine cdm,
 as its not supported in the current version of chrome.
 
 diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
-index 30da015cffeb945973d0045ce297467ab16d7db6..53e7bd0f7dbff8c620a5827abb3ba871703a4f06 100644
+index 2ac7cf0e337b10a2de230d4bb28542315dd30555..4b553794a216021f5c9e481fa2c08313b65e0980 100644
 --- a/chrome/renderer/media/chrome_key_systems.cc
 +++ b/chrome/renderer/media/chrome_key_systems.cc
 @@ -17,7 +17,9 @@
@@ -17,10 +17,10 @@ index 30da015cffeb945973d0045ce297467ab16d7db6..53e7bd0f7dbff8c620a5827abb3ba871
 +#if 0
  #include "chrome/renderer/chrome_render_thread_observer.h"
 +#endif
- #include "components/cdm/renderer/external_clear_key_key_system_properties.h"
- #include "components/cdm/renderer/widevine_key_system_properties.h"
+ #include "components/cdm/renderer/external_clear_key_key_system_info.h"
+ #include "components/cdm/renderer/widevine_key_system_info.h"
  #include "content/public/renderer/render_thread.h"
-@@ -235,12 +237,14 @@ SupportedCodecs GetSupportedCodecs(const media::CdmCapability& capability) {
+@@ -238,12 +240,14 @@ SupportedCodecs GetSupportedCodecs(const media::CdmCapability& capability,
  
  // Returns whether persistent-license session can be supported.
  bool CanSupportPersistentLicense() {

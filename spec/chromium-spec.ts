@@ -374,6 +374,7 @@ describe('command line switches', () => {
   });
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
+    const currentSystemLocale = app.getSystemLocale();
     const testLocale = async (locale: string, result: string, printEnv: boolean = false) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const args = [appPath, `--set-lang=${locale}`];
@@ -396,8 +397,9 @@ describe('command line switches', () => {
       expect(output).to.equal(result);
     };
 
-    it('should set the locale', async () => testLocale('fr', 'fr'));
-    it('should not set an invalid locale', async () => testLocale('asdfkl', currentLocale));
+    it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}`));
+    it('should set the locale with country code', async () => testLocale('zh-CN', `zh-CN|${currentSystemLocale}`));
+    it('should not set an invalid locale', async () => testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}`));
 
     const lcAll = String(process.env.LC_ALL);
     ifit(process.platform === 'linux')('current process has a valid LC_ALL env', async () => {
@@ -650,7 +652,7 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
     });
 
-    it('should not crash when nodeIntegration is enabled', (done) => {
+    it('should not allow nodeIntegrationInWorker', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -661,21 +663,19 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(`unexpected error : ${message}`);
-        } else if (channel === 'response') {
-          expect(message).to.equal('Hello from serviceWorker!');
-          session.fromPartition('sw-file-scheme-worker-spec').clearStorageData({
-            storages: ['serviceworkers']
-          }).then(() => done());
-        }
-      });
+      await w.loadURL(`file://${fixturesPath}/pages/service-worker/empty.html`);
 
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+      const data = await w.webContents.executeJavaScript(`
+        navigator.serviceWorker.register('worker-no-node.js', {
+          scope: './'
+        }).then(() => navigator.serviceWorker.ready)
+
+        new Promise((resolve) => {
+          navigator.serviceWorker.onmessage = event => resolve(event.data);
+        });
+      `);
+
+      expect(data).to.equal('undefined undefined undefined undefined');
     });
   });
 
@@ -787,11 +787,22 @@ describe('chromium features', () => {
         expect(data).to.equal('undefined undefined undefined undefined');
       });
 
-      it('has node integration with nodeIntegrationInWorker', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false } });
-        w.loadURL(`file://${fixturesPath}/pages/shared_worker.html`);
-        const [, data] = await emittedOnce(ipcMain, 'worker-result');
-        expect(data).to.equal('object function object function');
+      it('does not have node integration with nodeIntegrationInWorker', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false
+          }
+        });
+
+        await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        const data = await w.webContents.executeJavaScript(`
+          const worker = new SharedWorker('../workers/shared_worker_node.js');
+          new Promise((resolve) => { worker.port.onmessage = e => resolve(e.data); })
+        `);
+        expect(data).to.equal('undefined undefined undefined undefined');
       });
     });
   });
@@ -1810,6 +1821,34 @@ describe('chromium features', () => {
         await waitCommit;
         // Initial page + pushed state.
         expect((w.webContents as any).length()).to.equal(2);
+      });
+    });
+
+    describe('window.history.back', () => {
+      it('should not allow sandboxed iframe to modify main frame state', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL('data:text/html,<iframe sandbox="allow-scripts"></iframe>');
+        await Promise.all([
+          emittedOnce(w.webContents, 'navigation-entry-committed'),
+          emittedOnce(w.webContents, 'did-frame-navigate'),
+          emittedOnce(w.webContents, 'did-navigate')
+        ]);
+
+        w.webContents.executeJavaScript('window.history.pushState(1, "")');
+        await Promise.all([
+          emittedOnce(w.webContents, 'navigation-entry-committed'),
+          emittedOnce(w.webContents, 'did-navigate-in-page')
+        ]);
+
+        (w.webContents as any).once('navigation-entry-committed', () => {
+          expect.fail('Unexpected navigation-entry-committed');
+        });
+        w.webContents.once('did-navigate-in-page', () => {
+          expect.fail('Unexpected did-navigate-in-page');
+        });
+        await w.webContents.mainFrame.frames[0].executeJavaScript('window.history.back()');
+        expect(await w.webContents.executeJavaScript('window.history.state')).to.equal(1);
+        expect((w.webContents as any).getActiveIndex()).to.equal(1);
       });
     });
   });
