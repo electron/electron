@@ -8,7 +8,7 @@ Aligns common.gypi with the current build flag state of //v8.
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
 diff --git a/common.gypi b/common.gypi
-index 4fd15f8e80ba82f69aa651a78dd4d567b5e34c5d..d92f1daeb4fd78c4ec66ace0102b09db118f779a 100644
+index e58cc4b4fb4ba28f23133530dc3d908c4cb68426..3e73073fb3f0e3bed74ff00521fc1b98997d9540 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@
@@ -19,7 +19,7 @@ index 4fd15f8e80ba82f69aa651a78dd4d567b5e34c5d..d92f1daeb4fd78c4ec66ace0102b09db
  
      # Disable v8 hugepage by default.
      'v8_enable_hugepage%': 0,
-@@ -125,6 +126,7 @@
+@@ -123,6 +124,7 @@
        ['target_arch in "arm ia32 mips mipsel ppc"', {
          'v8_enable_pointer_compression': 0,
          'v8_enable_31bit_smis_on_64bit_arch': 0,
@@ -27,7 +27,7 @@ index 4fd15f8e80ba82f69aa651a78dd4d567b5e34c5d..d92f1daeb4fd78c4ec66ace0102b09db
        }],
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
-@@ -395,9 +397,12 @@
+@@ -393,9 +395,12 @@
        ['v8_enable_pointer_compression == 1', {
          'defines': [
            'V8_COMPRESS_POINTERS',

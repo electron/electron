@@ -7,10 +7,10 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index d92f1daeb4fd78c4ec66ace0102b09db118f779a..ae79e317cc021efdeb4a0a1d462b79ffff206030 100644
+index 3e73073fb3f0e3bed74ff00521fc1b98997d9540..ca089eee5eafef6e08960d2a96ef27d8cfa95180 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -83,6 +83,8 @@
+@@ -79,6 +79,8 @@
      # TODO(refack): make v8-perfetto happen
      'v8_use_perfetto': 0,
  
@@ -19,7 +19,7 @@ index d92f1daeb4fd78c4ec66ace0102b09db118f779a..ae79e317cc021efdeb4a0a1d462b79ff
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -284,6 +286,7 @@
+@@ -282,6 +284,7 @@
        'V8_DEPRECATION_WARNINGS',
        'V8_IMMINENT_DEPRECATION_WARNINGS',
        '_GLIBCXX_USE_CXX11_ABI=1',
@@ -27,7 +27,7 @@ index d92f1daeb4fd78c4ec66ace0102b09db118f779a..ae79e317cc021efdeb4a0a1d462b79ff
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -394,6 +397,11 @@
+@@ -392,6 +395,11 @@
            }],
          ],
        }],
