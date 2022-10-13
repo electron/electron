@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..bc826db98fff63e9c87332c45928e9118b8a0732
+index 0000000000000000000000000000000000000000..db80a8f00a84bf54f723c21300e7579c994d0514
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,439 @@
+@@ -0,0 +1,438 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -282,7 +282,6 @@ index 0000000000000000000000000000000000000000..bc826db98fff63e9c87332c45928e911
 +  sources += [
 +    "$root_gen_dir/electron_natives.cc",
 +    "$target_gen_dir/node_javascript.cc",
-+    "src/node_code_cache_stub.cc",
 +    "src/node_snapshot_stub.cc",
 +  ]
 +
