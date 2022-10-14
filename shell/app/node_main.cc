@@ -110,8 +110,9 @@ int NodeMain(int argc, char* argv[]) {
   v8_crashpad_support::SetUp();
 #endif
 
-// TODO(deepak1556): Enable crashpad support for
+// TODO(deepak1556): Enable crashpad support on linux for
 // ELECTRON_RUN_AS_NODE processes.
+// Refs https://github.com/electron/electron/issues/36030
 #if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !defined(MAS_BUILD))
   ElectronCrashReporterClient::Create();
   crash_reporter::InitializeCrashpad(false, "node");
