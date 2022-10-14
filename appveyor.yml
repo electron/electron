@@ -24,16 +24,18 @@
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 
 version: 1.0.{build}
-build_cloud: electron-16-core
-image: vs2019bt-16.16.11
+build_cloud: electronhq-16-core
+image: e-109.0.5382.0
 environment:
-  GIT_CACHE_PATH: C:\Users\electron\libcc_cache
+  GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
   ELECTRON_ALSO_LOG_TO_STDERR: 1
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
   GOMA_FALLBACK_ON_AUTH_FAILURE: true
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+  PYTHONIOENCODING: UTF-8
 
   matrix:
 
@@ -64,13 +66,26 @@ for:
           node script/yarn.js install --frozen-lockfile
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping tests for doc only change"; Exit-AppveyorBuild
+            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
           }
           $global:LASTEXITCODE = 0
       - cd ..
       - ps: Write-Host "Building $env:GN_CONFIG build"
       - git config --global core.longpaths true
-      - update_depot_tools.bat
+      - ps: >-
+          if (Test-Path -Path "$pwd\depot_tools") {
+            Remove-Item -Recurse -Force $pwd\depot_tools
+          }
+      - ps: >-
+          if (Test-Path -Path "$pwd\build-tools") {
+            Remove-Item -Recurse -Force $pwd\build-tools
+          }
+      - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
+      - ps: >-
+          if (Test-Path -Path "$pwd\src\electron") {
+            Remove-Item -Recurse -Force $pwd\src\electron
+          }
       - ps: >-
           if (Test-Path 'env:RAW_GOMA_AUTH') {
             $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
@@ -101,72 +116,22 @@ for:
           if ($env:GN_CONFIG -ne 'release') {
             $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
           }
-      - >-
-          gclient config
-          --name "src\electron"
-          --unmanaged
-          %GCLIENT_EXTRA_ARGS%
-          "https://github.com/electron/electron"
+      - gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
+      # Patches are applied in the image bake. Check depshash to see if patches have changed. 
+      - ps: $env:RUN_GCLIENT_SYNC="false"
+      - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
+      - ps: cd src\electron
+      - ps: node script\generate-deps-hash.js
+      - ps: $depshash = Get-Content .\.depshash -Raw
+      - ps: $zipfile = "Z:\$depshash.7z"
+      - ps: cd ..\..
       - ps: >-
-          if ($env:GN_CONFIG -eq 'release') {
+          if ($depshash_baked -ne $depshash) {
             $env:RUN_GCLIENT_SYNC="true"
-          } else {
-            cd src\electron
-            node script\generate-deps-hash.js
-            $depshash = Get-Content .\.depshash -Raw 
-            $zipfile = "Z:\$depshash.7z"
-            cd ..\..
-            if (Test-Path -Path $zipfile) {
-              # file exists, unzip and then gclient sync
-              7z x -y $zipfile -mmt=14 -aoa
-              if (-not (Test-Path -Path "src\buildtools")) {
-                # the zip file must be corrupt - resync
-                $env:RUN_GCLIENT_SYNC="true"
-                if ($env:TARGET_ARCH -ne 'ia32') {
-                  # only save on x64/woa to avoid contention saving
-                  $env:SAVE_GCLIENT_SRC="true"
-                }
-              } else {
-                # update angle
-                cd src\third_party\angle
-                git remote set-url origin  https://chromium.googlesource.com/angle/angle.git
-                git fetch
-                cd ..\..\..
-              }
-            } else {    
-              # file does not exist, gclient sync, then zip
-              $env:RUN_GCLIENT_SYNC="true"
-              if ($env:TARGET_ARCH -ne 'ia32') {
-                # only save on x64/woa to avoid contention saving
-                $env:SAVE_GCLIENT_SRC="true"
-              }
-            }
           }
-      - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync )
-      - ps: >-
-          if ($env:SAVE_GCLIENT_SRC -eq 'true') {
-            # archive current source for future use 
-            # only run on x64/woa to avoid contention saving
-            $(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30)
-            if ($LASTEXITCODE -ne 0) {
-              Write-warning "Could not save source to shared drive; continuing anyway"
-            }
-            # build time generation of file gen/angle/angle_commit.h depends on
-            # third_party/angle/.git
-            # https://chromium-review.googlesource.com/c/angle/angle/+/2074924       
-            $(7z a $zipfile src\third_party\angle\.git)
-            if ($LASTEXITCODE -ne 0) {
-              Write-warning "Failed to add third_party\angle\.git; continuing anyway"
-            }
-            # build time generation of file dawn/common/Version_autogen.h depends on third_party/dawn/.git/HEAD
-            # https://dawn-review.googlesource.com/c/dawn/+/83901        
-            $(7z a $zipfile src\third_party\dawn\.git)
-            if ($LASTEXITCODE -ne 0) {
-              Write-warning "Failed to add third_party\dawn\.git; continuing anyway"
-            }
-          }
+      - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
       - cd src
-      - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
+      - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
       - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
       - gn check out/Default //electron:electron_lib
       - gn check out/Default //electron:electron_app
@@ -186,6 +151,8 @@ for:
       - ninja -C out/Default electron:electron_chromedriver_zip
       - ninja -C out/Default third_party/electron_node:headers
       - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
+      - ps: >-
+          Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
       - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
       - 7z a node_headers.zip out\Default\gen\node_headers
       - 7z a builtins-pgo.zip v8\tools\builtins-pgo
@@ -205,7 +172,7 @@ for:
             7z a pdb.zip out\Default\*.pdb
           }
       - python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
-   
+
     deploy_script:
       - cd electron
       - ps: >-
@@ -222,7 +189,7 @@ for:
           }
     on_finish:
       # Uncomment this lines to enable RDP
-      #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       - cd C:\projects\src
       - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
       - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
@@ -237,8 +204,7 @@ for:
       - ps: >-
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
             appveyor-retry appveyor PushArtifact pdb.zip
-          }        
-
+          }
   - matrix:
       only:
         - job_name: Test
@@ -256,15 +222,15 @@ for:
           node script/yarn.js install --frozen-lockfile
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping tests for doc only change"; Exit-AppveyorBuild
+            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
           }
           $global:LASTEXITCODE = 0
+      - cd ..
+      - mkdir out\Default
+      - cd ..
       - ps: |
-          cd ..
-          mkdir out\Default
-          cd ..
           # Download build artifacts
-          $apiUrl = 'https://ci.appveyor.com/api'             
+          $apiUrl = 'https://ci.appveyor.com/api'
           $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
           $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','builtins-pgo.zip')
           foreach ($job in $build_info.build.jobs) {
@@ -297,15 +263,22 @@ for:
           New-Item .\out\Default\gen\node_headers\Release -Type directory
           Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
       - cd electron
+      # Explicitly set npm_config_arch because the .env doesn't persist
+      - ps: >-
+          if ($env:TARGET_ARCH -eq 'ia32') {
+            $env:npm_config_arch = "ia32"
+          }
       - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log
       - echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log
       - cd ..
-      - echo Verifying non proprietary ffmpeg & python3 electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
+      - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
       - echo "About to verify mksnapshot"
-      - echo Verifying mksnapshot & python3 electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
+      - echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying mksnapshot"
-      - echo Verifying chromedriver & python3 electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
+      - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying chromedriver"
-    
-    on_finish:
+
+    # Uncomment these lines to enable RDP
+    # on_finish:
+      # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
