@@ -30,10 +30,6 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 
-#if BUILDFLAG(IS_LINUX)
-#include "components/crash/core/app/breakpad_linux.h"
-#endif
-
 #if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
 #endif
@@ -41,7 +37,6 @@
 #if !defined(MAS_BUILD)
 #include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "shell/app/electron_crash_reporter_client.h"
-#include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/common/crash_keys.h"
 #endif
 
@@ -100,35 +95,6 @@ void ClearCrashKeyStub(const std::string& key) {}
 
 namespace electron {
 
-#if BUILDFLAG(IS_LINUX)
-void CrashReporterStart(gin_helper::Dictionary options) {
-  std::string submit_url;
-  bool upload_to_server = true;
-  bool ignore_system_crash_handler = false;
-  bool rate_limit = false;
-  bool compress = false;
-  std::map<std::string, std::string> global_extra;
-  std::map<std::string, std::string> extra;
-  options.Get("submitURL", &submit_url);
-  options.Get("uploadToServer", &upload_to_server);
-  options.Get("ignoreSystemCrashHandler", &ignore_system_crash_handler);
-  options.Get("rateLimit", &rate_limit);
-  options.Get("compress", &compress);
-  options.Get("extra", &extra);
-  options.Get("globalExtra", &global_extra);
-
-  std::string product_name;
-  if (options.Get("productName", &product_name))
-    global_extra["_productName"] = product_name;
-  std::string company_name;
-  if (options.Get("companyName", &company_name))
-    global_extra["_companyName"] = company_name;
-  api::crash_reporter::Start(submit_url, upload_to_server,
-                             ignore_system_crash_handler, rate_limit, compress,
-                             global_extra, extra, true);
-}
-#endif
-
 v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
   std::map<std::string, std::string> keys;
 #if !defined(MAS_BUILD)
@@ -144,15 +110,11 @@ int NodeMain(int argc, char* argv[]) {
   v8_crashpad_support::SetUp();
 #endif
 
-#if !defined(MAS_BUILD)
-  ElectronCrashReporterClient::Create();
-#endif
-
+// TODO(deepak1556): Enable crashpad support for
+// ELECTRON_RUN_AS_NODE processes.
 #if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !defined(MAS_BUILD))
+  ElectronCrashReporterClient::Create();
   crash_reporter::InitializeCrashpad(false, "node");
-#endif
-
-#if !defined(MAS_BUILD)
   crash_keys::SetCrashKeysFromCommandLine(
       *base::CommandLine::ForCurrentProcess());
   crash_keys::SetPlatformCrashKey();
@@ -225,10 +187,6 @@ int NodeMain(int argc, char* argv[]) {
 
       // Setup process.crashReporter in child node processes
       gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
-#if BUILDFLAG(IS_LINUX)
-      reporter.SetMethod("start", &CrashReporterStart);
-#endif
-
       reporter.SetMethod("getParameters", &GetParameters);
 #if defined(MAS_BUILD)
       reporter.SetMethod("addExtraParameter", &SetCrashKeyStub);

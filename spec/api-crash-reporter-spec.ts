@@ -166,7 +166,27 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(crash.mainProcessSpecific).to.equal('mps');
     });
 
-    ifit(!isLinuxOnArm)('when a node process crashes', async () => {
+    // TODO(deepak1556): Node.js forked child processes have been
+    // relying on breakpad for crash report generation, with
+    // Linux has moved onto crashpad completely. For these processes
+    // to act as crashpad clients, they need the following
+    // * Inherit FD for the handler process communication, which
+    //   is usually inherited by the chromium spawned child processes
+    //   via ElectronBrowserClient::GetAdditionalMappedFilesForChildProcess.
+    //   For Node.js the fork is performed by Libuv,
+    //   maybe via the stdio option of child_process.fork ??
+    //       The descriptor will eventually be looked up in
+    //   PlatformCrashpadInitialization.
+    //   Refs https://source.chromium.org/chromium/chromium/src/+/main:components/crash/core/app/crashpad_linux.cc;l=197
+    //   Also we will need to setup base::GlobalDescriptors instance in the child process.
+    //
+    // * Pass the PID of the handler process to the child process via
+    //   the command line flag
+    //   --crashpad-handler-pid/crash_reporter::switches::kCrashpadHandlerPid
+    //   whose value can be extracted with the same API to obtain the FD
+    //   crash_reporter::GetHandlerSocket.
+    //   Refs https://source.chromium.org/chromium/chromium/src/+/main:components/crash/core/app/crashpad_linux.cc;l=201-204
+    ifit(process.platform !== 'linux')('when a node process crashes', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('node', port);
       const crash = await waitForCrash();
@@ -279,7 +299,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
-      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127 + (process.platform === 'linux' ? 159 : 0), 'crash should have truncated longParam');
+      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
     });
 
     it('should omit extra keys with names longer than the maximum', async () => {
