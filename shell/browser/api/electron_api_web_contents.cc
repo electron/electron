@@ -172,6 +172,7 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_base.h"
 #include "components/printing/browser/print_manager_utils.h"
+#include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 #include "printing/backend/print_backend.h"  // nogncheck
 #include "printing/mojom/print.mojom.h"      // nogncheck
@@ -2902,12 +2903,12 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
 
 void WebContents::OnPDFCreated(
     gin_helper::Promise<v8::Local<v8::Value>> promise,
-    PrintViewManagerElectron::PrintResult print_result,
+    print_to_pdf::PdfPrintResult print_result,
     scoped_refptr<base::RefCountedMemory> data) {
-  if (print_result != PrintViewManagerElectron::PrintResult::kPrintSuccess) {
+  if (print_result != print_to_pdf::PdfPrintResult::kPrintSuccess) {
     promise.RejectWithErrorMessage(
         "Failed to generate PDF: " +
-        PrintViewManagerElectron::PrintResultToString(print_result));
+        print_to_pdf::PdfPrintResultToString(print_result));
     return;
   }
 
