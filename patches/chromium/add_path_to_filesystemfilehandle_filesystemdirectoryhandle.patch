@@ -1,0 +1,335 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jacob Bandes-Storch <jacob@foxglove.dev>
+Date: Wed, 7 Sep 2022 17:50:02 -0700
+Subject: Add path to FileSystemFileHandle & FileSystemDirectoryHandle
+
+This is used to obtain the filesystem path from a file handle obtained via drag & drop or showOpenFilePicker.
+
+diff --git a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+index 7e673f903a71a309e8d92b966330875ef2772f84..6ac14697360f45bc021f1df59dec23ce79553ea7 100644
+--- a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
++++ b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+@@ -554,12 +554,12 @@ FileSystemAccessEntryPtr FileSystemAccessDirectoryHandleImpl::CreateEntry(
+     return FileSystemAccessEntry::New(
+         FileSystemAccessHandle::NewDirectory(
+             manager()->CreateDirectoryHandle(context(), url, handle_state())),
+-        basename);
++        basename, url.path().AsUTF8Unsafe());
+   }
+   return FileSystemAccessEntry::New(
+       FileSystemAccessHandle::NewFile(
+           manager()->CreateFileHandle(context(), url, handle_state())),
+-      basename);
++      basename, url.path().AsUTF8Unsafe());
+ }
+ 
+ base::WeakPtr<FileSystemAccessHandleBase>
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
+index 3b60d30df2bed3b1ed4ff5e64ed6cc893ca002b8..765589857ab5bfd26d67edb405d00bfaffb8245a 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
+@@ -684,12 +684,12 @@ void FileSystemAccessManagerImpl::ResolveDataTransferTokenWithFileType(
+     entry = blink::mojom::FileSystemAccessEntry::New(
+         blink::mojom::FileSystemAccessHandle::NewDirectory(
+             CreateDirectoryHandle(binding_context, url, shared_handle_state)),
+-        file_path.BaseName().AsUTF8Unsafe());
++        file_path.BaseName().AsUTF8Unsafe(), file_path.AsUTF8Unsafe());
+   } else {
+     entry = blink::mojom::FileSystemAccessEntry::New(
+         blink::mojom::FileSystemAccessHandle::NewFile(
+             CreateFileHandle(binding_context, url, shared_handle_state)),
+-        file_path.BaseName().AsUTF8Unsafe());
++        file_path.BaseName().AsUTF8Unsafe(), file_path.AsUTF8Unsafe());
+   }
+ 
+   std::move(token_resolved_callback).Run(std::move(entry));
+@@ -932,7 +932,7 @@ FileSystemAccessManagerImpl::CreateFileEntryFromPath(
+   return blink::mojom::FileSystemAccessEntry::New(
+       blink::mojom::FileSystemAccessHandle::NewFile(
+           CreateFileHandle(binding_context, url, shared_handle_state)),
+-      file_path.BaseName().AsUTF8Unsafe());
++      file_path.BaseName().AsUTF8Unsafe(), file_path.AsUTF8Unsafe());
+ }
+ 
+ blink::mojom::FileSystemAccessEntryPtr
+@@ -952,7 +952,7 @@ FileSystemAccessManagerImpl::CreateDirectoryEntryFromPath(
+   return blink::mojom::FileSystemAccessEntry::New(
+       blink::mojom::FileSystemAccessHandle::NewDirectory(
+           CreateDirectoryHandle(binding_context, url, shared_handle_state)),
+-      file_path.BaseName().AsUTF8Unsafe());
++      file_path.BaseName().AsUTF8Unsafe(), file_path.AsUTF8Unsafe());
+ }
+ 
+ mojo::PendingRemote<blink::mojom::FileSystemAccessFileHandle>
+@@ -1339,7 +1339,7 @@ void FileSystemAccessManagerImpl::DidCreateAndTruncateSaveFile(
+   result_entries.push_back(blink::mojom::FileSystemAccessEntry::New(
+       blink::mojom::FileSystemAccessHandle::NewFile(
+           CreateFileHandle(binding_context, url, shared_handle_state)),
+-      entry.path.BaseName().AsUTF8Unsafe()));
++      entry.path.BaseName().AsUTF8Unsafe(), entry.path.AsUTF8Unsafe()));
+ 
+   std::move(callback).Run(file_system_access_error::Ok(),
+                           std::move(result_entries));
+@@ -1370,7 +1370,7 @@ void FileSystemAccessManagerImpl::DidChooseDirectory(
+           binding_context, url,
+           SharedHandleState(shared_handle_state.read_grant,
+                             shared_handle_state.write_grant))),
+-      entry.path.BaseName().AsUTF8Unsafe()));
++      entry.path.BaseName().AsUTF8Unsafe(), entry.path.AsUTF8Unsafe()));
+   std::move(callback).Run(file_system_access_error::Ok(),
+                           std::move(result_entries));
+ }
+diff --git a/third_party/blink/public/mojom/file_system_access/file_system_access_directory_handle.mojom b/third_party/blink/public/mojom/file_system_access/file_system_access_directory_handle.mojom
+index 531a22db5375be71dc0f9393609333b04bcea138..f3db90fcbe19e4e27789ae31fd94052d177d2308 100644
+--- a/third_party/blink/public/mojom/file_system_access/file_system_access_directory_handle.mojom
++++ b/third_party/blink/public/mojom/file_system_access/file_system_access_directory_handle.mojom
+@@ -19,6 +19,7 @@ union FileSystemAccessHandle {
+ struct FileSystemAccessEntry {
+   FileSystemAccessHandle entry_handle;
+   string name;
++  string path;
+ };
+ 
+ interface FileSystemAccessDirectoryEntriesListener {
+diff --git a/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_deserializer_for_modules.cc b/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_deserializer_for_modules.cc
+index bff24772245e550fd6ce2ab63d054187c281234f..7caef2e3291ea5d3b34672bac060c1bc974a65f3 100644
+--- a/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_deserializer_for_modules.cc
++++ b/third_party/blink/renderer/bindings/modules/v8/serialization/v8_script_value_deserializer_for_modules.cc
+@@ -385,7 +385,7 @@ FileSystemHandle* V8ScriptValueDeserializerForModules::ReadFileSystemHandle(
+       file_system_access_manager->GetFileHandleFromToken(
+           token.Unbind(), file_handle.InitWithNewPipeAndPassReceiver());
+ 
+-      return MakeGarbageCollected<FileSystemFileHandle>(execution_context, name,
++      return MakeGarbageCollected<FileSystemFileHandle>(execution_context, name, "",
+                                                         std::move(file_handle));
+     }
+     case kFileSystemDirectoryHandleTag: {
+@@ -396,7 +396,7 @@ FileSystemHandle* V8ScriptValueDeserializerForModules::ReadFileSystemHandle(
+           token.Unbind(), directory_handle.InitWithNewPipeAndPassReceiver());
+ 
+       return MakeGarbageCollected<FileSystemDirectoryHandle>(
+-          execution_context, name, std::move(directory_handle));
++          execution_context, name, "", std::move(directory_handle));
+     }
+     default: {
+       NOTREACHED();
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.cc b/third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.cc
+index 331896778177bf51368ff1a58b6fb2c2fa5b444d..123e9cbd0a43a5b9e37aa851d96c61f8e47d0b3f 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.cc
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.h"
+ 
++#include "base/files/file_path.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "mojo/public/cpp/bindings/remote.h"
+ #include "services/network/public/mojom/web_sandbox_flags.mojom-blink.h"
+@@ -36,8 +37,9 @@ using mojom::blink::FileSystemAccessErrorPtr;
+ FileSystemDirectoryHandle::FileSystemDirectoryHandle(
+     ExecutionContext* context,
+     const String& name,
++    const String& path,
+     mojo::PendingRemote<mojom::blink::FileSystemAccessDirectoryHandle> mojo_ptr)
+-    : FileSystemHandle(context, name), mojo_ptr_(context) {
++    : FileSystemHandle(context, name, path), mojo_ptr_(context) {
+   mojo_ptr_.Bind(std::move(mojo_ptr),
+                  context->GetTaskRunner(TaskType::kMiscPlatformAPI));
+   DCHECK(mojo_ptr_.is_bound());
+@@ -103,7 +105,7 @@ ScriptPromise FileSystemDirectoryHandle::getFileHandle(
+       name, options->create(),
+       WTF::Bind(
+           [](FileSystemDirectoryHandle*, ScriptPromiseResolver* resolver,
+-             const String& name, FileSystemAccessErrorPtr result,
++             const String& name, const String& path, FileSystemAccessErrorPtr result,
+              mojo::PendingRemote<mojom::blink::FileSystemAccessFileHandle>
+                  handle) {
+             // Keep `this` alive so the handle will not be garbage-collected
+@@ -116,9 +118,9 @@ ScriptPromise FileSystemDirectoryHandle::getFileHandle(
+               return;
+             }
+             resolver->Resolve(MakeGarbageCollected<FileSystemFileHandle>(
+-                context, name, std::move(handle)));
++                context, name, path, std::move(handle)));
+           },
+-          WrapPersistent(this), WrapPersistent(resolver), name));
++          WrapPersistent(this), WrapPersistent(resolver), name, String(base::FilePath::FromUTF8Unsafe(path().Utf8()).Append(name.Utf8()).AsUTF8Unsafe())));
+ 
+   return result;
+ }
+@@ -141,7 +143,7 @@ ScriptPromise FileSystemDirectoryHandle::getDirectoryHandle(
+       name, options->create(),
+       WTF::Bind(
+           [](FileSystemDirectoryHandle*, ScriptPromiseResolver* resolver,
+-             const String& name, FileSystemAccessErrorPtr result,
++             const String& name, const String& path, FileSystemAccessErrorPtr result,
+              mojo::PendingRemote<mojom::blink::FileSystemAccessDirectoryHandle>
+                  handle) {
+             // Keep `this` alive so the handle will not be garbage-collected
+@@ -154,9 +156,9 @@ ScriptPromise FileSystemDirectoryHandle::getDirectoryHandle(
+               return;
+             }
+             resolver->Resolve(MakeGarbageCollected<FileSystemDirectoryHandle>(
+-                context, name, std::move(handle)));
++                context, name, path, std::move(handle)));
+           },
+-          WrapPersistent(this), WrapPersistent(resolver), name));
++          WrapPersistent(this), WrapPersistent(resolver), name, String(base::FilePath::FromUTF8Unsafe(path().Utf8()).Append(name.Utf8()).AsUTF8Unsafe())));
+ 
+   return result;
+ }
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.h b/third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.h
+index af3f216af664f167539c208aa150abaa6e38195c..d6b8b830537a6ae1667d3368943134600cfa1e35 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.h
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_directory_handle.h
+@@ -24,6 +24,7 @@ class FileSystemDirectoryHandle final : public FileSystemHandle {
+   FileSystemDirectoryHandle(
+       ExecutionContext* context,
+       const String& name,
++      const String& path,
+       mojo::PendingRemote<mojom::blink::FileSystemAccessDirectoryHandle>);
+ 
+   // FileSystemDirectoryHandle IDL interface:
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_file_handle.cc b/third_party/blink/renderer/modules/file_system_access/file_system_file_handle.cc
+index a5c4388184949b2500359bfd42c4479c3b94d0e7..521ec6316e2f09960f5c6e1eaa0732697c7ccf77 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_file_handle.cc
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_file_handle.cc
+@@ -30,8 +30,9 @@ using mojom::blink::FileSystemAccessErrorPtr;
+ FileSystemFileHandle::FileSystemFileHandle(
+     ExecutionContext* context,
+     const String& name,
++    const String& path,
+     mojo::PendingRemote<mojom::blink::FileSystemAccessFileHandle> mojo_ptr)
+-    : FileSystemHandle(context, name), mojo_ptr_(context) {
++    : FileSystemHandle(context, name, path), mojo_ptr_(context) {
+   mojo_ptr_.Bind(std::move(mojo_ptr),
+                  context->GetTaskRunner(TaskType::kMiscPlatformAPI));
+   DCHECK(mojo_ptr_.is_bound());
+@@ -86,7 +87,7 @@ ScriptPromise FileSystemFileHandle::getFile(ScriptState* script_state,
+ 
+   mojo_ptr_->AsBlob(WTF::Bind(
+       [](FileSystemFileHandle*, ScriptPromiseResolver* resolver,
+-         const String& name, FileSystemAccessErrorPtr result,
++         const String& name, const String& path, FileSystemAccessErrorPtr result,
+          const base::File::Info& info,
+          const scoped_refptr<BlobDataHandle>& blob) {
+         // Keep `this` alive so the handle will not be garbage-collected
+@@ -96,9 +97,9 @@ ScriptPromise FileSystemFileHandle::getFile(ScriptState* script_state,
+           return;
+         }
+         resolver->Resolve(MakeGarbageCollected<File>(
+-            name, NullableTimeToOptionalTime(info.last_modified), blob));
++            path, name, "", File::kIsNotUserVisible, false, blob->size(), NullableTimeToOptionalTime(info.last_modified), blob));
+       },
+-      WrapPersistent(this), WrapPersistent(resolver), name()));
++      WrapPersistent(this), WrapPersistent(resolver), name(), path()));
+ 
+   return result;
+ }
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_file_handle.h b/third_party/blink/renderer/modules/file_system_access/file_system_file_handle.h
+index 0654b270fb2927259312eb2dc64078aed662b7da..bffae9ae88438a12d8f9591dded70d97e74505a5 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_file_handle.h
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_file_handle.h
+@@ -20,6 +20,7 @@ class FileSystemFileHandle final : public FileSystemHandle {
+   FileSystemFileHandle(
+       ExecutionContext* context,
+       const String& name,
++      const String& path,
+       mojo::PendingRemote<mojom::blink::FileSystemAccessFileHandle>);
+ 
+   bool isFile() const override { return true; }
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_handle.cc b/third_party/blink/renderer/modules/file_system_access/file_system_handle.cc
+index f09577094268a273e292879b1a9d29779395dfd2..b5c53ecfd6dec6f66b236aa9bd2404b04c930633 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_handle.cc
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_handle.cc
+@@ -21,8 +21,8 @@ using mojom::blink::FileSystemAccessEntryPtr;
+ using mojom::blink::FileSystemAccessErrorPtr;
+ 
+ FileSystemHandle::FileSystemHandle(ExecutionContext* execution_context,
+-                                   const String& name)
+-    : ExecutionContextClient(execution_context), name_(name) {}
++                                   const String& name, const String& path)
++    : ExecutionContextClient(execution_context), name_(name), path_(path) {}
+ 
+ // static
+ FileSystemHandle* FileSystemHandle::CreateFromMojoEntry(
+@@ -30,10 +30,10 @@ FileSystemHandle* FileSystemHandle::CreateFromMojoEntry(
+     ExecutionContext* execution_context) {
+   if (e->entry_handle->is_file()) {
+     return MakeGarbageCollected<FileSystemFileHandle>(
+-        execution_context, e->name, std::move(e->entry_handle->get_file()));
++        execution_context, e->name, e->path, std::move(e->entry_handle->get_file()));
+   }
+   return MakeGarbageCollected<FileSystemDirectoryHandle>(
+-      execution_context, e->name, std::move(e->entry_handle->get_directory()));
++      execution_context, e->name, e->path, std::move(e->entry_handle->get_directory()));
+ }
+ 
+ namespace {
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_handle.h b/third_party/blink/renderer/modules/file_system_access/file_system_handle.h
+index db69668b55fb6e5d707b0365b414f77abdc99b95..8b6c7d1ec160ad0e22596adf79f929cea53f830d 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_handle.h
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_handle.h
+@@ -27,7 +27,7 @@ class FileSystemHandle : public ScriptWrappable, public ExecutionContextClient {
+   DEFINE_WRAPPERTYPEINFO();
+ 
+  public:
+-  FileSystemHandle(ExecutionContext* execution_context, const String& name);
++  FileSystemHandle(ExecutionContext* execution_context, const String& name, const String& path);
+   static FileSystemHandle* CreateFromMojoEntry(
+       mojom::blink::FileSystemAccessEntryPtr,
+       ExecutionContext* execution_context);
+@@ -36,6 +36,7 @@ class FileSystemHandle : public ScriptWrappable, public ExecutionContextClient {
+   virtual bool isDirectory() const { return false; }
+   const String kind() const { return isFile() ? "file" : "directory"; }
+   const String& name() const { return name_; }
++  const String& path() const { return path_; }
+ 
+   ScriptPromise queryPermission(ScriptState*,
+                                 const FileSystemHandlePermissionDescriptor*);
+@@ -80,6 +81,7 @@ class FileSystemHandle : public ScriptWrappable, public ExecutionContextClient {
+                               bool)>) = 0;
+ 
+   String name_;
++  String path_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/file_system_access/file_system_handle.idl b/third_party/blink/renderer/modules/file_system_access/file_system_handle.idl
+index e53d6aaa553380dab440cfe742b764f121c59984..e6ff9e4d35da67ddce506b92e9794e392abb6884 100644
+--- a/third_party/blink/renderer/modules/file_system_access/file_system_handle.idl
++++ b/third_party/blink/renderer/modules/file_system_access/file_system_handle.idl
+@@ -21,6 +21,7 @@ enum FileSystemHandleKind {
+     readonly attribute FileSystemHandleKind kind;
+ 
+     readonly attribute USVString name;
++    readonly attribute USVString path;
+ 
+     [CallWith=ScriptState] Promise<PermissionState> queryPermission(
+         optional FileSystemHandlePermissionDescriptor descriptor = {});
+diff --git a/third_party/blink/renderer/modules/file_system_access/global_file_system_access_test.cc b/third_party/blink/renderer/modules/file_system_access/global_file_system_access_test.cc
+index 0e38fd626038cc9629e32472606476c756b55fb5..39ab013bac1908f9a60f2e482f081127d557ea6b 100644
+--- a/third_party/blink/renderer/modules/file_system_access/global_file_system_access_test.cc
++++ b/third_party/blink/renderer/modules/file_system_access/global_file_system_access_test.cc
+@@ -162,7 +162,7 @@ TEST_F(GlobalFileSystemAccessTest, UserActivationChooseEntriesSuccessful) {
+         auto handle = mojom::blink::FileSystemAccessHandle::NewFile(
+             std::move(pending_remote));
+         auto entry = mojom::blink::FileSystemAccessEntry::New(std::move(handle),
+-                                                              "foo.txt");
++                                                              "foo.txt", "");
+         Vector<mojom::blink::FileSystemAccessEntryPtr> entries;
+         entries.push_back(std::move(entry));
+ 
+diff --git a/third_party/blink/renderer/modules/file_system_access/storage_manager_file_system_access.cc b/third_party/blink/renderer/modules/file_system_access/storage_manager_file_system_access.cc
+index e654c8147cd272f0d413096bc1e4424db6d362fb..f27bf1e0eac581d2804d2e1924459bc28c62b211 100644
+--- a/third_party/blink/renderer/modules/file_system_access/storage_manager_file_system_access.cc
++++ b/third_party/blink/renderer/modules/file_system_access/storage_manager_file_system_access.cc
+@@ -66,7 +66,7 @@ void GetDirectoryImpl(ScriptPromiseResolver* resolver, bool allow_access) {
+           return;
+         }
+         resolver->Resolve(MakeGarbageCollected<FileSystemDirectoryHandle>(
+-            context, kSandboxRootDirectoryName, std::move(handle)));
++            context, kSandboxRootDirectoryName, kSandboxRootDirectoryName, std::move(handle)));
+       },
+       WrapPersistent(resolver), std::move(manager)));
+ }
