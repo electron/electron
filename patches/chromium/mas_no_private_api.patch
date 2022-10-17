@@ -166,7 +166,7 @@ index 644990412b4d67789faffc65c4f1114fa96c8f42..085ceafcda3f66b27cec2aedde86ac7c
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 04a5bbef30bdd1827f455b8288faf9fbd86f103e..1e6b91961c3e32aa223383b444d075ada9688b0b 100644
+index cfec184939ea205dfcc0b1066eeca5c5275596aa..d0dca967df81f6a3d321cd046532bd4cb21e1619 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -180,6 +180,12 @@ source_set("audio") {
@@ -183,7 +183,7 @@ index 04a5bbef30bdd1827f455b8288faf9fbd86f103e..1e6b91961c3e32aa223383b444d075ad
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 7da5704e2ee919b711b105641f6535b9fe08e396..a2c9e6232d7dc2490833b46b3f257ea1c636f0f1 100644
+index f2e38845218fe585085ca4ad9dc364ce2fdf3546..516bd4ae829d67e9d53b783671a2f6039800e2df 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -885,7 +885,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(

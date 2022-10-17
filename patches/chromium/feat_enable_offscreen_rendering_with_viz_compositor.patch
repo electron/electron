@@ -81,10 +81,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f2c661fb373a3e2b5fcd7c3da7d5ae00bec3c01f..002fa5d7119fda27cd308eefa7cdc54767a46019 100644
+index f8ceaa5f44852c8c37aee80205b8ed5edff11beb..b4a3ff7859425b11e5d640a81e8ab9653efa51fe 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -136,6 +136,8 @@ viz_component("service") {
+@@ -137,6 +137,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -516,10 +516,10 @@ index dc270ca19b0b29f863afdadf7b63fe9dad674a87..98843a7102bea4ab106ad4c84ecb1871
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 47f54d2f0a30cd5de1784b0d51fef12c273c4fc9..341904d3d2ae3aad88b730bbf61d2e99c1808485 100644
+index 4c5bf12286fbce150106b412cdc303093a5505a8..af4c8fa380dd2c8f738955afc459fdff09b7029d 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -384,8 +384,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -388,8 +388,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

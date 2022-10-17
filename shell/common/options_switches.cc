@@ -267,8 +267,6 @@ const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
 // If set, NTLM v2 is disabled for POSIX platforms.
 const char kDisableNTLMv2[] = "disable-ntlm-v2";
 
-const char kGlobalCrashKeys[] = "global-crash-keys";
-
 const char kEnableWebSQL[] = "enable-websql";
 
 }  // namespace switches

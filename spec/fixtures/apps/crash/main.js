@@ -51,10 +51,8 @@ app.whenReady().then(() => {
     w.loadURL(`about:blank?set_extra=${setExtraParameters ? 1 : 0}`);
     w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'node') {
-    const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`);
-    const version = app.getVersion();
     const crashPath = path.join(__dirname, 'node-crash.js');
-    const child = childProcess.fork(crashPath, [url, version, crashesDir], { silent: true });
+    const child = childProcess.fork(crashPath, { silent: true });
     child.on('exit', () => process.exit(0));
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);
