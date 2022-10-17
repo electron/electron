@@ -124,6 +124,12 @@ describe('app module', () => {
     });
   });
 
+  describe('app.getPreferredSystemLanguages()', () => {
+    it('should not be empty', () => {
+      expect(app.getPreferredSystemLanguages().length).to.not.equal(0);
+    });
+  });
+
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
       const localeCountryCode = app.getLocaleCountryCode();

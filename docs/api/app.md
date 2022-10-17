@@ -731,9 +731,9 @@ Note that the system locale is not necessarily the preferred system language. Fo
 
 **Note:** This API must be called after the `ready` event is emitted.
 
-### `app.getSystemLanguage()`
+### `app.getPreferredSystemLanguages()`
 
-Returns `string` - The user's most preferred system language, including the country code if applicable. If no preferred system languages are found, returns an empty string.
+Returns `string[]` - The user's preferred system languages, including the country codes if applicable.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 

@@ -1048,13 +1048,8 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
-std::string App::GetSystemLanguage() const {
-  std::vector<std::string> preferred_languages = GetPreferredLanguages();
-  if (preferred_languages.size()) {
-    return preferred_languages[0];
-  } else {
-    return std::string();
-  }
+std::vector<std::string> App::GetPreferredSystemLanguages() const {
+  return GetPreferredLanguages();
 }
 
 std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
@@ -1813,7 +1808,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
-      .SetMethod("getSystemLanguage", &App::GetSystemLanguage)
+      .SetMethod("getPreferredSystemLanguages",
+                 &App::GetPreferredSystemLanguages)
       .SetMethod("getSystemLocale", &App::GetSystemLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
 #if BUILDFLAG(USE_NSS_CERTS)
