@@ -15,10 +15,10 @@ at some point be an API to "unfreeze" the flags, or we may be able to refactor
 node initialization to not update flags after V8 initialization.
 
 diff --git a/content/renderer/render_process_impl.cc b/content/renderer/render_process_impl.cc
-index ff83822653e2e661eb0ce9e3a1a90c045b25fdb1..f7141cb915ab8028117264ecd8ebfdb53b1079f0 100644
+index f3b4c9c422feece52c010f63380213e242500c34..c5b308954d45e180682e36c498d6a3021adeb283 100644
 --- a/content/renderer/render_process_impl.cc
 +++ b/content/renderer/render_process_impl.cc
-@@ -241,6 +241,9 @@ RenderProcessImpl::RenderProcessImpl()
+@@ -224,6 +224,9 @@ RenderProcessImpl::RenderProcessImpl()
    SetV8FlagIfNotFeature(features::kWebAssemblyDynamicTiering,
                          "--no-wasm-dynamic-tiering");
  
@@ -27,4 +27,4 @@ index ff83822653e2e661eb0ce9e3a1a90c045b25fdb1..f7141cb915ab8028117264ecd8ebfdb5
 +
  #if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && defined(ARCH_CPU_X86_64)
    if (base::FeatureList::IsEnabled(features::kWebAssemblyTrapHandler)) {
-     if (command_line->HasSwitch(switches::kEnableCrashpad) ||
+     base::CommandLine* const command_line =

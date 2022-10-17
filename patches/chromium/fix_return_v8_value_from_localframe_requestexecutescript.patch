@@ -8,11 +8,11 @@ v8::Value instead of base::Value.
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=1323953
 
 diff --git a/extensions/renderer/script_injection.cc b/extensions/renderer/script_injection.cc
-index 01d3ac55dbf4d366e660bbee1d964f21bc3182ac..9ead280cce1577f05ff3409f8b31bd0fb044eaea 100644
+index bbeec904936d05ef76a9e5de1dcd7159e5c0f364..4be3de364630e989f4ac956944362800d535ef73 100644
 --- a/extensions/renderer/script_injection.cc
 +++ b/extensions/renderer/script_injection.cc
-@@ -342,6 +342,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,
-       blocking_option,
+@@ -331,6 +331,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,
+       blink::mojom::LoadEventBlockingOption::kBlock,
        base::BindOnce(&ScriptInjection::OnJsInjectionCompleted,
                       weak_ptr_factory_.GetWeakPtr()),
 +      base::NullCallback(),
@@ -64,10 +64,10 @@ index acc31345b556a4daf8a189cf7a9f302926e7cfdb..1f57875bb31f0e92829a0380e6f0f357
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 175b2a77d696a60fa8209809edc758912a11e83a..86cdb09f3d87cdc6970a288f50848c78687f6f36 100644
+index c634c099890120fe7a985f5067ba5fa8278468a1..9c29eae5e2d4c7a44b9f821c35af9be6387fa361 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -2526,6 +2526,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -2532,6 +2532,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -75,7 +75,7 @@ index 175b2a77d696a60fa8209809edc758912a11e83a..86cdb09f3d87cdc6970a288f50848c78
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -2556,7 +2557,8 @@ void LocalFrame::RequestExecuteScript(
+@@ -2562,7 +2563,8 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        ToScriptState(DomWindow(), *world), std::move(script_sources),
        execute_script_policy, user_gesture, evaluation_timing, blocking_option,
@@ -86,7 +86,7 @@ index 175b2a77d696a60fa8209809edc758912a11e83a..86cdb09f3d87cdc6970a288f50848c78
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index baac5c90c88991dc4b3ced175a8830f8d4cf1935..3b7f6a708fb41df297f9017daa6ec815ea1c418b 100644
+index 772ce6fa486fd33b5b7988f523a4ee44559ff067..e6f5f661c5306ca3958415e1b6336ea36d750a22 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -762,6 +762,7 @@ class CORE_EXPORT LocalFrame final

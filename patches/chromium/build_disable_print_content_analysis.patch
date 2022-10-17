@@ -13,10 +13,10 @@ This patch can be removed when enable_print_content_analysis can be more
 easily enabled or disabled by default with buildflags.
 
 diff --git a/printing/buildflags/buildflags.gni b/printing/buildflags/buildflags.gni
-index 4c7f9e2a074229f002dba786123423066b49d3bc..f2cd0d435fda91a74970c51d120687d27fa2e0e1 100644
+index 6be670877c03c58c1d622cfe19abe9e9ef37f91b..d3ab6cfff6a50957141c6d4370dc9fcda457aa9d 100644
 --- a/printing/buildflags/buildflags.gni
 +++ b/printing/buildflags/buildflags.gni
-@@ -36,7 +36,7 @@ declare_args() {
+@@ -40,7 +40,7 @@ declare_args() {
  
    # Enable snapshotting a page when printing for its content to be analyzed for
    # sensitive content by enterprise users.

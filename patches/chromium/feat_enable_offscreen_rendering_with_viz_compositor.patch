@@ -516,7 +516,7 @@ index dc270ca19b0b29f863afdadf7b63fe9dad674a87..98843a7102bea4ab106ad4c84ecb1871
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 4c5bf12286fbce150106b412cdc303093a5505a8..af4c8fa380dd2c8f738955afc459fdff09b7029d 100644
+index 034f957b148ef7d17301b7b75e0258c3a9230812..dd8ff1bd6257a524ff8f5a3a2e6f550f9e5114e2 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -388,8 +388,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(

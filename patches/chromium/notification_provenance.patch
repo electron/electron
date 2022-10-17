@@ -31,7 +31,7 @@ index dfbfbf4e5d92eb8c7c2ba38f31264ac41713a485..78cc81931321656c308e5611e30e0813
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index a84465f5c59921a1febaf2015be71fb593eb92a5..0b8e0aea8ac663c22c327005cb95d3f19dd1200c 100644
+index f66c863b18da856b449eaf4fd8cf8202d34a2f10..55aecd359a7d375f64d2125e3c08d9ea50175cda 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -83,11 +83,13 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -49,7 +49,7 @@ index a84465f5c59921a1febaf2015be71fb593eb92a5..0b8e0aea8ac663c22c327005cb95d3f1
        service_worker_context_(std::move(service_worker_context)),
        render_process_host_id_(render_process_host->GetID()),
 @@ -152,7 +154,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
-       notification_id, std::move(event_listener_remote));
+       notification_id, std::move(event_listener_remote), weak_document_ptr_);
  
    browser_context_->GetPlatformNotificationService()->DisplayNotification(
 -      notification_id, origin_.GetURL(), document_url_,
