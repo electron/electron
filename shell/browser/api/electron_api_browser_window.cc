@@ -215,8 +215,8 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   api_web_contents_->NotifyUserActivation();
 
   // Trigger beforeunload events for associated BrowserViews.
-  for (NativeBrowserView* view : window_->browser_views()) {
-    auto* vwc = view->web_contents();
+  for (InspectableWebContentsView* view : window_->inspectable_views()) {
+    auto* vwc = view->inspectable_web_contents()->GetWebContents();
     auto* api_web_contents = api::WebContents::From(vwc);
 
     // Required to make beforeunload handler work.

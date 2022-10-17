@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "shell/browser/native_browser_view.h"
-#include "third_party/skia/include/core/SkRegion.h"
 
 namespace electron {
 
@@ -30,13 +29,9 @@ class NativeBrowserViewViews : public NativeBrowserView {
   void SetBounds(const gfx::Rect& bounds) override;
   gfx::Rect GetBounds() override;
   void SetBackgroundColor(SkColor color) override;
-  void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions) override;
 
   // WebContentsObserver:
   void RenderViewReady() override;
-
-  SkRegion* draggable_region() const { return draggable_region_.get(); }
 
  private:
   void ResetAutoResizeProportions();
@@ -50,8 +45,6 @@ class NativeBrowserViewViews : public NativeBrowserView {
   bool auto_vertical_proportion_set_ = false;
   float auto_vertical_proportion_height_ = 0.;
   float auto_vertical_proportion_top_ = 0.;
-
-  std::unique_ptr<SkRegion> draggable_region_;
 };
 
 }  // namespace electron

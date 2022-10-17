@@ -6,10 +6,12 @@
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
 
 #include <memory>
+#include <vector>
 
 #include "base/compiler_specific.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/views/view.h"
 
 namespace views {
@@ -20,14 +22,15 @@ class WidgetDelegate;
 
 namespace electron {
 
-class InspectableWebContents;
-
 class InspectableWebContentsViewViews : public InspectableWebContentsView,
                                         public views::View {
  public:
   explicit InspectableWebContentsViewViews(
       InspectableWebContents* inspectable_web_contents);
   ~InspectableWebContentsViewViews() override;
+
+  bool IsContainedInDraggableRegion(views::View* root_view,
+                                    const gfx::Point& location);
 
   // InspectableWebContentsView:
   views::View* GetView() override;
@@ -40,20 +43,15 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
+  void UpdateDraggableRegions(
+      const std::vector<mojom::DraggableRegionPtr>& regions) override;
 
   // views::View:
   void Layout() override;
 
-  InspectableWebContents* inspectable_web_contents() {
-    return inspectable_web_contents_;
-  }
-
   const std::u16string& GetTitle() const { return title_; }
 
  private:
-  // Owns us.
-  InspectableWebContents* inspectable_web_contents_;
-
   std::unique_ptr<views::Widget> devtools_window_;
   views::WebView* devtools_window_web_view_ = nullptr;
   views::View* contents_web_view_ = nullptr;
@@ -63,6 +61,8 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   bool devtools_visible_ = false;
   views::WidgetDelegate* devtools_window_delegate_ = nullptr;
   std::u16string title_;
+
+  std::unique_ptr<SkRegion> draggable_region_;
 };
 
 }  // namespace electron
