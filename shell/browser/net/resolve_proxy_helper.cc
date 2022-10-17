@@ -10,6 +10,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
+#include "net/base/network_anonymization_key.h"
 #include "net/proxy_resolution/proxy_info.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/electron_browser_context.h"
@@ -56,7 +57,7 @@ void ResolveProxyHelper::StartPendingRequest() {
   browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->LookUpProxyForURL(pending_requests_.front().url,
-                          net::NetworkIsolationKey(),
+                          net::NetworkAnonymizationKey(),
                           std::move(proxy_lookup_client));
 }
 

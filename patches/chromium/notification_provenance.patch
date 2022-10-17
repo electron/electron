@@ -133,10 +133,10 @@ index 05fb3299e4eea19aeef8eb618ec81cb721a36cae..46d1cd2f96d68d36f6dd080fd69ffced
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index d075a2f1ed29a693009c3f993ab24c1fbc8cd1c7..d3c552ed96023475de1215c505978278f04766ec 100644
+index a0de2c6d5f027fefa052a4b87882685d4e347cd8..446a67010214e68d5981c74e9c3923cec16edc60 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2067,8 +2067,9 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2068,8 +2068,9 @@ void RenderProcessHostImpl::CreateNotificationService(
    // For workers:
    if (render_frame_id == MSG_ROUTING_NONE) {
      storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -148,7 +148,7 @@ index d075a2f1ed29a693009c3f993ab24c1fbc8cd1c7..d3c552ed96023475de1215c505978278
      return;
    }
  
-@@ -2076,7 +2077,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2077,7 +2078,7 @@ void RenderProcessHostImpl::CreateNotificationService(
    RenderFrameHost* rfh = RenderFrameHost::FromID(GetID(), render_frame_id);
    CHECK(rfh);
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
