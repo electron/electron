@@ -18,8 +18,12 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
+
+class SkRegion;
 
 namespace base {
 class DictionaryValue;
@@ -46,6 +50,10 @@ namespace electron {
 
 class ElectronMenuModel;
 class NativeBrowserView;
+
+namespace api {
+class BrowserView;
+}
 
 #if BUILDFLAG(IS_MAC)
 typedef NSView* NativeWindowHandle;
@@ -291,8 +299,6 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowResized();
   void NotifyWindowWillMove(const gfx::Rect& new_bounds, bool* prevent_default);
   void NotifyWindowMoved();
-  void NotifyWindowScrollTouchBegin();
-  void NotifyWindowScrollTouchEnd();
   void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowRotateGesture(float rotation);
   void NotifyWindowSheetBegin();
@@ -339,6 +345,11 @@ class NativeWindow : public base::SupportsUserData,
     return fullscreen_transition_type_;
   }
 
+  SkRegion const* draggable_region() const { return draggable_region_.get(); }
+
+  void UpdateDraggableRegions(
+      const std::vector<mojom::DraggableRegionPtr>& regions);
+
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
 
@@ -367,9 +378,15 @@ class NativeWindow : public base::SupportsUserData,
 
   std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
 
+  std::list<InspectableWebContentsView*> inspectable_views() const {
+    return inspectable_views_;
+  }
+
   int32_t window_id() const { return next_id_; }
 
  protected:
+  friend class api::BrowserView;
+
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   // views::WidgetDelegate:
@@ -385,6 +402,16 @@ class NativeWindow : public base::SupportsUserData,
   void remove_browser_view(NativeBrowserView* browser_view) {
     browser_views_.remove_if(
         [&browser_view](NativeBrowserView* n) { return (n == browser_view); });
+  }
+
+  void add_inspectable_view(InspectableWebContentsView* inspectable_view) {
+    inspectable_views_.push_back(inspectable_view);
+  }
+  void remove_inspectable_view(InspectableWebContentsView* inspectable_view) {
+    inspectable_views_.remove_if(
+        [&inspectable_view](InspectableWebContentsView* n) {
+          return (n == inspectable_view);
+        });
   }
 
   // The boolean parsing of the "titleBarOverlay" option
@@ -450,6 +477,9 @@ class NativeWindow : public base::SupportsUserData,
   // The browser view layer.
   std::list<NativeBrowserView*> browser_views_;
 
+  // The inspectable webContents views.
+  std::list<InspectableWebContentsView*> inspectable_views_;
+
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
 
@@ -457,6 +487,10 @@ class NativeWindow : public base::SupportsUserData,
   std::u16string accessible_title_;
 
   gfx::Rect overlay_rect_;
+
+  // For custom drag, the whole window is non-draggable and the draggable region
+  // has to been explicitly provided.
+  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

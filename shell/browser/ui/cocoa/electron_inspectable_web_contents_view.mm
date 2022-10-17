@@ -11,18 +11,6 @@
 #include "shell/browser/ui/inspectable_web_contents_view_mac.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
-@implementation ControlRegionView
-
-- (BOOL)mouseDownCanMoveWindow {
-  return NO;
-}
-
-- (NSView*)hitTest:(NSPoint)aPoint {
-  return nil;
-}
-
-@end
-
 @implementation ElectronInspectableWebContentsView
 
 - (instancetype)initWithInspectableWebContentsViewMac:
@@ -48,9 +36,6 @@
     [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [self addSubview:contentsView];
   }
-
-  // This will float above devtools to exclude it from dragging.
-  devtools_mask_.reset([[ControlRegionView alloc] initWithFrame:NSZeroRect]);
 
   // See https://code.google.com/p/chromium/issues/detail?id=348490.
   [self setWantsLayer:YES];
@@ -116,12 +101,6 @@
   devtools_visible_ = visible;
   if (devtools_docked_) {
     if (visible) {
-      // The devToolsView is placed under the contentsView, so it has to be
-      // draggable to make draggable region of contentsView work.
-      [devToolsView setMouseDownCanMoveWindow:YES];
-      // This view will exclude the actual devtools part from dragging.
-      [self addSubview:devtools_mask_.get()];
-
       // Place the devToolsView under contentsView, notice that we didn't set
       // sizes for them until the setContentsResizingStrategy message.
       [self addSubview:devToolsView positioned:NSWindowBelow relativeTo:nil];
@@ -132,7 +111,6 @@
     } else {
       gfx::ScopedCocoaDisableScreenUpdates disabler;
       [devToolsView removeFromSuperview];
-      [devtools_mask_ removeFromSuperview];
       [self adjustSubviews];
       [self notifyDevToolsResized];
     }
@@ -225,7 +203,7 @@
   NSView* devToolsView = [[self subviews] objectAtIndex:0];
   NSView* contentsView = [[self subviews] objectAtIndex:1];
 
-  DCHECK_EQ(3u, [[self subviews] count]);
+  DCHECK_EQ(2u, [[self subviews] count]);
 
   gfx::Rect new_devtools_bounds;
   gfx::Rect new_contents_bounds;
@@ -253,7 +231,6 @@
     devtools_frame.size.width = sb.size.width - cf.size.width;
     devtools_frame.size.height = sb.size.height;
   }
-  [devtools_mask_ setFrame:devtools_frame];
 
   [self notifyDevToolsResized];
 }

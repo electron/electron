@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 13 Oct 2022 20:30:12 +0900
+Subject: Preconnect manager
+
+* Patch disables the profile related changes added in
+https://chromium-review.googlesource.com/c/chromium/src/+/3928470.
+* Also avoids including chrome/browser/predictors/resource_prefetch_predictor.h
+in favor of defining PreconnectRequest in this file since we don't build
+the header.
+
+diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
+index 48b500a8ead699ef9d30d3219f41a913711bc4a0..f3e9c87c5ce29a4e9dc8204413f47a761408a373 100644
+--- a/chrome/browser/predictors/preconnect_manager.cc
++++ b/chrome/browser/predictors/preconnect_manager.cc
+@@ -10,9 +10,11 @@
+ #include "base/containers/adapters.h"
+ #include "base/metrics/histogram_macros.h"
+ #include "base/trace_event/trace_event.h"
++#if 0
+ #include "chrome/browser/predictors/resource_prefetch_predictor.h"
+ #include "chrome/browser/prefetch/prefetch_prefs.h"
+ #include "chrome/browser/profiles/profile.h"
++#endif
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"
+@@ -23,6 +25,20 @@ namespace predictors {
+ 
+ const bool kAllowCredentialsOnPreconnectByDefault = true;
+ 
++// NOTE(nornagon): this is copied from
++// //chrome/browser/predictors/resource_prefetch_predictor.cc we don't need
++// anything in that file other than this constructor.
++PreconnectRequest::PreconnectRequest(
++    const url::Origin& origin,
++    int num_sockets,
++    const net::NetworkAnonymizationKey& network_anonymization_key)
++    : origin(origin),
++      num_sockets(num_sockets),
++      network_anonymization_key(network_anonymization_key) {
++  DCHECK_GE(num_sockets, 0);
++  DCHECK(!network_anonymization_key.IsEmpty());
++}
++
+ PreconnectedRequestStats::PreconnectedRequestStats(const url::Origin& origin,
+                                                    bool was_preconnected)
+     : origin(origin), was_preconnected(was_preconnected) {}
+@@ -83,11 +99,14 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
+ PreconnectManager::~PreconnectManager() = default;
+ 
+ bool PreconnectManager::IsEnabled() {
++#if 0
+   Profile* profile = Profile::FromBrowserContext(browser_context_);
+   if (!profile) {
+     return false;
+   }
+   return prefetch::IsSomePreloadingEnabled(*profile->GetPrefs());
++#endif
++  return true;
+ }
+ 
+ void PreconnectManager::Start(const GURL& url,
+diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
+index d3cd85950261b66be42a22772b6344ab5cb63267..3346bb79dd1f945c4c86c664a82637ef0ce6229c 100644
+--- a/chrome/browser/predictors/preconnect_manager.h
++++ b/chrome/browser/predictors/preconnect_manager.h
+@@ -18,7 +18,9 @@
+ #include "base/time/time.h"
+ #include "chrome/browser/predictors/proxy_lookup_client_impl.h"
+ #include "chrome/browser/predictors/resolve_host_client_impl.h"
++#if 0
+ #include "chrome/browser/predictors/resource_prefetch_predictor.h"
++#endif
+ #include "net/base/network_anonymization_key.h"
+ #include "url/gurl.h"
+ 
+@@ -34,7 +36,28 @@ class NetworkContext;
+ 
+ namespace predictors {
+ 
+-struct PreconnectRequest;
++// Stores all values needed to trigger a preconnect/preresolve job to a single
++// origin.
++struct PreconnectRequest {
++  // |network_anonymization_key| specifies the key that network requests for the
++  // preconnected URL are expected to use. If a request is issued with a
++  // different key, it may not use the preconnected socket. It has no effect
++  // when |num_sockets| == 0.
++  PreconnectRequest(
++      const url::Origin& origin,
++      int num_sockets,
++      const net::NetworkAnonymizationKey& network_anonymization_key);
++  PreconnectRequest(const PreconnectRequest&) = default;
++  PreconnectRequest(PreconnectRequest&&) = default;
++  PreconnectRequest& operator=(const PreconnectRequest&) = default;
++  PreconnectRequest& operator=(PreconnectRequest&&) = default;
++
++  url::Origin origin;
++  // A zero-value means that we need to preresolve a host only.
++  int num_sockets = 0;
++  bool allow_credentials = true;
++  net::NetworkAnonymizationKey network_anonymization_key;
++};
+ 
+ struct PreconnectedRequestStats {
+   PreconnectedRequestStats(const url::Origin& origin, bool was_preconnected);

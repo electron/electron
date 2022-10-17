@@ -18,19 +18,19 @@ This patch can be removed when streams support rab/gsab, or
 when support is synchronized across both v8 and node.
 
 diff --git a/src/objects/js-array-buffer.cc b/src/objects/js-array-buffer.cc
-index c5b45087f0afd1a025cb816f0d6a5e6ff3231826..4b01d18d385bf6f2c4762b7b8086cbc2c535dbc8 100644
+index a1aca2a9dfef5a2b843ff345ae30506578d6f0c1..d580b70cd94b646cb86f1c035981c4a587d7b6c2 100644
 --- a/src/objects/js-array-buffer.cc
 +++ b/src/objects/js-array-buffer.cc
-@@ -72,9 +72,9 @@ void JSArrayBuffer::Attach(std::shared_ptr<BackingStore> backing_store) {
+@@ -71,9 +71,9 @@ void JSArrayBuffer::Attach(std::shared_ptr<BackingStore> backing_store) {
    DCHECK_NOT_NULL(backing_store);
    DCHECK_EQ(is_shared(), backing_store->is_shared());
-   DCHECK_EQ(is_resizable(), backing_store->is_resizable());
+   DCHECK_EQ(is_resizable_by_js(), backing_store->is_resizable_by_js());
 -  DCHECK_IMPLIES(
--      !backing_store->is_wasm_memory() && !backing_store->is_resizable(),
+-      !backing_store->is_wasm_memory() && !backing_store->is_resizable_by_js(),
 -      backing_store->byte_length() == backing_store->max_byte_length());
-+  // DCHECK_IMPLIES(
-+  //     !backing_store->is_wasm_memory() && !backing_store->is_resizable(),
-+  //     backing_store->byte_length() == backing_store->max_byte_length());
++  //DCHECK_IMPLIES(
++  //    !backing_store->is_wasm_memory() && !backing_store->is_resizable_by_js(),
++  //    backing_store->byte_length() == backing_store->max_byte_length());
    DCHECK(!was_detached());
    Isolate* isolate = GetIsolate();
  

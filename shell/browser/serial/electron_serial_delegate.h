@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "base/scoped_observation.h"
 #include "content/public/browser/serial_delegate.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/serial/serial_chooser_controller.h"
@@ -38,9 +39,9 @@ class ElectronSerialDelegate : public content::SerialDelegate,
   device::mojom::SerialPortManager* GetPortManager(
       content::RenderFrameHost* frame) override;
   void AddObserver(content::RenderFrameHost* frame,
-                   Observer* observer) override;
+                   content::SerialDelegate::Observer* observer) override;
   void RemoveObserver(content::RenderFrameHost* frame,
-                      Observer* observer) override;
+                      content::SerialDelegate::Observer* observer) override;
   void RevokePortPermissionWebInitiated(
       content::RenderFrameHost* frame,
       const base::UnguessableToken& token) override;

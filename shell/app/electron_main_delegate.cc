@@ -21,8 +21,10 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
+#include "content/public/app/initialize_mojo_core.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
@@ -56,7 +58,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
-#include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
 #endif
@@ -315,9 +316,6 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
       ::switches::kDisableGpuMemoryBufferCompositorResources);
 #endif
 
-  content_client_ = std::make_unique<ElectronContentClient>();
-  SetContentClient(content_client_.get());
-
   return absl::nullopt;
 }
 
@@ -373,15 +371,11 @@ void ElectronMainDelegate::PreSandboxStartup() {
   // Zygote needs to call InitCrashReporter() in RunZygote().
   if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
-    if (crash_reporter::IsCrashpadEnabled()) {
-      if (command_line->HasSwitch(
-              crash_reporter::switches::kCrashpadHandlerPid)) {
-        crash_reporter::InitializeCrashpad(false, process_type);
-        crash_reporter::SetFirstChanceExceptionHandler(
-            v8::TryHandleWebAssemblyTrapPosix);
-      }
-    } else {
-      breakpad::InitCrashReporter(process_type);
+    if (command_line->HasSwitch(
+            crash_reporter::switches::kCrashpadHandlerPid)) {
+      crash_reporter::InitializeCrashpad(false, process_type);
+      crash_reporter::SetFirstChanceExceptionHandler(
+          v8::TryHandleWebAssemblyTrapPosix);
     }
   }
 #endif
@@ -416,10 +410,31 @@ absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
   InitializeFeatureList();
+  // Initialize mojo core as soon as we have a valid feature list
+  content::InitializeMojoCore();
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
   return absl::nullopt;
+}
+
+base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  bool load_browser_process_specific_v8_snapshot =
+      process_type.empty() &&
+      electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
+  if (load_browser_process_specific_v8_snapshot) {
+    return "browser_v8_context_snapshot.bin";
+  }
+  return ContentMainDelegate::GetBrowserV8SnapshotFilename();
+}
+
+content::ContentClient* ElectronMainDelegate::CreateContentClient() {
+  content_client_ = std::make_unique<ElectronContentClient>();
+  return content_client_.get();
 }
 
 content::ContentBrowserClient*
@@ -466,6 +481,10 @@ bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {
   return absl::holds_alternative<InvokedInChildProcess>(invoked_in);
 }
 
+bool ElectronMainDelegate::ShouldInitializeMojo(InvokedIn invoked_in) {
+  return ShouldCreateFeatureList(invoked_in);
+}
+
 bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
   return false;
 }
@@ -479,15 +498,10 @@ void ElectronMainDelegate::ZygoteForked() {
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  if (crash_reporter::IsCrashpadEnabled()) {
-    if (command_line->HasSwitch(
-            crash_reporter::switches::kCrashpadHandlerPid)) {
-      crash_reporter::InitializeCrashpad(false, process_type);
-      crash_reporter::SetFirstChanceExceptionHandler(
-          v8::TryHandleWebAssemblyTrapPosix);
-    }
-  } else {
-    breakpad::InitCrashReporter(process_type);
+  if (command_line->HasSwitch(crash_reporter::switches::kCrashpadHandlerPid)) {
+    crash_reporter::InitializeCrashpad(false, process_type);
+    crash_reporter::SetFirstChanceExceptionHandler(
+        v8::TryHandleWebAssemblyTrapPosix);
   }
 
   // Reset the command line for the newly spawned process.

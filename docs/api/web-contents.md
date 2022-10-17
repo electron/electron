@@ -45,6 +45,13 @@ returns `null`.
 Returns `WebContents` | undefined - A WebContents instance with the given ID, or
 `undefined` if there is no WebContents associated with the given ID.
 
+### `webContents.fromFrame(frame)`
+
+* `frame` WebFrameMain
+
+Returns `WebContents` | undefined - A WebContents instance with the given WebFrameMain, or
+`undefined` if there is no WebContents associated with the given WebFrameMain.
+
 ### `webContents.fromDevToolsTargetId(targetId)`
 
 * `targetId` string - The Chrome DevTools Protocol [TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID) associated with the WebContents instance.
@@ -403,6 +410,16 @@ Emitted when a plugin process has crashed.
 #### Event: 'destroyed'
 
 Emitted when `webContents` is destroyed.
+
+#### Event: 'input-event'
+
+Returns:
+
+* `event` Event
+* `inputEvent` [InputEvent](structures/input-event.md)
+
+Emitted when an input event is sent to the WebContents. See
+[InputEvent](structures/input-event.md) for details.
 
 #### Event: 'before-input-event'
 
@@ -934,6 +951,21 @@ Returns `string` - The title of the current web page.
 
 Returns `boolean` - Whether the web page is destroyed.
 
+#### `contents.close([opts])`
+
+* `opts` Object (optional)
+  * `waitForBeforeUnload` boolean - if true, fire the `beforeunload` event
+    before closing the page. If the page prevents the unload, the WebContents
+    will not be closed. The [`will-prevent-unload`](#event-will-prevent-unload)
+    will be fired if the page requests prevention of unload.
+
+Closes the page, as if the web content had called `window.close()`.
+
+If the page is successfully closed (i.e. the unload is not prevented by the
+page, or `waitForBeforeUnload` is false or unspecified), the WebContents will
+be destroyed and no longer usable. The [`destroyed`](#event-destroyed) event
+will be emitted.
+
 #### `contents.focus()`
 
 Focuses the web page.
@@ -1306,20 +1338,25 @@ const requestId = webContents.findInPage('api')
 console.log(requestId)
 ```
 
-#### `contents.capturePage([rect])`
+#### `contents.capturePage([rect, opts])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
+* `opts` Object (optional)
+  * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
+  * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep. Default is `false`.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
+The page is considered visible when its browser window is hidden and the capturer count is non-zero.
+If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
 
 #### `contents.isBeingCaptured()`
 
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
 
-#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])`
+#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])` _Deprecated_
 
 * `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
 * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible.
@@ -1330,7 +1367,9 @@ hidden and the capturer count is non-zero. If you would like the page to stay hi
 
 This also affects the Page Visibility API.
 
-#### `contents.decrementCapturerCount([stayHidden, stayAwake])`
+**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`. See [breaking changes](../breaking-changes.md).
+
+#### `contents.decrementCapturerCount([stayHidden, stayAwake])` _Deprecated_
 
 * `stayHidden` boolean (optional) -  Keep the page in hidden state instead of visible.
 * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
@@ -1338,6 +1377,9 @@ This also affects the Page Visibility API.
 Decrease the capturer count by one. The page will be set to hidden or occluded state when its
 browser window is hidden or occluded and the capturer count reaches zero. If you want to
 decrease the hidden capturer count instead you should set `stayHidden` to true.
+
+**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`.
+See [breaking changes](../breaking-changes.md).
 
 #### `contents.getPrinters()` _Deprecated_
 
@@ -2028,6 +2070,11 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 #### `contents.mainFrame` _Readonly_
 
 A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.
+
+#### `contents.opener` _Readonly_
+
+A [`WebFrameMain`](web-frame-main.md) property that represents the frame that opened this WebContents, either
+with open(), or by navigating a link with a target attribute.
 
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

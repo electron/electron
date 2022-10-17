@@ -11,10 +11,10 @@ We use AdaptCallbackForRepeating() in about a dozen places. This patch
 should be removed as soon as those have been updated. Patching because
 every instance is a FTBFS that prevents testing any one instance's fix.
 
-diff --git a/base/callback_helpers.h b/base/callback_helpers.h
-index 49ce51acb678886e0c679caa42e616400ab3bd48..760d97e8614195c8106b07b8477cf91a5dbebc15 100644
---- a/base/callback_helpers.h
-+++ b/base/callback_helpers.h
+diff --git a/base/functional/callback_helpers.h b/base/functional/callback_helpers.h
+index 417610f6dcd336f54840dfcde1fe23809da5f5f5..a1df1373277e6ee711394f77c353ab91b09b739d 100644
+--- a/base/functional/callback_helpers.h
++++ b/base/functional/callback_helpers.h
 @@ -96,6 +96,22 @@ class OnceCallbackHolder final {
  
  }  // namespace internal

@@ -89,6 +89,7 @@
 #include "extensions/common/extensions_client.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/extension_web_view_helper.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/electron_extensions_client.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
@@ -536,6 +537,14 @@ void RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
   extensions_renderer_client_->GetDispatcher()
       ->WillDestroyServiceWorkerContextOnWorkerThread(
           context, service_worker_version_id, service_worker_scope, script_url);
+#endif
+}
+
+void RendererClientBase::WebViewCreated(blink::WebView* web_view,
+                                        bool was_created_by_renderer,
+                                        const url::Origin* outermost_origin) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  new extensions::ExtensionWebViewHelper(web_view, outermost_origin);
 #endif
 }
 

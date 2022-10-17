@@ -146,7 +146,7 @@ $ ninja -C out/Release electron
 ```
 
 This will build all of what was previously 'libchromiumcontent' (i.e. the
-`content/` directory of `chromium` and its dependencies, incl. WebKit and V8),
+`content/` directory of `chromium` and its dependencies, incl. Blink and V8),
 so it will take a while.
 
 The built executable will be under `./out/Testing`:

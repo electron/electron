@@ -216,6 +216,7 @@ step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
         rm -rf ~/Library/Application\ Support/electron*
         security delete-generic-password -l "Chromium Safe Storage" || echo "✓ Keychain does not contain password from tests"
         security delete-generic-password -l "Electron Test Main Safe Storage" || echo "✓ Keychain does not contain password from tests"
+        security delete-generic-password -a "electron-test-safe-storage" || echo "✓ Keychain does not contain password from tests"
       elif [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
         XVFB=/usr/bin/Xvfb
         /sbin/start-stop-daemon --stop --exec $XVFB || echo "Xvfb not running"
@@ -950,7 +951,6 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf src/ios/chrome
       rm -rf src/third_party/blink/web_tests
       rm -rf src/third_party/blink/perf_tests
-      rm -rf src/third_party/WebKit/LayoutTests
       rm -rf third_party/electron_node/deps/openssl
       rm -rf third_party/electron_node/deps/v8
       rm -rf chrome/test/data/xr/webvr_info

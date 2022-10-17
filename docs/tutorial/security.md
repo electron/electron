@@ -131,10 +131,8 @@ like `HTTP`. Similarly, we recommend the use of `WSS` over `WS`, `FTPS` over
 
 #### Why?
 
-`HTTPS` has three main benefits:
+`HTTPS` has two main benefits:
 
-1. It authenticates the remote server, ensuring your app connects to the correct
-   host instead of an impersonator.
 1. It ensures data integrity, asserting that the data was not modified while in
    transit between your application and the host.
 1. It encrypts the traffic between your user and the destination host, making it
@@ -257,7 +255,7 @@ the sandbox in all renderers. Loading, reading or processing any untrusted
 content in an unsandboxed process, including the main process, is not advised.
 
 :::info
-For more information on what `contextIsolation` is and how to enable it please
+For more information on what Process Sandboxing is and how to enable it please
 see our dedicated [Process Sandboxing](sandbox.md) document.
 :::info
 

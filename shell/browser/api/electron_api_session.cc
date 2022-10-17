@@ -39,6 +39,7 @@
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
+#include "net/base/network_anonymization_key.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
@@ -99,23 +100,6 @@
 using content::BrowserThread;
 using content::StoragePartition;
 
-namespace predictors {
-// NOTE(nornagon): this is copied from
-// //chrome/browser/predictors/resource_prefetch_predictor.cc we don't need
-// anything in that file other than this constructor. Without it we get a link
-// error. Probably upstream the constructor should be moved to
-// preconnect_manager.cc.
-PreconnectRequest::PreconnectRequest(
-    const url::Origin& origin,
-    int num_sockets,
-    const net::NetworkIsolationKey& network_isolation_key)
-    : origin(origin),
-      num_sockets(num_sockets),
-      network_isolation_key(network_isolation_key) {
-  DCHECK_GE(num_sockets, 0);
-}
-}  // namespace predictors
-
 namespace {
 
 struct ClearStorageDataOptions {
@@ -160,6 +144,30 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_SYNCABLE;
   }
   return quota_mask;
+}
+
+base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
+                                    std::string const& pac_url,
+                                    std::string const& proxy_server,
+                                    std::string const& bypass_list) {
+  if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
+    return ProxyConfigDictionary::CreateDirect();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
+    return ProxyConfigDictionary::CreateSystem();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
+    return ProxyConfigDictionary::CreateAutoDetect();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
+    const bool pac_mandatory = true;
+    return ProxyConfigDictionary::CreatePacScript(pac_url, pac_mandatory);
+  }
+
+  return ProxyConfigDictionary::CreateFixedServers(proxy_server, bypass_list);
 }
 
 }  // namespace
@@ -517,26 +525,10 @@ v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
     }
   }
 
-  std::unique_ptr<base::Value> proxy_config;
-  if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateDirect());
-  } else if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateSystem());
-  } else if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
-    proxy_config = std::make_unique<base::Value>(
-        ProxyConfigDictionary::CreateAutoDetect());
-  } else if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
-            pac_url, true /* pac_mandatory */));
-  } else {
-    proxy_config = std::make_unique<base::Value>(
-        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list));
-  }
   browser_context_->in_memory_pref_store()->SetValue(
-      proxy_config::prefs::kProxy, std::move(proxy_config),
+      proxy_config::prefs::kProxy,
+      base::Value{
+          createProxyConfig(proxy_mode, pac_url, proxy_rules, bypass_list)},
       WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
@@ -672,6 +664,18 @@ void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetDevicePermissionHandler(handler);
+}
+
+void Session::SetBluetoothPairingHandler(v8::Local<v8::Value> val,
+                                         gin::Arguments* args) {
+  ElectronPermissionManager::BluetoothPairingHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetBluetoothPairingHandler(handler);
 }
 
 v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
@@ -943,7 +947,8 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
   url::Origin origin = url::Origin::Create(url);
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkIsolationKey(origin, origin)}};
+       net::NetworkAnonymizationKey(net::SchemefulSite(origin),
+                                    net::SchemefulSite(origin))}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
@@ -1043,6 +1048,7 @@ base::Value Session::GetSpellCheckerLanguages() {
 void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
+#if !BUILDFLAG(IS_MAC)
   base::Value::List language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
@@ -1058,10 +1064,12 @@ void Session::SetSpellCheckerLanguages(
   // Enable spellcheck if > 0 languages, disable if no languages set
   browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
                                         !languages.empty());
+#endif
 }
 
 void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
                                           const GURL& url) {
+#if !BUILDFLAG(IS_MAC)
   if (!url.is_valid()) {
     thrower.ThrowError(
         "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
@@ -1069,6 +1077,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
     return;
   }
   SpellcheckHunspellDictionary::SetBaseDownloadURL(url);
+#endif
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
@@ -1221,6 +1230,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
+      .SetMethod("setBluetoothPairingHandler",
+                 &Session::SetBluetoothPairingHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",

@@ -138,6 +138,9 @@ class RendererClientBase : public content::ContentRendererClient
       int64_t service_worker_version_id,
       const GURL& service_worker_scope,
       const GURL& script_url) override;
+  void WebViewCreated(blink::WebView* web_view,
+                      bool was_created_by_renderer,
+                      const url::Origin* outermost_origin) override;
 
  protected:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

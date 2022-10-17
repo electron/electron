@@ -493,19 +493,22 @@ node::Environment* NodeBindings::CreateEnvironment(
     flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
   }
 
-  v8::TryCatch try_catch(isolate);
-  env = node::CreateEnvironment(
-      isolate_data_, context, args, exec_args,
-      static_cast<node::EnvironmentFlags::Flags>(flags));
+  {
+    v8::TryCatch try_catch(isolate);
+    env = node::CreateEnvironment(
+        isolate_data_, context, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(flags));
 
-  if (try_catch.HasCaught()) {
-    std::string err_msg =
-        "Failed to initialize node environment in process: " + process_type;
-    v8::Local<v8::Message> message = try_catch.Message();
-    std::string msg;
-    if (!message.IsEmpty() && gin::ConvertFromV8(isolate, message->Get(), &msg))
-      err_msg += " , with error: " + msg;
-    LOG(ERROR) << err_msg;
+    if (try_catch.HasCaught()) {
+      std::string err_msg =
+          "Failed to initialize node environment in process: " + process_type;
+      v8::Local<v8::Message> message = try_catch.Message();
+      std::string msg;
+      if (!message.IsEmpty() &&
+          gin::ConvertFromV8(isolate, message->Get(), &msg))
+        err_msg += " , with error: " + msg;
+      LOG(ERROR) << err_msg;
+    }
   }
 
   DCHECK(env);

@@ -12,6 +12,7 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "skia/public/mojom/bitmap.mojom.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
+#include "third_party/blink/public/common/messaging/web_message_port.h"
 #include "ui/gfx/image/image_skia.h"
 #include "v8/include/v8.h"
 
@@ -46,6 +47,8 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     DCHECK_EQ(buffer.first, data_.data());
     out->encoded_message = base::make_span(buffer.first, buffer.second);
     out->owned_encoded_message = std::move(data_);
+    out->sender_agent_cluster_id =
+        blink::WebMessagePort::GetEmbedderAgentClusterID();
 
     return true;
   }

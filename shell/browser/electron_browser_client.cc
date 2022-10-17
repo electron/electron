@@ -104,6 +104,7 @@
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
@@ -185,10 +186,7 @@
 #include "content/public/common/child_process_host.h"
 #endif
 
-#if BUILDFLAG(IS_LINUX) && !defined(MAS_BUILD)
-#include "base/debug/leak_annotations.h"
-#include "components/crash/content/browser/crash_handler_host_linux.h"
-#include "components/crash/core/app/breakpad_linux.h"  // nogncheck
+#if BUILDFLAG(IS_LINUX)
 #include "components/crash/core/app/crash_switches.h"  // nogncheck
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #endif
@@ -307,67 +305,9 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 #if BUILDFLAG(IS_LINUX)
-breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
-    const std::string& process_type) {
-  base::FilePath dumps_path;
-  base::PathService::Get(electron::DIR_CRASH_DUMPS, &dumps_path);
-  {
-    ANNOTATE_SCOPED_MEMORY_LEAK;
-    bool upload = ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
-    breakpad::CrashHandlerHostLinux* crash_handler =
-        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, upload);
-    crash_handler->StartUploaderThread();
-    return crash_handler;
-  }
-}
-
 int GetCrashSignalFD(const base::CommandLine& command_line) {
-  if (crash_reporter::IsCrashpadEnabled()) {
-    int fd;
-    pid_t pid;
-    return crash_reporter::GetHandlerSocket(&fd, &pid) ? fd : -1;
-  }
-
-  // Extensions have the same process type as renderers.
-  if (command_line.HasSwitch(extensions::switches::kExtensionProcess)) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost("extension");
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  std::string process_type =
-      command_line.GetSwitchValueASCII(::switches::kProcessType);
-
-  if (process_type == ::switches::kRendererProcess) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost(process_type);
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  if (process_type == ::switches::kPpapiPluginProcess) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost(process_type);
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  if (process_type == ::switches::kGpuProcess) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost(process_type);
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  if (process_type == ::switches::kUtilityProcess) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost(process_type);
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  return -1;
+  int fd;
+  return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
 }
 #endif  // BUILDFLAG(IS_LINUX)
 
@@ -565,42 +505,22 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
 #if BUILDFLAG(IS_LINUX)
-  bool enable_crash_reporter = false;
-  if (crash_reporter::IsCrashpadEnabled()) {
-    command_line->AppendSwitch(::switches::kEnableCrashpad);
-    enable_crash_reporter = true;
-
-    int fd;
-    pid_t pid;
-
-    if (crash_reporter::GetHandlerSocket(&fd, &pid)) {
-      command_line->AppendSwitchASCII(
-          crash_reporter::switches::kCrashpadHandlerPid,
-          base::NumberToString(pid));
-    }
-  } else {
-    enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  pid_t pid;
+  if (crash_reporter::GetHandlerSocket(nullptr, &pid)) {
+    command_line->AppendSwitchASCII(
+        crash_reporter::switches::kCrashpadHandlerPid,
+        base::NumberToString(pid));
   }
 
   // Zygote Process gets booted before any JS runs, accessing GetClientId
   // will end up touching DIR_USER_DATA path provider and this will
   // configure default value because app.name from browser_init has
   // not run yet.
-  if (enable_crash_reporter && process_type != ::switches::kZygoteProcess) {
+  if (process_type != ::switches::kZygoteProcess) {
     std::string switch_value =
         api::crash_reporter::GetClientId() + ",no_channel";
     command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
                                     switch_value);
-    if (!crash_reporter::IsCrashpadEnabled()) {
-      for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
-        if (!switch_value.empty())
-          switch_value += ",";
-        switch_value += pair.first;
-        switch_value += "=";
-        switch_value += pair.second;
-      }
-      command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
-    }
   }
 #endif
 
@@ -1507,9 +1427,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
 ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
     content::NavigationUIData* navigation_ui_data,
-    int frame_tree_node_id,
-    const scoped_refptr<network::SharedURLLoaderFactory>&
-        network_loader_factory) {
+    int frame_tree_node_id) {
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
       interceptors;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -1837,6 +1755,7 @@ void BindBadgeServiceForServiceWorker(
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
     content::BrowserContext* browser_context,
+    const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
     mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
         map) {
   map->Add<blink::mojom::BadgeService>(
@@ -1855,6 +1774,15 @@ content::HidDelegate* ElectronBrowserClient::GetHidDelegate() {
   if (!hid_delegate_)
     hid_delegate_ = std::make_unique<ElectronHidDelegate>();
   return hid_delegate_.get();
+}
+
+content::WebAuthenticationDelegate*
+ElectronBrowserClient::GetWebAuthenticationDelegate() {
+  if (!web_authentication_delegate_) {
+    web_authentication_delegate_ =
+        std::make_unique<ElectronWebAuthenticationDelegate>();
+  }
+  return web_authentication_delegate_.get();
 }
 
 }  // namespace electron

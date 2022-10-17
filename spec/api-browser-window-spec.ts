@@ -10,7 +10,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
-import { areColorsSimilar, captureScreen, CHROMA_COLOR_HEX, getPixelColor } from './screen-helpers';
+import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -1737,6 +1737,36 @@ describe('BrowserWindow module', () => {
       expect(image.isEmpty()).to.equal(true);
     });
 
+    ifit(process.platform === 'darwin')('honors the stayHidden argument', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong');
+        expect(visibilityState).to.equal('visible');
+        expect(hidden).to.be.false('hidden');
+      }
+
+      w.hide();
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong');
+        expect(visibilityState).to.equal('hidden');
+        expect(hidden).to.be.true('hidden');
+      }
+
+      await w.capturePage({ x: 0, y: 0, width: 0, height: 0 }, { stayHidden: true });
+
+      const visible = await w.webContents.executeJavaScript('document.visibilityState');
+      expect(visible).to.equal('hidden');
+    });
+
     it('resolves after the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixtures, 'pages', 'a.html'));
@@ -2040,15 +2070,7 @@ describe('BrowserWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
-    let appProcess: childProcess.ChildProcessWithoutNullStreams | childProcess.ChildProcess | undefined;
-
-    afterEach(() => {
-      if (appProcess && !appProcess.killed) {
-        appProcess.kill();
-        appProcess = undefined;
-      }
-      closeAllWindows();
-    });
+    afterEach(closeAllWindows);
 
     it('allows setting, changing, and removing the vibrancy', () => {
       const w = new BrowserWindow({ show: false });
@@ -2066,18 +2088,6 @@ describe('BrowserWindow module', () => {
       expect(() => {
         w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
       }).to.not.throw();
-    });
-
-    // TODO(nornagon): disabled due to flakiness.
-    it.skip('Allows setting a transparent window via CSS', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'background-color-transparent');
-
-      appProcess = childProcess.spawn(process.execPath, [appPath], {
-        stdio: 'inherit'
-      });
-
-      const [code] = await emittedOnce(appProcess, 'exit');
-      expect(code).to.equal(0);
     });
   });
 
@@ -2968,6 +2978,26 @@ describe('BrowserWindow module', () => {
           ? 'file:///' + htmlPath.replace(/\\/g, '/')
           : pageUrl;
         expect(url).to.equal(expectedUrl);
+      });
+
+      it('exposes full EventEmitter object to preload script', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: path.join(fixtures, 'module', 'preload-eventemitter.js')
+          }
+        });
+        w.loadURL('about:blank');
+        const [, rendererEventEmitterProperties] = await emittedOnce(ipcMain, 'answer');
+        const { EventEmitter } = require('events');
+        const emitter = new EventEmitter();
+        const browserEventEmitterProperties = [];
+        let currentObj = emitter;
+        do {
+          browserEventEmitterProperties.push(...Object.getOwnPropertyNames(currentObj));
+        } while ((currentObj = Object.getPrototypeOf(currentObj)));
+        expect(rendererEventEmitterProperties).to.deep.equal(browserEventEmitterProperties);
       });
 
       it('should open windows in same domain with cross-scripting enabled', async () => {
@@ -5477,7 +5507,7 @@ describe('BrowserWindow module', () => {
       const backgroundWindow = new BrowserWindow({
         ...display.bounds,
         frame: false,
-        backgroundColor: CHROMA_COLOR_HEX,
+        backgroundColor: HexColors.GREEN,
         hasShadow: false
       });
 
@@ -5491,9 +5521,10 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html'));
-      await emittedOnce(foregroundWindow, 'ready-to-show');
+      const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
+      await foregroundWindow.loadFile(colorFile);
 
+      await delay(1000);
       const screenCapture = await captureScreen();
       const leftHalfColor = getPixelColor(screenCapture, {
         x: display.size.width / 4,
@@ -5504,22 +5535,57 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(leftHalfColor, CHROMA_COLOR_HEX)).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, '#ff0000')).to.be.true();
+      expect(areColorsSimilar(leftHalfColor, HexColors.GREEN)).to.be.true();
+      expect(areColorsSimilar(rightHalfColor, HexColors.RED)).to.be.true();
+    });
+
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('Allows setting a transparent window via CSS', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const backgroundWindow = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        backgroundColor: HexColors.PURPLE,
+        hasShadow: false
+      });
+
+      await backgroundWindow.loadURL('about:blank');
+
+      const foregroundWindow = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        transparent: true,
+        hasShadow: false,
+        webPreferences: {
+          contextIsolation: false,
+          nodeIntegration: true
+        }
+      });
+
+      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
+      await emittedOnce(ipcMain, 'set-transparent');
+
+      await delay();
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
     });
   });
 
   describe('"backgroundColor" option', () => {
     afterEach(closeAllWindows);
 
-    // Linux/WOA doesn't return any capture sources.
-    ifit(process.platform !== 'linux' && (process.platform !== 'win32' || process.arch !== 'arm64'))('should display the set color', async () => {
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('should display the set color', async () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
         ...display.bounds,
         show: true,
-        backgroundColor: CHROMA_COLOR_HEX
+        backgroundColor: HexColors.BLUE
       });
 
       w.loadURL('about:blank');
@@ -5531,7 +5597,7 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, CHROMA_COLOR_HEX)).to.be.true();
+      expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
     });
   });
 });

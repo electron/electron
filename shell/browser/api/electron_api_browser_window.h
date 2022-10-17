@@ -17,7 +17,6 @@
 namespace electron::api {
 
 class BrowserWindow : public BaseWindow,
-                      public content::RenderWidgetHost::InputEventObserver,
                       public content::WebContentsObserver,
                       public ExtendedWebContentsObserver {
  public:
@@ -43,12 +42,7 @@ class BrowserWindow : public BaseWindow,
   BrowserWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BrowserWindow() override;
 
-  // content::RenderWidgetHost::InputEventObserver:
-  void OnInputEvent(const blink::WebInputEvent& event) override;
-
   // content::WebContentsObserver:
-  void RenderViewHostChanged(content::RenderViewHost* old_host,
-                             content::RenderViewHost* new_host) override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
   void OnRendererResponsive(
@@ -63,7 +57,6 @@ class BrowserWindow : public BaseWindow,
   void OnActivateContents() override;
   void OnPageTitleUpdated(const std::u16string& title,
                           bool explicit_set) override;
-  void OnDevToolsResized() override;
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
@@ -74,7 +67,6 @@ class BrowserWindow : public BaseWindow,
   // BaseWindow:
   void OnWindowBlur() override;
   void OnWindowFocus() override;
-  void OnWindowResize() override;
   void OnWindowLeaveFullScreen() override;
   void CloseImmediately() override;
   void Focus() override;
@@ -82,11 +74,6 @@ class BrowserWindow : public BaseWindow,
   void SetBackgroundColor(const std::string& color_name) override;
   void SetBrowserView(
       absl::optional<gin::Handle<BrowserView>> browser_view) override;
-  void AddBrowserView(gin::Handle<BrowserView> browser_view) override;
-  void RemoveBrowserView(gin::Handle<BrowserView> browser_view) override;
-  void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
-                         gin_helper::Arguments* args) override;
-  void ResetBrowserViews() override;
   void OnWindowShow() override;
   void OnWindowHide() override;
 
@@ -101,10 +88,6 @@ class BrowserWindow : public BaseWindow,
 #endif
 
  private:
-#if BUILDFLAG(IS_MAC)
-  void OverrideNSWindowContentView(InspectableWebContentsView* webView);
-#endif
-
   // Helpers.
 
   // Called when the window needs to update its draggable region.
@@ -120,8 +103,6 @@ class BrowserWindow : public BaseWindow,
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableRepeatingClosure window_unresponsive_closure_;
-
-  std::vector<mojom::DraggableRegionPtr> draggable_regions_;
 
   v8::Global<v8::Value> web_contents_;
   base::WeakPtr<api::WebContents> api_web_contents_;

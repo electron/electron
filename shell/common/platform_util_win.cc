@@ -331,23 +331,21 @@ void ShowItemInFolder(const base::FilePath& full_path) {
 void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  base::PostTaskAndReplyWithResult(
-      base::ThreadPool::CreateCOMSTATaskRunner(
-          {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
-          .get(),
-      FROM_HERE, base::BindOnce(&OpenPathOnThread, full_path),
-      std::move(callback));
+  base::ThreadPool::CreateCOMSTATaskRunner(
+      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+      ->PostTaskAndReplyWithResult(FROM_HERE,
+                                   base::BindOnce(&OpenPathOnThread, full_path),
+                                   std::move(callback));
 }
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
                   OpenCallback callback) {
-  base::PostTaskAndReplyWithResult(
-      base::ThreadPool::CreateCOMSTATaskRunner(
-          {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
-          .get(),
-      FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
-      std::move(callback));
+  base::ThreadPool::CreateCOMSTATaskRunner(
+      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+      ->PostTaskAndReplyWithResult(
+          FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
+          std::move(callback));
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& path,
