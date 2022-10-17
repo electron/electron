@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/logging.h"
 #include "base/feature_list.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
@@ -26,6 +27,13 @@
 #include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_file.h"
+#include "third_party/blink/renderer/bindings/modules/v8/v8_file_system_directory_handle.h"
+#include "third_party/blink/renderer/bindings/modules/v8/v8_file_system_file_handle.h"
+#include "third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h"
+#include "third_party/blink/renderer/platform/bindings/wrapper_type_info.h"
+#include "third_party/blink/renderer/core/fileapi/file.h"
+#include "third_party/blink/renderer/modules/file_system_access/file_system_file_handle.h"
 
 namespace features {
 
@@ -351,6 +359,16 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope destination_context_scope(destination_context);
     return v8::MaybeLocal<v8::Value>(blob.ToV8Value(
         destination_context->Global(), destination_context->GetIsolate()));
+  }
+
+  if (value->IsObject() && blink::V8DOMWrapper::IsWrapper(source_context->GetIsolate(), value.As<v8::Object>())) {
+    auto *wrappable = blink::ToScriptWrappable(value.As<v8::Object>());
+    const auto* wrapper_type_info = wrappable->GetWrapperTypeInfo();
+    if (wrapper_type_info == blink::V8FileSystemFileHandle::GetWrapperTypeInfo() || wrapper_type_info == blink::V8FileSystemDirectoryHandle::GetWrapperTypeInfo()) {
+      VLOG(1)<<"Bridging handle!!!";
+      auto* filehandle = wrappable->ToImpl<blink::FileSystemHandle>();
+      return v8::MaybeLocal<v8::Value>(filehandle->Wrap(blink::ScriptState::From(destination_context)));
+    }
   }
 
   // Proxy all objects

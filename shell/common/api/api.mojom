@@ -4,6 +4,7 @@ import "mojo/public/mojom/base/string16.mojom";
 import "ui/gfx/geometry/mojom/geometry.mojom";
 import "third_party/blink/public/mojom/messaging/cloneable_message.mojom";
 import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
+import "third_party/blink/public/mojom/file_system_access/file_system_access_transfer_token.mojom";
 
 interface ElectronRenderer {
   Message(
@@ -43,6 +44,9 @@ interface ElectronWebContentsUtility {
 
   [Sync]
   DoGetZoomLevel() => (double result);
+
+  ResolveFileSystemAccessTransferToken(
+      pending_remote<blink.mojom.FileSystemAccessTransferToken> token) => (string path);
 };
 
 interface ElectronApiIPC {

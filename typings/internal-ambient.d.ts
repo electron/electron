@@ -6,7 +6,7 @@ declare var isolatedApi: {
   guestViewInternal: any;
   allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
   setIsWebView: (iframe: HTMLIFrameElement) => void;
-}
+};
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
@@ -27,6 +27,10 @@ declare namespace NodeJS {
     isPictureInPictureEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
+  }
+
+  interface FilesBinding {
+    getPath(file: any/* FIXME: File | FileSystemHandle */): string | undefined;
   }
 
   interface IpcRendererBinding {
@@ -240,6 +244,7 @@ declare namespace NodeJS {
       fromIdOrNull(processId: number, routingId: number): Electron.WebFrameMain;
     }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
+    _linkedBinding(name: 'electron_renderer_files'): FilesBinding;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     log: NodeJS.WriteStream['write'];

@@ -653,6 +653,7 @@ filenames = {
     "shell/renderer/api/electron_api_context_bridge.cc",
     "shell/renderer/api/electron_api_context_bridge.h",
     "shell/renderer/api/electron_api_crash_reporter_renderer.cc",
+    "shell/renderer/api/electron_api_files.cc",
     "shell/renderer/api/electron_api_ipc_renderer.cc",
     "shell/renderer/api/electron_api_spell_check_client.cc",
     "shell/renderer/api/electron_api_spell_check_client.h",

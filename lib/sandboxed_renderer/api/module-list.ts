@@ -8,6 +8,10 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
     loader: () => require('@electron/internal/renderer/api/crash-reporter')
   },
   {
+    name: 'files',
+    loader: () => require('@electron/internal/renderer/api/files')
+  },
+  {
     name: 'ipcRenderer',
     loader: () => require('@electron/internal/renderer/api/ipc-renderer')
   },

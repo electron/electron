@@ -13,6 +13,7 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "third_party/blink/public/mojom/file_system_access/file_system_access_transfer_token.mojom.h"
 
 namespace content {
 class RenderFrameHost;
@@ -45,6 +46,7 @@ class ElectronWebContentsUtilityHandlerImpl
       std::vector<mojom::DraggableRegionPtr> regions) override;
   void SetTemporaryZoomLevel(double level) override;
   void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
+  void ResolveFileSystemAccessTransferToken(mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token, ResolveFileSystemAccessTransferTokenCallback callback) override;
 
   base::WeakPtr<ElectronWebContentsUtilityHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
