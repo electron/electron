@@ -129,8 +129,11 @@ describe('app module', () => {
       expect(app.getPreferredSystemLanguages().length).to.not.equal(0);
     });
 
-    ifit(process.platform === 'linux')('should be empty', () => {
-      expect(app.getPreferredSystemLanguages().length).to.equal(0);
+    ifit(process.platform === 'linux')('should be empty or contain C entry', () => {
+      const languages = app.getPreferredSystemLanguages();
+      if (languages.length) {
+        expect(languages).to.include('C');
+      }
     });
   });
 
