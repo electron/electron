@@ -582,6 +582,7 @@ filenames = {
     "shell/common/gin_converters/native_window_converter.h",
     "shell/common/gin_converters/net_converter.cc",
     "shell/common/gin_converters/net_converter.h",
+    "shell/common/gin_converters/serial_port_info_converter.h",
     "shell/common/gin_converters/std_converter.h",
     "shell/common/gin_converters/time_converter.cc",
     "shell/common/gin_converters/time_converter.h",
