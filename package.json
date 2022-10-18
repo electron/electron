@@ -5,6 +5,7 @@
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@azure/storage-blob": "^12.9.0",
+    "@electron/asar": "^3.2.1",
     "@electron/docs-parser": "^0.12.4",
     "@electron/typescript-definitions": "^8.9.6",
     "@octokit/auth-app": "^2.10.0",
@@ -31,7 +32,6 @@
     "@types/webpack-env": "^1.17.0",
     "@typescript-eslint/eslint-plugin": "^4.4.1",
     "@typescript-eslint/parser": "^4.4.1",
-    "asar": "^3.1.0",
     "aws-sdk": "^2.814.0",
     "buffer": "^6.0.3",
     "check-for-leaks": "^1.2.1",
