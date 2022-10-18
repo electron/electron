@@ -6,7 +6,7 @@
   "devDependencies": {
     "@azure/storage-blob": "^12.9.0",
     "@electron/docs-parser": "^0.12.4",
-    "@electron/typescript-definitions": "^8.9.6",
+    "@electron/typescript-definitions": "^8.9.7",
     "@octokit/auth-app": "^2.10.0",
     "@octokit/rest": "^18.0.3",
     "@primer/octicons": "^10.0.0",
