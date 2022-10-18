@@ -102,10 +102,10 @@ index 8420d43b88bc7187d8e0701dd58a5de07366a5c6..5572fad8219ae2c72f7c636b8b86c0b6
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 67d3be89ac776ebc39c245641f9fbb4e9dd5e03d..1e88f4034ef2b72b2373e17c607b9e38bf24863b 100644
+index e5dc2a6baddd1668998ca2c91f10d30893ea76b0..098cf457cc2391c53ab6f67f5ac0fc0f45e05a9d 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -495,8 +495,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -491,8 +491,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -115,7 +115,7 @@ index 67d3be89ac776ebc39c245641f9fbb4e9dd5e03d..1e88f4034ef2b72b2373e17c607b9e38
    if (g_mapped_snapshot) {
      // TODO(crbug.com/802962): Confirm not loading different type of snapshot
      // files in a process.
-@@ -505,10 +504,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -501,10 +500,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =
