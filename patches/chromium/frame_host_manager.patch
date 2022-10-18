@@ -20,7 +20,7 @@ index d1700997390777100002fb0a2f4a5fc0e961fb15..1a08dabef38c67b7ccfc5522e91b0322
  }
  
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 2dcea7a09b8521020e0821e18cbd45219caca639..0a128058163ec4adcdfb051d5c2e0f6c8394b81b 100644
+index 3f5f0449b7c70b7d48438d4c4c908c897cad3727..b00733238917b663909125e68a6fea84e060c9a8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -272,6 +272,11 @@ class CONTENT_EXPORT ContentBrowserClient {
