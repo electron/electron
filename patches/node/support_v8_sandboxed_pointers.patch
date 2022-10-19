@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253f62e51bd 100644
+index 73ffe569e5a5cebb1de1ceb51030c0fc3f96fee6..eebc675ccc125b9ab03dd4b7d18abe14564fbdb1 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -80,6 +80,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -26,7 +26,7 @@ index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 840fe824617b951d4f4421155c5e1ce79c28525e..b1ae378993723d7a0a71bfe36fc5be94a899082a 100644
+index 611599a3fcf7d521dbffeed88c33c3b4d4f64b09..10a316b82049a52476e4aaf6ffb93aca64c4b3ca 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -332,10 +332,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
@@ -93,10 +93,10 @@ index 840fe824617b951d4f4421155c5e1ce79c28525e..b1ae378993723d7a0a71bfe36fc5be94
 +  args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
 +}
 +#else
- // SecureBuffer uses openssl to allocate a Uint8Array using
- // OPENSSL_secure_malloc. Because we do not yet actually
- // make use of secure heap, this has the same semantics as
-@@ -707,6 +743,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+ // SecureBuffer uses OPENSSL_secure_malloc to allocate a Uint8Array.
+ // Without --secure-heap, OpenSSL's secure heap is disabled,
+ // in which case this has the same semantics as
+@@ -706,6 +742,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -118,7 +118,7 @@ index f26422ee106ab7a816750ee717cb18ea454b5b62..5e5798e7e55dbb2df93ef4a8ab6f40ae
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index c537a247f55ff070da1988fc8b7309b5692b5c18..59bfb597849cd5a94800d6c83b238ef77245243e 100644
+index d96efaa9df7b2f0bf23adab63d16df919f104542..5b959a70562fc161aec8c8f4649d89d92c401ab8 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {

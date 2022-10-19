@@ -6,10 +6,10 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index f1971c40a447b251f524717b906a5435bf0a0556..a65094ec21b0f40ab562608a9eeb36c5626cda31 100644
+index 7a996e9ef11535b4f2f8dcbac191e6973a86803c..df936b611953eca103ef1ae372f833fef1a3fc83 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -127,6 +127,13 @@ const {
+@@ -133,6 +133,13 @@ const {
    CHAR_COLON
  } = require('internal/constants');
  
@@ -23,7 +23,7 @@ index f1971c40a447b251f524717b906a5435bf0a0556..a65094ec21b0f40ab562608a9eeb36c5
  const {
    isProxy
  } = require('internal/util/types');
-@@ -1121,10 +1128,12 @@ Module.prototype._compile = function(content, filename) {
+@@ -1150,10 +1157,12 @@ Module.prototype._compile = function(content, filename) {
    if (requireDepth === 0) statCache = new SafeMap();
    if (inspectorWrapper) {
      result = inspectorWrapper(compiledWrapper, thisValue, exports,

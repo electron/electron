@@ -8,7 +8,7 @@ modules from being used in the renderer process. This should be upstreamed as
 a customizable error message.
 
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 03e26027406e655ce876a9af689c7d97920c4327..d188b393ee1bd2ee7de6f4454dfa7785d4a5c52b 100644
+index 9ae06c87f54b8f9a372fca3c8e39ba7c747c3596..82455b1a4d4585f135128dbec43cb3844eda8535 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -4,6 +4,7 @@

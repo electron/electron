@@ -31,10 +31,10 @@ index 25a8464e4833ff4655db2fe37f4bd482dc147865..4b1f1b05b6c67f206f87618792fa528d
    }
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 3a536aab1bdeea6829d76d6af48fdefe0e08908d..4e3388b0b1fe69f8aaff15e651f7f0201208a40f 100644
+index bd1f0e2851752fba0a7e187cdd695f73229e7ab0..f2d0c323fac35666d93a2caab088116abc9e8000 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1100,6 +1100,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1129,6 +1129,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.

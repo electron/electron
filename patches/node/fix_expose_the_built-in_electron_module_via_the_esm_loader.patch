@@ -6,22 +6,22 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 5ae0e17dcfb5e24a1a117c33c4d42891686e693f..619fe6cef3b02eb575410225f41d3e7d51f37b93 100644
+index 5fd9a256f1cee67d91c5f28e9a6d683cf1cb7d28..98a6b105625fc58d2df5a8a6908527fbf26c2111 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
-@@ -31,6 +31,7 @@ const protocolHandlers = ObjectAssign(ObjectCreate(null), {
+@@ -30,6 +30,7 @@ const protocolHandlers = {
    'http:': getHttpProtocolModuleFormat,
    'https:': getHttpProtocolModuleFormat,
    'node:'() { return 'builtin'; },
 +  'electron:'() { return 'commonjs'; },
- });
+ };
  
  function getDataProtocolModuleFormat(parsed) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9bb85947ac 100644
+index a3b4b1946d371dffa2233f80a7eb6ab97f8bb073..075aeb50d9234105d3f4b02f1074317f5ce7d030 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -883,6 +883,8 @@ function parsePackageName(specifier, base) {
+@@ -784,6 +784,8 @@ function parsePackageName(specifier, base) {
    return { packageName, packageSubpath, isScoped };
  }
  
@@ -30,7 +30,7 @@ index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9b
  /**
   * @param {string} specifier
   * @param {string | URL | undefined} base
-@@ -895,6 +897,10 @@ function packageResolve(specifier, base, conditions) {
+@@ -796,6 +798,10 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -41,7 +41,7 @@ index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9b
    const { packageName, packageSubpath, isScoped } =
      parsePackageName(specifier, base);
  
-@@ -1095,7 +1101,7 @@ function checkIfDisallowedImport(specifier, parsed, parsedParentURL) {
+@@ -996,7 +1002,7 @@ function checkIfDisallowedImport(specifier, parsed, parsedParentURL) {
  
  function throwIfUnsupportedURLProtocol(url) {
    if (url.protocol !== 'file:' && url.protocol !== 'data:' &&
@@ -51,10 +51,10 @@ index fc5dcd6863dc358102a74bd2cc723d54436fae64..97eea17d815967671a2a0fc2a9c95a9b
    }
  }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 8fb3c96f8dc4c535c3898755f7846ae24d9867c4..bda3ca0797e8f1b1d69295c2276c0f841cae99f2 100644
+index 1211974ba9cf9d6c551b6c93b335290c977f6f79..c1b76222452ef21a520cf7094df79f7282f2cf84 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -155,7 +155,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+@@ -154,7 +154,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
  
    if (!cjsParse) await initCJSParse();
    const { module, exportNames } = cjsPreparseModuleExports(filename);
@@ -63,7 +63,7 @@ index 8fb3c96f8dc4c535c3898755f7846ae24d9867c4..bda3ca0797e8f1b1d69295c2276c0f84
      [...exportNames] : ['default', ...exportNames];
  
    return new ModuleWrap(url, undefined, namesWithDefault, function() {
-@@ -174,7 +174,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+@@ -173,7 +173,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
        }
      }
  
@@ -73,10 +73,10 @@ index 8fb3c96f8dc4c535c3898755f7846ae24d9867c4..bda3ca0797e8f1b1d69295c2276c0f84
            exportName === 'default')
          continue;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 22bff28595f6f5b109ae47c79aa1f5ac463ec6c3..d4eb2e044cc1152f48c92d0503f9216e3aad5f4b 100644
+index 5715c403e6df7ba59d583b726b31648879952d25..a1e15a956e4449a5e1d12c380d696fff8fb46c11 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1432,6 +1432,8 @@ function fileURLToPath(path) {
+@@ -1431,6 +1431,8 @@ function fileURLToPath(path) {
      path = new URL(path);
    else if (!isURLInstance(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

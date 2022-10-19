@@ -538,11 +538,11 @@ index af2146982c7a3bf7bd7527f44e4b17a3b605026e..f6b91f675cfea367c608892dee078b56
    // Non-XOF hash functions should accept valid outputLength options as well.
    assert.strictEqual(crypto.createHash('sha224', { outputLength: 28 })
 diff --git a/test/parallel/test-crypto-hkdf.js b/test/parallel/test-crypto-hkdf.js
-index 2d6689a486ddb6e42e53df2b1551af72dc5bc903..3b1a71e1396875c74e28ecbc058981c3c9d10a1f 100644
+index ff3abdf291efcd076b36e755de4147b0aad0b345..d29854cf0c0ce89f84c912def672e7c4e11427a3 100644
 --- a/test/parallel/test-crypto-hkdf.js
 +++ b/test/parallel/test-crypto-hkdf.js
-@@ -122,8 +122,6 @@ const algorithms = [
-   ['sha256', 'secret', 'salt', 'info', 10],
+@@ -124,8 +124,6 @@ const algorithms = [
+   ['sha256', '', 'salt', '', 10],
    ['sha512', 'secret', 'salt', '', 15],
  ];
 -if (!common.hasOpenSSL3)
@@ -632,7 +632,7 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index b2c14b1efcd68bd20e9c946106f1ab5fb58627c5..eef0bfe638b641c68fdadd95226a74df044921cb 100644
+index 74c0ff53eb18b749d4018b50d654df943403245b..aab253ca5d4504c445c88cd9519f8385a7b39b91 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,6 +29,7 @@ const keySize = 2048;
@@ -1013,19 +1013,6 @@ index f8eb996000ec899abafbfd558f4f49bad2c69c9a..0bf5c7811eeccff6194d8df41887df0a
    test('X448').then(common.mustCall());
  }
 +*/
-diff --git a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
-index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa389a0469 100644
---- a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
-+++ b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
-@@ -127,7 +127,7 @@ async function testEncryptionLongPlaintext({ algorithm,
- 
-   return assert.rejects(
-     subtle.encrypt(algorithm, publicKey, newplaintext), {
--      message: /data too large/
-+      message: /data too large|DATA_TOO_LARGE_FOR_KEY_SIZE/
-     });
- }
- 
 diff --git a/test/parallel/test-webcrypto-sign-verify.js b/test/parallel/test-webcrypto-sign-verify.js
 index 6c6b15781549a4b37781bf0b8014054dc5d8c746..142d41b169c836201660d78c19383f3ffc469407 100644
 --- a/test/parallel/test-webcrypto-sign-verify.js

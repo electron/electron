@@ -44,10 +44,10 @@ index 7224823f0df04da7a7626839f2205057d95155d2..ae9889508ed0f3f24f2a888ba8650ccd
          'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
        }],
 diff --git a/configure.py b/configure.py
-index 1a7023dece588631b8281c67b223204c1ebb5ee7..08894bf3908916d1cb639810c5e1b2afae74ff4d 100755
+index d3192ca04ca336658969343dbf65482975e77c52..4befdc24da79892b4bfa5f9205c5b1004eb47e08 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1459,6 +1459,7 @@ def configure_v8(o):
+@@ -1472,6 +1472,7 @@ def configure_v8(o):
    o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
    o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0

@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 6c663a2b21d0a29708700d0e19b8e30fa696a1d0..1e4ff83faec60887e8169e612ac1a956130d7e4a 100644
+index 68e088d86a7599222e6491e1f8ee752952b4b612..bee56b4cd37a9bb51b755aa75b13837e0fa43413 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -25,7 +25,8 @@ using v8::Value;
@@ -31,10 +31,10 @@ index 6c663a2b21d0a29708700d0e19b8e30fa696a1d0..1e4ff83faec60887e8169e612ac1a956
    case EVP_CIPH_GCM_MODE:
  #ifndef OPENSSL_NO_OCB
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index ed1aea868d8385b6411103c614f4d12688c8cb30..4864d7cd6a310f31bfdda399996bd2c47977667a 100644
+index 0c794ffe2c1a278af2a50a52e29b3d83077a0008..e90f67b427ecd4095d5da131c0263fbd89bb964f 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
-@@ -166,7 +166,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -169,7 +169,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    const unsigned char* buf;
    size_t len;
    size_t rem;
@@ -43,7 +43,7 @@ index ed1aea868d8385b6411103c614f4d12688c8cb30..4864d7cd6a310f31bfdda399996bd2c4
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -179,13 +179,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -182,13 +182,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    len = (buf[0] << 8) | buf[1];
    if (len + 2 != rem) return nullptr;
    return reinterpret_cast<const char*>(buf + 3);
@@ -60,7 +60,7 @@ index ed1aea868d8385b6411103c614f4d12688c8cb30..4864d7cd6a310f31bfdda399996bd2c4
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_server_name,
-@@ -207,15 +209,20 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+@@ -210,15 +212,20 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
    if (len + 2 > rem)
      return nullptr;
    return reinterpret_cast<const char*>(buf + 5);
@@ -84,7 +84,7 @@ index ed1aea868d8385b6411103c614f4d12688c8cb30..4864d7cd6a310f31bfdda399996bd2c4
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
    const char* code = "UNSPECIFIED";
-@@ -1103,14 +1110,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -1107,14 +1114,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -183,10 +183,10 @@ index c02e22bb542ff529e4d4fa32de63a07704b02b8e..38220d2e0d1a695f67bf7b9cb79a73fa
  
    EVPKeyCtxPointer ctx(EVP_PKEY_CTX_new(key_params.get(), nullptr));
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42a461b689 100644
+index 862c091b05f5886479cedb8b95b756e4fd1547ee..c4cf3a59677ae9640e444f2649f89de3ab3c5c9e 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
-@@ -29,7 +29,7 @@ namespace crypto {
+@@ -40,7 +40,7 @@ namespace crypto {
  EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
    EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DSA, nullptr));
    EVP_PKEY* raw_params = nullptr;
@@ -195,7 +195,7 @@ index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42
    if (!param_ctx ||
        EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
        EVP_PKEY_CTX_set_dsa_paramgen_bits(
-@@ -49,7 +49,9 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
+@@ -55,7 +55,9 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
      }
    }
@@ -220,7 +220,7 @@ index 1459e410453da6850157444affa48b4a215edb03..2cf5861a110a2579329b9b0327d7b429
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index bd732a70a8ffe6212e06dddb352ca75cb45b50d3..cd025663f58d386e3b7c47823a7d6cf1a230e6a8 100644
+index c79e384febafdcc79a329fb67cc8094a770e7c35..27f5614ac97dcfb1bda108513118d7c7a1d44126 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
 @@ -626,10 +626,11 @@ Maybe<bool> GetRsaKeyDetail(
@@ -240,7 +240,7 @@ index bd732a70a8ffe6212e06dddb352ca75cb45b50d3..cd025663f58d386e3b7c47823a7d6cf1
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 652f6e0b12e2d56f33b1c18b80ec211b9c6bd5e9..840fe824617b951d4f4421155c5e1ce79c28525e 100644
+index 0a2e0eacab734c66fecc3f0448b3d43bae1af58a..611599a3fcf7d521dbffeed88c33c3b4d4f64b09 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -522,24 +522,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
@@ -273,12 +273,12 @@ index 652f6e0b12e2d56f33b1c18b80ec211b9c6bd5e9..840fe824617b951d4f4421155c5e1ce7
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
--  char* data = static_cast<char*>(OPENSSL_secure_malloc(len));
-+  char* data = static_cast<char*>(OPENSSL_malloc(len));
+-  void* data = OPENSSL_secure_zalloc(len);
++  void* data = OPENSSL_malloc(len);
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -710,7 +701,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -709,7 +700,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -287,7 +287,7 @@ index 652f6e0b12e2d56f33b1c18b80ec211b9c6bd5e9..840fe824617b951d4f4421155c5e1ce7
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -718,10 +709,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -717,10 +708,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -301,7 +301,7 @@ index 652f6e0b12e2d56f33b1c18b80ec211b9c6bd5e9..840fe824617b951d4f4421155c5e1ce7
  }  // namespace
  
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index 46d9be0dfcfdcf778ebaf0337517b7da3f68bc9b..435762f7df47459dc4e6e73a7c3d2376184bebcf 100644
+index 260b5196b34a40585c0356fbcacd3390d2543c8b..454504d83337c9b490b8805741b16e8b8a5ed81b 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
 @@ -9,7 +9,7 @@
@@ -327,7 +327,7 @@ index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e3241
  #endif  // HAVE_OPENSSL
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index b82100b6907891063a37023e6ad21f79fffade1e..d78005d41bebff4e8729400cf08ab67d27098448 100644
+index 2f0b3f24916d6996aaedbb93e844910ec8c8847c..96e73f6434e0952e5e3342605a84ebba3e532ab5 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -5,7 +5,7 @@

@@ -12,10 +12,10 @@ allocator that does handle these cases.
 Upstreamed in https://github.com/nodejs/node/pull/38362.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 9d33ebdc35516f65a977f7c1125453b0c99bee28..9cbe99596b1b8c148ac076acf8a9623d6989d505 100644
+index 448931cd517904f031b9db5b031081146dcc1246..73ffe569e5a5cebb1de1ceb51030c0fc3f96fee6 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -481,8 +481,9 @@ MultiIsolatePlatform* CreatePlatform(
+@@ -482,8 +482,9 @@ MultiIsolatePlatform* CreatePlatform(
  
  MultiIsolatePlatform* CreatePlatform(
      int thread_pool_size,
@@ -27,7 +27,7 @@ index 9d33ebdc35516f65a977f7c1125453b0c99bee28..9cbe99596b1b8c148ac076acf8a9623d
        .release();
  }
  
-@@ -492,8 +493,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
+@@ -493,8 +494,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
  
  std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
      int thread_pool_size,
@@ -40,10 +40,10 @@ index 9d33ebdc35516f65a977f7c1125453b0c99bee28..9cbe99596b1b8c148ac076acf8a9623d
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context) {
 diff --git a/src/node.h b/src/node.h
-index be619162d17728c1eb2ddf740947067913d6a348..4eee4e96349ee49423d53819dd90a213f6a6e042 100644
+index d295218afba96b11a5e88a4a70e572f107eba705..7f451c0c1dc561a3348b6de581cd0c06bcfa0281 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -342,7 +342,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
+@@ -343,7 +343,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
  
    static std::unique_ptr<MultiIsolatePlatform> Create(
        int thread_pool_size,
@@ -53,7 +53,7 @@ index be619162d17728c1eb2ddf740947067913d6a348..4eee4e96349ee49423d53819dd90a213
  };
  
  enum IsolateSettingsFlags {
-@@ -539,7 +540,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
+@@ -567,7 +568,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
  NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
      NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
          int thread_pool_size,
@@ -64,7 +64,7 @@ index be619162d17728c1eb2ddf740947067913d6a348..4eee4e96349ee49423d53819dd90a213
      NODE_EXTERN void FreePlatform(MultiIsolatePlatform* platform));
  
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index eb918bdd559c404a0e311e0dd92cfee8940491bc..5be79694fef65c9290f1b46d2657581dea16f543 100644
+index c63c53943db6a1c45d36019622771e05a189ecbd..99b6fe9f1476f4af97d090e0c794ba30bc59408a 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
 @@ -324,12 +324,16 @@ void PerIsolatePlatformData::DecreaseHandleCount() {
@@ -85,7 +85,7 @@ index eb918bdd559c404a0e311e0dd92cfee8940491bc..5be79694fef65c9290f1b46d2657581d
    // TODO(addaleax): It's a bit icky that we use global state here, but we can't
    // really do anything about it unless V8 starts exposing a way to access the
    // current v8::Platform instance.
-@@ -550,6 +554,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
+@@ -551,6 +555,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
    };
  }
  

@@ -7,10 +7,10 @@ Subject: feat: add kNoStartDebugSignalHandler to Environment to prevent
 This patch should be upstreamed, it allows embedders to prevent the call to StartDebugSignalHandler which handles SIGUSR1 and starts the inspector agent.  Apps that have --inspect disabled also don't want SIGUSR1 to have this affect.
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 71d3b65729a71caf157555bc6bba88eb3c3656e1..62c53acdb5f9c98fb7eade00802de2946f5c600c 100644
+index 37bb36b38b238eb1c06f4d31016864b7210b6239..f624da39c8799d5e2c2e205e07142791b7ca1d55 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -672,6 +672,10 @@ inline bool Environment::no_global_search_paths() const {
+@@ -671,6 +671,10 @@ inline bool Environment::no_global_search_paths() const {
           !options_->global_search_paths;
  }
  
@@ -22,10 +22,10 @@ index 71d3b65729a71caf157555bc6bba88eb3c3656e1..62c53acdb5f9c98fb7eade00802de294
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index ae234a99eb2d5f4f8f953b077f6261c8052f6346..6b18b6efd231d986c391a16966fdbc82a5d99eda 100644
+index e6d54bc7273c115142bd7887ccf6f82cce42c9e3..755cbfd6b72f13b8a85ae374631841ead25728d9 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1203,6 +1203,7 @@ class Environment : public MemoryRetainer {
+@@ -1210,6 +1210,7 @@ class Environment : public MemoryRetainer {
    inline bool tracks_unmanaged_fds() const;
    inline bool hide_console_windows() const;
    inline bool no_global_search_paths() const;
@@ -51,10 +51,10 @@ index 34bb11e7d7122cd2c659d45834be6889abec4ac1..f708933d8bd6a6dc6741d6af22665b37
      parent_env_->AddCleanupHook([](void* data) {
        Environment* env = static_cast<Environment*>(data);
 diff --git a/src/node.h b/src/node.h
-index 4eee4e96349ee49423d53819dd90a213f6a6e042..b6a26f8adf11959f94a00de0cbf9016fcc8707cb 100644
+index 7f451c0c1dc561a3348b6de581cd0c06bcfa0281..aa4072c3f9e17efcbde6fd623781a6dfe59f2c32 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -455,7 +455,11 @@ enum Flags : uint64_t {
+@@ -456,7 +456,11 @@ enum Flags : uint64_t {
    // This control is needed by embedders who may not want to initialize the V8
    // inspector in situations where one has already been created,
    // e.g. Blink's in Chromium.

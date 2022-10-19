@@ -19,10 +19,10 @@ index 4b1f1b05b6c67f206f87618792fa528deb238d8d..8993197ebd9eb54ec918767e16d665ca
    initializeCJSLoader,
    initializeWASI
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index 1b6a8242bbd9eeb901950f1b9016bc2b85af5951..af32601bc4bf0c7c61ee3ca0500bf26255081458 100644
+index 45cff7c41ce2b28c0d05600344ca89a5b52add13..f9623597aaeefb4d7248338fccb93013a7d8539b 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
-@@ -30,6 +30,7 @@ const {
+@@ -31,6 +31,7 @@ const {
    initializeReport,
    initializeSourceMapsHandlers,
    loadPreloadModules,
@@ -30,7 +30,7 @@ index 1b6a8242bbd9eeb901950f1b9016bc2b85af5951..af32601bc4bf0c7c61ee3ca0500bf262
    setupTraceCategoryState
  } = require('internal/bootstrap/pre_execution');
  
-@@ -162,6 +163,8 @@ port.on('message', (message) => {
+@@ -163,6 +164,8 @@ port.on('message', (message) => {
      };
      workerIo.sharedCwdCounter = cwdCounter;
  

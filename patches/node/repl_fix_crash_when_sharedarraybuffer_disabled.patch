@@ -25,19 +25,19 @@ index a771b1813731edf4f0dd60f3505799e389f1d876..b9461677e2d7d1df192e752496e62cca
    bench.start();
    for (let i = 0; i < n; i++)
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index e21c1b1fe2cc7f55d3782419913568f51f1a87ea..1b6a8242bbd9eeb901950f1b9016bc2b85af5951 100644
+index dc094dc8a2d930fb0f3f167e8c105b3275cabaa3..45cff7c41ce2b28c0d05600344ca89a5b52add13 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
-@@ -9,7 +9,7 @@ const {
-   ArrayPrototypeSplice,
+@@ -10,7 +10,7 @@ const {
    ObjectDefineProperty,
-   PromisePrototypeCatch,
+   PromisePrototypeThen,
+   RegExpPrototypeExec,
 -  globalThis: { Atomics },
 +  globalThis: { Atomics, SharedArrayBuffer },
  } = primordials;
  
  const {
-@@ -150,6 +150,9 @@ port.on('message', (message) => {
+@@ -151,6 +151,9 @@ port.on('message', (message) => {
      const originalCwd = process.cwd;
  
      process.cwd = function() {
@@ -48,10 +48,10 @@ index e21c1b1fe2cc7f55d3782419913568f51f1a87ea..1b6a8242bbd9eeb901950f1b9016bc2b
        if (currentCounter === lastCounter)
          return cachedCwd;
 diff --git a/lib/internal/worker.js b/lib/internal/worker.js
-index 8e396195209b83dff572792a78ee75d12d1f6610..4bb09b6ab5c31206a622814cbcd793c434b885d4 100644
+index 75287e8144677932feb9ee20fb9162933e632639..ecb216e60be9027df278d9a36ed73759b4ead6a4 100644
 --- a/lib/internal/worker.js
 +++ b/lib/internal/worker.js
-@@ -91,7 +91,8 @@ let cwdCounter;
+@@ -94,7 +94,8 @@ let cwdCounter;
  
  const environmentData = new SafeMap();
  

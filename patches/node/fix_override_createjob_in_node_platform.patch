@@ -9,10 +9,10 @@ This patch adds an override for NodePlatform::CreateJob, using
 the same parameters as PostJob.
 
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 5be79694fef65c9290f1b46d2657581dea16f543..e10caa9f6e39ec5b255acd9bc6b7f8efc77221d9 100644
+index 99b6fe9f1476f4af97d090e0c794ba30bc59408a..c38f1a3bf1e3d9b5f9401e59e161a2416673ee09 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
-@@ -523,6 +523,12 @@ std::unique_ptr<v8::JobHandle> NodePlatform::PostJob(v8::TaskPriority priority,
+@@ -524,6 +524,12 @@ std::unique_ptr<v8::JobHandle> NodePlatform::PostJob(v8::TaskPriority priority,
        this, priority, std::move(job_task), NumberOfWorkerThreads());
  }
  
