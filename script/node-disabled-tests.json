@@ -93,6 +93,7 @@
   "parallel/test-trace-events-dynamic-enable-workers-disabled",
   "parallel/test-trace-events-environment",
   "parallel/test-trace-events-file-pattern",
+  "parallel/test-trace-events-fs-async",
   "parallel/test-trace-events-fs-sync",
   "parallel/test-trace-events-metadata",
   "parallel/test-trace-events-net",
