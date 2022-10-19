@@ -1,7 +1,7 @@
-From 65f0ef609c005a16fe38e8f004a6ee3a38181135 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Andy Paicu <andypaicu@chromium.org>
-Date: Thu, 06 Oct 2022 21:04:23 +0000
-Subject: [PATCH] Fix UAF issue around permission status observer list
+Date: Thu, 6 Oct 2022 21:04:23 +0000
+Subject: Fix UAF issue around permission status observer list
 
 (cherry picked from commit 4df595127d95d4b0bf115be1ab4604d95b75273c)
 
@@ -21,13 +21,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3936291
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/5249@{#764}
 Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
----
 
 diff --git a/third_party/blink/renderer/modules/permissions/permission_status_listener.cc b/third_party/blink/renderer/modules/permissions/permission_status_listener.cc
-index 424314c..946e28a 100644
+index 424314c1dd49bd693643e41adb537f7a9d01e5d2..946e28ac3139a1927ac36281f04cec9f5faf76d2 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_status_listener.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_status_listener.cc
-@@ -62,7 +62,17 @@
+@@ -62,7 +62,17 @@ void PermissionStatusListener::OnPermissionStatusChange(
  
    status_ = status;
  
