@@ -715,9 +715,18 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 03f7c209679d9c0c7da4b82bddc45767945b596f..15ff08d9240ce87f3be5edad313d03f9e643aad5 100644
+index 03f7c209679d9c0c7da4b82bddc45767945b596f..de2e088865743202db322b00f443771121ff6643 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
+@@ -110,7 +110,7 @@ const der = Buffer.from(
+     'A3:06:C5:CE:43:C1:7F:2D:7E:5F:44:A5:EE:A3:CB:97:05:A3:E3:68'
+   );
+   assert.strictEqual(x509.keyUsage, undefined);
+-  assert.strictEqual(x509.serialNumber, 'ECC9B856270DA9A8');
++  assert.match(x509.serialNumber, /ECC9B856270DA9A8/i);
+ 
+   assert.deepStrictEqual(x509.raw, der);
+ 
 @@ -196,6 +196,12 @@ const der = Buffer.from(
    });
    mc.port2.postMessage(x509);
