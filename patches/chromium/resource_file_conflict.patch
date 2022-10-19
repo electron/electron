@@ -52,7 +52,7 @@ Some alternatives to this patch:
 None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index a0403bef7a074dbcb1543bf061de7bbd24dea24a..ba5250c410b510d6cdaa53a25516905c5aacb9c0 100644
+index 9d4f5de624492b5cd64688a364e09a3dd9976c60..ce3b89508bf228d5ec615cbe7f33ddcfb120a36b 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -1552,7 +1552,7 @@ if (is_chrome_branded && !is_android) {

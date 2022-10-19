@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 3f7b9ae95e8704b1ca3945611e16267f28888d05..10a487bd98590bef70a27fcd5b126721f3f97b9d 100644
+index 233dd65e19534b280f0b8e22e8cc6cc6546b8451..a078cd22ca41c5bdca64223db2797816a4b03533 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -987,7 +987,6 @@ if (is_win) {
+@@ -980,7 +980,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,12 +22,12 @@ index 3f7b9ae95e8704b1ca3945611e16267f28888d05..10a487bd98590bef70a27fcd5b126721
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -996,6 +995,10 @@ if (is_win) {
+@@ -989,6 +988,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
 +
-+    if (enable_basic_printing) {
++    if (enable_printing) {
 +      deps += [ "//printing:printing_unittests" ]
 +    }
    }
@@ -796,16 +796,16 @@ index 51a5497b809cda82b223138f43507172a9f066ae..71227492fd87e577518f3bf55ded37b0
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 716e4defca7fd163dbf654b18741dbc4ca3afc9d..5ec5cffce6b06de2822686f8ff347a8bcdb1f2ed 100644
+index bef5e7514f4383a4b650ef76b2d977cc50b789f0..e56472c44cc1285c5c05d69b2ec14d351af9f463 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2815,8 +2815,9 @@ source_set("browser") {
+@@ -2816,8 +2816,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
--    assert(enable_basic_printing)
+-    assert(enable_printing)
 -    deps += [ "//printing" ]
-+    if (enable_basic_printing) {
++    if (enable_printing) {
 +      deps += [ "//printing" ]
 +    }
  

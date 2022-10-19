@@ -7,14 +7,13 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses.py b/tools/licenses.py
-index c4ffc17fb5b372d56f68bc69e9d4fc93ae40d45f..253618104ea7bb4c97085da9df1496efaee32a46 100755
+index 8acf3c385f2e1d8144b17171728a06a4be4c82d9..37503a57c7e0bad9a6d2d49326e2ac0cc86cc141 100755
 --- a/tools/licenses.py
 +++ b/tools/licenses.py
-@@ -347,6 +347,32 @@ SPECIAL_CASES = {
-         "License File":
-         "/third_party/swiftshader/third_party/SPIRV-Headers/LICENSE",
+@@ -377,6 +377,31 @@ SPECIAL_CASES = {
+         "License": "Apache 2.0",
+         "License File": "/third_party/selenium-atoms/LICENSE.closure",
      },
-+
 +    os.path.join('third_party', 'electron_node'): {
 +        "Name": "Node.js",
 +        "URL": "https://github.com/nodejs/node",
