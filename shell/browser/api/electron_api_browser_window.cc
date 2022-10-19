@@ -73,17 +73,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, show);
   }
 
-  bool titleBarOverlay = false;
-  options.Get(options::ktitleBarOverlay, &titleBarOverlay);
-  if (titleBarOverlay) {
-    std::string enabled_features = "";
-    if (web_preferences.Get(options::kEnableBlinkFeatures, &enabled_features)) {
-      enabled_features += ",";
-    }
-    enabled_features += features::kWebAppWindowControlsOverlay.name;
-    web_preferences.Set(options::kEnableBlinkFeatures, enabled_features);
-  }
-
   // Copy the webContents option to webPreferences.
   v8::Local<v8::Value> value;
   if (options.Get("webContents", &value)) {
