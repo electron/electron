@@ -1,0 +1,47 @@
+From 65f0ef609c005a16fe38e8f004a6ee3a38181135 Mon Sep 17 00:00:00 2001
+From: Andy Paicu <andypaicu@chromium.org>
+Date: Thu, 06 Oct 2022 21:04:23 +0000
+Subject: [PATCH] Fix UAF issue around permission status observer list
+
+(cherry picked from commit 4df595127d95d4b0bf115be1ab4604d95b75273c)
+
+(cherry picked from commit 1dc5dda6112bdd811c923520cc728a474583409e)
+
+Bug: 1363040
+Change-Id: I1f64a901b83aa834ae652c8041456e9b7d253c1f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3907744
+Reviewed-by: Kamila Hasanbega <hkamila@chromium.org>
+Commit-Queue: Andy Paicu <andypaicu@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/main@{#1049058}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3929034
+Reviewed-by: Illia Klimov <elklm@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/5304@{#483}
+Cr-Original-Branched-From: 5d7b1fc9cb7103d9c82eed647cf4be38cf09738b-refs/heads/main@{#1047731}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3936291
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5249@{#764}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+---
+
+diff --git a/third_party/blink/renderer/modules/permissions/permission_status_listener.cc b/third_party/blink/renderer/modules/permissions/permission_status_listener.cc
+index 424314c..946e28a 100644
+--- a/third_party/blink/renderer/modules/permissions/permission_status_listener.cc
++++ b/third_party/blink/renderer/modules/permissions/permission_status_listener.cc
+@@ -62,7 +62,17 @@
+ 
+   status_ = status;
+ 
++  // The `observers_` list can change in response to permission status change
++  // events as the observers map to PermissionStatus JS objects which can be
++  // created and destroyed in the JS event handler function. To avoid UAF and
++  // list modification issues, a temporary snapshot of the observers is made and
++  // used instead.
++  HeapHashSet<WeakMember<Observer>> observers;
+   for (const auto& observer : observers_) {
++    observers.insert(observer);
++  }
++
++  for (const auto& observer : observers) {
+     if (observer)
+       observer->OnPermissionStatusChange(status);
+     else
