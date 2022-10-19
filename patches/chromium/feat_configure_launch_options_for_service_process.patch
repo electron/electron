@@ -18,10 +18,10 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index a09397f53cc949f3667d3494bb001aa06708b0d3..c7ad0a9a105080ea5561227b51aec91606b1d334 100644
+index ba1f0d6e958cdb534b8af7717a0d6d8f2ee296bf..626f771ffbd88f1cf2e9475b745456f98575cda1 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
-@@ -32,6 +32,7 @@
+@@ -31,6 +31,7 @@
  
  #if BUILDFLAG(IS_WIN)
  #include "base/win/windows_types.h"
@@ -29,7 +29,7 @@ index a09397f53cc949f3667d3494bb001aa06708b0d3..c7ad0a9a105080ea5561227b51aec916
  #endif
  
  #if BUILDFLAG(IS_POSIX)
-@@ -164,7 +165,10 @@ struct ChildProcessLauncherFileData {
+@@ -163,7 +164,10 @@ struct ChildProcessLauncherFileData {
        delete;
    ~ChildProcessLauncherFileData();
  
@@ -56,10 +56,10 @@ index cfadd28fca9f80bf57578db78d5472c4f75414e1..4925dc5cafbf312c3c9640d5873d6219
    return true;
  }
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index ee6ad3b99982e13d4db9033fbfa8719e84d6e58f..5054f8234a1653b747b4b8cd5a685fc5d6fdf92a 100644
+index d74a40c0e5731281b132cc1c3dc2416f9dc2b083..dd8a9d35af617441c6643ed643b459a35b612969 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
-@@ -59,7 +59,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -73,7 +73,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        'mojo', base::MachRendezvousPort(endpoint.TakeMachReceiveRight())));
  
    options->environment = delegate_->GetEnvironment();
