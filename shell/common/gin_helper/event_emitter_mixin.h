@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
-#define ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_
 
 #include <utility>
 
@@ -14,6 +14,9 @@
 namespace gin_helper {
 
 namespace internal {
+void SetEventEmitterPrototype(v8::Isolate* isolate,
+                              v8::Local<v8::Object> proto);
+void UpdateEventEmitterTemplatePrototype(v8::Isolate* isolate);
 v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate);
 }  // namespace internal
 
@@ -27,8 +30,7 @@ class EventEmitterMixin {
   // this.emit(name, new Event(), args...);
   // Returns true if event.preventDefault() was called during processing.
   template <typename... Args>
-  bool Emit(base::StringPiece name, Args&&... args) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  bool Emit(v8::Isolate* isolate, base::StringPiece name, Args&&... args) {
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
@@ -38,18 +40,37 @@ class EventEmitterMixin {
                          std::forward<Args>(args)...);
   }
 
+  // Shortcut for browser process which only has one isolate/context.
+  template <typename... Args>
+  bool Emit(base::StringPiece name, Args&&... args) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    DCHECK(isolate);
+    return Emit(isolate, name, std::forward<Args>(args)...);
+  }
+
   // this.emit(name, event, args...);
   template <typename... Args>
-  bool EmitCustomEvent(base::StringPiece name,
+  bool EmitCustomEvent(v8::Isolate* isolate,
+                       base::StringPiece name,
                        v8::Local<v8::Object> custom_event,
                        Args&&... args) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
     return EmitWithEvent(isolate, wrapper, name, custom_event,
                          std::forward<Args>(args)...);
+  }
+
+  // Shortcut for browser process which only has one isolate/context.
+  template <typename... Args>
+  bool EmitCustomEvent(base::StringPiece name,
+                       v8::Local<v8::Object> custom_event,
+                       Args&&... args) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    DCHECK(isolate);
+    return EmitCustomEvent(isolate, name, custom_event,
+                           std::forward<Args>(args)...);
   }
 
  protected:
@@ -94,4 +115,4 @@ class EventEmitterMixin {
 
 }  // namespace gin_helper
 
-#endif  // ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_MIXIN_H_

@@ -27,6 +27,9 @@ void PreventDefault(gin_helper::Arguments* args) {
 v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
                                         v8::Local<v8::Object> sender,
                                         v8::Local<v8::Object> custom_event) {
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+
   if (event_template.IsEmpty()) {
     event_template.Reset(
         isolate,

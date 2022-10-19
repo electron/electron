@@ -12,8 +12,8 @@
 #include "components/download/public/common/download_item.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/file_dialog.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 #include "shell/common/gin_helper/pinnable.h"
 
 class GURL;

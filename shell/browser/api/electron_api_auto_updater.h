@@ -10,8 +10,8 @@
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/auto_updater.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/window_list_observer.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 
 namespace electron::api {
 

@@ -10,13 +10,13 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "gin/wrappable.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 #include "ui/gfx/image/image.h"
 
 namespace gin {

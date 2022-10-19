@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "gin/wrappable.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 #include "ui/display/display_observer.h"
 #include "ui/display/screen.h"
 

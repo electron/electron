@@ -7,7 +7,7 @@
 
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 

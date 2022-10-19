@@ -11,7 +11,6 @@
 
 #include "gin/handle.h"
 #include "gin/wrappable.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
@@ -19,6 +18,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter_mixin.h"
 #include "shell/common/gin_helper/pinnable.h"
 
 namespace gfx {

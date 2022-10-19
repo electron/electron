@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import * as util from 'util';
 
 const timers = require('timers');
@@ -64,3 +65,5 @@ if (process.platform === 'win32') {
     }
   });
 }
+
+process._linkedBinding('electron_common_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
