@@ -7,6 +7,7 @@ import { ifit } from './spec-helpers';
 import { closeWindow } from './window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
+const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 
 describe('utilityProcess module', () => {
   describe('UtilityProcess constructor', () => {
@@ -169,7 +170,7 @@ describe('utilityProcess module', () => {
       await emittedOnce(child, 'exit');
     });
 
-    it('is valid when child process launches with pipe stdio configuration', async () => {
+    ifit(!isWindowsOnArm)('is valid when child process launches with pipe stdio configuration', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
