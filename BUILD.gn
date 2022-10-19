@@ -673,7 +673,7 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_basic_printing) {
+  if (enable_printing) {
     sources += [
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",

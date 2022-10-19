@@ -212,7 +212,7 @@ static_library("chrome") {
     deps += [ "//components/cdm/renderer" ]
   }
 
-  if (enable_basic_printing) {
+  if (enable_printing) {
     sources += [
       "//chrome/browser/bad_message.cc",
       "//chrome/browser/bad_message.h",
