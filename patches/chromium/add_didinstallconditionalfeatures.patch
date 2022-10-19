@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 158c3764a375f8df32e25e12351b0dcf4efaac17..0acaa8858f2667124b702f9a8f4d2f28adf36d61 100644
+index 0af40eb8f556aa29c8b7e1bdd0d62b1fb7b38791..b3ae64cf8836fdd3634bfd24fc2f8a25e1735da5 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -135,6 +135,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
+@@ -136,6 +136,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}
@@ -23,10 +23,10 @@ index 158c3764a375f8df32e25e12351b0dcf4efaac17..0acaa8858f2667124b702f9a8f4d2f28
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index adab8f27a3947c6a0f326a284f6bad158d2da639..c99603c883a67b28c812e05c1133555abc8d34dc 100644
+index fb0483af59b0e289bd716a3417a545233f17be1f..6a7e5ab92e6fa23762794efc3031ce982836c20e 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4351,6 +4351,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4365,6 +4365,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -123,7 +123,7 @@ index c974fa2f7c7f9c2aa5f075ec4aeb887d0b104453..b4ed9b2fadcfad7676387045b8581eb8
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 05f6e4002766fec006a55b2edf621f6b0b1a0d59..a9f6d89d0310732d7d26c0e9f8461ecadc87dbee 100644
+index ba841a41c1387c2cac3578bc01524b0a1868f74d..d2ce9ae524025cc06028b4ca80d04c580dc29b44 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -366,6 +366,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

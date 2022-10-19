@@ -23,12 +23,6 @@ class NativeBrowserViewMac : public NativeBrowserView {
   void SetBounds(const gfx::Rect& bounds) override;
   gfx::Rect GetBounds() override;
   void SetBackgroundColor(SkColor color) override;
-
-  void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions) override;
-
-  void UpdateDraggableRegions(
-      const std::vector<gfx::Rect>& drag_exclude_rects) override;
 };
 
 }  // namespace electron

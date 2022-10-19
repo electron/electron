@@ -44,10 +44,10 @@ index 89b9323c08cfed0d3ea3a0ec1beaa0bdfabe343e..d000b7f43f393d297a3715ea4279537b
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index fb835b2d02a2f0dd01afb73d11dc9651a583b9cf..d98ce7bbc69ffd9d246f6f81d096a84838c8a105 100644
+index eb178455e92ae0c5f6d5033ffc1990b711466a83..9b4f909501f6cbc50a7d88cef679add9e6c454d2 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -565,10 +565,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -566,10 +566,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -105,10 +105,10 @@ index abd19b8613e52a6f4c9404f509ab7ed5a61046a6..35945493a02996e88b0c53caf107c435
  }
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index fda9114d759cfb2db9ef7f981b82ae5f73c2f758..cd81c5481976e0a355230bae6a9ee2a362236b6f 100644
+index 67473b500bc8305bc21ec0324001ea5a64612aee..964acff055c3e192813b7793894b3fde8940facb 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -21,7 +21,9 @@
+@@ -22,7 +22,9 @@
  #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
  #include "ui/accessibility/ax_role_properties.h"
  #include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
@@ -118,7 +118,7 @@ index fda9114d759cfb2db9ef7f981b82ae5f73c2f758..cd81c5481976e0a355230bae6a9ee2a3
  
  namespace {
  
-@@ -619,6 +621,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -621,6 +623,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    if ([NSApp isActive])
      return window == [NSApp accessibilityFocusedWindow];
  
@@ -126,7 +126,7 @@ index fda9114d759cfb2db9ef7f981b82ae5f73c2f758..cd81c5481976e0a355230bae6a9ee2a3
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -646,6 +649,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -648,6 +651,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    // from within the app shim content.
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]])
      return true;

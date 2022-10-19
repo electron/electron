@@ -7,7 +7,7 @@ Make chrome's install-sysroot scripts point to our custom sysroot builds,
 which include extra deps that Electron needs (e.g. libnotify)
 
 diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
-index 7c18388b0082f766ae397daaa326ecfb26900ea7..e054db236481a6789d3304e60d92be5b98b8fae5 100755
+index d7e36862f48e8a2e3dff406f1183df26ca1ef700..e702004c4bc8afbad0ba42fe45511d30dc445f6e 100755
 --- a/build/linux/sysroot_scripts/install-sysroot.py
 +++ b/build/linux/sysroot_scripts/install-sysroot.py
 @@ -41,9 +41,11 @@ except ImportError:
@@ -24,7 +24,7 @@ index 7c18388b0082f766ae397daaa326ecfb26900ea7..e054db236481a6789d3304e60d92be5b
  
  VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
  
-@@ -106,7 +108,7 @@ def GetSysrootDict(target_platform, target_arch):
+@@ -107,7 +109,7 @@ def GetSysrootDict(target_platform, target_arch):
    if target_arch not in VALID_ARCHS:
      raise Error('Unknown architecture: %s' % target_arch)
  

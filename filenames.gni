@@ -124,7 +124,6 @@ filenames = {
     "shell/app/electron_main_delegate_mac.h",
     "shell/app/electron_main_delegate_mac.mm",
     "shell/browser/api/electron_api_app_mac.mm",
-    "shell/browser/api/electron_api_browser_window_mac.mm",
     "shell/browser/api/electron_api_menu_mac.h",
     "shell/browser/api/electron_api_menu_mac.mm",
     "shell/browser/api/electron_api_native_theme_mac.mm",
@@ -211,7 +210,6 @@ filenames = {
   ]
 
   lib_sources_views = [
-    "shell/browser/api/electron_api_browser_window_views.cc",
     "shell/browser/api/electron_api_menu_views.cc",
     "shell/browser/api/electron_api_menu_views.h",
     "shell/browser/native_browser_view_views.cc",
@@ -498,6 +496,7 @@ filenames = {
     "shell/browser/ui/inspectable_web_contents.cc",
     "shell/browser/ui/inspectable_web_contents.h",
     "shell/browser/ui/inspectable_web_contents_delegate.h",
+    "shell/browser/ui/inspectable_web_contents_view.cc",
     "shell/browser/ui/inspectable_web_contents_view.h",
     "shell/browser/ui/inspectable_web_contents_view_delegate.cc",
     "shell/browser/ui/inspectable_web_contents_view_delegate.h",
@@ -584,6 +583,7 @@ filenames = {
     "shell/common/gin_converters/native_window_converter.h",
     "shell/common/gin_converters/net_converter.cc",
     "shell/common/gin_converters/net_converter.h",
+    "shell/common/gin_converters/serial_port_info_converter.h",
     "shell/common/gin_converters/std_converter.h",
     "shell/common/gin_converters/time_converter.cc",
     "shell/common/gin_converters/time_converter.h",

@@ -8,6 +8,7 @@
 #include <objc/objc-runtime.h>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -31,8 +32,8 @@
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
-#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -40,88 +41,16 @@
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
+#include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/widget.h"
-
-// This view would inform Chromium to resize the hosted views::View.
-//
-// The overridden methods should behave the same with BridgedContentView.
-@interface ElectronAdaptedContentView : NSView {
- @private
-  views::NativeWidgetMacNSWindowHost* bridge_host_;
-}
-@end
-
-@implementation ElectronAdaptedContentView
-
-- (id)initWithShell:(electron::NativeWindowMac*)shell {
-  if ((self = [self init])) {
-    bridge_host_ = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
-        shell->GetNativeWindow());
-  }
-  return self;
-}
-
-- (void)viewDidMoveToWindow {
-  // When this view is added to a window, AppKit calls setFrameSize before it is
-  // added to the window, so the behavior in setFrameSize is not triggered.
-  NSWindow* window = [self window];
-  if (window)
-    [self setFrameSize:NSZeroSize];
-}
-
-- (void)setFrameSize:(NSSize)newSize {
-  // The size passed in here does not always use
-  // -[NSWindow contentRectForFrameRect]. The following ensures that the
-  // contentView for a frameless window can extend over the titlebar of the new
-  // window containing it, since AppKit requires a titlebar to give frameless
-  // windows correct shadows and rounded corners.
-  NSWindow* window = [self window];
-  if (window && [window contentView] == self) {
-    newSize = [window contentRectForFrameRect:[window frame]].size;
-    // Ensure that the window geometry be updated on the host side before the
-    // view size is updated.
-    bridge_host_->GetInProcessNSWindowBridge()->UpdateWindowGeometry();
-  }
-
-  [super setFrameSize:newSize];
-
-  // The OnViewSizeChanged is marked private in derived class.
-  static_cast<remote_cocoa::mojom::NativeWidgetNSWindowHost*>(bridge_host_)
-      ->OnViewSizeChanged(gfx::Size(newSize.width, newSize.height));
-}
-
-@end
-
-// This view always takes the size of its superview. It is intended to be used
-// as a NSWindow's contentView.  It is needed because NSWindow's implementation
-// explicitly resizes the contentView at inopportune times.
-@interface FullSizeContentView : NSView
-@end
-
-@implementation FullSizeContentView
-
-// This method is directly called by NSWindow during a window resize on OSX
-// 10.10.0, beta 2. We must override it to prevent the content view from
-// shrinking.
-- (void)setFrameSize:(NSSize)size {
-  if ([self superview])
-    size = [[self superview] bounds].size;
-  [super setFrameSize:size];
-}
-
-// The contentView gets moved around during certain full-screen operations.
-// This is less than ideal, and should eventually be removed.
-- (void)viewDidMoveToSuperview {
-  [self setFrame:[[self superview] bounds]];
-}
-
-@end
+#include "ui/views/window/native_frame_view_mac.h"
 
 @interface ElectronProgressBar : NSProgressIndicator
 @end
@@ -1701,22 +1630,42 @@ void NativeWindowMac::Cleanup() {
   display::Screen::GetScreen()->RemoveObserver(this);
 }
 
-void NativeWindowMac::OverrideNSWindowContentView() {
-  // When using `views::Widget` to hold WebContents, Chromium would use
-  // `BridgedContentView` as content view, which does not support draggable
-  // regions. In order to make draggable regions work, we have to replace the
-  // content view with a simple NSView.
-  if (has_frame()) {
-    container_view_.reset(
-        [[ElectronAdaptedContentView alloc] initWithShell:this]);
-  } else {
-    container_view_.reset([[FullSizeContentView alloc] init]);
-    [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
+class NativeAppWindowFrameViewMac : public views::NativeFrameViewMac {
+ public:
+  NativeAppWindowFrameViewMac(views::Widget* frame, NativeWindowMac* window)
+      : views::NativeFrameViewMac(frame), native_window_(window) {}
+
+  NativeAppWindowFrameViewMac(const NativeAppWindowFrameViewMac&) = delete;
+  NativeAppWindowFrameViewMac& operator=(const NativeAppWindowFrameViewMac&) =
+      delete;
+
+  ~NativeAppWindowFrameViewMac() override = default;
+
+  // NonClientFrameView:
+  int NonClientHitTest(const gfx::Point& point) override {
+    if (!bounds().Contains(point))
+      return HTNOWHERE;
+
+    if (GetWidget()->IsFullscreen())
+      return HTCLIENT;
+
+    // Check for possible draggable region in the client area for the frameless
+    // window.
+    SkRegion const* draggable_region = native_window_->draggable_region();
+    if (draggable_region && draggable_region->contains(point.x(), point.y()))
+      return HTCAPTION;
+
+    return HTCLIENT;
   }
-  [container_view_
-      setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [window_ setContentView:container_view_];
-  AddContentViewLayers();
+
+ private:
+  // Weak.
+  raw_ptr<NativeWindowMac> const native_window_;
+};
+
+std::unique_ptr<views::NonClientFrameView>
+NativeWindowMac::CreateNonClientFrameView(views::Widget* widget) {
+  return std::make_unique<NativeAppWindowFrameViewMac>(widget, this);
 }
 
 bool NativeWindowMac::HasStyleMask(NSUInteger flag) const {
@@ -1778,22 +1727,6 @@ void NativeWindowMac::AddContentViewLayers() {
       [[window_ contentView] setLayer:background_layer];
     }
     [[window_ contentView] setWantsLayer:YES];
-  }
-
-  if (!has_frame()) {
-    // In OSX 10.10, adding subviews to the root view for the NSView hierarchy
-    // produces warnings. To eliminate the warnings, we resize the contentView
-    // to fill the window, and add subviews to that.
-    // http://crbug.com/380412
-    if (!original_set_frame_size) {
-      Class cl = [[window_ contentView] class];
-      original_set_frame_size = class_replaceMethod(
-          cl, @selector(setFrameSize:), (IMP)SetFrameSize, "v@:{_NSSize=ff}");
-      original_view_did_move_to_superview =
-          class_replaceMethod(cl, @selector(viewDidMoveToSuperview),
-                              (IMP)ViewDidMoveToSuperview, "v@:");
-      [[window_ contentView] viewDidMoveToWindow];
-    }
   }
 }
 

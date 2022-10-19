@@ -235,7 +235,7 @@ int ElectronBrowserMainParts::GetExitCode() const {
 }
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
-  field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
+  field_trial_list_ = std::make_unique<base::FieldTrialList>();
 #if BUILDFLAG(IS_POSIX)
   HandleSIGCHLD();
 #endif

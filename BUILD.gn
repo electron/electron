@@ -502,13 +502,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (is_linux) {
-    deps += [
-      "//components/crash/content/browser",
-      "//ui/gtk:gtk_config",
-    ]
-  }
-
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
@@ -571,11 +564,14 @@ source_set("electron_lib") {
       ":electron_gtk_stubs",
       ":libnotify_loader",
       "//build/config/linux/gtk",
+      "//components/crash/content/browser",
       "//dbus",
       "//device/bluetooth",
+      "//third_party/crashpad/crashpad/client",
       "//ui/base/ime/linux",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
+      "//ui/gtk:gtk_config",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
       "//ui/views/controls/webview",
