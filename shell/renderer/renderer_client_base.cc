@@ -73,6 +73,7 @@
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
+#include "shell/common/plugin_info.h"
 #include "shell/renderer/pepper_helper.h"
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
 
@@ -420,19 +421,12 @@ bool RendererClientBase::IsPluginHandledExternally(
         ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
   }
 
-  // TODO(nornagon): this info should be shared with the data in
-  // electron_content_client.cc / ComputeBuiltInPlugins.
-  content::WebPluginInfo info;
-  info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
-  info.name = base::ASCIIToUTF16(kPDFExtensionPluginName);
-  info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
-  info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
-  info.mime_types.emplace_back(kPDFMimeType, "pdf", "Portable Document Format");
   return extensions::MimeHandlerViewContainerManager::Get(
              content::RenderFrame::FromWebFrame(
                  plugin_element.GetDocument().GetFrame()),
              true /* create_if_does_not_exist */)
-      ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
+      ->CreateFrameContainer(plugin_element, original_url, mime_type,
+                             GetPDFPluginInfo());
 #else
   return false;
 #endif
