@@ -126,6 +126,7 @@ void PrintViewManagerElectron::PrintToPdf(
 
   printing_rfh_ = rfh;
   print_pages_params->pages = absl::get<printing::PageRanges>(parsed_ranges);
+  headless_jobs_.emplace_back(print_pages_params->params->document_cookie);
   callback_ = std::move(callback);
 
   // There is no need for a weak pointer here since the mojo proxy is held
@@ -152,7 +153,9 @@ void PrintViewManagerElectron::OnDidPrintWithParams(
     }
   }
 
-  auto& content = *result->get_params()->content;
+  printing::mojom::DidPrintDocumentParamsPtr& params = result->get_params();
+
+  auto& content = *params->content;
   if (!content.metafile_data_region.IsValid()) {
     FailJob(kInvalidMemoryHandle);
     return;
@@ -168,7 +171,7 @@ void PrintViewManagerElectron::OnDidPrintWithParams(
       std::string(static_cast<const char*>(map.memory()), map.size());
   std::move(callback_).Run(kPrintSuccess,
                            base::RefCountedString::TakeString(&data));
-
+  base::Erase(headless_jobs_, params->document_cookie);
   Reset();
 }
 
