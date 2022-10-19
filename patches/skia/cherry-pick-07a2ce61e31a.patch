@@ -1,0 +1,52 @@
+From 07a2ce61e31a5dfdc758e4ef1543fd3d0fa774d2 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Wed, 05 Oct 2022 15:28:56 -0400
+Subject: [PATCH] [Cherry-pick] Fix GrDirectContext::fClinetMappedBuffer access in abandoned callbacks.
+
+Bug: chromium:1364604
+Change-Id: I1ca44cab1c762e7f94ac94be94991ec94a7497be
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/583963
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+Reviewed-by: Brian Salomon <bsalomon@google.com>
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/587879
+Auto-Submit: Greg Daniel <egdaniel@google.com>
+Commit-Queue: Brian Salomon <bsalomon@google.com>
+---
+
+diff --git a/src/gpu/ganesh/GrDirectContext.cpp b/src/gpu/ganesh/GrDirectContext.cpp
+index d45369d..6472381 100644
+--- a/src/gpu/ganesh/GrDirectContext.cpp
++++ b/src/gpu/ganesh/GrDirectContext.cpp
+@@ -144,9 +144,6 @@
+ 
+     fGpu->disconnect(GrGpu::DisconnectType::kAbandon);
+ 
+-    // Must be after GrResourceCache::abandonAll().
+-    fMappedBufferManager.reset();
+-
+     if (fSmallPathAtlasMgr) {
+         fSmallPathAtlasMgr->reset();
+     }
+diff --git a/src/gpu/ganesh/GrFinishCallbacks.cpp b/src/gpu/ganesh/GrFinishCallbacks.cpp
+index 5519d2c..172f07d 100644
+--- a/src/gpu/ganesh/GrFinishCallbacks.cpp
++++ b/src/gpu/ganesh/GrFinishCallbacks.cpp
+@@ -35,10 +35,16 @@
+ 
+ void GrFinishCallbacks::callAll(bool doDelete) {
+     while (!fCallbacks.empty()) {
+-        fCallbacks.front().fCallback(fCallbacks.front().fContext);
++        // While we are processing a proc we need to make sure to remove it from
++        // the callback list before calling it. This is because the client could
++        // trigger a call (e.g. calling flushAndSubmit(/*sync=*/true)) that has
++        // us process the finished callbacks. We also must process deleting the
++        // fence before a client may abandon the context.
++        auto finishCallback = fCallbacks.front();
+         if (doDelete) {
+-            fGpu->deleteFence(fCallbacks.front().fFence);
++            fGpu->deleteFence(finishCallback.fFence);
+         }
+         fCallbacks.pop_front();
++        finishCallback.fCallback(finishCallback.fContext);
+     }
+ }
