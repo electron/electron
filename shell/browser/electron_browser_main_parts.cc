@@ -112,6 +112,11 @@
 #include "chrome/browser/spellchecker/spellcheck_factory.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_PLUGINS)
+#include "content/public/browser/plugin_service.h"
+#include "shell/common/plugin_info.h"
+#endif  // BUILDFLAG(ENABLE_PLUGINS)
+
 namespace electron {
 
 namespace {
@@ -382,6 +387,18 @@ void ElectronBrowserMainParts::PostCreateThreads() {
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
+#if BUILDFLAG(ENABLE_PLUGINS)
+  // PluginService can only be used on the UI thread
+  // and ContentClient::AddPlugins gets called for both browser and render
+  // process where the latter will not have UI thread which leads to DCHECK.
+  // Separate the WebPluginInfo registration for these processes.
+  std::vector<content::WebPluginInfo> plugins;
+  auto* plugin_service = content::PluginService::GetInstance();
+  plugin_service->RefreshPlugins();
+  GetInternalPlugins(&plugins);
+  for (const auto& plugin : plugins)
+    plugin_service->RegisterInternalPlugin(plugin, true);
+#endif
 }
 
 void ElectronBrowserMainParts::PostDestroyThreads() {
