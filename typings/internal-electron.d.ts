@@ -9,7 +9,8 @@ declare namespace Electron {
   enum ProcessType {
     browser = 'browser',
     renderer = 'renderer',
-    worker = 'worker'
+    worker = 'worker',
+    utility = 'utility'
   }
 
   interface App {
@@ -252,6 +253,18 @@ declare namespace ElectronInternal {
     name: string;
     private?: boolean;
     loader: ModuleLoader;
+  }
+
+  interface UtilityProcessWrapper extends NodeJS.EventEmitter {
+    readonly pid: (number) | (undefined);
+    kill(): boolean;
+    postMessage(message: any, transfer?: any[]): void;
+  }
+
+  interface ParentPort extends NodeJS.EventEmitter {
+    start(): void;
+    pause(): void;
+    postMessage(message: any): void;
   }
 
   class WebViewElement extends HTMLElement {

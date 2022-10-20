@@ -29,8 +29,8 @@ class JavascriptEnvironment {
   JavascriptEnvironment(const JavascriptEnvironment&) = delete;
   JavascriptEnvironment& operator=(const JavascriptEnvironment&) = delete;
 
-  void OnMessageLoopCreated();
-  void OnMessageLoopDestroying();
+  void CreateMicrotasksRunner();
+  void DestroyMicrotasksRunner();
 
   node::MultiIsolatePlatform* platform() const { return platform_; }
   v8::Isolate* isolate() const { return isolate_; }
