@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 0182d4aece086658551c905d0f6575959fdec811..a0eb988bd3899ef0910161f4ef17d1fbb64de0e3 100644
+index 4846bee6b3fae798830a503ed26e8741d0228928..7124c57ff47c20e67635a9ad9b3a339a8d467d88 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -17,12 +17,16 @@
@@ -36,23 +36,20 @@ index 0182d4aece086658551c905d0f6575959fdec811..a0eb988bd3899ef0910161f4ef17d1fb
  #include "chrome/common/chrome_switches.h"
  #include "content/public/browser/navigation_details.h"
  #include "content/public/browser/navigation_entry.h"
-@@ -181,6 +185,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -180,10 +184,12 @@ void FullscreenController::EnterFullscreenModeForTab(
      return;
    }
  
 +#if 0
-   if (base::FeatureList::IsEnabled(
-           blink::features::kWindowPlacementFullscreenCompanionWindow)) {
-     if (!popunder_preventer_)
-@@ -188,6 +193,7 @@ void FullscreenController::EnterFullscreenModeForTab(
-     else
-       popunder_preventer_->WillActivateWebContents(web_contents);
-   }
+   if (!popunder_preventer_)
+     popunder_preventer_ = std::make_unique<PopunderPreventer>(web_contents);
+   else
+     popunder_preventer_->WillActivateWebContents(web_contents);
 +#endif
  
    // Keep the current state. |SetTabWithExclusiveAccess| may change the return
    // value of |IsWindowFullscreenForTabOrPending|.
-@@ -237,11 +243,13 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -233,11 +239,13 @@ void FullscreenController::EnterFullscreenModeForTab(
  }
  
  void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
@@ -66,13 +63,11 @@ index 0182d4aece086658551c905d0f6575959fdec811..a0eb988bd3899ef0910161f4ef17d1fb
  
    if (MaybeToggleFullscreenWithinTab(web_contents, false)) {
      // During tab capture of fullscreen-within-tab views, the browser window
-@@ -299,11 +307,13 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -295,9 +303,11 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
 +#if 0
-   DCHECK(base::FeatureList::IsEnabled(
-       blink::features::kWindowPlacementFullscreenCompanionWindow));
    DCHECK_EQ(exclusive_access_tab(), opener);
    DCHECK(popunder_preventer_);
    popunder_preventer_->AddPotentialPopunder(popup);
@@ -80,7 +75,7 @@ index 0182d4aece086658551c905d0f6575959fdec811..a0eb988bd3899ef0910161f4ef17d1fb
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -472,18 +482,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -466,18 +476,17 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -104,7 +99,7 @@ index 0182d4aece086658551c905d0f6575959fdec811..a0eb988bd3899ef0910161f4ef17d1fb
    if (option == TAB) {
      url = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -516,6 +525,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -510,6 +519,7 @@ void FullscreenController::EnterFullscreenModeInternal(
      if (!extension_caused_fullscreen_.is_empty())
        url = extension_caused_fullscreen_;
    }
@@ -112,7 +107,7 @@ index 0182d4aece086658551c905d0f6575959fdec811..a0eb988bd3899ef0910161f4ef17d1fb
  
    if (option == BROWSER)
      base::RecordAction(base::UserMetricsAction("ToggleFullscreen"));
-@@ -543,12 +553,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -537,12 +547,12 @@ void FullscreenController::ExitFullscreenModeInternal() {
    RecordExitingUMA();
    toggled_into_fullscreen_ = false;
    started_fullscreen_transition_ = true;

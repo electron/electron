@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 233dd65e19534b280f0b8e22e8cc6cc6546b8451..a078cd22ca41c5bdca64223db2797816a4b03533 100644
+index b5f700d7442afe55ac8011e26d9f1fcef16926ea..e620c59e51804bae408b0ff9a960d1086d2a6158 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -980,7 +980,6 @@ if (is_win) {
+@@ -981,7 +981,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 233dd65e19534b280f0b8e22e8cc6cc6546b8451..a078cd22ca41c5bdca64223db2797816
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -989,6 +988,10 @@ if (is_win) {
+@@ -990,6 +989,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -796,10 +796,10 @@ index 51a5497b809cda82b223138f43507172a9f066ae..71227492fd87e577518f3bf55ded37b0
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bef5e7514f4383a4b650ef76b2d977cc50b789f0..e56472c44cc1285c5c05d69b2ec14d351af9f463 100644
+index 4f74f95d91585bf6dd38282aacd35fb0ad83751d..345d985385a445a252bf00aa28bd5c557718854a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2816,8 +2816,9 @@ source_set("browser") {
+@@ -2817,8 +2817,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -812,10 +812,10 @@ index bef5e7514f4383a4b650ef76b2d977cc50b789f0..e56472c44cc1285c5c05d69b2ec14d35
      if (is_chromeos) {
        sources += [
 diff --git a/content/browser/utility_sandbox_delegate_win.cc b/content/browser/utility_sandbox_delegate_win.cc
-index aa59ef2ea780af3e881be9a984eef5d309586dc4..c5bd3ed36ff3f4d1fe75ef2c6a1d40d655c0bbe0 100644
+index cbb37171f35d8219409d429cd4fc401b44f73e5f..e7d28451b946670953016acbacf45b66f3ed1d27 100644
 --- a/content/browser/utility_sandbox_delegate_win.cc
 +++ b/content/browser/utility_sandbox_delegate_win.cc
-@@ -99,6 +99,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetConfig* config) {
+@@ -101,6 +101,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetConfig* config) {
    return true;
  }
  
@@ -823,14 +823,14 @@ index aa59ef2ea780af3e881be9a984eef5d309586dc4..c5bd3ed36ff3f4d1fe75ef2c6a1d40d6
  // Sets the sandbox policy for the print backend service process.
  bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
    DCHECK(!config->IsConfigured());
-@@ -192,6 +193,7 @@ bool XrCompositingPreSpawnTarget(sandbox::TargetConfig* config,
- 
+@@ -114,6 +115,7 @@ bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
+   config->SetDelayedIntegrityLevel(sandbox::INTEGRITY_LEVEL_LOW);
    return true;
  }
 +#endif
- }  // namespace
  
- std::string UtilitySandboxedProcessLauncherDelegate::GetSandboxTag() {
+ std::string UtilityAppContainerId(base::CommandLine& cmd_line) {
+   return base::WideToUTF8(cmd_line.GetProgram().value());
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
 index 3a9e75c229f028dcbfb2d7b9294bc42989cb4c1e..a890c5517c0708034bbc6b9b606c990a9ae8be7a 100644
 --- a/printing/printing_context.cc
