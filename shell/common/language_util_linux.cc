@@ -6,6 +6,7 @@
 
 #include <glib.h>
 
+#include "base/check.h"
 #include "base/i18n/rtl.h"
 
 namespace electron {
