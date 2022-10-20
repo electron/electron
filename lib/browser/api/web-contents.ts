@@ -177,10 +177,10 @@ WebContents.prototype.printToPDF = async function (options) {
     scale: 1.0,
     paperWidth: 8.5,
     paperHeight: 11.0,
-    marginTop: 0.0,
-    marginBottom: 0.0,
-    marginLeft: 0.0,
-    marginRight: 0.0,
+    marginTop: 0.4,
+    marginBottom: 0.4,
+    marginLeft: 0.4,
+    marginRight: 0.4,
     pageRanges: '',
     preferCSSPageSize: false
   };
