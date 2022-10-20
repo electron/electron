@@ -881,6 +881,16 @@ gfx::Point BaseWindow::GetTrafficLightPosition() const {
 }
 #endif
 
+#if BUILDFLAG(IS_MAC)
+bool BaseWindow::IsIgnoredByMissionControl() {
+  return window_->IsIgnoredByMissionControl();
+}
+
+void BaseWindow::SetIgnoreMissionControl(bool ignore) {
+  window_->SetIgnoreMissionControl(ignore);
+}
+#endif
+
 void BaseWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
   window_->SetTouchBar(std::move(items));
@@ -1256,6 +1266,14 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getTrafficLightPosition",
                  &BaseWindow::GetTrafficLightPosition)
 #endif
+
+#if BUILDFLAG(IS_MAC)
+      .SetMethod("isIgnoredByMissionControl",
+                 &BaseWindow::IsIgnoredByMissionControl)
+      .SetMethod("setIgnoreMissionControl",
+                 &BaseWindow::SetIgnoreMissionControl)
+#endif
+
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)

@@ -209,6 +209,9 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   std::string windowType;
   options.Get(options::kType, &windowType);
 
+  bool ignoreMissionControl = false;
+  options.Get(options::kIgnoreMissionControl, &ignoreMissionControl);
+
   bool useStandardWindow = true;
   // eventually deprecate separate "standardWindow" option in favor of
   // standard / textured window types
@@ -346,6 +349,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   bool disableAutoHideCursor = false;
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
+
+  SetIgnoreMissionControl(ignoreMissionControl);
 
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
@@ -1085,9 +1090,17 @@ bool NativeWindowMac::IsDocumentEdited() {
   return [window_ isDocumentEdited];
 }
 
+bool NativeWindowMac::IsIgnoredByMissionControl() {
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  return collectionBehavior & NSWindowCollectionBehaviorTransient;
+}
+
+void NativeWindowMac::SetIgnoreMissionControl(bool ignore) {
+  SetCollectionBehavior(ignore, NSWindowCollectionBehaviorTransient);
+}
+
 void NativeWindowMac::SetIgnoreMouseEvents(bool ignore, bool forward) {
   [window_ setIgnoresMouseEvents:ignore];
-
   if (!ignore) {
     SetForwardMouseMessages(NO);
   } else {

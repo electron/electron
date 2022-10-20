@@ -4784,6 +4784,24 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform === 'darwin')('isIgnoredByMissionControl state', () => {
+      it('with functions', () => {
+        it('can be set with ignoreMissionControl constructor option', () => {
+          const w = new BrowserWindow({ show: false, ignoreMissionControl: true });
+          expect(w.isIgnoredByMissionControl()).to.be.true('isIgnoredByMissionControl');
+        });
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.isIgnoredByMissionControl()).to.be.false('isIgnoredByMissionControl');
+          w.setIgnoreMissionControl(true);
+          expect(w.isIgnoredByMissionControl()).to.be.true('isIgnoredByMissionControl');
+          w.setIgnoreMissionControl(false);
+          expect(w.isIgnoredByMissionControl()).to.be.false('isIgnoredByMissionControl');
+        });
+      });
+    });
+
     // fullscreen events are dispatched eagerly and twiddling things too fast can confuse poor Electron
 
     ifdescribe(process.platform === 'darwin')('kiosk state', () => {

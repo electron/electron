@@ -198,6 +198,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   gfx::Point GetTrafficLightPosition() const;
 #endif
 
+#if BUILDFLAG(IS_MAC)
+  bool IsIgnoredByMissionControl();
+  void SetIgnoreMissionControl(bool ignore);
+#endif
+
   void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   void RefreshTouchBarItem(const std::string& item_id);
   void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
