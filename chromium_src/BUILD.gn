@@ -262,7 +262,10 @@ static_library("chrome") {
       sources += [
         "//chrome/browser/printing/pdf_to_emf_converter.cc",
         "//chrome/browser/printing/pdf_to_emf_converter.h",
+        "//chrome/browser/printing/printer_xml_parser_impl.cc",
+        "//chrome/browser/printing/printer_xml_parser_impl.h",
       ]
+      deps += [ "//printing:printing_base" ]
     }
   }
 

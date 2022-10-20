@@ -689,13 +689,6 @@ source_set("electron_lib") {
     if (is_mac) {
       deps += [ "//chrome/services/mac_notifications/public/mojom" ]
     }
-    if (is_win) {
-      sources += [
-        "printing/printer_xml_parser_impl.cc",
-        "printing/printer_xml_parser_impl.h",
-      ]
-      deps += [ "//printing:printing_base" ]
-    }
   }
 
   if (enable_electron_extensions) {
