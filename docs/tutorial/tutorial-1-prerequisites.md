@@ -123,7 +123,7 @@ the list of versions in the [electron/releases] repository.
 [homebrew]: https://brew.sh/
 [mdn-guide]: https://developer.mozilla.org/en-US/docs/Learn/
 [node]: https://nodejs.org/
-[node-guide]: https://nodejs.dev/learn
+[node-guide]: https://nodejs.dev/en/learn/
 [node-download]: https://nodejs.org/en/download/
 [nvm]: https://github.com/nvm-sh/nvm
 [process-model]: ./process-model.md
