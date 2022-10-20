@@ -125,8 +125,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                                       int child_process_id) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
   std::string GetGeolocationApiKey() override;
-  scoped_refptr<content::QuotaPermissionContext> CreateQuotaPermissionContext()
-      override;
   content::GeneratedCodeCacheSettings GetGeneratedCodeCacheSettings(
       content::BrowserContext* context) override;
   void AllowCertificateError(

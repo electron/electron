@@ -378,8 +378,6 @@ filenames = {
     "shell/browser/electron_navigation_throttle.h",
     "shell/browser/electron_permission_manager.cc",
     "shell/browser/electron_permission_manager.h",
-    "shell/browser/electron_quota_permission_context.cc",
-    "shell/browser/electron_quota_permission_context.h",
     "shell/browser/electron_speech_recognition_manager_delegate.cc",
     "shell/browser/electron_speech_recognition_manager_delegate.h",
     "shell/browser/electron_web_contents_utility_handler_impl.cc",
