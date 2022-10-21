@@ -1,4 +1,4 @@
-const asar = require('asar');
+const asar = require('@electron/asar');
 const assert = require('assert');
 const fs = require('fs-extra');
 const os = require('os');
