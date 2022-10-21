@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 966a33df4b6f62d941828cd34e7fccbbd41b6130..513a029e0a419349bec61ed2c6a69ed678ee167a 100644
+index 818560da666ad3430359144ee43969bfcf1d55f6..7383f3c8795b28e3b8bad8fd080bf530ad128e43 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7443,6 +7443,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7444,6 +7444,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 966a33df4b6f62d941828cd34e7fccbbd41b6130..513a029e0a419349bec61ed2c6a69ed6
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5ef91442276b2ca1d799b7368da475c7965cd407..2eff06f8e9a72b75c5b76e72caeace6a16d7f6ab 100644
+index d5acb359526e13535e16374a39aec44d2130faa1..04521664b26c5553bd550484a8b0e1db3a173281 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4004,6 +4004,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4005,6 +4005,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 5ef91442276b2ca1d799b7368da475c7965cd407..2eff06f8e9a72b75c5b76e72caeace6a
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -4048,12 +4056,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4049,12 +4057,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -124,7 +124,7 @@ index 4f4ce7c49df42d32e9a2dfb770671bb038d31f36..bd4bdeda3403325ac5c3b83bc575b468
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 7119f2fe8397a1bd3472af5b00346672ed90f2b1..f33bc7ec4bce4b6a4c38462110b68aae5b6280d6 100644
+index 03b810c51df61f1da8f4b7e3d48acd1517067277..5043d85e36e100cd912fc656f95d702521448d7b 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
@@ -150,10 +150,10 @@ index 7119f2fe8397a1bd3472af5b00346672ed90f2b1..f33bc7ec4bce4b6a4c38462110b68aae
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 20b7e1360df0b7a9e11da2b60f6b8edae378ea4c..7a5889b891331adc03935e399b6cf18e54fc7e43 100644
+index 083bbc55ec581af37aa1e8520a8c50587610a777..8d584917d2b328aed6eb3bfca78fe7bb66273ddc 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6212,6 +6212,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6211,6 +6211,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
        /*openee_can_access_opener_origin=*/true,
        !GetWebFrame()->IsAllowedToDownload(), GetWebFrame()->IsAdFrame());
  
@@ -212,7 +212,7 @@ index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index c23f85b34aa2ec74dfdfb0256fae2edfede354d0..9dd21f0ff5c8a1ed1121f98e719ff6c0147d437c 100644
+index 8c38c26f0b9a9bc307dc41752e12cba6a5b40342..cb4e9a6dd4ac282d545fc27b35dcf7d1f1e0b647 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2149,6 +2149,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

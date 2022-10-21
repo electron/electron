@@ -33,10 +33,10 @@ index d090510a8dde6d98a01532abbec0da2ecac3c94e..c122fb37173d3039116009eaa1da08e3
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index ba1b02cd7adf87b6e44873888d30fb19703c8a6e..b21ee8bd3d5f60b5592aa515853461f26eeadcd7 100644
+index 373df9385bfc004f428c2f338bcfa1b18dc360e9..00e9cd9fae0c8688a84976989c3d5b3f020692e5 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4684,7 +4684,7 @@ static_library("browser") {
+@@ -4687,7 +4687,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index ba1b02cd7adf87b6e44873888d30fb19703c8a6e..b21ee8bd3d5f60b5592aa515853461f2
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 9980c976f3544f5ab201fa6dc889ff4d8828f005..008a76d04fa27a241c56a15a16f4a94750e2c29c 100644
+index 5680e6bcfff7e0dc667e23b7f67b05f2a04ebc1f..369a1772f99c90d969488e88490f133248f28c8a 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6169,7 +6169,6 @@ test("unit_tests") {
+@@ -6170,7 +6170,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 9980c976f3544f5ab201fa6dc889ff4d8828f005..008a76d04fa27a241c56a15a16f4a947
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:crash_reporter_client_win_unit_tests",
-@@ -6194,6 +6193,10 @@ test("unit_tests") {
+@@ -6195,6 +6194,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 9980c976f3544f5ab201fa6dc889ff4d8828f005..008a76d04fa27a241c56a15a16f4a947
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7123,7 +7126,7 @@ test("unit_tests") {
+@@ -7125,7 +7128,7 @@ test("unit_tests") {
      }
  
      deps += [
@@ -77,7 +77,7 @@ index 9980c976f3544f5ab201fa6dc889ff4d8828f005..008a76d04fa27a241c56a15a16f4a947
        "//chrome/browser/autofill_assistant/password_change/vector_icons:vector_icons",
        "//chrome/browser/enterprise/connectors/analysis:features",
        "//chrome/browser/media/router:test_support",
-@@ -7246,6 +7249,10 @@ test("unit_tests") {
+@@ -7248,6 +7251,10 @@ test("unit_tests") {
      }
    }
  
