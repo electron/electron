@@ -50,10 +50,10 @@ upstream would also hit this DCHECK, so give it a try with content_shell or
 chrome and that would help reporting upstream crbug.
 
 diff --git a/services/device/device_service.cc b/services/device/device_service.cc
-index e21ddc77480abc177b2c2afd76ccc0126b27ebb7..7db962d3bc076e9465b2e4e081122fd5bb2aa8d5 100644
+index eb9831586c92d5fbd90e075a8c32fa2e647edd82..c3bf4194fd97826aae8b9da5e0c91100081828c7 100644
 --- a/services/device/device_service.cc
 +++ b/services/device/device_service.cc
-@@ -159,7 +159,7 @@ DeviceService::~DeviceService() {
+@@ -158,7 +158,7 @@ DeviceService::~DeviceService() {
      // naturally sequenced after the last task on
      // |serial_port_manager_task_runner_| per ThreadPool shutdown semantics).
      // See crbug.com/1263149#c20 for details.

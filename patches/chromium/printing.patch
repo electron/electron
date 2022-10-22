@@ -796,7 +796,7 @@ index 51a5497b809cda82b223138f43507172a9f066ae..71227492fd87e577518f3bf55ded37b0
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a82ab440893d22424366c969d6765a10ee05ea86..a68bc27a93a38f5a1cb0c3dc225def6290dbf688 100644
+index 5a032fac280466c9e1498c4d629acbe0b0bb1ec6..3274b0331aaa077603e8ad10ca9fe4b3cebc3161 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -2819,8 +2819,9 @@ source_set("browser") {
@@ -812,7 +812,7 @@ index a82ab440893d22424366c969d6765a10ee05ea86..a68bc27a93a38f5a1cb0c3dc225def62
      if (is_chromeos) {
        sources += [
 diff --git a/content/browser/utility_sandbox_delegate_win.cc b/content/browser/utility_sandbox_delegate_win.cc
-index aa59ef2ea780af3e881be9a984eef5d309586dc4..c5bd3ed36ff3f4d1fe75ef2c6a1d40d655c0bbe0 100644
+index aa59ef2ea780af3e881be9a984eef5d309586dc4..fb5dcccf6d3f7cf9c18155319d87624432d92526 100644
 --- a/content/browser/utility_sandbox_delegate_win.cc
 +++ b/content/browser/utility_sandbox_delegate_win.cc
 @@ -99,6 +99,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetConfig* config) {
@@ -823,14 +823,14 @@ index aa59ef2ea780af3e881be9a984eef5d309586dc4..c5bd3ed36ff3f4d1fe75ef2c6a1d40d6
  // Sets the sandbox policy for the print backend service process.
  bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
    DCHECK(!config->IsConfigured());
-@@ -192,6 +193,7 @@ bool XrCompositingPreSpawnTarget(sandbox::TargetConfig* config,
- 
+@@ -112,6 +113,7 @@ bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
+   config->SetDelayedIntegrityLevel(sandbox::INTEGRITY_LEVEL_LOW);
    return true;
  }
 +#endif
- }  // namespace
  
- std::string UtilitySandboxedProcessLauncherDelegate::GetSandboxTag() {
+ std::string UtilityAppContainerId(base::CommandLine& cmd_line) {
+   return base::WideToUTF8(cmd_line.GetProgram().value());
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
 index 3a9e75c229f028dcbfb2d7b9294bc42989cb4c1e..a890c5517c0708034bbc6b9b606c990a9ae8be7a 100644
 --- a/printing/printing_context.cc
