@@ -110,7 +110,10 @@ electron_mac_bundle_id = branding.mac_bundle_id
 electron_version = exec_script("script/print-version.py",
                                [],
                                "trim string",
-                               [ ".git/FETCH_HEAD" ])
+                               [
+                                 ".git/packed-refs",
+                                 ".git/HEAD",
+                               ])
 
 if (is_mas_build) {
   assert(is_mac,
