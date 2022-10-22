@@ -358,7 +358,7 @@ templated_file("electron_version_file") {
 }
 
 group("electron_win32_resources") {
-  deps = [
+  public_deps = [
     ":electron_win_rc",
     ":electron_win_rc_header",
   ]
