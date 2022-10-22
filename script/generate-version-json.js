@@ -19,6 +19,7 @@ const {
 } = parsed;
 
 fs.writeFileSync(outputPath, JSON.stringify({
+  full_version: currentVersion,
   major,
   minor,
   patch,

@@ -343,6 +343,15 @@ templated_file("electron_win_rc") {
   args_files = get_target_outputs(":electron_version_args")
 }
 
+templated_file("electron_version_file") {
+  deps = [ ":electron_version_args" ]
+
+  template = "build/templates/version_string.tmpl"
+  output = "$root_build_dir/version"
+
+  args_files = get_target_outputs(":electron_version_args")
+}
+
 action("electron_fuses") {
   script = "build/fuses/build.py"
 
@@ -1432,11 +1441,10 @@ group("licenses") {
   ]
 }
 
-write_file("$root_build_dir/version", [ "$electron_version" ])
-
 dist_zip("electron_dist_zip") {
   data_deps = [
     ":electron_app",
+    ":electron_version_file",
     ":licenses",
   ]
   if (is_linux) {
