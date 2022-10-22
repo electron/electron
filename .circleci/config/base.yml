@@ -455,7 +455,7 @@ step-delete-git-directories: &step-delete-git-directories
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
-        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" ) | xargs rm -rf
+        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux
@@ -954,6 +954,7 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf third_party/electron_node/deps/openssl
       rm -rf third_party/electron_node/deps/v8
       rm -rf chrome/test/data/xr/webvr_info
+      rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
 
 # Save the src cache based on the deps hash
 step-save-src-cache: &step-save-src-cache
