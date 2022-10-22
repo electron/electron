@@ -38,7 +38,8 @@ For more installation options and troubleshooting tips, see
 
 Each Electron release provides binaries for macOS, Windows, and Linux.
 
-* macOS (High Sierra and up): Electron provides 64-bit Intel and ARM binaries for macOS. Apple Silicon support was added in Electron 11.
+* macOS (High Sierra and up): Electron provides 64-bit Intel and ARM binaries for macOS. 
+###### "Apple Silicon support was added in Electron 11"
 * Windows (Windows 7 and up): Electron provides `ia32` (`x86`), `x64` (`amd64`), and `arm64` binaries for Windows. Windows on ARM support was added in Electron 5.0.8.
 * Linux: The prebuilt binaries of Electron are built on Ubuntu 20.04. They have also been verified to work on:
   * Ubuntu 14.04 and newer
@@ -69,6 +70,7 @@ npm start
 * [electron/fiddle](https://github.com/electron/fiddle) - A tool to build, run, and package small Electron experiments
 * [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - A very basic starter Electron app
 * [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - Sample starter apps created by the community
+* [electronjs Tutorial app](https://github.com/crilleengvall/electron-tutorial-app) - Electron learning app for beginners and developers.
 
 ## Programmatic usage
 
