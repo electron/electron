@@ -338,9 +338,14 @@ templated_file("electron_win_rc") {
   deps = [ ":electron_version_args" ]
 
   template = "build/templates/electron_rc.tmpl"
-  output = "$target_gen_dir/electron.rc"
+  output = "$target_gen_dir/win-resources/electron.rc"
 
   args_files = get_target_outputs(":electron_version_args")
+}
+
+copy("electron_win_rc_header") {
+  sources = [ "shell/browser/resources/win/resource.h" ]
+  outputs = [ "$target_gen_dir/win-resources/{{source_file_part}}" ]
 }
 
 templated_file("electron_version_file") {
@@ -350,6 +355,13 @@ templated_file("electron_version_file") {
   output = "$root_build_dir/version"
 
   args_files = get_target_outputs(":electron_version_args")
+}
+
+group("electron_win32_resources") {
+  deps = [
+    ":electron_win_rc",
+    ":electron_win_rc_header",
+  ]
 }
 
 action("electron_fuses") {
@@ -1225,7 +1237,7 @@ if (is_mac) {
       ":default_app_asar",
       ":electron_app_manifest",
       ":electron_lib",
-      ":electron_win_rc",
+      ":electron_win32_resources",
       ":packed_resources",
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
@@ -1259,7 +1271,7 @@ if (is_mac) {
 
     if (is_win) {
       sources += [
-        "$target_gen_dir/electron.rc",
+        "$target_gen_dir/win-resources/electron.rc",
         "shell/browser/resources/win/resource.h",
       ]
 
