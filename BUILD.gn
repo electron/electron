@@ -107,6 +107,10 @@ branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
 electron_mac_bundle_id = branding.mac_bundle_id
+electron_version = exec_script("script/print-version.py",
+                               [],
+                               "trim string",
+                               [ ".git/FETCH_HEAD" ])
 
 if (is_mas_build) {
   assert(is_mac,
@@ -313,12 +317,9 @@ npm_action("electron_version_args") {
 
   outputs = [ "$target_gen_dir/electron_version.args" ]
 
-  args = rebase_path(outputs)
+  args = rebase_path(outputs) + [ "$electron_version" ]
 
-  inputs = [
-    "ELECTRON_VERSION",
-    "script/generate-version-json.js",
-  ]
+  inputs = [ "script/generate-version-json.js" ]
 }
 
 templated_file("electron_version_header") {
@@ -326,6 +327,15 @@ templated_file("electron_version_header") {
 
   template = "build/templates/electron_version.tmpl"
   output = "$target_gen_dir/electron_version.h"
+
+  args_files = get_target_outputs(":electron_version_args")
+}
+
+templated_file("electron_win_rc") {
+  deps = [ ":electron_version_args" ]
+
+  template = "build/templates/electron_rc.tmpl"
+  output = "$target_gen_dir/electron.rc"
 
   args_files = get_target_outputs(":electron_version_args")
 }
@@ -763,7 +773,6 @@ if (is_mac) {
   electron_helper_name = "$electron_product_name Helper"
   electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
-  electron_version = read_file("ELECTRON_VERSION", "trim string")
 
   mac_xib_bundle_data("electron_xibs") {
     sources = [ "shell/common/resources/mac/MainMenu.xib" ]
@@ -1204,6 +1213,7 @@ if (is_mac) {
       ":default_app_asar",
       ":electron_app_manifest",
       ":electron_lib",
+      ":electron_win_rc",
       ":packed_resources",
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
@@ -1237,8 +1247,7 @@ if (is_mac) {
 
     if (is_win) {
       sources += [
-        # TODO: we should be generating our .rc files more like how chrome does
-        "shell/browser/resources/win/electron.rc",
+        "$target_gen_dir/electron.rc",
         "shell/browser/resources/win/resource.h",
       ]
 
@@ -1420,15 +1429,11 @@ group("licenses") {
   ]
 }
 
-copy("electron_version") {
-  sources = [ "ELECTRON_VERSION" ]
-  outputs = [ "$root_build_dir/version" ]
-}
+write_file("$root_build_dir/version", [ "$electron_version" ])
 
 dist_zip("electron_dist_zip") {
   data_deps = [
     ":electron_app",
-    ":electron_version",
     ":licenses",
   ]
   if (is_linux) {

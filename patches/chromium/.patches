@@ -120,3 +120,4 @@ feat_ensure_mas_builds_of_the_same_application_can_use_safestorage.patch
 fix_on-screen-keyboard_hides_on_input_blur_in_webview.patch
 preconnect_manager.patch
 fix_remove_caption-removing_style_call.patch
+build_allow_electron_to_use_exec_script.patch
