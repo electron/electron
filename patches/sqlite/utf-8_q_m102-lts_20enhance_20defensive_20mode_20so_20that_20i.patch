@@ -1,12 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: drh <>
 Date: Tue, 18 Oct 2022 18:55:52 +0000
-Subject: =?UTF-8?q?[M102-LTS]=20Enhance=20defensive=20mode=20so=20that=20i?=
- =?UTF-8?q?t=20disallows=20CREATE=20TRIGGER=20statements=20if=0Athe=20stat?=
- =?UTF-8?q?ements=20within=20the=20trigger=20attempt=20to=20write=20on=20a?=
- =?UTF-8?q?=20shadow=20table.=20=20Also=0Amake=20the=20legacy=20FTS3=20cod?=
- =?UTF-8?q?e=20more=20robust=20against=20integer=20overflow=20during=0Amem?=
- =?UTF-8?q?ory=20allocation.?=
+Subject: Enhance defensive mode so that it disallows CREATE TRIGGER statements
+ if the statements within the trigger attempt to write on a shadow table. Also
+ make the legacy FTS3 code more robust against integer overflow during memory
+ allocation.
 
 Bug: 1368076
 FossilOrigin-Name: c41f25e6f3591e575452c4c68f8072a0163cc00d80af31f90d407c7deca79622
@@ -775,7 +773,7 @@ index deea06d92bf895a1f513f863484cfbffd0a2faa1..78e5889da5250184db89879b059a66eb
          c->pToken = pNew;
        }
 diff --git a/ext/fts3/fts3_write.c b/ext/fts3/fts3_write.c
-index 201e5813c6fe870ae46f5e1f13da55d6710896d9..0110df4e6e7d786632ba414f9185ca7871012861 100644
+index 201e5813c6fe870ae46f5e1f13da55d6710896d9..450deddfa70a7a3b16e34a199184b0e096f888c0 100644
 --- a/ext/fts3/fts3_write.c
 +++ b/ext/fts3/fts3_write.c
 @@ -649,7 +649,7 @@ static int fts3PendingListAppendVarint(
@@ -1077,7 +1075,7 @@ index 0b6d0669f9997bee8ab46af1de318178c6190f17..6174c1a449288c840d082fdd8bbb60b3
  F src/upsert.c 8789047a8f0a601ea42fa0256d1ba3190c13746b6ba940fe2d25643a7e991937
  F src/utf.c ee39565f0843775cc2c81135751ddd93eceb91a673ea2c57f61c76f288b041a0
 diff --git a/src/trigger.c b/src/trigger.c
-index 5df6b0c0bc8c19d85341cc62a4e8ac35a98e75d7..fcf1f77033a1e74bc259fce858301d5cfe25bbb6 100644
+index 5df6b0c0bc8c19d85341cc62a4e8ac35a98e75d7..63e109d784368e5879affc9076c4f40ad6e7212d 100644
 --- a/src/trigger.c
 +++ b/src/trigger.c
 @@ -354,6 +354,23 @@ void sqlite3FinishTrigger(
