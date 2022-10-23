@@ -1,7 +1,8 @@
-From 07a2ce61e31a5dfdc758e4ef1543fd3d0fa774d2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Greg Daniel <egdaniel@google.com>
-Date: Wed, 05 Oct 2022 15:28:56 -0400
-Subject: [PATCH] [Cherry-pick] Fix GrDirectContext::fClinetMappedBuffer access in abandoned callbacks.
+Date: Wed, 5 Oct 2022 15:28:56 -0400
+Subject: Fix GrDirectContext::fClinetMappedBuffer access in abandoned
+ callbacks.
 
 Bug: chromium:1364604
 Change-Id: I1ca44cab1c762e7f94ac94be94991ec94a7497be
@@ -11,13 +12,12 @@ Reviewed-by: Brian Salomon <bsalomon@google.com>
 Reviewed-on: https://skia-review.googlesource.com/c/skia/+/587879
 Auto-Submit: Greg Daniel <egdaniel@google.com>
 Commit-Queue: Brian Salomon <bsalomon@google.com>
----
 
 diff --git a/src/gpu/ganesh/GrDirectContext.cpp b/src/gpu/ganesh/GrDirectContext.cpp
-index d45369d..6472381 100644
+index abec1a933ee2623aa18beb582966df30db8ec9fa..19f162083d506658394347046ada0de45908de81 100644
 --- a/src/gpu/ganesh/GrDirectContext.cpp
 +++ b/src/gpu/ganesh/GrDirectContext.cpp
-@@ -144,9 +144,6 @@
+@@ -142,9 +142,6 @@ void GrDirectContext::abandonContext() {
  
      fGpu->disconnect(GrGpu::DisconnectType::kAbandon);
  
@@ -28,10 +28,10 @@ index d45369d..6472381 100644
          fSmallPathAtlasMgr->reset();
      }
 diff --git a/src/gpu/ganesh/GrFinishCallbacks.cpp b/src/gpu/ganesh/GrFinishCallbacks.cpp
-index 5519d2c..172f07d 100644
+index 5519d2ca639d31f86e33ff0f617246b785fbc779..172f07d4de4554663140fdc2ad30ceab9bf449aa 100644
 --- a/src/gpu/ganesh/GrFinishCallbacks.cpp
 +++ b/src/gpu/ganesh/GrFinishCallbacks.cpp
-@@ -35,10 +35,16 @@
+@@ -35,10 +35,16 @@ void GrFinishCallbacks::check() {
  
  void GrFinishCallbacks::callAll(bool doDelete) {
      while (!fCallbacks.empty()) {
