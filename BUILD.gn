@@ -343,8 +343,11 @@ templated_file("electron_win_rc") {
   args_files = get_target_outputs(":electron_version_args")
 }
 
-copy("electron_win_rc_header") {
-  sources = [ "shell/browser/resources/win/resource.h" ]
+copy("electron_win_resource_files") {
+  sources = [
+    "shell/browser/resources/win/electron.ico",
+    "shell/browser/resources/win/resource.h",
+  ]
   outputs = [ "$target_gen_dir/win-resources/{{source_file_part}}" ]
 }
 
@@ -360,7 +363,7 @@ templated_file("electron_version_file") {
 group("electron_win32_resources") {
   public_deps = [
     ":electron_win_rc",
-    ":electron_win_rc_header",
+    ":electron_win_resource_files",
   ]
 }
 
