@@ -2359,6 +2359,8 @@ describe('navigator.serial', () => {
     `, true);
   };
 
+  const notFoundError = 'NotFoundError: Failed to execute \'requestPort\' on \'Serial\': No port selected by the user.';
+
   after(closeAllWindows);
   afterEach(() => {
     session.defaultSession.setPermissionCheckHandler(null);
@@ -2368,7 +2370,7 @@ describe('navigator.serial', () => {
   it('does not return a port if select-serial-port event is not defined', async () => {
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('does not return a port when permission denied', async () => {
@@ -2377,7 +2379,7 @@ describe('navigator.serial', () => {
     });
     session.defaultSession.setPermissionCheckHandler(() => false);
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('does not crash when select-serial-port is called with an invalid port', async () => {
@@ -2385,7 +2387,7 @@ describe('navigator.serial', () => {
       callback('i-do-not-exist');
     });
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('returns a port when select-serial-port event is defined', async () => {
@@ -2402,7 +2404,7 @@ describe('navigator.serial', () => {
     if (havePorts) {
       expect(port).to.equal('[object SerialPort]');
     } else {
-      expect(port).to.equal('NotFoundError: No port selected by the user.');
+      expect(port).to.equal(notFoundError);
     }
   });
 
