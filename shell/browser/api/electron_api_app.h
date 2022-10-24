@@ -191,7 +191,6 @@ class App : public ElectronBrowserClient::Delegate,
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
-  std::vector<std::string> GetPreferredSystemLanguages() const;
   std::string GetSystemLocale(gin_helper::ErrorThrower thrower) const;
   void OnSecondInstance(const base::CommandLine& cmd,
                         const base::FilePath& cwd,
