@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Mon, 24 Oct 2022 16:42:23 -0400
+Subject: chore: revert clang roll
+
+This patch reverts https://chromium-review.googlesource.com/c/chromium/src/+/3967491
+because that roll breaks the WOA build: https://crbug.com/1377819
+
+diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
+index 5ae5eed14977562c66b7fe9ba98052d58da165ca..a85d5bb16ab0ce8a0193c54af282d49424a5b40b 100755
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -35,7 +35,7 @@ import zlib
+ # https://chromium.googlesource.com/chromium/src/+/main/docs/updating_clang.md
+ # Reverting problematic clang rolls is safe, though.
+ # This is the output of `git describe` and is usable as a commit-ish.
+-CLANG_REVISION = 'llvmorg-16-init-8189-g97196a2d'
++CLANG_REVISION = 'llvmorg-16-init-7184-gdeb82d4a'
+ CLANG_SUB_REVISION = 1
+ 
+ PACKAGE_VERSION = '%s-%s' % (CLANG_REVISION, CLANG_SUB_REVISION)

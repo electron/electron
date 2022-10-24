@@ -119,3 +119,4 @@ feat_ensure_mas_builds_of_the_same_application_can_use_safestorage.patch
 fix_on-screen-keyboard_hides_on_input_blur_in_webview.patch
 preconnect_manager.patch
 fix_remove_caption-removing_style_call.patch
+chore_revert_clang_roll.patch
