@@ -1,0 +1,1104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: drh <>
+Date: Tue, 18 Oct 2022 18:55:52 +0000
+Subject: Enhance defensive mode so that it disallows CREATE TRIGGER statements
+ if the statements within the trigger attempt to write on a shadow table. Also
+ make the legacy FTS3 code more robust against integer overflow during memory
+ allocation.
+
+Bug: 1368076
+FossilOrigin-Name: c41f25e6f3591e575452c4c68f8072a0163cc00d80af31f90d407c7deca79622
+(cherry picked from commit 3ec786ab9cfa213525ecc18b326aeb18ab842f7d)
+Change-Id: I3b2cbf7c04f1873a6001d577feefaa8abd9f2a7d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/deps/sqlite/+/3933554
+Reviewed-by: Ayu Ishii <ayui@chromium.org>
+
+diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
+index 9b9c2d727e7b0c21a03353aba6b4725e7d7c1633..dca202f0165ac40f2e023443222391fbf2885693 100644
+--- a/amalgamation/sqlite3.c
++++ b/amalgamation/sqlite3.c
+@@ -454,7 +454,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.38.5"
+ #define SQLITE_VERSION_NUMBER 3038005
+-#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407alt1"
++#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 4cf1f47cc2533b1c8053f642fa0754cddb26df96804e4fa144dee4a78632alt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -142357,6 +142357,23 @@ SQLITE_PRIVATE void sqlite3FinishTrigger(
+     Vdbe *v;
+     char *z;
+ 
++    /* If this is a new CREATE TABLE statement, and if shadow tables
++    ** are read-only, and the trigger makes a change to a shadow table,
++    ** then raise an error - do not allow the trigger to be created. */
++    if( sqlite3ReadOnlyShadowTables(db) ){
++      TriggerStep *pStep;
++      for(pStep=pTrig->step_list; pStep; pStep=pStep->pNext){
++        if( pStep->zTarget!=0
++         && sqlite3ShadowTableName(db, pStep->zTarget)
++        ){
++          sqlite3ErrorMsg(pParse,
++            "trigger \"%s\" may not write to shadow table \"%s\"",
++            pTrig->zName, pStep->zTarget);
++          goto triggerfinish_cleanup;
++        }
++      }
++    }
++
+     /* Make an entry in the sqlite_schema table */
+     v = sqlite3GetVdbe(pParse);
+     if( v==0 ) goto triggerfinish_cleanup;
+@@ -174292,7 +174309,7 @@ struct Fts3MultiSegReader {
+   int nAdvance;                   /* How many seg-readers to advance */
+   Fts3SegFilter *pFilter;         /* Pointer to filter object */
+   char *aBuffer;                  /* Buffer to merge doclists in */
+-  int nBuffer;                    /* Allocated size of aBuffer[] in bytes */
++  i64 nBuffer;                    /* Allocated size of aBuffer[] in bytes */
+ 
+   int iColFilter;                 /* If >=0, filter for this column */
+   int bRestart;
+@@ -176988,7 +177005,7 @@ static int fts3TermSelectMerge(
+     **
+     ** Similar padding is added in the fts3DoclistOrMerge() function.
+     */
+-    pTS->aaOutput[0] = sqlite3_malloc(nDoclist + FTS3_VARINT_MAX + 1);
++    pTS->aaOutput[0] = sqlite3_malloc64((i64)nDoclist + FTS3_VARINT_MAX + 1);
+     pTS->anOutput[0] = nDoclist;
+     if( pTS->aaOutput[0] ){
+       memcpy(pTS->aaOutput[0], aDoclist, nDoclist);
+@@ -178842,7 +178859,7 @@ static int fts3EvalIncrPhraseNext(
+       if( bEof==0 ){
+         int nList = 0;
+         int nByte = a[p->nToken-1].nList;
+-        char *aDoclist = sqlite3_malloc(nByte+FTS3_BUFFER_PADDING);
++        char *aDoclist = sqlite3_malloc64((i64)nByte+FTS3_BUFFER_PADDING);
+         if( !aDoclist ) return SQLITE_NOMEM;
+         memcpy(aDoclist, a[p->nToken-1].pList, nByte+1);
+         memset(&aDoclist[nByte], 0, FTS3_BUFFER_PADDING);
+@@ -183079,7 +183096,7 @@ static int porterNext(
+       if( n>c->nAllocated ){
+         char *pNew;
+         c->nAllocated = n+20;
+-        pNew = sqlite3_realloc(c->zToken, c->nAllocated);
++        pNew = sqlite3_realloc64(c->zToken, c->nAllocated);
+         if( !pNew ) return SQLITE_NOMEM;
+         c->zToken = pNew;
+       }
+@@ -183831,7 +183848,7 @@ static int simpleNext(
+       if( n>c->nTokenAllocated ){
+         char *pNew;
+         c->nTokenAllocated = n+20;
+-        pNew = sqlite3_realloc(c->pToken, c->nTokenAllocated);
++        pNew = sqlite3_realloc64(c->pToken, c->nTokenAllocated);
+         if( !pNew ) return SQLITE_NOMEM;
+         c->pToken = pNew;
+       }
+@@ -184993,7 +185010,7 @@ static int fts3PendingListAppendVarint(
+ 
+   /* Allocate or grow the PendingList as required. */
+   if( !p ){
+-    p = sqlite3_malloc(sizeof(*p) + 100);
++    p = sqlite3_malloc64(sizeof(*p) + 100);
+     if( !p ){
+       return SQLITE_NOMEM;
+     }
+@@ -185002,14 +185019,14 @@ static int fts3PendingListAppendVarint(
+     p->nData = 0;
+   }
+   else if( p->nData+FTS3_VARINT_MAX+1>p->nSpace ){
+-    int nNew = p->nSpace * 2;
+-    p = sqlite3_realloc(p, sizeof(*p) + nNew);
++    i64 nNew = p->nSpace * 2;
++    p = sqlite3_realloc64(p, sizeof(*p) + nNew);
+     if( !p ){
+       sqlite3_free(*pp);
+       *pp = 0;
+       return SQLITE_NOMEM;
+     }
+-    p->nSpace = nNew;
++    p->nSpace = (int)nNew;
+     p->aData = (char *)&p[1];
+   }
+ 
+@@ -185566,7 +185583,7 @@ SQLITE_PRIVATE int sqlite3Fts3ReadBlock(
+     int nByte = sqlite3_blob_bytes(p->pSegments);
+     *pnBlob = nByte;
+     if( paBlob ){
+-      char *aByte = sqlite3_malloc(nByte + FTS3_NODE_PADDING);
++      char *aByte = sqlite3_malloc64((i64)nByte + FTS3_NODE_PADDING);
+       if( !aByte ){
+         rc = SQLITE_NOMEM;
+       }else{
+@@ -185683,7 +185700,7 @@ static int fts3SegReaderNext(
+         int nTerm = fts3HashKeysize(pElem);
+         if( (nTerm+1)>pReader->nTermAlloc ){
+           sqlite3_free(pReader->zTerm);
+-          pReader->zTerm = (char*)sqlite3_malloc((nTerm+1)*2);
++          pReader->zTerm = (char*)sqlite3_malloc64(((i64)nTerm+1)*2);
+           if( !pReader->zTerm ) return SQLITE_NOMEM;
+           pReader->nTermAlloc = (nTerm+1)*2;
+         }
+@@ -185691,7 +185708,7 @@ static int fts3SegReaderNext(
+         pReader->zTerm[nTerm] = '\0';
+         pReader->nTerm = nTerm;
+ 
+-        aCopy = (char*)sqlite3_malloc(nCopy);
++        aCopy = (char*)sqlite3_malloc64(nCopy);
+         if( !aCopy ) return SQLITE_NOMEM;
+         memcpy(aCopy, pList->aData, nCopy);
+         pReader->nNode = pReader->nDoclist = nCopy;
+@@ -185978,7 +185995,7 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderNew(
+     nExtra = nRoot + FTS3_NODE_PADDING;
+   }
+ 
+-  pReader = (Fts3SegReader *)sqlite3_malloc(sizeof(Fts3SegReader) + nExtra);
++  pReader = (Fts3SegReader *)sqlite3_malloc64(sizeof(Fts3SegReader) + nExtra);
+   if( !pReader ){
+     return SQLITE_NOMEM;
+   }
+@@ -186070,7 +186087,7 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderPending(
+         if( nElem==nAlloc ){
+           Fts3HashElem **aElem2;
+           nAlloc += 16;
+-          aElem2 = (Fts3HashElem **)sqlite3_realloc(
++          aElem2 = (Fts3HashElem **)sqlite3_realloc64(
+               aElem, nAlloc*sizeof(Fts3HashElem *)
+           );
+           if( !aElem2 ){
+@@ -186404,7 +186421,7 @@ static int fts3NodeAddTerm(
+         ** this is not expected to be a serious problem.
+         */
+         assert( pTree->aData==(char *)&pTree[1] );
+-        pTree->aData = (char *)sqlite3_malloc(nReq);
++        pTree->aData = (char *)sqlite3_malloc64(nReq);
+         if( !pTree->aData ){
+           return SQLITE_NOMEM;
+         }
+@@ -186422,7 +186439,7 @@ static int fts3NodeAddTerm(
+ 
+       if( isCopyTerm ){
+         if( pTree->nMalloc<nTerm ){
+-          char *zNew = sqlite3_realloc(pTree->zMalloc, nTerm*2);
++          char *zNew = sqlite3_realloc64(pTree->zMalloc, (i64)nTerm*2);
+           if( !zNew ){
+             return SQLITE_NOMEM;
+           }
+@@ -186448,7 +186465,7 @@ static int fts3NodeAddTerm(
+   ** now. Instead, the term is inserted into the parent of pTree. If pTree
+   ** has no parent, one is created here.
+   */
+-  pNew = (SegmentNode *)sqlite3_malloc(sizeof(SegmentNode) + p->nNodeSize);
++  pNew = (SegmentNode *)sqlite3_malloc64(sizeof(SegmentNode) + p->nNodeSize);
+   if( !pNew ){
+     return SQLITE_NOMEM;
+   }
+@@ -186586,7 +186603,7 @@ static int fts3SegWriterAdd(
+ ){
+   int nPrefix;                    /* Size of term prefix in bytes */
+   int nSuffix;                    /* Size of term suffix in bytes */
+-  int nReq;                       /* Number of bytes required on leaf page */
++  i64 nReq;                       /* Number of bytes required on leaf page */
+   int nData;
+   SegmentWriter *pWriter = *ppWriter;
+ 
+@@ -186595,13 +186612,13 @@ static int fts3SegWriterAdd(
+     sqlite3_stmt *pStmt;
+ 
+     /* Allocate the SegmentWriter structure */
+-    pWriter = (SegmentWriter *)sqlite3_malloc(sizeof(SegmentWriter));
++    pWriter = (SegmentWriter *)sqlite3_malloc64(sizeof(SegmentWriter));
+     if( !pWriter ) return SQLITE_NOMEM;
+     memset(pWriter, 0, sizeof(SegmentWriter));
+     *ppWriter = pWriter;
+ 
+     /* Allocate a buffer in which to accumulate data */
+-    pWriter->aData = (char *)sqlite3_malloc(p->nNodeSize);
++    pWriter->aData = (char *)sqlite3_malloc64(p->nNodeSize);
+     if( !pWriter->aData ) return SQLITE_NOMEM;
+     pWriter->nSize = p->nNodeSize;
+ 
+@@ -186676,7 +186693,7 @@ static int fts3SegWriterAdd(
+   ** the buffer to make it large enough.
+   */
+   if( nReq>pWriter->nSize ){
+-    char *aNew = sqlite3_realloc(pWriter->aData, nReq);
++    char *aNew = sqlite3_realloc64(pWriter->aData, nReq);
+     if( !aNew ) return SQLITE_NOMEM;
+     pWriter->aData = aNew;
+     pWriter->nSize = nReq;
+@@ -186701,7 +186718,7 @@ static int fts3SegWriterAdd(
+   */
+   if( isCopyTerm ){
+     if( nTerm>pWriter->nMalloc ){
+-      char *zNew = sqlite3_realloc(pWriter->zMalloc, nTerm*2);
++      char *zNew = sqlite3_realloc64(pWriter->zMalloc, (i64)nTerm*2);
+       if( !zNew ){
+         return SQLITE_NOMEM;
+       }
+@@ -187009,12 +187026,12 @@ static void fts3ColumnFilter(
+ static int fts3MsrBufferData(
+   Fts3MultiSegReader *pMsr,       /* Multi-segment-reader handle */
+   char *pList,
+-  int nList
++  i64 nList
+ ){
+   if( nList>pMsr->nBuffer ){
+     char *pNew;
+     pMsr->nBuffer = nList*2;
+-    pNew = (char *)sqlite3_realloc(pMsr->aBuffer, pMsr->nBuffer);
++    pNew = (char *)sqlite3_realloc64(pMsr->aBuffer, pMsr->nBuffer);
+     if( !pNew ) return SQLITE_NOMEM;
+     pMsr->aBuffer = pNew;
+   }
+@@ -187070,7 +187087,7 @@ SQLITE_PRIVATE int sqlite3Fts3MsrIncrNext(
+       fts3SegReaderSort(pMsr->apSegment, nMerge, j, xCmp);
+ 
+       if( nList>0 && fts3SegReaderIsPending(apSegment[0]) ){
+-        rc = fts3MsrBufferData(pMsr, pList, nList+1);
++        rc = fts3MsrBufferData(pMsr, pList, (i64)nList+1);
+         if( rc!=SQLITE_OK ) return rc;
+         assert( (pMsr->aBuffer[nList] & 0xFE)==0x00 );
+         pList = pMsr->aBuffer;
+@@ -187207,11 +187224,11 @@ SQLITE_PRIVATE int sqlite3Fts3MsrIncrRestart(Fts3MultiSegReader *pCsr){
+   return SQLITE_OK;
+ }
+ 
+-static int fts3GrowSegReaderBuffer(Fts3MultiSegReader *pCsr, int nReq){
++static int fts3GrowSegReaderBuffer(Fts3MultiSegReader *pCsr, i64 nReq){
+   if( nReq>pCsr->nBuffer ){
+     char *aNew;
+     pCsr->nBuffer = nReq*2;
+-    aNew = sqlite3_realloc(pCsr->aBuffer, pCsr->nBuffer);
++    aNew = sqlite3_realloc64(pCsr->aBuffer, pCsr->nBuffer);
+     if( !aNew ){
+       return SQLITE_NOMEM;
+     }
+@@ -187302,7 +187319,8 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderStep(
+     ){
+       pCsr->nDoclist = apSegment[0]->nDoclist;
+       if( fts3SegReaderIsPending(apSegment[0]) ){
+-        rc = fts3MsrBufferData(pCsr, apSegment[0]->aDoclist, pCsr->nDoclist);
++        rc = fts3MsrBufferData(pCsr, apSegment[0]->aDoclist,
++                               (i64)pCsr->nDoclist);
+         pCsr->aDoclist = pCsr->aBuffer;
+       }else{
+         pCsr->aDoclist = apSegment[0]->aDoclist;
+@@ -187355,7 +187373,8 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderStep(
+ 
+           nByte = sqlite3Fts3VarintLen(iDelta) + (isRequirePos?nList+1:0);
+ 
+-          rc = fts3GrowSegReaderBuffer(pCsr, nByte+nDoclist+FTS3_NODE_PADDING);
++          rc = fts3GrowSegReaderBuffer(pCsr,
++                                   (i64)nByte+nDoclist+FTS3_NODE_PADDING);
+           if( rc ) return rc;
+ 
+           if( isFirst ){
+@@ -187381,7 +187400,7 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderStep(
+         fts3SegReaderSort(apSegment, nMerge, j, xCmp);
+       }
+       if( nDoclist>0 ){
+-        rc = fts3GrowSegReaderBuffer(pCsr, nDoclist+FTS3_NODE_PADDING);
++        rc = fts3GrowSegReaderBuffer(pCsr, (i64)nDoclist+FTS3_NODE_PADDING);
+         if( rc ) return rc;
+         memset(&pCsr->aBuffer[nDoclist], 0, FTS3_NODE_PADDING);
+         pCsr->aDoclist = pCsr->aBuffer;
+@@ -188094,7 +188113,7 @@ struct NodeReader {
+ static void blobGrowBuffer(Blob *pBlob, int nMin, int *pRc){
+   if( *pRc==SQLITE_OK && nMin>pBlob->nAlloc ){
+     int nAlloc = nMin;
+-    char *a = (char *)sqlite3_realloc(pBlob->a, nAlloc);
++    char *a = (char *)sqlite3_realloc64(pBlob->a, nAlloc);
+     if( a ){
+       pBlob->nAlloc = nAlloc;
+       pBlob->a = a;
+@@ -188888,7 +188907,7 @@ static int fts3RepackSegdirLevel(
+       if( nIdx>=nAlloc ){
+         int *aNew;
+         nAlloc += 16;
+-        aNew = sqlite3_realloc(aIdx, nAlloc*sizeof(int));
++        aNew = sqlite3_realloc64(aIdx, nAlloc*sizeof(int));
+         if( !aNew ){
+           rc = SQLITE_NOMEM;
+           break;
+@@ -189262,7 +189281,7 @@ SQLITE_PRIVATE int sqlite3Fts3Incrmerge(Fts3Table *p, int nMerge, int nMin){
+ 
+   /* Allocate space for the cursor, filter and writer objects */
+   const int nAlloc = sizeof(*pCsr) + sizeof(*pFilter) + sizeof(*pWriter);
+-  pWriter = (IncrmergeWriter *)sqlite3_malloc(nAlloc);
++  pWriter = (IncrmergeWriter *)sqlite3_malloc64(nAlloc);
+   if( !pWriter ) return SQLITE_NOMEM;
+   pFilter = (Fts3SegFilter *)&pWriter[1];
+   pCsr = (Fts3MultiSegReader *)&pFilter[1];
+@@ -189898,7 +189917,7 @@ SQLITE_PRIVATE int sqlite3Fts3DeferredTokenList(
+     return SQLITE_OK;
+   }
+ 
+-  pRet = (char *)sqlite3_malloc(p->pList->nData);
++  pRet = (char *)sqlite3_malloc64(p->pList->nData);
+   if( !pRet ) return SQLITE_NOMEM;
+ 
+   nSkip = sqlite3Fts3GetVarint(p->pList->aData, &dummy);
+@@ -189918,7 +189937,7 @@ SQLITE_PRIVATE int sqlite3Fts3DeferToken(
+   int iCol                        /* Column that token must appear in (or -1) */
+ ){
+   Fts3DeferredToken *pDeferred;
+-  pDeferred = sqlite3_malloc(sizeof(*pDeferred));
++  pDeferred = sqlite3_malloc64(sizeof(*pDeferred));
+   if( !pDeferred ){
+     return SQLITE_NOMEM;
+   }
+diff --git a/amalgamation/sqlite3.h b/amalgamation/sqlite3.h
+index 4ef161c20403dfc7f71e9b081a3dff8b1c615506..792848f39ccfeeefe9665cd3d164adfa3601223a 100644
+--- a/amalgamation/sqlite3.h
++++ b/amalgamation/sqlite3.h
+@@ -148,7 +148,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.38.5"
+ #define SQLITE_VERSION_NUMBER 3038005
+-#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407alt1"
++#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 4cf1f47cc2533b1c8053f642fa0754cddb26df96804e4fa144dee4a78632alt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
+index 94222875ff2d1e47370e3fa766003cfb0f8dc015..414782240a4901d9b46c4345ee599d4f4e2b8619 100644
+--- a/amalgamation_dev/sqlite3.c
++++ b/amalgamation_dev/sqlite3.c
+@@ -454,7 +454,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.38.5"
+ #define SQLITE_VERSION_NUMBER 3038005
+-#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407alt1"
++#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 4cf1f47cc2533b1c8053f642fa0754cddb26df96804e4fa144dee4a78632alt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -142370,6 +142370,23 @@ SQLITE_PRIVATE void sqlite3FinishTrigger(
+     Vdbe *v;
+     char *z;
+ 
++    /* If this is a new CREATE TABLE statement, and if shadow tables
++    ** are read-only, and the trigger makes a change to a shadow table,
++    ** then raise an error - do not allow the trigger to be created. */
++    if( sqlite3ReadOnlyShadowTables(db) ){
++      TriggerStep *pStep;
++      for(pStep=pTrig->step_list; pStep; pStep=pStep->pNext){
++        if( pStep->zTarget!=0
++         && sqlite3ShadowTableName(db, pStep->zTarget)
++        ){
++          sqlite3ErrorMsg(pParse,
++            "trigger \"%s\" may not write to shadow table \"%s\"",
++            pTrig->zName, pStep->zTarget);
++          goto triggerfinish_cleanup;
++        }
++      }
++    }
++
+     /* Make an entry in the sqlite_schema table */
+     v = sqlite3GetVdbe(pParse);
+     if( v==0 ) goto triggerfinish_cleanup;
+@@ -174811,7 +174828,7 @@ struct Fts3MultiSegReader {
+   int nAdvance;                   /* How many seg-readers to advance */
+   Fts3SegFilter *pFilter;         /* Pointer to filter object */
+   char *aBuffer;                  /* Buffer to merge doclists in */
+-  int nBuffer;                    /* Allocated size of aBuffer[] in bytes */
++  i64 nBuffer;                    /* Allocated size of aBuffer[] in bytes */
+ 
+   int iColFilter;                 /* If >=0, filter for this column */
+   int bRestart;
+@@ -177507,7 +177524,7 @@ static int fts3TermSelectMerge(
+     **
+     ** Similar padding is added in the fts3DoclistOrMerge() function.
+     */
+-    pTS->aaOutput[0] = sqlite3_malloc(nDoclist + FTS3_VARINT_MAX + 1);
++    pTS->aaOutput[0] = sqlite3_malloc64((i64)nDoclist + FTS3_VARINT_MAX + 1);
+     pTS->anOutput[0] = nDoclist;
+     if( pTS->aaOutput[0] ){
+       memcpy(pTS->aaOutput[0], aDoclist, nDoclist);
+@@ -179361,7 +179378,7 @@ static int fts3EvalIncrPhraseNext(
+       if( bEof==0 ){
+         int nList = 0;
+         int nByte = a[p->nToken-1].nList;
+-        char *aDoclist = sqlite3_malloc(nByte+FTS3_BUFFER_PADDING);
++        char *aDoclist = sqlite3_malloc64((i64)nByte+FTS3_BUFFER_PADDING);
+         if( !aDoclist ) return SQLITE_NOMEM;
+         memcpy(aDoclist, a[p->nToken-1].pList, nByte+1);
+         memset(&aDoclist[nByte], 0, FTS3_BUFFER_PADDING);
+@@ -183598,7 +183615,7 @@ static int porterNext(
+       if( n>c->nAllocated ){
+         char *pNew;
+         c->nAllocated = n+20;
+-        pNew = sqlite3_realloc(c->zToken, c->nAllocated);
++        pNew = sqlite3_realloc64(c->zToken, c->nAllocated);
+         if( !pNew ) return SQLITE_NOMEM;
+         c->zToken = pNew;
+       }
+@@ -184350,7 +184367,7 @@ static int simpleNext(
+       if( n>c->nTokenAllocated ){
+         char *pNew;
+         c->nTokenAllocated = n+20;
+-        pNew = sqlite3_realloc(c->pToken, c->nTokenAllocated);
++        pNew = sqlite3_realloc64(c->pToken, c->nTokenAllocated);
+         if( !pNew ) return SQLITE_NOMEM;
+         c->pToken = pNew;
+       }
+@@ -185512,7 +185529,7 @@ static int fts3PendingListAppendVarint(
+ 
+   /* Allocate or grow the PendingList as required. */
+   if( !p ){
+-    p = sqlite3_malloc(sizeof(*p) + 100);
++    p = sqlite3_malloc64(sizeof(*p) + 100);
+     if( !p ){
+       return SQLITE_NOMEM;
+     }
+@@ -185521,14 +185538,14 @@ static int fts3PendingListAppendVarint(
+     p->nData = 0;
+   }
+   else if( p->nData+FTS3_VARINT_MAX+1>p->nSpace ){
+-    int nNew = p->nSpace * 2;
+-    p = sqlite3_realloc(p, sizeof(*p) + nNew);
++    i64 nNew = p->nSpace * 2;
++    p = sqlite3_realloc64(p, sizeof(*p) + nNew);
+     if( !p ){
+       sqlite3_free(*pp);
+       *pp = 0;
+       return SQLITE_NOMEM;
+     }
+-    p->nSpace = nNew;
++    p->nSpace = (int)nNew;
+     p->aData = (char *)&p[1];
+   }
+ 
+@@ -186085,7 +186102,7 @@ SQLITE_PRIVATE int sqlite3Fts3ReadBlock(
+     int nByte = sqlite3_blob_bytes(p->pSegments);
+     *pnBlob = nByte;
+     if( paBlob ){
+-      char *aByte = sqlite3_malloc(nByte + FTS3_NODE_PADDING);
++      char *aByte = sqlite3_malloc64((i64)nByte + FTS3_NODE_PADDING);
+       if( !aByte ){
+         rc = SQLITE_NOMEM;
+       }else{
+@@ -186202,7 +186219,7 @@ static int fts3SegReaderNext(
+         int nTerm = fts3HashKeysize(pElem);
+         if( (nTerm+1)>pReader->nTermAlloc ){
+           sqlite3_free(pReader->zTerm);
+-          pReader->zTerm = (char*)sqlite3_malloc((nTerm+1)*2);
++          pReader->zTerm = (char*)sqlite3_malloc64(((i64)nTerm+1)*2);
+           if( !pReader->zTerm ) return SQLITE_NOMEM;
+           pReader->nTermAlloc = (nTerm+1)*2;
+         }
+@@ -186210,7 +186227,7 @@ static int fts3SegReaderNext(
+         pReader->zTerm[nTerm] = '\0';
+         pReader->nTerm = nTerm;
+ 
+-        aCopy = (char*)sqlite3_malloc(nCopy);
++        aCopy = (char*)sqlite3_malloc64(nCopy);
+         if( !aCopy ) return SQLITE_NOMEM;
+         memcpy(aCopy, pList->aData, nCopy);
+         pReader->nNode = pReader->nDoclist = nCopy;
+@@ -186497,7 +186514,7 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderNew(
+     nExtra = nRoot + FTS3_NODE_PADDING;
+   }
+ 
+-  pReader = (Fts3SegReader *)sqlite3_malloc(sizeof(Fts3SegReader) + nExtra);
++  pReader = (Fts3SegReader *)sqlite3_malloc64(sizeof(Fts3SegReader) + nExtra);
+   if( !pReader ){
+     return SQLITE_NOMEM;
+   }
+@@ -186589,7 +186606,7 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderPending(
+         if( nElem==nAlloc ){
+           Fts3HashElem **aElem2;
+           nAlloc += 16;
+-          aElem2 = (Fts3HashElem **)sqlite3_realloc(
++          aElem2 = (Fts3HashElem **)sqlite3_realloc64(
+               aElem, nAlloc*sizeof(Fts3HashElem *)
+           );
+           if( !aElem2 ){
+@@ -186923,7 +186940,7 @@ static int fts3NodeAddTerm(
+         ** this is not expected to be a serious problem.
+         */
+         assert( pTree->aData==(char *)&pTree[1] );
+-        pTree->aData = (char *)sqlite3_malloc(nReq);
++        pTree->aData = (char *)sqlite3_malloc64(nReq);
+         if( !pTree->aData ){
+           return SQLITE_NOMEM;
+         }
+@@ -186941,7 +186958,7 @@ static int fts3NodeAddTerm(
+ 
+       if( isCopyTerm ){
+         if( pTree->nMalloc<nTerm ){
+-          char *zNew = sqlite3_realloc(pTree->zMalloc, nTerm*2);
++          char *zNew = sqlite3_realloc64(pTree->zMalloc, (i64)nTerm*2);
+           if( !zNew ){
+             return SQLITE_NOMEM;
+           }
+@@ -186967,7 +186984,7 @@ static int fts3NodeAddTerm(
+   ** now. Instead, the term is inserted into the parent of pTree. If pTree
+   ** has no parent, one is created here.
+   */
+-  pNew = (SegmentNode *)sqlite3_malloc(sizeof(SegmentNode) + p->nNodeSize);
++  pNew = (SegmentNode *)sqlite3_malloc64(sizeof(SegmentNode) + p->nNodeSize);
+   if( !pNew ){
+     return SQLITE_NOMEM;
+   }
+@@ -187105,7 +187122,7 @@ static int fts3SegWriterAdd(
+ ){
+   int nPrefix;                    /* Size of term prefix in bytes */
+   int nSuffix;                    /* Size of term suffix in bytes */
+-  int nReq;                       /* Number of bytes required on leaf page */
++  i64 nReq;                       /* Number of bytes required on leaf page */
+   int nData;
+   SegmentWriter *pWriter = *ppWriter;
+ 
+@@ -187114,13 +187131,13 @@ static int fts3SegWriterAdd(
+     sqlite3_stmt *pStmt;
+ 
+     /* Allocate the SegmentWriter structure */
+-    pWriter = (SegmentWriter *)sqlite3_malloc(sizeof(SegmentWriter));
++    pWriter = (SegmentWriter *)sqlite3_malloc64(sizeof(SegmentWriter));
+     if( !pWriter ) return SQLITE_NOMEM;
+     memset(pWriter, 0, sizeof(SegmentWriter));
+     *ppWriter = pWriter;
+ 
+     /* Allocate a buffer in which to accumulate data */
+-    pWriter->aData = (char *)sqlite3_malloc(p->nNodeSize);
++    pWriter->aData = (char *)sqlite3_malloc64(p->nNodeSize);
+     if( !pWriter->aData ) return SQLITE_NOMEM;
+     pWriter->nSize = p->nNodeSize;
+ 
+@@ -187195,7 +187212,7 @@ static int fts3SegWriterAdd(
+   ** the buffer to make it large enough.
+   */
+   if( nReq>pWriter->nSize ){
+-    char *aNew = sqlite3_realloc(pWriter->aData, nReq);
++    char *aNew = sqlite3_realloc64(pWriter->aData, nReq);
+     if( !aNew ) return SQLITE_NOMEM;
+     pWriter->aData = aNew;
+     pWriter->nSize = nReq;
+@@ -187220,7 +187237,7 @@ static int fts3SegWriterAdd(
+   */
+   if( isCopyTerm ){
+     if( nTerm>pWriter->nMalloc ){
+-      char *zNew = sqlite3_realloc(pWriter->zMalloc, nTerm*2);
++      char *zNew = sqlite3_realloc64(pWriter->zMalloc, (i64)nTerm*2);
+       if( !zNew ){
+         return SQLITE_NOMEM;
+       }
+@@ -187528,12 +187545,12 @@ static void fts3ColumnFilter(
+ static int fts3MsrBufferData(
+   Fts3MultiSegReader *pMsr,       /* Multi-segment-reader handle */
+   char *pList,
+-  int nList
++  i64 nList
+ ){
+   if( nList>pMsr->nBuffer ){
+     char *pNew;
+     pMsr->nBuffer = nList*2;
+-    pNew = (char *)sqlite3_realloc(pMsr->aBuffer, pMsr->nBuffer);
++    pNew = (char *)sqlite3_realloc64(pMsr->aBuffer, pMsr->nBuffer);
+     if( !pNew ) return SQLITE_NOMEM;
+     pMsr->aBuffer = pNew;
+   }
+@@ -187589,7 +187606,7 @@ SQLITE_PRIVATE int sqlite3Fts3MsrIncrNext(
+       fts3SegReaderSort(pMsr->apSegment, nMerge, j, xCmp);
+ 
+       if( nList>0 && fts3SegReaderIsPending(apSegment[0]) ){
+-        rc = fts3MsrBufferData(pMsr, pList, nList+1);
++        rc = fts3MsrBufferData(pMsr, pList, (i64)nList+1);
+         if( rc!=SQLITE_OK ) return rc;
+         assert( (pMsr->aBuffer[nList] & 0xFE)==0x00 );
+         pList = pMsr->aBuffer;
+@@ -187726,11 +187743,11 @@ SQLITE_PRIVATE int sqlite3Fts3MsrIncrRestart(Fts3MultiSegReader *pCsr){
+   return SQLITE_OK;
+ }
+ 
+-static int fts3GrowSegReaderBuffer(Fts3MultiSegReader *pCsr, int nReq){
++static int fts3GrowSegReaderBuffer(Fts3MultiSegReader *pCsr, i64 nReq){
+   if( nReq>pCsr->nBuffer ){
+     char *aNew;
+     pCsr->nBuffer = nReq*2;
+-    aNew = sqlite3_realloc(pCsr->aBuffer, pCsr->nBuffer);
++    aNew = sqlite3_realloc64(pCsr->aBuffer, pCsr->nBuffer);
+     if( !aNew ){
+       return SQLITE_NOMEM;
+     }
+@@ -187821,7 +187838,8 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderStep(
+     ){
+       pCsr->nDoclist = apSegment[0]->nDoclist;
+       if( fts3SegReaderIsPending(apSegment[0]) ){
+-        rc = fts3MsrBufferData(pCsr, apSegment[0]->aDoclist, pCsr->nDoclist);
++        rc = fts3MsrBufferData(pCsr, apSegment[0]->aDoclist,
++                               (i64)pCsr->nDoclist);
+         pCsr->aDoclist = pCsr->aBuffer;
+       }else{
+         pCsr->aDoclist = apSegment[0]->aDoclist;
+@@ -187874,7 +187892,8 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderStep(
+ 
+           nByte = sqlite3Fts3VarintLen(iDelta) + (isRequirePos?nList+1:0);
+ 
+-          rc = fts3GrowSegReaderBuffer(pCsr, nByte+nDoclist+FTS3_NODE_PADDING);
++          rc = fts3GrowSegReaderBuffer(pCsr,
++                                   (i64)nByte+nDoclist+FTS3_NODE_PADDING);
+           if( rc ) return rc;
+ 
+           if( isFirst ){
+@@ -187900,7 +187919,7 @@ SQLITE_PRIVATE int sqlite3Fts3SegReaderStep(
+         fts3SegReaderSort(apSegment, nMerge, j, xCmp);
+       }
+       if( nDoclist>0 ){
+-        rc = fts3GrowSegReaderBuffer(pCsr, nDoclist+FTS3_NODE_PADDING);
++        rc = fts3GrowSegReaderBuffer(pCsr, (i64)nDoclist+FTS3_NODE_PADDING);
+         if( rc ) return rc;
+         memset(&pCsr->aBuffer[nDoclist], 0, FTS3_NODE_PADDING);
+         pCsr->aDoclist = pCsr->aBuffer;
+@@ -188613,7 +188632,7 @@ struct NodeReader {
+ static void blobGrowBuffer(Blob *pBlob, int nMin, int *pRc){
+   if( *pRc==SQLITE_OK && nMin>pBlob->nAlloc ){
+     int nAlloc = nMin;
+-    char *a = (char *)sqlite3_realloc(pBlob->a, nAlloc);
++    char *a = (char *)sqlite3_realloc64(pBlob->a, nAlloc);
+     if( a ){
+       pBlob->nAlloc = nAlloc;
+       pBlob->a = a;
+@@ -189407,7 +189426,7 @@ static int fts3RepackSegdirLevel(
+       if( nIdx>=nAlloc ){
+         int *aNew;
+         nAlloc += 16;
+-        aNew = sqlite3_realloc(aIdx, nAlloc*sizeof(int));
++        aNew = sqlite3_realloc64(aIdx, nAlloc*sizeof(int));
+         if( !aNew ){
+           rc = SQLITE_NOMEM;
+           break;
+@@ -189781,7 +189800,7 @@ SQLITE_PRIVATE int sqlite3Fts3Incrmerge(Fts3Table *p, int nMerge, int nMin){
+ 
+   /* Allocate space for the cursor, filter and writer objects */
+   const int nAlloc = sizeof(*pCsr) + sizeof(*pFilter) + sizeof(*pWriter);
+-  pWriter = (IncrmergeWriter *)sqlite3_malloc(nAlloc);
++  pWriter = (IncrmergeWriter *)sqlite3_malloc64(nAlloc);
+   if( !pWriter ) return SQLITE_NOMEM;
+   pFilter = (Fts3SegFilter *)&pWriter[1];
+   pCsr = (Fts3MultiSegReader *)&pFilter[1];
+@@ -190417,7 +190436,7 @@ SQLITE_PRIVATE int sqlite3Fts3DeferredTokenList(
+     return SQLITE_OK;
+   }
+ 
+-  pRet = (char *)sqlite3_malloc(p->pList->nData);
++  pRet = (char *)sqlite3_malloc64(p->pList->nData);
+   if( !pRet ) return SQLITE_NOMEM;
+ 
+   nSkip = sqlite3Fts3GetVarint(p->pList->aData, &dummy);
+@@ -190437,7 +190456,7 @@ SQLITE_PRIVATE int sqlite3Fts3DeferToken(
+   int iCol                        /* Column that token must appear in (or -1) */
+ ){
+   Fts3DeferredToken *pDeferred;
+-  pDeferred = sqlite3_malloc(sizeof(*pDeferred));
++  pDeferred = sqlite3_malloc64(sizeof(*pDeferred));
+   if( !pDeferred ){
+     return SQLITE_NOMEM;
+   }
+diff --git a/amalgamation_dev/sqlite3.h b/amalgamation_dev/sqlite3.h
+index 4ef161c20403dfc7f71e9b081a3dff8b1c615506..792848f39ccfeeefe9665cd3d164adfa3601223a 100644
+--- a/amalgamation_dev/sqlite3.h
++++ b/amalgamation_dev/sqlite3.h
+@@ -148,7 +148,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.38.5"
+ #define SQLITE_VERSION_NUMBER 3038005
+-#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 78d9c993d404cdfaa7fdd2973fa1052e3da9f66215cff9c5540ebe55c407alt1"
++#define SQLITE_SOURCE_ID      "2022-05-06 15:25:27 4cf1f47cc2533b1c8053f642fa0754cddb26df96804e4fa144dee4a78632alt1"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/ext/fts3/fts3.c b/ext/fts3/fts3.c
+index 097338f54770d946db93a7f814c759951dbb3535..6764bb13601386d1d8912004e6c53295c700c020 100644
+--- a/ext/fts3/fts3.c
++++ b/ext/fts3/fts3.c
+@@ -2888,7 +2888,7 @@ static int fts3TermSelectMerge(
+     **
+     ** Similar padding is added in the fts3DoclistOrMerge() function.
+     */
+-    pTS->aaOutput[0] = sqlite3_malloc(nDoclist + FTS3_VARINT_MAX + 1);
++    pTS->aaOutput[0] = sqlite3_malloc64((i64)nDoclist + FTS3_VARINT_MAX + 1);
+     pTS->anOutput[0] = nDoclist;
+     if( pTS->aaOutput[0] ){
+       memcpy(pTS->aaOutput[0], aDoclist, nDoclist);
+@@ -4742,7 +4742,7 @@ static int fts3EvalIncrPhraseNext(
+       if( bEof==0 ){
+         int nList = 0;
+         int nByte = a[p->nToken-1].nList;
+-        char *aDoclist = sqlite3_malloc(nByte+FTS3_BUFFER_PADDING);
++        char *aDoclist = sqlite3_malloc64((i64)nByte+FTS3_BUFFER_PADDING);
+         if( !aDoclist ) return SQLITE_NOMEM;
+         memcpy(aDoclist, a[p->nToken-1].pList, nByte+1);
+         memset(&aDoclist[nByte], 0, FTS3_BUFFER_PADDING);
+diff --git a/ext/fts3/fts3Int.h b/ext/fts3/fts3Int.h
+index 0626486edff3a74bfc6fa88c7fe244e06324e6e2..e821d6be31352d6878c3fca79c873009fece71d5 100644
+--- a/ext/fts3/fts3Int.h
++++ b/ext/fts3/fts3Int.h
+@@ -558,7 +558,7 @@ struct Fts3MultiSegReader {
+   int nAdvance;                   /* How many seg-readers to advance */
+   Fts3SegFilter *pFilter;         /* Pointer to filter object */
+   char *aBuffer;                  /* Buffer to merge doclists in */
+-  int nBuffer;                    /* Allocated size of aBuffer[] in bytes */
++  i64 nBuffer;                    /* Allocated size of aBuffer[] in bytes */
+ 
+   int iColFilter;                 /* If >=0, filter for this column */
+   int bRestart;
+diff --git a/ext/fts3/fts3_porter.c b/ext/fts3/fts3_porter.c
+index 8fb4c25daa0a9ff27d0f3699ff6bd7e0a6e4c3a5..fbe7913020a4e975ce997b02a619ca589dc1dc1d 100644
+--- a/ext/fts3/fts3_porter.c
++++ b/ext/fts3/fts3_porter.c
+@@ -621,7 +621,7 @@ static int porterNext(
+       if( n>c->nAllocated ){
+         char *pNew;
+         c->nAllocated = n+20;
+-        pNew = sqlite3_realloc(c->zToken, c->nAllocated);
++        pNew = sqlite3_realloc64(c->zToken, c->nAllocated);
+         if( !pNew ) return SQLITE_NOMEM;
+         c->zToken = pNew;
+       }
+diff --git a/ext/fts3/fts3_tokenizer1.c b/ext/fts3/fts3_tokenizer1.c
+index deea06d92bf895a1f513f863484cfbffd0a2faa1..78e5889da5250184db89879b059a66eb5637aa93 100644
+--- a/ext/fts3/fts3_tokenizer1.c
++++ b/ext/fts3/fts3_tokenizer1.c
+@@ -185,7 +185,7 @@ static int simpleNext(
+       if( n>c->nTokenAllocated ){
+         char *pNew;
+         c->nTokenAllocated = n+20;
+-        pNew = sqlite3_realloc(c->pToken, c->nTokenAllocated);
++        pNew = sqlite3_realloc64(c->pToken, c->nTokenAllocated);
+         if( !pNew ) return SQLITE_NOMEM;
+         c->pToken = pNew;
+       }
+diff --git a/ext/fts3/fts3_write.c b/ext/fts3/fts3_write.c
+index 201e5813c6fe870ae46f5e1f13da55d6710896d9..450deddfa70a7a3b16e34a199184b0e096f888c0 100644
+--- a/ext/fts3/fts3_write.c
++++ b/ext/fts3/fts3_write.c
+@@ -649,7 +649,7 @@ static int fts3PendingListAppendVarint(
+ 
+   /* Allocate or grow the PendingList as required. */
+   if( !p ){
+-    p = sqlite3_malloc(sizeof(*p) + 100);
++    p = sqlite3_malloc64(sizeof(*p) + 100);
+     if( !p ){
+       return SQLITE_NOMEM;
+     }
+@@ -658,14 +658,14 @@ static int fts3PendingListAppendVarint(
+     p->nData = 0;
+   }
+   else if( p->nData+FTS3_VARINT_MAX+1>p->nSpace ){
+-    int nNew = p->nSpace * 2;
+-    p = sqlite3_realloc(p, sizeof(*p) + nNew);
++    i64 nNew = p->nSpace * 2;
++    p = sqlite3_realloc64(p, sizeof(*p) + nNew);
+     if( !p ){
+       sqlite3_free(*pp);
+       *pp = 0;
+       return SQLITE_NOMEM;
+     }
+-    p->nSpace = nNew;
++    p->nSpace = (int)nNew;
+     p->aData = (char *)&p[1];
+   }
+ 
+@@ -1222,7 +1222,7 @@ int sqlite3Fts3ReadBlock(
+     int nByte = sqlite3_blob_bytes(p->pSegments);
+     *pnBlob = nByte;
+     if( paBlob ){
+-      char *aByte = sqlite3_malloc(nByte + FTS3_NODE_PADDING);
++      char *aByte = sqlite3_malloc64((i64)nByte + FTS3_NODE_PADDING);
+       if( !aByte ){
+         rc = SQLITE_NOMEM;
+       }else{
+@@ -1339,7 +1339,7 @@ static int fts3SegReaderNext(
+         int nTerm = fts3HashKeysize(pElem);
+         if( (nTerm+1)>pReader->nTermAlloc ){
+           sqlite3_free(pReader->zTerm);
+-          pReader->zTerm = (char*)sqlite3_malloc((nTerm+1)*2);
++          pReader->zTerm = (char*)sqlite3_malloc64(((i64)nTerm+1)*2);
+           if( !pReader->zTerm ) return SQLITE_NOMEM;
+           pReader->nTermAlloc = (nTerm+1)*2;
+         }
+@@ -1347,7 +1347,7 @@ static int fts3SegReaderNext(
+         pReader->zTerm[nTerm] = '\0';
+         pReader->nTerm = nTerm;
+ 
+-        aCopy = (char*)sqlite3_malloc(nCopy);
++        aCopy = (char*)sqlite3_malloc64(nCopy);
+         if( !aCopy ) return SQLITE_NOMEM;
+         memcpy(aCopy, pList->aData, nCopy);
+         pReader->nNode = pReader->nDoclist = nCopy;
+@@ -1634,7 +1634,7 @@ int sqlite3Fts3SegReaderNew(
+     nExtra = nRoot + FTS3_NODE_PADDING;
+   }
+ 
+-  pReader = (Fts3SegReader *)sqlite3_malloc(sizeof(Fts3SegReader) + nExtra);
++  pReader = (Fts3SegReader *)sqlite3_malloc64(sizeof(Fts3SegReader) + nExtra);
+   if( !pReader ){
+     return SQLITE_NOMEM;
+   }
+@@ -1726,7 +1726,7 @@ int sqlite3Fts3SegReaderPending(
+         if( nElem==nAlloc ){
+           Fts3HashElem **aElem2;
+           nAlloc += 16;
+-          aElem2 = (Fts3HashElem **)sqlite3_realloc(
++          aElem2 = (Fts3HashElem **)sqlite3_realloc64(
+               aElem, nAlloc*sizeof(Fts3HashElem *)
+           );
+           if( !aElem2 ){
+@@ -2060,7 +2060,7 @@ static int fts3NodeAddTerm(
+         ** this is not expected to be a serious problem. 
+         */
+         assert( pTree->aData==(char *)&pTree[1] );
+-        pTree->aData = (char *)sqlite3_malloc(nReq);
++        pTree->aData = (char *)sqlite3_malloc64(nReq);
+         if( !pTree->aData ){
+           return SQLITE_NOMEM;
+         }
+@@ -2078,7 +2078,7 @@ static int fts3NodeAddTerm(
+ 
+       if( isCopyTerm ){
+         if( pTree->nMalloc<nTerm ){
+-          char *zNew = sqlite3_realloc(pTree->zMalloc, nTerm*2);
++          char *zNew = sqlite3_realloc64(pTree->zMalloc, (i64)nTerm*2);
+           if( !zNew ){
+             return SQLITE_NOMEM;
+           }
+@@ -2104,7 +2104,7 @@ static int fts3NodeAddTerm(
+   ** now. Instead, the term is inserted into the parent of pTree. If pTree 
+   ** has no parent, one is created here.
+   */
+-  pNew = (SegmentNode *)sqlite3_malloc(sizeof(SegmentNode) + p->nNodeSize);
++  pNew = (SegmentNode *)sqlite3_malloc64(sizeof(SegmentNode) + p->nNodeSize);
+   if( !pNew ){
+     return SQLITE_NOMEM;
+   }
+@@ -2242,7 +2242,7 @@ static int fts3SegWriterAdd(
+ ){
+   int nPrefix;                    /* Size of term prefix in bytes */
+   int nSuffix;                    /* Size of term suffix in bytes */
+-  int nReq;                       /* Number of bytes required on leaf page */
++  i64 nReq;                       /* Number of bytes required on leaf page */
+   int nData;
+   SegmentWriter *pWriter = *ppWriter;
+ 
+@@ -2251,13 +2251,13 @@ static int fts3SegWriterAdd(
+     sqlite3_stmt *pStmt;
+ 
+     /* Allocate the SegmentWriter structure */
+-    pWriter = (SegmentWriter *)sqlite3_malloc(sizeof(SegmentWriter));
++    pWriter = (SegmentWriter *)sqlite3_malloc64(sizeof(SegmentWriter));
+     if( !pWriter ) return SQLITE_NOMEM;
+     memset(pWriter, 0, sizeof(SegmentWriter));
+     *ppWriter = pWriter;
+ 
+     /* Allocate a buffer in which to accumulate data */
+-    pWriter->aData = (char *)sqlite3_malloc(p->nNodeSize);
++    pWriter->aData = (char *)sqlite3_malloc64(p->nNodeSize);
+     if( !pWriter->aData ) return SQLITE_NOMEM;
+     pWriter->nSize = p->nNodeSize;
+ 
+@@ -2332,7 +2332,7 @@ static int fts3SegWriterAdd(
+   ** the buffer to make it large enough.
+   */
+   if( nReq>pWriter->nSize ){
+-    char *aNew = sqlite3_realloc(pWriter->aData, nReq);
++    char *aNew = sqlite3_realloc64(pWriter->aData, nReq);
+     if( !aNew ) return SQLITE_NOMEM;
+     pWriter->aData = aNew;
+     pWriter->nSize = nReq;
+@@ -2357,7 +2357,7 @@ static int fts3SegWriterAdd(
+   */
+   if( isCopyTerm ){
+     if( nTerm>pWriter->nMalloc ){
+-      char *zNew = sqlite3_realloc(pWriter->zMalloc, nTerm*2);
++      char *zNew = sqlite3_realloc64(pWriter->zMalloc, (i64)nTerm*2);
+       if( !zNew ){
+         return SQLITE_NOMEM;
+       }
+@@ -2665,12 +2665,12 @@ static void fts3ColumnFilter(
+ static int fts3MsrBufferData(
+   Fts3MultiSegReader *pMsr,       /* Multi-segment-reader handle */
+   char *pList,
+-  int nList
++  i64 nList
+ ){
+   if( nList>pMsr->nBuffer ){
+     char *pNew;
+     pMsr->nBuffer = nList*2;
+-    pNew = (char *)sqlite3_realloc(pMsr->aBuffer, pMsr->nBuffer);
++    pNew = (char *)sqlite3_realloc64(pMsr->aBuffer, pMsr->nBuffer);
+     if( !pNew ) return SQLITE_NOMEM;
+     pMsr->aBuffer = pNew;
+   }
+@@ -2726,7 +2726,7 @@ int sqlite3Fts3MsrIncrNext(
+       fts3SegReaderSort(pMsr->apSegment, nMerge, j, xCmp);
+ 
+       if( nList>0 && fts3SegReaderIsPending(apSegment[0]) ){
+-        rc = fts3MsrBufferData(pMsr, pList, nList+1);
++        rc = fts3MsrBufferData(pMsr, pList, (i64)nList+1);
+         if( rc!=SQLITE_OK ) return rc;
+         assert( (pMsr->aBuffer[nList] & 0xFE)==0x00 );
+         pList = pMsr->aBuffer;
+@@ -2863,11 +2863,11 @@ int sqlite3Fts3MsrIncrRestart(Fts3MultiSegReader *pCsr){
+   return SQLITE_OK;
+ }
+ 
+-static int fts3GrowSegReaderBuffer(Fts3MultiSegReader *pCsr, int nReq){
++static int fts3GrowSegReaderBuffer(Fts3MultiSegReader *pCsr, i64 nReq){
+   if( nReq>pCsr->nBuffer ){
+     char *aNew;
+     pCsr->nBuffer = nReq*2;
+-    aNew = sqlite3_realloc(pCsr->aBuffer, pCsr->nBuffer);
++    aNew = sqlite3_realloc64(pCsr->aBuffer, pCsr->nBuffer);
+     if( !aNew ){
+       return SQLITE_NOMEM;
+     }
+@@ -2958,7 +2958,8 @@ int sqlite3Fts3SegReaderStep(
+     ){
+       pCsr->nDoclist = apSegment[0]->nDoclist;
+       if( fts3SegReaderIsPending(apSegment[0]) ){
+-        rc = fts3MsrBufferData(pCsr, apSegment[0]->aDoclist, pCsr->nDoclist);
++        rc = fts3MsrBufferData(pCsr, apSegment[0]->aDoclist,
++                               (i64)pCsr->nDoclist);
+         pCsr->aDoclist = pCsr->aBuffer;
+       }else{
+         pCsr->aDoclist = apSegment[0]->aDoclist;
+@@ -3011,7 +3012,8 @@ int sqlite3Fts3SegReaderStep(
+ 
+           nByte = sqlite3Fts3VarintLen(iDelta) + (isRequirePos?nList+1:0);
+ 
+-          rc = fts3GrowSegReaderBuffer(pCsr, nByte+nDoclist+FTS3_NODE_PADDING);
++          rc = fts3GrowSegReaderBuffer(pCsr,
++                                   (i64)nByte+nDoclist+FTS3_NODE_PADDING);
+           if( rc ) return rc;
+ 
+           if( isFirst ){
+@@ -3037,7 +3039,7 @@ int sqlite3Fts3SegReaderStep(
+         fts3SegReaderSort(apSegment, nMerge, j, xCmp);
+       }
+       if( nDoclist>0 ){
+-        rc = fts3GrowSegReaderBuffer(pCsr, nDoclist+FTS3_NODE_PADDING);
++        rc = fts3GrowSegReaderBuffer(pCsr, (i64)nDoclist+FTS3_NODE_PADDING);
+         if( rc ) return rc;
+         memset(&pCsr->aBuffer[nDoclist], 0, FTS3_NODE_PADDING);
+         pCsr->aDoclist = pCsr->aBuffer;
+@@ -3750,7 +3752,7 @@ struct NodeReader {
+ static void blobGrowBuffer(Blob *pBlob, int nMin, int *pRc){
+   if( *pRc==SQLITE_OK && nMin>pBlob->nAlloc ){
+     int nAlloc = nMin;
+-    char *a = (char *)sqlite3_realloc(pBlob->a, nAlloc);
++    char *a = (char *)sqlite3_realloc64(pBlob->a, nAlloc);
+     if( a ){
+       pBlob->nAlloc = nAlloc;
+       pBlob->a = a;
+@@ -4544,7 +4546,7 @@ static int fts3RepackSegdirLevel(
+       if( nIdx>=nAlloc ){
+         int *aNew;
+         nAlloc += 16;
+-        aNew = sqlite3_realloc(aIdx, nAlloc*sizeof(int));
++        aNew = sqlite3_realloc64(aIdx, nAlloc*sizeof(int));
+         if( !aNew ){
+           rc = SQLITE_NOMEM;
+           break;
+@@ -4918,7 +4920,7 @@ int sqlite3Fts3Incrmerge(Fts3Table *p, int nMerge, int nMin){
+ 
+   /* Allocate space for the cursor, filter and writer objects */
+   const int nAlloc = sizeof(*pCsr) + sizeof(*pFilter) + sizeof(*pWriter);
+-  pWriter = (IncrmergeWriter *)sqlite3_malloc(nAlloc);
++  pWriter = (IncrmergeWriter *)sqlite3_malloc64(nAlloc);
+   if( !pWriter ) return SQLITE_NOMEM;
+   pFilter = (Fts3SegFilter *)&pWriter[1];
+   pCsr = (Fts3MultiSegReader *)&pFilter[1];
+@@ -5554,7 +5556,7 @@ int sqlite3Fts3DeferredTokenList(
+     return SQLITE_OK;
+   }
+ 
+-  pRet = (char *)sqlite3_malloc(p->pList->nData);
++  pRet = (char *)sqlite3_malloc64(p->pList->nData);
+   if( !pRet ) return SQLITE_NOMEM;
+ 
+   nSkip = sqlite3Fts3GetVarint(p->pList->aData, &dummy);
+@@ -5574,7 +5576,7 @@ int sqlite3Fts3DeferToken(
+   int iCol                        /* Column that token must appear in (or -1) */
+ ){
+   Fts3DeferredToken *pDeferred;
+-  pDeferred = sqlite3_malloc(sizeof(*pDeferred));
++  pDeferred = sqlite3_malloc64(sizeof(*pDeferred));
+   if( !pDeferred ){
+     return SQLITE_NOMEM;
+   }
+diff --git a/manifest b/manifest
+index 0b6d0669f9997bee8ab46af1de318178c6190f17..6174c1a449288c840d082fdd8bbb60b31b699ced 100644
+--- a/manifest
++++ b/manifest
+@@ -85,25 +85,25 @@ F ext/fts3/README.content b9078d0843a094d86af0d48dffbff13c906702b4c3558012e67b9c
+ F ext/fts3/README.syntax a19711dc5458c20734b8e485e75fb1981ec2427a
+ F ext/fts3/README.tokenizers b92bdeb8b46503f0dd301d364efc5ef59ef9fa8e2758b8e742f39fa93a2e422d
+ F ext/fts3/README.txt 8c18f41574404623b76917b9da66fcb0ab38328d
+-F ext/fts3/fts3.c 6634a3854e70afa8710ee5e3a7253cd0f0c89d4cce207fcbfe2ead3bad1db7d5
++F ext/fts3/fts3.c 0724f5a10cb5d6096d0d8b453f4d2284a3fe2896423378355671b98f9a5b7441
+ F ext/fts3/fts3.h 3a10a0af180d502cecc50df77b1b22df142817fe
+-F ext/fts3/fts3Int.h dafdc371f9fbab175744b06cfe019d5f040cdfdbd11fea752f5dc28d45b04c05
++F ext/fts3/fts3Int.h ae2a44b04cddb5fb35cac4ea5f7f819b2894fd258186465777a19f7acfdf84ed
+ F ext/fts3/fts3_aux.c f0dc9bd98582615b7750218899bd0c729879b6bbf94d1be57ca1833ff49afc6f
+ F ext/fts3/fts3_expr.c 903bfb9433109fffb10e910d7066c49cbf8eeae316adc93f0499c4da7dfc932a
+ F ext/fts3/fts3_hash.c 8b6e31bfb0844c27dc6092c2620bdb1fca17ed613072db057d96952c6bdb48b7
+ F ext/fts3/fts3_hash.h 39cf6874dc239d6b4e30479b1975fe5b22a3caaf
+ F ext/fts3/fts3_icu.c 305ce7fb6036484085b5556a9c8e62acdc7763f0f4cdf5fd538212a9f3720116
+-F ext/fts3/fts3_porter.c 3565faf04b626cddf85f03825e86056a4562c009
++F ext/fts3/fts3_porter.c b5e72d1e11d55905c5997e7e1d6f5a9111f1e83f
+ F ext/fts3/fts3_snippet.c f9a8149173553113f3c495a503843e30028b5dc3723d0ca798c5ad6142e130e6
+ F ext/fts3/fts3_term.c f45a1e7c6ef464abb1231245d123dae12266b69e05cc56e14045b76591ae92d1
+ F ext/fts3/fts3_test.c d8d7b2734f894e8a489987447658e374cdd3a3bc8575c401decf1911cb7c6454
+ F ext/fts3/fts3_tokenize_vtab.c a95feda3590f3c3e17672fe35b67ea6112471aeea4c07ef7744a6606b66549aa
+ F ext/fts3/fts3_tokenizer.c 6d8fc150c48238955d5182bf661498db0dd473c8a2a80e00c16994a646fa96e7
+ F ext/fts3/fts3_tokenizer.h 64c6ef6c5272c51ebe60fc607a896e84288fcbc3
+-F ext/fts3/fts3_tokenizer1.c 5c98225a53705e5ee34824087478cf477bdb7004
++F ext/fts3/fts3_tokenizer1.c 544d90f9991cb3d434d2c1d5acf40c6bf4b9b204
+ F ext/fts3/fts3_unicode.c de426ff05c1c2e7bce161cf6b706638419c3a1d9c2667de9cb9dc0458c18e226
+ F ext/fts3/fts3_unicode2.c 416eb7e1e81142703520d284b768ca2751d40e31fa912cae24ba74860532bf0f
+-F ext/fts3/fts3_write.c 3109c1a232da86474e196cc7db754445a354409f141e08cb11c846cdb17bdf31
++F ext/fts3/fts3_write.c a306e0c22176515bf89c4d2007d3162f88221a3f471b30ae4cf1f1635f03fbd1
+ F ext/fts3/fts3speed.tcl b54caf6a18d38174f1a6e84219950d85e98bb1e9
+ F ext/fts3/tool/fts3cov.sh c331d006359456cf6f8f953e37f2b9c7d568f3863f00bb5f7eb87fea4ac01b73
+ F ext/fts3/tool/fts3view.c 413c346399159df81f86c4928b7c4a455caab73bfbc8cd68f950f632e5751674
+@@ -618,7 +618,7 @@ F src/test_wsd.c 41cadfd9d97fe8e3e4e44f61a4a8ccd6f7ca8fe9
+ F src/threads.c 4ae07fa022a3dc7c5beb373cf744a85d3c5c6c3c
+ F src/tokenize.c 6661a9fa660ecbd3ac0df1acd2ec788b3a8122b4316022bcdaf476ea6754a8de
+ F src/treeview.c a84b57d15e46007d8b1ae249344b3f0b7f3c62def908b98baaa54935a57c8476
+-F src/trigger.c 5fc3cde35cc4de510be68bb2db4dcff0ce0e1625f43e28a0920be9a6f010cd3f
++F src/trigger.c bc61b12589273cd63aa7a1c621fa1f093ca88f3c793b478affb226dec3a3a48a
+ F src/update.c f875b0d59da5c3055a0b2ac20560e1650229c6787e78de5e9836267b5cbb8359
+ F src/upsert.c 8789047a8f0a601ea42fa0256d1ba3190c13746b6ba940fe2d25643a7e991937
+ F src/utf.c ee39565f0843775cc2c81135751ddd93eceb91a673ea2c57f61c76f288b041a0
+diff --git a/src/trigger.c b/src/trigger.c
+index 5df6b0c0bc8c19d85341cc62a4e8ac35a98e75d7..63e109d784368e5879affc9076c4f40ad6e7212d 100644
+--- a/src/trigger.c
++++ b/src/trigger.c
+@@ -354,6 +354,23 @@ void sqlite3FinishTrigger(
+     Vdbe *v;
+     char *z;
+ 
++    /* If this is a new CREATE TABLE statement, and if shadow tables
++    ** are read-only, and the trigger makes a change to a shadow table,
++    ** then raise an error - do not allow the trigger to be created. */
++    if( sqlite3ReadOnlyShadowTables(db) ){
++      TriggerStep *pStep;
++      for(pStep=pTrig->step_list; pStep; pStep=pStep->pNext){
++        if( pStep->zTarget!=0
++         && sqlite3ShadowTableName(db, pStep->zTarget)
++        ){
++          sqlite3ErrorMsg(pParse,
++            "trigger \"%s\" may not write to shadow table \"%s\"",
++            pTrig->zName, pStep->zTarget);
++          goto triggerfinish_cleanup;
++        }
++      }
++    }
++
+     /* Make an entry in the sqlite_schema table */
+     v = sqlite3GetVdbe(pParse);
+     if( v==0 ) goto triggerfinish_cleanup;
