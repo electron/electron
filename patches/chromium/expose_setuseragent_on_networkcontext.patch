@@ -63,7 +63,7 @@ index 9c249984078c92a4470509ae7120c6bd561cd83a..140a954bc4e99f9742f0aeab8bdcf666
    void SetEnableReferrers(bool enable_referrers) override;
    void SetEnablePreconnect(bool enable_preconnect) override;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index fc39e11a4a66e84a398248c1ff314940dc17105f..c1153da3470ea836b0c5e065fba5ed02251ebd99 100644
+index a420ab8d9367596ffc5be6da6b38ff484d47cd50..338e08cf8fd749c543455c7415f8d27614696d1a 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -1106,6 +1106,9 @@ interface NetworkContext {

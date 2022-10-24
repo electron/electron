@@ -113,7 +113,7 @@ index 65ee7d921294a8b135f06666e8ef66faf281afc4..b8a789107ab8793f248ff592667a4ecd
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 05fb3299e4eea19aeef8eb618ec81cb721a36cae..46d1cd2f96d68d36f6dd080fd69ffced9fa89ca0 100644
+index 5d66bbea7b30a4145745676749ab49ecd5c93dbc..1a923782adf35c31571c4af459027966e2505c43 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -48,6 +48,7 @@ struct NotificationDatabaseData;

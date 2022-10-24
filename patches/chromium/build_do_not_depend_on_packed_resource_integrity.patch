@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index d090510a8dde6d98a01532abbec0da2ecac3c94e..c122fb37173d3039116009eaa1da08e36b9bd5d8 100644
+index 9c67058e34e1e82a4e0083dce9ecb233a40ae907..8e766fdcd51b76a7dc371bde0376a355d41e8d8d 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -180,11 +180,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index d090510a8dde6d98a01532abbec0da2ecac3c94e..c122fb37173d3039116009eaa1da08e3
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 373df9385bfc004f428c2f338bcfa1b18dc360e9..00e9cd9fae0c8688a84976989c3d5b3f020692e5 100644
+index 107e71258491cd6ff57006689b09f97748d504bd..be47376b71cd86c188d9c7f80adcc54d19816fd9 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4687,7 +4687,7 @@ static_library("browser") {
+@@ -4692,7 +4692,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index 373df9385bfc004f428c2f338bcfa1b18dc360e9..00e9cd9fae0c8688a84976989c3d5b3f
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 5680e6bcfff7e0dc667e23b7f67b05f2a04ebc1f..369a1772f99c90d969488e88490f133248f28c8a 100644
+index 0c3fccfb1fea9e57a49a3b05b419974dcf09821a..5a3549987c0be9d21d16edfdaa1a5427cf99b618 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -6170,7 +6170,6 @@ test("unit_tests") {
@@ -68,7 +68,7 @@ index 5680e6bcfff7e0dc667e23b7f67b05f2a04ebc1f..369a1772f99c90d969488e88490f1332
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7125,7 +7128,7 @@ test("unit_tests") {
+@@ -7120,7 +7123,7 @@ test("unit_tests") {
      }
  
      deps += [
@@ -77,7 +77,7 @@ index 5680e6bcfff7e0dc667e23b7f67b05f2a04ebc1f..369a1772f99c90d969488e88490f1332
        "//chrome/browser/autofill_assistant/password_change/vector_icons:vector_icons",
        "//chrome/browser/enterprise/connectors/analysis:features",
        "//chrome/browser/media/router:test_support",
-@@ -7248,6 +7251,10 @@ test("unit_tests") {
+@@ -7243,6 +7246,10 @@ test("unit_tests") {
      }
    }
  

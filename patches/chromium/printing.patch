@@ -78,7 +78,7 @@ index a1372cc90fc84b159e9952fa747e36360ae1a170..429b93910457675347b3b80e232e71aa
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 51bab147b3c353313e91b1ff09b735bfdde9b19a..d311ed33b2cf8fc459af7c3b7dd0c0ff9f2fdc51 100644
+index ec5386f5bef38a5f8bbde193e5f61de36f50494f..2348993386efbdf991bd749b482baee1a6892b92 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,7 +20,6 @@
@@ -97,7 +97,7 @@ index 51bab147b3c353313e91b1ff09b735bfdde9b19a..d311ed33b2cf8fc459af7c3b7dd0c0ff
  #include "printing/backend/print_backend.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/mojom/print.mojom.h"
-@@ -208,16 +208,19 @@ void PrintJobWorker::SetSettings(base::Value::Dict new_settings,
+@@ -211,16 +211,19 @@ void PrintJobWorker::SetSettings(base::Value::Dict new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && defined(USE_CUPS)
    }
  
@@ -796,10 +796,10 @@ index 51a5497b809cda82b223138f43507172a9f066ae..71227492fd87e577518f3bf55ded37b0
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d574fff0477b86c7b0151c6bcb8f9a0be06e1f89..a7dce3d8bd3e6b825a7ac32398618cf219aba360 100644
+index 77f7de61ab9eab5945c81324bb1b2f98d1a164d8..c3244bcf534fce9827379f6ae2ebf76c62eb5c38 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2822,8 +2822,9 @@ source_set("browser") {
+@@ -2820,8 +2820,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -811,26 +811,6 @@ index d574fff0477b86c7b0151c6bcb8f9a0be06e1f89..a7dce3d8bd3e6b825a7ac32398618cf2
  
      if (is_chromeos) {
        sources += [
-diff --git a/content/browser/utility_sandbox_delegate_win.cc b/content/browser/utility_sandbox_delegate_win.cc
-index cbb37171f35d8219409d429cd4fc401b44f73e5f..e7d28451b946670953016acbacf45b66f3ed1d27 100644
---- a/content/browser/utility_sandbox_delegate_win.cc
-+++ b/content/browser/utility_sandbox_delegate_win.cc
-@@ -101,6 +101,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetConfig* config) {
-   return true;
- }
- 
-+#if BUILDFLAG(ENABLE_PRINTING)
- // Sets the sandbox policy for the print backend service process.
- bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
-   DCHECK(!config->IsConfigured());
-@@ -114,6 +115,7 @@ bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
-   config->SetDelayedIntegrityLevel(sandbox::INTEGRITY_LEVEL_LOW);
-   return true;
- }
-+#endif
- 
- std::string UtilityAppContainerId(base::CommandLine& cmd_line) {
-   return base::WideToUTF8(cmd_line.GetProgram().value());
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
 index 3a9e75c229f028dcbfb2d7b9294bc42989cb4c1e..a890c5517c0708034bbc6b9b606c990a9ae8be7a 100644
 --- a/printing/printing_context.cc

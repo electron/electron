@@ -127,7 +127,7 @@ index 4dacb65d29ae2523736704a0127b0a8150f739a0..3115d134232f6a10def44bf5c6a2a4b8
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index e80e3d192f615140cad4f804cf08f8dbc8590834..d5980c0c190c03fef24561d1a224b52b1e900ffa 100644
+index 201e468d272af0fbd263cf030dbd499ef1fff413..6d79e02baef84b01e98b03c670e8bb2b63a853ed 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -842,8 +842,7 @@ class Browser : public TabStripModelObserver,
@@ -155,7 +155,7 @@ index 45a27e0b458d5ad30619727aa54e9136aab13546..1e1c67b5c9eec3ce050d9702276a02b2
    // uses this to spawn new windows/tabs, which is also not allowed for
    // local presentations.
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.h b/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
-index c5ac95f3f5de7a71a52dc3ad6ec7cdd6da8a7f75..cd5b29a7df6bad940dbe9dbf972a58c6deef1fb8 100644
+index 9f36b1721b154ebd31a593800d5eb1f5930314cc..5c0f9cb89b675b58d7334c71c6546afb58498c03 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
 @@ -105,8 +105,7 @@ class PresentationReceiverWindowController final
@@ -167,7 +167,7 @@ index c5ac95f3f5de7a71a52dc3ad6ec7cdd6da8a7f75..cd5b29a7df6bad940dbe9dbf972a58c6
 +      const content::mojom::CreateNewWindowParams& params) override;
  
    // The profile used for the presentation.
-   raw_ptr<Profile> otr_profile_;
+   raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 index f1561f1759be766d00543a868c9cd931dc17a72a..e2502b1f9219841857da4a27d5723052b3915757 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
@@ -400,7 +400,7 @@ index a4e4703e5c2a3e668806e61ca5437a6a571e73d2..f1198ac26f34c68efd70e77453b0705c
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 105c29d75c54fe5ff2909af38f52bb00fdee3d05..3fbb4beca0e0b727858d4966a509851700baa167 100644
+index 63a3eb7b4a73e8d28662ca1175008b7e4225ed36..df1fd8f901507854bc6fbed5ba8b94c15b58b56d 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
 @@ -155,8 +155,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,

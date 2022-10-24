@@ -72,10 +72,10 @@ index f3b681ec44c57f69c57390f31bd951cef8de3f0c..2fbe866ddf50d7eb324b0e2e4d120f4c
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 33cd38a8e24a2db922987a957a115a5892382a59..b07f239296667e0d3809ccee255d608e7b0d0c9b 100644
+index c4a436ed447bc8e44757bd6d1742309d4aa2192f..f6ac001411c3210d5029a8a6e5e64ad4d1e1ccc1 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3811,13 +3811,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3812,13 +3812,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -99,7 +99,7 @@ index 33cd38a8e24a2db922987a957a115a5892382a59..b07f239296667e0d3809ccee255d608e
    if (!is_initial_state) {
      for (auto& observer : observers_)
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index ac38111515f40630f2d16c8425e39775e4118818..0a4890ed17305e215eb8963d27767d77471eebb7 100644
+index fd9c8d96da0f5e962c47d60d98083833cfdf0628..b32d06420753fe22385bb6969e03b0452de374eb 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -426,6 +426,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -110,7 +110,7 @@ index ac38111515f40630f2d16c8425e39775e4118818..0a4890ed17305e215eb8963d27767d77
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -879,6 +880,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -881,6 +882,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  
