@@ -117,6 +117,7 @@
   "parallel/test-trace-events-v8",
   "parallel/test-trace-events-vm",
   "parallel/test-trace-events-worker-metadata",
+  "parallel/test-wasm-web-api",
   "parallel/test-webcrypto-derivebits-cfrg",
   "parallel/test-webcrypto-derivekey-cfrg",
   "parallel/test-webcrypto-encrypt-decrypt",
