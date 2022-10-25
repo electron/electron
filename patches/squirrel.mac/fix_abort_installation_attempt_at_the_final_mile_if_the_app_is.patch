@@ -63,7 +63,7 @@ index 2c515ffdd67052a08ee8155c0e46b57e9721a0e5..ddec9e986f6ab0e1171eae80ddbef458
 -			NSLog(@"Installation error: %@", error);
 -			exit(EXIT_FAILURE);
 +			if ([[error domain] isEqual:SQRLInstallerErrorDomain] && [error code] == SQRLInstallerErrorAppStillRunning) {
-+				NSLog(@"Installation error but happy: %@", error);
++				NSLog(@"Installation cancelled: %@", error);
 +				clearInstallationAttempts(applicationIdentifier);
 +				exit(EXIT_SUCCESS);
 +			} else {
