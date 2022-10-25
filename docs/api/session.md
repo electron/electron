@@ -385,6 +385,50 @@ callback from `select-serial-port` is called.  This event is intended for use
 when using a UI to ask users to pick a port so that the UI can be updated
 to remove the specified port.
 
+#### Event: 'serial-port-revoked'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `port` [SerialPort](structures/serial-port.md)
+  * `frame` [WebFrameMain](web-frame-main.md)
+  * `origin` string - The origin that the device has been revoked from.
+
+Emitted after `SerialPort.forget()` has been called.  This event can be used
+to help maintain persistent storage of permissions when `setDevicePermissionHandler` is used.
+
+```js
+// Browser Process
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600
+  })
+
+  win.webContents.session.on('serial-port-revoked', (event, details) => {
+    console.log(`Access revoked for serial device from origin ${details.origin}`)
+  })
+})
+```
+
+```js
+// Renderer Process
+
+const portConnect = async () => {
+  // Request a port.
+  const port = await navigator.serial.requestPort()
+
+  // Wait for the serial port to open.
+  await port.open({ baudRate: 9600 })
+
+  // ...later, revoke access to the serial port.
+  await port.forget()
+}
+```
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:

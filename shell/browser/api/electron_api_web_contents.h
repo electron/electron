@@ -46,6 +46,7 @@
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
+#include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
@@ -227,7 +228,7 @@ class WebContents : public ExclusiveAccessContext,
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
   void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
-                    PrintViewManagerElectron::PrintResult print_result,
+                    print_to_pdf::PdfPrintResult print_result,
                     scoped_refptr<base::RefCountedMemory> data);
 #endif
 

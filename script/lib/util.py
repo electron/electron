@@ -15,7 +15,9 @@ except ImportError:
   from urllib2 import urlopen
 import zipfile
 
-from lib.config import is_verbose_mode
+# from lib.config import is_verbose_mode
+def is_verbose_mode():
+  return False
 
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -149,11 +151,17 @@ def get_electron_branding():
   with open(branding_file_path) as f:
     return json.load(f)
 
+
+cached_electron_version = None
 def get_electron_version():
-  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  version_file = os.path.join(SOURCE_ROOT, 'ELECTRON_VERSION')
-  with open(version_file) as f:
-    return 'v' + f.read().strip()
+  global cached_electron_version
+  if cached_electron_version is None:
+    cached_electron_version = str.strip(execute([
+      'node',
+      '-p',
+      'require("./script/lib/get-version").getElectronVersion()'
+    ], cwd=ELECTRON_DIR).decode())
+  return cached_electron_version
 
 def store_artifact(prefix, key_prefix, files):
   # Azure Storage

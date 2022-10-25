@@ -113,6 +113,7 @@ A `string` representing the current process's type, can be:
 * `browser` - The main process
 * `renderer` - A renderer process
 * `worker` - In a web worker
+* `utility` - In a node process launched as a service
 
 ### `process.versions.chrome` _Readonly_
 
@@ -133,6 +134,11 @@ A `string` (optional) representing a globally unique ID of the current JavaScrip
 Each frame has its own JavaScript context. When contextIsolation is enabled, the isolated
 world also has a separate JavaScript context.
 This property is only available in the renderer process.
+
+### `process.parentPort`
+
+A [`Electron.ParentPort`](parent-port.md) property if this is a [`UtilityProcess`](utility-process.md)
+(or `null` otherwise) allowing communication with the parent process.
 
 ## Methods
 

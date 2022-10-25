@@ -232,6 +232,8 @@ static_library("chrome") {
       "//chrome/browser/printing/printing_service.h",
       "//components/printing/browser/print_to_pdf/pdf_print_job.cc",
       "//components/printing/browser/print_to_pdf/pdf_print_job.h",
+      "//components/printing/browser/print_to_pdf/pdf_print_result.cc",
+      "//components/printing/browser/print_to_pdf/pdf_print_result.h",
       "//components/printing/browser/print_to_pdf/pdf_print_utils.cc",
       "//components/printing/browser/print_to_pdf/pdf_print_utils.h",
     ]
