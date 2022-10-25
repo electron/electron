@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 6aef46800029ba0e4d740038383d19ca746f125f..4293ce7e527fb489eebbff0724b6d81e04f35569 100644
+index 6ae237ee6462e6fecf1b3600ab418fcf47ae0c1c..00110f431fde28578c81ccc676be640568d9054d 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -988,7 +988,6 @@ if (is_win) {
+@@ -990,7 +990,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 6aef46800029ba0e4d740038383d19ca746f125f..4293ce7e527fb489eebbff0724b6d81e
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -997,6 +996,10 @@ if (is_win) {
+@@ -999,6 +998,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -553,7 +553,7 @@ index 2273775eccac63960bdea6124e657b4177120ad8..a94d3ecb7fde44888ef85df1cda1c1b5
                         PrintWithParamsCallback callback) override;
    void PrintForSystemDialog() override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 220a751903f8bec318e5d7f48f35333b3b1c155b..60c54f6e407ba89894847b7e34f0ea9e3afd63af 100644
+index 72a4e933b8aface53db92884b245d8b92d950917..b7aa4fd0e96e43a6ef0be6c9fbe720b235956714 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -289,7 +289,7 @@ union PrintWithParamsResult {
@@ -565,7 +565,7 @@ index 220a751903f8bec318e5d7f48f35333b3b1c155b..60c54f6e407ba89894847b7e34f0ea9e
  
    // Requests the frame to be printed with specified parameters. This is used
    // to programmatically produce PDF by request from the browser (e.g. over
-@@ -372,7 +372,7 @@ interface PrintManagerHost {
+@@ -373,7 +373,7 @@ interface PrintManagerHost {
    // Request the print settings from the user. This step is about showing
    // UI to the user to select the final print settings.
    [Sync]
@@ -796,10 +796,10 @@ index 51a5497b809cda82b223138f43507172a9f066ae..71227492fd87e577518f3bf55ded37b0
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 77f7de61ab9eab5945c81324bb1b2f98d1a164d8..c3244bcf534fce9827379f6ae2ebf76c62eb5c38 100644
+index 2c2d98942ace8ff38a4b626b4067e496da7acbfe..2a6bb917fe0886fbc7aeeabf1489c424fbb89f6a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2820,8 +2820,9 @@ source_set("browser") {
+@@ -2822,8 +2822,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

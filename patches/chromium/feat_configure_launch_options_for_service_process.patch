@@ -143,7 +143,7 @@ index e547f42bc0d06b485797ccc1605969259631831f..0f3041f4a5b636440d9579303721f2ae
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 171b8440c25580d717f87c4f68bd8f4734b5fcf1..35826081dc3fc2f17fd7ceaf25c2c014ae623304 100644
+index 1bb75bb14aa1afd9ebebf343b1a9436cd3f790f1..9260fa0eba56eca9c24a16880b07efb5481c15a1 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -108,11 +108,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -187,7 +187,7 @@ index 171b8440c25580d717f87c4f68bd8f4734b5fcf1..35826081dc3fc2f17fd7ceaf25c2c014
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -356,9 +376,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -358,9 +378,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
  
