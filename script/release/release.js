@@ -12,8 +12,6 @@ const args = require('minimist')(process.argv.slice(2), {
 const fs = require('fs');
 const { execSync } = require('child_process');
 const got = require('got');
-const pkg = require('../../package.json');
-const pkgVersion = `v${pkg.version}`;
 const path = require('path');
 const temp = require('temp').track();
 const { URL } = require('url');
@@ -25,7 +23,10 @@ const pass = '✓'.green;
 const fail = '✗'.red;
 
 const { ELECTRON_DIR } = require('../lib/utils');
+const { getElectronVersion } = require('../lib/get-version');
 const getUrlHash = require('./get-url-hash');
+
+const pkgVersion = `v${getElectronVersion()}`;
 
 const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
