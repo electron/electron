@@ -5,6 +5,7 @@ import * as express from 'express';
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
+import * as psList from 'ps-list';
 import { AddressInfo } from 'net';
 import { ifdescribe, ifit } from './spec-helpers';
 import * as uuid from 'uuid';
@@ -15,7 +16,7 @@ const features = process._linkedBinding('electron_common_features');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 // We can only test the auto updater on darwin non-component builds
-ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch === 'arm64') && !process.mas && !features.isComponentBuild())('autoUpdater behavior', function () {
+ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch === 'arm64') && !process.mas && !features.isComponentBuild()).only('autoUpdater behavior', function () {
   this.timeout(120000);
 
   let identity = '';
@@ -93,6 +94,16 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
 
   const launchApp = (appPath: string, args: string[] = []) => {
     return spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
+  };
+
+  const spawnAppWithHandle = (appPath: string, args: string[] = []) => {
+    return cp.spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
+  };
+
+  const getRunningShipIts = async (appPath: string) => {
+    const processes = await psList();
+    const activeShipIts = processes.filter(p => p.name === 'ShipIt' && p.cmd!.startsWith(appPath));
+    return activeShipIts;
   };
 
   const withTempDirectory = async (fn: (dir: string) => Promise<void>, autoCleanUp = true) => {
@@ -320,6 +331,71 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
         expect(requests).to.have.lengthOf(3);
         expect(requests[2].url).to.equal('/update-check/updated/2.0.0');
         expect(requests[2].header('user-agent')).to.include('Electron/');
+      });
+    });
+
+    it('should abort the update if the application is still running when ShipIt kicks off', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update',
+        endFixture: 'update'
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            url: `http://localhost:${port}/update-file`,
+            name: 'My Release Name',
+            notes: 'Theses are some release notes innit',
+            pub_date: (new Date()).toString()
+          });
+        });
+
+        enum FlipFlop {
+          INITIAL,
+          FLIPPED,
+          FLOPPED,
+        }
+
+        const shipItFlipFlopPromise = new Promise<void>((resolve) => {
+          let state = FlipFlop.INITIAL;
+          const checker = setInterval(async () => {
+            const running = await getRunningShipIts(appPath);
+            switch (state) {
+              case FlipFlop.INITIAL: {
+                if (running.length) state = FlipFlop.FLIPPED;
+                break;
+              }
+              case FlipFlop.FLIPPED: {
+                if (!running.length) state = FlipFlop.FLOPPED;
+                break;
+              }
+            }
+            if (state === FlipFlop.FLOPPED) {
+              clearInterval(checker);
+              resolve();
+            }
+          }, 500);
+        });
+
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        const retainerHandle = spawnAppWithHandle(appPath, ['remain-open']);
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 0);
+          expect(launchResult.out).to.include('Update Downloaded');
+          expect(requests).to.have.lengthOf(2);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
+          expect(requests[1].header('user-agent')).to.include('Electron/');
+        });
+
+        await shipItFlipFlopPromise;
+        expect(requests).to.have.lengthOf(2, 'should not have relaunched the updated app');
+        expect(JSON.parse(await fs.readFile(path.resolve(appPath, 'Contents/Resources/app/package.json'), 'utf8')).version).to.equal('1.0.0', 'should still be the old version on disk');
+
+        retainerHandle.kill('SIGINT');
       });
     });
 
