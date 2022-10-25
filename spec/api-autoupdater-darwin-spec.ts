@@ -16,7 +16,7 @@ const features = process._linkedBinding('electron_common_features');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 // We can only test the auto updater on darwin non-component builds
-ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch === 'arm64') && !process.mas && !features.isComponentBuild()).only('autoUpdater behavior', function () {
+ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch === 'arm64') && !process.mas && !features.isComponentBuild())('autoUpdater behavior', function () {
   this.timeout(120000);
 
   let identity = '';
