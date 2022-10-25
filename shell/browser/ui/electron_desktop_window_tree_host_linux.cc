@@ -78,6 +78,14 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
   UpdateWindowState(new_state);
 }
 
+void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
+    ui::WindowTiledEdges new_tiled_edges) {
+  static_cast<ClientFrameViewLinux*>(
+      native_window_view_->widget()->non_client_view()->frame_view())
+      ->set_tiled_edges(new_tiled_edges);
+  UpdateFrameHints();
+}
+
 void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     ui::PlatformWindowState new_state) {
   if (window_state_ == new_state)
@@ -159,7 +167,15 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
 
     input_insets = view->GetInputInsets();
   }
-
+  const auto tiled_edges = view->tiled_edges();
+  if (tiled_edges.left)
+    insets.set_left(0);
+  if (tiled_edges.right)
+    insets.set_right(0);
+  if (tiled_edges.top)
+    insets.set_top(0);
+  if (tiled_edges.bottom)
+    insets.set_bottom(0);
   gfx::Insets scaled_insets = gfx::ScaleToCeiledInsets(insets, scale);
   window->SetDecorationInsets(&scaled_insets);
 

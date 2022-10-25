@@ -295,7 +295,7 @@ void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
   if (!frame_->IsFullscreen()) {
     frame_provider_->PaintWindowFrame(canvas, GetLocalBounds(),
                                       GetTitlebarBounds().bottom(),
-                                      ShouldPaintAsActive());
+                                      ShouldPaintAsActive(), tiled_edges());
   }
 }
 
