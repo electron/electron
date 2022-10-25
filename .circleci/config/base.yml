@@ -455,7 +455,7 @@ step-delete-git-directories: &step-delete-git-directories
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
-        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" ) | xargs rm -rf
+        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux
@@ -814,7 +814,7 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       cd src
       export BUILD_PATH="$PWD/out/Default"
       ninja -C out/Default electron:licenses
-      ninja -C out/Default electron:electron_version
+      ninja -C out/Default electron:electron_version_file
       DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
@@ -874,12 +874,12 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v14-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v15-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v14-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v15-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -954,13 +954,14 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf third_party/electron_node/deps/openssl
       rm -rf third_party/electron_node/deps/v8
       rm -rf chrome/test/data/xr/webvr_info
+      rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
 
 # Save the src cache based on the deps hash
 step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v14-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v15-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -970,7 +971,7 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v14-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v15-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
   run:
