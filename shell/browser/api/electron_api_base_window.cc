@@ -882,12 +882,12 @@ gfx::Point BaseWindow::GetTrafficLightPosition() const {
 #endif
 
 #if BUILDFLAG(IS_MAC)
-bool BaseWindow::IsIgnoredByMissionControl() {
-  return window_->IsIgnoredByMissionControl();
+bool BaseWindow::IsHiddenInMissionControl() {
+  return window_->IsHiddenInMissionControl();
 }
 
-void BaseWindow::SetIgnoreMissionControl(bool ignore) {
-  window_->SetIgnoreMissionControl(ignore);
+void BaseWindow::SetHiddenInMissionControl(bool hidden) {
+  window_->SetHiddenInMissionControl(hidden);
 }
 #endif
 
@@ -1268,10 +1268,10 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
 #endif
 
 #if BUILDFLAG(IS_MAC)
-      .SetMethod("isIgnoredByMissionControl",
-                 &BaseWindow::IsIgnoredByMissionControl)
-      .SetMethod("setIgnoreMissionControl",
-                 &BaseWindow::SetIgnoreMissionControl)
+      .SetMethod("isHiddenInMissionControl",
+                 &BaseWindow::IsHiddenInMissionControl)
+      .SetMethod("setHiddenInMissionControl",
+                 &BaseWindow::SetHiddenInMissionControl)
 #endif
 
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)

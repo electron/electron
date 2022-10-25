@@ -4784,20 +4784,20 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'darwin')('isIgnoredByMissionControl state', () => {
+    ifdescribe(process.platform === 'darwin')('isHiddenInMissionControl state', () => {
       it('with functions', () => {
         it('can be set with ignoreMissionControl constructor option', () => {
-          const w = new BrowserWindow({ show: false, ignoreMissionControl: true });
-          expect(w.isIgnoredByMissionControl()).to.be.true('isIgnoredByMissionControl');
+          const w = new BrowserWindow({ show: false, hiddenInMissionControl: true });
+          expect(w.isHiddenInMissionControl()).to.be.true('isHiddenInMissionControl');
         });
 
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
-          expect(w.isIgnoredByMissionControl()).to.be.false('isIgnoredByMissionControl');
-          w.setIgnoreMissionControl(true);
-          expect(w.isIgnoredByMissionControl()).to.be.true('isIgnoredByMissionControl');
-          w.setIgnoreMissionControl(false);
-          expect(w.isIgnoredByMissionControl()).to.be.false('isIgnoredByMissionControl');
+          expect(w.isHiddenInMissionControl()).to.be.false('isHiddenInMissionControl');
+          w.setHiddenInMissionControl(true);
+          expect(w.isHiddenInMissionControl()).to.be.true('isHiddenInMissionControl');
+          w.setHiddenInMissionControl(false);
+          expect(w.isHiddenInMissionControl()).to.be.false('isHiddenInMissionControl');
         });
       });
     });

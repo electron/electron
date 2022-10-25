@@ -229,8 +229,8 @@ class NativeWindow : public base::SupportsUserData,
 
 // whether windows should be ignored by mission control
 #if BUILDFLAG(IS_MAC)
-  virtual bool IsIgnoredByMissionControl() = 0;
-  virtual void SetIgnoreMissionControl(bool visible) = 0;
+  virtual bool IsHiddenInMissionControl() = 0;
+  virtual void SetHiddenInMissionControl(bool hidden) = 0;
 #endif
 
   // Touchbar API

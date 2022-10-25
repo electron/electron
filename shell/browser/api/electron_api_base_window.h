@@ -199,8 +199,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
 #if BUILDFLAG(IS_MAC)
-  bool IsIgnoredByMissionControl();
-  void SetIgnoreMissionControl(bool ignore);
+  bool IsHiddenInMissionControl();
+  void SetHiddenInMissionControl(bool hidden);
 #endif
 
   void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
