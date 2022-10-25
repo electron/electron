@@ -199,14 +199,14 @@ for:
         }
     - ps: >-
         if ($env:GN_CONFIG -eq 'release') {
-          python electron\script\zip-symbols.py
+          python3 electron\script\zip-symbols.py
           appveyor-retry appveyor PushArtifact out/Default/symbols.zip
         } else {
           # It's useful to have pdb files when debugging testing builds that are
           # built on CI.
           7z a pdb.zip out\Default\*.pdb
         }
-    - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
+    - python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
    
     deploy_script:
       - cd electron
@@ -214,10 +214,10 @@ for:
           if (Test-Path Env:\ELECTRON_RELEASE) {
             if (Test-Path Env:\UPLOAD_TO_STORAGE) {
               Write-Output "Uploading Electron release distribution to azure"
-              & python script\release\uploaders\upload.py --verbose --upload_to_storage
+              & python3 script\release\uploaders\upload.py --verbose --upload_to_storage
             } else {
               Write-Output "Uploading Electron release distribution to github releases"
-              & python script\release\uploaders\upload.py --verbose
+              & python3 script\release\uploaders\upload.py --verbose
             }
           } elseif (Test-Path Env:\TEST_WOA) {
             node script/release/ci-release-build.js --job=electron-woa-testing --ci=GHA --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
@@ -303,11 +303,11 @@ for:
       - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log
       - echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log
       - cd ..
-      - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
+      - echo Verifying non proprietary ffmpeg & python3 electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
       - echo "About to verify mksnapshot"
-      - echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
+      - echo Verifying mksnapshot & python3 electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying mksnapshot"
-      - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
+      - echo Verifying chromedriver & python3 electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying chromedriver"
     
     on_finish:
