@@ -104,7 +104,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   bool IsHiddenInMissionControl() override;
-  void SetHiddenInMissionControl(bool ignore) override;
+  void SetHiddenInMissionControl(bool hidden) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
