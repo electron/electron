@@ -10,10 +10,10 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 72e0eb7b65e89b2130eae0d72d009fe6fa3e48cc..03022ef433d1c40c3acb3b9cc225b155777d085b 100644
+index 09846e00f1a75b54ddfe9434521add4ce3b20e97..25b01a54932108c5a888607e19d76f2301e05b76 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -370,6 +370,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -373,6 +373,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -67,7 +67,7 @@ index 13ddc138a6dbdbed067c6e06900d33add92ed3d1..d18825243a1898afb92ca6d3d4aa6084
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index 8bf05b2789af3f7d2f6ecda9b7a6eb4abb84dbd6..b739ed97b190bce06b6c0f2bc12a1869fa590e39 100644
+index 9056d1bb293dfb8c40c7e3d3d94c238cd514a2aa..fc576e5ad08b93204e1ebfb5486d0ad15733f317 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
 @@ -747,6 +747,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {

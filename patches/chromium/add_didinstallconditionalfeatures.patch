@@ -67,10 +67,10 @@ index 149ca596036a4a4c123b6982014001953cf06800..dd069baf01929b75f42093ecf09ecf8e
    virtual void WillReleaseScriptContext(v8::Local<v8::Context>,
                                          int32_t world_id) {}
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index d0b5233ad45995bd6128a03fe9267618d723d683..e5e93be8f2433196a13aa104241b1ddd63985e81 100644
+index 9736b31c03a32635fb8fde581321cc10ec11b11a..c9fd2170a25a7970648b8210ebe94e225f4ee3aa 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -210,6 +210,7 @@ void LocalWindowProxy::Initialize() {
+@@ -197,6 +197,7 @@ void LocalWindowProxy::Initialize() {
    }
  
    InstallConditionalFeatures();
