@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Fri, 21 Oct 2022 16:29:06 -0700
+Subject: build: allow electron to use exec_script
+
+This is similar to the //build usecase so we're OK adding ourselves here
+
+diff --git a/.gn b/.gn
+index 55f5ee19f13e49dfd0aa2300d980d813474c95ef..483e0f0598bfed76b4a4283be3cfa1fdb9eafe5a 100644
+--- a/.gn
++++ b/.gn
+@@ -169,4 +169,6 @@ exec_script_whitelist =
+ 
+       "//tools/grit/grit_rule.gni",
+       "//tools/gritsettings/BUILD.gn",
++
++      "//electron/BUILD.gn"
+     ]
