@@ -121,3 +121,4 @@ fix_on-screen-keyboard_hides_on_input_blur_in_webview.patch
 preconnect_manager.patch
 fix_remove_caption-removing_style_call.patch
 build_allow_electron_to_use_exec_script.patch
+revert_use_accessibility_pkey_when_setting_page_access.patch
