@@ -451,10 +451,10 @@ index 0000000000000000000000000000000000000000..db80a8f00a84bf54f723c21300e7579c
 +}
 diff --git a/deps/base64/BUILD.gn b/deps/base64/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60b16ffefc
+index 0000000000000000000000000000000000000000..0796c0b7d85f89ed01c392b2ee971bcf5e96b94c
 --- /dev/null
 +++ b/deps/base64/BUILD.gn
-@@ -0,0 +1,204 @@
+@@ -0,0 +1,215 @@
 +config("base64_config") {
 +  include_dirs = [
 +    "base64/include",
@@ -475,7 +475,11 @@ index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60
 +    "base64/lib",
 +  ]
 +
-+  cflags_c = [ "-Wno-implicit-fallthrough" ]
++  cflags_c = [
++    "-Wno-implicit-fallthrough",
++    "-Wno-unused-but-set-variable",
++    "-Wno-shadow",
++  ]
 +
 +  sources = [
 +    "base64/include/libbase64.h",
@@ -542,7 +546,7 @@ index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60
 +
 +  sources = [ "base64/lib/arch/ssse3/ssse3_codec.c" ]
 +
-+  if (!is_win) {
++  if (!is_win || is_clang) {
 +    cflags = ["-mssse3"]
 +  }
 +}
@@ -563,7 +567,7 @@ index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60
 +
 +  sources = [ "base64/lib/arch/sse41/sse41_codec.c" ]
 +
-+  if (!is_win) {
++  if (!is_win || is_clang) {
 +    cflags = ["-msse4.1"]
 +  }
 +}
@@ -583,7 +587,7 @@ index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60
 +
 +  sources = [ "base64/lib/arch/sse42/sse42_codec.c" ]
 +
-+  if (!is_win) {
++  if (!is_win || is_clang) {
 +    cflags = ["-msse4.2"]
 +  }
 +}
@@ -603,7 +607,7 @@ index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60
 +
 +  sources = [ "base64/lib/arch/avx/avx_codec.c" ]
 +
-+  if (!is_win) {
++  if (!is_win || is_clang) {
 +    cflags = ["-mavx"]
 +  }
 +}
@@ -619,11 +623,14 @@ index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60
 +    "HAVE_AVX2=1"
 +  ]
 +
-+  cflags_c = [ "-Wno-implicit-fallthrough" ]
++  cflags_c = [
++    "-Wno-implicit-fallthrough",
++    "-Wno-implicit-function-declaration",
++  ]
 +
 +  sources = [ "base64/lib/arch/avx2/avx2_codec.c" ]
 +
-+  if (!is_win) {
++  if (!is_win || is_clang) {
 +    cflags = ["-mavx2"]
 +  }
 +}
@@ -642,6 +649,10 @@ index 0000000000000000000000000000000000000000..5a1a4b88856cb370bb9887f52f074f60
 +  cflags_c = [ "-Wno-implicit-fallthrough" ]
 +
 +  sources = [ "base64/lib/arch/neon32/neon32_codec.c" ]
++
++  if (!is_win) {
++    cflags = ["-mfpu=neon"]
++  }
 +}
 +
 +static_library("base64_neon64") {

@@ -1088,4 +1088,3 @@ index c31a6d21351dc97054daf6276454e2cd98263e26..8c420a534577b01ff07270585017e3da
    assert.strictEqual(certX509.checkHost(servername, { subject: 'never' }),
                       undefined);
  
- 
