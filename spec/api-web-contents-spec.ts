@@ -362,6 +362,12 @@ describe('webContents module', () => {
       await expect(w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))).to.eventually.be.fulfilled();
     });
 
+    it('resolves when navigating within the page', async () => {
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await new Promise(resolve => setTimeout(resolve));
+      await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
+    });
+
     it('rejects when failing to load a file URL', async () => {
       await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected()
         .and.have.property('code', 'ERR_FILE_NOT_FOUND');
