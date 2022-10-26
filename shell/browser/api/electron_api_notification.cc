@@ -304,4 +304,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_notification, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_notification, Initialize)

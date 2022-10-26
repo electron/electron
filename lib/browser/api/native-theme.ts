@@ -1,3 +1,3 @@
-const { nativeTheme } = process._linkedBinding('electron_common_native_theme');
+const { nativeTheme } = process._linkedBinding('electron_browser_native_theme');
 
 module.exports = nativeTheme;
