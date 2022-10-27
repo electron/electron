@@ -567,6 +567,10 @@ describe('BrowserWindow module', () => {
             targetId: iframeTarget.targetId,
             flatten: true
           });
+          let willNavigateEmitted = false;
+          w.webContents.on('will-navigate', () => {
+            willNavigateEmitted = true;
+          });
           await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
             type: 'mousePressed',
             x: 10,
@@ -581,10 +585,6 @@ describe('BrowserWindow module', () => {
             clickCount: 1,
             button: 'left'
           }, sessionId);
-          let willNavigateEmitted = false;
-          w.webContents.on('will-navigate', () => {
-            willNavigateEmitted = true;
-          });
           await emittedOnce(w.webContents, 'did-navigate');
           expect(willNavigateEmitted).to.be.true();
         });
