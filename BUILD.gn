@@ -106,6 +106,7 @@ electron_version = exec_script("script/print-version.py",
                                [
                                  ".git/packed-refs",
                                  ".git/HEAD",
+                                 "script/lib/get-version.js",
                                ])
 
 if (is_mas_build) {
