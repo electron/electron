@@ -29,5 +29,7 @@
 
   "src/electron/patches/ffmpeg": "src/third_party/ffmpeg",
 
-  "src/electron/patches/libaom": "src/third_party/libaom/source/libaom"
+  "src/electron/patches/libaom": "src/third_party/libaom/source/libaom",
+
+  "src/electron/patches/skia": "src/third_party/skia"
 }
