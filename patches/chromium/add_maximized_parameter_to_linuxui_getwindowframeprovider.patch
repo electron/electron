@@ -53,7 +53,7 @@ index 18c34ce9965912caa58457fc28be2b4f6edffb78..d1fc002ff98ea25ff4fec7bacd44140c
  
  }  // namespace gtk
 diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
-index 6aff3b989aff9488b85ca46a62a52a1c7cfb3215..751247c2608ca5143044f6395baae5917c909f46 100644
+index c7857a3e316554e6b5f46c023a1a8084a3263074..5ad7d4ffa7e9c12ec4640a845a4c763420c23ec2 100644
 --- a/ui/gtk/window_frame_provider_gtk.cc
 +++ b/ui/gtk/window_frame_provider_gtk.cc
 @@ -38,16 +38,18 @@ std::string GetThemeName() {
@@ -111,8 +111,8 @@ index 6aff3b989aff9488b85ca46a62a52a1c7cfb3215..751247c2608ca5143044f6395baae591
  
  WindowFrameProviderGtk::~WindowFrameProviderGtk() = default;
  
-@@ -264,7 +266,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
-       top_area_height_dip * scale - asset.frame_thickness_px.top();
+@@ -272,7 +274,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(
+       top_area_height_dip * scale - effective_frame_thickness_px.top();
  
    auto header = PaintHeaderbar({client_bounds_px.width(), top_area_height_px},
 -                               HeaderContext(solid_frame_, focused), scale);
@@ -120,7 +120,7 @@ index 6aff3b989aff9488b85ca46a62a52a1c7cfb3215..751247c2608ca5143044f6395baae591
    image = gfx::ImageSkia::CreateFrom1xBitmap(header);
    // In GTK4, the headerbar gets clipped by the window.
    if (GtkCheckVersion(4)) {
-@@ -296,7 +298,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+@@ -304,7 +306,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
  
    gfx::Rect frame_bounds_dip(kMaxFrameSizeDip, kMaxFrameSizeDip,
                               2 * kMaxFrameSizeDip, 2 * kMaxFrameSizeDip);
@@ -129,7 +129,7 @@ index 6aff3b989aff9488b85ca46a62a52a1c7cfb3215..751247c2608ca5143044f6395baae591
    frame_bounds_dip.Inset(-GtkStyleContextGetPadding(focused_context));
    frame_bounds_dip.Inset(-GtkStyleContextGetBorder(focused_context));
    gfx::Size bitmap_size(BitmapSizePx(asset), BitmapSizePx(asset));
-@@ -304,7 +306,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+@@ -312,7 +314,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
        PaintBitmap(bitmap_size, frame_bounds_dip, focused_context, scale);
    asset.unfocused_bitmap =
        PaintBitmap(bitmap_size, frame_bounds_dip,
@@ -139,7 +139,7 @@ index 6aff3b989aff9488b85ca46a62a52a1c7cfb3215..751247c2608ca5143044f6395baae591
    // In GTK4, there's no way to obtain the frame thickness from CSS values
    // directly, so we must determine it experimentally based on the drawn
 diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
-index 867896de7fa036b7c8be5adf5a7731c97e942d69..2c38d399f95cc2c8851aded5993e3019941defc0 100644
+index d8cb2c6aab333cc55ad1daa70ac91b0569d33a7c..558aa3979301f79df789a29ba3ad1cf134bd6494 100644
 --- a/ui/gtk/window_frame_provider_gtk.h
 +++ b/ui/gtk/window_frame_provider_gtk.h
 @@ -14,7 +14,7 @@ namespace gtk {
@@ -151,7 +151,7 @@ index 867896de7fa036b7c8be5adf5a7731c97e942d69..2c38d399f95cc2c8851aded5993e3019
  
    WindowFrameProviderGtk(const WindowFrameProviderGtk&) = delete;
    WindowFrameProviderGtk& operator=(const WindowFrameProviderGtk&) = delete;
-@@ -69,6 +69,9 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+@@ -70,6 +70,9 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
  
    // Cached bitmaps and metrics.  The scale is rounded to percent.
    base::flat_map<int, Asset> assets_;

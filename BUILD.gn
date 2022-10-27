@@ -113,6 +113,7 @@ electron_version = exec_script("script/print-version.py",
                                [
                                  ".git/packed-refs",
                                  ".git/HEAD",
+                                 "script/lib/get-version.js",
                                ])
 
 if (is_mas_build) {
@@ -662,6 +663,8 @@ source_set("electron_lib") {
   if (enable_plugins) {
     deps += [ "chromium_src:plugins" ]
     sources += [
+      "shell/common/plugin_info.cc",
+      "shell/common/plugin_info.h",
       "shell/renderer/pepper_helper.cc",
       "shell/renderer/pepper_helper.h",
     ]
@@ -722,7 +725,7 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_basic_printing) {
+  if (enable_printing) {
     sources += [
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",

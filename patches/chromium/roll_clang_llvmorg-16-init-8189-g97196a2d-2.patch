@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nico Weber <thakis@chromium.org>
+Date: Wed, 26 Oct 2022 12:18:49 +0000
+Subject: Roll clang llvmorg-16-init-8189-g97196a2d-2 :
+ llvmorg-16-init-8697-g60809cd2-1
+
+Ran `tools/clang/scripts/upload_revision.py 60809cd29308e78d662375e6957a2b1b85415def`.
+
+Needed to resolve https://crbug.com/1377819
+
+Bug: 1378191
+Change-Id: Id426d7c6c171738044189a707b4579313231886f
+Cq-Include-Trybots: chromium/try:chromeos-amd64-generic-cfi-thin-lto-rel
+Cq-Include-Trybots: chromium/try:dawn-win10-x86-deps-rel
+Cq-Include-Trybots: chromium/try:linux-chromeos-dbg
+Cq-Include-Trybots: chromium/try:linux_chromium_cfi_rel_ng
+Cq-Include-Trybots: chromium/try:linux_chromium_chromeos_msan_rel_ng
+Cq-Include-Trybots: chromium/try:linux_chromium_msan_rel_ng
+Cq-Include-Trybots: chromium/try:mac11-arm64-rel,mac_chromium_asan_rel_ng
+Cq-Include-Trybots: chromium/try:ios-catalyst
+Cq-Include-Trybots: chromium/try:win-asan,win7-rel
+Cq-Include-Trybots: chromium/try:android-official
+Cq-Include-Trybots: chromium/try:mac-official
+Cq-Include-Trybots: chromium/try:win-official,win32-official
+Cq-Include-Trybots: chromium/try:linux-swangle-try-x64,win-swangle-try-x86
+Cq-Include-Trybots: chrome/try:iphone-device,ipad-device
+Cq-Include-Trybots: chrome/try:linux-chromeos-chrome
+Cq-Include-Trybots: chrome/try:win-chrome,win64-chrome,linux-chrome,mac-chrome
+Cq-Include-Trybots: chrome/try:linux-pgo,mac-pgo,win32-pgo,win64-pgo
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3976312
+Reviewed-by: Nico Weber <thakis@chromium.org>
+Commit-Queue: Nico Weber <thakis@chromium.org>
+Reviewed-by: Hans Wennborg <hans@chromium.org>
+Auto-Submit: Nico Weber <thakis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1063747}
+
+diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
+index 244f103df4db5dd04c5f1a7821741c4a5486bdd1..6b13b7687d94f9e08b313b22c63588b4bc454297 100755
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -35,8 +35,8 @@ import zlib
+ # https://chromium.googlesource.com/chromium/src/+/main/docs/updating_clang.md
+ # Reverting problematic clang rolls is safe, though.
+ # This is the output of `git describe` and is usable as a commit-ish.
+-CLANG_REVISION = 'llvmorg-16-init-8189-g97196a2d'
+-CLANG_SUB_REVISION = 2
++CLANG_REVISION = 'llvmorg-16-init-8697-g60809cd2'
++CLANG_SUB_REVISION = 1
+ 
+ PACKAGE_VERSION = '%s-%s' % (CLANG_REVISION, CLANG_SUB_REVISION)
+ RELEASE_VERSION = '16.0.0'
