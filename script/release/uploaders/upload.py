@@ -23,7 +23,7 @@ from lib.util import get_electron_branding, execute, get_electron_version, \
                      SRC_DIR, ELECTRON_DIR, TS_NODE
 
 
-ELECTRON_VERSION = get_electron_version()
+ELECTRON_VERSION = 'v' + get_electron_version()
 
 PROJECT_NAME = get_electron_branding()['project_name']
 PRODUCT_NAME = get_electron_branding()['product_name']
