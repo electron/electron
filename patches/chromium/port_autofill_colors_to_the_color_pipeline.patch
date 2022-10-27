@@ -8,13 +8,13 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index a0ea99233f8d890f34da329dd90b4c791eb8e64b..6e097af16731e7c9a624a33014f393dc618f74ed 100644
+index 813deda1c0ab67ea855c5a85a88dd1797a99bdd6..c918e44036b042bd7dc3562957d990f86b6a4ac4 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -240,6 +240,10 @@
-   E_CPONLY(kColorReadAnythingForegroundDark) \
-   E_CPONLY(kColorReadAnythingForegroundLight) \
-   E_CPONLY(kColorReadAnythingForegroundYellow) \
+@@ -250,6 +250,10 @@
+   E_CPONLY(kColorScrollbarThumbInactive) \
+   E_CPONLY(kColorScrollbarThumbPressed) \
+   E_CPONLY(kColorScrollbarTrack) \
 +  E_CPONLY(kColorResultsTableNormalBackground) \
 +  E_CPONLY(kColorResultsTableHoveredBackground) \
 +  E_CPONLY(kColorResultsTableNormalText) \
@@ -22,7 +22,7 @@ index a0ea99233f8d890f34da329dd90b4c791eb8e64b..6e097af16731e7c9a624a33014f393dc
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -294,6 +298,7 @@
+@@ -304,6 +308,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,13 +31,13 @@ index a0ea99233f8d890f34da329dd90b4c791eb8e64b..6e097af16731e7c9a624a33014f393dc
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 2b8697cac1a1fa7ce2c7abfb436dc38d334c93ec..2952397d1f9f6a44ace0e3c7cd2bce92a0217df3 100644
+index 3e7ef724d0b58dc43c5aecaaba2794dccacc31ba..803ab33876467c30bda8aaaf42a4a3d4e443c509 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -154,6 +154,17 @@ void AddUiColorMixer(ColorProvider* provider,
-   mixer[kColorReadAnythingForegroundDark] = {gfx::kGoogleGrey200};
-   mixer[kColorReadAnythingForegroundLight] = {gfx::kGoogleGrey800};
-   mixer[kColorReadAnythingForegroundYellow] = {gfx::kGoogleGrey800};
+@@ -178,6 +178,17 @@ void AddUiColorMixer(ColorProvider* provider,
+                                             : SkColorSetA(SK_ColorBLACK, 0x80)};
+   mixer[kColorScrollbarTrack] = {dark_mode ? SkColorSetRGB(0x42, 0x42, 0x42)
+                                            : SkColorSetRGB(0xF1, 0xF1, 0xF1)};
 +  mixer[kColorResultsTableNormalBackground] = {SK_ColorWHITE};
 +  mixer[kColorResultsTableHoveredBackground] =
 +      SetAlpha(kColorResultsTableNormalText, 0x0D);
@@ -52,7 +52,7 @@ index 2b8697cac1a1fa7ce2c7abfb436dc38d334c93ec..2952397d1f9f6a44ace0e3c7cd2bce92
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -235,6 +246,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -259,6 +270,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};

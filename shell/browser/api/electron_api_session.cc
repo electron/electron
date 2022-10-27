@@ -138,8 +138,6 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
     auto type = base::ToLowerASCII(it);
     if (type == "temporary")
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_TEMPORARY;
-    else if (type == "persistent")
-      quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_PERSISTENT;
     else if (type == "syncable")
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_SYNCABLE;
   }
