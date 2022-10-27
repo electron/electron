@@ -18,5 +18,5 @@ module.exports.getElectronVersion = () => {
     console.error(output.stderr);
     throw new Error('Failed to get current electron version');
   }
-  return output.stdout.toString().trim();
+  return output.stdout.toString().trim().replace(/^v/g, '');
 };
