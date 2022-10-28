@@ -2359,6 +2359,8 @@ describe('navigator.serial', () => {
     `, true);
   };
 
+  const notFoundError = 'NotFoundError: Failed to execute \'requestPort\' on \'Serial\': No port selected by the user.';
+
   after(closeAllWindows);
   afterEach(() => {
     session.defaultSession.setPermissionCheckHandler(null);
@@ -2368,7 +2370,7 @@ describe('navigator.serial', () => {
   it('does not return a port if select-serial-port event is not defined', async () => {
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('does not return a port when permission denied', async () => {
@@ -2377,7 +2379,7 @@ describe('navigator.serial', () => {
     });
     session.defaultSession.setPermissionCheckHandler(() => false);
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('does not crash when select-serial-port is called with an invalid port', async () => {
@@ -2385,7 +2387,7 @@ describe('navigator.serial', () => {
       callback('i-do-not-exist');
     });
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('returns a port when select-serial-port event is defined', async () => {
@@ -2402,7 +2404,7 @@ describe('navigator.serial', () => {
     if (havePorts) {
       expect(port).to.equal('[object SerialPort]');
     } else {
-      expect(port).to.equal('NotFoundError: No port selected by the user.');
+      expect(port).to.equal(notFoundError);
     }
   });
 
@@ -2421,6 +2423,50 @@ describe('navigator.serial', () => {
     if (havePorts) {
       const grantedPorts = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
       expect(grantedPorts).to.not.be.empty();
+    }
+  });
+
+  it('supports port.forget()', async () => {
+    let forgottenPortFromEvent = {};
+    let havePorts = false;
+
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      if (portList.length > 0) {
+        havePorts = true;
+        callback(portList[0].portId);
+      } else {
+        callback('');
+      }
+    });
+
+    w.webContents.session.on('serial-port-revoked', (event, details) => {
+      forgottenPortFromEvent = details.port;
+    });
+
+    await getPorts();
+    if (havePorts) {
+      const grantedPorts = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
+      if (grantedPorts.length > 0) {
+        const forgottenPort = await w.webContents.executeJavaScript(`
+          navigator.serial.getPorts().then(async(ports) => {
+            const portInfo = await ports[0].getInfo();
+            await ports[0].forget();
+            if (portInfo.usbVendorId && portInfo.usbProductId) {
+              return {
+                vendorId: '' + portInfo.usbVendorId,
+                productId: '' + portInfo.usbProductId
+              }
+            } else {
+              return {};
+            }
+          })
+        `);
+        const grantedPorts2 = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
+        expect(grantedPorts2.length).to.be.lessThan(grantedPorts.length);
+        if (forgottenPort.vendorId && forgottenPort.productId) {
+          expect(forgottenPortFromEvent).to.include(forgottenPort);
+        }
+      }
     }
   });
 });
@@ -2683,9 +2729,7 @@ describe('navigator.hid', () => {
     } else {
       expect(device).to.equal('');
     }
-    if (process.arch === 'arm64' || process.arch === 'arm') {
-      // arm CI returns HID devices - this block may need to change if CI hardware changes.
-      expect(haveDevices).to.be.true();
+    if (haveDevices) {
       // Verify that navigation will clear device permissions
       const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
       expect(grantedDevices).to.not.be.empty();

@@ -107,6 +107,14 @@ branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
 electron_mac_bundle_id = branding.mac_bundle_id
+electron_version = exec_script("script/print-version.py",
+                               [],
+                               "trim string",
+                               [
+                                 ".git/packed-refs",
+                                 ".git/HEAD",
+                                 "script/lib/get-version.js",
+                               ])
 
 if (is_mas_build) {
   assert(is_mac,
@@ -202,6 +210,15 @@ webpack_build("electron_isolated_renderer_bundle") {
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
+webpack_build("electron_utility_bundle") {
+  deps = [ ":build_electron_definitions" ]
+
+  inputs = auto_filenames.utility_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.utility.js"
+  out_file = "$target_gen_dir/js2c/utility_init.js"
+}
+
 action("electron_js2c") {
   deps = [
     ":electron_asar_bundle",
@@ -209,6 +226,7 @@ action("electron_js2c") {
     ":electron_isolated_renderer_bundle",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
+    ":electron_utility_bundle",
     ":electron_worker_bundle",
   ]
 
@@ -218,6 +236,7 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
+    "$target_gen_dir/js2c/utility_init.js",
     "$target_gen_dir/js2c/worker_init.js",
   ]
 
@@ -302,12 +321,9 @@ npm_action("electron_version_args") {
 
   outputs = [ "$target_gen_dir/electron_version.args" ]
 
-  args = rebase_path(outputs)
+  args = rebase_path(outputs) + [ "$electron_version" ]
 
-  inputs = [
-    "ELECTRON_VERSION",
-    "script/generate-version-json.js",
-  ]
+  inputs = [ "script/generate-version-json.js" ]
 }
 
 templated_file("electron_version_header") {
@@ -317,6 +333,39 @@ templated_file("electron_version_header") {
   output = "$target_gen_dir/electron_version.h"
 
   args_files = get_target_outputs(":electron_version_args")
+}
+
+templated_file("electron_win_rc") {
+  deps = [ ":electron_version_args" ]
+
+  template = "build/templates/electron_rc.tmpl"
+  output = "$target_gen_dir/win-resources/electron.rc"
+
+  args_files = get_target_outputs(":electron_version_args")
+}
+
+copy("electron_win_resource_files") {
+  sources = [
+    "shell/browser/resources/win/electron.ico",
+    "shell/browser/resources/win/resource.h",
+  ]
+  outputs = [ "$target_gen_dir/win-resources/{{source_file_part}}" ]
+}
+
+templated_file("electron_version_file") {
+  deps = [ ":electron_version_args" ]
+
+  template = "build/templates/version_string.tmpl"
+  output = "$root_build_dir/version"
+
+  args_files = get_target_outputs(":electron_version_args")
+}
+
+group("electron_win32_resources") {
+  public_deps = [
+    ":electron_win_rc",
+    ":electron_win_resource_files",
+  ]
 }
 
 action("electron_fuses") {
@@ -368,6 +417,7 @@ source_set("electron_lib") {
     "chromium_src:chrome",
     "chromium_src:chrome_spellchecker",
     "shell/common/api:mojo",
+    "shell/services/node/public/mojom",
     "//base:base_static",
     "//base/allocator:buildflags",
     "//chrome:strings",
@@ -490,13 +540,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (is_linux) {
-    deps += [
-      "//components/crash/content/browser",
-      "//ui/gtk:gtk_config",
-    ]
-  }
-
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
@@ -559,11 +602,14 @@ source_set("electron_lib") {
       ":electron_gtk_stubs",
       ":libnotify_loader",
       "//build/config/linux/gtk",
+      "//components/crash/content/browser",
       "//dbus",
       "//device/bluetooth",
+      "//third_party/crashpad/crashpad/client",
       "//ui/base/ime/linux",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
+      "//ui/gtk:gtk_config",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
       "//ui/views/controls/webview",
@@ -617,6 +663,8 @@ source_set("electron_lib") {
   if (enable_plugins) {
     deps += [ "chromium_src:plugins" ]
     sources += [
+      "shell/common/plugin_info.cc",
+      "shell/common/plugin_info.h",
       "shell/renderer/pepper_helper.cc",
       "shell/renderer/pepper_helper.h",
     ]
@@ -677,7 +725,7 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_basic_printing) {
+  if (enable_printing) {
     sources += [
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",
@@ -755,7 +803,6 @@ if (is_mac) {
   electron_helper_name = "$electron_product_name Helper"
   electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
-  electron_version = read_file("ELECTRON_VERSION", "trim string")
 
   mac_xib_bundle_data("electron_xibs") {
     sources = [ "shell/common/resources/mac/MainMenu.xib" ]
@@ -1196,6 +1243,7 @@ if (is_mac) {
       ":default_app_asar",
       ":electron_app_manifest",
       ":electron_lib",
+      ":electron_win32_resources",
       ":packed_resources",
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
@@ -1229,8 +1277,7 @@ if (is_mac) {
 
     if (is_win) {
       sources += [
-        # TODO: we should be generating our .rc files more like how chrome does
-        "shell/browser/resources/win/electron.rc",
+        "$target_gen_dir/win-resources/electron.rc",
         "shell/browser/resources/win/resource.h",
       ]
 
@@ -1412,15 +1459,10 @@ group("licenses") {
   ]
 }
 
-copy("electron_version") {
-  sources = [ "ELECTRON_VERSION" ]
-  outputs = [ "$root_build_dir/version" ]
-}
-
 dist_zip("electron_dist_zip") {
   data_deps = [
     ":electron_app",
-    ":electron_version",
+    ":electron_version_file",
     ":licenses",
   ]
   if (is_linux) {

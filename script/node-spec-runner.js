@@ -67,6 +67,8 @@ async function main () {
       console.error(`Found ${missing.length} missing disabled specs: \n${missing.join('\n')}`);
       process.exit(1);
     }
+
+    process.exit(0);
   }
 
   const options = args.default ? defaultOptions : getCustomOptions();

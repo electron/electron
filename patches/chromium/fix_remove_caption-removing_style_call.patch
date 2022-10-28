@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Zhao <7199958+rzhao271@users.noreply.github.com>
+Date: Wed, 17 Aug 2022 13:49:40 -0700
+Subject: fix: Adjust caption-removing style call
+
+There is a SetWindowLong call that removes WS_CAPTION for frameless
+windows, but Electron uses WS_CAPTION even for frameless windows,
+unless they are transparent.
+
+Changing this call only affects frameless windows, and it fixes
+a visual glitch where they showed a Windows 7 style frame
+during startup.
+
+The if statement was originally introduced by
+https://codereview.chromium.org/9372053/, and it was there to fix
+a visual glitch with the close button showing up during startup
+or resizing, but Electron does not seem to run into that issue
+for opaque frameless windows even with that block commented out.
+
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 400278ab26a4e095fd837fcf84c952a1297b173d..55afa69870f27b877826ea8a442ab20a8b336d74 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -1731,7 +1731,23 @@ LRESULT HWNDMessageHandler::OnCreate(CREATESTRUCT* create_struct) {
+   SendMessage(hwnd(), WM_CHANGEUISTATE, MAKELPARAM(UIS_CLEAR, UISF_HIDEFOCUS),
+               0);
+ 
+-  if (!delegate_->HasFrame()) {
++  LONG is_popup =
++      GetWindowLong(hwnd(), GWL_STYLE) & static_cast<LONG>(WS_POPUP);
++
++  // For transparent windows, Electron removes the WS_CAPTION style,
++  // so we continue to remove it here. If we didn't, an opaque rectangle
++  // would show up.
++  // For non-transparent windows, Electron keeps the WS_CAPTION style,
++  // so we don't remove it in that case. If we did, a Windows 7 frame
++  // would show up.
++  // We also need this block for frameless popup windows. When the user opens
++  // a dropdown in an Electron app, the internal popup menu from
++  // third_party/blink/renderer/core/html/forms/internal_popup_menu.h
++  // is rendered. That menu is actually an HTML page inside of a frameless popup window.
++  // A new popup window is created every time the user opens the dropdown,
++  // and this code path is run. The code block below runs SendFrameChanged,
++  // which gives the dropdown options the proper layout.
++  if (!delegate_->HasFrame() && (is_translucent_ || is_popup)) {
+     SetWindowLong(hwnd(), GWL_STYLE,
+                   GetWindowLong(hwnd(), GWL_STYLE) & ~WS_CAPTION);
+     SendFrameChanged();

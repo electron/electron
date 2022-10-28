@@ -20,7 +20,7 @@ index 2ca14efae5ea478f43794a81883b00dfdb1a37b0..d73055fbf39334925ef4b4804bbaca57
  
      case ssl_open_record_error:
 diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
-index 1b2e9f41da12c3a3863d7862ccf95f1d6c54e8f4..4f5bdf7240e741c498e0927abd7aff06cb914f0c 100644
+index a6ca0ab96266475384429e73970de18d4ba09912..c7e7bd02f2484f91bf55df1400e94804e61ea914 100644
 --- a/ssl/ssl_lib.cc
 +++ b/ssl/ssl_lib.cc
 @@ -1319,7 +1319,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
@@ -48,10 +48,10 @@ index 1b2e9f41da12c3a3863d7862ccf95f1d6c54e8f4..4f5bdf7240e741c498e0927abd7aff06
  void SSL_CTX_set_tmp_rsa_callback(SSL_CTX *ctx,
                                    RSA *(*cb)(SSL *ssl, int is_export,
 diff --git a/ssl/ssl_test.cc b/ssl/ssl_test.cc
-index 2627362daf72423c15bfcc4e3d2fb82ffc1bdb33..a9a695a4029f3563145ec0f8864cae366de90bc3 100644
+index 3709a4694f3c9be67fd918f125f023b5aa660971..3507f4ef5bd4444c2499b06a5e312ab54f08bc3b 100644
 --- a/ssl/ssl_test.cc
 +++ b/ssl/ssl_test.cc
-@@ -8509,11 +8509,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
+@@ -8358,11 +8358,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
    EXPECT_EQ(ret, 0);
    EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_ZERO_RETURN);
  
@@ -63,7 +63,7 @@ index 2627362daf72423c15bfcc4e3d2fb82ffc1bdb33..a9a695a4029f3563145ec0f8864cae36
    // Although the client has seen close_notify, it should continue to report
    // |SSL_ERROR_SYSCALL| when its writes fail.
    ret = SSL_write(client.get(), data, sizeof(data));
-@@ -8521,22 +8516,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
+@@ -8370,22 +8365,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
    EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_SYSCALL);
    EXPECT_TRUE(write_failed);
    write_failed = false;

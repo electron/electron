@@ -5,6 +5,7 @@
 #include "shell/browser/ui/views/frameless_view.h"
 
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 #include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
 #include "ui/views/widget/widget.h"
@@ -77,6 +78,15 @@ gfx::Rect FramelessView::GetWindowBoundsForClientBounds(
 int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
   if (frame_->IsFullscreen())
     return HTCLIENT;
+
+  // Check attached BrowserViews for potential draggable areas.
+  for (auto* view : window_->inspectable_views()) {
+    auto* inspectable_view =
+        static_cast<InspectableWebContentsViewViews*>(view);
+    if (inspectable_view->IsContainedInDraggableRegion(window_->content_view(),
+                                                       cursor))
+      return HTCAPTION;
+  }
 
   // Support resizing frameless window by dragging the border.
   int frame_component = ResizingBorderHitTest(cursor);
