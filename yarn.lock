@@ -126,10 +126,10 @@
     ora "^4.0.3"
     pretty-ms "^5.1.0"
 
-"@electron/typescript-definitions@^8.9.6":
-  version "8.9.6"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.6.tgz#99575209b12ae00784190282e5b636a44f1beabc"
-  integrity sha512-Hlvzo0A5iuRFICOB/xIADKKc1axCA4G13vsCC5ZcG6VVvJPsmPrjr2/npb9Aebfzm4OUbdoPHS952lqPXFLFXQ==
+"@electron/typescript-definitions@^8.9.7":
+  version "8.9.7"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.7.tgz#defcb1e5ad99a3cfb0327fb8b9442e520f8576c5"
+  integrity sha512-HVoZXpnylbfTCSaLQWTP5Pd8F2dqSmwXt4WfaliAwAhzUBGudDy7MsYDMFUd2YH7uNgSeGChjN1ugZJ3BB9XLA==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
