@@ -182,9 +182,11 @@ View::~View() {
 }
 
 #if BUILDFLAG(ENABLE_VIEWS_API)
-void View::AddChildViewAt(gin::Handle<View> child, absl::optional<size_t> maybe_index) {
+void View::AddChildViewAt(gin::Handle<View> child,
+                          absl::optional<size_t> maybe_index) {
   CHECK(view_);
-  size_t index = std::min(child_views_.size(), maybe_index.value_or(child_views_.size()));
+  size_t index =
+      std::min(child_views_.size(), maybe_index.value_or(child_views_.size()));
   child_views_.emplace(child_views_.begin() + index,     // index
                        isolate(), child->GetWrapper());  // v8::Global(args...)
 #if BUILDFLAG(IS_MAC)
