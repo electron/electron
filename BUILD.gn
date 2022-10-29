@@ -676,6 +676,10 @@ source_set("electron_lib") {
       "//ppapi/proxy",
       "//ppapi/shared_impl",
     ]
+    sources += [
+      "shell/renderer/electron_renderer_pepper_host_factory.cc",
+      "shell/renderer/electron_renderer_pepper_host_factory.h",
+    ]
   }
 
   if (enable_run_as_node) {
