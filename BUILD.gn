@@ -665,6 +665,8 @@ source_set("electron_lib") {
     sources += [
       "shell/common/plugin_info.cc",
       "shell/common/plugin_info.h",
+      "shell/renderer/electron_renderer_pepper_host_factory.cc",
+      "shell/renderer/electron_renderer_pepper_host_factory.h",
       "shell/renderer/pepper_helper.cc",
       "shell/renderer/pepper_helper.h",
     ]
