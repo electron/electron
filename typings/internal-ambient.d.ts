@@ -251,6 +251,7 @@ declare namespace NodeJS {
 
     // Additional properties
     _firstFileName?: string;
+    _serviceStartupScript: string;
 
     helperExecPath: string;
     mainModule?: NodeJS.Module | undefined;

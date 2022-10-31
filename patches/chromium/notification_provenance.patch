@@ -31,7 +31,7 @@ index dfbfbf4e5d92eb8c7c2ba38f31264ac41713a485..78cc81931321656c308e5611e30e0813
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index a84465f5c59921a1febaf2015be71fb593eb92a5..0b8e0aea8ac663c22c327005cb95d3f19dd1200c 100644
+index f66c863b18da856b449eaf4fd8cf8202d34a2f10..55aecd359a7d375f64d2125e3c08d9ea50175cda 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -83,11 +83,13 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -49,7 +49,7 @@ index a84465f5c59921a1febaf2015be71fb593eb92a5..0b8e0aea8ac663c22c327005cb95d3f1
        service_worker_context_(std::move(service_worker_context)),
        render_process_host_id_(render_process_host->GetID()),
 @@ -152,7 +154,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
-       notification_id, std::move(event_listener_remote));
+       notification_id, std::move(event_listener_remote), weak_document_ptr_);
  
    browser_context_->GetPlatformNotificationService()->DisplayNotification(
 -      notification_id, origin_.GetURL(), document_url_,
@@ -113,7 +113,7 @@ index 65ee7d921294a8b135f06666e8ef66faf281afc4..b8a789107ab8793f248ff592667a4ecd
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 05fb3299e4eea19aeef8eb618ec81cb721a36cae..46d1cd2f96d68d36f6dd080fd69ffced9fa89ca0 100644
+index 5d66bbea7b30a4145745676749ab49ecd5c93dbc..1a923782adf35c31571c4af459027966e2505c43 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -48,6 +48,7 @@ struct NotificationDatabaseData;
@@ -133,10 +133,10 @@ index 05fb3299e4eea19aeef8eb618ec81cb721a36cae..46d1cd2f96d68d36f6dd080fd69ffced
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index d075a2f1ed29a693009c3f993ab24c1fbc8cd1c7..d3c552ed96023475de1215c505978278f04766ec 100644
+index 81a7142ce6948e9ba9e5f355f4c98508dd40fb34..a0c3faf9fa20f55650745019613b18e615dd5e0f 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2067,8 +2067,9 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2068,8 +2068,9 @@ void RenderProcessHostImpl::CreateNotificationService(
    // For workers:
    if (render_frame_id == MSG_ROUTING_NONE) {
      storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -148,7 +148,7 @@ index d075a2f1ed29a693009c3f993ab24c1fbc8cd1c7..d3c552ed96023475de1215c505978278
      return;
    }
  
-@@ -2076,7 +2077,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2077,7 +2078,7 @@ void RenderProcessHostImpl::CreateNotificationService(
    RenderFrameHost* rfh = RenderFrameHost::FromID(GetID(), render_frame_id);
    CHECK(rfh);
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

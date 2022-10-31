@@ -7,8 +7,10 @@
 #include <memory>
 
 #include <utility>
+#include <vector>
 
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -79,7 +81,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
 
 InspectableWebContentsViewViews::InspectableWebContentsViewViews(
     InspectableWebContents* inspectable_web_contents)
-    : inspectable_web_contents_(inspectable_web_contents),
+    : InspectableWebContentsView(inspectable_web_contents),
       devtools_web_view_(new views::WebView(nullptr)),
       title_(u"Developer Tools") {
   if (!inspectable_web_contents_->IsGuest() &&
@@ -101,6 +103,19 @@ InspectableWebContentsViewViews::~InspectableWebContentsViewViews() {
   if (devtools_window_)
     inspectable_web_contents()->SaveDevToolsBounds(
         devtools_window_->GetWindowBoundsInScreen());
+}
+
+bool InspectableWebContentsViewViews::IsContainedInDraggableRegion(
+    views::View* root_view,
+    const gfx::Point& location) {
+  if (!draggable_region_.get())
+    return false;
+  // Draggable regions are defined relative to the web contents.
+  gfx::Point point_in_contents_web_view_coords(location);
+  views::View::ConvertPointToTarget(root_view, this,
+                                    &point_in_contents_web_view_coords);
+  return draggable_region_->contains(point_in_contents_web_view_coords.x(),
+                                     point_in_contents_web_view_coords.y());
 }
 
 views::View* InspectableWebContentsViewViews::GetView() {
@@ -210,6 +225,14 @@ void InspectableWebContentsViewViews::SetTitle(const std::u16string& title) {
     title_ = title;
     devtools_window_->UpdateWindowTitle();
   }
+}
+
+void InspectableWebContentsViewViews::UpdateDraggableRegions(
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  if (&draggable_regions_ == &regions)
+    return;
+  draggable_regions_ = mojo::Clone(regions);
+  draggable_region_ = DraggableRegionsToSkRegion(draggable_regions_);
 }
 
 void InspectableWebContentsViewViews::Layout() {

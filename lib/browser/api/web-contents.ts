@@ -174,13 +174,13 @@ WebContents.prototype.printToPDF = async function (options) {
     headerTemplate: '',
     footerTemplate: '',
     printBackground: false,
-    scale: 1,
+    scale: 1.0,
     paperWidth: 8.5,
-    paperHeight: 11,
-    marginTop: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    marginRight: 0,
+    paperHeight: 11.0,
+    marginTop: 0.4,
+    marginBottom: 0.4,
+    marginLeft: 0.4,
+    marginRight: 0.4,
     pageRanges: '',
     preferCSSPageSize: false
   };
@@ -210,7 +210,7 @@ WebContents.prototype.printToPDF = async function (options) {
     if (typeof options.scale !== 'number') {
       return Promise.reject(new Error('scale must be a Number'));
     }
-    printSettings.scaleFactor = options.scale;
+    printSettings.scale = options.scale;
   }
 
   const { pageSize } = options;
@@ -450,12 +450,14 @@ WebContents.prototype.loadURL = function (url, options) {
     const removeListeners = () => {
       this.removeListener('did-finish-load', finishListener);
       this.removeListener('did-fail-load', failListener);
+      this.removeListener('did-navigate-in-page', finishListener);
       this.removeListener('did-start-navigation', navigationListener);
       this.removeListener('did-stop-loading', stopLoadingListener);
       this.removeListener('destroyed', stopLoadingListener);
     };
     this.on('did-finish-load', finishListener);
     this.on('did-fail-load', failListener);
+    this.on('did-navigate-in-page', finishListener);
     this.on('did-start-navigation', navigationListener);
     this.on('did-stop-loading', stopLoadingListener);
     this.on('destroyed', stopLoadingListener);

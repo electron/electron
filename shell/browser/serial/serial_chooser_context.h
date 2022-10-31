@@ -67,8 +67,18 @@ class SerialChooserContext : public KeyedService,
   bool HasPortPermission(const url::Origin& origin,
                          const device::mojom::SerialPortInfo& port,
                          content::RenderFrameHost* render_frame_host);
+  void RevokePortPermissionWebInitiated(
+      const url::Origin& origin,
+      const base::UnguessableToken& token,
+      content::RenderFrameHost* render_frame_host);
   static bool CanStorePersistentEntry(
       const device::mojom::SerialPortInfo& port);
+
+  // Only call this if you're sure |port_info_| has been initialized
+  // before-hand. The returned raw pointer is owned by |port_info_| and will be
+  // destroyed when the port is removed.
+  const device::mojom::SerialPortInfo* GetPortInfo(
+      const base::UnguessableToken& token);
 
   device::mojom::SerialPortManager* GetPortManager();
 
@@ -77,21 +87,9 @@ class SerialChooserContext : public KeyedService,
 
   base::WeakPtr<SerialChooserContext> AsWeakPtr();
 
-  bool is_initialized_ = false;
-
-  // Map from port token to port info.
-  std::map<base::UnguessableToken, device::mojom::SerialPortInfoPtr> port_info_;
-
   // SerialPortManagerClient implementation.
   void OnPortAdded(device::mojom::SerialPortInfoPtr port) override;
   void OnPortRemoved(device::mojom::SerialPortInfoPtr port) override;
-  void RevokePortPermissionWebInitiated(const url::Origin& origin,
-                                        const base::UnguessableToken& token);
-  // Only call this if you're sure |port_info_| has been initialized
-  // before-hand. The returned raw pointer is owned by |port_info_| and will be
-  // destroyed when the port is removed.
-  const device::mojom::SerialPortInfo* GetPortInfo(
-      const base::UnguessableToken& token);
 
  private:
   void EnsurePortManagerConnection();
@@ -99,9 +97,14 @@ class SerialChooserContext : public KeyedService,
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
   void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
   void OnPortManagerConnectionError();
-  void RevokeObjectPermissionInternal(const url::Origin& origin,
-                                      const base::Value& object,
-                                      bool revoked_by_website);
+
+  bool is_initialized_ = false;
+
+  // Tracks the set of ports to which an origin has access to.
+  std::map<url::Origin, std::set<base::UnguessableToken>> ephemeral_ports_;
+
+  // Map from port token to port info.
+  std::map<base::UnguessableToken, device::mojom::SerialPortInfoPtr> port_info_;
 
   mojo::Remote<device::mojom::SerialPortManager> port_manager_;
   mojo::Receiver<device::mojom::SerialPortManagerClient> client_receiver_{this};

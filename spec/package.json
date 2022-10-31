@@ -15,7 +15,6 @@
     "coffeescript": "^2.4.1",
     "dbus-native": "github:nornagon/dbus-native#master",
     "dirty-chai": "^2.0.1",
-    "get-image-colors": "^4.0.0",
     "graceful-fs": "^4.1.15",
     "is-valid-window": "0.0.5",
     "mkdirp": "^0.5.1",

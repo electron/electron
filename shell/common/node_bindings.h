@@ -5,7 +5,9 @@
 #ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 #define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
@@ -74,7 +76,7 @@ class UvHandle {
 
 class NodeBindings {
  public:
-  enum class BrowserEnvironment { kBrowser, kRenderer, kWorker };
+  enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
   static NodeBindings* Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinModules();
@@ -86,6 +88,10 @@ class NodeBindings {
   void Initialize();
 
   // Create the environment and load node.js.
+  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
+                                       node::MultiIsolatePlatform* platform,
+                                       std::vector<std::string> args,
+                                       std::vector<std::string> exec_args);
   node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
                                        node::MultiIsolatePlatform* platform);
 

@@ -58,7 +58,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
-#include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
 #endif
@@ -317,9 +316,6 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
       ::switches::kDisableGpuMemoryBufferCompositorResources);
 #endif
 
-  content_client_ = std::make_unique<ElectronContentClient>();
-  SetContentClient(content_client_.get());
-
   return absl::nullopt;
 }
 
@@ -375,15 +371,11 @@ void ElectronMainDelegate::PreSandboxStartup() {
   // Zygote needs to call InitCrashReporter() in RunZygote().
   if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
-    if (crash_reporter::IsCrashpadEnabled()) {
-      if (command_line->HasSwitch(
-              crash_reporter::switches::kCrashpadHandlerPid)) {
-        crash_reporter::InitializeCrashpad(false, process_type);
-        crash_reporter::SetFirstChanceExceptionHandler(
-            v8::TryHandleWebAssemblyTrapPosix);
-      }
-    } else {
-      breakpad::InitCrashReporter(process_type);
+    if (command_line->HasSwitch(
+            crash_reporter::switches::kCrashpadHandlerPid)) {
+      crash_reporter::InitializeCrashpad(false, process_type);
+      crash_reporter::SetFirstChanceExceptionHandler(
+          v8::TryHandleWebAssemblyTrapPosix);
     }
   }
 #endif
@@ -438,6 +430,11 @@ base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
     return "browser_v8_context_snapshot.bin";
   }
   return ContentMainDelegate::GetBrowserV8SnapshotFilename();
+}
+
+content::ContentClient* ElectronMainDelegate::CreateContentClient() {
+  content_client_ = std::make_unique<ElectronContentClient>();
+  return content_client_.get();
 }
 
 content::ContentBrowserClient*
@@ -501,15 +498,10 @@ void ElectronMainDelegate::ZygoteForked() {
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  if (crash_reporter::IsCrashpadEnabled()) {
-    if (command_line->HasSwitch(
-            crash_reporter::switches::kCrashpadHandlerPid)) {
-      crash_reporter::InitializeCrashpad(false, process_type);
-      crash_reporter::SetFirstChanceExceptionHandler(
-          v8::TryHandleWebAssemblyTrapPosix);
-    }
-  } else {
-    breakpad::InitCrashReporter(process_type);
+  if (command_line->HasSwitch(crash_reporter::switches::kCrashpadHandlerPid)) {
+    crash_reporter::InitializeCrashpad(false, process_type);
+    crash_reporter::SetFirstChanceExceptionHandler(
+        v8::TryHandleWebAssemblyTrapPosix);
   }
 
   // Reset the command line for the newly spawned process.

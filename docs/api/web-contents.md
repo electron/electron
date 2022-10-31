@@ -1338,20 +1338,25 @@ const requestId = webContents.findInPage('api')
 console.log(requestId)
 ```
 
-#### `contents.capturePage([rect])`
+#### `contents.capturePage([rect, opts])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
+* `opts` Object (optional)
+  * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
+  * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep. Default is `false`.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
+The page is considered visible when its browser window is hidden and the capturer count is non-zero.
+If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
 
 #### `contents.isBeingCaptured()`
 
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
 
-#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])`
+#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])` _Deprecated_
 
 * `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
 * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible.
@@ -1362,7 +1367,9 @@ hidden and the capturer count is non-zero. If you would like the page to stay hi
 
 This also affects the Page Visibility API.
 
-#### `contents.decrementCapturerCount([stayHidden, stayAwake])`
+**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`. See [breaking changes](../breaking-changes.md).
+
+#### `contents.decrementCapturerCount([stayHidden, stayAwake])` _Deprecated_
 
 * `stayHidden` boolean (optional) -  Keep the page in hidden state instead of visible.
 * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
@@ -1370,6 +1377,9 @@ This also affects the Page Visibility API.
 Decrease the capturer count by one. The page will be set to hidden or occluded state when its
 browser window is hidden or occluded and the capturer count reaches zero. If you want to
 decrease the hidden capturer count instead you should set `stayHidden` to true.
+
+**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`.
+See [breaking changes](../breaking-changes.md).
 
 #### `contents.getPrinters()` _Deprecated_
 

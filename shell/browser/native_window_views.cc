@@ -19,9 +19,8 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
-#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
-#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_view_manager.h"
@@ -281,24 +280,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       new ElectronDesktopWindowTreeHostLinux(this, native_widget);
 #endif
 
-  // Ref https://github.com/electron/electron/issues/30760
-  // Set the can_resize param before initializing the widget.
-  // When resizable_ is true, this causes the WS_THICKFRAME style
-  // to be passed into CreateWindowEx and SetWindowLong calls in
-  // WindowImpl::Init and HwndMessageHandler::SizeConstraintsChanged
-  // respectively. As a result, the Windows 7 frame doesn't show,
-  // but it isn't clear why this is the case.
-  // When resizable_ is false, WS_THICKFRAME is not passed into the
-  // SetWindowLong call, so the Windows 7 frame still shows.
-  // One workaround would be to call set_can_resize(true) here,
-  // and then move the SetCanResize(resizable_) call after the
-  // SetWindowLong call around line 365, but that's a much larger change.
-  set_can_resize(true);
   widget()->Init(std::move(params));
-
-  // When the workaround above is not needed anymore, only this
-  // call should be necessary.
-  // With the workaround in place, this call doesn't do anything.
   SetCanResize(resizable_);
 
   bool fullscreen = false;
@@ -1512,11 +1494,6 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
   return content_bounds;
 }
 
-void NativeWindowViews::UpdateDraggableRegions(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
-}
-
 #if BUILDFLAG(IS_WIN)
 void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
   // We are responsible for storing the images.
@@ -1617,11 +1594,11 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     const gfx::Point& location) {
   // App window should claim mouse events that fall within any BrowserViews'
   // draggable region.
-  for (auto* view : browser_views()) {
-    auto* native_view = static_cast<NativeBrowserViewViews*>(view);
-    auto* view_draggable_region = native_view->draggable_region();
-    if (view_draggable_region &&
-        view_draggable_region->contains(location.x(), location.y()))
+  for (auto* view : inspectable_views()) {
+    auto* inspectable_view =
+        static_cast<InspectableWebContentsViewViews*>(view);
+    if (inspectable_view->IsContainedInDraggableRegion(content_view(),
+                                                       location))
       return false;
   }
 

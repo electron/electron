@@ -37,9 +37,5 @@ int main(int argc, char* argv[]) {
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
   base::CommandLine::Init(params.argc, params.argv);
-  // TODO(https://crbug.com/1176772): Remove when Chrome Linux is fully migrated
-  // to Crashpad.
-  base::CommandLine::ForCurrentProcess()->AppendSwitch(
-      ::switches::kEnableCrashpad);
   return content::ContentMain(std::move(params));
 }

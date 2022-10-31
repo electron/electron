@@ -1,4 +1,4 @@
-const asar = require('asar');
+const asar = require('@electron/asar');
 const crypto = require('crypto');
 const fs = require('fs');
 

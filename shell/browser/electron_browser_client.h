@@ -125,8 +125,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                                       int child_process_id) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
   std::string GetGeolocationApiKey() override;
-  scoped_refptr<content::QuotaPermissionContext> CreateQuotaPermissionContext()
-      override;
   content::GeneratedCodeCacheSettings GetGeneratedCodeCacheSettings(
       content::BrowserContext* context) override;
   void AllowCertificateError(
@@ -236,9 +234,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
   WillCreateURLLoaderRequestInterceptors(
       content::NavigationUIData* navigation_ui_data,
-      int frame_tree_node_id,
-      const scoped_refptr<network::SharedURLLoaderFactory>&
-          network_loader_factory) override;
+      int frame_tree_node_id) override;
   bool ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
       base::StringPiece scheme,
       bool is_embedded_origin_secure) override;

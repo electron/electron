@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Wed, 26 Oct 2022 16:14:20 -0400
+Subject: Remove AllocationSpace::MAP_SPACE enum constant
+
+This was removed in:
+https://chromium-review.googlesource.com/c/v8/v8/+/3967841
+
+diff --git a/test/parallel/test-v8-stats.js b/test/parallel/test-v8-stats.js
+index 98ad11f11f9b9bf5699801814f8234e84dfaf638..678cb7626bc82bea17129ce2f8a4590350bf0983 100644
+--- a/test/parallel/test-v8-stats.js
++++ b/test/parallel/test-v8-stats.js
+@@ -41,7 +41,6 @@ const expectedHeapSpaces = [
+   'code_large_object_space',
+   'code_space',
+   'large_object_space',
+-  'map_space',
+   'new_large_object_space',
+   'new_space',
+   'old_space',

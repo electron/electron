@@ -43,7 +43,6 @@
 #include "base/containers/span.h"
 #include "base/files/file_util.h"
 #include "base/guid.h"
-#include "components/crash/core/app/breakpad_linux.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "components/upload_list/combining_upload_list.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
@@ -149,28 +148,15 @@ void Start(const std::string& submit_url,
           ? "node"
           : command_line->GetSwitchValueASCII(::switches::kProcessType);
 #if BUILDFLAG(IS_LINUX)
-  if (::crash_reporter::IsCrashpadEnabled()) {
-    for (const auto& pair : extra)
-      electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
-      ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
-    }
-    if (ignore_system_crash_handler) {
-      crashpad::CrashpadInfo::GetCrashpadInfo()
-          ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
-    }
-  } else {
-    ::crash_keys::SetMetricsClientIdFromGUID(GetClientId());
-    auto& global_crash_keys = GetGlobalCrashKeysMutable();
-    for (const auto& pair : global_extra) {
-      global_crash_keys[pair.first] = pair.second;
-    }
-    for (const auto& pair : extra)
-      electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    for (const auto& pair : global_extra)
-      electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    breakpad::InitCrashReporter(process_type);
+  for (const auto& pair : extra)
+    electron::crash_keys::SetCrashKey(pair.first, pair.second);
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+  }
+  if (ignore_system_crash_handler) {
+    crashpad::CrashpadInfo::GetCrashpadInfo()
+        ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
   }
 #elif BUILDFLAG(IS_MAC)
   for (const auto& pair : extra)
@@ -213,17 +199,15 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
       crash_dir_path.AppendASCII(CrashUploadList::kReporterLogFilename);
   scoped_refptr<UploadList> result =
       base::MakeRefCounted<TextLogUploadList>(upload_log_path);
-  if (crash_reporter::IsCrashpadEnabled()) {
-    // Crashpad keeps the records of C++ crashes (segfaults, etc) in its
-    // internal database. The JavaScript error reporter writes JS error upload
-    // records to the older text format. Combine the two to present a complete
-    // list to the user.
-    // TODO(nornagon): what is "The JavaScript error reporter", and do we care
-    // about it?
-    std::vector<scoped_refptr<UploadList>> uploaders = {
-        base::MakeRefCounted<CrashUploadListCrashpad>(), std::move(result)};
-    result = base::MakeRefCounted<CombiningUploadList>(std::move(uploaders));
-  }
+  // Crashpad keeps the records of C++ crashes (segfaults, etc) in its
+  // internal database. The JavaScript error reporter writes JS error upload
+  // records to the older text format. Combine the two to present a complete
+  // list to the user.
+  // TODO(nornagon): what is "The JavaScript error reporter", and do we care
+  // about it?
+  std::vector<scoped_refptr<UploadList>> uploaders = {
+      base::MakeRefCounted<CrashUploadListCrashpad>(), std::move(result)};
+  result = base::MakeRefCounted<CombiningUploadList>(std::move(uploaders));
   return result;
 #endif  // BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 }
