@@ -1,7 +1,7 @@
-From 194bcc127f21f940b128438f3c0d5136a03f97e7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tobias Tebbi <tebbi@chromium.org>
-Date: Thu, 06 Oct 2022 13:43:19 +0200
-Subject: [PATCH] Merged: [turbofan] validate more concurrent reads
+Date: Thu, 6 Oct 2022 13:43:19 +0200
+Subject: Merged: [turbofan] validate more concurrent reads
 
 Bug: chromium:1369871
 (cherry picked from commit ebe5675360e4735589a92a8836303822da79a8f4)
@@ -13,13 +13,12 @@ Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.6@{#41}
 Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
 Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
----
 
 diff --git a/src/compiler/compilation-dependencies.cc b/src/compiler/compilation-dependencies.cc
-index 761e673..c356f3b 100644
+index 4fb04ae2bd8960deb7e978641d3cf75297f72bda..45aea59373067d1f0fe63d2fcc7059b788c8277b 100644
 --- a/src/compiler/compilation-dependencies.cc
 +++ b/src/compiler/compilation-dependencies.cc
-@@ -34,7 +34,8 @@
+@@ -35,7 +35,8 @@ namespace compiler {
    V(Protector)                          \
    V(PrototypeProperty)                  \
    V(StableMap)                          \
@@ -29,7 +28,7 @@ index 761e673..c356f3b 100644
  
  CompilationDependencies::CompilationDependencies(JSHeapBroker* broker,
                                                   Zone* zone)
-@@ -868,6 +869,42 @@
+@@ -863,6 +864,42 @@ class ProtectorDependency final : public CompilationDependency {
    const PropertyCellRef cell_;
  };
  
@@ -72,7 +71,7 @@ index 761e673..c356f3b 100644
  class ElementsKindDependency final : public CompilationDependency {
   public:
    ElementsKindDependency(const AllocationSiteRef& site, ElementsKind kind)
-@@ -1120,6 +1157,12 @@
+@@ -1115,6 +1152,12 @@ void CompilationDependencies::DependOnElementsKind(
    }
  }
  
@@ -86,10 +85,10 @@ index 761e673..c356f3b 100644
      const JSObjectRef& holder, uint32_t index, const ObjectRef& element) {
    RecordDependency(
 diff --git a/src/compiler/compilation-dependencies.h b/src/compiler/compilation-dependencies.h
-index 52c07ec..b679934 100644
+index 72ee5773abfcf344e3964d58ea855461ca1ca79d..e0f4eca359b2f7cdca326702d0181b83d3dc322c 100644
 --- a/src/compiler/compilation-dependencies.h
 +++ b/src/compiler/compilation-dependencies.h
-@@ -93,6 +93,10 @@
+@@ -94,6 +94,10 @@ class V8_EXPORT_PRIVATE CompilationDependencies : public ZoneObject {
    // Record the assumption that {site}'s {ElementsKind} doesn't change.
    void DependOnElementsKind(const AllocationSiteRef& site);
  
@@ -101,10 +100,10 @@ index 52c07ec..b679934 100644
                                    const ObjectRef& element);
  
 diff --git a/src/compiler/js-create-lowering.cc b/src/compiler/js-create-lowering.cc
-index 4cc0a9a..100ec33 100644
+index 1b4755e2db290701740cbcbaf6fcab2154c68132..241186706d9388fe6127c5cf1d1e6befecf229f7 100644
 --- a/src/compiler/js-create-lowering.cc
 +++ b/src/compiler/js-create-lowering.cc
-@@ -1673,6 +1673,10 @@
+@@ -1677,6 +1677,10 @@ base::Optional<Node*> JSCreateLowering::TryAllocateFastLiteral(
  
    // Now that we hold the migration lock, get the current map.
    MapRef boilerplate_map = boilerplate.map();
@@ -115,7 +114,7 @@ index 4cc0a9a..100ec33 100644
    {
      base::Optional<MapRef> current_boilerplate_map =
          boilerplate.map_direct_read();
-@@ -1837,10 +1841,18 @@
+@@ -1841,10 +1845,18 @@ base::Optional<Node*> JSCreateLowering::TryAllocateFastLiteralElements(
        boilerplate.elements(kRelaxedLoad);
    if (!maybe_boilerplate_elements.has_value()) return {};
    FixedArrayBaseRef boilerplate_elements = maybe_boilerplate_elements.value();
