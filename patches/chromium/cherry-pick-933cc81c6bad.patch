@@ -1,7 +1,7 @@
-From 933cc81c6bad0bb1aaf1b07b7255500efc58de6e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xiaocheng Hu <xiaochengh@chromium.org>
 Date: Sat, 10 Sep 2022 05:53:49 +0000
-Subject: [PATCH] Remove symlinks from FileChooserImpl folder upload result
+Subject: Remove symlinks from FileChooserImpl folder upload result
 
 FileChooserImpl is the browser-side implementation of
 <input type=file>. When uploading a whole folder, it
@@ -23,10 +23,9 @@ Commit-Queue: Xiaocheng Hu <xiaochengh@chromium.org>
 Reviewed-by: Mason Freed <masonf@chromium.org>
 Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1045491}
----
 
 diff --git a/content/browser/web_contents/file_chooser_impl.cc b/content/browser/web_contents/file_chooser_impl.cc
-index 7a3ea45d..1aa19f7a 100644
+index 7a3ea45d32c97980c141662f6a071cc517a15ad8..1aa19f7a735b444f2c33d5084edcdd14e3c2f5c5 100644
 --- a/content/browser/web_contents/file_chooser_impl.cc
 +++ b/content/browser/web_contents/file_chooser_impl.cc
 @@ -4,8 +4,11 @@
@@ -61,7 +60,7 @@ index 7a3ea45d..1aa19f7a 100644
  FileChooserImpl::FileSelectListenerImpl::~FileSelectListenerImpl() {
  #if DCHECK_IS_ON()
    if (!was_file_select_listener_function_called_) {
-@@ -51,8 +67,20 @@
+@@ -51,8 +67,20 @@ void FileChooserImpl::FileSelectListenerImpl::FileSelected(
           "FileSelectListener::FileSelectionCanceled()";
    was_file_select_listener_function_called_ = true;
  #endif
@@ -84,7 +83,7 @@ index 7a3ea45d..1aa19f7a 100644
  }
  
  void FileChooserImpl::FileSelectListenerImpl::FileSelectionCanceled() {
-@@ -162,9 +190,9 @@
+@@ -162,9 +190,9 @@ void FileChooserImpl::EnumerateChosenDirectory(
  }
  
  void FileChooserImpl::FileSelected(
@@ -97,10 +96,10 @@ index 7a3ea45d..1aa19f7a 100644
    if (!render_frame_host_) {
      std::move(callback_).Run(nullptr);
 diff --git a/content/browser/web_contents/file_chooser_impl.h b/content/browser/web_contents/file_chooser_impl.h
-index b9f11f9..b628b29 100644
+index b9f11f9e6a0b548cb5ab8ca721ae823e079ce6fa..b628b29a5f84264e62bb3fa9e92550787b8342de 100644
 --- a/content/browser/web_contents/file_chooser_impl.h
 +++ b/content/browser/web_contents/file_chooser_impl.h
-@@ -37,6 +37,8 @@
+@@ -37,6 +37,8 @@ class CONTENT_EXPORT FileChooserImpl : public blink::mojom::FileChooser,
  
      // FileSelectListener overrides:
  
@@ -109,7 +108,7 @@ index b9f11f9..b628b29 100644
      void FileSelected(std::vector<blink::mojom::FileChooserFileInfoPtr> files,
                        const base::FilePath& base_dir,
                        blink::mojom::FileChooserParams::Mode mode) override;
-@@ -68,9 +70,9 @@
+@@ -68,9 +70,9 @@ class CONTENT_EXPORT FileChooserImpl : public blink::mojom::FileChooser,
  
    ~FileChooserImpl() override;
  
@@ -122,7 +121,7 @@ index b9f11f9..b628b29 100644
  
    void FileSelectionCanceled();
  
-@@ -82,6 +84,10 @@
+@@ -82,6 +84,10 @@ class CONTENT_EXPORT FileChooserImpl : public blink::mojom::FileChooser,
        const base::FilePath& directory_path,
        EnumerateChosenDirectoryCallback callback) override;
  
@@ -133,7 +132,7 @@ index b9f11f9..b628b29 100644
   private:
    explicit FileChooserImpl(RenderFrameHostImpl* render_frame_host);
  
-@@ -95,6 +101,8 @@
+@@ -95,6 +101,8 @@ class CONTENT_EXPORT FileChooserImpl : public blink::mojom::FileChooser,
    raw_ptr<RenderFrameHostImpl> render_frame_host_;
    scoped_refptr<FileSelectListenerImpl> listener_impl_;
    base::OnceCallback<void(blink::mojom::FileChooserResultPtr)> callback_;
@@ -143,7 +142,7 @@ index b9f11f9..b628b29 100644
  
  }  // namespace content
 diff --git a/content/browser/web_contents/file_chooser_impl_browsertest.cc b/content/browser/web_contents/file_chooser_impl_browsertest.cc
-index 5aa120c..2acd221 100644
+index 5aa120cd2e9fab1492f5d0993adbb2f80a4aa732..2acd2216331bd9be56eb9705f0e9c0d3bceb9e93 100644
 --- a/content/browser/web_contents/file_chooser_impl_browsertest.cc
 +++ b/content/browser/web_contents/file_chooser_impl_browsertest.cc
 @@ -5,14 +5,18 @@
@@ -165,7 +164,7 @@ index 5aa120c..2acd221 100644
  #include "url/gurl.h"
  #include "url/url_constants.h"
  
-@@ -143,11 +147,52 @@
+@@ -143,11 +147,52 @@ IN_PROC_BROWSER_TEST_F(FileChooserImplBrowserTest,
        ->SetListenerFunctionCalledTrueForTesting();
    std::vector<blink::mojom::FileChooserFileInfoPtr> files;
    files.emplace_back(blink::mojom::FileChooserFileInfoPtr(nullptr));
@@ -221,10 +220,10 @@ index 5aa120c..2acd221 100644
 +
  }  // namespace content
 diff --git a/content/test/content_browser_test_utils_internal.cc b/content/test/content_browser_test_utils_internal.cc
-index 6db08b6..8e1dfaf 100644
+index 8183cb7e6547f42b27afc323fe136e2157e4dd03..dbdf244571956645c6494c4cdab514dd42dbb6c2 100644
 --- a/content/test/content_browser_test_utils_internal.cc
 +++ b/content/test/content_browser_test_utils_internal.cc
-@@ -445,9 +445,14 @@
+@@ -447,9 +447,14 @@ Shell* OpenPopup(const ToRenderFrameHost& opener,
    return new_shell_observer.GetShell();
  }
  
@@ -240,7 +239,7 @@ index 6db08b6..8e1dfaf 100644
  
  FileChooserDelegate::~FileChooserDelegate() = default;
  
-@@ -455,16 +460,18 @@
+@@ -457,16 +462,18 @@ void FileChooserDelegate::RunFileChooser(
      RenderFrameHost* render_frame_host,
      scoped_refptr<content::FileSelectListener> listener,
      const blink::mojom::FileChooserParams& params) {
@@ -267,10 +266,10 @@ index 6db08b6..8e1dfaf 100644
  
  FrameTestNavigationManager::FrameTestNavigationManager(
 diff --git a/content/test/content_browser_test_utils_internal.h b/content/test/content_browser_test_utils_internal.h
-index 6ae5e8f..3bf1bb93 100644
+index 6ae5e8f81a189702d5ed9bef003696f34c525dd3..3bf1bb93e15b0a5270262837802e140ad72a9231 100644
 --- a/content/test/content_browser_test_utils_internal.h
 +++ b/content/test/content_browser_test_utils_internal.h
-@@ -176,9 +176,11 @@
+@@ -176,9 +176,11 @@ Shell* OpenPopup(const ToRenderFrameHost& opener,
  class FileChooserDelegate : public WebContentsDelegate {
   public:
    // Constructs a WebContentsDelegate that mocks a file dialog.
@@ -284,7 +283,7 @@ index 6ae5e8f..3bf1bb93 100644
    ~FileChooserDelegate() override;
  
    // Implementation of WebContentsDelegate::RunFileChooser.
-@@ -190,7 +192,7 @@
+@@ -190,7 +192,7 @@ class FileChooserDelegate : public WebContentsDelegate {
    const blink::mojom::FileChooserParams& params() const { return *params_; }
  
   private:
@@ -295,7 +294,7 @@ index 6ae5e8f..3bf1bb93 100644
  };
 diff --git a/content/test/data/file_chooser/dir_with_symlink/symlink b/content/test/data/file_chooser/dir_with_symlink/symlink
 new file mode 120000
-index 0000000..7857c689
+index 0000000000000000000000000000000000000000..7857c689f7043265b4e6d4dcdf6d40d0be2d3d60
 --- /dev/null
 +++ b/content/test/data/file_chooser/dir_with_symlink/symlink
 @@ -0,0 +1 @@
@@ -303,21 +302,21 @@ index 0000000..7857c689
 \ No newline at end of file
 diff --git a/content/test/data/file_chooser/dir_with_symlink/text_file.txt b/content/test/data/file_chooser/dir_with_symlink/text_file.txt
 new file mode 100644
-index 0000000..8e27be7d
+index 0000000000000000000000000000000000000000..8e27be7d6154a1f68ea9160ef0e18691d20560dc
 --- /dev/null
 +++ b/content/test/data/file_chooser/dir_with_symlink/text_file.txt
 @@ -0,0 +1 @@
 +text
 diff --git a/content/test/data/file_chooser/linked_text_file.txt b/content/test/data/file_chooser/linked_text_file.txt
 new file mode 100644
-index 0000000..9a1f4bc
+index 0000000000000000000000000000000000000000..9a1f4bc60917c014eac1464ad664a0271c288b84
 --- /dev/null
 +++ b/content/test/data/file_chooser/linked_text_file.txt
 @@ -0,0 +1 @@
 +linked text file
 diff --git a/content/test/data/file_input_webkitdirectory.html b/content/test/data/file_input_webkitdirectory.html
 new file mode 100644
-index 0000000..5b7bb50
+index 0000000000000000000000000000000000000000..5b7bb501f7eb5d9f28751f36380e4ad01d2da0c7
 --- /dev/null
 +++ b/content/test/data/file_input_webkitdirectory.html
 @@ -0,0 +1 @@
