@@ -82,6 +82,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   gin::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
+  window_->AddDraggableRegionProvider(web_contents_view.get());
 
   // Save a reference of the WebContents.
   gin::Handle<WebContents> web_contents =
@@ -137,14 +138,6 @@ void BrowserWindow::WebContentsDestroyed() {
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
   window_unresponsive_closure_.Cancel();
   Emit("responsive");
-}
-
-void BrowserWindow::OnDraggableRegionsUpdated(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  if (window_->has_frame())
-    return;
-
-  window_->UpdateDraggableRegions(regions);
 }
 
 void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {

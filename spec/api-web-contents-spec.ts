@@ -1665,9 +1665,7 @@ describe('webContents module', () => {
       });
     });
 
-    // TODO(jeremy): window.open() in a real browser passes the referrer, but
-    // our hacked-up window.open() shim doesn't. It should.
-    xit('propagates referrer information to windows opened with window.open', (done) => {
+    it('propagates referrer information to windows opened with window.open', (done) => {
       const w = new BrowserWindow({ show: false });
       const server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
@@ -1685,7 +1683,7 @@ describe('webContents module', () => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.setWindowOpenHandler(details => {
             expect(details.referrer.url).to.equal(url);
-            expect(details.referrer.policy).to.equal('no-referrer-when-downgrade');
+            expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
             return { action: 'allow' };
           });
           w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');

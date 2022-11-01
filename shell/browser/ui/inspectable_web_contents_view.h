@@ -41,10 +41,6 @@ class InspectableWebContentsView {
   }
   InspectableWebContentsViewDelegate* GetDelegate() const { return delegate_; }
 
-  const std::vector<mojom::DraggableRegionPtr>& GetDraggableRegions() const {
-    return draggable_regions_;
-  }
-
 #if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
   // Returns the container control, which has devtools view attached.
   virtual views::View* GetView() = 0;
@@ -66,15 +62,9 @@ class InspectableWebContentsView {
       const DevToolsContentsResizingStrategy& strategy) = 0;
   virtual void SetTitle(const std::u16string& title) = 0;
 
-  // Called when the window needs to update its draggable region.
-  virtual void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions) = 0;
-
  protected:
   // Owns us.
   InspectableWebContents* inspectable_web_contents_;
-
-  std::vector<mojom::DraggableRegionPtr> draggable_regions_;
 
  private:
   InspectableWebContentsViewDelegate* delegate_ = nullptr;  // weak references.
