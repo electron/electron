@@ -766,6 +766,7 @@ void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
     }
 
     window_->AddBrowserView(browser_view->view());
+    window_->AddDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(this);
     browser_views_[browser_view->ID()].Reset(isolate(), browser_view.ToV8());
   }
@@ -775,6 +776,7 @@ void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
   auto iter = browser_views_.find(browser_view->ID());
   if (iter != browser_views_.end()) {
     window_->RemoveBrowserView(browser_view->view());
+    window_->RemoveDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(nullptr);
     iter->second.Reset();
     browser_views_.erase(iter);
@@ -1114,6 +1116,7 @@ void BaseWindow::ResetBrowserViews() {
       DCHECK_EQ(owner_window, this);
       browser_view->SetOwnerWindow(nullptr);
       window_->RemoveBrowserView(browser_view->view());
+      window_->RemoveDraggableRegionProvider(browser_view.get());
       browser_view->SetOwnerWindow(nullptr);
     }
 
