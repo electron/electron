@@ -83,7 +83,6 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
-#include "shell/browser/electron_quota_permission_context.h"
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
 #include "shell/browser/electron_web_contents_utility_handler_impl.h"
 #include "shell/browser/font_defaults.h"
@@ -601,11 +600,6 @@ std::string ElectronBrowserClient::GetGeolocationApiKey() {
   std::string api_key;
   env->GetVar("GOOGLE_API_KEY", &api_key);
   return api_key;
-}
-
-scoped_refptr<content::QuotaPermissionContext>
-ElectronBrowserClient::CreateQuotaPermissionContext() {
-  return base::MakeRefCounted<ElectronQuotaPermissionContext>();
 }
 
 content::GeneratedCodeCacheSettings

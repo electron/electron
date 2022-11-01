@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index a6b18dea1236535e4c802c4c1abceefb69609b17..76bc010c7a4af291fff8d44c0e5c54b93f355b87 100644
+index c6e527e33e7280342284c7fb46503d47395a5a23..617ec42be88e848a04491aec1cbc54b060016414 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -980,7 +980,6 @@ if (is_win) {
+@@ -991,7 +991,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,12 +22,12 @@ index a6b18dea1236535e4c802c4c1abceefb69609b17..76bc010c7a4af291fff8d44c0e5c54b9
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -989,6 +988,10 @@ if (is_win) {
+@@ -1000,6 +999,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
 +
-+    if (enable_basic_printing) {
++    if (enable_printing) {
 +      deps += [ "//printing:printing_unittests" ]
 +    }
    }
@@ -78,7 +78,7 @@ index a1372cc90fc84b159e9952fa747e36360ae1a170..429b93910457675347b3b80e232e71aa
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 51bab147b3c353313e91b1ff09b735bfdde9b19a..d311ed33b2cf8fc459af7c3b7dd0c0ff9f2fdc51 100644
+index ec5386f5bef38a5f8bbde193e5f61de36f50494f..2348993386efbdf991bd749b482baee1a6892b92 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,7 +20,6 @@
@@ -97,7 +97,7 @@ index 51bab147b3c353313e91b1ff09b735bfdde9b19a..d311ed33b2cf8fc459af7c3b7dd0c0ff
  #include "printing/backend/print_backend.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/mojom/print.mojom.h"
-@@ -208,16 +208,19 @@ void PrintJobWorker::SetSettings(base::Value::Dict new_settings,
+@@ -211,16 +211,19 @@ void PrintJobWorker::SetSettings(base::Value::Dict new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && defined(USE_CUPS)
    }
  
@@ -553,7 +553,7 @@ index 2273775eccac63960bdea6124e657b4177120ad8..a94d3ecb7fde44888ef85df1cda1c1b5
                         PrintWithParamsCallback callback) override;
    void PrintForSystemDialog() override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 220a751903f8bec318e5d7f48f35333b3b1c155b..60c54f6e407ba89894847b7e34f0ea9e3afd63af 100644
+index 72a4e933b8aface53db92884b245d8b92d950917..b7aa4fd0e96e43a6ef0be6c9fbe720b235956714 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -289,7 +289,7 @@ union PrintWithParamsResult {
@@ -565,7 +565,7 @@ index 220a751903f8bec318e5d7f48f35333b3b1c155b..60c54f6e407ba89894847b7e34f0ea9e
  
    // Requests the frame to be printed with specified parameters. This is used
    // to programmatically produce PDF by request from the browser (e.g. over
-@@ -372,7 +372,7 @@ interface PrintManagerHost {
+@@ -373,7 +373,7 @@ interface PrintManagerHost {
    // Request the print settings from the user. This step is about showing
    // UI to the user to select the final print settings.
    [Sync]
@@ -796,41 +796,21 @@ index 51a5497b809cda82b223138f43507172a9f066ae..71227492fd87e577518f3bf55ded37b0
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a82ab440893d22424366c969d6765a10ee05ea86..a68bc27a93a38f5a1cb0c3dc225def6290dbf688 100644
+index 2799c8b88e09656f599c672f7a5422b802a56dbf..b33864b2d57fb26637bd96edbd8fb917881f5f4c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2819,8 +2819,9 @@ source_set("browser") {
+@@ -2823,8 +2823,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
--    assert(enable_basic_printing)
+-    assert(enable_printing)
 -    deps += [ "//printing" ]
-+    if (enable_basic_printing) {
++    if (enable_printing) {
 +      deps += [ "//printing" ]
 +    }
  
      if (is_chromeos) {
        sources += [
-diff --git a/content/browser/utility_sandbox_delegate_win.cc b/content/browser/utility_sandbox_delegate_win.cc
-index aa59ef2ea780af3e881be9a984eef5d309586dc4..c5bd3ed36ff3f4d1fe75ef2c6a1d40d655c0bbe0 100644
---- a/content/browser/utility_sandbox_delegate_win.cc
-+++ b/content/browser/utility_sandbox_delegate_win.cc
-@@ -99,6 +99,7 @@ bool NetworkPreSpawnTarget(sandbox::TargetConfig* config) {
-   return true;
- }
- 
-+#if BUILDFLAG(ENABLE_PRINTING)
- // Sets the sandbox policy for the print backend service process.
- bool PrintBackendPreSpawnTarget(sandbox::TargetConfig* config) {
-   DCHECK(!config->IsConfigured());
-@@ -192,6 +193,7 @@ bool XrCompositingPreSpawnTarget(sandbox::TargetConfig* config,
- 
-   return true;
- }
-+#endif
- }  // namespace
- 
- std::string UtilitySandboxedProcessLauncherDelegate::GetSandboxTag() {
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
 index 3a9e75c229f028dcbfb2d7b9294bc42989cb4c1e..a890c5517c0708034bbc6b9b606c990a9ae8be7a 100644
 --- a/printing/printing_context.cc

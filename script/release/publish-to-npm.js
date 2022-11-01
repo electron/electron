@@ -194,7 +194,7 @@ new Promise((resolve, reject) => {
     });
   })
   .then((tarballPath) => {
-    const existingVersionJSON = childProcess.execSync(`npm view electron@${currentElectronVersion} --json`).toString('utf-8');
+    const existingVersionJSON = childProcess.execSync(`npx npm@7 view ${rootPackageJson.name}@${currentElectronVersion} --json`).toString('utf-8');
     // It's possible this is a re-run and we already have published the package, if not we just publish like normal
     if (!existingVersionJSON) {
       childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag} --otp=${process.env.ELECTRON_NPM_OTP}`);

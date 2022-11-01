@@ -24,7 +24,6 @@ export class WebViewImpl {
   public guestInstanceId?: number
   public hasFocus = false
   public internalInstanceId?: number;
-  public resizeObserver?: ResizeObserver;
   public viewInstanceId: number
 
   // on* Event handlers.
@@ -101,14 +100,6 @@ export class WebViewImpl {
 
     // Let the changed attribute handle its own mutation
     this.attributes.get(attributeName)!.handleMutation(oldValue, newValue);
-  }
-
-  onElementResize () {
-    const props = {
-      newWidth: this.webviewNode.clientWidth,
-      newHeight: this.webviewNode.clientHeight
-    };
-    this.dispatchEvent('resize', props);
   }
 
   createGuest () {
@@ -203,10 +194,6 @@ export class WebViewImpl {
     }
 
     this.guestInstanceId = guestInstanceId;
-    // TODO(zcbenz): Should we deprecate the "resize" event? Wait, it is not
-    // even documented.
-    this.resizeObserver = new ResizeObserver(this.onElementResize.bind(this));
-    this.resizeObserver.observe(this.internalElement);
   }
 }
 
