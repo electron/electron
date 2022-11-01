@@ -44,7 +44,7 @@ index 89b9323c08cfed0d3ea3a0ec1beaa0bdfabe343e..d000b7f43f393d297a3715ea4279537b
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index eb178455e92ae0c5f6d5033ffc1990b711466a83..9b4f909501f6cbc50a7d88cef679add9e6c454d2 100644
+index 1b91b71bae8201d7cae5850a8c810bd179a36ab1..7f4bc1ded505067ba83001b389ab5813bad17dc4 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -566,10 +566,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
