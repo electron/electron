@@ -232,7 +232,7 @@ how to meet the Mac App Store requirements.
 
 ### Upload
 
-The Application Loader should be used to upload the signed app to iTunes
+[Apple Transporter](apple-transporter) should be used to upload the signed app to App Store
 Connect for processing, making sure you have [created a record][create-record]
 before uploading.
 
@@ -345,7 +345,8 @@ Electron uses following cryptographic algorithms:
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [app-notarization]: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
-[create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
+[create-record]: https://help.apple.com/app-store-connect/#/dev2cd126805
+[apple-transporter]: https://help.apple.com/itc/transporteruserguide/en.lproj/static.html
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [export-compliance]: https://help.apple.com/app-store-connect/#/devc3f64248f
 [user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6
