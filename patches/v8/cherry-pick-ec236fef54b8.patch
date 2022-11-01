@@ -1,7 +1,7 @@
-From ec236fef54b801fcfd89342108cfe95d20db2fd8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tobias Tebbi <tebbi@chromium.org>
 Date: Wed, 26 Oct 2022 11:19:59 +0200
-Subject: [PATCH] Merged: [turbofan] do not optimize any stores for field type None
+Subject: Merged: [turbofan] do not optimize any stores for field type None
 
 Fixed: chromium:1378239
 (cherry picked from commit db83e72034c0d431ff2f73e3c4ae3130c0f3e4e1)
@@ -13,13 +13,12 @@ Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.6@{#45}
 Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
 Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
----
 
 diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
-index 024a803..4c89233 100644
+index 53cab92b8e72bbfcead07b94f68f0872b9379b53..6ad6a68092efc36591204f9aacde97a49b13812d 100644
 --- a/src/compiler/access-info.cc
 +++ b/src/compiler/access-info.cc
-@@ -451,9 +451,15 @@
+@@ -454,9 +454,15 @@ PropertyAccessInfo AccessInfoFactory::ComputeDataFieldAccessInfo(
              map, descriptor, details_representation));
    } else if (details_representation.IsHeapObject()) {
      if (descriptors_field_type->IsNone()) {
