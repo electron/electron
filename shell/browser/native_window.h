@@ -227,6 +227,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual void UpdateFrame() = 0;
 #endif
 
+// whether windows should be ignored by mission control
+#if BUILDFLAG(IS_MAC)
+  virtual bool IsHiddenInMissionControl() = 0;
+  virtual void SetHiddenInMissionControl(bool hidden) = 0;
+#endif
+
   // Touchbar API
   virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   virtual void RefreshTouchBarItem(const std::string& item_id);

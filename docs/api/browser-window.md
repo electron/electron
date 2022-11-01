@@ -192,6 +192,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     macOS. Default is `false`.
   * `skipTaskbar` boolean (optional) _macOS_ _Windows_ - Whether to show the window in taskbar.
     Default is `false`.
+  * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
   * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
   * `title` string (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
   * `icon` ([NativeImage](native-image.md) | string) (optional) - The window icon. On Windows it is
@@ -1254,6 +1255,16 @@ Sets whether the window can be manually closed by user. On Linux does nothing.
 Returns `boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
+
+#### `win.setHiddenInMissionControl(hidden)` _macOS_
+
+* `hidden` boolean
+
+Sets whether the window will be hidden when the user toggles into mission control.
+
+#### `win.isHiddenInMissionControl()` _macOS_
+
+Returns `boolean` - Whether the window will be hidden when the user toggles into mission control.
 
 #### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
