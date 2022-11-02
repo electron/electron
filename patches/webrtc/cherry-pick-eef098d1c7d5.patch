@@ -1,0 +1,256 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@webrtc.org>
+Date: Mon, 19 Sep 2022 11:33:23 +0200
+Subject: Avoid DCHECK crashing if SSRCs are not unique.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+To properly handle SSRC collisions in non-BUNDLE we need to change how
+RTP stats IDs are generated, but that is a riskier change to be dealt
+with in a separate CL.
+
+For now, we just make sure that crashing is not a possibility during
+SSRC collisions as a mitigation for https://crbug.com/1361612. This is
+achieved by adding a TryAddStats() method to RTCStatsReport returning
+whether successful.
+
+(cherry picked from commit da6297dc53cb2eaae7b1c5381652de9d707a7d48)
+
+Bug: chromium:1361612
+Change-Id: I8577ae4c84a7c1eb3c7527e9efd8d1b0254269a3
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/275766
+Reviewed-by: Harald Alvestrand <hta@webrtc.org>
+Commit-Queue: Henrik Boström <hbos@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#38197}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/277900
+Reviewed-by: Evan Shrubsole <eshr@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/5304@{#4}
+Cr-Branched-From: 024bd84ca1cf7d3650c27912a3b5bfbb54da152a-refs/heads/main@{#38083}
+
+diff --git a/api/stats/rtc_stats_report.h b/api/stats/rtc_stats_report.h
+index 2ced422370c79fab5ff3d95c24110b468a3eb9ee..f84272cb81f9e1ae1a8926f6627e221bbe456c2d 100644
+--- a/api/stats/rtc_stats_report.h
++++ b/api/stats/rtc_stats_report.h
+@@ -17,6 +17,7 @@
+ #include <map>
+ #include <memory>
+ #include <string>
++#include <utility>
+ #include <vector>
+ 
+ #include "api/ref_counted_base.h"
+@@ -68,6 +69,18 @@ class RTC_EXPORT RTCStatsReport final
+ 
+   int64_t timestamp_us() const { return timestamp_us_; }
+   void AddStats(std::unique_ptr<const RTCStats> stats);
++  // On success, returns a non-owning pointer to `stats`. If the stats ID is not
++  // unique, `stats` is not inserted and nullptr is returned.
++  template <typename T>
++  T* TryAddStats(std::unique_ptr<T> stats) {
++    T* stats_ptr = stats.get();
++    if (!stats_
++             .insert(std::make_pair(std::string(stats->id()), std::move(stats)))
++             .second) {
++      return nullptr;
++    }
++    return stats_ptr;
++  }
+   const RTCStats* Get(const std::string& id) const;
+   size_t size() const { return stats_.size(); }
+ 
+diff --git a/pc/rtc_stats_collector.cc b/pc/rtc_stats_collector.cc
+index 6f1033456de000fae748c5b776ca6353d1da5c05..ead377106f884896cb48e1c5546888290ac534ff 100644
+--- a/pc/rtc_stats_collector.cc
++++ b/pc/rtc_stats_collector.cc
+@@ -1896,6 +1896,12 @@ void RTCStatsCollector::ProduceAudioRTPStreamStats_n(
+               track_media_info_map.GetAttachmentIdByTrack(audio_track).value());
+     }
+     inbound_audio->transport_id = transport_id;
++    auto* inbound_audio_ptr = report->TryAddStats(std::move(inbound_audio));
++    if (!inbound_audio_ptr) {
++      RTC_LOG(LS_ERROR)
++          << "Unable to add audio 'inbound-rtp' to report, ID is not unique.";
++      continue;
++    }
+     // Remote-outbound.
+     auto remote_outbound_audio = CreateRemoteOutboundAudioStreamStats(
+         voice_receiver_info, mid, inbound_audio->id(), transport_id);
+@@ -1903,10 +1909,15 @@ void RTCStatsCollector::ProduceAudioRTPStreamStats_n(
+     if (remote_outbound_audio) {
+       // When the remote outbound stats are available, the remote ID for the
+       // local inbound stats is set.
+-      inbound_audio->remote_id = remote_outbound_audio->id();
+-      report->AddStats(std::move(remote_outbound_audio));
++      auto* remote_outbound_audio_ptr =
++          report->TryAddStats(std::move(remote_outbound_audio));
++      if (remote_outbound_audio_ptr) {
++        inbound_audio_ptr->remote_id = remote_outbound_audio_ptr->id();
++      } else {
++        RTC_LOG(LS_ERROR) << "Unable to add audio 'remote-outbound-rtp' to "
++                          << "report, ID is not unique.";
++      }
+     }
+-    report->AddStats(std::move(inbound_audio));
+   }
+   // Outbound.
+   std::map<std::string, RTCOutboundRTPStreamStats*> audio_outbound_rtps;
+@@ -1933,9 +1944,14 @@ void RTCStatsCollector::ProduceAudioRTPStreamStats_n(
+                                                      attachment_id);
+     }
+     outbound_audio->transport_id = transport_id;
+-    audio_outbound_rtps.insert(
+-        std::make_pair(outbound_audio->id(), outbound_audio.get()));
+-    report->AddStats(std::move(outbound_audio));
++    auto audio_outbound_pair =
++        std::make_pair(outbound_audio->id(), outbound_audio.get());
++    if (report->TryAddStats(std::move(outbound_audio))) {
++      audio_outbound_rtps.insert(std::move(audio_outbound_pair));
++    } else {
++      RTC_LOG(LS_ERROR)
++          << "Unable to add audio 'outbound-rtp' to report, ID is not unique.";
++    }
+   }
+   // Remote-inbound.
+   // These are Report Block-based, information sent from the remote endpoint,
+@@ -1988,8 +2004,10 @@ void RTCStatsCollector::ProduceVideoRTPStreamStats_n(
+               track_media_info_map.GetAttachmentIdByTrack(video_track).value());
+     }
+     inbound_video->transport_id = transport_id;
+-    report->AddStats(std::move(inbound_video));
+-    // TODO(crbug.com/webrtc/12529): Add remote-outbound stats.
++    if (!report->TryAddStats(std::move(inbound_video))) {
++      RTC_LOG(LS_ERROR)
++          << "Unable to add video 'inbound-rtp' to report, ID is not unique.";
++    }
+   }
+   // Outbound
+   std::map<std::string, RTCOutboundRTPStreamStats*> video_outbound_rtps;
+@@ -2016,9 +2034,14 @@ void RTCStatsCollector::ProduceVideoRTPStreamStats_n(
+                                                      attachment_id);
+     }
+     outbound_video->transport_id = transport_id;
+-    video_outbound_rtps.insert(
+-        std::make_pair(outbound_video->id(), outbound_video.get()));
+-    report->AddStats(std::move(outbound_video));
++    auto video_outbound_pair =
++        std::make_pair(outbound_video->id(), outbound_video.get());
++    if (report->TryAddStats(std::move(outbound_video))) {
++      video_outbound_rtps.insert(std::move(video_outbound_pair));
++    } else {
++      RTC_LOG(LS_ERROR)
++          << "Unable to add video 'outbound-rtp' to report, ID is not unique.";
++    }
+   }
+   // Remote-inbound
+   // These are Report Block-based, information sent from the remote endpoint,
+diff --git a/pc/rtc_stats_collector_unittest.cc b/pc/rtc_stats_collector_unittest.cc
+index 1438615ee6750e18ba51a26aa8e1d3153370973c..2b96e3f400f1680306fe24a29c76c64370ffc820 100644
+--- a/pc/rtc_stats_collector_unittest.cc
++++ b/pc/rtc_stats_collector_unittest.cc
+@@ -1007,6 +1007,82 @@ TEST_F(RTCStatsCollectorTest, CollectRTCCertificateStatsSingle) {
+   ExpectReportContainsCertificateInfo(report, *remote_certinfo);
+ }
+ 
++// These SSRC collisions are legal.
++TEST_F(RTCStatsCollectorTest, ValidSsrcCollisionDoesNotCrash) {
++  // BUNDLE audio/video inbound/outbound. Unique SSRCs needed within the BUNDLE.
++  cricket::VoiceMediaInfo mid1_info;
++  mid1_info.receivers.emplace_back();
++  mid1_info.receivers[0].add_ssrc(1);
++  mid1_info.senders.emplace_back();
++  mid1_info.senders[0].add_ssrc(2);
++  pc_->AddVoiceChannel("Mid1", "Transport1", mid1_info);
++  cricket::VideoMediaInfo mid2_info;
++  mid2_info.receivers.emplace_back();
++  mid2_info.receivers[0].add_ssrc(3);
++  mid2_info.senders.emplace_back();
++  mid2_info.senders[0].add_ssrc(4);
++  pc_->AddVideoChannel("Mid2", "Transport1", mid2_info);
++  // Now create a second BUNDLE group with SSRCs colliding with the first group
++  // (but again no collisions within the group).
++  cricket::VoiceMediaInfo mid3_info;
++  mid3_info.receivers.emplace_back();
++  mid3_info.receivers[0].add_ssrc(1);
++  mid3_info.senders.emplace_back();
++  mid3_info.senders[0].add_ssrc(2);
++  pc_->AddVoiceChannel("Mid3", "Transport2", mid3_info);
++  cricket::VideoMediaInfo mid4_info;
++  mid4_info.receivers.emplace_back();
++  mid4_info.receivers[0].add_ssrc(3);
++  mid4_info.senders.emplace_back();
++  mid4_info.senders[0].add_ssrc(4);
++  pc_->AddVideoChannel("Mid4", "Transport2", mid4_info);
++
++  // This should not crash (https://crbug.com/1361612).
++  rtc::scoped_refptr<const RTCStatsReport> report = stats_->GetStatsReport();
++  auto inbound_rtps = report->GetStatsOfType<RTCInboundRTPStreamStats>();
++  auto outbound_rtps = report->GetStatsOfType<RTCOutboundRTPStreamStats>();
++  // TODO(https://crbug.com/webrtc/14443): When valid SSRC collisions are
++  // handled correctly, we should expect to see 4 of each type of object here.
++  EXPECT_EQ(inbound_rtps.size(), 2u);
++  EXPECT_EQ(outbound_rtps.size(), 2u);
++}
++
++// These SSRC collisions are illegal, so it is not clear if this setup can
++// happen even when talking to a malicious endpoint, but simulate illegal SSRC
++// collisions just to make sure we don't crash in even the most extreme cases.
++TEST_F(RTCStatsCollectorTest, InvalidSsrcCollisionDoesNotCrash) {
++  // One SSRC to rule them all.
++  cricket::VoiceMediaInfo mid1_info;
++  mid1_info.receivers.emplace_back();
++  mid1_info.receivers[0].add_ssrc(1);
++  mid1_info.senders.emplace_back();
++  mid1_info.senders[0].add_ssrc(1);
++  pc_->AddVoiceChannel("Mid1", "BundledTransport", mid1_info);
++  cricket::VideoMediaInfo mid2_info;
++  mid2_info.receivers.emplace_back();
++  mid2_info.receivers[0].add_ssrc(1);
++  mid2_info.senders.emplace_back();
++  mid2_info.senders[0].add_ssrc(1);
++  pc_->AddVideoChannel("Mid2", "BundledTransport", mid2_info);
++  cricket::VoiceMediaInfo mid3_info;
++  mid3_info.receivers.emplace_back();
++  mid3_info.receivers[0].add_ssrc(1);
++  mid3_info.senders.emplace_back();
++  mid3_info.senders[0].add_ssrc(1);
++  pc_->AddVoiceChannel("Mid3", "BundledTransport", mid3_info);
++  cricket::VideoMediaInfo mid4_info;
++  mid4_info.receivers.emplace_back();
++  mid4_info.receivers[0].add_ssrc(1);
++  mid4_info.senders.emplace_back();
++  mid4_info.senders[0].add_ssrc(1);
++  pc_->AddVideoChannel("Mid4", "BundledTransport", mid4_info);
++
++  // This should not crash (https://crbug.com/1361612).
++  stats_->GetStatsReport();
++  // Because this setup is illegal, there is no "right answer" to how the report
++  // should look. We only care about not crashing.
++}
++
+ TEST_F(RTCStatsCollectorTest, CollectRTCCodecStats) {
+   // Audio
+   cricket::VoiceMediaInfo voice_media_info;
+diff --git a/stats/rtc_stats_report.cc b/stats/rtc_stats_report.cc
+index 4fbd82508e7a2f415e12c2cc402b5630a53b1da1..187adadd7e928f45ddd727ad30d6ad6bfa81c32d 100644
+--- a/stats/rtc_stats_report.cc
++++ b/stats/rtc_stats_report.cc
+@@ -71,12 +71,15 @@ rtc::scoped_refptr<RTCStatsReport> RTCStatsReport::Copy() const {
+ }
+ 
+ void RTCStatsReport::AddStats(std::unique_ptr<const RTCStats> stats) {
++#if RTC_DCHECK_IS_ON
+   auto result =
++#endif
+       stats_.insert(std::make_pair(std::string(stats->id()), std::move(stats)));
++#if RTC_DCHECK_IS_ON
+   RTC_DCHECK(result.second)
+-      << "A stats object with ID " << result.first->second->id()
+-      << " is already "
+-         "present in this stats report.";
++      << "A stats object with ID \"" << result.first->second->id() << "\" is "
++      << "already present in this stats report.";
++#endif
+ }
+ 
+ const RTCStats* RTCStatsReport::Get(const std::string& id) const {
