@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@webrtc.org>
 Date: Mon, 19 Sep 2022 11:33:23 +0200
-Subject: [Merge-107] [Stats] Avoid DCHECK crashing if SSRCs are not unique.
+Subject: Avoid DCHECK crashing if SSRCs are not unique.
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
