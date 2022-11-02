@@ -1,0 +1,680 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lukasz Anforowicz <lukasza@chromium.org>
+Date: Tue, 30 Aug 2022 19:18:15 +0000
+Subject: Validate `source_context` in ExtensionHostMsg_OpenChannelToNativeApp.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+After this CL, the Browser process will verify `source_context` in the
+IPC payload of the ExtensionHostMsg_OpenChannelToNativeApp message and
+avoid processing malformed or spoofed IPCs.
+
+Change-Id: I9466dc076c4d07dbb4bec38973000dc0418565f6
+Bug: 1356234
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3854987
+Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1041118}
+
+diff --git a/chrome/browser/extensions/extension_security_exploit_browsertest.cc b/chrome/browser/extensions/extension_security_exploit_browsertest.cc
+index 0bbdc8c38a99986d5b8f70f5582f78c7f8be3fa0..7f8ed5f1e0eef6db0504ad3e075d76738bc07243 100644
+--- a/chrome/browser/extensions/extension_security_exploit_browsertest.cc
++++ b/chrome/browser/extensions/extension_security_exploit_browsertest.cc
+@@ -10,6 +10,7 @@
+ #include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/test/bind.h"
++#include "build/build_config.h"
+ #include "chrome/browser/chrome_content_browser_client.h"
+ #include "chrome/browser/extensions/extension_browsertest.h"
+ #include "chrome/browser/extensions/extension_tab_util.h"
+@@ -45,6 +46,10 @@
+ #include "third_party/blink/public/mojom/service_worker/service_worker_database.mojom-forward.h"
+ #include "url/gurl.h"
+ 
++#if !(BUILDFLAG(IS_FUCHSIA))
++#include "chrome/browser/extensions/api/messaging/native_messaging_test_util.h"
++#endif
++
+ namespace extensions {
+ 
+ // ExtensionFrameHostInterceptor is a helper for:
+@@ -280,6 +285,10 @@ class ExtensionSecurityExploitBrowserTest : public ExtensionBrowserTest {
+     InstallTestExtensions();
+   }
+ 
++  content::WebContents* active_web_contents() {
++    return browser()->tab_strip_model()->GetActiveWebContents();
++  }
++
+   // Asks the `extension_id` to inject `content_script` into `web_contents`.
+   // Returns true if the content script execution started successfully.
+   bool ExecuteProgrammaticContentScript(content::WebContents* web_contents,
+@@ -293,36 +302,63 @@ class ExtensionSecurityExploitBrowserTest : public ExtensionBrowserTest {
+         browser()->profile(), extension_id, background_script);
+   }
+ 
++  const Extension& active_extension() { return *active_extension_; }
+   const ExtensionId& active_extension_id() { return active_extension_->id(); }
+   const ExtensionId& spoofed_extension_id() { return spoofed_extension_->id(); }
+ 
+  private:
++  // Installs an `active_extension` and a separate, but otherwise identical
++  // `spoofed_extension` (the only difference will be the extension id).
+   void InstallTestExtensions() {
+-    // Install an `active_extension` and a separate, but otherwise identical
+-    // `spoofed_extension` (the only difference will be the extension id).
+-    auto install_extension = [this](TestExtensionDir& dir) -> const Extension* {
++    auto install_extension =
++        [this](TestExtensionDir& dir,
++               const char* extra_manifest_bits) -> const Extension* {
+       const char kManifestTemplate[] = R"(
+           {
++            %s
+             "name": "ContentScriptTrackerBrowserTest - Programmatic",
+             "version": "1.0",
+             "manifest_version": 2,
+-            "permissions": [ "tabs", "<all_urls>", "storage" ],
++            "permissions": [
++                "tabs",
++                "<all_urls>",
++                "nativeMessaging",
++                "storage"
++            ],
+             "background": {"scripts": ["background_script.js"]}
+           } )";
+-      dir.WriteManifest(kManifestTemplate);
++      dir.WriteManifest(
++          base::StringPrintf(kManifestTemplate, extra_manifest_bits));
+       dir.WriteFile(FILE_PATH_LITERAL("background_script.js"), "");
++      dir.WriteFile(FILE_PATH_LITERAL("page.html"), "<p>page</p>");
+       return LoadExtension(dir.UnpackedPath());
+     };
+ 
+-    TestExtensionDir active_dir;
+-    TestExtensionDir spoofed_dir;
+-    active_extension_ = install_extension(active_dir);
+-    spoofed_extension_ = install_extension(spoofed_dir);
++#if !(BUILDFLAG(IS_FUCHSIA))
++    // The key below corresponds to the extension ID used by
++    // ScopedTestNativeMessagingHost::kExtensionId.
++    const char kActiveExtensionKey[] = R"(
++        "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDcBHwzDvyBQ6bDppkIs9MP4ksKqCMyXQ/A52JivHZKh4YO/9vJsT3oaYhSpDCE9RPocOEQvwsHsFReW2nUEc6OLLyoCFFxIb7KkLGsmfakkut/fFdNJYh0xOTbSN8YvLWcqph09XAY2Y/f0AL7vfO1cuCqtkMt8hFrBGWxDdf9CQIDAQAB",
++    )";
++#else
++    // Native messaging is not available on Fuchsia (i.e.
++    // //chrome/browser/extensions/BUILD.gn excludes
++    // api/messaging/native_messaging_test_util.h on Fuchsia).
++    const char kActiveExtensionKey[] = "";
++#endif
++    active_extension_ = install_extension(active_dir_, kActiveExtensionKey);
++    spoofed_extension_ = install_extension(spoofed_dir_, "");
+     ASSERT_TRUE(active_extension_);
+     ASSERT_TRUE(spoofed_extension_);
++#if !(BUILDFLAG(IS_FUCHSIA))
++    ASSERT_EQ(active_extension_id(),
++              ScopedTestNativeMessagingHost::kExtensionId);
++#endif
+     ASSERT_NE(active_extension_id(), spoofed_extension_id());
+   }
+ 
++  TestExtensionDir active_dir_;
++  TestExtensionDir spoofed_dir_;
+   raw_ptr<const Extension> active_extension_ = nullptr;
+   raw_ptr<const Extension> spoofed_extension_ = nullptr;
+ };
+@@ -333,48 +369,35 @@ class OpenChannelToExtensionExploitTest
+  public:
+   OpenChannelToExtensionExploitTest() = default;
+ 
++  using OpenChannelMessageWaiter =
++      ExtensionMessageWaiter<ExtensionHostMsg_OpenChannelToExtension>;
+   void SetUpOnMainThread() override {
+     ExtensionSecurityExploitBrowserTest::SetUpOnMainThread();
+ 
+-    GURL test_page_url =
+-        embedded_test_server()->GetURL("foo.com", "/title1.html");
+-    ipc_message_waiter_ = StartInterceptingIpcs(test_page_url);
+-  }
+-
+-  // Waits for ExtensionHostMsg_OpenChannelToExtension IPC and returns its
+-  // payload.
+-  ExtensionHostMsg_OpenChannelToExtension::Param WaitForMessage() {
+-    return ipc_message_waiter_->WaitForMessage();
+-  }
+-
+- private:
+-  using OpenChannelMessageWaiter =
+-      ExtensionMessageWaiter<ExtensionHostMsg_OpenChannelToExtension>;
+-  std::unique_ptr<OpenChannelMessageWaiter> StartInterceptingIpcs(
+-      const GURL& test_page_url) {
+     // Start capturing IPC messages in all future/new RenderProcessHosts.
+-    auto ipc_message_waiter = std::make_unique<OpenChannelMessageWaiter>();
++    ipc_message_waiter_ = std::make_unique<OpenChannelMessageWaiter>();
+ 
+     // Navigate to an arbitrary, mostly empty test page.  Make sure that a new
+     // RenderProcessHost is created to make sure it is covered by the
+-    // `ipc_message_waiter`.  (A WebUI -> http navigation should swap the
++    // `ipc_message_waiter_`.  (A WebUI -> http navigation should swap the
+     // RenderProcessHost on all platforms.)
+-    content::WebContents* web_contents =
+-        browser()->tab_strip_model()->GetActiveWebContents();
++    GURL test_page_url =
++        embedded_test_server()->GetURL("foo.com", "/title1.html");
+     int old_process_id =
+-        web_contents->GetPrimaryMainFrame()->GetProcess()->GetID();
++        active_web_contents()->GetPrimaryMainFrame()->GetProcess()->GetID();
+     EXPECT_TRUE(
+         ui_test_utils::NavigateToURL(browser(), GURL("chrome://version")));
+     EXPECT_TRUE(ui_test_utils::NavigateToURL(browser(), test_page_url));
+     int new_process_id =
+-        web_contents->GetPrimaryMainFrame()->GetProcess()->GetID();
++        active_web_contents()->GetPrimaryMainFrame()->GetProcess()->GetID();
+     EXPECT_NE(old_process_id, new_process_id);
+ 
+     // Only intercept messages from `active_extension`'s content script running
+     // in the main frame's process.
+     ExtensionId matching_extension_id = active_extension_id();
+-    int matching_process_id = new_process_id;
+-    ipc_message_waiter->SetIpcMatcher(base::BindLambdaForTesting(
++    int matching_process_id =
++        active_web_contents()->GetPrimaryMainFrame()->GetProcess()->GetID();
++    ipc_message_waiter_->SetIpcMatcher(base::BindLambdaForTesting(
+         [matching_extension_id, matching_process_id](
+             int captured_render_process_id,
+             const ExtensionHostMsg_OpenChannelToExtension::Param& param) {
+@@ -391,14 +414,16 @@ class OpenChannelToExtensionExploitTest
+ 
+           return true;
+         }));
++  }
+ 
+-    return ipc_message_waiter;
++  // Waits for ExtensionHostMsg_OpenChannelToExtension IPC and returns its
++  // payload.
++  ExtensionHostMsg_OpenChannelToExtension::Param WaitForMessage() {
++    return ipc_message_waiter_->WaitForMessage();
+   }
+ 
++ private:
+   std::unique_ptr<OpenChannelMessageWaiter> ipc_message_waiter_;
+-
+-  raw_ptr<const Extension> active_extension_ = nullptr;
+-  raw_ptr<const Extension> spoofed_extension_ = nullptr;
+ };
+ 
+ IN_PROC_BROWSER_TEST_F(OpenChannelToExtensionExploitTest,
+@@ -412,24 +437,22 @@ IN_PROC_BROWSER_TEST_F(OpenChannelToExtensionExploitTest,
+ 
+   // Trigger sending of a valid ExtensionHostMsg_OpenChannelToExtension IPC
+   // from a content script of an `active_extension_id`.
+-  content::WebContents* web_contents =
+-      browser()->tab_strip_model()->GetActiveWebContents();
+   ASSERT_TRUE(ExecuteProgrammaticContentScript(
+-      web_contents, active_extension_id(),
++      active_web_contents(), active_extension_id(),
+       "chrome.runtime.sendMessage({greeting: 'hello'}, (response) => {});"));
+ 
+   // Capture the IPC.
+   auto [source_context, info, channel_name, port_id] = WaitForMessage();
+-
+-  // Mutate the IPC payload.
+   EXPECT_EQ(MessagingEndpoint::Type::kTab, info.source_endpoint.type);
+   EXPECT_EQ(active_extension_id(), info.source_endpoint.extension_id);
++
++  // Mutate the IPC payload.
+   info.source_endpoint.extension_id = spoofed_extension_id();
+ 
+   // Inject the malformed/mutated IPC and verify that the renderer is terminated
+   // as expected.
+   content::RenderProcessHost* main_frame_process =
+-      web_contents->GetPrimaryMainFrame()->GetProcess();
++      active_web_contents()->GetPrimaryMainFrame()->GetProcess();
+   RenderProcessHostBadIpcMessageWaiter kill_waiter(main_frame_process);
+   IPC::IpcSecurityTestUtil::PwnMessageReceived(
+       main_frame_process->GetChannel(),
+@@ -443,24 +466,22 @@ IN_PROC_BROWSER_TEST_F(OpenChannelToExtensionExploitTest,
+                        FromContentScript_UnexpectedNativeAppType) {
+   // Trigger sending of a valid ExtensionHostMsg_OpenChannelToExtension IPC
+   // from a content script of an `active_extension_id`.
+-  content::WebContents* web_contents =
+-      browser()->tab_strip_model()->GetActiveWebContents();
+   ASSERT_TRUE(ExecuteProgrammaticContentScript(
+-      web_contents, active_extension_id(),
++      active_web_contents(), active_extension_id(),
+       "chrome.runtime.sendMessage({greeting: 'hello'}, (response) => {});"));
+ 
+   // Capture the IPC.
+   auto [source_context, info, channel_name, port_id] = WaitForMessage();
+-
+-  // Mutate the IPC payload.
+   EXPECT_EQ(MessagingEndpoint::Type::kTab, info.source_endpoint.type);
+   EXPECT_EQ(active_extension_id(), info.source_endpoint.extension_id);
++
++  // Mutate the IPC payload.
+   info.source_endpoint.type = MessagingEndpoint::Type::kNativeApp;
+ 
+   // Inject the malformed/mutated IPC and verify that the renderer is terminated
+   // as expected.
+   content::RenderProcessHost* main_frame_process =
+-      web_contents->GetPrimaryMainFrame()->GetProcess();
++      active_web_contents()->GetPrimaryMainFrame()->GetProcess();
+   RenderProcessHostBadIpcMessageWaiter kill_waiter(main_frame_process);
+   IPC::IpcSecurityTestUtil::PwnMessageReceived(
+       main_frame_process->GetChannel(),
+@@ -473,24 +494,22 @@ IN_PROC_BROWSER_TEST_F(OpenChannelToExtensionExploitTest,
+                        FromContentScript_UnexpectedExtensionType) {
+   // Trigger sending of a valid ExtensionHostMsg_OpenChannelToExtension IPC
+   // from a content script of an `active_extension_id`.
+-  content::WebContents* web_contents =
+-      browser()->tab_strip_model()->GetActiveWebContents();
+   ASSERT_TRUE(ExecuteProgrammaticContentScript(
+-      web_contents, active_extension_id(),
++      active_web_contents(), active_extension_id(),
+       "chrome.runtime.sendMessage({greeting: 'hello'}, (response) => {});"));
+ 
+   // Capture the IPC.
+   auto [source_context, info, channel_name, port_id] = WaitForMessage();
+-
+-  // Mutate the IPC payload.
+   EXPECT_EQ(MessagingEndpoint::Type::kTab, info.source_endpoint.type);
+   EXPECT_EQ(active_extension_id(), info.source_endpoint.extension_id);
++
++  // Mutate the IPC payload.
+   info.source_endpoint.type = MessagingEndpoint::Type::kExtension;
+ 
+   // Inject the malformed/mutated IPC and verify that the renderer is terminated
+   // as expected.
+   content::RenderProcessHost* main_frame_process =
+-      web_contents->GetPrimaryMainFrame()->GetProcess();
++      active_web_contents()->GetPrimaryMainFrame()->GetProcess();
+   RenderProcessHostBadIpcMessageWaiter kill_waiter(main_frame_process);
+   IPC::IpcSecurityTestUtil::PwnMessageReceived(
+       main_frame_process->GetChannel(),
+@@ -504,25 +523,23 @@ IN_PROC_BROWSER_TEST_F(OpenChannelToExtensionExploitTest,
+                        FromContentScript_NoExtensionIdForExtensionType) {
+   // Trigger sending of a valid ExtensionHostMsg_OpenChannelToExtension IPC
+   // from a content script of an `active_extension_id`.
+-  content::WebContents* web_contents =
+-      browser()->tab_strip_model()->GetActiveWebContents();
+   ASSERT_TRUE(ExecuteProgrammaticContentScript(
+-      web_contents, active_extension_id(),
++      active_web_contents(), active_extension_id(),
+       "chrome.runtime.sendMessage({greeting: 'hello'}, (response) => {});"));
+ 
+   // Capture the IPC.
+   auto [source_context, info, channel_name, port_id] = WaitForMessage();
+-
+-  // Mutate the IPC payload.
+   EXPECT_EQ(MessagingEndpoint::Type::kTab, info.source_endpoint.type);
+   EXPECT_EQ(active_extension_id(), info.source_endpoint.extension_id);
++
++  // Mutate the IPC payload.
+   info.source_endpoint.type = MessagingEndpoint::Type::kExtension;
+   info.source_endpoint.extension_id = absl::nullopt;
+ 
+   // Inject the malformed/mutated IPC and verify that the renderer is terminated
+   // as expected.
+   content::RenderProcessHost* main_frame_process =
+-      web_contents->GetPrimaryMainFrame()->GetProcess();
++      active_web_contents()->GetPrimaryMainFrame()->GetProcess();
+   RenderProcessHostBadIpcMessageWaiter kill_waiter(main_frame_process);
+   IPC::IpcSecurityTestUtil::PwnMessageReceived(
+       main_frame_process->GetChannel(),
+@@ -536,18 +553,16 @@ IN_PROC_BROWSER_TEST_F(OpenChannelToExtensionExploitTest,
+                        FromContentScript_UnexpectedWorkerContext) {
+   // Trigger sending of a valid ExtensionHostMsg_OpenChannelToExtension IPC
+   // from a content script of an `active_extension_id`.
+-  content::WebContents* web_contents =
+-      browser()->tab_strip_model()->GetActiveWebContents();
+   ASSERT_TRUE(ExecuteProgrammaticContentScript(
+-      web_contents, active_extension_id(),
++      active_web_contents(), active_extension_id(),
+       "chrome.runtime.sendMessage({greeting: 'hello'}, (response) => {});"));
+ 
+   // Capture the IPC.
+   auto [source_context, info, channel_name, port_id] = WaitForMessage();
+-
+-  // Mutate the IPC payload.
+   EXPECT_TRUE(source_context.is_for_render_frame());
+   EXPECT_FALSE(source_context.is_for_service_worker());
++
++  // Mutate the IPC payload.
+   source_context.frame = absl::nullopt;
+   source_context.worker = PortContext::WorkerContext(
+       /* thread_id = */ 123, /* version_id = */ 456,
+@@ -556,7 +571,7 @@ IN_PROC_BROWSER_TEST_F(OpenChannelToExtensionExploitTest,
+   // Inject the malformed/mutated IPC and verify that the renderer is terminated
+   // as expected.
+   content::RenderProcessHost* main_frame_process =
+-      web_contents->GetPrimaryMainFrame()->GetProcess();
++      active_web_contents()->GetPrimaryMainFrame()->GetProcess();
+   RenderProcessHostBadIpcMessageWaiter kill_waiter(main_frame_process);
+   IPC::IpcSecurityTestUtil::PwnMessageReceived(
+       main_frame_process->GetChannel(),
+@@ -566,21 +581,115 @@ IN_PROC_BROWSER_TEST_F(OpenChannelToExtensionExploitTest,
+             kill_waiter.Wait());
+ }
+ 
++// Native messaging is not available on Fuchsia (i.e.
++// //chrome/browser/extensions/BUILD.gn excludes
++// api/messaging/native_messaging_test_util.h on Fuchsia).
++#if !(BUILDFLAG(IS_FUCHSIA))
++
++// Test suite for covering ExtensionHostMsg_OpenChannelToNativeApp IPC.
++class OpenChannelToNativeAppExploitTest
++    : public ExtensionSecurityExploitBrowserTest {
++ public:
++  OpenChannelToNativeAppExploitTest() = default;
++
++  using OpenChannelMessageWaiter =
++      ExtensionMessageWaiter<ExtensionHostMsg_OpenChannelToNativeApp>;
++  void SetUpOnMainThread() override {
++    // Set up ExtensionMessageWaiter *before* installing the extensions (i.e.
++    // *before* the corresponding RenderProcessHost objects are created).
++    ipc_message_waiter_ = std::make_unique<OpenChannelMessageWaiter>();
++
++    // SetUpOnMainThread in the base class will install the test extensions.
++    ExtensionSecurityExploitBrowserTest::SetUpOnMainThread();
++
++    // Register a (fake, test-only) native messaging host.
++    test_native_messaging_host_.RegisterTestHost(/* user_level= */ false);
++
++    // Navigate the test tab to an extension page.
++    GURL test_page_url = active_extension().GetResourceURL("page.html");
++    EXPECT_TRUE(ui_test_utils::NavigateToURL(browser(), test_page_url));
++
++    // Only intercept messages from the test process.
++    int matching_process_id =
++        active_web_contents()->GetPrimaryMainFrame()->GetProcess()->GetID();
++    ipc_message_waiter_->SetIpcMatcher(base::BindLambdaForTesting(
++        [matching_process_id](
++            int captured_render_process_id,
++            const ExtensionHostMsg_OpenChannelToNativeApp::Param& param) {
++          if (captured_render_process_id != matching_process_id)
++            return false;
++
++          return true;
++        }));
++  }
++
++  // Waits for ExtensionHostMsg_OpenChannelToNativeApp IPC and returns its
++  // payload.
++  ExtensionHostMsg_OpenChannelToNativeApp::Param WaitForMessage() {
++    return ipc_message_waiter_->WaitForMessage();
++  }
++
++ private:
++  ScopedTestNativeMessagingHost test_native_messaging_host_;
++  std::unique_ptr<OpenChannelMessageWaiter> ipc_message_waiter_;
++};
++
++IN_PROC_BROWSER_TEST_F(OpenChannelToNativeAppExploitTest,
++                       SourceContextWithSpoofedExtensionId) {
++  // Trigger sending of a valid ExtensionHostMsg_OpenChannelToNativeApp IPC
++  // from a frame of an `active_extension`.
++  const char kScript[] = R"(
++      var message = {text: 'Hello!'};
++      var host = $1;
++      chrome.runtime.sendNativeMessage(host, message);
++  )";
++  ASSERT_EQ(
++      active_extension().origin(),
++      active_web_contents()->GetPrimaryMainFrame()->GetLastCommittedOrigin());
++  ASSERT_TRUE(content::ExecuteScript(
++      active_web_contents(),
++      content::JsReplace(kScript, ScopedTestNativeMessagingHost::kHostName)));
++
++  // Capture the IPC.
++  auto [source_context, native_app_name, port_id] = WaitForMessage();
++  EXPECT_EQ(native_app_name, ScopedTestNativeMessagingHost::kHostName);
++  EXPECT_TRUE(source_context.is_for_render_frame());
++
++  // Mutate the IPC payload.
++  source_context = PortContext::ForWorker(123,  // thread_id
++                                          456,  // version_id
++                                          spoofed_extension_id());
++
++  // Inject the malformed/mutated IPC and verify that the renderer is terminated
++  // as expected.
++  content::RenderProcessHost* main_frame_process =
++      active_web_contents()->GetPrimaryMainFrame()->GetProcess();
++  RenderProcessHostBadIpcMessageWaiter kill_waiter(main_frame_process);
++  IPC::IpcSecurityTestUtil::PwnMessageReceived(
++      main_frame_process->GetChannel(),
++      ExtensionHostMsg_OpenChannelToNativeApp(source_context, native_app_name,
++                                              port_id));
++  EXPECT_EQ(bad_message::EMF_INVALID_EXTENSION_ID_FOR_WORKER_CONTEXT,
++            kill_waiter.Wait());
++}
++
++#endif  // !(BUILDFLAG(IS_FUCHSIA)) - native messaging is available
++
+ IN_PROC_BROWSER_TEST_F(ExtensionSecurityExploitBrowserTest,
+                        SpoofedExtensionId_ExtensionFunctionDispatcher) {
+   // Navigate to a test page.
+   GURL test_page_url =
+       embedded_test_server()->GetURL("foo.com", "/title1.html");
+   ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), test_page_url));
+-  content::WebContents* web_contents =
+-      browser()->tab_strip_model()->GetActiveWebContents();
+-  content::RenderFrameHost* main_frame = web_contents->GetPrimaryMainFrame();
++  content::RenderFrameHost* main_frame =
++      active_web_contents()->GetPrimaryMainFrame();
+ 
+   // Verify the test setup by checking if the non-intercepted `chrome.storage`
+   // API call will succeed.
+   {
+     ExtensionTestMessageListener listener("Got chrome.storage response");
+-    ExecuteProgrammaticContentScript(web_contents, active_extension_id(), R"(
++    ExecuteProgrammaticContentScript(active_web_contents(),
++                                     active_extension_id(), R"(
+           chrome.storage.local.set(
+               { test_key: 'test value'},
+               () => {
+@@ -607,7 +716,8 @@ IN_PROC_BROWSER_TEST_F(ExtensionSecurityExploitBrowserTest,
+   // terminating the misbehaving renderer process.
+   content::RenderProcessHostBadMojoMessageWaiter kill_waiter(
+       main_frame->GetProcess());
+-  ExecuteProgrammaticContentScript(web_contents, active_extension_id(), R"(
++  ExecuteProgrammaticContentScript(active_web_contents(), active_extension_id(),
++                                   R"(
+           chrome.storage.local.set({ test_key: 'test value2'}, () => {}); )");
+   EXPECT_EQ(
+       "Received bad user message: LocalFrameHost::Request: renderer never "
+diff --git a/docs/security/compromised-renderers.md b/docs/security/compromised-renderers.md
+index b7e56be454f2d42dc4ae4ac875586a01f2354d9a..2155a399e0e432fedc2792b6893440efd7fca572 100644
+--- a/docs/security/compromised-renderers.md
++++ b/docs/security/compromised-renderers.md
+@@ -213,14 +213,21 @@ Compromised renderers shouldn’t be able to:
+ - Spoof the `MessageEvent.origin` seen by a recipient of a `postMessage`.
+ - Bypass enforcement of the `targetOrigin` argument of `postMessage`.
+ - Send or receive `BroadcastChannel` messages for another origin.
+-- Spoof the `MessageSender.origin` seen by a recipient of a
+-  `chrome.runtime.sendMessage`
+-  (see also [MessageSender documentation](https://developers.chrome.com/extensions/runtime#type-MessageSender) and [content script security guidance](https://groups.google.com/a/chromium.org/forum/#!topic/chromium-extensions/0ei-UCHNm34)).
++- Spoof the `MessageSender.origin`, nor `MessageSender.id` (i.e. an
++  extension id which can differ from the origin when the message is sent
++  from a content script), as seen by a recipient of a
++  `chrome.runtime.sendMessage`.
++  See also [MessageSender documentation](https://developers.chrome.com/extensions/runtime#type-MessageSender) and [content script security guidance](https://groups.google.com/a/chromium.org/forum/#!topic/chromium-extensions/0ei-UCHNm34).
++- Spoof the id of a Chrome extension initiating
++  [native messaging](https://developer.chrome.com/docs/apps/nativeMessaging/)
++  communication.
+ 
+ Protection techniques:
+ - Using `CanAccessDataForOrigin` to verify IPCs sent by a renderer process
+   (e.g. in `RenderFrameProxyHost::OnRouteMessageEvent` or
+   `BroadcastChannelProvider::ConnectToChannel`).
++- Using `ContentScriptTracker` to check if IPCs from a given renderer process
++  can legitimately claim to act on behalf content scripts of a given extension.
+ 
+ **Known gaps in protection**:
+ - Spoofing of `MessageSender.id` object
+diff --git a/extensions/browser/api/messaging/messaging_api_message_filter.cc b/extensions/browser/api/messaging/messaging_api_message_filter.cc
+index 25af213a4c02d7994eddb4dcb29a37871accd807..faf61a3b2bcb531934b8522b95b64930fff463dd 100644
+--- a/extensions/browser/api/messaging/messaging_api_message_filter.cc
++++ b/extensions/browser/api/messaging/messaging_api_message_filter.cc
+@@ -146,6 +146,16 @@ bool IsValidSourceContext(RenderProcessHost& process,
+     }
+   }
+ 
++  // This function doesn't validate frame-flavoured `source_context`s, because
++  // PortContext::FrameContext only contains frame's `routing_id` and therefore
++  // inherently cannot spoof frames in another process (a frame is identified
++  // by its `routing_id` *and* the `process_id` of the Renderer process hosting
++  // the frame;  the latter is trustworthy / doesn't come from an IPC payload).
++
++  // This function doesn't validate native app `source_context`s, because
++  // `PortContext::ForNativeHost()` is called with trustoworthy inputs (e.g. it
++  // doesn't take input from IPCs sent by a Renderer process).
++
+   return true;
+ }
+ 
+@@ -217,6 +227,18 @@ void MessagingAPIMessageFilter::Shutdown() {
+   shutdown_notifier_subscription_ = {};
+ }
+ 
++content::RenderProcessHost* MessagingAPIMessageFilter::GetRenderProcessHost() {
++  DCHECK_CURRENTLY_ON(BrowserThread::UI);
++  if (!browser_context_)
++    return nullptr;
++
++  // The IPC might race with RenderProcessHost destruction.  This may only
++  // happen in scenarios that are already inherently racey, so returning nullptr
++  // (and dropping the IPC) is okay and won't lead to any additional risk of
++  // data loss.
++  return content::RenderProcessHost::FromID(render_process_id_);
++}
++
+ void MessagingAPIMessageFilter::OverrideThreadForMessage(
+     const IPC::Message& message,
+     BrowserThread::ID* thread) {
+@@ -262,19 +284,14 @@ void MessagingAPIMessageFilter::OnOpenChannelToExtension(
+     const std::string& channel_name,
+     const PortId& port_id) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  if (!browser_context_)
+-    return;
+-
+-  // The IPC might race with RenderProcessHost destruction.  This may only
+-  // happen in scenarios that are already inherently racey, so dropping the IPC
+-  // is okay and won't lead to any additional risk of data loss.
+-  auto* process = content::RenderProcessHost::FromID(render_process_id_);
++  auto* process = GetRenderProcessHost();
+   if (!process)
+     return;
+   TRACE_EVENT("extensions", "MessageFilter::OnOpenChannelToExtension",
+               ChromeTrackEvent::kRenderProcessHost, *process);
+ 
+   ScopedExternalConnectionInfoCrashKeys info_crash_keys(info);
++  debug::ScopedPortContextCrashKeys port_context_crash_keys(source_context);
+   if (!IsValidMessagingSource(*process, info.source_endpoint) ||
+       !IsValidSourceContext(*process, source_context)) {
+     return;
+@@ -293,7 +310,14 @@ void MessagingAPIMessageFilter::OnOpenChannelToNativeApp(
+     const std::string& native_app_name,
+     const PortId& port_id) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  if (!browser_context_)
++  auto* process = GetRenderProcessHost();
++  if (!process)
++    return;
++  TRACE_EVENT("extensions", "MessageFilter::OnOpenChannelToNativeApp",
++              ChromeTrackEvent::kRenderProcessHost, *process);
++
++  debug::ScopedPortContextCrashKeys port_context_crash_keys(source_context);
++  if (!IsValidSourceContext(*process, source_context))
+     return;
+ 
+   ChannelEndpoint source_endpoint(browser_context_, render_process_id_,
+diff --git a/extensions/browser/api/messaging/messaging_api_message_filter.h b/extensions/browser/api/messaging/messaging_api_message_filter.h
+index 6a0ccd698629f650d68f2b4ee168aa2b3b3a116c..3358187387cd9a5765a7bd4e522aeecfd787e06b 100644
+--- a/extensions/browser/api/messaging/messaging_api_message_filter.h
++++ b/extensions/browser/api/messaging/messaging_api_message_filter.h
+@@ -14,6 +14,7 @@ struct ExtensionMsg_TabTargetConnectionInfo;
+ 
+ namespace content {
+ class BrowserContext;
++class RenderProcessHost;
+ }
+ 
+ namespace extensions {
+@@ -40,6 +41,11 @@ class MessagingAPIMessageFilter : public content::BrowserMessageFilter {
+ 
+   void Shutdown();
+ 
++  // Returns the process that the IPC came from, or `nullptr` if the IPC should
++  // be dropped (in case the IPC arrived racily after the process or its
++  // BrowserContext already got destructed).
++  content::RenderProcessHost* GetRenderProcessHost();
++
+   // content::BrowserMessageFilter implementation:
+   void OverrideThreadForMessage(const IPC::Message& message,
+                                 content::BrowserThread::ID* thread) override;
+diff --git a/extensions/common/api/messaging/port_context.cc b/extensions/common/api/messaging/port_context.cc
+index 6872179450d8295de7f15dc1437e9d6edefe4fde..319e2f34eca730c5eb7cf94ef8cdede0ddc3f8e1 100644
+--- a/extensions/common/api/messaging/port_context.cc
++++ b/extensions/common/api/messaging/port_context.cc
+@@ -40,4 +40,27 @@ PortContext PortContext::ForNativeHost() {
+   return PortContext();
+ }
+ 
++namespace debug {
++
++namespace {
++
++base::debug::CrashKeyString* GetServiceWorkerExtensionIdCrashKey() {
++  static auto* crash_key = base::debug::AllocateCrashKeyString(
++      "PortContext-worker-extension_id", base::debug::CrashKeySize::Size64);
++  return crash_key;
++}
++
++}  // namespace
++
++ScopedPortContextCrashKeys::ScopedPortContextCrashKeys(
++    const PortContext& port_context) {
++  if (port_context.is_for_service_worker()) {
++    extension_id_.emplace(GetServiceWorkerExtensionIdCrashKey(),
++                          port_context.worker->extension_id);
++  }
++}
++
++ScopedPortContextCrashKeys::~ScopedPortContextCrashKeys() = default;
++
++}  // namespace debug
+ }  // namespace extensions
+diff --git a/extensions/common/api/messaging/port_context.h b/extensions/common/api/messaging/port_context.h
+index b2e9f057b531d90dc256773959cd586953e4915c..53d94c2ad73c58d45b186a32989e2f4864e67d79 100644
+--- a/extensions/common/api/messaging/port_context.h
++++ b/extensions/common/api/messaging/port_context.h
+@@ -9,6 +9,7 @@
+ 
+ #include <string>
+ 
++#include "base/debug/crash_logging.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+ 
+ namespace extensions {
+@@ -59,6 +60,19 @@ struct PortContext {
+   absl::optional<WorkerContext> worker;
+ };
+ 
++namespace debug {
++
++class ScopedPortContextCrashKeys {
++ public:
++  explicit ScopedPortContextCrashKeys(const PortContext& port_context);
++  ~ScopedPortContextCrashKeys();
++
++ private:
++  absl::optional<base::debug::ScopedCrashKeyString> extension_id_;
++};
++
++}  // namespace debug
++
+ }  // namespace extensions
+ 
+ #endif  // EXTENSIONS_COMMON_API_MESSAGING_PORT_CONTEXT_H_
