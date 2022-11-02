@@ -1,0 +1,46 @@
+From b8636b57b8f231994ecb3fb14f181c593c83a3fb Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Mon, 29 Aug 2022 16:25:46 -0400
+Subject: [PATCH] [M106] Vulkan: Ensure we sync the draw FB before beingQuery.
+
+Bug: chromium:1354271
+(cherry picked from commit 4ebdac790c76b65abf5703bcef9482c638076195)
+Change-Id: I7b715a9c28badfe58a0ae1a478d2b4e8bbd23c47
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3956939
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+---
+
+diff --git a/src/libANGLE/State.h b/src/libANGLE/State.h
+index 168104e..2f498d3 100644
+--- a/src/libANGLE/State.h
++++ b/src/libANGLE/State.h
+@@ -603,6 +603,11 @@
+ 
+     bool isRobustResourceInitEnabled() const { return mRobustResourceInit; }
+ 
++    bool isDrawFramebufferBindingDirty() const
++    {
++        return mDirtyBits.test(DIRTY_BIT_DRAW_FRAMEBUFFER_BINDING);
++    }
++
+     // Sets the dirty bit for the program executable.
+     angle::Result onProgramExecutableChange(const Context *context, Program *program);
+     // Sets the dirty bit for the program pipeline executable.
+diff --git a/src/libANGLE/renderer/vulkan/QueryVk.cpp b/src/libANGLE/renderer/vulkan/QueryVk.cpp
+index 9f475e6..6ef5f72 100644
+--- a/src/libANGLE/renderer/vulkan/QueryVk.cpp
++++ b/src/libANGLE/renderer/vulkan/QueryVk.cpp
+@@ -303,6 +303,13 @@
+ {
+     ContextVk *contextVk = vk::GetImpl(context);
+ 
++    // Ensure that we start with the right RenderPass when we begin a new query.
++    if (contextVk->getState().isDrawFramebufferBindingDirty())
++    {
++        ANGLE_TRY(contextVk->flushCommandsAndEndRenderPass(
++            RenderPassClosureReason::FramebufferBindingChange));
++    }
++
+     mCachedResultValid = false;
+ 
+     // Transform feedback query is handled by a CPU-calculated value when emulated.
