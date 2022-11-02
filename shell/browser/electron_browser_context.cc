@@ -51,6 +51,7 @@
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -583,19 +584,22 @@ bool ElectronBrowserContext::DoesDeviceMatch(
     const base::Value* device_to_compare,
     blink::PermissionType permission_type) {
   if (permission_type ==
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::HID)) {
-    if (device.GetDict().FindInt(kHidVendorIdKey) !=
-            device_to_compare->GetDict().FindInt(kHidVendorIdKey) ||
-        device.GetDict().FindInt(kHidProductIdKey) !=
-            device_to_compare->GetDict().FindInt(kHidProductIdKey)) {
+          static_cast<blink::PermissionType>(
+              WebContentsPermissionHelper::PermissionType::HID) ||
+      permission_type ==
+          static_cast<blink::PermissionType>(
+              WebContentsPermissionHelper::PermissionType::USB)) {
+    if (device.GetDict().FindInt(kDeviceVendorIdKey) !=
+            device_to_compare->GetDict().FindInt(kDeviceVendorIdKey) ||
+        device.GetDict().FindInt(kDeviceProductIdKey) !=
+            device_to_compare->GetDict().FindInt(kDeviceProductIdKey)) {
       return false;
     }
 
     const auto* serial_number =
-        device_to_compare->GetDict().FindString(kHidSerialNumberKey);
+        device_to_compare->GetDict().FindString(kDeviceSerialNumberKey);
     const auto* device_serial_number =
-        device.GetDict().FindString(kHidSerialNumberKey);
+        device.GetDict().FindString(kDeviceSerialNumberKey);
 
     if (serial_number && device_serial_number &&
         *device_serial_number == *serial_number)

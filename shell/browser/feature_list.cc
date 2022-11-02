@@ -12,6 +12,7 @@
 #include "base/metrics/field_trial.h"
 #include "components/spellcheck/common/spellcheck_features.h"
 #include "content/public/common/content_features.h"
+#include "device/base/features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
@@ -31,6 +32,11 @@ void InitializeFeatureList() {
   // when node integration is enabled.
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
+
+#if BUILDFLAG(IS_MAC)
+  // Needed for WebUSB implementation
+  enable_features += std::string(",") + device::kNewUsbBackend.name;
+#endif
 
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;
