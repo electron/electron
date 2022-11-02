@@ -75,7 +75,7 @@ gfx::Rect FramelessView::GetWindowBoundsForClientBounds(
   return window_bounds;
 }
 
-int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
+int FramelessView::NonClientHitTest(const gfx::Point& point) {
   if (frame_->IsFullscreen())
     return HTCLIENT;
 
@@ -84,7 +84,7 @@ int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
     return contents_hit_test;
 
   // Support resizing frameless window by dragging the border.
-  int frame_component = ResizingBorderHitTest(cursor);
+  int frame_component = ResizingBorderHitTest(point);
   if (frame_component != HTNOWHERE)
     return frame_component;
 
