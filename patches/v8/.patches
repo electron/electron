@@ -10,3 +10,4 @@ revert_fix_cppgc_removed_deleted_cstors_in_cppheapcreateparams.patch
 cherry-pick-3704cf78f471.patch
 cherry-pick-2f6a2939514f.patch
 cherry-pick-8b040cb69e96.patch
+cherry-pick-194bcc127f21.patch
