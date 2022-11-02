@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Thu, 6 Oct 2022 13:43:19 +0200
+Subject: Merged: [turbofan] validate more concurrent reads
+
+Bug: chromium:1369871
+(cherry picked from commit ebe5675360e4735589a92a8836303822da79a8f4)
+
+Change-Id: I49243d2c604cb4635d0d49a572245f7469eabffa
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3952937
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.6@{#41}
+Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
+Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
+
+diff --git a/src/compiler/compilation-dependencies.cc b/src/compiler/compilation-dependencies.cc
+index 6f5514289b764667fb849ec70c8afe076de33dcb..62bd0f8c46d1e57812605d2425f76679183dc943 100644
+--- a/src/compiler/compilation-dependencies.cc
++++ b/src/compiler/compilation-dependencies.cc
+@@ -35,7 +35,8 @@ namespace compiler {
+   V(Protector)                          \
+   V(PrototypeProperty)                  \
+   V(StableMap)                          \
+-  V(Transition)
++  V(Transition)                         \
++  V(ObjectSlotValue)
+ 
+ CompilationDependencies::CompilationDependencies(JSHeapBroker* broker,
+                                                  Zone* zone)
+@@ -863,6 +864,42 @@ class ProtectorDependency final : public CompilationDependency {
+   const PropertyCellRef cell_;
+ };
+ 
++// Check that an object slot will not change during compilation.
++class ObjectSlotValueDependency final : public CompilationDependency {
++ public:
++  explicit ObjectSlotValueDependency(const HeapObjectRef& object, int offset,
++                                     const ObjectRef& value)
++      : CompilationDependency(kObjectSlotValue),
++        object_(object.object()),
++        offset_(offset),
++        value_(value.object()) {}
++
++  bool IsValid() const override {
++    PtrComprCageBase cage_base = GetPtrComprCageBase(*object_);
++    Object current_value =
++        offset_ == HeapObject::kMapOffset
++            ? object_->map()
++            : TaggedField<Object>::Relaxed_Load(cage_base, *object_, offset_);
++    return *value_ == current_value;
++  }
++  void Install(PendingDependencies* deps) const override {}
++
++ private:
++  size_t Hash() const override {
++    return base::hash_combine(object_.address(), offset_, value_.address());
++  }
++
++  bool Equals(const CompilationDependency* that) const override {
++    const ObjectSlotValueDependency* const zat = that->AsObjectSlotValue();
++    return object_->address() == zat->object_->address() &&
++           offset_ == zat->offset_ && value_.address() == zat->value_.address();
++  }
++
++  Handle<HeapObject> object_;
++  int offset_;
++  Handle<Object> value_;
++};
++
+ class ElementsKindDependency final : public CompilationDependency {
+  public:
+   ElementsKindDependency(const AllocationSiteRef& site, ElementsKind kind)
+@@ -1110,6 +1147,12 @@ void CompilationDependencies::DependOnElementsKind(
+   }
+ }
+ 
++void CompilationDependencies::DependOnObjectSlotValue(
++    const HeapObjectRef& object, int offset, const ObjectRef& value) {
++  RecordDependency(
++      zone_->New<ObjectSlotValueDependency>(object, offset, value));
++}
++
+ void CompilationDependencies::DependOnOwnConstantElement(
+     const JSObjectRef& holder, uint32_t index, const ObjectRef& element) {
+   RecordDependency(
+diff --git a/src/compiler/compilation-dependencies.h b/src/compiler/compilation-dependencies.h
+index aa8ff7b82abd2b75d0f32b312f4625de29827bb5..c6a18c400fe7571af67aa45f7a4d2666e09d8de1 100644
+--- a/src/compiler/compilation-dependencies.h
++++ b/src/compiler/compilation-dependencies.h
+@@ -93,6 +93,10 @@ class V8_EXPORT_PRIVATE CompilationDependencies : public ZoneObject {
+   // Record the assumption that {site}'s {ElementsKind} doesn't change.
+   void DependOnElementsKind(const AllocationSiteRef& site);
+ 
++  // Check that an object slot will not change during compilation.
++  void DependOnObjectSlotValue(const HeapObjectRef& object, int offset,
++                               const ObjectRef& value);
++
+   void DependOnOwnConstantElement(const JSObjectRef& holder, uint32_t index,
+                                   const ObjectRef& element);
+ 
+diff --git a/src/compiler/js-create-lowering.cc b/src/compiler/js-create-lowering.cc
+index fab65507ea0566e27a6793532b5f471fd5104ea5..25a2ec03d2f4ac6834baf2de7132619ce73b8bcc 100644
+--- a/src/compiler/js-create-lowering.cc
++++ b/src/compiler/js-create-lowering.cc
+@@ -1677,6 +1677,10 @@ base::Optional<Node*> JSCreateLowering::TryAllocateFastLiteral(
+ 
+   // Now that we hold the migration lock, get the current map.
+   MapRef boilerplate_map = boilerplate.map();
++  // Protect against concurrent changes to the boilerplate object by checking
++  // for an identical value at the end of the compilation.
++  dependencies()->DependOnObjectSlotValue(boilerplate, HeapObject::kMapOffset,
++                                          boilerplate_map);
+   {
+     base::Optional<MapRef> current_boilerplate_map =
+         boilerplate.map_direct_read();
+@@ -1841,10 +1845,18 @@ base::Optional<Node*> JSCreateLowering::TryAllocateFastLiteralElements(
+       boilerplate.elements(kRelaxedLoad);
+   if (!maybe_boilerplate_elements.has_value()) return {};
+   FixedArrayBaseRef boilerplate_elements = maybe_boilerplate_elements.value();
++  // Protect against concurrent changes to the boilerplate object by checking
++  // for an identical value at the end of the compilation.
++  dependencies()->DependOnObjectSlotValue(
++      boilerplate, JSObject::kElementsOffset, boilerplate_elements);
+ 
+   // Empty or copy-on-write elements just store a constant.
+   int const elements_length = boilerplate_elements.length();
+   MapRef elements_map = boilerplate_elements.map();
++  // Protect against concurrent changes to the boilerplate object by checking
++  // for an identical value at the end of the compilation.
++  dependencies()->DependOnObjectSlotValue(boilerplate_elements,
++                                          HeapObject::kMapOffset, elements_map);
+   if (boilerplate_elements.length() == 0 || elements_map.IsFixedCowArrayMap()) {
+     if (allocation == AllocationType::kOld &&
+         !boilerplate.IsElementsTenured(boilerplate_elements)) {
