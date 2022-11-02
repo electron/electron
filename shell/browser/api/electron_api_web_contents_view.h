@@ -47,6 +47,10 @@ class WebContentsView : public View,
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
 
+  // views::ViewObserver
+  void OnViewAddedToWidget(views::View* view) override;
+  void OnViewRemovedFromWidget(views::View* view) override;
+
  private:
   static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
 

@@ -82,7 +82,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   gin::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
-  window_->AddDraggableRegionProvider(web_contents_view.get());
 
   // Save a reference of the WebContents.
   gin::Handle<WebContents> web_contents =

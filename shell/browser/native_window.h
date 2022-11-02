@@ -49,6 +49,8 @@ class PersistentDictionary;
 
 namespace electron {
 
+extern const char kElectronNativeWindowKey[];
+
 class ElectronMenuModel;
 
 namespace api {

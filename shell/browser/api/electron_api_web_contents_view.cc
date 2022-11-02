@@ -7,6 +7,7 @@
 #include "base/no_destructor.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/gfx_converter.h"
@@ -19,6 +20,7 @@
 #include "ui/base/hit_test.h"
 #include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/view_class_properties.h"
+#include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
@@ -88,6 +90,26 @@ int WebContentsView::NonClientHitTest(const gfx::Point& point) {
 void WebContentsView::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   web_contents_.Reset();
+}
+
+void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
+  DCHECK_EQ(observed_view, view());
+  views::Widget* widget = view()->GetWidget();
+  auto* native_window = static_cast<NativeWindow*>(
+      widget->GetNativeWindowProperty(electron::kElectronNativeWindowKey));
+  if (!native_window)
+    return;
+  native_window->AddDraggableRegionProvider(this);
+}
+
+void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
+  DCHECK_EQ(observed_view, view());
+  views::Widget* widget = view()->GetWidget();
+  auto* native_window = static_cast<NativeWindow*>(
+      widget->GetNativeWindowProperty(kElectronNativeWindowKey));
+  if (!native_window)
+    return;
+  native_window->RemoveDraggableRegionProvider(this);
 }
 
 // static
