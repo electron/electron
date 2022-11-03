@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Tue, 18 Oct 2022 01:30:12 +0000
+Subject: WebGPU: use CHECK instead of DCHECK to crash out of bounds write in
+ SerializeDataUpdate
+
+A comprised renderer could have a shared memory size not large enough
+to fit the GPU buffer contents. Instead of DCHECK, do a CHECK here to
+crash the release build. The crash is fine since it is not reachable
+from normal behavior. WebGPU post-V1 will have a refactored API.
+
+(cherry picked from commit 9bcbce75d5feaa1ba48a5d0d8036b5c77500bb67)
+
+Fixed: 1373314
+Change-Id: I8d8e1a469c2b10ff16e7363f9b6f7b63587cb007
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3946246
+Reviewed-by: Austin Eng <enga@chromium.org>
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1058233}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3956286
+Owners-Override: Prudhvikumar Bommana <pbommana@google.com>
+Reviewed-by: Prudhvikumar Bommana <pbommana@google.com>
+Commit-Queue: Prudhvikumar Bommana <pbommana@google.com>
+Cr-Commit-Position: refs/branch-heads/5249@{#850}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc b/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
+index 579cd3cbdfcd5990db02960413bcac86e41c69b2..a15b6f9b3b345079d8cf8251ca5f77b6e7ef647a 100644
+--- a/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
++++ b/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
+@@ -30,8 +30,13 @@ class ReadHandleImpl
+                            size_t offset,
+                            size_t size,
+                            void* serializePointer) override {
+-    DCHECK_LE(offset, size_);
+-    DCHECK_LE(size, size_ - offset);
++    // TODO(crbug.com/1373314): A compromised renderer could have a shared
++    // memory size not large enough to fit the GPU buffer contents. Instead of
++    // DCHECK, do a CHECK here to crash the release build. The crash is fine
++    // since it is not reachable from normal behavior. WebGPU post-V1 will have
++    // a refactored API.
++    CHECK_LE(offset, size_);
++    CHECK_LE(size, size_ - offset);
+     // Copy the data into the shared memory allocation.
+     // In the case of buffer mapping, this is the mapped GPU memory which we
+     // copy into client-visible shared memory.
+@@ -94,7 +99,10 @@ bool DawnServiceMemoryTransferService::DeserializeReadHandle(
+     size_t deserialize_size,
+     ReadHandle** read_handle) {
+   DCHECK(deserialize_pointer);
+-  DCHECK_EQ(deserialize_size, sizeof(MemoryTransferHandle));
++  // Use CHECK instead of DCHECK because the cast of the memory to
++  // MemoryTransferHandle and subsequent reads won't be safe if deserialize_size
++  // is too small.
++  CHECK_EQ(deserialize_size, sizeof(MemoryTransferHandle));
+   const volatile MemoryTransferHandle* handle =
+       reinterpret_cast<const volatile MemoryTransferHandle*>(
+           deserialize_pointer);
+@@ -119,7 +127,10 @@ bool DawnServiceMemoryTransferService::DeserializeWriteHandle(
+     size_t deserialize_size,
+     WriteHandle** write_handle) {
+   DCHECK(deserialize_pointer);
+-  DCHECK_EQ(deserialize_size, sizeof(MemoryTransferHandle));
++  // Use CHECK instead of DCHECK because the cast of the memory to
++  // MemoryTransferHandle and subsequent reads won't be safe if deserialize_size
++  // is too small.
++  CHECK_EQ(deserialize_size, sizeof(MemoryTransferHandle));
+   const volatile MemoryTransferHandle* handle =
+       reinterpret_cast<const volatile MemoryTransferHandle*>(
+           deserialize_pointer);
