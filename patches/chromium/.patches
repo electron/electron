@@ -134,5 +134,6 @@ cherry-pick-65f0ef609c00.patch
 cherry-pick-cb9dff93f3d4.patch
 build_fix_building_with_enable_plugins_false.patch
 build_allow_electron_to_use_exec_script.patch
+cherry-pick-933cc81c6bad.patch
 cherry-pick-06c87f9f42ff.patch
 cherry-pick-67c9cbc784d6.patch
