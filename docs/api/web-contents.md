@@ -624,7 +624,6 @@ Returns:
 
 Emitted when `webContents` wants to show javascript dialog alert, confirm or prompt.
 The type of a particular dialog can be checked with the `dialogDetails.type` property.
-You can use `dialogDetails.frameProcessId` and `dialogDetails.frameRoutingId` to construct a `webFrame` by calling `webFrameMain.fromId()`.
 
 Calling `event.preventDefault()` indicates that the dialog request is handled by the user.
 If you call `event.preventDefault()` make sure to call `callback()` afterwards.

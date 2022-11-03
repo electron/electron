@@ -17,6 +17,7 @@
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/options_switches.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -162,8 +163,7 @@ bool ElectronJavaScriptDialogManager::EmitEvent(
   v8::HandleScope scope(isolate);
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("message", message_text);
-  details.Set("frameProcessId", rfh->GetProcess()->GetID());
-  details.Set("frameRoutingId", rfh->GetRoutingID());
+  details.Set("frame", rfh);
 
   if (dialog_type == JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT)
     details.Set("type", "alert");
