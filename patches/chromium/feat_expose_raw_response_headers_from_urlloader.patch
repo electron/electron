@@ -81,7 +81,7 @@ index 3c81eb68a21e2762173d6de055f6fedff457c4b6..8da97492aa055c384a539de4701d7b21
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index dd8e82d32cba09733b98f48ff08e750b4dec82d2..0680b97af6a933c060d759740da2a2942c7ca1a6 100644
+index 72a37cbcd114896d2ebcdb6a443168bbdb3be6f8..43781bd7ec2778a71695d968c47875ab02febeea 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -9,6 +9,7 @@ import "mojo/public/mojom/base/unguessable_token.mojom";
@@ -92,7 +92,7 @@ index dd8e82d32cba09733b98f48ff08e750b4dec82d2..0680b97af6a933c060d759740da2a294
  import "services/network/public/mojom/ip_endpoint.mojom";
  import "services/network/public/mojom/load_timing_info.mojom";
  import "services/network/public/mojom/network_param.mojom";
-@@ -29,6 +30,9 @@ struct URLResponseHead {
+@@ -38,6 +39,9 @@ struct URLResponseHead {
    // The response headers or NULL if the URL type does not support headers.
    HttpResponseHeaders headers;
  
@@ -103,10 +103,10 @@ index dd8e82d32cba09733b98f48ff08e750b4dec82d2..0680b97af6a933c060d759740da2a294
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 52070fab8653653534c8759b01b025c24dd18e3b..28f453ee8aa36a1a3341aa60966a885f8c5f4014 100644
+index 270cbc9582c2588c5648fe00090664587f74eb48..b64aef6e3f283ad15721f7828974ce75f055bd8b 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -479,6 +479,7 @@ URLLoader::URLLoader(
+@@ -480,6 +480,7 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
        per_factory_corb_state_(context.GetMutableCorbState()),
@@ -114,7 +114,7 @@ index 52070fab8653653534c8759b01b025c24dd18e3b..28f453ee8aa36a1a3341aa60966a885f
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -661,7 +662,7 @@ URLLoader::URLLoader(
+@@ -662,7 +663,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 52070fab8653653534c8759b01b025c24dd18e3b..28f453ee8aa36a1a3341aa60966a885f
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1442,6 +1443,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1443,6 +1444,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

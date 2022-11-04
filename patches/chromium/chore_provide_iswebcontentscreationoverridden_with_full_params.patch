@@ -35,7 +35,7 @@ index bcf9aa806ef31af1fe88e7b7aa661135f2d4d6bc..350dcd90d5961b17af8cd5748460e04d
  
  #endif  // CHROME_BROWSER_ANDROID_DOCUMENT_DOCUMENT_WEB_CONTENTS_DELEGATE_H_
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
-index 32a1c3ace3b9e1624f3637e9773c72b8088f296b..cdc4053b02e6f5ef38707b2353adb5057e8048eb 100644
+index bdbef88069219e65b8e556ff60ce23d45eca2f0b..e13371976cb3c19f1181f18dd04b9e58cedf85e0 100644
 --- a/chrome/browser/media/offscreen_tab.cc
 +++ b/chrome/browser/media/offscreen_tab.cc
 @@ -285,8 +285,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
@@ -63,10 +63,10 @@ index 155296ba7ee5495be62045bc620bb1cd31d3ceb3..954efde9e7a58f8b556c6ceabb81643f
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.cc b/chrome/browser/ui/ash/ash_web_view_impl.cc
-index cd480419c84969837d8322f1860d62042f116b00..b521b8f84b6ac1c4a7902151a630de386063a589 100644
+index e17bb96ea9a38c73b1701abfc12e0be6d95d1b45..072ff863afa1253ba812508fdb4505522d1c3483 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.cc
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.cc
-@@ -96,10 +96,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
+@@ -94,10 +94,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -80,7 +80,7 @@ index cd480419c84969837d8322f1860d62042f116b00..b521b8f84b6ac1c4a7902151a630de38
                                  /*from_user_gesture=*/true);
      return true;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.h b/chrome/browser/ui/ash/ash_web_view_impl.h
-index b857041f9be1ee941a40b50ab8cad9c1079028bc..131faece2645aa104da440f09cd7d8bd5e3e324e 100644
+index e30587e0fd1c42342a767ac281916e960c5a220d..4b9a924748d2ba89a5418818fad85cc4e0491976 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.h
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.h
 @@ -47,8 +47,7 @@ class AshWebViewImpl : public ash::AshWebView,
@@ -94,7 +94,7 @@ index b857041f9be1ee941a40b50ab8cad9c1079028bc..131faece2645aa104da440f09cd7d8bd
        content::WebContents* source,
        const content::OpenURLParams& params) override;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index 1d49ec9a62ebc062ac825bebf471e2da99f4b65d..f19a6d112fe006b9a1eaa5dff375f6d2b40ae4da 100644
+index a3b44ab7c4fb44b103897d141f16b738b137df82..cab11ccf106e839a14f4a2fc76367959133babf0 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 @@ -71,8 +71,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
@@ -108,10 +108,10 @@ index 1d49ec9a62ebc062ac825bebf471e2da99f4b65d..f19a6d112fe006b9a1eaa5dff375f6d2
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 4dacb65d29ae2523736704a0127b0a8150f739a0..3115d134232f6a10def44bf5c6a2a4b89c849555 100644
+index 7eca80fed385c81b22031d181ee2c01961f81d28..e1c29b0d86bae71440e04a26bfaac2a6e0488b42 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1811,12 +1811,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1802,12 +1802,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -141,7 +141,7 @@ index 201e468d272af0fbd263cf030dbd499ef1fff413..6d79e02baef84b01e98b03c670e8bb2b
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
-index 45a27e0b458d5ad30619727aa54e9136aab13546..1e1c67b5c9eec3ce050d9702276a02b24e6f9f21 100644
+index c76254dab42cb4761401dacc0587d74393eedf67..2ae0911e8ead5fae1c34f8981a97c1d829fb6e12 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 @@ -202,8 +202,7 @@ bool PresentationReceiverWindowController::IsWebContentsCreationOverridden(
@@ -169,7 +169,7 @@ index 9f36b1721b154ebd31a593800d5eb1f5930314cc..5c0f9cb89b675b58d7334c71c6546afb
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index f1561f1759be766d00543a868c9cd931dc17a72a..e2502b1f9219841857da4a27d5723052b3915757 100644
+index cf85a661565bc8335f36dafe69760e40b897a45c..9d520b523e62f8e599e330fd341740fb62812698 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 @@ -70,8 +70,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
@@ -246,10 +246,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1b57fb8d75365aa589556c1c44a28ef81ed6598b..fc0b20e3ce29b51a752517487538a296bf7f753e 100644
+index 36855db5e3f9e966c136c6a32a676ac67dc1d1d7..4d3f0dd7b79e66f3f9076da07454c969642ef954 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3934,8 +3934,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3944,8 +3944,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -344,10 +344,10 @@ index 06d3ed32b65708d91b220cdd4991fd377d84217c..bc942580c1bfb16bc5a8e9168f55626d
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 1570a5d8ccbfbe2ea041ca458f3b59a8b40ef28e..0d0d7a45cd9f4299bbeab1b3d10f9159082698e5 100644
+index a105b8767f770bbfcd09a4d7eddd74c574ac0654..30a446beff0ec02e904e648b9ea9f26f5ad5b76d 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -529,8 +529,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -528,8 +528,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -358,7 +358,7 @@ index 1570a5d8ccbfbe2ea041ca458f3b59a8b40ef28e..0d0d7a45cd9f4299bbeab1b3d10f9159
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia_web/webengine/browser/frame_impl.h b/fuchsia_web/webengine/browser/frame_impl.h
-index 07a9e1713df6fe952880a7a1f3c25ddc56046c90..8c7f4f7220ce0b7569ac10a7bf73911cb172537b 100644
+index 59157a161a4a9f090d4c1c398bca777a68b4d50d..0ea92bad0a50bd2acb2f9a106e7f2551facc0299 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.h
 +++ b/fuchsia_web/webengine/browser/frame_impl.h
 @@ -316,8 +316,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,

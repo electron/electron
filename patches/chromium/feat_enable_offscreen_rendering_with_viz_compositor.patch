@@ -81,7 +81,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3d2fbf9ae3ed9a7621ed54ad7da4e290781b8b60..c2c65f685e760248adf3efcc98e6c7a8f1f7e5fb 100644
+index 22d84ec0c7ca57f012a47d50a6e0f90258fb634b..47a4a0bb91ca12f3d034291cef41c98128e2aeac 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -137,6 +137,8 @@ viz_component("service") {
@@ -108,7 +108,7 @@ index 28f44e5df4a3591c8563564a9aba7cec1b023a29..befc5a556a7fd6719d8a1c2eb8e92784
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index eca31050366217643f6567d3bf9b22e946bdd029..9d778fb267e81ad0d8e4c7275fd17a942e1a4256 100644
+index bd9f162f5053f0e7e505e2af1a2e16d6e23b9ec4..df67fc2caa0f4dc8bd11a0ac6045915b7fc2a6ff 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,12 +23,14 @@

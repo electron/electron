@@ -13,7 +13,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/3949284
 is merged.
 
 diff --git a/base/allocator/partition_allocator/BUILD.gn b/base/allocator/partition_allocator/BUILD.gn
-index 7f55dfd28b41c19a61590a71fa72c7bc73edc4a0..d8688eca677aac51c3e6e16104c3fe3b765167f0 100644
+index 6764a0b741e21b934fb1d688e67f536111c44687..e3244cc34daded942b0ca1e893b56ab794c1417c 100644
 --- a/base/allocator/partition_allocator/BUILD.gn
 +++ b/base/allocator/partition_allocator/BUILD.gn
 @@ -110,8 +110,6 @@ component("partition_alloc") {
