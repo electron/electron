@@ -447,6 +447,13 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
     image = native_image->image();
   }
 
+  // This is needed when this fn is called before the browser
+  // process is ready, since supported scales are normally set
+  // by ui::ResourceBundle::InitSharedInstance
+  // during browser process startup.
+  if (!is_ready())
+    gfx::ImageSkia::SetSupportedScales({1.0f});
+
   [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
 }
