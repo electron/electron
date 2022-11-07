@@ -29,9 +29,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
       InspectableWebContents* inspectable_web_contents);
   ~InspectableWebContentsViewViews() override;
 
-  bool IsContainedInDraggableRegion(views::View* root_view,
-                                    const gfx::Point& location);
-
   // InspectableWebContentsView:
   views::View* GetView() override;
   views::View* GetWebView() override;
@@ -43,8 +40,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
-  void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions) override;
 
   // views::View:
   void Layout() override;
@@ -61,8 +56,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   bool devtools_visible_ = false;
   views::WidgetDelegate* devtools_window_delegate_ = nullptr;
   std::u16string title_;
-
-  std::unique_ptr<SkRegion> draggable_region_;
 };
 
 }  // namespace electron
