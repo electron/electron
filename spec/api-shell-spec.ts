@@ -2,7 +2,7 @@ import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe } from './spec-helpers';
 import * as http from 'http';
 import * as fs from 'fs-extra';
 import * as os from 'os';
@@ -79,10 +79,10 @@ describe('shell module', () => {
       await expect(shell.trashItem(filename)).to.eventually.be.rejected();
     });
 
-    ifit(!(process.platform === 'win32' && process.arch === 'ia32'))('works in the renderer process', async () => {
+    it('works in the renderer process', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
-      await expect(w.webContents.executeJavaScript('require(\'electron\').shell.trashItem(\'does-not-exist\')')).to.be.rejectedWith(/does-not-exist|Failed to move item|Failed to create FileOperation/);
+      await expect(w.webContents.executeJavaScript('require(\'electron\').shell.trashItem(\'does-not-exist\')')).to.be.rejectedWith(/does-not-exist|Failed to move item/);
     });
   });
 
