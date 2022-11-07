@@ -6,34 +6,6 @@ Subject: chore: provide IsWebContentsCreationOverridden with full params
 Pending upstream patch, this gives us fuller access to the window.open params
 so that we will be able to decide whether to cancel it or not.
 
-diff --git a/chrome/browser/android/document/document_web_contents_delegate.cc b/chrome/browser/android/document/document_web_contents_delegate.cc
-index 72644e1404e025bcfa5fa07a817721cdf2aecca5..5d1dae43ae3f79ed3e84f570c120a44ffdacf8ae 100644
---- a/chrome/browser/android/document/document_web_contents_delegate.cc
-+++ b/chrome/browser/android/document/document_web_contents_delegate.cc
-@@ -46,8 +46,7 @@ bool DocumentWebContentsDelegate::IsWebContentsCreationOverridden(
-     content::SiteInstance* source_site_instance,
-     content::mojom::WindowContainerType window_container_type,
-     const GURL& opener_url,
--    const std::string& frame_name,
--    const GURL& target_url) {
-+    const content::mojom::CreateNewWindowParams& params) {
-   NOTREACHED();
-   return true;
- }
-diff --git a/chrome/browser/android/document/document_web_contents_delegate.h b/chrome/browser/android/document/document_web_contents_delegate.h
-index bcf9aa806ef31af1fe88e7b7aa661135f2d4d6bc..350dcd90d5961b17af8cd5748460e04d930b269d 100644
---- a/chrome/browser/android/document/document_web_contents_delegate.h
-+++ b/chrome/browser/android/document/document_web_contents_delegate.h
-@@ -41,8 +41,7 @@ class DocumentWebContentsDelegate
-       content::SiteInstance* source_site_instance,
-       content::mojom::WindowContainerType window_container_type,
-       const GURL& opener_url,
--      const std::string& frame_name,
--      const GURL& target_url) override;
-+      const content::mojom::CreateNewWindowParams& params) override;
- };
- 
- #endif  // CHROME_BROWSER_ANDROID_DOCUMENT_DOCUMENT_WEB_CONTENTS_DELEGATE_H_
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
 index bdbef88069219e65b8e556ff60ce23d45eca2f0b..e13371976cb3c19f1181f18dd04b9e58cedf85e0 100644
 --- a/chrome/browser/media/offscreen_tab.cc
