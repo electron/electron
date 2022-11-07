@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 1de624ff2bf3c9b4fff0efe573a76f6c5a42c467..69bbb4ad423996fcc1a8ec7550c0dab924775fa4 100644
+index 343906ed85bffac0a36af8429671efe65aa043a6..54fe2ee164261a42f92c83e255281a35bbe084fd 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1957,6 +1957,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1960,6 +1960,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -93,10 +93,10 @@ index 0b2bd5d95561180ac4dfb261ded9aee2bcd57445..62e1f9976bf007d91d2e1d65bb58cd06
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 47871bc0150cad3c0f2c39995d1b8df9528ffea1..d5edac8c1d8e5966f5f0128f2c9ce7e66b00a4c2 100644
+index b2622d2ebad66a141c436eae0d4d18d84daec666..3a3e8da6bf29f293b7bf0b18c0916ce2a58b744b 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -200,6 +200,7 @@
+@@ -202,6 +202,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -104,7 +104,7 @@ index 47871bc0150cad3c0f2c39995d1b8df9528ffea1..d5edac8c1d8e5966f5f0128f2c9ce7e6
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3242,6 +3243,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3245,6 +3246,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -156,7 +156,7 @@ index 318005b66e04ed03ce6d44931d9360c0e009cb94..0d622fddb95720141ccf8a285ace4714
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 191a45bd3844d3b1ea652e7df164d7b7c11767da..754998229bb1fb92ac8cbf783839a60b92db0320 100644
+index 2fc5a3614e2a7edf8ce13c5bacd8c920aafcecd6..3f6d3af19126a441c2a0adb37f0d29b9bf26a7ac 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -25,6 +25,7 @@

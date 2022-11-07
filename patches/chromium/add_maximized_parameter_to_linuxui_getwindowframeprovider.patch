@@ -167,10 +167,10 @@ index d8cb2c6aab333cc55ad1daa70ac91b0569d33a7c..558aa3979301f79df789a29ba3ad1cf1
  
  }  // namespace gtk
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index 6279e1953c5a069d051aaca67fa5b8bd1c64dd74..a867e1d5015aa41ee49de71ada5afcd7904774a5 100644
+index b5fd57741d2f47bda9499cf10e73cc9b3dd1b4dc..35e5bedb719af699485b575ece4bdb4f90df07df 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
-@@ -272,7 +272,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
+@@ -273,7 +273,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
    // if transparency is unsupported and the frame should be rendered opaque.
    // The returned object is not owned by the caller and will remain alive until
    // the process ends.

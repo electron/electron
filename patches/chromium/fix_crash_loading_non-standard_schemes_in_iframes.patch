@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 636902299141f4731f199966b446ffcc1b59ea5e..f0dcc1873d1b260bd8a6f12e1e85a035a000b072 100644
+index eac1780eaaef2d0f5e4182289440e5e8f9d70fac..56a049d9ddc9ba0b5b2991317517143604b70d8d 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6742,10 +6742,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
+@@ -6743,10 +6743,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
