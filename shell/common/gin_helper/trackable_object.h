@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
 
+#include <utility>
 #include <vector>
 
 #include "base/bind.h"

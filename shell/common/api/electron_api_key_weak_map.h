@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_
 #define ELECTRON_SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_
 
+#include <utility>
+
 #include "gin/handle.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/object_template_builder.h"

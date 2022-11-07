@@ -7,6 +7,7 @@
 
 #include <windows.h>
 
+#include <utility>
 #include <vector>
 
 #include "shell/common/gin_converters/guid_converter.h"

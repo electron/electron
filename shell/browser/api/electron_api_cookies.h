@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
 
 #include <string>
+#include <utility>
 
 #include "base/callback_list.h"
 #include "base/values.h"
