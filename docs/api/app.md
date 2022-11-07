@@ -1203,7 +1203,7 @@ For `infoType` equal to `basic`:
 }
 ```
 
-Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
+Using `basic` should be preferred if only basic information like `vendorId` or `deviceId` is needed.
 
 ### `app.setBadgeCount([count])` _Linux_ _macOS_
 
