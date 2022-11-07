@@ -39,6 +39,8 @@ class WebContentsView : public View,
 
   int NonClientHitTest(const gfx::Point& point) override;
 
+  int NonClientHitTest(const gfx::Point& point) override;
+
  protected:
   // Takes an existing WebContents.
   WebContentsView(v8::Isolate* isolate, gin::Handle<WebContents> web_contents);
