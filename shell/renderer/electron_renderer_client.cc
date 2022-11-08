@@ -86,7 +86,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
-  CHECK(!initialized.IsNothing());
+  CHECK(!initialized.IsNothing() && initialized.FromJust());
 
   node::Environment* env =
       node_bindings_->CreateEnvironment(renderer_context, nullptr);

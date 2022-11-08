@@ -64,7 +64,7 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);
-  CHECK(!initialized.IsNothing());
+  CHECK(!initialized.IsNothing() && initialized.FromJust());
   node::Environment* env =
       node_bindings_->CreateEnvironment(worker_context, nullptr);
 
