@@ -1875,8 +1875,7 @@ void WebContents::MessageHost(const std::string& channel,
 
 void WebContents::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnDraggableRegionsUpdated(regions);
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 void WebContents::DidStartNavigation(

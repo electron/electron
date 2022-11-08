@@ -83,6 +83,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   gin::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
+  window_->AddDraggableRegionProvider(web_contents_view.get());
 
   // Save a reference of the WebContents.
   gin::Handle<WebContents> web_contents =
@@ -146,14 +147,6 @@ void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
   Emit("responsive");
 }
 
-void BrowserWindow::OnDraggableRegionsUpdated(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  if (window_->has_frame())
-    return;
-
-  window_->UpdateDraggableRegions(regions);
-}
-
 void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
   // window.resizeTo(...)
   // window.moveTo(...)
@@ -204,8 +197,8 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   api_web_contents_->NotifyUserActivation();
 
   // Trigger beforeunload events for associated BrowserViews.
-  for (InspectableWebContentsView* view : window_->inspectable_views()) {
-    auto* vwc = view->inspectable_web_contents()->GetWebContents();
+  for (NativeBrowserView* view : window_->browser_views()) {
+    auto* vwc = view->GetInspectableWebContents()->GetWebContents();
     auto* api_web_contents = api::WebContents::From(vwc);
 
     // Required to make beforeunload handler work.

@@ -73,9 +73,6 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
       superview_height - bounds.y() - bounds.height() + titlebar_height;
   view.frame =
       NSMakeRect(bounds.x(), new_height, bounds.width(), bounds.height());
-
-  // Ensure draggable regions are properly updated to reflect new bounds.
-  iwc_view->UpdateDraggableRegions(iwc_view->GetDraggableRegions());
 }
 
 gfx::Rect NativeBrowserViewMac::GetBounds() {
