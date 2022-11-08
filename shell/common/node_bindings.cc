@@ -359,8 +359,9 @@ void NodeBindings::SetNodeCliFlags() {
   }
 
   // We need to disable Node.js' fetch implementation to prevent
-  // conflict with Blink's.
-  if (browser_env_ != BrowserEnvironment::kBrowser) {
+  // conflict with Blink's in renderer and worker processes.
+  if (browser_env_ == BrowserEnvironment::kRenderer ||
+      browser_env_ == BrowserEnvironment::kWorker) {
     args.push_back("--no-experimental-fetch");
   }
 
