@@ -451,14 +451,6 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary global(isolate, context->Global());
-  // Avoids overriding globals like setImmediate, clearImmediate
-  // queueMicrotask etc during the bootstrap phase of Node.js
-  // for processes that already have these defined by DOM.
-  // Check //third_party/electron_node/lib/internal/bootstrap/node.js
-  // for the list of overrides on globalThis.
-  if (browser_env_ == BrowserEnvironment::kRenderer ||
-      browser_env_ == BrowserEnvironment::kWorker)
-    global.Set("_noBrowserGlobals", true);
 
   if (browser_env_ == BrowserEnvironment::kBrowser) {
     const std::vector<std::string> search_paths = {"app.asar", "app",
@@ -493,6 +485,11 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
+    // We also avoid overriding globals like setImmediate, clearImmediate
+    // queueMicrotask etc during the bootstrap phase of Node.js
+    // for processes that already have these defined by DOM.
+    // Check //third_party/electron_node/lib/internal/bootstrap/node.js
+    // for the list of overrides on globalThis.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
              node::EnvironmentFlags::kNoBrowserGlobals |
              node::EnvironmentFlags::kNoCreateInspector;
@@ -523,15 +520,6 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   DCHECK(env);
-
-  // Clean up the global _noBrowserGlobals that we unironically injected into
-  // the global scope
-  if (browser_env_ == BrowserEnvironment::kRenderer ||
-      browser_env_ == BrowserEnvironment::kWorker) {
-    // We need to bootstrap the env in non-browser processes so that
-    // _noBrowserGlobals is read correctly before we remove it
-    global.Delete("_noBrowserGlobals");
-  }
 
   node::IsolateSettings is;
 
