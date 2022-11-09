@@ -717,6 +717,8 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 
 **Note:** This API must be called after the `ready` event is emitted.
 
+**Note:** To see example return values of this API compared to other locale and language APIs, see [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
+
 ### `app.getLocaleCountryCode()`
 
 Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
@@ -736,11 +738,26 @@ Therefore, this API can be used for purposes such as choosing a format for rende
 
 **Note:** This API must be called after the `ready` event is emitted.
 
+**Note:** To see example return values of this API compared to other locale and language APIs, see [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
+
 ### `app.getPreferredSystemLanguages()`
 
 Returns `string[]` - The user's preferred system languages from most preferred to least preferred, including the country codes if applicable. A user can modify and add to this list on Windows or macOS through the Language and Region settings.
 
 This API can be used for purposes such as deciding what language to present the application in.
+
+Here are some examples of return values of the various language and locale APIs with different configurations:
+
+* For Windows, where the application locale is French, the region is Simplified Chinese (China), and the preferred system languages from most to least preferred are French (Canada), English (US), and Simplified Chinese (China):
+  * `app.getLocale()` returns `'fr'`
+  * `app.getSystemLocale()` returns `'zh-CN'`
+  * `app.getPreferredSystemLanguages()` returns `['fr-CA', 'en-US', 'zh-Hans-CN']`
+* On macOS, where the application locale is German, the region is Finland, and the preferred system languages from most to least preferred are French, French (Canada), Simplified Chinese, and Spanish (Latin America):
+  * `app.getLocale()` returns `'de'`
+  * `app.getSystemLocale()` returns `'fr-FI'`
+  * `app.getPreferredSystemLanguages()` returns `['fr-FI', 'fr-CA', 'zh-Hans-FI', 'es-419']`
+
+Both the available languages and regions and the possible return values differ between the two operating systems.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
