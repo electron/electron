@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jacobo=20Aragunde=20P=C3=A9rez?= <jaragunde@igalia.com>
+Date: Fri, 20 May 2022 10:22:05 +0000
+Subject: Refresh cached attributes before name computation traversal.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+It was possible to trigger a children clear operation while running
+TextFromDescendants to compute a node name from its children. This
+is the sequence:
+
+* A node changes its aria-hidden value.
+* We run TextFromDescendants on that node, it queries the hidden value
+  for each child.
+* To know the hidden value, it refreshes cached attributes in
+  UpdateCachedAttributeValuesIfNeeded
+* To refresh the cached aria-hidden value, it needs to check the
+  parent's aria-hidden
+* The parent also refreshes cached attributes in
+  UpdateCachedAttributeValuesIfNeeded
+* It detects aria-hidden value has changed, that triggers
+  SetNeedsToUpdateChildren, which runs ClearChildren
+
+To prevent children being cleared while we traverse them, which can
+cause an invalid pointer being addressed, we run a refresh of cached
+values before the traversal, knowing that operation may trigger a
+children clear (and we will need to use those cached values anyway).
+
+We also add a regression test, based on a clusterfuzz-generated one,
+which is known to trigger this situation.
+
+Bug: 1315044
+Change-Id: I0a7ca27cca5d93fbdbc07d31cab6a21b1401d8dc
+AX-relnotes: prevent crash in name computation.
+Cq-Include-Trybots: luci.chromium.try:linux-blink-web-tests-force-accessibility-rel
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3633568
+Commit-Queue: Jacobo Aragunde Pérez <jaragunde@igalia.com>
+Reviewed-by: Aaron Leventhal <aleventhal@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1005708}
+
+diff --git a/content/browser/accessibility/dump_accessibility_tree_browsertest.cc b/content/browser/accessibility/dump_accessibility_tree_browsertest.cc
+index ee4bc3c0766c2d1b6f279e5a9cf12303af098f0a..44304f626679bb7b4fc5f631170462bf0d79a120 100644
+--- a/content/browser/accessibility/dump_accessibility_tree_browsertest.cc
++++ b/content/browser/accessibility/dump_accessibility_tree_browsertest.cc
+@@ -3277,6 +3277,12 @@ IN_PROC_BROWSER_TEST_P(DumpAccessibilityTreeTest, AriaHiddenTabindexChange) {
+   RunRegressionTest(FILE_PATH_LITERAL("aria-hidden-tabindex-change.html"));
+ }
+ 
++IN_PROC_BROWSER_TEST_P(DumpAccessibilityTreeTest,
++                       ClearChildrenWhileComputingName) {
++  RunRegressionTest(
++      FILE_PATH_LITERAL("clear-children-while-computing-name.html"));
++}
++
+ IN_PROC_BROWSER_TEST_P(DumpAccessibilityTreeTest, HiddenTable) {
+   RunRegressionTest(FILE_PATH_LITERAL("hidden-table.html"));
+ }
+diff --git a/content/test/data/accessibility/regression/clear-children-while-computing-name-expected-blink.txt b/content/test/data/accessibility/regression/clear-children-while-computing-name-expected-blink.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..59e71c6983acae4e4cb519e423f3aa2db030c88a
+--- /dev/null
++++ b/content/test/data/accessibility/regression/clear-children-while-computing-name-expected-blink.txt
+@@ -0,0 +1,7 @@
++rootWebArea name='done'
++++genericContainer ignored
++++++genericContainer ignored
++++++++genericContainer ignored invisible
++++++++++heading ignored invisible
++++++++++++staticText ignored invisible name='Browser'
++++++++++genericContainer ignored invisible
+diff --git a/content/test/data/accessibility/regression/clear-children-while-computing-name.html b/content/test/data/accessibility/regression/clear-children-while-computing-name.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..415e25e70604ac74a73618075e0b97fca3b08bac
+--- /dev/null
++++ b/content/test/data/accessibility/regression/clear-children-while-computing-name.html
+@@ -0,0 +1,23 @@
++<!--
++@WAIT-FOR:done
++-->
++<head>
++<style>
++.c4 {}
++</style>
++</head>
++<body>
++<div id="container">
++  <h3 id="heading">Browser</h3>
++  <a id="anchor"></a>
++</div>
++<script>
++  function crash() {
++    document.getElementById('container').setAttribute('aria-hidden', 'true');
++    document.getElementById('heading').setAttribute('aria-hidden', 'false');
++    document.getElementById('anchor').setAttribute('class', 'c4');
++    heading['computedName']; // access to the property triggers name computation
++    document.title = 'done';
++  }
++  setTimeout(crash, 100);
++</script>
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+index 0beba99f522a9932390306e46988832ddbc258b0..ddfeeb3f32a8a0448ecae3ee54ba8b3c3e0f68c5 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+@@ -3444,6 +3444,10 @@ String AXNodeObject::TextFromDescendants(
+   ax::mojom::blink::NameFrom last_used_name_from =
+       ax::mojom::blink::NameFrom::kUninitialized;
+ 
++  // Ensure that if this node needs to invalidate its children (e.g. due to
++  // included in tree status change), that we do it now, rather than while
++  // traversing the children.
++  UpdateCachedAttributeValuesIfNeeded();
+ #if defined(AX_FAIL_FAST_BUILD)
+   base::AutoReset<bool> auto_reset(&is_computing_text_from_descendants_, true);
+ #endif
