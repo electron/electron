@@ -18,7 +18,7 @@
 #include "services/network/public/cpp/features.h"
 
 #if BUILDFLAG(IS_MAC)
-#include "device/base/features.h"
+#include "device/base/features.h"  // nogncheck
 #endif
 
 namespace electron {
