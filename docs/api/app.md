@@ -725,9 +725,15 @@ Returns `string` - User operating system's locale two-letter [ISO 3166](https://
 
 ### `app.getSystemLocale()`
 
-Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, the `NSLocale` object is used instead.
+Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, `[NSLocale currentLocale]` is used instead.
+
+Note that the system locale is not necessarily the preferred system language. For example, The system locale on Windows 11 returns the locale used for the region. On macOS Monterey, it returns a string containing a mix of the language and the region. For example, setting the most preferred language to Brazilian Portuguese but setting the region to Finland returns `pt-FI` instead of `pt-BR`.
 
 **Note:** This API must be called after the `ready` event is emitted.
+
+### `app.getSystemLanguage()`
+
+Returns `string` - The user's most preferred system language, including the country code if applicable. If no preferred system languages are found, returns an empty string.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
