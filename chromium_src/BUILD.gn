@@ -318,10 +318,10 @@ static_library("chrome") {
       "//chrome/browser/extensions/chrome_url_request_util.h",
       "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",
       "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.h",
-      "//chrome/renderer/extensions/extension_hooks_delegate.cc",
-      "//chrome/renderer/extensions/extension_hooks_delegate.h",
-      "//chrome/renderer/extensions/tabs_hooks_delegate.cc",
-      "//chrome/renderer/extensions/tabs_hooks_delegate.h",
+      "//chrome/renderer/extensions/api/extension_hooks_delegate.cc",
+      "//chrome/renderer/extensions/api/extension_hooks_delegate.h",
+      "//chrome/renderer/extensions/api/tabs_hooks_delegate.cc",
+      "//chrome/renderer/extensions/api/tabs_hooks_delegate.h",
     ]
 
     if (enable_pdf_viewer) {
