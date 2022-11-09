@@ -125,8 +125,12 @@ describe('app module', () => {
   });
 
   describe('app.getPreferredSystemLanguages()', () => {
-    it('should not be empty', () => {
+    ifit(process.platform !== 'linux')('should not be empty', () => {
       expect(app.getPreferredSystemLanguages().length).to.not.equal(0);
+    });
+
+    ifit(process.platform === 'linux')('should be empty', () => {
+      expect(app.getPreferredSystemLanguages().length).to.equal(0);
     });
   });
 
