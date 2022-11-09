@@ -221,10 +221,10 @@ index c119ef410f437b27ae4d0ff76627af55a2679171..997558e36dc1aec86005d05a82433691
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 3efe109c57d7cdf2979bfd97d26ff351b48158f6..d549cb67409425238cf7cae57a34339650584fb7 100644
+index d497b6e3b8615d683589b2b9d43e810ed57e8eb8..873a084eeac8f50a1ce0be53bbdb47b4856e0bce 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
-@@ -11,6 +11,8 @@ namespace switches {
+@@ -13,6 +13,8 @@ namespace switches {
  // only apply to LinearAnimation and its subclasses.
  const char kAnimationDurationScale[] = "animation-duration-scale";
  
@@ -234,7 +234,7 @@ index 3efe109c57d7cdf2979bfd97d26ff351b48158f6..d549cb67409425238cf7cae57a343396
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index 96563c15f0849dfced900435e8eb20db4d50bc0d..01e6a4954866cdcdc9e8a2e05c092e059b05426b 100644
+index 8bb46cc8a5d521452ac0ef9cac975987e203404c..03ee7b511c6b8fcd0b7154365cf533778ff4d234 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -12,6 +12,7 @@
@@ -243,5 +243,5 @@ index 96563c15f0849dfced900435e8eb20db4d50bc0d..01e6a4954866cdcdc9e8a2e05c092e05
  GFX_SWITCHES_EXPORT extern const char kAnimationDurationScale[];
 +GFX_SWITCHES_EXPORT extern const char kDisableColorCorrectRendering[];
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
+ GFX_SWITCHES_EXPORT extern const char kDisablePPAPISharedImagesSwapChain[];
  GFX_SWITCHES_EXPORT extern const char kEnableNativeGpuMemoryBuffers[];
- GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];

@@ -143,10 +143,10 @@ index e547f42bc0d06b485797ccc1605969259631831f..0f3041f4a5b636440d9579303721f2ae
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 1bb75bb14aa1afd9ebebf343b1a9436cd3f790f1..9260fa0eba56eca9c24a16880b07efb5481c15a1 100644
+index 893a902621593f42a81323b82614491241f58df9..8f1a722cc54dd66a0fbc54dc32d1fafe8e6c4015 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -108,11 +108,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -101,11 +101,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -162,7 +162,7 @@ index 1bb75bb14aa1afd9ebebf343b1a9436cd3f790f1..9260fa0eba56eca9c24a16880b07efb5
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -153,6 +155,24 @@ void UtilityProcessHost::SetExtraCommandLineSwitches(
+@@ -146,6 +148,24 @@ void UtilityProcessHost::SetExtraCommandLineSwitches(
    extra_switches_ = std::move(switches);
  }
  
@@ -187,9 +187,9 @@ index 1bb75bb14aa1afd9ebebf343b1a9436cd3f790f1..9260fa0eba56eca9c24a16880b07efb5
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -358,9 +378,22 @@ bool UtilityProcessHost::StartProcess() {
-     }
- #endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
+@@ -336,9 +356,22 @@ bool UtilityProcessHost::StartProcess() {
+     file_data->files_to_preload = GetV8SnapshotFilesToPreload();
+ #endif  // BUILDFLAG(IS_POSIX)
  
 +#if BUILDFLAG(IS_WIN)
 +    file_data->stdout_handle = std::move(stdout_handle_);
@@ -211,6 +211,14 @@ index 1bb75bb14aa1afd9ebebf343b1a9436cd3f790f1..9260fa0eba56eca9c24a16880b07efb5
  
      process_->LaunchWithFileData(std::move(delegate), std::move(cmd_line),
                                   std::move(file_data), true);
+@@ -348,7 +381,6 @@ bool UtilityProcessHost::StartProcess() {
+ }
+ 
+ void UtilityProcessHost::OnProcessLaunched() {
+-  launch_state_ = LaunchState::kLaunchComplete;
+ // TODO(crbug.com/1328879): Remove this when fixing the bug.
+ #if BUILDFLAG(IS_CASTOS) || BUILDFLAG(IS_CAST_ANDROID)
+   for (auto& callback : pending_run_service_callbacks_)
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
 index db20f0c7cfab79a02f3b6bb5d22f1863e1070419..22fad76769cd601f0c4c81fd4b1330616123254d 100644
 --- a/content/browser/utility_process_host.h

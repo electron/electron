@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 516a34f919823b5cff8beb92c2c25b9f4ba69ffc..7a5a814f7f2557963dcafa0ff7bf9141f3ee6676 100644
+index 4ee72c3d84d7768503a02f6d43390d406486eb7f..f384e7368aedb2cf1441e5a2dbc552d106f19c5d 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6659,10 +6659,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
+@@ -6695,10 +6695,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,12 +37,12 @@ index 516a34f919823b5cff8beb92c2c25b9f4ba69ffc..7a5a814f7f2557963dcafa0ff7bf9141
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 3bbe5e0475150ff65517365ef18bd184f5e4ca52..ef3a0880533891284b6fd6f8d94926244ce13304 100644
+index b97f456735743ecc4c3da33fafcdcc484597aef4..43af224fcb70beb48ed841dad017c2432f1c942a 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2683,6 +2683,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-     kIframeNestedWithinFencedFrame
-   };
+@@ -2687,6 +2687,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+       blink::mojom::LocalFrame::SnapshotDocumentForViewTransitionCallback
+           callback);
  
 +  // Returns whether the given origin and URL is allowed to commit in the
 +  // current RenderFrameHost. The |url| is used to ensure it matches the origin
@@ -58,7 +58,7 @@ index 3bbe5e0475150ff65517365ef18bd184f5e4ca52..ef3a0880533891284b6fd6f8d9492624
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3036,17 +3047,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3040,17 +3051,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

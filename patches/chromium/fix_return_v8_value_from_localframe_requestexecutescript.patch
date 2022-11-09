@@ -98,10 +98,10 @@ index dfd65464ee97e9bd87097454f992f2633cf0cff3..453dadbc3d4b22872f614199d1bb2eda
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 4716b950eebda617be15bf45e4e455ce067200b2..3a7b354cf09602a8da2dec8afcbc7651955838be 100644
+index 802e53f8a22e48f84dce7bd29ca6e44047ae7f62..e916f3189863c9f3b580067dbf33fe6d37a0e8ae 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -1034,6 +1034,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -1035,6 +1035,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),
@@ -110,7 +110,7 @@ index 4716b950eebda617be15bf45e4e455ce067200b2..3a7b354cf09602a8da2dec8afcbc7651
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index 26a2e49e027e0535b3dbb496897d5f802318e50f..b757c943bd6e0b54f2f59e7e56f013ed32fda991 100644
+index 42cc739e222f65be431dd49347bb9b1057938144..97aa7c001329c2fa4d325ec07d698d448dd81d13 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 @@ -248,7 +248,7 @@ void PausableScriptExecutor::CreateAndRun(

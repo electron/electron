@@ -66,10 +66,10 @@ index e30587e0fd1c42342a767ac281916e960c5a220d..4b9a924748d2ba89a5418818fad85cc4
        content::WebContents* source,
        const content::OpenURLParams& params) override;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index a3b44ab7c4fb44b103897d141f16b738b137df82..cab11ccf106e839a14f4a2fc76367959133babf0 100644
+index 0e9e41382300d6bb5fc6fa47cd5ed2ed4181ce46..e65a9bb5b9909e16f5a7dd2e73defa850795c9c4 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-@@ -71,8 +71,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
+@@ -74,8 +74,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
