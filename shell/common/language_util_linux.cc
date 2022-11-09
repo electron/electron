@@ -4,9 +4,9 @@
 
 #include "shell/common/language_util.h"
 
-#include "base/i18n/rtl.h"
-
 #include <glib.h>
+
+#include "base/i18n/rtl.h"
 
 namespace electron {
 
