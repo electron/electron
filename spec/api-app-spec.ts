@@ -132,7 +132,7 @@ describe('app module', () => {
     ifit(process.platform === 'linux')('should be empty or contain C entry', () => {
       const languages = app.getPreferredSystemLanguages();
       if (languages.length) {
-        expect(languages).to.include('C');
+        expect(languages).to.not.include('C');
       }
     });
   });
