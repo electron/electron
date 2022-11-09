@@ -67,6 +67,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
@@ -1803,6 +1804,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("getPreferredSystemLanguages", &GetPreferredLanguages)
       .SetMethod("getSystemLocale", &App::GetSystemLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
 #if BUILDFLAG(USE_NSS_CERTS)
