@@ -12,11 +12,14 @@
 #include "base/metrics/field_trial.h"
 #include "components/spellcheck/common/spellcheck_features.h"
 #include "content/public/common/content_features.h"
-#include "device/base/features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
 #include "services/network/public/cpp/features.h"
+
+#if BUILDFLAG(IS_MAC)
+#include "device/base/features.h"
+#endif
 
 namespace electron {
 
