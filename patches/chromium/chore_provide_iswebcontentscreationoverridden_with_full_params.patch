@@ -35,10 +35,10 @@ index 155296ba7ee5495be62045bc620bb1cd31d3ceb3..954efde9e7a58f8b556c6ceabb81643f
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.cc b/chrome/browser/ui/ash/ash_web_view_impl.cc
-index e17bb96ea9a38c73b1701abfc12e0be6d95d1b45..072ff863afa1253ba812508fdb4505522d1c3483 100644
+index 7d14473e1c042767de834f6734a7667d9c8bdb81..b9c1e56e8f6d528aaf92e27c7fc7e0bd6a174e81 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.cc
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.cc
-@@ -94,10 +94,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
+@@ -95,10 +95,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

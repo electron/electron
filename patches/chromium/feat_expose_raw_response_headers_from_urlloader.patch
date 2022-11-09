@@ -81,7 +81,7 @@ index 3c81eb68a21e2762173d6de055f6fedff457c4b6..8da97492aa055c384a539de4701d7b21
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 72a37cbcd114896d2ebcdb6a443168bbdb3be6f8..43781bd7ec2778a71695d968c47875ab02febeea 100644
+index f4cbafde0cfa92e3e93f5480242025b3d5c822c4..73a7a02a224a4737c4f7a97a98a73e7f67ce3250 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -9,6 +9,7 @@ import "mojo/public/mojom/base/unguessable_token.mojom";
@@ -103,7 +103,7 @@ index 72a37cbcd114896d2ebcdb6a443168bbdb3be6f8..43781bd7ec2778a71695d968c47875ab
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 270cbc9582c2588c5648fe00090664587f74eb48..b64aef6e3f283ad15721f7828974ce75f055bd8b 100644
+index a7da161099bb10a1afb850d14816cc382a1b888c..d06307ca3a849a562eb0df6808c27570edc52db7 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -480,6 +480,7 @@ URLLoader::URLLoader(
@@ -123,7 +123,7 @@ index 270cbc9582c2588c5648fe00090664587f74eb48..b64aef6e3f283ad15721f7828974ce75
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1443,6 +1444,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1441,6 +1442,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index eac1780eaaef2d0f5e4182289440e5e8f9d70fac..56a049d9ddc9ba0b5b2991317517143604b70d8d 100644
+index 516a34f919823b5cff8beb92c2c25b9f4ba69ffc..7a5a814f7f2557963dcafa0ff7bf9141f3ee6676 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6743,10 +6743,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
+@@ -6659,10 +6659,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,10 +37,10 @@ index eac1780eaaef2d0f5e4182289440e5e8f9d70fac..56a049d9ddc9ba0b5b29913175171436
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index c9c0155bc626e2c4583e3dc133482fea5178d3fc..9cd10de92955337f491b68807b93b52f59b832ca 100644
+index 3bbe5e0475150ff65517365ef18bd184f5e4ca52..ef3a0880533891284b6fd6f8d94926244ce13304 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2673,6 +2673,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2683,6 +2683,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
      kIframeNestedWithinFencedFrame
    };
  
@@ -58,7 +58,7 @@ index c9c0155bc626e2c4583e3dc133482fea5178d3fc..9cd10de92955337f491b68807b93b52f
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3019,17 +3030,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3036,17 +3047,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

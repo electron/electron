@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 142c6d093d80ac0c33d32cb60ac2d0757a500c45..a8e5396c7b150eb47e547a6c0b3054b27a56b7b0 100644
+index 4ee41da6620d036fb52dd52398e95fd0d57f0363..2eace6b3257d3382dd7cda2ada61318b6797bf0d 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7440,6 +7440,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7443,6 +7443,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -68,10 +68,10 @@ index 683ea0bc548ed4978873d44c0ce7db6933585eda..e6241d0b14660a8aec09aab2271162c2
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index f32766e762ca266b0f958e20bdcb1bf0ad8a3e63..e277c9a52aa6d575a4cff79ea47d18a1cfd7c75a 100644
+index 560e66d4e402c7c114fae8c5bac750cf1029b32c..bd85708729c32381ea982d894a6be26783f8cc3f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -624,6 +624,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -625,6 +625,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -150,10 +150,10 @@ index 03b810c51df61f1da8f4b7e3d48acd1517067277..5043d85e36e100cd912fc656f95d7025
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c6adbdb80c2fe60f2f94d525b5a594736518cebc..6ac19075b43da64f4622a13f074c45e217a32185 100644
+index adfb898a59d61e9a6f2b60fee6209f734cf0e038..d8c2c1a8e457cd5c2e222607b3442f3242c4c204 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6211,6 +6211,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6215,6 +6215,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
        /*openee_can_access_opener_origin=*/true,
        !GetWebFrame()->IsAllowedToDownload(), GetWebFrame()->IsAdFrame());
  
