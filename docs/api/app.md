@@ -725,26 +725,22 @@ Returns `string` - User operating system's locale two-letter [ISO 3166](https://
 
 ### `app.getSystemLocale()`
 
-Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, `[NSLocale currentLocale]` is used instead. To get the user's current system language, which is not always the same as the locale, it is better to use `app.getPreferredSystemLanguages()` and take the first result.
-
-Note that the system locale is not always the most preferred system language:
-
-* On Windows 11, the locale returned is the one used for the regional format. For example, if the regional format is `zh-CN` and the most preferred system language is `fr-FR`, then `zh-CN` is returned.
-* On macOS Monterey, the locale is a string containing a mix of the most preferred system language and the region. For example, if the most preferred language is `pt-BR` but the region is Finland, the locale is `pt-FI` instead of `pt-BR`.
+Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, `[NSLocale currentLocale]` is used instead. To get the user's current system language, which is not always the same as the locale, it is better to use [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
 
 Different operating systems also use the regional data differently:
 
-* Windows 11 uses the regional format to render dates and times.
-* macOS Monterey uses the region for formatting numbers, selecting the currency symbol to use, and rendering dates and times.
+* Windows 11 uses the regional format for numbers, dates, and times.
+* macOS Monterey uses the region for formatting numbers, dates, times, and for selecting the currency symbol to use.
+
+Therefore, this API can be used for purposes such as choosing a format for rendering dates and times in a calendar app, especially when the developer wants the format to be consistent with the OS.
 
 **Note:** This API must be called after the `ready` event is emitted.
 
 ### `app.getPreferredSystemLanguages()`
 
 Returns `string[]` - The user's preferred system languages from most preferred to least preferred, including the country codes if applicable. A user can modify and add to this list on Windows or macOS through the Language and Region settings.
-Some languages returned by this API appear in a different format than locales returned by `app.getLocale()`. For example, on Windows and macOS, the language code for Simplified Chinese starts with `zh-Hans`, and the language code for Traditional Chinese starts with `zh-Hant`.
-To get the user's system locale or region, which is not always the same as their preferred system languages, one can use `app.getSystemLocale()`.
-On Linux, if `USE_GLIB` is defined, there will always be at least the entry `C`.
+
+This API can be used for purposes such as deciding what language to present the application in.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
