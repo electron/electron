@@ -375,6 +375,7 @@ describe('command line switches', () => {
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
     const currentSystemLocale = app.getSystemLocale();
+    const currentPreferredLanguages = JSON.stringify(app.getPreferredSystemLanguages());
     const testLocale = async (locale: string, result: string, printEnv: boolean = false) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const args = [appPath, `--set-lang=${locale}`];
@@ -397,9 +398,9 @@ describe('command line switches', () => {
       expect(output).to.equal(result);
     };
 
-    it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}`));
-    it('should set the locale with country code', async () => testLocale('zh-CN', `zh-CN|${currentSystemLocale}`));
-    it('should not set an invalid locale', async () => testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}`));
+    it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}|${currentPreferredLanguages}`));
+    it('should set the locale with country code', async () => testLocale('zh-CN', `zh-CN|${currentSystemLocale}|${currentPreferredLanguages}`));
+    it('should not set an invalid locale', async () => testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}|${currentPreferredLanguages}`));
 
     const lcAll = String(process.env.LC_ALL);
     ifit(process.platform === 'linux')('current process has a valid LC_ALL env', async () => {
