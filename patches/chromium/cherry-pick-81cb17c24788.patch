@@ -1,7 +1,10 @@
-From 81cb17c2478807517551e6869748b5bd1612a310 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Christoph Schwering <schwering@google.com>
-Date: Fri, 04 Nov 2022 00:56:32 +0000
-Subject: [PATCH] [Autofill] Handle misaligned FormData, FormStructure.
+Date: Fri, 4 Nov 2022 00:56:32 +0000
+Subject: Handle misaligned FormData, FormStructure.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 This CL handles the case where the fields of the cached FormStructure
 and the FormData are misaligned in
@@ -21,10 +24,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4003032
 Commit-Queue: Dominic Battré <battre@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5249@{#907}
 Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
----
 
 diff --git a/chrome/test/data/autofill/captured_sites/testcases.json b/chrome/test/data/autofill/captured_sites/testcases.json
-index bb7ac2a..2e69d8f 100644
+index bb7ac2a638a410b3e83b9871314eae27aa8ef229..2e69d8f8532760103b9cccd5efc4ca7a4ad016a1 100644
 --- a/chrome/test/data/autofill/captured_sites/testcases.json
 +++ b/chrome/test/data/autofill/captured_sites/testcases.json
 @@ -17,7 +17,7 @@
@@ -37,10 +39,10 @@ index bb7ac2a..2e69d8f 100644
      { "site_name": "bhphotovideo", "bug_number":1173033 },
      { "site_name": "bloomingdales" },
 diff --git a/components/autofill/core/browser/browser_autofill_manager.cc b/components/autofill/core/browser/browser_autofill_manager.cc
-index 4d123df8..bf23dc1 100644
+index 2dad433c7deb91a2d06f7a10077c9197bd2eba98..0a6e94a1f5327600c1c13cd6fd7586c7ca09037e 100644
 --- a/components/autofill/core/browser/browser_autofill_manager.cc
 +++ b/components/autofill/core/browser/browser_autofill_manager.cc
-@@ -1113,26 +1113,36 @@
+@@ -1069,26 +1069,36 @@ void BrowserAutofillManager::OnAskForValuesToFillImpl(
  
  bool BrowserAutofillManager::WillFillCreditCardNumber(
      const FormData& form,
@@ -53,10 +55,12 @@ index 4d123df8..bf23dc1 100644
 +  if (!GetCachedFormAndField(form, triggered_field_data, &form_structure,
 +                             &triggered_field)) {
      return false;
--
++  }
+ 
 -  if (autofill_field->Type().GetStorableType() == CREDIT_CARD_NUMBER)
--    return true;
--
++  if (triggered_field->Type().GetStorableType() == CREDIT_CARD_NUMBER)
+     return true;
+ 
 -  DCHECK_EQ(form_structure->field_count(), form.fields.size());
 -  for (size_t i = 0; i < form_structure->field_count(); ++i) {
 -    if (form_structure->field(i)->section == autofill_field->section &&
@@ -65,12 +69,7 @@ index 4d123df8..bf23dc1 100644
 -        form.fields[i].value.empty() && !form.fields[i].is_autofilled) {
 -      return true;
 -    }
-   }
- 
--  return false;
-+  if (triggered_field->Type().GetStorableType() == CREDIT_CARD_NUMBER)
-+    return true;
-+
+-  }
 +  // `form` is the latest version of the form received from the renderer and may
 +  // be more up to date than the `form_structure` in the cache. Therefore, we
 +  // need to validate for each `field` in the cache we try to fill whether
@@ -79,7 +78,8 @@ index 4d123df8..bf23dc1 100644
 +    auto it = base::ranges::find(form.fields, id, &FormFieldData::global_id);
 +    return it != form.fields.end() && it->value.empty() && !it->is_autofilled;
 +  };
-+
+ 
+-  return false;
 +  auto IsFillableCreditCardNumberField = [&triggered_field,
 +                                          &IsFillableField](const auto& field) {
 +    return field->Type().GetStorableType() == CREDIT_CARD_NUMBER &&
@@ -94,10 +94,10 @@ index 4d123df8..bf23dc1 100644
  
  void BrowserAutofillManager::FillOrPreviewCreditCardForm(
 diff --git a/components/autofill/core/browser/browser_autofill_manager.h b/components/autofill/core/browser/browser_autofill_manager.h
-index c33ab84..c443bcf2 100644
+index d6d33df90907dd1521108cfbae1ecbd430bb4e8e..03f92c993a05122b0df1e3b6afdad50edd9e1b41 100644
 --- a/components/autofill/core/browser/browser_autofill_manager.h
 +++ b/components/autofill/core/browser/browser_autofill_manager.h
-@@ -485,11 +485,11 @@
+@@ -475,11 +475,11 @@ class BrowserAutofillManager : public AutofillManager,
    // profile does not exist.
    AutofillProfile* GetProfile(int unique_id);
  
