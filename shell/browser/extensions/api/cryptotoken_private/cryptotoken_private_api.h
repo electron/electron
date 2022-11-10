@@ -24,7 +24,7 @@ class CryptotokenPrivateCanOriginAssertAppIdFunction
  public:
   CryptotokenPrivateCanOriginAssertAppIdFunction();
   DECLARE_EXTENSION_FUNCTION("cryptotokenPrivate.canOriginAssertAppId",
-                             CRYPTOTOKENPRIVATE_CANORIGINASSERTAPPID)
+                             DELETED_CRYPTOTOKENPRIVATE_CANORIGINASSERTAPPID)
  protected:
   ~CryptotokenPrivateCanOriginAssertAppIdFunction() override {}
   ResponseAction Run() override;
@@ -36,7 +36,7 @@ class CryptotokenPrivateIsAppIdHashInEnterpriseContextFunction
   CryptotokenPrivateIsAppIdHashInEnterpriseContextFunction();
   DECLARE_EXTENSION_FUNCTION(
       "cryptotokenPrivate.isAppIdHashInEnterpriseContext",
-      CRYPTOTOKENPRIVATE_ISAPPIDHASHINENTERPRISECONTEXT)
+      DELETED_CRYPTOTOKENPRIVATE_ISAPPIDHASHINENTERPRISECONTEXT)
 
  protected:
   ~CryptotokenPrivateIsAppIdHashInEnterpriseContextFunction() override {}
@@ -48,7 +48,7 @@ class CryptotokenPrivateCanAppIdGetAttestationFunction
  public:
   CryptotokenPrivateCanAppIdGetAttestationFunction();
   DECLARE_EXTENSION_FUNCTION("cryptotokenPrivate.canAppIdGetAttestation",
-                             CRYPTOTOKENPRIVATE_CANAPPIDGETATTESTATION)
+                             DELETED_CRYPTOTOKENPRIVATE_CANAPPIDGETATTESTATION)
 
  protected:
   ~CryptotokenPrivateCanAppIdGetAttestationFunction() override {}
@@ -61,7 +61,7 @@ class CryptotokenPrivateRecordRegisterRequestFunction
  public:
   CryptotokenPrivateRecordRegisterRequestFunction() = default;
   DECLARE_EXTENSION_FUNCTION("cryptotokenPrivate.recordRegisterRequest",
-                             CRYPTOTOKENPRIVATE_RECORDREGISTERREQUEST)
+                             DELETED_CRYPTOTOKENPRIVATE_RECORDREGISTERREQUEST)
 
  protected:
   ~CryptotokenPrivateRecordRegisterRequestFunction() override = default;
@@ -72,7 +72,7 @@ class CryptotokenPrivateRecordSignRequestFunction : public ExtensionFunction {
  public:
   CryptotokenPrivateRecordSignRequestFunction() = default;
   DECLARE_EXTENSION_FUNCTION("cryptotokenPrivate.recordSignRequest",
-                             CRYPTOTOKENPRIVATE_RECORDSIGNREQUEST)
+                             DELETED_CRYPTOTOKENPRIVATE_RECORDSIGNREQUEST)
 
  protected:
   ~CryptotokenPrivateRecordSignRequestFunction() override = default;
