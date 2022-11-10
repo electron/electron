@@ -14,7 +14,7 @@ If Electron compiles on Windows without this patch then it's no longer
 needed.
 
 diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
-index f96709c783a0b13a3c09925a930d59c8ba48e01f..d91253f16ee9775986d699ebfed77b7389c71a13 100644
+index 139af8fdac26c3f829886aedc18af1592a4de7ef..b361aa912c74233d2fb6feb0b00e45c1c1697496 100644
 --- a/include/v8-cppgc.h
 +++ b/include/v8-cppgc.h
 @@ -76,6 +76,12 @@ struct WrapperDescriptor final {
