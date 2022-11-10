@@ -1,7 +1,7 @@
-From 177e8bcd358436191f63482897115e90809ebb80 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Darius M <dmercadier@chromium.org>
-Date: Mon, 07 Nov 2022 08:40:11 +0100
-Subject: [PATCH] Merged: [compiler] fix bug in inlining of Array.At
+Date: Mon, 7 Nov 2022 08:40:11 +0100
+Subject: Merged: [compiler] fix bug in inlining of Array.At
 
 The inlined version of Array.At was only checking the kind of the
 maps, rather than the maps themselves. When the feedback was
@@ -23,13 +23,12 @@ Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.6@{#49}
 Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
 Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
----
 
 diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
-index 82c3b1a..85b3689 100644
+index 65d3dfe1db8e690a949f6ea3140dda4813a0b0d5..10f3301e3a10d215d731e8bd7d2ec67537d66989 100644
 --- a/src/compiler/js-call-reducer.cc
 +++ b/src/compiler/js-call-reducer.cc
-@@ -710,9 +710,8 @@
+@@ -719,9 +719,8 @@ class IteratingArrayBuiltinReducerAssembler : public JSCallReducerAssembler {
        MapInference* inference, const bool has_stability_dependency,
        ElementsKind kind, const SharedFunctionInfoRef& shared,
        const NativeContextRef& native_context, ArrayEverySomeVariant variant);
@@ -41,7 +40,7 @@ index 82c3b1a..85b3689 100644
    TNode<Object> ReduceArrayPrototypeIndexOfIncludes(
        ElementsKind kind, ArrayIndexOfIncludesVariant variant);
  
-@@ -1322,24 +1321,26 @@
+@@ -1331,24 +1330,26 @@ TNode<String> JSCallReducerAssembler::ReduceStringPrototypeSlice() {
  }
  
  TNode<Object> IteratingArrayBuiltinReducerAssembler::ReduceArrayPrototypeAt(
@@ -75,7 +74,7 @@ index 82c3b1a..85b3689 100644
  
      // If index is less than 0, then subtract from length.
      TNode<Boolean> cond = NumberLessThan(index_num, ZeroConstant());
-@@ -1358,15 +1359,16 @@
+@@ -1367,15 +1368,16 @@ TNode<Object> IteratingArrayBuiltinReducerAssembler::ReduceArrayPrototypeAt(
  
      // Retrieving element at index.
      TNode<Object> element = LoadElement<Object>(
@@ -95,7 +94,7 @@ index 82c3b1a..85b3689 100644
      }
      Goto(&out, element);
  
-@@ -5632,25 +5634,22 @@
+@@ -5639,25 +5641,22 @@ Reduction JSCallReducer::ReduceArrayPrototypeAt(Node* node) {
    MapInference inference(broker(), receiver, effect);
    if (!inference.HaveMaps()) return NoChange();
  
@@ -127,7 +126,7 @@ index 82c3b1a..85b3689 100644
      // No map in the feedback supports fast iteration. Keeping the builtin call.
      return NoChange();
    }
-@@ -5659,13 +5658,11 @@
+@@ -5666,13 +5665,11 @@ Reduction JSCallReducer::ReduceArrayPrototypeAt(Node* node) {
      return NoChange();
    }
  
