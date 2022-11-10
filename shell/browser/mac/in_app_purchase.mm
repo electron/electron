@@ -25,12 +25,12 @@
  @private
   in_app_purchase::InAppPurchaseCallback callback_;
   NSInteger quantity_;
-  NSString username_;
+  NSString* username_;
 }
 
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
               quantity:(NSInteger)quantity
-              username:(NSString)username;
+              username:(NSString*)username;
 
 - (void)purchaseProduct:(NSString*)productID;
 
@@ -48,11 +48,11 @@
  */
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
               quantity:(NSInteger)quantity
-              username:(NSString)username {
+              username:(NSString*)username {
   if ((self = [super init])) {
     callback_ = std::move(callback);
     quantity_ = quantity;
-    username_ = username;
+    username_ = [username copy];
   }
 
   return self;
@@ -111,8 +111,7 @@
   // when the transaction is finished).
   SKMutablePayment* payment = [SKMutablePayment paymentWithProduct:product];
   payment.quantity = quantity_;
-  if ([username_ length] > 0)
-    payment.applicationUsername = username_;
+  payment.applicationUsername = username_;
 
   [[SKPaymentQueue defaultQueue] addPayment:payment];
 
