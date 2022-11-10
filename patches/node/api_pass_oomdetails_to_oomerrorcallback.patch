@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 12 Oct 2022 21:25:49 +0200
+Subject: Pass OOMDetails to OOMErrorCallback
+
+Introduced in https://chromium-review.googlesource.com/c/v8/v8/+/3647827.
+
+This patch can be removed when Node.js updates to a V8 version containing
+the above CL.
+
+diff --git a/src/node_errors.cc b/src/node_errors.cc
+index 323fc7d4ff635ca287ee241cee234da0600340a2..36ab78f739f3faecab47eead99f9aa3c403672c0 100644
+--- a/src/node_errors.cc
++++ b/src/node_errors.cc
+@@ -495,9 +495,9 @@ void OnFatalError(const char* location, const char* message) {
+   ABORT();
+ }
+ 
+-void OOMErrorHandler(const char* location, bool is_heap_oom) {
++void OOMErrorHandler(const char* location, const v8::OOMDetails& details) {
+   const char* message =
+-      is_heap_oom ? "Allocation failed - JavaScript heap out of memory"
++      details.is_heap_oom ? "Allocation failed - JavaScript heap out of memory"
+                   : "Allocation failed - process out of memory";
+   if (location) {
+     FPrintF(stderr, "FATAL ERROR: %s %s\n", location, message);
+diff --git a/src/node_errors.h b/src/node_errors.h
+index 5587c2348626102febe33a20ff45748a6eec61ad..6dbba32858dc82bc04171da7ee2a33a0b4dee791 100644
+--- a/src/node_errors.h
++++ b/src/node_errors.h
+@@ -21,7 +21,7 @@ void AppendExceptionLine(Environment* env,
+ 
+ [[noreturn]] void FatalError(const char* location, const char* message);
+ void OnFatalError(const char* location, const char* message);
+-void OOMErrorHandler(const char* location, bool is_heap_oom);
++void OOMErrorHandler(const char* location, const v8::OOMDetails& details);
+ 
+ // Helpers to construct errors similar to the ones provided by
+ // lib/internal/errors.js.
