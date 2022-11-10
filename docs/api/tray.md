@@ -34,6 +34,9 @@ __Linux__
 
 * On Linux distributions that only have app indicator support, you have to
   install `libappindicator1` to make the tray icon work.
+* Many users have versions of `libayatana-appindicator` with a major bug.
+  `Tray`'s `setImage` may non-deterministically segfault and crash electron.
+  Avoid changing the Tray icon after the app has initialized.
 * The app indicator will be used if it is supported, otherwise
   `GtkStatusIcon` will be used instead.
 * App indicator will only be shown when it has a context menu.
