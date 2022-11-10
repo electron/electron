@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Wed, 26 Oct 2022 17:03:36 +0200
+Subject: Merged: [wasm] Reload cached instance fields in catch handler
+
+Bug: chromium:1377816
+(cherry picked from commit f517e518af26b7eac23c9e328b463eb1e8ee3499)
+
+Change-Id: I993bcff0389a1ba134e89e8ac5299d742ddd150c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3999134
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.6@{#47}
+Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
+Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
+
+diff --git a/src/wasm/graph-builder-interface.cc b/src/wasm/graph-builder-interface.cc
+index 5b3256fe6d1c431adf4c10c84dfa9340d4e99754..3d899eded2d744731f2acfadce6f4d55b1417c4d 100644
+--- a/src/wasm/graph-builder-interface.cc
++++ b/src/wasm/graph-builder-interface.cc
+@@ -91,6 +91,7 @@ class WasmGraphBuildingInterface {
+   struct TryInfo : public ZoneObject {
+     SsaEnv* catch_env;
+     TFNode* exception = nullptr;
++    bool first_catch = true;
+ 
+     bool might_throw() const { return exception != nullptr; }
+ 
+@@ -937,6 +938,10 @@ class WasmGraphBuildingInterface {
+ 
+     TFNode* exception = block->try_info->exception;
+     SetEnv(block->try_info->catch_env);
++    if (block->try_info->first_catch) {
++      LoadContextIntoSsa(ssa_env_, decoder);
++      block->try_info->first_catch = false;
++    }
+ 
+     TFNode* if_catch = nullptr;
+     TFNode* if_no_catch = nullptr;
+@@ -1014,6 +1019,9 @@ class WasmGraphBuildingInterface {
+     }
+ 
+     SetEnv(block->try_info->catch_env);
++    if (block->try_info->first_catch) {
++      LoadContextIntoSsa(ssa_env_, decoder);
++    }
+   }
+ 
+   void AtomicOp(FullDecoder* decoder, WasmOpcode opcode,
