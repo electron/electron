@@ -155,4 +155,5 @@ cherry-pick-06c87f9f42ff.patch
 refresh_cached_attributes_before_name_computation_traversal.patch
 review_add_clear_children_checks_during_accname_traversal.patch
 cherry-pick-1894458e04a2.patch
+cherry-pick-a1cbf05b4163.patch
 cherry-pick-ac4785387fff.patch
