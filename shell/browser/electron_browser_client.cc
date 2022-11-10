@@ -702,24 +702,6 @@ ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
 #endif
   return overlay_window;
 }
-
-std::unique_ptr<content::DocumentOverlayWindow>
-ElectronBrowserClient::CreateWindowForDocumentPictureInPicture(
-    content::DocumentPictureInPictureWindowController* controller) {
-  auto overlay_window = content::DocumentOverlayWindow::Create(controller);
-#if BUILDFLAG(IS_WIN)
-  std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
-  if (!app_user_model_id.empty()) {
-    auto* overlay_window_view =
-        static_cast<DocumentOverlayWindowViews*>(overlay_window.get());
-    ui::win::SetAppIdForWindow(app_user_model_id,
-                               overlay_window_view->GetNativeWindow()
-                                   ->GetHost()
-                                   ->GetAcceleratedWidget());
-  }
-#endif
-  return overlay_window;
-}
 #endif
 
 void ElectronBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
