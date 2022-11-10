@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dave Tapuska <dtapuska@chromium.org>
 Date: Thu, 3 Nov 2022 23:16:16 +0000
-Subject: [m106] Fix PauseOrFreezeOnWorkerThread with nested Worklets.
+Subject: Fix PauseOrFreezeOnWorkerThread with nested Worklets.
 
 Worklets can use the same backing thread which means we can have
 nested WorkerThreads paused. If a parent WorkerThread gets deallocated
