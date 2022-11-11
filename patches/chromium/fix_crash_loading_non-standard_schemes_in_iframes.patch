@@ -37,12 +37,12 @@ index cd1650e1e1ad05bf1c6aff8710b25ca3f8fe22a7..0284d5dca05bc6ce060f0d0403b6329d
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 06e72144c8c155bffe10c9799351c11f9834354c..f4bb3f6244800ff2aaf93cf1105e75a7e27decf0 100644
+index 41af50169e3aaf50a6e6f6c5382eaf1883a69491..775ac8165fb50282db18b73c3c397ca522b21c6b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2687,6 +2687,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-       blink::mojom::LocalFrame::SnapshotDocumentForViewTransitionCallback
-           callback);
+@@ -2690,6 +2690,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   RenderFrameHostImplPpapiSupport& GetPpapiSupport();
+ #endif
  
 +  // Returns whether the given origin and URL is allowed to commit in the
 +  // current RenderFrameHost. The |url| is used to ensure it matches the origin
@@ -58,7 +58,7 @@ index 06e72144c8c155bffe10c9799351c11f9834354c..f4bb3f6244800ff2aaf93cf1105e75a7
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3040,17 +3051,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3002,17 +3013,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
