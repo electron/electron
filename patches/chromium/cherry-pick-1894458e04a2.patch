@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joshua Peraza <jperaza@chromium.org>
+Date: Thu, 3 Nov 2022 21:18:35 +0000
+Subject: Validate number of bytes read
+
+Original commit:
+https://chromium-review.googlesource.com/c/crashpad/crashpad/+/3994208
+
+(cherry picked from commit 7585111a6c1dfa502f3ca1e3d27aed066e479fd9)
+
+Bug: chromium:1380083
+Change-Id: If9708ccdbf6957ef169b35f8f89e2b0744d066d7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4000305
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+Commit-Queue: Joshua Peraza <jperaza@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/5359@{#529}
+Cr-Original-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4004067
+Cr-Commit-Position: refs/branch-heads/5249@{#905}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/third_party/crashpad/crashpad/util/linux/ptrace_client.cc b/third_party/crashpad/crashpad/util/linux/ptrace_client.cc
+index 1863841f73f64d89391646f5c3e5fc2e2766a6cc..32cc35d9567117fe0eb6f1ec4736ac4a15ddfd83 100644
+--- a/third_party/crashpad/crashpad/util/linux/ptrace_client.cc
++++ b/third_party/crashpad/crashpad/util/linux/ptrace_client.cc
+@@ -331,6 +331,11 @@ ssize_t PtraceClient::ReadUpTo(VMAddress address, size_t size, void* buffer) {
+       return total_read;
+     }
+ 
++    if (static_cast<size_t>(bytes_read) > size) {
++      LOG(ERROR) << "invalid size " << bytes_read;
++      return -1;
++    }
++
+     if (!LoggingReadFileExactly(sock_, buffer_c, bytes_read)) {
+       return -1;
+     }
