@@ -50,6 +50,11 @@ describe('BrowserView module', () => {
     expect(view.webContents.getURL()).to.equal('about:blank');
   });
 
+  it('has type browserView', () => {
+    view = new BrowserView();
+    expect(view.webContents.getType()).to.equal('browserView');
+  });
+
   describe('BrowserView.setBackgroundColor()', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView();

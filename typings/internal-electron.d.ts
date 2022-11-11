@@ -105,7 +105,7 @@ declare namespace Electron {
   interface WebPreferences {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
-    type?: 'backgroundPage' | 'window' | 'remote' | 'webview' | 'offscreen';
+    type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
   interface Menu {

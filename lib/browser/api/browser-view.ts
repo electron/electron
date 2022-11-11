@@ -15,6 +15,7 @@ export default class BrowserView {
     if (webContents) {
       v8Util.setHiddenValue(webPreferences, 'webContents', webContents);
     }
+    webPreferences.type = 'browserView';
     this.#webContentsView = new WebContentsView(webPreferences);
   }
 

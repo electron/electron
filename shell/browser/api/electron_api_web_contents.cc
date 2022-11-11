@@ -322,6 +322,9 @@ struct Converter<electron::api::WebContents::Type> {
       case Type::kBrowserWindow:
         type = "window";
         break;
+      case Type::kBrowserView:
+        type = "browserView";
+        break;
       case Type::kRemote:
         type = "remote";
         break;
@@ -346,6 +349,8 @@ struct Converter<electron::api::WebContents::Type> {
       return false;
     if (type == "backgroundPage") {
       *out = Type::kBackgroundPage;
+    } else if (type == "browserView") {
+      *out = Type::kBrowserView;
     } else if (type == "webview") {
       *out = Type::kWebView;
 #if BUILDFLAG(ENABLE_OSR)
