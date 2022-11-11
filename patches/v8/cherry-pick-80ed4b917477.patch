@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maya Lekova <mslekova@chromium.org>
+Date: Wed, 2 Nov 2022 11:02:24 +0100
+Subject: Merged: [compiler] Fix mutable heap number object reference leak
+
+(cherry picked from commit 64112122374c00a86771b4612d20ca5d88ad5bfb)
+
+Bug: chromium:1380063
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: Ifa1737af7fbc7e14d69a5080cbe0aabf7ef466fa
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4009978
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Maya Lekova <mslekova@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.6@{#51}
+Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
+Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
+
+diff --git a/src/compiler/effect-control-linearizer.cc b/src/compiler/effect-control-linearizer.cc
+index 5825045052be450516b30e09a2cdf3e55c42c70e..909a6781d60729d7e21d9f8dfe265ff853855ed3 100644
+--- a/src/compiler/effect-control-linearizer.cc
++++ b/src/compiler/effect-control-linearizer.cc
+@@ -5380,6 +5380,8 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
+ 
+   auto if_double = __ MakeDeferredLabel();
+   auto done = __ MakeLabel(MachineRepresentation::kTagged);
++  auto loaded_field = __ MakeLabel(MachineRepresentation::kTagged);
++  auto done_double = __ MakeLabel(MachineRepresentation::kFloat64);
+ 
+   // Check if field is a mutable double field.
+   __ GotoIfNot(__ IntPtrEqual(__ WordAnd(index, one), zero), &if_double);
+@@ -5396,8 +5398,8 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
+       Node* offset =
+           __ IntAdd(__ WordShl(index, __ IntPtrConstant(kTaggedSizeLog2 - 1)),
+                     __ IntPtrConstant(JSObject::kHeaderSize - kHeapObjectTag));
+-      Node* result = __ Load(MachineType::AnyTagged(), object, offset);
+-      __ Goto(&done, result);
++      Node* field = __ Load(MachineType::AnyTagged(), object, offset);
++      __ Goto(&loaded_field, field);
+     }
+ 
+     // The field is located in the properties backing store of {object}.
+@@ -5411,8 +5413,8 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
+                                __ IntPtrConstant(kTaggedSizeLog2 - 1)),
+                     __ IntPtrConstant((FixedArray::kHeaderSize - kTaggedSize) -
+                                       kHeapObjectTag));
+-      Node* result = __ Load(MachineType::AnyTagged(), properties, offset);
+-      __ Goto(&done, result);
++      Node* field = __ Load(MachineType::AnyTagged(), properties, offset);
++      __ Goto(&loaded_field, field);
+     }
+   }
+ 
+@@ -5420,9 +5422,6 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
+   // architectures, or a mutable HeapNumber.
+   __ Bind(&if_double);
+   {
+-    auto loaded_field = __ MakeLabel(MachineRepresentation::kTagged);
+-    auto done_double = __ MakeLabel(MachineRepresentation::kFloat64);
+-
+     index = __ WordSar(index, one);
+ 
+     // Check if field is in-object or out-of-object.
+@@ -5450,27 +5449,27 @@ Node* EffectControlLinearizer::LowerLoadFieldByIndex(Node* node) {
+       Node* field = __ Load(MachineType::AnyTagged(), properties, offset);
+       __ Goto(&loaded_field, field);
+     }
++  }
+ 
+-    __ Bind(&loaded_field);
+-    {
+-      Node* field = loaded_field.PhiAt(0);
+-      // We may have transitioned in-place away from double, so check that
+-      // this is a HeapNumber -- otherwise the load is fine and we don't need
+-      // to copy anything anyway.
+-      __ GotoIf(ObjectIsSmi(field), &done, field);
+-      Node* field_map = __ LoadField(AccessBuilder::ForMap(), field);
+-      __ GotoIfNot(__ TaggedEqual(field_map, __ HeapNumberMapConstant()), &done,
+-                   field);
+-
+-      Node* value = __ LoadField(AccessBuilder::ForHeapNumberValue(), field);
+-      __ Goto(&done_double, value);
+-    }
++  __ Bind(&loaded_field);
++  {
++    Node* field = loaded_field.PhiAt(0);
++    // We may have transitioned in-place away from double, so check that
++    // this is a HeapNumber -- otherwise the load is fine and we don't need
++    // to copy anything anyway.
++    __ GotoIf(ObjectIsSmi(field), &done, field);
++    Node* field_map = __ LoadField(AccessBuilder::ForMap(), field);
++    __ GotoIfNot(__ TaggedEqual(field_map, __ HeapNumberMapConstant()), &done,
++                 field);
+ 
+-    __ Bind(&done_double);
+-    {
+-      Node* result = AllocateHeapNumberWithValue(done_double.PhiAt(0));
+-      __ Goto(&done, result);
+-    }
++    Node* value = __ LoadField(AccessBuilder::ForHeapNumberValue(), field);
++    __ Goto(&done_double, value);
++  }
++
++  __ Bind(&done_double);
++  {
++    Node* result = AllocateHeapNumberWithValue(done_double.PhiAt(0));
++    __ Goto(&done, result);
+   }
+ 
+   __ Bind(&done);
