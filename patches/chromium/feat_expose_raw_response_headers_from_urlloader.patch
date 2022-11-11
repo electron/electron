@@ -67,7 +67,7 @@ index af527034303f0660934d50a441fa178ddaeca475..65e0719fef13fbf730d74f9982d1b54d
      return request.previews_state;
    }
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index b1bec9e2d024fec63f2100f96d532dc023ffbbd5..9cdb54774b4bc7949e43e345f6f9e29e13eb5473 100644
+index bf3c8e3dc4d15d33118144f801b661fed667a5ba..733bb2b2b20094520c3e944288dfa01dad01ebc5 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -317,6 +317,9 @@ struct URLRequest {
@@ -103,10 +103,10 @@ index f4cbafde0cfa92e3e93f5480242025b3d5c822c4..73a7a02a224a4737c4f7a97a98a73e7f
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 21ac93a9621cd152aabed91c71e79487960be562..e016b813a322263cfad8607325713976bf1b0532 100644
+index ce9ffb76f1b5bfd11e582bf71f9bcb6ce47676c3..b8d86763393a6f3e3b88d5078119f1a4c78960d3 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -480,6 +480,7 @@ URLLoader::URLLoader(
+@@ -479,6 +479,7 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
        per_factory_corb_state_(context.GetMutableCorbState()),
@@ -114,7 +114,7 @@ index 21ac93a9621cd152aabed91c71e79487960be562..e016b813a322263cfad8607325713976
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -662,7 +663,7 @@ URLLoader::URLLoader(
+@@ -661,7 +662,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 21ac93a9621cd152aabed91c71e79487960be562..e016b813a322263cfad8607325713976
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1462,6 +1463,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1461,6 +1462,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

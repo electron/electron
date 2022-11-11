@@ -7,10 +7,10 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses.py b/tools/licenses.py
-index 677c63364f472a576565ce4f36c26d2185f77687..a5314de899cd22f59acb431068e27678e8fdb213 100755
+index de49fae95801e402cef4cda481bdf17222c9525c..fe6d69d0cc41abfc7f3150c45a23dec75add4f07 100755
 --- a/tools/licenses.py
 +++ b/tools/licenses.py
-@@ -380,6 +380,31 @@ SPECIAL_CASES = {
+@@ -384,6 +384,31 @@ SPECIAL_CASES = {
          "License": "Apache 2.0",
          "License File": "/third_party/selenium-atoms/LICENSE.closure",
      },
