@@ -28,7 +28,6 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-#if BUILDFLAG(ENABLE_VIEWS_API)
   void AddChildViewAt(gin::Handle<View> child, absl::optional<size_t> index);
   void RemoveChildView(gin::Handle<View> child);
 
@@ -42,7 +41,6 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
   // views::ViewObserver
   void OnViewBoundsChanged(views::View* observed_view) override;
   void OnViewIsDeleting(views::View* observed_view) override;
-#endif
 
   views::View* view() const { return view_; }
 

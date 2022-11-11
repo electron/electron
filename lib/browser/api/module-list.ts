@@ -12,6 +12,7 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'dialog', loader: () => require('./dialog') },
   { name: 'globalShortcut', loader: () => require('./global-shortcut') },
   { name: 'ipcMain', loader: () => require('./ipc-main') },
+  { name: 'ImageView', loader: () => require('./views/image-view') },
   { name: 'inAppPurchase', loader: () => require('./in-app-purchase') },
   { name: 'Menu', loader: () => require('./menu') },
   { name: 'MenuItem', loader: () => require('./menu-item') },
@@ -41,11 +42,5 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
   browserModuleList.push(
     { name: 'desktopCapturer', loader: () => require('./desktop-capturer') }
-  );
-}
-
-if (BUILDFLAG(ENABLE_VIEWS_API)) {
-  browserModuleList.push(
-    { name: 'ImageView', loader: () => require('./views/image-view') }
   );
 }

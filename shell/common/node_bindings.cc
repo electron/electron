@@ -52,6 +52,7 @@
   V(electron_browser_event)              \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
+  V(electron_browser_image_view)         \
   V(electron_browser_in_app_purchase)    \
   V(electron_browser_menu)               \
   V(electron_browser_message_port)       \
@@ -90,8 +91,6 @@
   V(electron_renderer_web_frame)         \
   V(electron_utility_parent_port)
 
-#define ELECTRON_VIEWS_MODULES(V) V(electron_browser_image_view)
-
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(electron_browser_desktop_capturer)
 
 #define ELECTRON_TESTING_MODULE(V) V(electron_common_testing)
@@ -103,9 +102,6 @@
 // implementation when calling the NODE_LINKED_MODULE_CONTEXT_AWARE.
 #define V(modname) void _register_##modname();
 ELECTRON_BUILTIN_MODULES(V)
-#if BUILDFLAG(ENABLE_VIEWS_API)
-ELECTRON_VIEWS_MODULES(V)
-#endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
@@ -353,9 +349,6 @@ NodeBindings::~NodeBindings() {
 void NodeBindings::RegisterBuiltinModules() {
 #define V(modname) _register_##modname();
   ELECTRON_BUILTIN_MODULES(V)
-#if BUILDFLAG(ENABLE_VIEWS_API)
-  ELECTRON_VIEWS_MODULES(V)
-#endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif

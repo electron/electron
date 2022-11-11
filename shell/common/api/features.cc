@@ -34,10 +34,6 @@ bool IsFakeLocationProviderEnabled() {
   return BUILDFLAG(OVERRIDE_LOCATION_PROVIDER);
 }
 
-bool IsViewApiEnabled() {
-  return BUILDFLAG(ENABLE_VIEWS_API);
-}
-
 bool IsTtsEnabled() {
   return BUILDFLAG(ENABLE_TTS);
 }
@@ -74,7 +70,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
-  dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
   dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
   dict.SetMethod("isPictureInPictureEnabled", &IsPictureInPictureEnabled);

@@ -61,12 +61,6 @@ module.exports = ({
       );
     }
 
-    if (defines.ENABLE_VIEWS_API === 'false') {
-      ignoredModules.push(
-        '@electron/internal/browser/api/views/image-view.js'
-      );
-    }
-
     const plugins = [];
 
     if (onlyPrintingGraph) {

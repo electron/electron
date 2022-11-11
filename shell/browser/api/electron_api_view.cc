@@ -181,7 +181,6 @@ View::~View() {
     delete view_;
 }
 
-#if BUILDFLAG(ENABLE_VIEWS_API)
 void View::AddChildViewAt(gin::Handle<View> child,
                           absl::optional<size_t> maybe_index) {
   CHECK(view_);
@@ -300,7 +299,6 @@ void View::OnViewIsDeleting(views::View* observed_view) {
   DCHECK_EQ(observed_view, view_);
   view_ = nullptr;
 }
-#endif
 
 // static
 gin_helper::WrappableBase* View::New(gin::Arguments* args) {
@@ -335,7 +333,6 @@ gin::Handle<View> View::Create(v8::Isolate* isolate) {
 void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "View"));
-#if BUILDFLAG(ENABLE_VIEWS_API)
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("addChildView", &View::AddChildViewAt)
       .SetMethod("removeChildView", &View::RemoveChildView)
@@ -345,7 +342,6 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
       .SetMethod("setLayout", &View::SetLayout)
       .SetMethod("setVisible", &View::SetVisible);
-#endif
 }
 
 }  // namespace electron::api

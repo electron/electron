@@ -11,7 +11,6 @@ declare var isolatedApi: {
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
 declare const ENABLE_DESKTOP_CAPTURER: boolean;
-declare const ENABLE_VIEWS_API: boolean;
 
 declare namespace NodeJS {
   interface FeaturesBinding {
@@ -21,7 +20,6 @@ declare namespace NodeJS {
     isPDFViewerEnabled(): boolean;
     isRunAsNodeEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
-    isViewApiEnabled(): boolean;
     isTtsEnabled(): boolean;
     isPrintingEnabled(): boolean;
     isPictureInPictureEnabled(): boolean;
