@@ -78,27 +78,21 @@ Once you have it installed, you need to set it up in your Forge
 configuration. A full list of options is documented in the Forge's
 [`PublisherGitHubConfig`] API docs.
 
-```json title='package.json' {6-16}
-{
-  //...
-  "config": {
-    "forge": {
-      "publishers": [
-        {
-          "name": "@electron-forge/publisher-github",
-          "config": {
-            "repository": {
-              "owner": "github-user-name",
-              "name": "github-repo-name"
-            },
-            "prerelease": false,
-            "draft": true
-          }
-        }
-      ]
-    }
-  }
-  //...
+```js title='forge.config.js'
+module.exports = {
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'github-user-name',
+          name: 'github-repo-name',
+        },
+        prerelease: false,
+        draft: true,
+      },
+    },
+  ],
 }
 ```
 
