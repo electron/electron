@@ -37,6 +37,10 @@
 #include "chrome/browser/printing/print_job_manager.h"
 #endif
 
+namespace electron {
+class ScopedAllowBlockingForFilePath : public base::ScopedAllowBlocking {};
+}  // namespace electron
+
 BrowserProcessImpl::BrowserProcessImpl() {
   g_browser_process = this;
 }
@@ -108,7 +112,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   base::FilePath prefs_path;
   CHECK(base::PathService::Get(electron::DIR_SESSION_DATA, &prefs_path));
   prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForFilePath allow_blocking;
   scoped_refptr<JsonPrefStore> user_pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
   user_pref_store->ReadPrefs();

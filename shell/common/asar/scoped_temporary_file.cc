@@ -13,11 +13,13 @@
 
 namespace asar {
 
+class ScopedAllowBlockingForAsarTempFile : public base::ScopedAllowBlocking {};
+
 ScopedTemporaryFile::ScopedTemporaryFile() = default;
 
 ScopedTemporaryFile::~ScopedTemporaryFile() {
   if (!path_.empty()) {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    ScopedAllowBlockingForAsarTempFile allow_blocking;
     // On Windows it is very likely the file is already in use (because it is
     // mostly used for Node native modules), so deleting it now will halt the
     // program.
@@ -33,7 +35,7 @@ bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
   if (!path_.empty())
     return true;
 
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForAsarTempFile allow_blocking;
   if (!base::CreateTemporaryFile(&path_))
     return false;
 
@@ -62,7 +64,7 @@ bool ScopedTemporaryFile::InitFromFile(
   if (!Init(ext))
     return false;
 
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForAsarTempFile allow_blocking;
   std::vector<char> buf(size);
   int len = src->Read(offset, buf.data(), buf.size());
   if (len != static_cast<int>(size))

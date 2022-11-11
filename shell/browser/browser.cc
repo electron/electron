@@ -26,6 +26,9 @@
 
 namespace electron {
 
+class ScopedAllowBlockingForDidFinishLaunching
+    : public base::ScopedAllowBlocking {};
+
 namespace {
 
 // Call |quit| after Chromium is fully started.
@@ -186,7 +189,7 @@ void Browser::WillFinishLaunching() {
 
 void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
   // Make sure the userData directory is created.
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForDidFinishLaunching allow_blocking;
   base::FilePath user_data;
   if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);

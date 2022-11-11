@@ -89,6 +89,9 @@ using content::BrowserThread;
 
 namespace electron {
 
+class ScopedAllowBlockingForHeapSnapshotFile
+    : public base::ScopedAllowBlocking {};
+
 namespace {
 
 // Convert string to lower case and escape it.
@@ -164,7 +167,7 @@ ElectronBrowserContext::~ElectronBrowserContext() {
 
 void ElectronBrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForHeapSnapshotFile allow_blocking;
   PrefServiceFactory prefs_factory;
   scoped_refptr<JsonPrefStore> pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);

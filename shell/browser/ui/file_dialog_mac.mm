@@ -80,6 +80,7 @@
 @end
 
 namespace file_dialog {
+class ScopedAllowBlockingForFileDialog : public base::ScopedAllowBlocking {};
 
 DialogSettings::DialogSettings() = default;
 DialogSettings::DialogSettings(const DialogSettings&) = default;
@@ -173,7 +174,7 @@ void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
   NSString* default_dir = nil;
   NSString* default_filename = nil;
   if (!settings.default_path.empty()) {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    file_dialog::ScopedAllowBlockingForFileDialog allow_blocking;
     if (base::DirectoryExists(settings.default_path)) {
       default_dir = base::SysUTF8ToNSString(settings.default_path.value());
     } else {

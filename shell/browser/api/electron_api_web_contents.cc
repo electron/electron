@@ -3540,13 +3540,15 @@ v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
   return handle;
 }
 
+class ScopedAllowBlockingForHeapSnapshot : public base::ScopedAllowBlocking {};
+
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     v8::Isolate* isolate,
     const base::FilePath& file_path) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForHeapSnapshot allow_blocking;
   base::File file(file_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
   if (!file.IsValid()) {

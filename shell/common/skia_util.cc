@@ -35,6 +35,8 @@ struct ScaleFactorPair {
   float scale;
 };
 
+class ScopedAllowBlockingForSkiaUtil : public base::ScopedAllowBlocking {};
+
 ScaleFactorPair kScaleFactorPairs[] = {
     // The "@2x" is put as first one to make scale matching faster.
     {"@2x", 2.0f},   {"@3x", 3.0f},     {"@1x", 1.0f},     {"@4x", 4.0f},
@@ -123,7 +125,7 @@ bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
                              double scale_factor) {
   std::string file_contents;
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    ScopedAllowBlockingForSkiaUtil allow_blocking;
     if (!asar::ReadFileToString(path, &file_contents))
       return false;
   }

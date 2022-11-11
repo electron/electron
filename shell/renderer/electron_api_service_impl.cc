@@ -100,6 +100,9 @@ void EmitIPCEvent(v8::Local<v8::Context> context,
 
 }  // namespace
 
+class ScopedAllowBlockingForAPIServiceHeapSnapshot
+    : public base::ScopedAllowBlocking {};
+
 ElectronApiServiceImpl::~ElectronApiServiceImpl() = default;
 
 ElectronApiServiceImpl::ElectronApiServiceImpl(
@@ -203,7 +206,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 void ElectronApiServiceImpl::TakeHeapSnapshot(
     mojo::ScopedHandle file,
     TakeHeapSnapshotCallback callback) {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForAPIServiceHeapSnapshot allow_blocking;
 
   base::ScopedPlatformFile platform_file;
   if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=

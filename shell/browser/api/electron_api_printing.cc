@@ -40,6 +40,8 @@ struct Converter<printing::PrinterBasicInfo> {
 
 namespace electron::api {
 
+class ScopedAllowBlockingForPrinting : public base::ScopedAllowBlocking {};
+
 #if BUILDFLAG(ENABLE_PRINTING)
 printing::PrinterList GetPrinterList(v8::Isolate* isolate) {
   EmitWarning(node::Environment::GetCurrent(isolate),
@@ -51,7 +53,7 @@ printing::PrinterList GetPrinterList(v8::Isolate* isolate) {
   auto print_backend = printing::PrintBackend::CreateInstance(
       g_browser_process->GetApplicationLocale());
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    ScopedAllowBlockingForPrinting allow_blocking;
     printing::mojom::ResultCode code =
         print_backend->EnumeratePrinters(printers);
     if (code != printing::mojom::ResultCode::kSuccess)

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "base/path_service.h"
+#include "base/threading/thread_restrictions.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/node_includes.h"
@@ -15,6 +16,8 @@
 
 namespace electron::api {
 
+class ScopedAllowBlockingForAppLogs : public base::ScopedAllowBlocking {};
+
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          absl::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
@@ -23,7 +26,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      ScopedAllowBlockingForAppLogs allow_blocking;
       base::PathService::Override(DIR_APP_LOGS, custom_path.value());
     }
   } else {
@@ -34,7 +37,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     NSString* library_path =
         [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
     {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      ScopedAllowBlockingForAppLogs allow_blocking;
       base::PathService::Override(DIR_APP_LOGS,
                                   base::FilePath([library_path UTF8String]));
     }

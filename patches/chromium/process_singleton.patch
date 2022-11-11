@@ -51,7 +51,7 @@ index 2db06b7dc4cb729ebfb5ae48ab676a7bc0697a99..19350d58e817ea8ac7868dd90a08cc25
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index afe39196a3882326c27527623ffeeb5019f685b0..455585a9f6d59d65bcfd322f4f925641148cbf55 100644
+index afe39196a3882326c27527623ffeeb5019f685b0..70190a215c1d085c7f632444a275493a2373315c 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@
@@ -62,7 +62,15 @@ index afe39196a3882326c27527623ffeeb5019f685b0..455585a9f6d59d65bcfd322f4f925641
  #include <type_traits>
  
  #include "base/base_paths.h"
-@@ -97,9 +98,11 @@
+@@ -81,6 +82,7 @@
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/sequenced_task_runner_helpers.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/threading/thread_restrictions.h"
+ #include "base/threading/platform_thread.h"
+ #include "base/threading/thread_task_runner_handle.h"
+ #include "base/time/time.h"
+@@ -97,9 +99,11 @@
  #include "net/base/network_interfaces.h"
  #include "ui/base/l10n/l10n_util.h"
  
@@ -74,7 +82,7 @@ index afe39196a3882326c27527623ffeeb5019f685b0..455585a9f6d59d65bcfd322f4f925641
  
  using content::BrowserThread;
  
-@@ -343,6 +346,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -343,6 +347,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -84,7 +92,7 @@ index afe39196a3882326c27527623ffeeb5019f685b0..455585a9f6d59d65bcfd322f4f925641
    std::u16string error = l10n_util::GetStringFUTF16(
        IDS_PROFILE_IN_USE_POSIX, base::NumberToString16(pid),
        base::ASCIIToUTF16(hostname));
-@@ -362,6 +368,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -362,6 +369,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
    NOTREACHED();
    return false;
@@ -92,7 +100,7 @@ index afe39196a3882326c27527623ffeeb5019f685b0..455585a9f6d59d65bcfd322f4f925641
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -402,6 +409,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
+@@ -402,6 +410,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
    return (cookie == ReadLink(path));
  }
  
@@ -114,18 +122,18 @@ index afe39196a3882326c27527623ffeeb5019f685b0..455585a9f6d59d65bcfd322f4f925641
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -768,6 +790,10 @@ ProcessSingleton::ProcessSingleton(
+@@ -768,6 +791,10 @@ ProcessSingleton::ProcessSingleton(
  
  ProcessSingleton::~ProcessSingleton() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 +  // Manually free resources with IO explicitly allowed.
-+  base::ThreadRestrictions::ScopedAllowIO allow_io;
++  base::ScopedAllowBlocking allow_blocking;
 +  watcher_ = nullptr;
 +  std::ignore = socket_dir_.Delete();
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1031,14 +1057,32 @@ bool ProcessSingleton::Create() {
+@@ -1031,14 +1058,32 @@ bool ProcessSingleton::Create() {
  #endif
    }
  

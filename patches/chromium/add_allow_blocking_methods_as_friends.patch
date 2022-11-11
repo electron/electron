@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Fri, 11 Nov 2022 11:12:50 -0800
+Subject: build: add allow_blocking methods as friends in thread_restrictions
+
+This patch comes after Chromium removed the ScopedAllowIO API in favor
+of explicitly adding ScopedAllowBlocking calls as friends. This patch
+adds the needed Electron methods that also require allowing blocking.
+
+This patch can be removed if:
+1. We want to proceed with another method such as ScopedAllowBlockingForTesting,
+which doesn't require adding methods as friends.
+2. Chromium implements another IO API that would allow blocking calls without
+needing to explicitly name the methods.
+
+Co-authored-by: George Xu <georgexu99@users.noreply.github.com>
+
+diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
+index 07fe653bd2d231b3dcab405dec5da21a576aa5d5..56ff62af7a33aee56e607125c44967e0738bfb13 100644
+--- a/base/threading/thread_restrictions.h
++++ b/base/threading/thread_restrictions.h
+@@ -112,6 +112,7 @@ class FirefoxProfileLock;
+ class KeyStorageLinux;
+ class NativeBackendKWallet;
+ class NativeDesktopMediaList;
++class ProcessSingleton;
+ class Profile;
+ class ProfileImpl;
+ class StartupTabProviderImpl;
+@@ -135,6 +136,11 @@ class CookieManager;
+ class ScopedAllowInitGLBindings;
+ class VizCompositorThreadRunnerWebView;
+ }  // namespace android_webview
++namespace asar {
++class ScopedAllowBlockingForAsarArchive;
++class ScopedAllowBlockingForAsarCache;
++class ScopedAllowBlockingForAsarTempFile;
++} // namespace asar (electron)
+ namespace ash {
+ class MojoUtils;
+ class BrowserDataBackMigrator;
+@@ -243,6 +249,29 @@ class BackendImpl;
+ class InFlightIO;
+ bool CleanupDirectorySync(const base::FilePath&);
+ }  // namespace disk_cache
++namespace electron {
++class ScopedAllowBlockingForAPIServiceHeapSnapshot;
++class ScopedAllowBlockingForBindingHeapSnapshot;
++class ScopedAllowBlockingCommandLineSwitches;
++class ScopedAllowBlockingForDidFinishLaunching;
++class ScopedAllowBlockingForElectronPathProvider;
++class ScopedAllowBlockingForHeapSnapshotFile;
++class ScopedAllowBlockingForElectronDownloadPath;
++class ScopedAllowBlockingForCrashReporter;
++class ScopedAllowBlockingForFilePath;
++}
++namespace electron::api {
++class ScopedAllowBlockingForAppLogs;
++class ScopedAllowBlockingForHeapSnapshot;
++class ScopedAllowBlockingForPrinting;
++class ScopedAllowBlockingForNativeImage;
++}
++namespace electron::api::crash_reporter {
++class ScopedAllowBlockingForCrashReporter;
++}
++namespace electron::util {
++class ScopedAllowBlockingForSkiaUtil;
++}
+ namespace enterprise_connectors {
+ class LinuxKeyRotationCommand;
+ }  // namespace enterprise_connectors
+@@ -250,6 +279,9 @@ namespace extensions {
+ class InstalledLoader;
+ class UnpackedInstaller;
+ }  // namespace extensions
++namespace file_dialog {
++class ScopedAllowBlockingForFileDialog;
++}
+ namespace font_service::internal {
+ class MappedFontFile;
+ }
+@@ -521,6 +553,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+   friend class ::DesktopNotificationBalloon;
+   friend class ::FirefoxProfileLock;
+   friend class ::GaiaConfig;
++  friend class ::ProcessSingleton;
+   friend class ::ProfileImpl;
+   friend class ::ScopedAllowBlockingForProfile;
+   friend class ::StartupTabProviderImpl;
+@@ -560,8 +593,27 @@ class BASE_EXPORT ScopedAllowBlocking {
+   friend class crosapi::LacrosThreadTypeDelegate;
+   friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
+   friend class drive::FakeDriveService;
++  friend class asar::ScopedAllowBlockingForAsarArchive;
++  friend class asar::ScopedAllowBlockingForAsarCache;
++  friend class asar::ScopedAllowBlockingForAsarTempFile;
++  friend class electron::ScopedAllowBlockingForAPIServiceHeapSnapshot;
++  friend class electron::ScopedAllowBlockingForBindingHeapSnapshot;
++  friend class electron::ScopedAllowBlockingCommandLineSwitches;
++  friend class electron::ScopedAllowBlockingForDidFinishLaunching;
++  friend class electron::ScopedAllowBlockingForElectronPathProvider;
++  friend class electron::ScopedAllowBlockingForHeapSnapshotFile;
++  friend class electron::ScopedAllowBlockingForElectronDownloadPath;
++  friend class electron::ScopedAllowBlockingForCrashReporter;
++  friend class electron::ScopedAllowBlockingForFilePath;
++  friend class electron::api::ScopedAllowBlockingForHeapSnapshot;
++  friend class electron::api::ScopedAllowBlockingForAppLogs;
++  friend class electron::api::ScopedAllowBlockingForPrinting;
++  friend class electron::api::ScopedAllowBlockingForNativeImage;
++  friend class electron::api::crash_reporter::ScopedAllowBlockingForCrashReporter;
++  friend class electron::util::ScopedAllowBlockingForSkiaUtil;
+   friend class extensions::InstalledLoader;
+   friend class extensions::UnpackedInstaller;
++  friend class file_dialog::ScopedAllowBlockingForFileDialog;
+   friend class font_service::internal::MappedFontFile;
+   friend class ios_web_view::WebViewBrowserState;
+   friend class media::FileVideoCaptureDeviceFactory;

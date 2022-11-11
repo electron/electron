@@ -40,6 +40,9 @@ ElectronBindings::ElectronBindings(uv_loop_t* loop) {
 
 ElectronBindings::~ElectronBindings() = default;
 
+class ScopedAllowBlockingForBindingHeapSnapshot
+    : public base::ScopedAllowBlocking {};
+
 // static
 void ElectronBindings::BindProcess(v8::Isolate* isolate,
                                    gin_helper::Dictionary* process,
@@ -325,7 +328,7 @@ v8::Local<v8::Value> ElectronBindings::GetIOCounters(v8::Isolate* isolate) {
 // static
 bool ElectronBindings::TakeHeapSnapshot(v8::Isolate* isolate,
                                         const base::FilePath& file_path) {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForBindingHeapSnapshot allow_blocking;
 
   base::File file(file_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);

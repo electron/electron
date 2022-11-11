@@ -178,6 +178,8 @@ void Start(const std::string& submit_url,
 #endif
 }
 
+class ScopedAllowBlockingForCrashReporter
+    : public base::ScopedAllowBlockingForTesting {};
 }  // namespace electron::api::crash_reporter
 
 namespace {
@@ -218,7 +220,8 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
   // synchronous version of getUploadedReports is deprecated so we can remove
   // our patch.
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::api::crash_reporter::ScopedAllowBlockingForCrashReporter
+        allow_blocking;
     list->LoadSync();
   }
   std::vector<UploadList::UploadInfo> uploads;
