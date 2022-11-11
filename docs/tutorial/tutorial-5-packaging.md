@@ -70,10 +70,9 @@ the [Electron Forge CLI documentation].
 :::
 
 You should also notice that your package.json now has a few more packages installed
-under your `devDependencies`, and contains an added `config.forge` field with an array
-of makers configured. **Makers** are Forge plugins that create distributables from
-your source code. You should see multiple makers in the pre-populated configuration,
-one for each target platform.
+under `devDependencies`, and a new `forge.config.js` file that exports a configuration
+object. You should see multiple makers (packages that generate distributable app bundles) in the
+pre-populated configuration, one for each target platform.
 
 ### Creating a distributable
 
@@ -111,13 +110,14 @@ Electron Forge can be configured to create distributables in different OS-specif
 
 :::
 
-:::tip Creating and Adding Application Icons
+:::tip Creating and adding application icons
 
-Setting custom application icons requires a few additions to your config. Check out [Forge's icon tutorial] for more information.
+Setting custom application icons requires a few additions to your config.
+Check out [Forge's icon tutorial] for more information.
 
 :::
 
-:::note Packaging without Electron Forge
+:::info Packaging without Electron Forge
 
 If you want to manually package your code, or if you're just interested understanding the
 mechanics behind packaging an Electron app, check out the full [Application Packaging]
@@ -136,64 +136,51 @@ Code signing is a security technology that you use to certify that a desktop app
 created by a known source. Windows and macOS have their own OS-specific code signing
 systems that will make it difficult for users to download or launch unsigned applications.
 
-If you already have code signing certificates for Windows and macOS, you can set your
-credentials in your Forge configuration. Otherwise, please refer to the full
-[Code Signing] documentation to learn how to purchase a certificate and for more information
-on the desktop app code signing process.
-
 On macOS, code signing is done at the app packaging level. On Windows, distributable installers
-are signed instead.
+are signed instead. If you already have code signing certificates for Windows and macOS, you can set
+your credentials in your Forge configuration.
+
+:::info
+
+For more information on code signing, check out the
+[Signing macOS Apps](https://www.electronforge.io/guides/code-signing) guide in the Forge docs.
+
+:::
 
 <Tabs>
   <TabItem value="macos" label="macOS" default>
 
-```json title='package.json' {6-18}
-{
-  //...
-  "config": {
-    "forge": {
-      //...
-      "packagerConfig": {
-        "osxSign": {
-          "identity": "Developer ID Application: Felix Rieseberg (LT94ZKYDCJ)",
-          "hardened-runtime": true,
-          "entitlements": "entitlements.plist",
-          "entitlements-inherit": "entitlements.plist",
-          "signature-flags": "library"
-        },
-        "osxNotarize": {
-          "appleId": "felix@felix.fun",
-          "appleIdPassword": "this-is-a-secret"
-        }
-      }
-      //...
+```js title='forge.config.js'
+module.exports = {
+  packagerConfig: {
+    osxSign: {},
+    //...
+    osxNotarize: {
+      tool: 'notarytool',
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_PASSWORD,
+      teamId: process.env.APPLE_TEAM_ID,
     }
+    //...
   }
-  //...
 }
 ```
 
   </TabItem>
   <TabItem value="windows" label="Windows">
 
-```json title='package.json'  {6-14}
-{
+```js title='forge.config.js'
+module.exports = {
   //...
-  "config": {
-    "forge": {
-      //...
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "certificateFile": "./cert.pfx",
-            "certificatePassword": "this-is-a-secret"
-          }
-        }
-      ]
-      //...
-    }
-  }
+  makers: [
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        certificateFile: './cert.pfx',
+        certificatePassword: process.env.CERTIFICATE_PASSWORD,
+      },
+    },
+  ],
   //...
 }
 ```
@@ -214,13 +201,12 @@ information.
 
 [`@electron/osx-sign`]: https://github.com/electron/osx-sign
 [application packaging]: ./application-distribution.md
-[code signing]: ./code-signing.md
 [`electron-packager`]: https://github.com/electron/electron-packager
 [`electron-winstaller`]: https://github.com/electron/windows-installer
 [electron forge]: https://www.electronforge.io
 [electron forge cli documentation]: https://www.electronforge.io/cli#commands
 [makers]: https://www.electronforge.io/config/makers
-[Forge's icon tutorial]: https://www.electronforge.io/guides/create-and-add-icons
+[forge's icon tutorial]: https://www.electronforge.io/guides/create-and-add-icons
 
 <!-- Tutorial links -->
 
