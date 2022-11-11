@@ -52,15 +52,17 @@ ways to get your application signed and notarized.
 If you're using Electron's favorite build tool, getting your application signed
 and notarized requires a few additions to your configuration. [Forge](https://electronforge.io) is a
 collection of the official Electron tools, using [`electron-packager`],
-[`electron-osx-sign`], and [`electron-notarize`] under the hood.
+[`@electron/osx-sign`], and [`@electron/notarize`] under the hood.
 
-Detailed instructions on how to configure your application can be found in the [Electron Forge Code Signing Tutorial](https://www.electronforge.io/guides/code-signing/code-signing-macos).
+Detailed instructions on how to configure your application can be found in the
+[Signing macOS Apps](https://www.electronforge.io/guides/code-signing/code-signing-macos) guide in
+the Electron Forge docs.
 
 ### Using Electron Packager
 
 If you're not using an integrated build pipeline like Forge, you
-are likely using [`electron-packager`], which includes [`electron-osx-sign`] and
-[`electron-notarize`].
+are likely using [`electron-packager`], which includes [`@electron/osx-sign`] and
+[`@electron/notarize`].
 
 If you're using Packager's API, you can pass [in configuration that both signs
 and notarizes your application](https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html).
@@ -70,39 +72,13 @@ const packager = require('electron-packager')
 
 packager({
   dir: '/path/to/my/app',
-  osxSign: {
-    identity: 'Developer ID Application: Felix Rieseberg (LT94ZKYDCJ)',
-    'hardened-runtime': true,
-    entitlements: 'entitlements.plist',
-    'entitlements-inherit': 'entitlements.plist',
-    'signature-flags': 'library'
-  },
+  osxSign: {},
   osxNotarize: {
     appleId: 'felix@felix.fun',
     appleIdPassword: 'my-apple-id-password'
   }
 })
 ```
-
-The `entitlements.plist` file referenced here needs the following macOS-specific entitlements
-to assure the Apple security mechanisms that your app is doing these things
-without meaning any harm:
-
-```xml title="entitlements.plist"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-  <dict>
-    <key>com.apple.security.cs.allow-jit</key>
-    <true/>
-    <key>com.apple.security.cs.debugger</key>
-    <true/>
-  </dict>
-</plist>
-```
-
-Up until Electron 12, the `com.apple.security.cs.allow-unsigned-executable-memory` entitlement was required
-as well. However, it should not be used anymore if it can be avoided.
 
 ### Signing Mac App Store applications
 
@@ -213,15 +189,14 @@ can find [its documentation here](https://www.electron.build/code-signing).
 See the [Windows Store Guide].
 
 [apple developer program]: https://developer.apple.com/programs/
-[`electron-builder`]: https://github.com/electron-userland/electron-builder
-[`electron-forge`]: https://github.com/electron-userland/electron-forge
-[`electron-osx-sign`]: https://github.com/electron-userland/electron-osx-sign
+[`electron-forge`]: https://github.com/electron/forge
+[`@electron/osx-sign`]: https://github.com/electron/osx-sign
 [`electron-packager`]: https://github.com/electron/electron-packager
-[`electron-notarize`]: https://github.com/electron/electron-notarize
+[`@electron/notarize`]: https://github.com/electron/notarize
 [`electron-winstaller`]: https://github.com/electron/windows-installer
-[`electron-wix-msi`]: https://github.com/felixrieseberg/electron-wix-msi
+[`electron-wix-msi`]: https://github.com/electron-userland/electron-wix-msi
 [xcode]: https://developer.apple.com/xcode
-[signing certificates]: https://github.com/electron/electron-osx-sign/wiki/1.-Getting-Started#certificates
+[signing certificates]: https://developer.apple.com/support/certificates/
 [mac app store guide]: ./mac-app-store-submission-guide.md
 [windows store guide]: ./windows-store-guide.md
 [maker-squirrel]: https://www.electronforge.io/config/makers/squirrel.windows
