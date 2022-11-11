@@ -22,10 +22,10 @@ specified move constructor "shadows" the implicit initializer-list constructor.
 This patch seems to fix things, in any case.
 
 diff --git a/src/env.h b/src/env.h
-index 6b18b6efd231d986c391a16966fdbc82a5d99eda..099d8c9efeeda1c851d526e4bf4ddece444c7299 100644
+index 417f0b3657cb068e7708cbeb787f8cb116501876..34c88c1addc5f64bd46332451e5b4ba8343c8818 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -939,9 +939,6 @@ struct DeserializeRequest {
+@@ -932,9 +932,6 @@ struct DeserializeRequest {
    v8::Global<v8::Object> holder;
    int index;
    InternalFieldInfo* info = nullptr;  // Owned by the request

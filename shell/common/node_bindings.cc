@@ -210,46 +210,6 @@ GetAllowedDebugOptions() {
   return {};
 }
 
-// Initialize Node.js cli options to pass to Node.js
-// See https://nodejs.org/api/cli.html#cli_options
-void SetNodeCliFlags() {
-  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed =
-      GetAllowedDebugOptions();
-
-  const auto argv = base::CommandLine::ForCurrentProcess()->argv();
-  std::vector<std::string> args;
-
-  // TODO(codebytere): We need to set the first entry in args to the
-  // process name owing to src/node_options-inl.h#L286-L290 but this is
-  // redundant and so should be refactored upstream.
-  args.reserve(argv.size() + 1);
-  args.emplace_back("electron");
-
-  for (const auto& arg : argv) {
-#if BUILDFLAG(IS_WIN)
-    const auto& option = base::WideToUTF8(arg);
-#else
-    const auto& option = arg;
-#endif
-    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
-
-    // Only allow in no-op (--) option or DebugOptions
-    if (allowed.count(stripped) != 0 || stripped == "--")
-      args.push_back(option);
-  }
-
-  std::vector<std::string> errors;
-  const int exit_code = ProcessGlobalArgs(&args, nullptr, &errors,
-                                          node::kDisallowedInEnvironment);
-
-  const std::string err_str = "Error parsing Node.js cli flags ";
-  if (exit_code != 0) {
-    LOG(ERROR) << err_str;
-  } else if (!errors.empty()) {
-    LOG(ERROR) << err_str << base::JoinString(errors, " ");
-  }
-}
-
 // Initialize NODE_OPTIONS to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
@@ -370,6 +330,53 @@ bool NodeBindings::IsInitialized() {
   return g_is_initialized;
 }
 
+// Initialize Node.js cli options to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_options
+void NodeBindings::SetNodeCliFlags() {
+  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed =
+      GetAllowedDebugOptions();
+
+  const auto argv = base::CommandLine::ForCurrentProcess()->argv();
+  std::vector<std::string> args;
+
+  // TODO(codebytere): We need to set the first entry in args to the
+  // process name owing to src/node_options-inl.h#L286-L290 but this is
+  // redundant and so should be refactored upstream.
+  args.reserve(argv.size() + 1);
+  args.emplace_back("electron");
+
+  for (const auto& arg : argv) {
+#if BUILDFLAG(IS_WIN)
+    const auto& option = base::WideToUTF8(arg);
+#else
+    const auto& option = arg;
+#endif
+    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
+
+    // Only allow in no-op (--) option or DebugOptions
+    if (allowed.count(stripped) != 0 || stripped == "--")
+      args.push_back(option);
+  }
+
+  // We need to disable Node.js' fetch implementation to prevent
+  // conflict with Blink's in renderer and worker processes.
+  if (browser_env_ == BrowserEnvironment::kRenderer ||
+      browser_env_ == BrowserEnvironment::kWorker) {
+    args.push_back("--no-experimental-fetch");
+  }
+
+  std::vector<std::string> errors;
+  const int exit_code = ProcessGlobalArgs(&args, nullptr, &errors,
+                                          node::kDisallowedInEnvironment);
+
+  const std::string err_str = "Error parsing Node.js cli flags ";
+  if (exit_code != 0) {
+    LOG(ERROR) << err_str;
+  } else if (!errors.empty()) {
+    LOG(ERROR) << err_str << base::JoinString(errors, " ");
+  }
+}
+
 void NodeBindings::Initialize() {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
@@ -445,14 +452,6 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary global(isolate, context->Global());
-  // Avoids overriding globals like setImmediate, clearImmediate
-  // queueMicrotask etc during the bootstrap phase of Node.js
-  // for processes that already have these defined by DOM.
-  // Check //third_party/electron_node/lib/internal/bootstrap/node.js
-  // for the list of overrides on globalThis.
-  if (browser_env_ == BrowserEnvironment::kRenderer ||
-      browser_env_ == BrowserEnvironment::kWorker)
-    global.Set("_noBrowserGlobals", true);
 
   if (browser_env_ == BrowserEnvironment::kBrowser) {
     const std::vector<std::string> search_paths = {"app.asar", "app",
@@ -487,7 +486,13 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
+    // We also avoid overriding globals like setImmediate, clearImmediate
+    // queueMicrotask etc during the bootstrap phase of Node.js
+    // for processes that already have these defined by DOM.
+    // Check //third_party/electron_node/lib/internal/bootstrap/node.js
+    // for the list of overrides on globalThis.
     flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
+             node::EnvironmentFlags::kNoBrowserGlobals |
              node::EnvironmentFlags::kNoCreateInspector;
   }
 
@@ -516,15 +521,6 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   DCHECK(env);
-
-  // Clean up the global _noBrowserGlobals that we unironically injected into
-  // the global scope
-  if (browser_env_ == BrowserEnvironment::kRenderer ||
-      browser_env_ == BrowserEnvironment::kWorker) {
-    // We need to bootstrap the env in non-browser processes so that
-    // _noBrowserGlobals is read correctly before we remove it
-    global.Delete("_noBrowserGlobals");
-  }
 
   node::IsolateSettings is;
 
