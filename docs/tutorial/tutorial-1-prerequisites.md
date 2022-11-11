@@ -26,6 +26,15 @@ work on Windows, macOS, and Linux with a single JavaScript codebase.
 This tutorial will guide you through the process of developing a desktop
 application with Electron and distributing it to end users.
 
+## Goals
+
+This tutorial starts by guiding you through the process of piecing together
+a minimal Electron application from scratch, then teaches you how to
+package and distribute it to users using Electron Forge.
+
+If you prefer to get a project started with a single-command boilerplate, we recommend you start
+with Electron Forge's [`create-electron-app`](https://www.electronforge.io/) command.
+
 ## Assumptions
 
 Electron is a native wrapper layer for web apps and is run in a Node.js environment.
