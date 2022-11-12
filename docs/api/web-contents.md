@@ -625,7 +625,9 @@ Returns:
 Emitted when `webContents` wants to show javascript dialog alert, confirm or prompt.
 The type of a particular dialog can be checked with the `dialogDetails.type` property.
 
-Calling `event.preventDefault()` indicates that the dialog request is handled by the user.
+By default a system native dialog will be displayed.
+
+Calling `event.preventDefault()` indicates that the dialog request is handled by the user and the default dialog will not be displayed.
 If you call `event.preventDefault()` make sure to call `callback()` afterwards.
 The renderer will be blocked until then.
 
