@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_
 
-#include "chrome/common/extensions/api/cryptotoken_private.h"
 #include "extensions/browser/extension_function.h"
 
 namespace user_prefs {

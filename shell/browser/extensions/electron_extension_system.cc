@@ -46,18 +46,6 @@ using content::BrowserThread;
 
 namespace extensions {
 
-namespace {
-
-std::string GetCryptoTokenManifest() {
-  std::string manifest_contents(
-      ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
-          IDR_CRYPTOTOKEN_MANIFEST));
-
-  return manifest_contents;
-}
-
-}  // namespace
-
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
@@ -135,22 +123,6 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
     extension_loader_->registrar()->AddExtension(pdf_extension);
   }
 #endif
-
-  std::string cryptotoken_manifest_string = GetCryptoTokenManifest();
-  std::unique_ptr<base::DictionaryValue> cryptotoken_manifest =
-      ParseManifest(cryptotoken_manifest_string);
-  DCHECK(cryptotoken_manifest);
-  if (cryptotoken_manifest) {
-    base::FilePath root_directory;
-    CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
-    root_directory = root_directory.Append(FILE_PATH_LITERAL("cryptotoken"));
-    scoped_refptr<const Extension> cryptotoken_extension =
-        extensions::Extension::Create(
-            root_directory, extensions::mojom::ManifestLocation::kComponent,
-            *cryptotoken_manifest, extensions::Extension::REQUIRE_KEY,
-            &utf8_error);
-    extension_loader_->registrar()->AddExtension(cryptotoken_extension);
-  }
 }
 
 ExtensionService* ElectronExtensionSystem::extension_service() {
