@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index c54e59bf4a7266ec65633e6e63e7fdab547f95c0..be4291050bfa1a7592fe087ae5fa6cfeae5084ed 100644
+index b44b331f03bad11a8433ca7d0a2e03d9c9a355fa..92d18de4b9830c2f1ee43e0c58c1735344425c0d 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7271,6 +7271,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7269,6 +7269,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index c54e59bf4a7266ec65633e6e63e7fdab547f95c0..be4291050bfa1a7592fe087ae5fa6cfe
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7ca95e7ec0f376691267cc5346c06ca136601fcd..4d977f1687da0a693eed3875c5c7bf61e57d4542 100644
+index a7e56cc23e50930b038be9ecc285e506c783f72a..027c035405567ccb2d45b97a63ac7e2a29c96ac5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4038,6 +4038,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4032,6 +4032,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 7ca95e7ec0f376691267cc5346c06ca136601fcd..4d977f1687da0a693eed3875c5c7bf61
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -4082,12 +4090,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4076,12 +4084,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -53,10 +53,10 @@ index 7ca95e7ec0f376691267cc5346c06ca136601fcd..4d977f1687da0a693eed3875c5c7bf61
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 683ea0bc548ed4978873d44c0ce7db6933585eda..e6241d0b14660a8aec09aab2271162c296c4ca1b 100644
+index d4f2e7f78c601ed7ab5514cfa731e04b7597a7b2..9a9a9766b34e00bce4bb5bf211a0809735021304 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -590,6 +590,10 @@ struct CreateNewWindowParams {
+@@ -587,6 +587,10 @@ struct CreateNewWindowParams {
  
    // Additional parameters for creating picture-in-picture windows.
    blink.mojom.PictureInPictureWindowOptions? pip_options;

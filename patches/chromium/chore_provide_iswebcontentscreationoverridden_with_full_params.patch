@@ -66,10 +66,10 @@ index e30587e0fd1c42342a767ac281916e960c5a220d..4b9a924748d2ba89a5418818fad85cc4
        content::WebContents* source,
        const content::OpenURLParams& params) override;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index 0e9e41382300d6bb5fc6fa47cd5ed2ed4181ce46..e65a9bb5b9909e16f5a7dd2e73defa850795c9c4 100644
+index a3b44ab7c4fb44b103897d141f16b738b137df82..cab11ccf106e839a14f4a2fc76367959133babf0 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-@@ -74,8 +74,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
+@@ -71,8 +71,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index dd1069784dd648d78efe54dc8c1694441e35cc14..89a81964e69d4c9bf5622690ba64bfd231eb5cc6 100644
+index 9f13ef9cfabf0a370d7e95c6b24a543d97e0514d..0a828ca5ed134107f0c9d66915cc0008b623d416 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3965,8 +3965,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3959,8 +3959,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -316,10 +316,10 @@ index 06d3ed32b65708d91b220cdd4991fd377d84217c..bc942580c1bfb16bc5a8e9168f55626d
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index a105b8767f770bbfcd09a4d7eddd74c574ac0654..30a446beff0ec02e904e648b9ea9f26f5ad5b76d 100644
+index b4c2bdf3607eb7cea5ae3128884a054b10f1e5a0..11de044d55f5f1acc7233a6e51a3a62e6279998a 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -528,8 +528,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -527,8 +527,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -330,10 +330,10 @@ index a105b8767f770bbfcd09a4d7eddd74c574ac0654..30a446beff0ec02e904e648b9ea9f26f
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia_web/webengine/browser/frame_impl.h b/fuchsia_web/webengine/browser/frame_impl.h
-index 59157a161a4a9f090d4c1c398bca777a68b4d50d..0ea92bad0a50bd2acb2f9a106e7f2551facc0299 100644
+index 957eef3cbc48c820680b929423bf70a1001c9dc6..6891a43dd610e8f719b5efa2200dafb3d1ffffa7 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.h
 +++ b/fuchsia_web/webengine/browser/frame_impl.h
-@@ -316,8 +316,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
+@@ -302,8 +302,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

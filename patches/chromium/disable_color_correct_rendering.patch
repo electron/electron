@@ -93,7 +93,7 @@ index 0b2bd5d95561180ac4dfb261ded9aee2bcd57445..62e1f9976bf007d91d2e1d65bb58cd06
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index b2622d2ebad66a141c436eae0d4d18d84daec666..3a3e8da6bf29f293b7bf0b18c0916ce2a58b744b 100644
+index 05b41950ba338ef3a94046508863a9bcb38d7532..f45c56157a741e748718a6d176474b54b0e782ce 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -202,6 +202,7 @@
@@ -104,7 +104,7 @@ index b2622d2ebad66a141c436eae0d4d18d84daec666..3a3e8da6bf29f293b7bf0b18c0916ce2
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3245,6 +3246,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3261,6 +3262,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
