@@ -130,6 +130,7 @@
         FROM_HERE, base::BindOnce(std::move(callback_), isProductValid));
   }
   // Release this delegate.
+  [username_ release];
   [self release];
 }
 
