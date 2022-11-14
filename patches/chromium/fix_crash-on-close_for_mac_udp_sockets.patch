@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Thu, 2 Jun 2022 07:33:07 +0000
+Subject: Fix crash-on-close for Mac UDP sockets
+
+guarded_close_np() on UDP sockets on Mac may fail with an EPROTOTYPE
+error. Avoid a crash for that error as well as the ENOTCONN error we are
+already checking for.
+
+BUG=1151048
+
+Change-Id: I11ed84b879fbeda6bd6aee8614e54d8ed791f4ef
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3682001
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1009976}
+
+diff --git a/net/socket/udp_socket_posix.cc b/net/socket/udp_socket_posix.cc
+index 63ae4274d11f53b0e2edf25ebcceb580813455d9..43e1ab15e2f1b66fb7946db6c0cbdae86a6a85a0 100644
+--- a/net/socket/udp_socket_posix.cc
++++ b/net/socket/udp_socket_posix.cc
+@@ -320,19 +320,20 @@ void UDPSocketPosix::Close() {
+                           : perfetto::StaticString{"CloseSocketUDP"});
+ 
+   // Attempt to clear errors on the socket so that they are not returned by
+-  // close(). See https://crbug.com/1151048.
++  // close(). This seems to be effective at clearing some, but not all,
++  // EPROTOTYPE errors. See https://crbug.com/1151048.
+   int value = 0;
+   socklen_t value_len = sizeof(value);
+   HANDLE_EINTR(getsockopt(socket_, SOL_SOCKET, SO_ERROR, &value, &value_len));
+ 
+   if (IGNORE_EINTR(guarded_close_np(socket_, &kSocketFdGuard)) != 0) {
+-    // There is a bug in the Mac OS kernel that it can return an
+-    // ENOTCONN error. In this case we don't know whether the file
+-    // descriptor is still allocated or not. We cannot safely close the
+-    // file descriptor because it may have been reused by another
+-    // thread in the meantime. We may leak file handles here and cause
+-    // a crash indirectly later. See https://crbug.com/1151048.
+-    PCHECK(errno == ENOTCONN);
++    // There is a bug in the Mac OS kernel that it can return an ENOTCONN or
++    // EPROTOTYPE error. In this case we don't know whether the file descriptor
++    // is still allocated or not. We cannot safely close the file descriptor
++    // because it may have been reused by another thread in the meantime. We may
++    // leak file handles here and cause a crash indirectly later. See
++    // https://crbug.com/1151048.
++    PCHECK(errno == ENOTCONN || errno == EPROTOTYPE);
+   }
+ #else
+   PCHECK(IGNORE_EINTR(close(socket_)) == 0);
