@@ -1349,7 +1349,9 @@ void NativeWindowMac::UpdateWindowOriginalFrame() {
   original_frame_ = [window_ frame];
 }
 
-void NativeWindowMac::SetVibrancy(const std::string& type, bool animate) {
+void NativeWindowMac::SetVibrancy(const std::string& type,
+                                  bool animate,
+                                  float duration) {
   NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (type.empty()) {
@@ -1362,7 +1364,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type, bool animate) {
       __weak auto weak_delegate = window_delegate_.get();
       [NSAnimationContext
           runAnimationGroup:^(NSAnimationContext* context) {
-            context.duration = 0.3;
+            context.duration = duration;
             vibrantView.animator.alphaValue = 0.0;
           }
           completionHandler:^{
@@ -1471,7 +1473,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type, bool animate) {
       [vibrantView setAlphaValue:0.0];
       [NSAnimationContext
           runAnimationGroup:^(NSAnimationContext* context) {
-            context.duration = 0.3;
+            context.duration = duration;
             vibrantView.animator.alphaValue = 1.0;
           }
           completionHandler:nil];

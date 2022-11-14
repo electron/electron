@@ -243,7 +243,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 #if BUILDFLAG(IS_MAC)
   std::string type;
   if (options.Get(options::kVibrancyType, &type)) {
-    SetVibrancy(type, false);
+    SetVibrancy(type, false, 0.0f);
   }
 #endif
   std::string color;
@@ -439,7 +439,9 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& type, bool animate) {}
+void NativeWindow::SetVibrancy(const std::string& type,
+                               bool animate,
+                               float duration) {}
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}
