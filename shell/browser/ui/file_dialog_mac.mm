@@ -340,13 +340,13 @@ void OpenDialogCompletion(int chosen,
   if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
     dict.Set("bookmarks", std::vector<std::string>());
 #endif
   } else {
     std::vector<base::FilePath> paths;
     dict.Set("canceled", false);
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
     std::vector<std::string> bookmarks;
     if (security_scoped_bookmarks)
       ReadDialogPathsWithBookmarks(dialog, &paths, &bookmarks);
@@ -418,14 +418,14 @@ void SaveDialogCompletion(int chosen,
   if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
     dict.Set("bookmark", base::StringPiece());
 #endif
   } else {
     std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
     dict.Set("filePath", base::FilePath(path));
     dict.Set("canceled", false);
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
     std::string bookmark;
     if (security_scoped_bookmarks) {
       bookmark = GetBookmarkDataFromNSURL([dialog URL]);

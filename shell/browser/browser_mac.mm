@@ -309,7 +309,7 @@ bool Browser::UpdateUserActivityState(const std::string& type,
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   settings.open_at_login = platform_util::GetLoginItemEnabled();
 #else
   settings.open_at_login =
@@ -322,7 +322,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   if (!platform_util::SetLoginItemEnabled(settings.open_at_login)) {
     LOG(ERROR) << "Unable to set login item enabled on sandboxed app.";
   }

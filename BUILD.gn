@@ -518,6 +518,7 @@ source_set("electron_lib") {
   }
   if (is_mac) {
     sources += filenames.lib_sources_mac
+    configs += [ "//electron/build/config:mas_build" ]
   }
   if (is_posix) {
     sources += filenames.lib_sources_posix
@@ -573,7 +574,6 @@ source_set("electron_lib") {
     if (is_mas_build) {
       sources += [ "shell/browser/api/electron_api_app_mas.mm" ]
       sources -= [ "shell/browser/auto_updater_mac.mm" ]
-      defines += [ "MAS_BUILD" ]
       sources -= [
         "shell/app/electron_crash_reporter_client.cc",
         "shell/app/electron_crash_reporter_client.h",
@@ -977,6 +977,11 @@ if (is_mac) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
       defines = [ "HELPER_EXECUTABLE" ]
+      if (is_mas_build) {
+        defines += [ "IS_MAS_BUILD()=1" ]
+      } else {
+        defines += [ "IS_MAS_BUILD()=0" ]
+      }
       sources = [
         "shell/app/electron_main_mac.cc",
         "shell/app/uv_stdio_fix.cc",
@@ -1147,6 +1152,11 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
+    if (is_mas_build) {
+      defines = [ "IS_MAS_BUILD()=1" ]
+    } else {
+      defines = [ "IS_MAS_BUILD()=0" ]
+    }
   }
 
   if (enable_dsyms) {
