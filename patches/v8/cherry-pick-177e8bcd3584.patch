@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius M <dmercadier@chromium.org>
+Date: Mon, 7 Nov 2022 08:40:11 +0100
+Subject: Merged: [compiler] fix bug in inlining of Array.At
+
+The inlined version of Array.At was only checking the kind of the
+maps, rather than the maps themselves. When the feedback was
+containing an array map that "supports_fast_array_iteration", then its
+kind was added to the list of supported kinds. If this Array.at was
+later called with a non-array map with the same kind, then the object
+would be wrongly treated as an array.
+
+This is now fixed: inlining Array.at checks the maps directly rather
+than only their kinds.
+
+Bug: chromium:1377775
+(cherry picked from commit 0ce27310674150b46605c1e226b8f1a2503bac8c)
+
+Change-Id: I2398f2f7a1ea37808962ba5eb3d1fe00a54fd614
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3990747
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.6@{#49}
+Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
+Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 65d3dfe1db8e690a949f6ea3140dda4813a0b0d5..10f3301e3a10d215d731e8bd7d2ec67537d66989 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -719,9 +719,8 @@ class IteratingArrayBuiltinReducerAssembler : public JSCallReducerAssembler {
+       MapInference* inference, const bool has_stability_dependency,
+       ElementsKind kind, const SharedFunctionInfoRef& shared,
+       const NativeContextRef& native_context, ArrayEverySomeVariant variant);
+-  TNode<Object> ReduceArrayPrototypeAt(ZoneVector<ElementsKind> kinds,
+-                                       bool needs_fallback_builtin_call,
+-                                       Node* receiver_kind);
++  TNode<Object> ReduceArrayPrototypeAt(ZoneVector<const MapRef*> kinds,
++                                       bool needs_fallback_builtin_call);
+   TNode<Object> ReduceArrayPrototypeIndexOfIncludes(
+       ElementsKind kind, ArrayIndexOfIncludesVariant variant);
+ 
+@@ -1331,24 +1330,26 @@ TNode<String> JSCallReducerAssembler::ReduceStringPrototypeSlice() {
+ }
+ 
+ TNode<Object> IteratingArrayBuiltinReducerAssembler::ReduceArrayPrototypeAt(
+-    ZoneVector<ElementsKind> kinds, bool needs_fallback_builtin_call,
+-    Node* receiver_kind) {
++    ZoneVector<const MapRef*> maps, bool needs_fallback_builtin_call) {
+   TNode<JSArray> receiver = ReceiverInputAs<JSArray>();
+   TNode<Object> index = ArgumentOrZero(0);
+ 
+   TNode<Number> index_num = CheckSmi(index);
+   TNode<FixedArrayBase> elements = LoadElements(receiver);
+ 
++  TNode<Map> receiver_map =
++      TNode<Map>::UncheckedCast(LoadField(AccessBuilder::ForMap(), receiver));
++
+   auto out = MakeLabel(MachineRepresentation::kTagged);
+ 
+-  for (ElementsKind kind : kinds) {
++  for (const MapRef* map : maps) {
++    DCHECK(map->supports_fast_array_iteration());
+     auto correct_map_label = MakeLabel(), wrong_map_label = MakeLabel();
+-    Branch(NumberEqual(TNode<Number>::UncheckedCast(receiver_kind),
+-                       NumberConstant(kind)),
+-           &correct_map_label, &wrong_map_label);
++    TNode<Boolean> is_map_equal = ReferenceEqual(receiver_map, Constant(*map));
++    Branch(is_map_equal, &correct_map_label, &wrong_map_label);
+     Bind(&correct_map_label);
+ 
+-    TNode<Number> length = LoadJSArrayLength(receiver, kind);
++    TNode<Number> length = LoadJSArrayLength(receiver, map->elements_kind());
+ 
+     // If index is less than 0, then subtract from length.
+     TNode<Boolean> cond = NumberLessThan(index_num, ZeroConstant());
+@@ -1367,15 +1368,16 @@ TNode<Object> IteratingArrayBuiltinReducerAssembler::ReduceArrayPrototypeAt(
+ 
+     // Retrieving element at index.
+     TNode<Object> element = LoadElement<Object>(
+-        AccessBuilder::ForFixedArrayElement(kind), elements, real_index_num);
+-    if (IsHoleyElementsKind(kind)) {
++        AccessBuilder::ForFixedArrayElement(map->elements_kind()), elements,
++        real_index_num);
++    if (IsHoleyElementsKind(map->elements_kind())) {
+       // This case is needed in particular for HOLEY_DOUBLE_ELEMENTS: raw
+       // doubles are stored in the FixedDoubleArray, and need to be converted to
+       // HeapNumber or to Smi so that this function can return an Object. The
+       // automatic converstion performed by
+       // RepresentationChanger::GetTaggedRepresentationFor does not handle
+       // holes, so we convert manually a potential hole here.
+-      element = TryConvertHoleToUndefined(element, kind);
++      element = TryConvertHoleToUndefined(element, map->elements_kind());
+     }
+     Goto(&out, element);
+ 
+@@ -5639,25 +5641,22 @@ Reduction JSCallReducer::ReduceArrayPrototypeAt(Node* node) {
+   MapInference inference(broker(), receiver, effect);
+   if (!inference.HaveMaps()) return NoChange();
+ 
+-  // Collecting kinds
+-  ZoneVector<ElementsKind> kinds(broker()->zone());
++  // Collecting maps, and checking if a fallback builtin call will be required
++  // (it is required if at least one map doesn't support fast array iteration).
++  ZoneVector<const MapRef*> maps(broker()->zone());
+   bool needs_fallback_builtin_call = false;
+   for (const MapRef& map : inference.GetMaps()) {
+     if (map.supports_fast_array_iteration()) {
+-      ElementsKind kind = map.elements_kind();
+-      // Checking that |kind| isn't already in |kinds|. Using std::find should
+-      // be fast enough since |kinds| can contain at most 4 items.
+-      if (std::find(kinds.begin(), kinds.end(), kind) == kinds.end()) {
+-        kinds.push_back(kind);
+-      }
++      maps.push_back(&map);
+     } else {
+       needs_fallback_builtin_call = true;
+     }
+   }
++
+   inference.RelyOnMapsPreferStability(dependencies(), jsgraph(), &effect,
+                                       control, p.feedback());
+ 
+-  if (kinds.empty()) {
++  if (maps.empty()) {
+     // No map in the feedback supports fast iteration. Keeping the builtin call.
+     return NoChange();
+   }
+@@ -5666,13 +5665,11 @@ Reduction JSCallReducer::ReduceArrayPrototypeAt(Node* node) {
+     return NoChange();
+   }
+ 
+-  Node* receiver_kind = LoadReceiverElementsKind(receiver, &effect, control);
+-
+   IteratingArrayBuiltinReducerAssembler a(this, node);
+   a.InitializeEffectControl(effect, control);
+ 
+-  TNode<Object> subgraph = a.ReduceArrayPrototypeAt(
+-      kinds, needs_fallback_builtin_call, receiver_kind);
++  TNode<Object> subgraph =
++      a.ReduceArrayPrototypeAt(maps, needs_fallback_builtin_call);
+   return ReplaceWithSubgraph(&a, subgraph);
+ }
+ 
