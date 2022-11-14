@@ -1,7 +1,7 @@
 // Use this script to regenerate these fixture files
 // using a new version of the asar package
 
-const asar = require('asar');
+const asar = require('@electron/asar');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');

@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <jeremy.rose@salesforce.com>
+Date: Wed, 28 Sep 2022 14:44:32 -0700
+Subject: force CppHeapCreateParams to be noncopyable
+
+Ref https://chromium-review.googlesource.com/c/v8/v8/+/3348007
+
+Without this change, clang on windows for some reason thinks that
+CppHeapCreateParams is copyable and tries to generate copy
+constructors for it, which doesn't work because vector<unique_ptr>
+isn't copyable.
+
+If Electron compiles on Windows without this patch then it's no longer
+needed.
+
+diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
+index f96709c783a0b13a3c09925a930d59c8ba48e01f..d91253f16ee9775986d699ebfed77b7389c71a13 100644
+--- a/include/v8-cppgc.h
++++ b/include/v8-cppgc.h
+@@ -76,6 +76,12 @@ struct WrapperDescriptor final {
+   uint16_t embedder_id_for_garbage_collected;
+ };
+ 
++struct NonCopyable {
++  NonCopyable() = default;
++  NonCopyable(const NonCopyable&) = delete;
++  NonCopyable(NonCopyable&&) = default;
++};
++
+ struct V8_EXPORT CppHeapCreateParams {
+   std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces;
+   WrapperDescriptor wrapper_descriptor;
+@@ -91,6 +97,7 @@ struct V8_EXPORT CppHeapCreateParams {
+    */
+   cppgc::Heap::SweepingType sweeping_support =
+       cppgc::Heap::SweepingType::kIncrementalAndConcurrent;
++  NonCopyable non_copyable_;
+ };
+ 
+ /**

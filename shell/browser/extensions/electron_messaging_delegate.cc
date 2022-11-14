@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 #include "base/logging.h"
+#include "base/values.h"
 #include "build/build_config.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_context.h"
@@ -50,7 +51,7 @@ absl::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
       tab.url = api_contents->GetURL().spec();
       tab.title = base::UTF16ToUTF8(api_contents->GetTitle());
       tab.audible = api_contents->IsCurrentlyAudible();
-      return std::move(tab.ToValue()->GetDict());
+      return tab.ToValue();
     }
   }
   return absl::nullopt;

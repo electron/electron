@@ -374,6 +374,8 @@ describe('command line switches', () => {
   });
   describe('--lang switch', () => {
     const currentLocale = app.getLocale();
+    const currentSystemLocale = app.getSystemLocale();
+    const currentPreferredLanguages = JSON.stringify(app.getPreferredSystemLanguages());
     const testLocale = async (locale: string, result: string, printEnv: boolean = false) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const args = [appPath, `--set-lang=${locale}`];
@@ -396,8 +398,9 @@ describe('command line switches', () => {
       expect(output).to.equal(result);
     };
 
-    it('should set the locale', async () => testLocale('fr', 'fr'));
-    it('should not set an invalid locale', async () => testLocale('asdfkl', currentLocale));
+    it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}|${currentPreferredLanguages}`));
+    it('should set the locale with country code', async () => testLocale('zh-CN', `zh-CN|${currentSystemLocale}|${currentPreferredLanguages}`));
+    it('should not set an invalid locale', async () => testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}|${currentPreferredLanguages}`));
 
     const lcAll = String(process.env.LC_ALL);
     ifit(process.platform === 'linux')('current process has a valid LC_ALL env', async () => {
@@ -650,7 +653,7 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
     });
 
-    it('should not crash when nodeIntegration is enabled', (done) => {
+    it('should not allow nodeIntegrationInWorker', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -661,21 +664,19 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(`unexpected error : ${message}`);
-        } else if (channel === 'response') {
-          expect(message).to.equal('Hello from serviceWorker!');
-          session.fromPartition('sw-file-scheme-worker-spec').clearStorageData({
-            storages: ['serviceworkers']
-          }).then(() => done());
-        }
-      });
+      await w.loadURL(`file://${fixturesPath}/pages/service-worker/empty.html`);
 
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+      const data = await w.webContents.executeJavaScript(`
+        navigator.serviceWorker.register('worker-no-node.js', {
+          scope: './'
+        }).then(() => navigator.serviceWorker.ready)
+
+        new Promise((resolve) => {
+          navigator.serviceWorker.onmessage = event => resolve(event.data);
+        });
+      `);
+
+      expect(data).to.equal('undefined undefined undefined undefined');
     });
   });
 
@@ -787,11 +788,22 @@ describe('chromium features', () => {
         expect(data).to.equal('undefined undefined undefined undefined');
       });
 
-      it('has node integration with nodeIntegrationInWorker', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false } });
-        w.loadURL(`file://${fixturesPath}/pages/shared_worker.html`);
-        const [, data] = await emittedOnce(ipcMain, 'worker-result');
-        expect(data).to.equal('object function object function');
+      it('does not have node integration with nodeIntegrationInWorker', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false
+          }
+        });
+
+        await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        const data = await w.webContents.executeJavaScript(`
+          const worker = new SharedWorker('../workers/shared_worker_node.js');
+          new Promise((resolve) => { worker.port.onmessage = e => resolve(e.data); })
+        `);
+        expect(data).to.equal('undefined undefined undefined undefined');
       });
     });
   });
@@ -2348,6 +2360,8 @@ describe('navigator.serial', () => {
     `, true);
   };
 
+  const notFoundError = 'NotFoundError: Failed to execute \'requestPort\' on \'Serial\': No port selected by the user.';
+
   after(closeAllWindows);
   afterEach(() => {
     session.defaultSession.setPermissionCheckHandler(null);
@@ -2357,7 +2371,7 @@ describe('navigator.serial', () => {
   it('does not return a port if select-serial-port event is not defined', async () => {
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('does not return a port when permission denied', async () => {
@@ -2366,7 +2380,7 @@ describe('navigator.serial', () => {
     });
     session.defaultSession.setPermissionCheckHandler(() => false);
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('does not crash when select-serial-port is called with an invalid port', async () => {
@@ -2374,7 +2388,7 @@ describe('navigator.serial', () => {
       callback('i-do-not-exist');
     });
     const port = await getPorts();
-    expect(port).to.equal('NotFoundError: No port selected by the user.');
+    expect(port).to.equal(notFoundError);
   });
 
   it('returns a port when select-serial-port event is defined', async () => {
@@ -2391,7 +2405,7 @@ describe('navigator.serial', () => {
     if (havePorts) {
       expect(port).to.equal('[object SerialPort]');
     } else {
-      expect(port).to.equal('NotFoundError: No port selected by the user.');
+      expect(port).to.equal(notFoundError);
     }
   });
 
@@ -2410,6 +2424,50 @@ describe('navigator.serial', () => {
     if (havePorts) {
       const grantedPorts = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
       expect(grantedPorts).to.not.be.empty();
+    }
+  });
+
+  it('supports port.forget()', async () => {
+    let forgottenPortFromEvent = {};
+    let havePorts = false;
+
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      if (portList.length > 0) {
+        havePorts = true;
+        callback(portList[0].portId);
+      } else {
+        callback('');
+      }
+    });
+
+    w.webContents.session.on('serial-port-revoked', (event, details) => {
+      forgottenPortFromEvent = details.port;
+    });
+
+    await getPorts();
+    if (havePorts) {
+      const grantedPorts = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
+      if (grantedPorts.length > 0) {
+        const forgottenPort = await w.webContents.executeJavaScript(`
+          navigator.serial.getPorts().then(async(ports) => {
+            const portInfo = await ports[0].getInfo();
+            await ports[0].forget();
+            if (portInfo.usbVendorId && portInfo.usbProductId) {
+              return {
+                vendorId: '' + portInfo.usbVendorId,
+                productId: '' + portInfo.usbProductId
+              }
+            } else {
+              return {};
+            }
+          })
+        `);
+        const grantedPorts2 = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
+        expect(grantedPorts2.length).to.be.lessThan(grantedPorts.length);
+        if (forgottenPort.vendorId && forgottenPort.productId) {
+          expect(forgottenPortFromEvent).to.include(forgottenPort);
+        }
+      }
     }
   });
 });
@@ -2672,9 +2730,7 @@ describe('navigator.hid', () => {
     } else {
       expect(device).to.equal('');
     }
-    if (process.arch === 'arm64' || process.arch === 'arm') {
-      // arm CI returns HID devices - this block may need to change if CI hardware changes.
-      expect(haveDevices).to.be.true();
+    if (haveDevices) {
       // Verify that navigation will clear device permissions
       const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
       expect(grantedDevices).to.not.be.empty();

@@ -31,6 +31,22 @@ const runFixtureAndEnsureCleanExit = (args: string[]) => {
   });
 };
 
+const shouldRunCase = (crashCase: string) => {
+  switch (crashCase) {
+    // TODO(jkleinsc) fix this flaky test on Windows 32-bit
+    case 'quit-on-crashed-event': {
+      return (process.platform !== 'win32' || process.arch !== 'ia32');
+    }
+    // TODO(jkleinsc) fix this test on Linux on arm/arm64
+    case 'js-execute-iframe': {
+      return (process.platform !== 'linux' || (process.arch !== 'arm64' && process.arch !== 'arm'));
+    }
+    default: {
+      return true;
+    }
+  }
+};
+
 describe('crash cases', () => {
   afterEach(() => {
     for (const child of children) {
@@ -42,8 +58,7 @@ describe('crash cases', () => {
   const cases = fs.readdirSync(fixturePath);
 
   for (const crashCase of cases) {
-    // TODO(jkleinsc) fix this flaky test on Windows 32-bit
-    ifit(process.platform !== 'win32' || process.arch !== 'ia32' || crashCase !== 'quit-on-crashed-event')(`the "${crashCase}" case should not crash`, () => {
+    ifit(shouldRunCase(crashCase))(`the "${crashCase}" case should not crash`, () => {
       const fixture = path.resolve(fixturePath, crashCase);
       const argsFile = path.resolve(fixture, 'electron.args');
       const args = [fixture];

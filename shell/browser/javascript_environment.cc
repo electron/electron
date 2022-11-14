@@ -262,11 +262,11 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* tracing_agent = node::CreateAgent();
   auto* tracing_controller = new TracingControllerImpl();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
-  platform_ = node::CreatePlatform(
+  platform_ = node::MultiIsolatePlatform::Create(
       base::RecommendedMaxNumberOfThreadsInThreadGroup(3, 8, 0.1, 0),
       tracing_controller, gin::V8Platform::PageAllocator());
 
-  v8::V8::InitializePlatform(platform_);
+  v8::V8::InitializePlatform(platform_.get());
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::ArrayBufferAllocator::SharedInstance(),
                                  nullptr /* external_reference_table */,
@@ -287,13 +287,13 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
   return g_isolate;
 }
 
-void JavascriptEnvironment::OnMessageLoopCreated() {
+void JavascriptEnvironment::CreateMicrotasksRunner() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
   base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
-void JavascriptEnvironment::OnMessageLoopDestroying() {
+void JavascriptEnvironment::DestroyMicrotasksRunner() {
   DCHECK(microtasks_runner_);
   {
     v8::HandleScope scope(isolate_);

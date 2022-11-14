@@ -130,6 +130,11 @@ void ElectronPermissionManager::SetDevicePermissionHandler(
   device_permission_handler_ = handler;
 }
 
+void ElectronPermissionManager::SetBluetoothPairingHandler(
+    const BluetoothPairingHandler& handler) {
+  bluetooth_pairing_handler_ = handler;
+}
+
 void ElectronPermissionManager::RequestPermission(
     blink::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
@@ -275,6 +280,18 @@ ElectronPermissionManager::SubscribePermissionStatusChange(
 
 void ElectronPermissionManager::UnsubscribePermissionStatusChange(
     SubscriptionId id) {}
+
+void ElectronPermissionManager::CheckBluetoothDevicePair(
+    gin_helper::Dictionary details,
+    PairCallback pair_callback) const {
+  if (bluetooth_pairing_handler_.is_null()) {
+    base::Value::Dict response;
+    response.Set("confirmed", false);
+    std::move(pair_callback).Run(std::move(response));
+  } else {
+    bluetooth_pairing_handler_.Run(details, std::move(pair_callback));
+  }
+}
 
 bool ElectronPermissionManager::CheckPermissionWithDetails(
     blink::PermissionType permission,

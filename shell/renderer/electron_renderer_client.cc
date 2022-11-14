@@ -21,6 +21,7 @@
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 
 namespace electron {
 
@@ -84,8 +85,8 @@ void ElectronRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  bool initialized = node::InitializeContext(renderer_context);
-  CHECK(initialized);
+  v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
+  CHECK(!initialized.IsNothing() && initialized.FromJust());
 
   node::Environment* env =
       node_bindings_->CreateEnvironment(renderer_context, nullptr);
@@ -156,8 +157,15 @@ void ElectronRendererClient::WillReleaseScriptContext(
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
-  // TODO(loc): Note that this will not be correct for in-process child windows
-  // with webPreferences that have a different value for nodeIntegrationInWorker
+  // We do not create a Node.js environment in service or shared workers
+  // owing to an inability to customize sandbox policies in these workers
+  // given that they're run out-of-process.
+  auto* ec = blink::ExecutionContext::From(context);
+  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope())
+    return;
+
+  // This won't be correct for in-process child windows with webPreferences
+  // that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
     WebWorkerObserver::GetCurrent()->WorkerScriptReadyForEvaluation(context);
@@ -166,6 +174,10 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
 
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
+  auto* ec = blink::ExecutionContext::From(context);
+  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope())
+    return;
+
   // TODO(loc): Note that this will not be correct for in-process child windows
   // with webPreferences that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(

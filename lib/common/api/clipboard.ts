@@ -1,5 +1,6 @@
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
+// eslint-disable-next-line no-restricted-imports
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
 const clipboard = process._linkedBinding('electron_common_clipboard');

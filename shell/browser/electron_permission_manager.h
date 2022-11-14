@@ -13,6 +13,7 @@
 #include "content/public/browser/permission_controller_delegate.h"
 #include "gin/dictionary.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace base {
 class Value;
@@ -38,6 +39,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       base::OnceCallback<void(blink::mojom::PermissionStatus)>;
   using StatusesCallback = base::OnceCallback<void(
       const std::vector<blink::mojom::PermissionStatus>&)>;
+  using PairCallback = base::OnceCallback<void(base::Value::Dict)>;
   using RequestHandler = base::RepeatingCallback<void(content::WebContents*,
                                                       blink::PermissionType,
                                                       StatusCallback,
@@ -50,11 +52,14 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
   using DeviceCheckHandler =
       base::RepeatingCallback<bool(const v8::Local<v8::Object>&)>;
+  using BluetoothPairingHandler =
+      base::RepeatingCallback<void(gin_helper::Dictionary, PairCallback)>;
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
   void SetPermissionCheckHandler(const CheckHandler& handler);
   void SetDevicePermissionHandler(const DeviceCheckHandler& handler);
+  void SetBluetoothPairingHandler(const BluetoothPairingHandler& handler);
 
   // content::PermissionControllerDelegate:
   void RequestPermission(blink::PermissionType permission,
@@ -80,6 +85,9 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       bool user_gesture,
       base::Value::Dict details,
       StatusesCallback callback);
+
+  void CheckBluetoothDevicePair(gin_helper::Dictionary details,
+                                PairCallback pair_callback) const;
 
   bool CheckPermissionWithDetails(blink::PermissionType permission,
                                   content::RenderFrameHost* render_frame_host,
@@ -147,6 +155,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   RequestHandler request_handler_;
   CheckHandler check_handler_;
   DeviceCheckHandler device_permission_handler_;
+  BluetoothPairingHandler bluetooth_pairing_handler_;
 
   PendingRequestsMap pending_requests_;
 };

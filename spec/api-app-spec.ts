@@ -118,6 +118,25 @@ describe('app module', () => {
     });
   });
 
+  describe('app.getSystemLocale()', () => {
+    it('should not be empty', () => {
+      expect(app.getSystemLocale()).to.not.equal('');
+    });
+  });
+
+  describe('app.getPreferredSystemLanguages()', () => {
+    ifit(process.platform !== 'linux')('should not be empty', () => {
+      expect(app.getPreferredSystemLanguages().length).to.not.equal(0);
+    });
+
+    ifit(process.platform === 'linux')('should be empty or contain C entry', () => {
+      const languages = app.getPreferredSystemLanguages();
+      if (languages.length) {
+        expect(languages).to.not.include('C');
+      }
+    });
+  });
+
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
       const localeCountryCode = app.getLocaleCountryCode();

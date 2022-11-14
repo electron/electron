@@ -12,6 +12,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/extended_web_contents_observer.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/browser/native_window.h"
@@ -37,7 +38,8 @@ class BrowserView : public gin::Wrappable<BrowserView>,
                     public gin_helper::Constructible<BrowserView>,
                     public gin_helper::Pinnable<BrowserView>,
                     public content::WebContentsObserver,
-                    public ExtendedWebContentsObserver {
+                    public ExtendedWebContentsObserver,
+                    public DraggableRegionProvider {
  public:
   // gin_helper::Constructible
   static gin::Handle<BrowserView> New(gin_helper::ErrorThrower thrower,
@@ -58,6 +60,8 @@ class BrowserView : public gin::Wrappable<BrowserView>,
 
   int32_t ID() const { return id_; }
 
+  int NonClientHitTest(const gfx::Point& point) override;
+
   // disable copy
   BrowserView(const BrowserView&) = delete;
   BrowserView& operator=(const BrowserView&) = delete;
@@ -68,10 +72,6 @@ class BrowserView : public gin::Wrappable<BrowserView>,
 
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
-
-  // ExtendedWebContentsObserver:
-  void OnDraggableRegionsUpdated(
-      const std::vector<mojom::DraggableRegionPtr>& regions) override;
 
  private:
   void SetAutoResize(AutoResizeFlags flags);

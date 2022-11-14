@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 6da0ab90d57119e7b70205e2bfe38f3b86f727e3..7d63c8d16d6d9c390ab08339a4b2ba4362a3a890 100644
+index bf77c08ecf45bc9da36b99442b7ce14df3f8a4fc..cc2e46107f645dfc7c0265c93aeca037e6094559 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -132,6 +132,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
@@ -26,7 +26,7 @@ index 6da0ab90d57119e7b70205e2bfe38f3b86f727e3..7d63c8d16d6d9c390ab08339a4b2ba43
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 23e21452e6eccfa5e7823ccbc2f59b8a6dbff30d..083af9dbbc407b84964cee5d473c8600bc022940 100644
+index 03cf4a5080e77983abcf0b40b7621d33bd7005cb..a23aea98f14bb7dac8f9c5ca7df22349bf61478f 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -406,6 +406,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -53,7 +53,7 @@ index 23e21452e6eccfa5e7823ccbc2f59b8a6dbff30d..083af9dbbc407b84964cee5d473c8600
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -586,6 +603,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -587,6 +604,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PageColors page_colors_ = PageColors::kOff;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
@@ -62,7 +62,7 @@ index 23e21452e6eccfa5e7823ccbc2f59b8a6dbff30d..083af9dbbc407b84964cee5d473c8600
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 4301448fe6c2c16a6fa9c45d90c1ae3726845a37..a69aee280fd9fef3e609c799302cf0db724223fc 100644
+index 6230688b9ed1dcb239482cfa1dab7daeaf0501c2..aeacdc17413eb5bedb9218140755777eef27349e 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -621,6 +621,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

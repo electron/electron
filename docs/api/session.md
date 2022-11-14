@@ -385,6 +385,50 @@ callback from `select-serial-port` is called.  This event is intended for use
 when using a UI to ask users to pick a port so that the UI can be updated
 to remove the specified port.
 
+#### Event: 'serial-port-revoked'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `port` [SerialPort](structures/serial-port.md)
+  * `frame` [WebFrameMain](web-frame-main.md)
+  * `origin` string - The origin that the device has been revoked from.
+
+Emitted after `SerialPort.forget()` has been called.  This event can be used
+to help maintain persistent storage of permissions when `setDevicePermissionHandler` is used.
+
+```js
+// Browser Process
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600
+  })
+
+  win.webContents.session.on('serial-port-revoked', (event, details) => {
+    console.log(`Access revoked for serial device from origin ${details.origin}`)
+  })
+})
+```
+
+```js
+// Renderer Process
+
+const portConnect = async () => {
+  // Request a port.
+  const port = await navigator.serial.requestPort()
+
+  // Wait for the serial port to open.
+  await port.open({ baudRate: 9600 })
+
+  // ...later, revoke access to the serial port.
+  await port.forget()
+}
+```
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
@@ -409,7 +453,7 @@ Clears the session’s HTTP cache.
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
   * `quotas` string[] (optional) - The types of quotas to clear, can contain:
-    `temporary`, `persistent`, `syncable`. If not specified, clear all quotas.
+    `temporary`, `syncable`. If not specified, clear all quotas.
 
 Returns `Promise<void>` - resolves when the storage data has been cleared.
 
@@ -820,6 +864,71 @@ app.whenReady().then(() => {
     })
     callback(selectedPort?.deviceId)
   })
+})
+```
+
+#### `ses.setBluetoothPairingHandler(handler)` _Windows_ _Linux_
+
+* `handler` Function | null
+  * `details` Object
+    * `deviceId` string
+    * `pairingKind` string - The type of pairing prompt being requested.
+      One of the following values:
+      * `confirm`
+        This prompt is requesting confirmation that the Bluetooth device should
+        be paired.
+      * `confirmPin`
+        This prompt is requesting confirmation that the provided PIN matches the
+        pin displayed on the device.
+      * `providePin`
+        This prompt is requesting that a pin be provided for the device.
+    * `frame` [WebFrameMain](web-frame-main.md)
+    * `pin` string (optional) - The pin value to verify if `pairingKind` is `confirmPin`.
+  * `callback` Function
+    * `response` Object
+      * `confirmed` boolean - `false` should be passed in if the dialog is canceled.
+        If the `pairingKind` is `confirm` or `confirmPin`, this value should indicate
+        if the pairing is confirmed.  If the `pairingKind` is `providePin` the value
+        should be `true` when a value is provided.
+      * `pin` string | null (optional) - When the `pairingKind` is `providePin`
+        this value should be the required pin for the Bluetooth device.
+
+Sets a handler to respond to Bluetooth pairing requests. This handler
+allows developers to handle devices that require additional validation
+before pairing.  When a handler is not defined, any pairing on Linux or Windows
+that requires additional validation will be automatically cancelled.
+macOS does not require a handler because macOS handles the pairing
+automatically.  To clear the handler, call `setBluetoothPairingHandler(null)`.
+
+```javascript
+
+const { app, BrowserWindow, ipcMain, session } = require('electron')
+
+let bluetoothPinCallback = null
+
+function createWindow () {
+  const mainWindow = new BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+}
+
+// Listen for an IPC message from the renderer to get the response for the Bluetooth pairing.
+ipcMain.on('bluetooth-pairing-response', (event, response) => {
+  bluetoothPinCallback(response)
+})
+
+mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
+  bluetoothPinCallback = callback
+  // Send a IPC message to the renderer to prompt the user to confirm the pairing.
+  // Note that this will require logic in the renderer to handle this message and
+  // display a prompt to the user.
+  mainWindow.webContents.send('bluetooth-pairing-request', details)
+})
+
+app.whenReady().then(() => {
+  createWindow()
 })
 ```
 

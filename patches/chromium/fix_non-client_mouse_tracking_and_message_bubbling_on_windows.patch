@@ -13,7 +13,7 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index c60db9efd14aa7c9e974d2a36626bdc86e0f80e1..bc38939c1965633a4a7ad5aacaaaa18566874e88 100644
+index d045964264de280f670350f71c5d69cf7326e13a..d0ce23fa6d6b32e8475cdafbf551447c6db700c6 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
 @@ -288,12 +288,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
@@ -44,7 +44,7 @@ index c60db9efd14aa7c9e974d2a36626bdc86e0f80e1..bc38939c1965633a4a7ad5aacaaaa185
      }
    }
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
-index 81e5cde38627914e6a19ed2c1ab62547fdd7fc19..111c59c91073578d8d176598b5e4d10b84918d4c 100644
+index 11ae0ec65f8b3eab782e9f660ba21bc6fccdc7e2..4bf7545646794f045e6cea6131e3b67453c459d3 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
 @@ -106,6 +106,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND

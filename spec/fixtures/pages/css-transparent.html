@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>test-color-window</title>
+    <style>
+      body {
+        background: red;
+      }
+    </style>
+  </head>
+  <body id="body">
+    <script>
+      const { ipcRenderer } = require('electron');
+
+      const observer = new MutationObserver((mutationList, observer) => {
+        mutationList.forEach(({ type, attributeName }) => {
+          if (type === 'attributes' && attributeName === 'style') {
+            ipcRenderer.send('set-transparent');
+          }
+        });
+      });
+
+      observer.observe(document.body, { attributes: true });
+
+      document.addEventListener('DOMContentLoaded', event => {
+        document.body.style.background = 'transparent';
+      });
+    </script>
+  </body>
+</html>

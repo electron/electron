@@ -16,6 +16,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/unguessable_token.h"
+#include "components/keyed_service/core/keyed_service.h"
 #include "content/public/browser/web_contents.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"

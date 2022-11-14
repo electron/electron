@@ -1,10 +1,14 @@
 import { expect } from 'chai';
+import * as dns from 'dns';
 import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
 import { defer, delay } from './spec-helpers';
+
+// See https://github.com/nodejs/node/issues/40702.
+dns.setDefaultResultOrder('ipv4first');
 
 const kOneKiloByte = 1024;
 const kOneMegaByte = kOneKiloByte * kOneKiloByte;

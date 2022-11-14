@@ -3,10 +3,13 @@ type DeprecationHandler = (message: string) => void;
 let deprecationHandler: DeprecationHandler | null = null;
 
 export function warnOnce (oldName: string, newName?: string) {
-  let warned = false;
-  const msg = newName
+  return warnOnceMessage(newName
     ? `'${oldName}' is deprecated and will be removed. Please use '${newName}' instead.`
-    : `'${oldName}' is deprecated and will be removed.`;
+    : `'${oldName}' is deprecated and will be removed.`);
+}
+
+export function warnOnceMessage (msg: string) {
+  let warned = false;
   return () => {
     if (!warned && !process.noDeprecation) {
       warned = true;

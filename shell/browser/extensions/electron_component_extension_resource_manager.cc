@@ -33,13 +33,13 @@ ElectronComponentExtensionResourceManager::
   AddComponentResourceEntries(kPdfResources, kPdfResourcesSize);
 
   // Register strings for the PDF viewer, so that $i18n{} replacements work.
-  base::Value pdf_strings(base::Value::Type::DICTIONARY);
+  base::Value::Dict pdf_strings;
   pdf_extension_util::AddStrings(
       pdf_extension_util::PdfViewerContext::kPdfViewer, &pdf_strings);
   pdf_extension_util::AddAdditionalData(true, &pdf_strings);
 
   ui::TemplateReplacements pdf_viewer_replacements;
-  ui::TemplateReplacementsFromDictionaryValue(pdf_strings.GetDict(),
+  ui::TemplateReplacementsFromDictionaryValue(pdf_strings,
                                               &pdf_viewer_replacements);
   extension_template_replacements_[extension_misc::kPdfExtensionId] =
       std::move(pdf_viewer_replacements);

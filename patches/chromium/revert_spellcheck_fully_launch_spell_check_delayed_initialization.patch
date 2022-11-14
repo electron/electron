@@ -10,10 +10,10 @@ can be reverted when those failures are addressed. It's unlikely
 that this patch will be upstreamed.
 
 diff --git a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
-index 9e86fff4335a5efc3d89eda167f756ec82f10407..4375f34b007b21d4cc190bdb1434964304f14785 100644
+index c8eccc85881c4ebe879dcb4fc3c21a3529e17085..42ce09bc56c1a761612251af3d3d0d3add7128cf 100644
 --- a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
 +++ b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
-@@ -297,26 +297,7 @@ TEST_F(LanguageSettingsPrivateApiTest, GetNeverTranslateLanguagesListTest) {
+@@ -293,26 +293,7 @@ TEST_F(LanguageSettingsPrivateApiTest, GetNeverTranslateLanguagesListTest) {
    }
  }
  
@@ -42,7 +42,7 @@ index 9e86fff4335a5efc3d89eda167f756ec82f10407..4375f34b007b21d4cc190bdb14349643
    RunGetLanguageListTest();
  }
 diff --git a/chrome/browser/spellchecker/spellcheck_service_unittest.cc b/chrome/browser/spellchecker/spellcheck_service_unittest.cc
-index b8fa14fa50d82521845b9f84d62d9de922df9168..1e9c21eca325845bbc8f09a5287a2451f9829e80 100644
+index f528150f455103828c463c28b302f671f100d533..18566653b1cdca9a4db1657f3e4b811ff720c41b 100644
 --- a/chrome/browser/spellchecker/spellcheck_service_unittest.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service_unittest.cc
 @@ -341,18 +341,9 @@ const std::vector<std::string> SpellcheckServiceHybridUnitTestBase::
@@ -98,15 +98,15 @@ index b8fa14fa50d82521845b9f84d62d9de922df9168..1e9c21eca325845bbc8f09a5287a2451
  static const DictionaryMappingTestCase kHybridDictionaryMappingsParams[] = {
      DictionaryMappingTestCase({"en-CA", "en-CA", "en-CA", "en", "en"}),
 diff --git a/components/spellcheck/common/spellcheck_features.cc b/components/spellcheck/common/spellcheck_features.cc
-index 37f2b0e837d8031bee488e9fd7bd4eb456c42204..dcd365a802e0feebbb2bc3839c7a0f47fb113c70 100644
+index 0f17118a967852309b42c74d5c41516df3288d73..5be8a0b6a4472eee426c1af1342c86158630ac37 100644
 --- a/components/spellcheck/common/spellcheck_features.cc
 +++ b/components/spellcheck/common/spellcheck_features.cc
-@@ -32,7 +32,7 @@ const base::Feature kWinUseBrowserSpellChecker{
-     "WinUseBrowserSpellChecker", base::FEATURE_ENABLED_BY_DEFAULT};
+@@ -34,7 +34,7 @@ BASE_FEATURE(kWinUseBrowserSpellChecker,
  
- const base::Feature kWinDelaySpellcheckServiceInit{
--    "WinDelaySpellcheckServiceInit", base::FEATURE_ENABLED_BY_DEFAULT};
-+    "WinDelaySpellcheckServiceInit", base::FEATURE_DISABLED_BY_DEFAULT};
+ BASE_FEATURE(kWinDelaySpellcheckServiceInit,
+              "WinDelaySpellcheckServiceInit",
+-             base::FEATURE_ENABLED_BY_DEFAULT);
++             base::FEATURE_DISABLED_BY_DEFAULT);
  
- const base::Feature kWinRetrieveSuggestionsOnlyOnDemand{
-     "WinRetrieveSuggestionsOnlyOnDemand", base::FEATURE_ENABLED_BY_DEFAULT};
+ BASE_FEATURE(kWinRetrieveSuggestionsOnlyOnDemand,
+              "WinRetrieveSuggestionsOnlyOnDemand",

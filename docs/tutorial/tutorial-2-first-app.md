@@ -186,7 +186,7 @@ by creating a barebones web page in an `index.html` file in the root folder of y
 ```
 
 Now that you have a web page, you can load it into an Electron [BrowserWindow][browser-window].
-Replace the contents your `main.js` file with the following code. We will explain each
+Replace the contents of your `main.js` file with the following code. We will explain each
 highlighted block separately.
 
 ```js {1,3-10,12-14} title='main.js' showLineNumbers
@@ -369,12 +369,12 @@ run. Create a launch.json configuration in a new `.vscode` folder in your projec
       "name": "Renderer",
       "port": 9222,
       "request": "attach",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "webRoot": "${workspaceFolder}"
     },
     {
       "name": "Main",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
@@ -398,11 +398,11 @@ What we have done in the `launch.json` file is to create 3 configurations:
 - `Main` is used to start the main process and also expose port 9222 for remote debugging
   (`--remote-debugging-port=9222`). This is the port that we will use to attach the debugger
   for the `Renderer`. Because the main process is a Node.js process, the type is set to
-  `pwa-node` (`pwa-` is the prefix that tells VS Code to use the latest JavaScript debugger).
+  `node`.
 - `Renderer` is used to debug the renderer process. Because the main process is the one
   that creates the process, we have to "attach" to it (`"request": "attach"`) instead of
   creating a new one.
-  The renderer process is a web one, so the debugger we have to use is `pwa-chrome`.
+  The renderer process is a web one, so the debugger we have to use is `chrome`.
 - `Main + renderer` is a [compound task] that executes the previous ones simultaneously.
 
 :::caution
@@ -435,7 +435,7 @@ This file controls Electron's **main process**, which runs an instance of Node.j
 responsible for your app's lifecycle, displaying native interfaces, performing privileged operations,
 and managing renderer processes.
 
-**Renderer processes** (or renderers for short) are responsible for display graphical content. You can
+**Renderer processes** (or renderers for short) are responsible for displaying graphical content. You can
 load a web page into a renderer by pointing it to either a web address or a local HTML file.
 Renderers behave very similarly to regular web pages and have access to the same web APIs.
 

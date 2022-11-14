@@ -192,6 +192,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     macOS. Default is `false`.
   * `skipTaskbar` boolean (optional) _macOS_ _Windows_ - Whether to show the window in taskbar.
     Default is `false`.
+  * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
   * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
   * `title` string (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
   * `icon` ([NativeImage](native-image.md) | string) (optional) - The window icon. On Windows it is
@@ -652,17 +653,35 @@ The following app commands are explicitly supported on Linux:
 * `browser-backward`
 * `browser-forward`
 
-#### Event: 'scroll-touch-begin' _macOS_
+#### Event: 'scroll-touch-begin' _macOS_ _Deprecated_
 
 Emitted when scroll wheel event phase has begun.
 
-#### Event: 'scroll-touch-end' _macOS_
+> **Note**
+> This event is deprecated beginning in Electron 22.0.0. See [Breaking
+> Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
+> for details of how to migrate to using the [WebContents
+> `input-event`](api/web-contents.md#event-input-event) event.
+
+#### Event: 'scroll-touch-end' _macOS_ _Deprecated_
 
 Emitted when scroll wheel event phase has ended.
 
-#### Event: 'scroll-touch-edge' _macOS_
+> **Note**
+> This event is deprecated beginning in Electron 22.0.0. See [Breaking
+> Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
+> for details of how to migrate to using the [WebContents
+> `input-event`](api/web-contents.md#event-input-event) event.
+
+#### Event: 'scroll-touch-edge' _macOS_ _Deprecated_
 
 Emitted when scroll wheel event phase filed upon reaching the edge of element.
+
+> **Note**
+> This event is deprecated beginning in Electron 22.0.0. See [Breaking
+> Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
+> for details of how to migrate to using the [WebContents
+> `input-event`](api/web-contents.md#event-input-event) event.
 
 #### Event: 'swipe' _macOS_
 
@@ -1237,6 +1256,16 @@ Returns `boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
 
+#### `win.setHiddenInMissionControl(hidden)` _macOS_
+
+* `hidden` boolean
+
+Sets whether the window will be hidden when the user toggles into mission control.
+
+#### `win.isHiddenInMissionControl()` _macOS_
+
+Returns `boolean` - Whether the window will be hidden when the user toggles into mission control.
+
 #### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
 * `flag` boolean
@@ -1419,13 +1448,16 @@ Returns `boolean` - Whether the window's document has been edited.
 
 #### `win.blurWebView()`
 
-#### `win.capturePage([rect])`
+#### `win.capturePage([rect, opts])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
+* `opts` Object (optional)
+  * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
+  * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep. Default is `false`.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
-Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page. If the page is not visible, `rect` may be empty.
+Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page. If the page is not visible, `rect` may be empty. The page is considered visible when its browser window is hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
 
 #### `win.loadURL(url[, options])`
 

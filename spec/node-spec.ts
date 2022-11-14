@@ -341,7 +341,7 @@ describe('node feature', () => {
   describe('Buffer', () => {
     useRemoteContext();
 
-    itremote('can be created from WebKit external string', () => {
+    itremote('can be created from Blink external string', () => {
       const p = document.createElement('p');
       p.innerText = '闲云潭影日悠悠，物换星移几度秋';
       const b = Buffer.from(p.innerText);

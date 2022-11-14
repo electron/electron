@@ -64,7 +64,7 @@ void ZoomLevelDelegate::SetDefaultZoomLevelPref(double level) {
 
 double ZoomLevelDelegate::GetDefaultZoomLevelPref() const {
   const base::Value::Dict& default_zoom_level_dictionary =
-      pref_service_->GetValueDict(kPartitionDefaultZoomLevel);
+      pref_service_->GetDict(kPartitionDefaultZoomLevel);
   // If no default has been previously set, the default returned is the
   // value used to initialize default_zoom_level in this function.
   return default_zoom_level_dictionary.FindDouble(partition_key_).value_or(0.0);
@@ -147,7 +147,7 @@ void ZoomLevelDelegate::InitHostZoomMap(content::HostZoomMap* host_zoom_map) {
   // Initialize the HostZoomMap with per-host zoom levels from the persisted
   // zoom-level preference values.
   const base::Value::Dict& host_zoom_dictionaries =
-      pref_service_->GetValueDict(kPartitionPerHostZoomLevels);
+      pref_service_->GetDict(kPartitionPerHostZoomLevels);
   const base::Value::Dict* host_zoom_dictionary =
       host_zoom_dictionaries.FindDict(partition_key_);
   if (host_zoom_dictionary) {

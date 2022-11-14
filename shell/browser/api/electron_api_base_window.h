@@ -68,8 +68,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                         bool* prevent_default) override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
-  void OnWindowScrollTouchBegin() override;
-  void OnWindowScrollTouchEnd() override;
   void OnWindowSwipe(const std::string& direction) override;
   void OnWindowRotateGesture(float rotation) override;
   void OnWindowSheetBegin() override;
@@ -198,6 +196,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool GetWindowButtonVisibility() const;
   void SetTrafficLightPosition(const gfx::Point& position);
   gfx::Point GetTrafficLightPosition() const;
+#endif
+
+#if BUILDFLAG(IS_MAC)
+  bool IsHiddenInMissionControl();
+  void SetHiddenInMissionControl(bool hidden);
 #endif
 
   void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);

@@ -13,6 +13,7 @@
 
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_window.h"
+#include "shell/common/api/api.mojom.h"
 #include "ui/display/display_observer.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/native/native_view_host.h"
@@ -102,6 +103,8 @@ class NativeWindowMac : public NativeWindow,
   void SetDocumentEdited(bool edited) override;
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
+  bool IsHiddenInMissionControl() override;
+  void SetHiddenInMissionControl(bool hidden) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
@@ -160,9 +163,6 @@ class NativeWindowMac : public NativeWindow,
   // cleanup in destructor.
   void Cleanup();
 
-  // Use a custom content view instead of Chromium's BridgedContentView.
-  void OverrideNSWindowContentView();
-
   void UpdateVibrancyRadii(bool fullscreen);
 
   void UpdateWindowOriginalFrame();
@@ -206,6 +206,8 @@ class NativeWindowMac : public NativeWindow,
   // views::WidgetDelegate:
   views::View* GetContentsView() override;
   bool CanMaximize() const override;
+  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
+      views::Widget* widget) override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
@@ -227,14 +229,6 @@ class NativeWindowMac : public NativeWindow,
   base::scoped_nsobject<ElectronNSWindowDelegate> window_delegate_;
   base::scoped_nsobject<ElectronPreviewItem> preview_item_;
   base::scoped_nsobject<ElectronTouchBar> touch_bar_;
-
-  // Event monitor for scroll wheel event.
-  id wheel_event_monitor_;
-
-  // The NSView that used as contentView of window.
-  //
-  // For frameless window it would fill the whole window.
-  base::scoped_nsobject<NSView> container_view_;
 
   // The views::View that fills the client area.
   std::unique_ptr<RootViewMac> root_view_;
@@ -263,6 +257,8 @@ class NativeWindowMac : public NativeWindow,
 
   // Controls the position and visibility of window buttons.
   base::scoped_nsobject<WindowButtonsProxy> buttons_proxy_;
+
+  std::unique_ptr<SkRegion> draggable_region_;
 
   // Maximizable window state; necessary for persistence through redraws.
   bool maximizable_ = true;

@@ -64,7 +64,7 @@ class SpellCheckClient::SpellcheckRequest {
  private:
   std::u16string text_;          // Text to be checked in this task.
   std::vector<Word> word_list_;  // List of Words found in text
-  // The interface to send the misspelled ranges to WebKit.
+  // The interface to send the misspelled ranges to Blink.
   std::unique_ptr<blink::WebTextCheckingCompletion> completion_;
 };
 

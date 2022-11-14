@@ -309,6 +309,7 @@ describe('<webview> tag', function () {
       const [, { runtimeId, tabId }] = await emittedOnce(ipcMain, 'answer');
       expect(runtimeId).to.match(/^[a-z]{32}$/);
       expect(tabId).to.equal(childWebContentsId);
+      await w.webContents.executeJavaScript('webview.closeDevTools()');
     });
   });
 
@@ -1534,6 +1535,7 @@ describe('<webview> tag', function () {
           webview.openDevTools()
           webview.addEventListener('devtools-opened', () => resolve(), {once: true})
         })`);
+        await w.executeJavaScript('webview.closeDevTools()');
       });
     });
 
@@ -1950,61 +1952,11 @@ describe('<webview> tag', function () {
     });
 
     describe('DOM events', () => {
-      /*
-      let div;
-
-      beforeEach(() => {
-        div = document.createElement('div');
-        div.style.width = '100px';
-        div.style.height = '10px';
-        div.style.overflow = 'hidden';
-        webview.style.height = '100%';
-        webview.style.width = '100%';
-      });
-
-      afterEach(() => {
-        if (div != null) div.remove();
-      });
-      */
-
       for (const [description, sandbox] of [
         ['without sandbox', false] as const,
         ['with sandbox', true] as const
       ]) {
         describe(description, () => {
-        // TODO(nornagon): disabled during chromium roll 2019-06-11 due to a
-        // 'ResizeObserver loop limit exceeded' error on Windows
-        /*
-          xit('emits resize events', async () => {
-            const firstResizeSignal = waitForEvent(webview, 'resize');
-            const domReadySignal = waitForEvent(webview, 'dom-ready');
-
-            webview.src = `file://${fixtures}/pages/a.html`;
-            webview.webpreferences = `sandbox=${sandbox ? 'yes' : 'no'}`;
-            div.appendChild(webview);
-            document.body.appendChild(div);
-
-            const firstResizeEvent = await firstResizeSignal;
-            expect(firstResizeEvent.target).to.equal(webview);
-            expect(firstResizeEvent.newWidth).to.equal(100);
-            expect(firstResizeEvent.newHeight).to.equal(10);
-
-            await domReadySignal;
-
-            const secondResizeSignal = waitForEvent(webview, 'resize');
-
-            const newWidth = 1234;
-            const newHeight = 789;
-            div.style.width = `${newWidth}px`;
-            div.style.height = `${newHeight}px`;
-
-            const secondResizeEvent = await secondResizeSignal;
-            expect(secondResizeEvent.target).to.equal(webview);
-            expect(secondResizeEvent.newWidth).to.equal(newWidth);
-            expect(secondResizeEvent.newHeight).to.equal(newHeight);
-          });
-          */
-
           it('emits focus event', async () => {
             await loadWebViewAndWaitForEvent(w, {
               src: `file://${fixtures}/pages/a.html`,

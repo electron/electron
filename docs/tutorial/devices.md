@@ -16,6 +16,10 @@ with bluetooth devices. In order to use this API in Electron, developers will
 need to handle the [`select-bluetooth-device` event on the webContents](../api/web-contents.md#event-select-bluetooth-device)
 associated with the device request.
 
+Additionally, [`ses.setBluetoothPairingHandler(handler)`](../api/session.md#sessetbluetoothpairinghandlerhandler-windows-linux)
+can be used to handle pairing to bluetooth devices on Windows or Linux when
+additional validation such as a pin is needed.
+
 ### Example
 
 This example demonstrates an Electron application that automatically selects

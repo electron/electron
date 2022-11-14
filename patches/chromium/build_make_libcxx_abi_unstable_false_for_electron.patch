@@ -6,7 +6,7 @@ Subject: build: make libcxx_abi_unstable false for electron
 https://nornagon.medium.com/a-libc-odyssey-973e51649063
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index c9f885120cdcafbdd021a3d2afa3d7f29bf56367..a26efc71bed9c672528431fa8969e60d0aac3c42 100644
+index c9230033a1250c50c863487bfea3547a3e821707..866c6f5c5f672b797be9456045405ac906a61b98 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
 @@ -12,7 +12,6 @@

@@ -1,0 +1,4 @@
+{
+  "name": "electron-test-utility-process-inherit-stderr",
+  "main": "main.js"
+}
