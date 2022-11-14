@@ -34,7 +34,7 @@
 #include "chrome/child/v8_crashpad_support_win.h"
 #endif
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
 #include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/common/crash_keys.h"
@@ -86,7 +86,7 @@ int SetNodeCliFlags() {
                            node::kDisallowedInEnvironment);
 }
 
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
 void SetCrashKeyStub(const std::string& key, const std::string& value) {}
 void ClearCrashKeyStub(const std::string& key) {}
 #endif
@@ -97,7 +97,7 @@ namespace electron {
 
 v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
   std::map<std::string, std::string> keys;
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
   electron::crash_keys::GetCrashKeys(&keys);
 #endif
   return gin::ConvertToV8(isolate, keys);
@@ -113,7 +113,7 @@ int NodeMain(int argc, char* argv[]) {
 // TODO(deepak1556): Enable crashpad support on linux for
 // ELECTRON_RUN_AS_NODE processes.
 // Refs https://github.com/electron/electron/issues/36030
-#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !defined(MAS_BUILD))
+#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
   ElectronCrashReporterClient::Create();
   crash_reporter::InitializeCrashpad(false, "node");
   crash_keys::SetCrashKeysFromCommandLine(
@@ -189,7 +189,7 @@ int NodeMain(int argc, char* argv[]) {
       // Setup process.crashReporter in child node processes
       gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
       reporter.SetMethod("getParameters", &GetParameters);
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
       reporter.SetMethod("addExtraParameter", &SetCrashKeyStub);
       reporter.SetMethod("removeExtraParameter", &ClearCrashKeyStub);
 #else

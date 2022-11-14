@@ -61,7 +61,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
 
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   process->SetReadOnly("mas", true);
 #endif
 

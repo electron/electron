@@ -197,7 +197,7 @@
 #include "content/public/browser/plugin_service.h"
 #endif
 
-#ifndef MAS_BUILD
+#if !IS_MAS_BUILD()
 #include "chrome/browser/hang_monitor/hang_crash_dump.h"  // nogncheck
 #endif
 
@@ -2395,7 +2395,7 @@ void WebContents::ForcefullyCrashRenderer() {
     rph->ForceCrash();
 #else
     // Try to generate a crash report for the hung process.
-#ifndef MAS_BUILD
+#if !IS_MAS_BUILD()
     CrashDumpHungChildProcess(rph->GetProcess().Handle());
 #endif
     rph->Shutdown(content::RESULT_CODE_HUNG);

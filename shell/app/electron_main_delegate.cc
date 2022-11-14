@@ -62,7 +62,7 @@
 #include "v8/include/v8.h"
 #endif
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
 #include "components/crash/core/app/crash_switches.h"  // nogncheck
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #include "components/crash/core/common/crash_key.h"
@@ -301,7 +301,7 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
                << " is not supported. See https://crbug.com/638180.";
 #endif
 
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   // In MAS build we are using --disable-remote-core-animation.
   //
   // According to ccameron:
@@ -345,7 +345,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
                                    process_type == ::switches::kZygoteProcess);
 #endif
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
   crash_reporter::InitializeCrashKeys();
 #endif
 
@@ -357,7 +357,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !defined(MAS_BUILD))
+#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
   // In the main process, we wait for JS to call crashReporter.start() before
   // initializing crashpad. If we're in the renderer, we want to initialize it
   // immediately at boot.
@@ -380,7 +380,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
   }
 #endif
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
   crash_keys::SetCrashKeysFromCommandLine(*command_line);
   crash_keys::SetPlatformCrashKey();
 #endif
