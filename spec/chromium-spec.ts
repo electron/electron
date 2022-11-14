@@ -2893,7 +2893,7 @@ describe('navigator.usb', () => {
     session.defaultSession.removeAllListeners('select-usb-device');
   });
 
-  it('does not return a device if select-hid-device event is not defined', async () => {
+  it('does not return a device if select-usb-device event is not defined', async () => {
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const device = await requestDevices();
     expect(device).to.equal(notFoundError);
@@ -2954,7 +2954,7 @@ describe('navigator.usb', () => {
       selectFired = true;
       if (details.deviceList.length > 0) {
         const foundDevice = details.deviceList.find((device) => {
-          if (device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '') {
+          if (device.productName && device.productName !== '' && device.serialNumber && device.serialNumber !== '') {
             haveDevices = true;
             return true;
           }
@@ -3005,7 +3005,7 @@ describe('navigator.usb', () => {
             return {
               vendorId: devices[0].vendorId,
               productId: devices[0].productId,
-              name: devices[0].productName
+              productName: devices[0].productName
             }
           })
         `);

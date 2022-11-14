@@ -239,7 +239,7 @@ app.whenReady().then(() => {
     const selectedDevice = details.deviceList.find((device) => {
       return device.vendorId === '9025' && device.productId === '67'
     })
-    callback(selectedPort?.deviceId)
+    callback(selectedDevice?.deviceId)
   })
 })
 ```
@@ -438,7 +438,7 @@ Returns:
   * `deviceList` [USBDevice[]](structures/usb-device.md)
   * `frame` [WebFrameMain](web-frame-main.md)
 * `callback` Function
-  * `deviceId` string | null (optional)
+  * `deviceId` string (optional)
 
 Emitted when a USB device needs to be selected when a call to
 `navigator.usb.requestDevice` is made. `callback` should be called with
@@ -463,7 +463,7 @@ app.whenReady().then(() => {
     return false
   })
 
-  // Optionally, retrieve previously persisted devices from a persistent store
+  // Optionally, retrieve previously persisted devices from a persistent store (fetchGrantedDevices needs to be implemented by developer to fetch persisted permissions)
   const grantedDevices = fetchGrantedDevices()
 
   win.webContents.session.setDevicePermissionHandler((details) => {
@@ -488,7 +488,12 @@ app.whenReady().then(() => {
     const selectedDevice = details.deviceList.find((device) => {
       return device.vendorId === '9025' && device.productId === '67'
     })
-    callback(selectedPort?.deviceId)
+    if (selectedDevice) {
+      // Optionally, add this to the persisted devices (updateGrantedDevices needs to be implemented by developer to persist permissions)
+      grantedDevices.push(selectedDevice)
+      updateGrantedDevices(grantedDevices)
+    }
+    callback(selectedDevice?.deviceId)
   })
 })
 ```
@@ -499,7 +504,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `device` [USBDevice[]](structures/usb-device.md)
+  * `device` [USBDevice](structures/usb-device.md)
   * `frame` [WebFrameMain](web-frame-main.md)
 
 Emitted after `navigator.usb.requestDevice` has been called and
@@ -514,7 +519,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `device` [USBDevice[]](structures/usb-device.md)
+  * `device` [USBDevice](structures/usb-device.md)
   * `frame` [WebFrameMain](web-frame-main.md)
 
 Emitted after `navigator.usb.requestDevice` has been called and
@@ -935,7 +940,7 @@ app.whenReady().then(() => {
       return true
     } else if (permission === 'serial') {
       // Add logic here to determine if permission should be given to allow serial port selection
-    } if (permission === 'usb') {
+    } else if (permission === 'usb') {
       // Add logic here to determine if permission should be given to allow USB device selection
     }
     return false

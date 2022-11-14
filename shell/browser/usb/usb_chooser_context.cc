@@ -32,8 +32,7 @@
 
 namespace {
 
-constexpr char kDeviceNameKey[] = "name";
-constexpr char kGuidKey[] = "ephemeralGuid";
+constexpr char kDeviceNameKey[] = "productName";
 constexpr char kDeviceIdKey[] = "deviceId";
 constexpr int kUsbClassMassStorage = 0x08;
 
@@ -99,12 +98,23 @@ base::Value UsbChooserContext::DeviceInfoToValue(
   if (CanStorePersistentEntry(device_info)) {
     device_value.SetStringKey(kDeviceSerialNumberKey,
                               *device_info.serial_number);
-  } else {
-    device_value.SetStringKey(kGuidKey, device_info.guid);
   }
 
   device_value.SetStringKey(kDeviceIdKey, device_info.guid);
 
+  device_value.SetIntKey("usbVersionMajor", device_info.usb_version_major);
+  device_value.SetIntKey("usbVersionMinor", device_info.usb_version_minor);
+  device_value.SetIntKey("usbVersionSubminor",
+                         device_info.usb_version_subminor);
+  device_value.SetIntKey("deviceClass", device_info.class_code);
+  device_value.SetIntKey("deviceSubclass", device_info.subclass_code);
+  device_value.SetIntKey("deviceProtocol", device_info.protocol_code);
+  device_value.SetIntKey("deviceVersionMajor",
+                         device_info.device_version_major);
+  device_value.SetIntKey("deviceVersionMinor",
+                         device_info.device_version_minor);
+  device_value.SetIntKey("deviceVersionSubminor",
+                         device_info.device_version_subminor);
   return device_value;
 }
 
@@ -175,9 +185,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     const url::Origin& origin,
     const base::Value& object,
     bool revoked_by_website = false) {
-  const std::string* guid = object.FindStringKey(kGuidKey);
-
-  if (!guid) {
+  if (object.FindStringKey(kDeviceSerialNumberKey)) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->RevokeDevicePermission(
@@ -185,6 +193,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
             WebContentsPermissionHelper::PermissionType::USB),
         origin, object, browser_context_);
   } else {
+    const std::string* guid = object.FindStringKey(kDeviceIdKey);
     auto it = ephemeral_devices_.find(origin);
     if (it != ephemeral_devices_.end()) {
       it->second.erase(*guid);
