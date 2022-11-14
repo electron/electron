@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 6d905b62e62582e72d5ea7ef74a3992e35c6fe8f..841c2d8411f1ae54c5c2f360b5166a0e12b644ad 100644
+index 6d905b62e62582e72d5ea7ef74a3992e35c6fe8f..c0af9ee7459d29f18aa2972cd43e3a1a6a52798d 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -47,9 +47,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -22,17 +22,17 @@ index 6d905b62e62582e72d5ea7ef74a3992e35c6fe8f..841c2d8411f1ae54c5c2f360b5166a0e
    if (!NeedsToUseLayerWindow(widget_)) {
      DLOG(ERROR) << "HWND shouldn't be using a layered window";
      return;
-@@ -58,6 +58,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
+@@ -57,7 +57,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
+ 
    layered_window_updater_ =
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
- }
 +
 +#else
 +  CHECK(false) << "Chromium is calling CreateLayeredWindowUpdater for non-OSR "
 +                  "windows on POSIX platforms, something is wrong with "
 +                  "Electron's OSR implementation.";
 +#endif
-+}
+ }
 +
 +#if BUILDFLAG(IS_WIN)
  void HostDisplayClient::AddChildWindowToBrowser(
