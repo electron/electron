@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christoph Schwering <schwering@google.com>
+Date: Fri, 4 Nov 2022 00:56:32 +0000
+Subject: Handle misaligned FormData, FormStructure.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This CL handles the case where the fields of the cached FormStructure
+and the FormData are misaligned in
+BrowserAutofillManager::WillFillCreditCardNumber.
+
+(cherry picked from commit 1ad751f7dfa30a12a85824c291394b73c5c47eff)
+
+Bug: 1376637, 1376639
+Change-Id: Id7c3357a274b4d6624009ecf52b95a24cf3bfa1d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3965141
+Commit-Queue: Christoph Schwering <schwering@google.com>
+Quick-Run: Christoph Schwering <schwering@google.com>
+Reviewed-by: Dominic Battré <battre@chromium.org>
+Auto-Submit: Christoph Schwering <schwering@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1061790}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4003032
+Commit-Queue: Dominic Battré <battre@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5249@{#907}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/chrome/test/data/autofill/captured_sites/testcases.json b/chrome/test/data/autofill/captured_sites/testcases.json
+index bb7ac2a638a410b3e83b9871314eae27aa8ef229..2e69d8f8532760103b9cccd5efc4ca7a4ad016a1 100644
+--- a/chrome/test/data/autofill/captured_sites/testcases.json
++++ b/chrome/test/data/autofill/captured_sites/testcases.json
+@@ -17,7 +17,7 @@
+     { "site_name": "bath_and_body_works" },
+     { "site_name": "beachbody" },
+     { "site_name": "bed_bath_beyond" },
+-    { "site_name": "belk" },
++    { "site_name": "belk", "bug_number": 1376637 },
+     { "site_name": "bestbuy" },
+     { "site_name": "bhphotovideo", "bug_number":1173033 },
+     { "site_name": "bloomingdales" },
+diff --git a/components/autofill/core/browser/browser_autofill_manager.cc b/components/autofill/core/browser/browser_autofill_manager.cc
+index 2dad433c7deb91a2d06f7a10077c9197bd2eba98..0a6e94a1f5327600c1c13cd6fd7586c7ca09037e 100644
+--- a/components/autofill/core/browser/browser_autofill_manager.cc
++++ b/components/autofill/core/browser/browser_autofill_manager.cc
+@@ -1069,26 +1069,36 @@ void BrowserAutofillManager::OnAskForValuesToFillImpl(
+ 
+ bool BrowserAutofillManager::WillFillCreditCardNumber(
+     const FormData& form,
+-    const FormFieldData& field) {
++    const FormFieldData& triggered_field_data) {
+   FormStructure* form_structure = nullptr;
+-  AutofillField* autofill_field = nullptr;
+-  if (!GetCachedFormAndField(form, field, &form_structure, &autofill_field))
++  AutofillField* triggered_field = nullptr;
++  if (!GetCachedFormAndField(form, triggered_field_data, &form_structure,
++                             &triggered_field)) {
+     return false;
++  }
+ 
+-  if (autofill_field->Type().GetStorableType() == CREDIT_CARD_NUMBER)
++  if (triggered_field->Type().GetStorableType() == CREDIT_CARD_NUMBER)
+     return true;
+ 
+-  DCHECK_EQ(form_structure->field_count(), form.fields.size());
+-  for (size_t i = 0; i < form_structure->field_count(); ++i) {
+-    if (form_structure->field(i)->section == autofill_field->section &&
+-        form_structure->field(i)->Type().GetStorableType() ==
+-            CREDIT_CARD_NUMBER &&
+-        form.fields[i].value.empty() && !form.fields[i].is_autofilled) {
+-      return true;
+-    }
+-  }
++  // `form` is the latest version of the form received from the renderer and may
++  // be more up to date than the `form_structure` in the cache. Therefore, we
++  // need to validate for each `field` in the cache we try to fill whether
++  // it still exists in the renderer and whether it is fillable.
++  auto IsFillableField = [&form](FieldGlobalId id) {
++    auto it = base::ranges::find(form.fields, id, &FormFieldData::global_id);
++    return it != form.fields.end() && it->value.empty() && !it->is_autofilled;
++  };
+ 
+-  return false;
++  auto IsFillableCreditCardNumberField = [&triggered_field,
++                                          &IsFillableField](const auto& field) {
++    return field->Type().GetStorableType() == CREDIT_CARD_NUMBER &&
++           field->section == triggered_field->section &&
++           IsFillableField(field->global_id());
++  };
++
++  // This runs O(N^2) in the worst case, but usually there aren't too many
++  // credit card number fields in a form.
++  return base::ranges::any_of(*form_structure, IsFillableCreditCardNumberField);
+ }
+ 
+ void BrowserAutofillManager::FillOrPreviewCreditCardForm(
+diff --git a/components/autofill/core/browser/browser_autofill_manager.h b/components/autofill/core/browser/browser_autofill_manager.h
+index d6d33df90907dd1521108cfbae1ecbd430bb4e8e..03f92c993a05122b0df1e3b6afdad50edd9e1b41 100644
+--- a/components/autofill/core/browser/browser_autofill_manager.h
++++ b/components/autofill/core/browser/browser_autofill_manager.h
+@@ -475,11 +475,11 @@ class BrowserAutofillManager : public AutofillManager,
+   // profile does not exist.
+   AutofillProfile* GetProfile(int unique_id);
+ 
+-  // Determines whether a fill on |form| initiated from |field| will wind up
+-  // filling a credit card number. This is useful to determine if we will need
+-  // to unmask a card.
++  // Determines whether a fill on |form| initiated from |triggered_field| will
++  // wind up filling a credit card number. This is useful to determine if we
++  // will need to unmask a card.
+   bool WillFillCreditCardNumber(const FormData& form,
+-                                const FormFieldData& field);
++                                const FormFieldData& triggered_field);
+ 
+   // Fills or previews the credit card form.
+   // Assumes the form and field are valid.
