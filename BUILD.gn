@@ -978,11 +978,7 @@ if (is_mac) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
       defines = [ "HELPER_EXECUTABLE" ]
-      if (is_mas_build) {
-        defines += [ "IS_MAS_BUILD()=1" ]
-      } else {
-        defines += [ "IS_MAS_BUILD()=0" ]
-      }
+      extra_configs = [ "//electron/build/config:mas_build" ]
       sources = [
         "shell/app/electron_main_mac.cc",
         "shell/app/uv_stdio_fix.cc",
@@ -1153,11 +1149,7 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
-    if (is_mas_build) {
-      defines = [ "IS_MAS_BUILD()=1" ]
-    } else {
-      defines = [ "IS_MAS_BUILD()=0" ]
-    }
+    extra_configs = [ "//electron/build/config:mas_build" ]
   }
 
   if (enable_dsyms) {
