@@ -35,7 +35,6 @@
 #include "extensions/common/constants.h"
 #include "extensions/common/file_util.h"
 #include "shell/browser/extensions/electron_extension_loader.h"
-#include "ui/base/resource/resource_bundle.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/browser/pdf/pdf_extension_util.h"  // nogncheck
