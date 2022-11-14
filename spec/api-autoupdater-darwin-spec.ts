@@ -102,7 +102,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
 
   const getRunningShipIts = async (appPath: string) => {
     const processes = await psList();
-    const activeShipIts = processes.filter(p => p.name === 'ShipIt' && p.cmd!.startsWith(appPath));
+    const activeShipIts = processes.filter(p => p.cmd?.includes('Squirrel.framework/Resources/ShipIt com.github.Electron.ShipIt') && p.cmd!.startsWith(appPath));
     return activeShipIts;
   };
 
