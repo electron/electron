@@ -118,10 +118,10 @@
   optionalDependencies:
     "@types/glob" "^7.1.1"
 
-"@electron/docs-parser@^0.12.4":
-  version "0.12.4"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.12.4.tgz#cca403c8c2200181339c3115cdd25f3fbfc7dea3"
-  integrity sha512-vdkjcvkI7zTd2v1A8qsl5+HY+9AQCrW5Eh60I9rhPtUPoxo2V1pQwogTW6kzc3XZ54crTa7R3KxwkZpSbcGCug==
+"@electron/docs-parser@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.0.0.tgz#1844ed2e18528ea56aaef0ace1cfa0633a6fa1b1"
+  integrity sha512-nIqEO8Ga6LavdaY2aJMPfq2vSOPVlgOvNv7jpiyaoqsAz5vYnWNUnxeCyaalCaDyFiKhVeHbKwP8Kt2TENwneg==
   dependencies:
     "@types/markdown-it" "^10.0.0"
     chai "^4.2.0"
@@ -133,10 +133,10 @@
     ora "^4.0.3"
     pretty-ms "^5.1.0"
 
-"@electron/typescript-definitions@^8.9.5":
-  version "8.9.5"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.5.tgz#e6cb08e0e7c9656e178b892eab50866a8a80bf7a"
-  integrity sha512-xDLFl6joGpA8c9cGSPWC3DFHyIGf9+OWZmDrPbGJW1URt6C1ukdQWKSmjb1Rttb94QQxBrGuUlSyz27IQgLFsw==
+"@electron/typescript-definitions@^8.10.0":
+  version "8.10.0"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.10.0.tgz#e9cf2b329ec4b0b76947ef751725383a6cf8994d"
+  integrity sha512-FVc2y0GUfxFZDoma0scYiMxkoalle19Fq332fNFGWoCJ9rCj5OUvriewSjPtGBsRuHv2xaMS5MhBuy2/pRuFuQ==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
