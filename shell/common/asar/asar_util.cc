@@ -25,8 +25,6 @@
 
 namespace asar {
 
-class ScopedAllowBlockingForAsarCache : public base::ScopedAllowBlocking {};
-
 namespace {
 
 typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
@@ -45,7 +43,7 @@ bool IsDirectoryCached(const base::FilePath& path) {
   if (it != is_directory_cache.end()) {
     return it->second;
   }
-  ScopedAllowBlockingForAsarCache allow_blocking;
+  base::ScopedAllowBlocking allow_blocking;
   return is_directory_cache[path] = base::DirectoryExists(path);
 }
 

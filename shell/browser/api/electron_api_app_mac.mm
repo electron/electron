@@ -16,8 +16,6 @@
 
 namespace electron::api {
 
-class ScopedAllowBlockingForAppLogs : public base::ScopedAllowBlocking {};
-
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          absl::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
@@ -26,7 +24,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     {
-      ScopedAllowBlockingForAppLogs allow_blocking;
+      base::ScopedAllowBlocking allow_blocking;
       base::PathService::Override(DIR_APP_LOGS, custom_path.value());
     }
   } else {
@@ -37,7 +35,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     NSString* library_path =
         [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
     {
-      ScopedAllowBlockingForAppLogs allow_blocking;
+      base::ScopedAllowBlocking allow_blocking;
       base::PathService::Override(DIR_APP_LOGS,
                                   base::FilePath([library_path UTF8String]));
     }

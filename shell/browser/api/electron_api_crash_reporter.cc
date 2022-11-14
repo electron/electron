@@ -91,7 +91,7 @@ bool GetClientIdPath(base::FilePath* path) {
 }
 
 std::string ReadClientId() {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  base::ScopedAllowBlocking allow_blocking;
   std::string client_id;
   // "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".length == 36
   base::FilePath client_id_path;
@@ -104,7 +104,7 @@ std::string ReadClientId() {
 
 void WriteClientId(const std::string& client_id) {
   DCHECK_EQ(client_id.size(), 36u);
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  base::ScopedAllowBlocking allow_blocking;
   base::FilePath client_id_path;
   if (GetClientIdPath(&client_id_path))
     base::WriteFile(client_id_path, client_id);
@@ -151,7 +151,7 @@ void Start(const std::string& submit_url,
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    base::ScopedAllowBlocking allow_blocking;
     ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
   }
   if (ignore_system_crash_handler) {
@@ -178,8 +178,6 @@ void Start(const std::string& submit_url,
 #endif
 }
 
-class ScopedAllowBlockingForCrashReporter
-    : public base::ScopedAllowBlockingForTesting {};
 }  // namespace electron::api::crash_reporter
 
 namespace {
@@ -220,8 +218,7 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
   // synchronous version of getUploadedReports is deprecated so we can remove
   // our patch.
   {
-    electron::api::crash_reporter::ScopedAllowBlockingForCrashReporter
-        allow_blocking;
+    base::ScopedAllowBlocking allow_blocking;
     list->LoadSync();
   }
   std::vector<UploadList::UploadInfo> uploads;

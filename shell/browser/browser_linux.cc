@@ -30,9 +30,6 @@ const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
 class LaunchXdgUtilityScopedAllowBaseSyncPrimitives
     : public base::ScopedAllowBaseSyncPrimitivesForTesting {};
 
-class GetXdgAppOutputScopedAllowBlocking
-    : public base::ScopedAllowBlockingForTesting {};
-
 bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
   *exit_code = EXIT_FAILURE;
   int devnull = open("/dev/null", O_RDONLY);
@@ -55,7 +52,7 @@ absl::optional<std::string> GetXdgAppOutput(
     const std::vector<std::string>& argv) {
   std::string reply;
   int success_code;
-  GetXdgAppOutputScopedAllowBlocking allow_blocking;
+  base::ScopedAllowBlocking allow_blocking;
   bool ran_ok = base::GetAppOutputWithExitCode(base::CommandLine(argv), &reply,
                                                &success_code);
 

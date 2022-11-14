@@ -50,8 +50,6 @@
 
 namespace electron::api {
 
-class ScopedAllowBlockingForNativeImage : public base::ScopedAllowBlocking {};
-
 namespace {
 
 // Get the scale factor from options object at the first argument
@@ -68,7 +66,7 @@ base::FilePath NormalizePath(const base::FilePath& path) {
     return path;
   }
 
-  ScopedAllowBlockingForNativeImage allow_blocking;
+  base::ScopedAllowBlocking allow_blocking;
   base::FilePath absolute_path = MakeAbsoluteFilePath(path);
   // MakeAbsoluteFilePath returns an empty path on failures so use original path
   if (absolute_path.empty()) {

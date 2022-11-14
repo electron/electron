@@ -37,12 +37,6 @@
 #include "base/strings/string_util_win.h"
 #endif
 
-namespace electron {
-
-class ScopedAllowBlockingForCrashReporter : public base::ScopedAllowBlocking {};
-
-}  // namespace electron
-
 namespace {
 
 ElectronCrashReporterClient* Instance() {
@@ -66,7 +60,7 @@ void ElectronCrashReporterClient::Create() {
         base::FilePath::FromUTF8Unsafe(alternate_crash_dump_location);
   }
   if (!crash_dumps_dir_path.empty()) {
-    electron::ScopedAllowBlockingForCrashReporter allow_blocking;
+    base::ScopedAllowBlocking allow_blocking;
     base::PathService::Override(electron::DIR_CRASH_DUMPS,
                                 crash_dumps_dir_path);
   }
@@ -162,7 +156,7 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
     // If the DIR_CRASH_DUMPS path is overridden with
     // app.setPath('crashDumps', ...) then the directory might not have been
     // created.
-    electron::ScopedAllowBlockingForCrashReporter allow_blocking;
+    base::ScopedAllowBlocking allow_blocking;
     if (result && !base::PathExists(*crash_dir)) {
       return base::CreateDirectory(*crash_dir);
     }

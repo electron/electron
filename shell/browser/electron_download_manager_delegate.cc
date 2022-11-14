@@ -42,9 +42,6 @@
 
 namespace electron {
 
-class ScopedAllowBlockingForElectronDownloadPath
-    : public base::ScopedAllowBlocking {};
-
 namespace {
 
 // Generate default file path to save the download.
@@ -221,7 +218,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     content::DownloadTargetCallback callback,
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  ScopedAllowBlockingForElectronDownloadPath allow_blocking;
+  base::ScopedAllowBlocking allow_blocking;
 
   auto* item = download_manager_->GetDownload(download_id);
   if (!item)

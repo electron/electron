@@ -34,7 +34,7 @@ void SetWindowType(x11::Window window, const std::string& type) {
 }
 
 bool ShouldUseGlobalMenuBar() {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  base::ScopedAllowBlocking allow_blocking;
   auto env = base::Environment::Create();
   if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
     return false;

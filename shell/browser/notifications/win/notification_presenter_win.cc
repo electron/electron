@@ -67,7 +67,7 @@ NotificationPresenterWin::NotificationPresenterWin() = default;
 NotificationPresenterWin::~NotificationPresenterWin() = default;
 
 bool NotificationPresenterWin::Init() {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  base::ScopedAllowBlocking allow_blocking;
   return temp_dir_.CreateUniqueTempDir();
 }
 
@@ -83,7 +83,7 @@ std::wstring NotificationPresenterWin::SaveIconToFilesystem(
     filename = std::to_string(now.ToInternalValue()) + ".png";
   }
 
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  base::ScopedAllowBlocking allow_blocking;
   base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToWide(filename));
   if (base::PathExists(path))
     return path.value();

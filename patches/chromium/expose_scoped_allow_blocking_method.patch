@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Fri, 11 Nov 2022 11:12:50 -0800
+Subject: build: expose ScopedAllowBlocking in thread_restrictions
+
+This patch comes after Chromium removed the ScopedAllowIO API in favor
+of explicitly adding ScopedAllowBlocking calls as friends. This patch
+exposes a public constructor/destructor for ScopedAllowBlocking.
+
+This patch can be removed if:
+1. We want to proceed with another method such as ScopedAllowBlockingForTesting,
+which doesn't require adding methods as friends.
+  * May be hard as a lot of ForTesting methods are IFDEF'd out in release builds
+2. Chromium implements another IO API that would allow blocking calls without
+needing to explicitly name the methods.
+
+Co-authored-by: George Xu <georgexu99@users.noreply.github.com>
+
+diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
+index 07fe653bd2d231b3dcab405dec5da21a576aa5d5..14984a7942689fd6a507c103bd8638dec9c22de6 100644
+--- a/base/threading/thread_restrictions.h
++++ b/base/threading/thread_restrictions.h
+@@ -506,8 +506,9 @@ class BASE_EXPORT ScopedDisallowBlocking {
+ 
+ class BASE_EXPORT ScopedAllowBlocking {
+  public:
+-  ScopedAllowBlocking(const ScopedAllowBlocking&) = delete;
++  ScopedAllowBlocking(const Location& from_here = Location::Current());
+   ScopedAllowBlocking& operator=(const ScopedAllowBlocking&) = delete;
++  ~ScopedAllowBlocking();
+ 
+  private:
+   FRIEND_TEST_ALL_PREFIXES(ThreadRestrictionsTest,
+@@ -614,9 +615,6 @@ class BASE_EXPORT ScopedAllowBlocking {
+   friend int chromeos::system::NumberOfPhysicalCores();
+   friend bool disk_cache::CleanupDirectorySync(const base::FilePath&);
+ 
+-  ScopedAllowBlocking(const Location& from_here = Location::Current());
+-  ~ScopedAllowBlocking();
+-
+ #if DCHECK_IS_ON()
+   std::unique_ptr<BooleanWithStack> was_disallowed_;
+ #endif

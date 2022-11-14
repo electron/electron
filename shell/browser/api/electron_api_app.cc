@@ -979,7 +979,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      base::ScopedAllowBlocking allow_blocking;
       base::PathService::Override(DIR_APP_LOGS, custom_path.value());
     }
   } else {
@@ -987,7 +987,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
       path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
       {
-        base::ThreadRestrictions::ScopedAllowIO allow_io;
+        base::ScopedAllowBlocking allow_blocking;
         base::PathService::Override(DIR_APP_LOGS, path);
       }
     }

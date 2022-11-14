@@ -217,9 +217,6 @@ using content::BrowserThread;
 
 namespace electron {
 
-class ScopedAllowBlockingCommandLineSwitches
-    : public base::ScopedAllowBlocking {};
-
 namespace {
 
 ElectronBrowserClient* g_browser_client = nullptr;
@@ -468,7 +465,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     int process_id) {
   // Make sure we're about to launch a known executable
   {
-    ScopedAllowBlockingCommandLineSwitches allow_blocking;
+    base::ScopedAllowBlocking allow_blocking;
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());

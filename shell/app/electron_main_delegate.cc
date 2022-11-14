@@ -74,9 +74,6 @@
 
 namespace electron {
 
-class ScopedAllowBlockingForElectronPathProvider
-    : public base::ScopedAllowBlocking {};
-
 namespace {
 
 const char kRelauncherProcess[] = "relauncher";
@@ -197,7 +194,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
   }
 
   // TODO(bauerb): http://crbug.com/259796
-  ScopedAllowBlockingForElectronPathProvider allow_blocking;
+  base::ScopedAllowBlocking allow_blocking;
   if (create_dir && !base::PathExists(cur) && !base::CreateDirectory(cur)) {
     return false;
   }

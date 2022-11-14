@@ -277,7 +277,7 @@ std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
   base::FilePath path;
 
   if (base::PathService::Get(base::FILE_EXE, &path)) {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    base::ScopedAllowBlocking allow_blocking;
     return FileVersionInfo::CreateFileVersionInfo(path);
   }
   return std::unique_ptr<FileVersionInfo>();
@@ -779,7 +779,7 @@ PCWSTR Browser::GetAppUserModelID() {
 std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
   if (base::PathService::Get(base::FILE_EXE, &path)) {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    base::ScopedAllowBlocking allow_blocking;
     std::unique_ptr<FileVersionInfo> version_info = FetchFileVersionInfo();
     return base::UTF16ToUTF8(version_info->product_version());
   }

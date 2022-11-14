@@ -156,8 +156,6 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
 }  // namespace
 
-class ScopedAllowBlockingForAsarArchive : public base::ScopedAllowBlocking {};
-
 IntegrityPayload::IntegrityPayload()
     : algorithm(HashAlgorithm::NONE), block_size(0) {}
 IntegrityPayload::~IntegrityPayload() = default;
@@ -169,7 +167,7 @@ Archive::FileInfo::~FileInfo() = default;
 
 Archive::Archive(const base::FilePath& path)
     : initialized_(false), path_(path), file_(base::File::FILE_OK) {
-  ScopedAllowBlockingForAsarArchive allow_blocking;
+  base::ScopedAllowBlocking allow_blocking;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if BUILDFLAG(IS_WIN)
   fd_ = _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
@@ -186,7 +184,7 @@ Archive::~Archive() {
     file_.TakePlatformFile();
   }
 #endif
-  ScopedAllowBlockingForAsarArchive allow_blocking;
+  base::ScopedAllowBlocking allow_blocking;
   file_.Close();
 }
 
@@ -208,7 +206,7 @@ bool Archive::Init() {
 
   buf.resize(8);
   {
-    ScopedAllowBlockingForAsarArchive allow_blocking;
+    base::ScopedAllowBlocking allow_blocking;
     len = file_.ReadAtCurrentPos(buf.data(), buf.size());
   }
   if (len != static_cast<int>(buf.size())) {
@@ -225,7 +223,7 @@ bool Archive::Init() {
 
   buf.resize(size);
   {
-    ScopedAllowBlockingForAsarArchive allow_blocking;
+    base::ScopedAllowBlocking allow_blocking;
     len = file_.ReadAtCurrentPos(buf.data(), buf.size());
   }
   if (len != static_cast<int>(buf.size())) {
