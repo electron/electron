@@ -15,9 +15,9 @@
 #include "shell/common/platform_util.h"
 
 #if BUILDFLAG(IS_WIN)
-#include "base/threading/thread_restrictions.h"
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/shortcut.h"
+#include "shell/common/thread_restrictions.h"
 
 namespace gin {
 
@@ -138,7 +138,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
   if (options.Get("toastActivatorClsid", &toastActivatorClsid))
     properties.set_toast_activator_clsid(toastActivatorClsid);
 
-  base::ScopedAllowBlocking allow_blocking;
+  ScopedAllowBlockingForElectron allow_blocking;
   base::win::ScopedCOMInitializer com_initializer;
   return base::win::CreateOrUpdateShortcutLink(shortcut_path, properties,
                                                operation);
@@ -148,7 +148,7 @@ v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
                                       const base::FilePath& path) {
   using base::win::ShortcutProperties;
   gin::Dictionary options = gin::Dictionary::CreateEmpty(thrower.isolate());
-  base::ScopedAllowBlocking allow_blocking;
+  ScopedAllowBlockingForElectron allow_blocking;
   base::win::ScopedCOMInitializer com_initializer;
   base::win::ShortcutProperties properties;
   if (!base::win::ResolveShortcutProperties(
