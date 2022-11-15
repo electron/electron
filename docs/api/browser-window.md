@@ -1835,7 +1835,7 @@ Adds a window as a tab on this window, after the tab for the window instance.
   the [macOS documentation][vibrancy-docs] for more details.
 * `options` boolean (optional)
   * `animate` boolean (optional) - Whether to animate or not the vibrancy toggle.
-  * `animationDuration` number (optional) - The duration of the animation in seconds.
+  * `animationDuration` number (optional) - The duration of the animation in milliseconds.
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window. The `animate` parameter only

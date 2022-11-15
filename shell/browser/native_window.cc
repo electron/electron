@@ -441,7 +441,7 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
 
 void NativeWindow::SetVibrancy(const std::string& type,
                                bool animate,
-                               float duration) {}
+                               int duration) {}
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}

@@ -862,14 +862,14 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate,
 
   gin_helper::Dictionary options;
   bool animate = false;
-  float animation_duration = 0.3f;
+  int animation_duration_ms = 300;
 
   if (args->GetNext(&options)) {
     options.Get("animate", &animate);
-    options.Get("animationDuration", &animation_duration);
+    options.Get("animationDuration", &animation_duration_ms);
   }
 
-  window_->SetVibrancy(type, animate, animation_duration);
+  window_->SetVibrancy(type, animate, animation_duration_ms);
 }
 
 #if BUILDFLAG(IS_MAC)

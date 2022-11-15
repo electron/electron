@@ -128,7 +128,7 @@ class NativeWindowMac : public NativeWindow,
   void SetAutoHideCursor(bool auto_hide) override;
   void SetVibrancy(const std::string& type,
                    bool animate,
-                   float duration) override;
+                   int duration) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
   void SetTrafficLightPosition(absl::optional<gfx::Point> position) override;

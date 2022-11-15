@@ -217,9 +217,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetAutoHideCursor(bool auto_hide);
 
   // Vibrancy API
-  virtual void SetVibrancy(const std::string& type,
-                           bool animate,
-                           float duration);
+  virtual void SetVibrancy(const std::string& type, bool animate, int duration);
 
   // Traffic Light API
 #if BUILDFLAG(IS_MAC)
