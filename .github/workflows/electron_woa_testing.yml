@@ -26,7 +26,7 @@ jobs:
       checks: write
       pull-requests: write
     steps:
-    - uses: LouisBrunner/checks-action@442ad2296fb110373e3fe01c2a3717b546583631
+    - uses: LouisBrunner/checks-action@442ad2296fb110373e3fe01c2a3717b546583631 # tag: v1.1.1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         name: electron-woa-testing
@@ -39,7 +39,7 @@ jobs:
         Remove-Item * -Recurse -Force
       shell: powershell
     - name: Checkout
-      uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+      uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag: v3
       with:
         path: src\electron
         fetch-depth: 0
@@ -134,7 +134,7 @@ jobs:
       run: |
         Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
       shell: powershell
-    - uses: LouisBrunner/checks-action@442ad2296fb110373e3fe01c2a3717b546583631
+    - uses: LouisBrunner/checks-action@442ad2296fb110373e3fe01c2a3717b546583631 # tag: v1.1.1
       if: ${{ success() }}
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -143,7 +143,7 @@ jobs:
         details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         output: |
           {"summary":"${{ job.status }}","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
-    - uses: LouisBrunner/checks-action@442ad2296fb110373e3fe01c2a3717b546583631
+    - uses: LouisBrunner/checks-action@442ad2296fb110373e3fe01c2a3717b546583631 # tag: v1.1.1
       if: ${{ success() }}
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -152,7 +152,7 @@ jobs:
         details_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         output: |
           {"summary":"Job Succeeded","text_description":"See job details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}          
-    - uses: LouisBrunner/checks-action@442ad2296fb110373e3fe01c2a3717b546583631
+    - uses: LouisBrunner/checks-action@442ad2296fb110373e3fe01c2a3717b546583631 # tag: v1.1.1
       if: ${{ ! success() }}
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
