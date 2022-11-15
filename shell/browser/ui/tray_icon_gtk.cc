@@ -50,7 +50,8 @@ void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
 
 void TrayIconGtk::SetContextMenu(ElectronMenuModel* menu_model) {
   menu_model_ = menu_model;
-  status_icon_->UpdatePlatformContextMenu(menu_model_);
+  if (status_icon_)
+    status_icon_->UpdatePlatformContextMenu(menu_model_);
 }
 
 const gfx::ImageSkia& TrayIconGtk::GetImage() const {
