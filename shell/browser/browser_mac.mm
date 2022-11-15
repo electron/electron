@@ -65,7 +65,7 @@ std::u16string GetAppDisplayNameForProtocol(NSString* app_path) {
   return base::SysNSStringToUTF16(app_display_name);
 }
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
 bool CheckLoginItemStatus(bool* is_hidden) {
   base::mac::LoginItemsFileList login_items;
   if (!login_items.Initialize())
