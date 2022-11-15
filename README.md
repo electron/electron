@@ -12,7 +12,7 @@ using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) an
 [Chromium](https://www.chromium.org) and is used by the [Atom
 editor](https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
 
-Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
+Follow [@electronjs](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
 This project adheres to the Contributor Covenant
