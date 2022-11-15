@@ -33,6 +33,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/electron_paths.h"
+#include "ui/base/win/scoped_ole_initializer.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
 
@@ -351,7 +352,7 @@ void OpenExternal(const GURL& url,
 bool MoveItemToTrashWithError(const base::FilePath& path,
                               bool delete_on_fail,
                               std::string* error) {
-  base::win::ScopedCOMInitializer com_initializer;
+  ui::ScopedOleInitializer ole_initializer;
   if (!com_initializer.Succeeded()) {
     *error = "Failed to initialize COM";
     return false;
