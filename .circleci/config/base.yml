@@ -894,14 +894,6 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
 
-step-restore-out-cache: &step-restore-out-cache
-  restore_cache:
-    paths:
-      - ./src/out/Default
-    keys:
-      - v10-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
-    name: Restoring out cache
-
 step-set-git-cache-path: &step-set-git-cache-path
   run:
     name: Set GIT_CACHE_PATH to make gclient to use the cache
@@ -918,13 +910,6 @@ step-save-git-cache: &step-save-git-cache
       - git-cache
     key: v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
-
-step-save-out-cache: &step-save-out-cache
-  save_cache:
-    paths:
-      - ./src/out/Default
-    key: v10-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
-    name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -1300,9 +1285,6 @@ commands:
       build:
         type: boolean
         default: true
-      use-out-cache:
-        type: boolean
-        default: true
       restore-src-cache:
         type: boolean
         default: true
@@ -1425,10 +1407,6 @@ commands:
             - *step-delete-git-directories
 
             # Electron app
-            - when:
-                condition: << parameters.use-out-cache >>
-                steps:
-                  - *step-restore-out-cache
             - *step-gn-gen-default
             - *step-electron-build
             - *step-maybe-electron-dist-strip
@@ -1471,22 +1449,6 @@ commands:
           condition: << parameters.build >>
           steps:
             - move_and_store_all_artifacts
-            - run:
-                name: Remove the big things on macOS, this seems to be better on average
-                command: |
-                  if [ "`uname`" == "Darwin" ]; then
-                    mkdir -p src/out/Default
-                    cd src/out/Default
-                    find . -type f -size +50M -delete
-                    mkdir -p gen/electron
-                    cd gen/electron
-                    # These files do not seem to like being in a cache, let us remove them
-                    find . -type f -name '*_pkg_info' -delete
-                  fi
-            - when:
-                condition: << parameters.use-out-cache >>
-                steps:
-                  - *step-save-out-cache
 
             - *step-maybe-notify-slack-failure
 
@@ -1640,7 +1602,6 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
 
   linux-x64-testing-asan:
     executor:
@@ -1657,7 +1618,6 @@ jobs:
       - electron-build:
           persist: true
           checkout: true
-          use-out-cache: false
           build-nonproprietary-ffmpeg: false
 
   linux-x64-testing-no-run-as-node:
@@ -1674,7 +1634,6 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
-          use-out-cache: false
 
   linux-x64-testing-gn-check:
     executor:
@@ -1725,7 +1684,6 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
 
   linux-arm-publish:
     executor:
@@ -1768,7 +1726,6 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
 
   linux-arm64-testing-gn-check:
     executor:
