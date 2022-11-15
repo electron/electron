@@ -760,9 +760,13 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   std::unique_ptr<content::WebContents> web_contents;
   if (IsGuest()) {
+    std::string partition_domain = "chrome-guest://fake-host";
+    auto partition_config = content::StoragePartitionConfig::Create(
+        session->browser_context(), partition_domain, partition,
+        false /* in_memory */);
     scoped_refptr<content::SiteInstance> site_instance =
-        content::SiteInstance::CreateForURL(session->browser_context(),
-                                            GURL("chrome-guest://fake-host"));
+        content::SiteInstance::CreateForGuest(session->browser_context(),
+                                              partition_config);
     content::WebContents::CreateParams params(session->browser_context(),
                                               site_instance);
     guest_delegate_ =
