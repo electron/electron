@@ -69,6 +69,7 @@ npm start
 * [electron/fiddle](https://github.com/electron/fiddle) - A tool to build, run, and package small Electron experiments
 * [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - A very basic starter Electron app
 * [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - Sample starter apps created by the community
+* [Electron Discord](https://discord.gg/electronjs) - Official Discord for the Electron community
 
 ## Programmatic usage
 
