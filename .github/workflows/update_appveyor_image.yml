@@ -3,7 +3,7 @@ name: Update AppVeyor Image
 # Run chron daily Mon-Fri
 on:
   schedule:
-  - cron: '0 8 * * 1-5' # runs 8:00 every business day (see https://crontab.guru)
+    - cron: '0 8 * * 1-5' # runs 8:00 every business day (see https://crontab.guru)
 
 permissions:
   contents: write
@@ -12,6 +12,9 @@ permissions:
 jobs:
   bake-appveyor-image:
     name: Bake AppVeyor Image
+    permissions:
+      contents: write
+      pull-requests: write  # to create a new PR with updated Appveyor images
     runs-on: ubuntu-latest
     steps:
     - name: Checkout

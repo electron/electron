@@ -123,7 +123,6 @@ for:
       - ps: cd src\electron
       - ps: node script\generate-deps-hash.js
       - ps: $depshash = Get-Content .\.depshash -Raw
-      - ps: $zipfile = "Z:\$depshash.7z"
       - ps: cd ..\..
       - ps: >-
           if ($depshash_baked -ne $depshash) {
