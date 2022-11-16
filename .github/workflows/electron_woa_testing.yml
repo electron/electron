@@ -10,6 +10,9 @@ on:
         type: text
         required: true
 
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
 jobs:
   electron-woa-init:
     if: ${{ github.event_name == 'push' && github.repository == 'electron/electron' }}
