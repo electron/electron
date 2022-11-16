@@ -73,10 +73,9 @@
   dependencies:
     "@types/node" "*"
 
-abstract-socket@^2.0.0:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/abstract-socket/-/abstract-socket-2.1.1.tgz#243a7e6e6ff65bb9eab16a22fa90699b91e528f7"
-  integrity sha512-YZJizsvS1aBua5Gd01woe4zuyYBGgSMeqDOB6/ChwdTI904KP6QGtJswXl4hcqWxbz86hQBe++HWV0hF1aGUtA==
+"abstract-socket@github:saghul/node-abstractsocket#35b1b1491fabc04899bde5be3428abf5cf9cd528":
+  version "2.1.0"
+  resolved "https://codeload.github.com/saghul/node-abstractsocket/tar.gz/35b1b1491fabc04899bde5be3428abf5cf9cd528"
   dependencies:
     bindings "^1.2.1"
     nan "^2.12.1"
@@ -385,7 +384,7 @@ data-uri-to-buffer@0.0.3:
     safe-buffer "^5.1.1"
     xml2js "^0.4.17"
   optionalDependencies:
-    abstract-socket "^2.0.0"
+    abstract-socket "github:saghul/node-abstractsocket#35b1b1491fabc04899bde5be3428abf5cf9cd528"
 
 debug@2.6.9, debug@^2.2.0:
   version "2.6.9"
@@ -1282,6 +1281,11 @@ pngjs@^3.3.3:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/pngjs/-/pngjs-3.4.0.tgz#99ca7d725965fb655814eaf65f38f12bbdbf555f"
   integrity sha512-NCrCHhWmnQklfH4MtJMRjZ2a8c80qXeMlQMv2uVp9ISJMTt562SbGd6n2oq0PaPgKm7Z6pL9E2UlLIhC+SHL3w==
+
+ps-list@^7.0.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/ps-list/-/ps-list-7.2.0.tgz#3d110e1de8249a4b178c9b1cf2a215d1e4e42fc0"
+  integrity sha512-v4Bl6I3f2kJfr5o80ShABNHAokIgY+wFDTQfE+X3zWYgSGQOCBeYptLZUpoOALBqO5EawmDN/tjTldJesd0ujQ==
 
 psl@^1.1.24:
   version "1.9.0"
