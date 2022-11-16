@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Sun, 20 Nov 2022 21:45:20 -0800
+Subject: fix: enable crashpad for ELECTRON_RUN_AS_NODE linux processes
+
+This patch is currently a WIP for debugging. The end purpose of this
+patch is to enable crashpad for node processes on Linux.
+
+If this patch is merged in its current state, something has gone
+horribly wrong.
+
+diff --git a/lib/child_process.js b/lib/child_process.js
+index f448bde2a570480a4390daf5392dc9d9b0f52df3..e920624f7ff5e4e3dc6fcaef003492928e4760d5 100644
+--- a/lib/child_process.js
++++ b/lib/child_process.js
+@@ -159,7 +159,6 @@ function fork(modulePath, args = [], options) {
+       ArrayPrototypeSplice(execArgv, index - 1, 2);
+     }
+   }
+-
+   args = [...execArgv, modulePath, ...args];
+ 
+   if (typeof options.stdio === 'string') {
+@@ -170,10 +169,17 @@ function fork(modulePath, args = [], options) {
+     options.stdio = stdioStringToArray(
+       options.silent ? 'pipe' : 'inherit',
+       'ipc');
++
++    // If using Linux, initialize child process with Crashpad
++    if (process.platform === 'linux') {
++      const fd = process.getFD();
++      console.log('fd (in child_process): ', fd);
++      options.stdio.push(fd);
++    }
+   } else if (!ArrayPrototypeIncludes(options.stdio, 'ipc')) {
+     throw new ERR_CHILD_PROCESS_IPC_REQUIRED('options.stdio');
+   }
+-
++  console.log('options: ', options);
+   return spawn(options.execPath, args, options);
+ }
+ 

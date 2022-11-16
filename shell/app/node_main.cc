@@ -14,10 +14,12 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "components/crash/core/app/crash_switches.h"
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
 #include "gin/array_buffer.h"
@@ -38,6 +40,12 @@
 #include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/common/crash_keys.h"
+#include "shell/common/options_switches.h"
+#endif
+
+#if BUILDFLAG(IS_POSIX)
+#include "base/posix/global_descriptors.h"
+#include "content/public/common/content_descriptors.h"
 #endif
 
 namespace {
@@ -110,10 +118,24 @@ int NodeMain(int argc, char* argv[]) {
   v8_crashpad_support::SetUp();
 #endif
 
+#if !IS_MAS_BUILD()
 // TODO(deepak1556): Enable crashpad support on linux for
 // ELECTRON_RUN_AS_NODE processes.
 // Refs https://github.com/electron/electron/issues/36030
-#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
+#if BUILDFLAG(IS_LINUX)
+  int fd_;
+  // pid_t pid_;
+  [[maybe_unused]] base::GlobalDescriptors* g_fds =
+      base::GlobalDescriptors::GetInstance();
+
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  base::StringToInt(
+      command_line->GetSwitchValueASCII(options::kCrashpadProcessFD), &fd_);
+  g_fds->Set(kCrashDumpSignal, fd_);
+
+  LOG(ERROR) << "fd_ (node_main.cc): " << std::to_string(fd_);
+#endif  // BUILDFLAG(IS_LINUX)
+
   ElectronCrashReporterClient::Create();
   crash_reporter::InitializeCrashpad(false, "node");
   crash_keys::SetCrashKeysFromCommandLine(

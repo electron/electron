@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Sun, 20 Nov 2022 21:40:12 -0800
+Subject: fix: enable crashpad for ELECTRON_RUN_AS_NODE linux processes
+
+This patch is currently a WIP for debugging. The end purpose of this
+patch is to enable crashpad for node processes on Linux.
+
+If this patch is merged in its current state, something has gone
+horribly wrong.
+
+diff --git a/base/posix/global_descriptors.cc b/base/posix/global_descriptors.cc
+index f486ce1a1c252e9361a11e00f9f19243cc02df5b..a8102261df544a692591fb5f9bdbf5c44ad7ed00 100644
+--- a/base/posix/global_descriptors.cc
++++ b/base/posix/global_descriptors.cc
+@@ -68,8 +68,10 @@ void GlobalDescriptors::Set(Key key, int fd) {
+ void GlobalDescriptors::Set(Key key,
+                             int fd,
+                             base::MemoryMappedFile::Region region) {
++  LOG(INFO) << "Inside GlobalDescriptors::Set...";
+   for (auto& i : descriptors_) {
+     if (i.key == key) {
++      LOG(INFO) << "Found i.key...";
+       i.fd = fd;
+       i.region = region;
+       return;
+@@ -84,7 +86,8 @@ base::MemoryMappedFile::Region GlobalDescriptors::GetRegion(Key key) const {
+     if (i.key == key)
+       return i.region;
+   }
+-  DLOG(DCHECK) << "Unknown global descriptor: " << key;
++  // DLOG(DCHECK) << "Unknown global descriptor: " << key;
++  LOG(INFO) << "Unknown global descriptor: " << key;
+   return base::MemoryMappedFile::Region::kWholeFile;
+ }
+ 
+diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
+index e55df93f17560a566e1dd2a63c560054edd772a5..5650e851605114cbd0f609b25181fd481fca93f8 100644
+--- a/components/crash/core/app/crashpad_linux.cc
++++ b/components/crash/core/app/crashpad_linux.cc
+@@ -11,6 +11,7 @@
+ 
+ #include "base/base_switches.h"
+ #include "base/command_line.h"
++#include "base/debug/stack_trace.h"
+ #include "base/linux_util.h"
+ #include "base/logging.h"
+ #include "base/path_service.h"
+@@ -202,7 +203,10 @@ bool PlatformCrashpadInitialization(
+     CHECK(client.StartHandler(handler_path, *database_path, metrics_path, url,
+                               annotations, arguments, false, false));
+   } else {
++    base::debug::StackTrace().Print();
+     int fd = base::GlobalDescriptors::GetInstance()->Get(kCrashDumpSignal);
++    std::string fd_string_ = std::to_string(fd);
++    LOG(INFO) << "fd (crashpad_linux): " << fd_string_;
+ 
+     pid_t pid = 0;
+     if (!sandbox::NamespaceSandbox::InNewUserNamespace()) {
+@@ -210,6 +214,8 @@ bool PlatformCrashpadInitialization(
+           base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+               switches::kCrashpadHandlerPid);
+       bool parsed = base::StringToInt(pid_string, &pid);
++      LOG(INFO) << "pid_string (crashpad_linux): " << pid_string;
++      LOG(INFO) << "parsed: " << parsed;
+       DCHECK(parsed);
+     }
+ 

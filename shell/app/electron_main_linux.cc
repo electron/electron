@@ -9,6 +9,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/i18n/icu_util.h"
+#include "base/logging.h"
 #include "content/public/app/content_main.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
@@ -22,9 +23,11 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
+  LOG(INFO) << "ENABLE_RUN_AS_NODE";
   char* indicator = getenv(electron::kRunAsNode);
   if (electron::fuses::IsRunAsNodeEnabled() && indicator &&
       indicator[0] != '\0') {
+    LOG(INFO) << "About to initialize the node process...";
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return electron::NodeMain(argc, argv);

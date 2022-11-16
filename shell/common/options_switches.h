@@ -11,6 +11,8 @@ namespace electron {
 
 namespace options {
 
+extern const char kCrashpadProcessFD[];
+
 extern const char kTitle[];
 extern const char kIcon[];
 extern const char kFrame[];

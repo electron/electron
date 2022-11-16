@@ -101,7 +101,7 @@ const startServer = async () => {
 };
 
 function runApp (appPath: string, args: Array<string> = []) {
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...args]);
+  const appProcess = childProcess.spawn(process.execPath, [appPath, ...args], { stdio: 'inherit' });
   return new Promise(resolve => {
     appProcess.once('exit', resolve);
   });
@@ -112,6 +112,7 @@ function runCrashApp (crashType: string, port: number, extraArgs: Array<string> 
   return runApp(appPath, [
     `--crash-type=${crashType}`,
     `--crash-reporter-url=http://127.0.0.1:${port}`,
+    `--enable-logging`,
     ...extraArgs
   ]);
 }
@@ -168,7 +169,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
     // TODO(deepak1556): Re-enable this test once
     // https://github.com/electron/electron/issues/36030 is resolved.
-    ifit(process.platform !== 'linux')('when a node process crashes', async () => {
+    ifit(!isLinuxOnArm)('when a node process crashes', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('node', port);
       const crash = await waitForCrash();
@@ -281,7 +282,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
-      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
+      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127 + (process.platform === 'linux' ? 159 : 0), 'crash should have truncated longParam');
     });
 
     it('should omit extra keys with names longer than the maximum', async () => {

@@ -8,6 +8,8 @@ namespace electron {
 
 namespace options {
 
+const char kCrashpadProcessFD[] = "crashpadfd";
+
 const char kTitle[] = "title";
 const char kIcon[] = "icon";
 const char kFrame[] = "frame";

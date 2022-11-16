@@ -30,6 +30,11 @@
 #include "shell/common/thread_restrictions.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
+#if BUILDFLAG(IS_LINUX)
+#include "components/crash/core/app/crash_switches.h"  // nogncheck
+#include "components/crash/core/app/crashpad.h"        // nogncheck
+#endif
+
 namespace electron {
 
 ElectronBindings::ElectronBindings(uv_loop_t* loop) {
@@ -60,6 +65,8 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
+  process->SetMethod("getFD", &GetFD);
+  process->SetMethod("getPID", &GetPID);
 
 #if IS_MAS_BUILD()
   process->SetReadOnly("mas", true);
@@ -162,6 +169,18 @@ v8::Local<v8::Value> ElectronBindings::GetHeapStatistics(v8::Isolate* isolate) {
            static_cast<bool>(v8_heap_stats.does_zap_garbage()));
 
   return dict.GetHandle();
+}
+
+// TODO: Remove this, function for testing
+int ElectronBindings::GetFD() {
+  int fd;
+  return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
+}
+
+// TODO: Testing function for getting PID
+int ElectronBindings::GetPID() {
+  pid_t pid;
+  return crash_reporter::GetHandlerSocket(nullptr, &pid) ? pid : -1;
 }
 
 // static
