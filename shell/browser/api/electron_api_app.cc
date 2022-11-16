@@ -17,7 +17,6 @@
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
-#include "base/threading/thread_restrictions.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
@@ -72,6 +71,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
@@ -979,7 +979,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     {
-      base::ScopedAllowBlocking allow_blocking;
+      ScopedAllowBlockingForElectron allow_blocking;
       base::PathService::Override(DIR_APP_LOGS, custom_path.value());
     }
   } else {
@@ -987,7 +987,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
       path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
       {
-        base::ScopedAllowBlocking allow_blocking;
+        ScopedAllowBlockingForElectron allow_blocking;
         base::PathService::Override(DIR_APP_LOGS, path);
       }
     }
