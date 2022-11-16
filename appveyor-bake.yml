@@ -27,13 +27,6 @@ build_script:
   - update_depot_tools.bat
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - src\electron\script\setup-win-for-dev.bat
-  - ps: >-
-      if (Test-Path 'env:RAW_GOMA_AUTH') {
-        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
-        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
-      }
-  - ps: >-
-      $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
   - >-
       gclient config
       --name "src\electron"
@@ -43,14 +36,8 @@ build_script:
   - ps: cd src\electron
   - ps: node script\generate-deps-hash.js
   - ps: $depshash = Get-Content .\.depshash -Raw
-  - ps: $zipfile = "Z:\$depshash.7z"
   - ps: Copy-Item -path .\.depshash -destination ..\.depshash
   - ps: cd ..\..
-  - ps: >-
-      if ($env:TARGET_ARCH -ne 'ia32') {
-        # only save on x64/woa to avoid contention saving
-        $env:SAVE_GCLIENT_SRC="true"
-      }
   - gclient sync --with_branch_heads --with_tags --nohooks
   - ps: regsvr32 /s "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\DIA SDK\bin\amd64\msdia140.dll"
 on_image_bake:
@@ -61,8 +48,5 @@ on_image_bake:
 # Uncomment these lines to enable RDP
 #on_finish:
 #  - ps: >-
-#      if ($env:TARGET_ARCH -eq 'x64') {
-#        echo "SETTING BAKE IMAGE"
-#        $env:APPVEYOR_RDP_PASSWORD = "electron"
-#        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-#      }
+#       $env:APPVEYOR_RDP_PASSWORD = "electron"
+#       $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
