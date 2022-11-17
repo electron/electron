@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 16 Nov 2022 13:18:23 +0900
+Subject: chore: enable c++17 for native modules
+
+V8 headers shipped since 10.4 use C++17 featuers, update the compile flags
+correspondinly for native addons. C++ version in this file should be updated
+following the version bump in upstream.
+
+Next update: crbug.com/1284275
+
+diff --git a/common.gypi b/common.gypi
+index 6bf1b3395250d05cad215bd56f6efea9abc7a7aa..d6b026511acf7a69b1e86093075db30e2f518e17 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -308,7 +308,10 @@
+     ],
+     'msvs_settings': {
+       'VCCLCompilerTool': {
+-        'AdditionalOptions': ['/Zc:__cplusplus'],
++        'AdditionalOptions': [
++          '/Zc:__cplusplus',
++          '-std:c++17',
++        ],
+         'BufferSecurityCheck': 'true',
+         'DebugInformationFormat': 1,          # /Z7 embed info in .obj files
+         'ExceptionHandling': 0,               # /EHsc
+@@ -440,7 +443,7 @@
+       }],
+       [ 'OS in "linux freebsd openbsd solaris android aix cloudabi"', {
+         'cflags': [ '-Wall', '-Wextra', '-Wno-unused-parameter', ],
+-        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++14' ],
++        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++17' ],
+         'defines': [ '__STDC_FORMAT_MACROS' ],
+         'ldflags': [ '-rdynamic' ],
+         'target_conditions': [
+@@ -580,7 +583,7 @@
+           ['clang==1', {
+             'xcode_settings': {
+               'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',
+-              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++14',  # -std=gnu++14
++              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++17',  # -std=gnu++17
+               'CLANG_CXX_LIBRARY': 'libc++',
+             },
+           }],
+@@ -653,7 +656,7 @@
+           '-qASM',
+         ],
+         'cflags_cc': [
+-          '-qxclang=-std=c++14',
++          '-qxclang=-std=c++17',
+         ],
+         'ldflags': [
+           '-q64',
