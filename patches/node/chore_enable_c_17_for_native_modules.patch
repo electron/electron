@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 16 Nov 2022 13:18:23 +0900
+Subject: chore: enable c++17 for native modules
+
+V8 headers shipped since 10.4 use C++17 featuers, update the compile flags
+correspondinly for native addons. C++ version in this file should be updated
+following the version bump in upstream.
+
+Next update: crbug.com/1284275
+
+diff --git a/common.gypi b/common.gypi
+index 8441a5270212af7e4643e6b4ee100a22f8e6f51c..37908fc70c6e95970ef7bd4ee83799710397a450 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -306,7 +306,10 @@
+     ],
+     'msvs_settings': {
+       'VCCLCompilerTool': {
+-        'AdditionalOptions': ['/Zc:__cplusplus'],
++        'AdditionalOptions': [
++          '/Zc:__cplusplus',
++          '-std:c++17',
++        ],
+         'BufferSecurityCheck': 'true',
+         'target_conditions': [
+           ['_toolset=="target"', {
+@@ -438,7 +441,7 @@
+       }],
+       [ 'OS in "linux freebsd openbsd solaris android aix cloudabi"', {
+         'cflags': [ '-Wall', '-Wextra', '-Wno-unused-parameter', ],
+-        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++14' ],
++        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++17' ],
+         'defines': [ '__STDC_FORMAT_MACROS' ],
+         'ldflags': [ '-rdynamic' ],
+         'target_conditions': [
+@@ -578,7 +581,7 @@
+           ['clang==1', {
+             'xcode_settings': {
+               'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',
+-              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++14',  # -std=gnu++14
++              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++17',  # -std=gnu++17
+               'CLANG_CXX_LIBRARY': 'libc++',
+             },
+           }],
+@@ -651,7 +654,7 @@
+           '-qASM',
+         ],
+         'cflags_cc': [
+-          '-qxclang=-std=c++14',
++          '-qxclang=-std=c++17',
+         ],
+         'ldflags': [
+           '-q64',
