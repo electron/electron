@@ -10,10 +10,10 @@ following the version bump in upstream.
 Next update: crbug.com/1284275
 
 diff --git a/common.gypi b/common.gypi
-index 8441a5270212af7e4643e6b4ee100a22f8e6f51c..37908fc70c6e95970ef7bd4ee83799710397a450 100644
+index c68cf1eb0f9cdd2a8fe314237c1e790fe3690272..b5f33411c68d56ae2a582b0defaa55bf10a830e0 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -306,7 +306,10 @@
+@@ -308,7 +308,10 @@
      ],
      'msvs_settings': {
        'VCCLCompilerTool': {
@@ -23,9 +23,9 @@ index 8441a5270212af7e4643e6b4ee100a22f8e6f51c..37908fc70c6e95970ef7bd4ee8379971
 +          '-std:c++17',
 +        ],
          'BufferSecurityCheck': 'true',
-         'target_conditions': [
-           ['_toolset=="target"', {
-@@ -438,7 +441,7 @@
+         'DebugInformationFormat': 1,          # /Z7 embed info in .obj files
+         'ExceptionHandling': 0,               # /EHsc
+@@ -440,7 +443,7 @@
        }],
        [ 'OS in "linux freebsd openbsd solaris android aix cloudabi"', {
          'cflags': [ '-Wall', '-Wextra', '-Wno-unused-parameter', ],
@@ -34,7 +34,7 @@ index 8441a5270212af7e4643e6b4ee100a22f8e6f51c..37908fc70c6e95970ef7bd4ee8379971
          'defines': [ '__STDC_FORMAT_MACROS' ],
          'ldflags': [ '-rdynamic' ],
          'target_conditions': [
-@@ -578,7 +581,7 @@
+@@ -580,7 +583,7 @@
            ['clang==1', {
              'xcode_settings': {
                'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',
@@ -43,7 +43,7 @@ index 8441a5270212af7e4643e6b4ee100a22f8e6f51c..37908fc70c6e95970ef7bd4ee8379971
                'CLANG_CXX_LIBRARY': 'libc++',
              },
            }],
-@@ -651,7 +654,7 @@
+@@ -653,7 +656,7 @@
            '-qASM',
          ],
          'cflags_cc': [
