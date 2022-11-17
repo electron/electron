@@ -80,11 +80,7 @@ function extractFile (zipPath) {
     const hasTypeDefinitions = fs.existsSync(srcTypeDefPath);
 
     if (hasTypeDefinitions) {
-      try {
-        fs.renameSync(srcTypeDefPath, targetTypeDefPath);
-      } catch (err) {
-        throw err;
-      }
+      fs.renameSync(srcTypeDefPath, targetTypeDefPath);
     }
 
     // Write a "path.txt" file.
