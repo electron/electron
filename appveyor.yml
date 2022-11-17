@@ -179,7 +179,11 @@ for:
     - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
     - ninja -C out/Default electron:electron_dist_zip
     - ninja -C out/Default shell_browser_ui_unittests
-    - gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+    - gn desc out/Default v8:run_mksnapshot_default args > out/Default/default_mksnapshot_args
+    - ps: >-
+        # Remove unused args from mksnapshot_args
+
+        Get-Content out/Default/default_mksnapshot_args | Where-Object { -not $_.Contains('--turbo-profiling-input') -And -not $_.Contains('builtins-pgo') } | Set-Content out/Default/mksnapshot_args
     - ninja -C out/Default electron:electron_mksnapshot_zip
     - cd out\Default
     - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
@@ -190,7 +194,6 @@ for:
     - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
     - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
     - 7z a node_headers.zip out\Default\gen\node_headers
-    - 7z a builtins-pgo.zip v8\tools\builtins-pgo
     - ps: >-
         if ($env:GN_CONFIG -eq 'release') {
           # Needed for msdia140.dll on 64-bit windows
@@ -235,7 +238,6 @@ for:
       - if exist out\Default\mksnapshot.zip (appveyor-retry appveyor PushArtifact out\Default\mksnapshot.zip)
       - if exist out\Default\hunspell_dictionaries.zip (appveyor-retry appveyor PushArtifact out\Default\hunspell_dictionaries.zip)
       - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)
-      - if exist builtins-pgo.zip (appveyor-retry appveyor PushArtifact builtins-pgo.zip)
       - ps: >-
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
             appveyor-retry appveyor PushArtifact pdb.zip
@@ -269,7 +271,7 @@ for:
         # Download build artifacts
         $apiUrl = 'https://ci.appveyor.com/api'             
         $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
-        $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','builtins-pgo.zip')
+        $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib')
         foreach ($job in $build_info.build.jobs) {
           if ($job.name -eq "Build") {
             $jobId = $job.jobId
@@ -290,7 +292,6 @@ for:
         }
     - ps: 7z x -y -osrc\out\ffmpeg ffmpeg.zip
     - ps: 7z x -y -osrc node_headers.zip
-    - ps: 7z x -y -osrc builtins-pgo.zip
 
     test_script:
       # Workaround for https://github.com/appveyor/ci/issues/2420
