@@ -211,14 +211,6 @@ index 893a902621593f42a81323b82614491241f58df9..8f1a722cc54dd66a0fbc54dc32d1fafe
  
      process_->LaunchWithFileData(std::move(delegate), std::move(cmd_line),
                                   std::move(file_data), true);
-@@ -348,7 +381,6 @@ bool UtilityProcessHost::StartProcess() {
- }
- 
- void UtilityProcessHost::OnProcessLaunched() {
--  launch_state_ = LaunchState::kLaunchComplete;
- // TODO(crbug.com/1328879): Remove this when fixing the bug.
- #if BUILDFLAG(IS_CASTOS) || BUILDFLAG(IS_CAST_ANDROID)
-   for (auto& callback : pending_run_service_callbacks_)
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
 index db20f0c7cfab79a02f3b6bb5d22f1863e1070419..22fad76769cd601f0c4c81fd4b1330616123254d 100644
 --- a/content/browser/utility_process_host.h
