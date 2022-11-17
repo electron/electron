@@ -83,7 +83,7 @@ function extractFile (zipPath) {
       try {
         fs.renameSync(srcTypeDefPath, targetTypeDefPath);
       } catch (err) {
-        reject(err);
+        throw err;
       }
     }
 
