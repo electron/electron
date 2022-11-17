@@ -1,0 +1,21 @@
+// Copyright (c) 2022 Microsoft, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+module node.mojom;
+
+import "mojo/public/mojom/base/file_path.mojom";
+import "sandbox/policy/mojom/sandbox.mojom";
+import "third_party/blink/public/mojom/messaging/message_port_descriptor.mojom";
+
+struct NodeServiceParams {
+  mojo_base.mojom.FilePath script;
+  array<string> args;
+  array<string> exec_args;
+  blink.mojom.MessagePortDescriptor port;
+};
+
+[ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
+interface NodeService {
+  Initialize(NodeServiceParams params);
+};
