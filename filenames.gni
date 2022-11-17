@@ -648,6 +648,7 @@ filenames = {
     "shell/common/process_util.h",
     "shell/common/skia_util.cc",
     "shell/common/skia_util.h",
+    "shell/common/thread_restrictions.h",
     "shell/common/v8_value_serializer.cc",
     "shell/common/v8_value_serializer.h",
     "shell/common/world_ids.h",
@@ -687,8 +688,6 @@ filenames = {
   ]
 
   lib_sources_extensions = [
-    "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.cc",
-    "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.h",
     "shell/browser/extensions/api/management/electron_management_api_delegate.cc",
     "shell/browser/extensions/api/management/electron_management_api_delegate.h",
     "shell/browser/extensions/api/resources_private/resources_private_api.cc",

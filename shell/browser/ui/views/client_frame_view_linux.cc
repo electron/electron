@@ -104,14 +104,14 @@ ClientFrameViewLinux::ClientFrameViewLinux()
 
   native_theme_observer_.Observe(theme_);
 
-  if (ui::LinuxUiTheme* ui = ui::LinuxUiTheme::GetForProfile(nullptr)) {
+  if (auto* ui = ui::LinuxUi::instance()) {
     ui->AddWindowButtonOrderObserver(this);
     OnWindowButtonOrderingChange();
   }
 }
 
 ClientFrameViewLinux::~ClientFrameViewLinux() {
-  if (ui::LinuxUiTheme* ui = ui::LinuxUiTheme::GetForProfile(nullptr))
+  if (auto* ui = ui::LinuxUi::instance())
     ui->RemoveWindowButtonOrderObserver(this);
   theme_->RemoveObserver(this);
 }

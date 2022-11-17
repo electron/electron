@@ -115,10 +115,7 @@ class HidChooserController
   // in the chooser.
   std::vector<std::string> items_;
 
-  base::ScopedObservation<HidChooserContext,
-                          HidChooserContext::DeviceObserver,
-                          &HidChooserContext::AddDeviceObserver,
-                          &HidChooserContext::RemoveDeviceObserver>
+  base::ScopedObservation<HidChooserContext, HidChooserContext::DeviceObserver>
       observation_{this};
 
   base::WeakPtr<ElectronHidDelegate> hid_delegate_;

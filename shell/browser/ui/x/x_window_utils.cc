@@ -8,10 +8,10 @@
 
 #include "base/environment.h"
 #include "base/strings/string_util.h"
-#include "base/threading/thread_restrictions.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
+#include "shell/common/thread_restrictions.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 #include "ui/gfx/x/xproto.h"
@@ -34,7 +34,7 @@ void SetWindowType(x11::Window window, const std::string& type) {
 }
 
 bool ShouldUseGlobalMenuBar() {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
   auto env = base::Environment::Create();
   if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
     return false;

@@ -542,7 +542,8 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   auto shutdown_cb =
       base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
-      std::move(shutdown_cb));
+      std::move(shutdown_cb),
+      content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
   bluez::DBusBluezManagerWrapperLinux::Initialize();
 
   // Set up crypt config. This needs to be done before anything starts the

@@ -297,7 +297,8 @@ void HandleAccessibilityRequestCallback(
   std::string json_string;
   base::JSONWriter::Write(base::Value(std::move(data)), &json_string);
 
-  std::move(callback).Run(base::RefCountedString::TakeString(&json_string));
+  std::move(callback).Run(
+      base::MakeRefCounted<base::RefCountedString>(std::move(json_string)));
 }
 
 }  // namespace

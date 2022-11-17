@@ -11,6 +11,7 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
+#include "base/mac/mac_util.mm"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
@@ -63,6 +64,24 @@ std::u16string GetAppDisplayNameForProtocol(NSString* app_path) {
       [[NSFileManager defaultManager] displayNameAtPath:app_path];
   return base::SysNSStringToUTF16(app_display_name);
 }
+
+#if !IS_MAS_BUILD()
+bool CheckLoginItemStatus(bool* is_hidden) {
+  base::mac::LoginItemsFileList login_items;
+  if (!login_items.Initialize())
+    return false;
+
+  base::ScopedCFTypeRef<LSSharedFileListItemRef> item(
+      login_items.GetLoginItemForMainApp());
+  if (!item.get())
+    return false;
+
+  if (is_hidden)
+    *is_hidden = base::mac::IsHiddenLoginItem(item);
+
+  return true;
+}
+#endif
 
 }  // namespace
 
@@ -312,8 +331,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 #if IS_MAS_BUILD()
   settings.open_at_login = platform_util::GetLoginItemEnabled();
 #else
-  settings.open_at_login =
-      base::mac::CheckLoginItemStatus(&settings.open_as_hidden);
+  settings.open_at_login = CheckLoginItemStatus(&settings.open_as_hidden);
   settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
   settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
   settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
@@ -328,9 +346,10 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   }
 #else
   if (settings.open_at_login) {
-    base::mac::AddToLoginItems(settings.open_as_hidden);
+    base::mac::AddToLoginItems(base::mac::MainBundlePath(),
+                               settings.open_as_hidden);
   } else {
-    base::mac::RemoveFromLoginItems();
+    base::mac::RemoveFromLoginItems(base::mac::MainBundlePath());
   }
 #endif
 }

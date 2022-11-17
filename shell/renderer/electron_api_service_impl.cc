@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/environment.h"
-#include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
 #include "gin/data_object_builder.h"
 #include "mojo/public/cpp/system/platform_handle.h"
@@ -19,6 +18,7 @@
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
@@ -203,7 +203,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 void ElectronApiServiceImpl::TakeHeapSnapshot(
     mojo::ScopedHandle file,
     TakeHeapSnapshotCallback callback) {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
 
   base::ScopedPlatformFile platform_file;
   if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=

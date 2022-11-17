@@ -18,10 +18,10 @@
 #include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
 #include "base/threading/thread_local.h"
-#include "base/threading/thread_restrictions.h"
 #include "crypto/secure_hash.h"
 #include "crypto/sha2.h"
 #include "shell/common/asar/archive.h"
+#include "shell/common/thread_restrictions.h"
 
 namespace asar {
 
@@ -43,7 +43,7 @@ bool IsDirectoryCached(const base::FilePath& path) {
   if (it != is_directory_cache.end()) {
     return it->second;
   }
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   return is_directory_cache[path] = base::DirectoryExists(path);
 }
 

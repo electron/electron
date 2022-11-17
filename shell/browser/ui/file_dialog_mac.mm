@@ -16,11 +16,11 @@
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/threading/thread_restrictions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/thread_restrictions.h"
 
 @interface PopUpButtonHandler : NSObject
 
@@ -173,7 +173,7 @@ void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
   NSString* default_dir = nil;
   NSString* default_filename = nil;
   if (!settings.default_path.empty()) {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     if (base::DirectoryExists(settings.default_path)) {
       default_dir = base::SysUTF8ToNSString(settings.default_path.value());
     } else {

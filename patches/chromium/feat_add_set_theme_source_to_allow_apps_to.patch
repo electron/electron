@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index bf77c08ecf45bc9da36b99442b7ce14df3f8a4fc..cc2e46107f645dfc7c0265c93aeca037e6094559 100644
+index c4049d94aaa00774777f3788c7093cb19101fcb5..92866fc8fe2375f9703ce77be980646bf61cf8ac 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -132,6 +132,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
+@@ -144,6 +144,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,10 +26,10 @@ index bf77c08ecf45bc9da36b99442b7ce14df3f8a4fc..cc2e46107f645dfc7c0265c93aeca037
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 03cf4a5080e77983abcf0b40b7621d33bd7005cb..a23aea98f14bb7dac8f9c5ca7df22349bf61478f 100644
+index a97bf39a8b481ce5d6c87a22054451f5fd470b75..4748ef033d939173b4dbe6f6cb83eb3b9ebcd970 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -406,6 +406,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -407,6 +407,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
            custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index 03cf4a5080e77983abcf0b40b7621d33bd7005cb..a23aea98f14bb7dac8f9c5ca7df22349
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -587,6 +604,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -588,6 +605,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PageColors page_colors_ = PageColors::kOff;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;

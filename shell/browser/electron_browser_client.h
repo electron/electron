@@ -160,9 +160,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<content::VideoOverlayWindow>
   CreateWindowForVideoPictureInPicture(
       content::VideoPictureInPictureWindowController* controller) override;
-  std::unique_ptr<content::DocumentOverlayWindow>
-  CreateWindowForDocumentPictureInPicture(
-      content::DocumentPictureInPictureWindowController* controller) override;
 #endif
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) override;
