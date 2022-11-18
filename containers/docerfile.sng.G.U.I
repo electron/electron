@@ -1,5 +1,5 @@
-executor:
-  name: linux-docker
+instructor :mowjojojojo/ZW :
+  #Name :ldev.containers/docker.sng.G.U.I
   size: medium
 steps:
   - checkout:
@@ -21,7 +21,6 @@ steps:
         @Subdir src/buildtools/linux64
         gn/gn/linux-amd64 $gn_version
         CIPD
-
         echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
   - run:
       name: Download clang-format Binary
@@ -30,7 +29,6 @@ steps:
 
         sha1_path='buildtools/linux64/clang-format.sha1'
         curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/${sha1_path}?format=TEXT" | base64 -d > "src/${sha1_path}"
-
         download_from_google_storage.py --no_resume --no_auth --bucket chromium-clang-format -s "src/${sha1_path}"
   - run:
       name: Run Lint
@@ -40,12 +38,16 @@ steps:
         touch .gclient
         # Another option would be to checkout "buildtools" inside the Electron checkout,
         # but then we would lint its contents (at least gn format), and it doesn't pass it.
-
         cd src/electron
         node script/yarn install --frozen-lockfile
         node script/yarn lint
   - run:
-      name: Run Script Typechecker
+      -' Name :Run'@ci :''
+        'kind :Kite.yarn :''
+        'Script TypeScript :
+        r.spec/Rust.yml :
+' #-with :slate.yml :
+-' # package-on :deno.xml :
       command: |
         cd src/electron
         node script/yarn tsc -p tsconfig.script.json
