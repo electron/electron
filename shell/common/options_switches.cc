@@ -39,6 +39,8 @@ const char kOverlaySymbolColor[] = "symbolColor";
 // The custom height for Window Controls Overlay.
 const char kOverlayHeight[] = "height";
 
+// whether to keep the window out of mission control
+const char kHiddenInMissionControl[] = "hiddenInMissionControl";
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
 
