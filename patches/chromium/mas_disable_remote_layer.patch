@@ -16,12 +16,12 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 54df9cd23be7441f9b61e9f94b191b3a6a7ab6fd..861f6579d9fb93ab7c3741fd39eaaf8bda76ed9d 100644
+index 9666bbab1fc8e046e2702aef9e78028252e984ed..6a26e3cd714b0cfa65f696bea63d238c55fa4467 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-@@ -21,7 +21,9 @@
+@@ -18,7 +18,9 @@
  #include "ui/gl/gl_surface_egl.h"
- #endif
+ #include "ui/gl/gpu_switching_observer.h"
  
 +#if !IS_MAS_BUILD()
  @class CAContext;
@@ -29,17 +29,7 @@ index 54df9cd23be7441f9b61e9f94b191b3a6a7ab6fd..861f6579d9fb93ab7c3741fd39eaaf8b
  @class CALayer;
  
  namespace ui {
-@@ -117,7 +119,9 @@ class ImageTransportSurfaceOverlayMac : public gl::GLSurface,
-   base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
- 
-   bool use_remote_layer_api_;
-+#if !IS_MAS_BUILD()
-   base::scoped_nsobject<CAContext> ca_context_;
-+#endif
-   std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
- 
-   gfx::Size pixel_size_;
-@@ -212,7 +216,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::GLSurfaceEGL,
+@@ -109,7 +111,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::GLSurfaceEGL,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -50,44 +40,17 @@ index 54df9cd23be7441f9b61e9f94b191b3a6a7ab6fd..861f6579d9fb93ab7c3741fd39eaaf8b
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 6944ef9d099231c04e1b13e8a434ca436637ddd2..57ec91986dad4f7f18263fdc81ec877406fbee69 100644
+index eddfa44a4b3de8eed63157d75bb03070e9783f9b..67e48cc815cc36149a0ccae5eb3d0df97ba31ba3 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -68,6 +68,7 @@
-   ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
+@@ -71,12 +71,14 @@
  
-+#if !IS_MAS_BUILD()
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
-   if (use_remote_layer_api_) {
-@@ -76,6 +77,7 @@
-                                                    options:@{}] retain]);
-     [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
-   }
-+#endif
- }
- 
- ImageTransportSurfaceOverlayMac::~ImageTransportSurfaceOverlayMac() {
-@@ -153,7 +155,9 @@
-                          "GLImpl", static_cast<int>(gl::GetGLImplementation()),
-                          "width", pixel_size_.width());
-     if (use_remote_layer_api_) {
 +#if !IS_MAS_BUILD()
-       params.ca_context_id = [ca_context_ contextId];
-+#endif
-     } else {
-       IOSurfaceRef io_surface =
-           ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
-@@ -385,6 +389,7 @@
-   ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
- 
-+#if !IS_MAS_BUILD()
-   // Create the CAContext to send this to the GPU process, and the layer for
-   // the context.
    if (use_remote_layer_api_) {
-@@ -393,6 +398,7 @@
+     CGSConnectionID connection_id = CGSMainConnectionID();
+     ca_context_.reset([[CAContext contextWithCGSConnection:connection_id
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -95,7 +58,7 @@ index 6944ef9d099231c04e1b13e8a434ca436637ddd2..57ec91986dad4f7f18263fdc81ec8774
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -490,7 +496,9 @@
+@@ -174,7 +176,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {

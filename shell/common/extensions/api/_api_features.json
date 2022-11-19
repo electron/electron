@@ -37,9 +37,5 @@
     "matches": [
       "chrome://print/*"
     ]
-  }],
-  "cryptotokenPrivate": {
-    "dependencies": ["permission:cryptotokenPrivate"],
-    "contexts": ["blessed_extension"]
-  }
+  }]
 }

@@ -63,10 +63,7 @@ class ElectronDesktopWindowTreeHostLinux
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       theme_observation_{this};
-  base::ScopedObservation<ui::LinuxUi,
-                          ui::DeviceScaleFactorObserver,
-                          &ui::LinuxUi::AddDeviceScaleFactorObserver,
-                          &ui::LinuxUi::RemoveDeviceScaleFactorObserver>
+  base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
 };

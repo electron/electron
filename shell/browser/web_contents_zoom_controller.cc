@@ -51,9 +51,8 @@ void WebContentsZoomController::SetZoomLevel(double level) {
       zoom_mode_ == ZoomMode::kDisabled)
     return;
 
-  int render_process_id =
-      web_contents()->GetRenderViewHost()->GetProcess()->GetID();
-  int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
+  content::GlobalRenderFrameHostId rfh_id =
+      web_contents()->GetPrimaryMainFrame()->GetGlobalId();
 
   if (zoom_mode_ == ZoomMode::kManual) {
     zoom_level_ = level;
@@ -67,8 +66,8 @@ void WebContentsZoomController::SetZoomLevel(double level) {
   content::HostZoomMap* zoom_map =
       content::HostZoomMap::GetForWebContents(web_contents());
   if (zoom_mode_ == ZoomMode::kIsolated ||
-      zoom_map->UsesTemporaryZoomLevel(render_process_id, render_view_id)) {
-    zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id, level);
+      zoom_map->UsesTemporaryZoomLevel(rfh_id)) {
+    zoom_map->SetTemporaryZoomLevel(rfh_id, level);
     // Notify observers of zoom level changes.
     for (Observer& observer : observers_)
       observer.OnZoomLevelChanged(web_contents(), level, true);
@@ -96,20 +95,18 @@ double WebContentsZoomController::GetDefaultZoomFactor() {
 }
 
 void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
-  old_process_id_ = web_contents()->GetRenderViewHost()->GetProcess()->GetID();
-  old_view_id_ = web_contents()->GetRenderViewHost()->GetRoutingID();
-  host_zoom_map_->SetTemporaryZoomLevel(old_process_id_, old_view_id_, level);
+  content::GlobalRenderFrameHostId old_rfh_id_ =
+      web_contents()->GetPrimaryMainFrame()->GetGlobalId();
+  host_zoom_map_->SetTemporaryZoomLevel(old_rfh_id_, level);
   // Notify observers of zoom level changes.
   for (Observer& observer : observers_)
     observer.OnZoomLevelChanged(web_contents(), level, true);
 }
 
 bool WebContentsZoomController::UsesTemporaryZoomLevel() {
-  int render_process_id =
-      web_contents()->GetRenderViewHost()->GetProcess()->GetID();
-  int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
-  return host_zoom_map_->UsesTemporaryZoomLevel(render_process_id,
-                                                render_view_id);
+  content::GlobalRenderFrameHostId rfh_id =
+      web_contents()->GetPrimaryMainFrame()->GetGlobalId();
+  return host_zoom_map_->UsesTemporaryZoomLevel(rfh_id);
 }
 
 void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
@@ -118,9 +115,8 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
 
   content::HostZoomMap* zoom_map =
       content::HostZoomMap::GetForWebContents(web_contents());
-  int render_process_id =
-      web_contents()->GetRenderViewHost()->GetProcess()->GetID();
-  int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
+  content::GlobalRenderFrameHostId rfh_id =
+      web_contents()->GetPrimaryMainFrame()->GetGlobalId();
   double original_zoom_level = GetZoomLevel();
 
   switch (new_mode) {
@@ -139,8 +135,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
           // the correct zoom level.
           double origin_zoom_level =
               zoom_map->GetZoomLevelForHostAndScheme(url.scheme(), host);
-          zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id,
-                                          origin_zoom_level);
+          zoom_map->SetTemporaryZoomLevel(rfh_id, origin_zoom_level);
         } else {
           // The host will need a level prior to removing the temporary level.
           // We don't want the zoom level to change just because we entered
@@ -149,7 +144,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
         }
       }
       // Remove per-tab zoom data for this tab. No event callback expected.
-      zoom_map->ClearTemporaryZoomLevel(render_process_id, render_view_id);
+      zoom_map->ClearTemporaryZoomLevel(rfh_id);
       break;
     }
     case ZoomMode::kIsolated: {
@@ -157,8 +152,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
       // page needs an initial isolated zoom back to the same level it was at
       // in the other mode.
       if (zoom_mode_ != ZoomMode::kDisabled) {
-        zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id,
-                                        original_zoom_level);
+        zoom_map->SetTemporaryZoomLevel(rfh_id, original_zoom_level);
       } else {
         // When we don't call any HostZoomMap set functions, we send the event
         // manually.
@@ -173,8 +167,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
       // page needs to be resized to the default zoom. While in manual mode,
       // the zoom level is handled independently.
       if (zoom_mode_ != ZoomMode::kDisabled) {
-        zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id,
-                                        GetDefaultZoomLevel());
+        zoom_map->SetTemporaryZoomLevel(rfh_id, GetDefaultZoomLevel());
         zoom_level_ = original_zoom_level;
       } else {
         // When we don't call any HostZoomMap set functions, we send the event
@@ -187,8 +180,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
     }
     case ZoomMode::kDisabled: {
       // The page needs to be zoomed back to default before disabling the zoom
-      zoom_map->SetTemporaryZoomLevel(render_process_id, render_view_id,
-                                      GetDefaultZoomLevel());
+      zoom_map->SetTemporaryZoomLevel(rfh_id, GetDefaultZoomLevel());
       break;
     }
   }
@@ -201,9 +193,8 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   if (zoom_mode_ != ZoomMode::kIsolated && zoom_mode_ != ZoomMode::kManual)
     return;
 
-  int render_process_id =
-      web_contents()->GetRenderViewHost()->GetProcess()->GetID();
-  int render_view_id = web_contents()->GetRenderViewHost()->GetRoutingID();
+  content::GlobalRenderFrameHostId rfh_id =
+      web_contents()->GetPrimaryMainFrame()->GetGlobalId();
   content::HostZoomMap* zoom_map =
       content::HostZoomMap::GetForWebContents(web_contents());
   zoom_level_ = zoom_map->GetDefaultZoomLevel();
@@ -211,7 +202,7 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
       url.scheme(), net::GetHostOrSpecFromURL(url));
   for (Observer& observer : observers_)
     observer.OnZoomLevelChanged(web_contents(), new_zoom_level, false);
-  zoom_map->ClearTemporaryZoomLevel(render_process_id, render_view_id);
+  zoom_map->ClearTemporaryZoomLevel(rfh_id);
   zoom_mode_ = ZoomMode::kDefault;
 }
 
@@ -254,8 +245,11 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   if (blink::PageZoomValuesEqual(GetDefaultZoomFactor(), kPageZoomEpsilon))
     return;
 
-  if (host_zoom_map_->UsesTemporaryZoomLevel(old_process_id_, old_view_id_)) {
-    host_zoom_map_->ClearTemporaryZoomLevel(old_process_id_, old_view_id_);
+  content::GlobalRenderFrameHostId old_rfh_id_ =
+      content::GlobalRenderFrameHostId(old_process_id_, old_view_id_);
+
+  if (host_zoom_map_->UsesTemporaryZoomLevel(old_rfh_id_)) {
+    host_zoom_map_->ClearTemporaryZoomLevel(old_rfh_id_);
   }
 
   if (embedder_zoom_controller_ &&

@@ -15,7 +15,6 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/upload_list/crash_upload_list.h"
@@ -29,6 +28,7 @@
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/thread_restrictions.h"
 
 #if !IS_MAS_BUILD()
 #include "components/crash/core/app/crashpad.h"  // nogncheck
@@ -91,7 +91,7 @@ bool GetClientIdPath(base::FilePath* path) {
 }
 
 std::string ReadClientId() {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   std::string client_id;
   // "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".length == 36
   base::FilePath client_id_path;
@@ -104,7 +104,7 @@ std::string ReadClientId() {
 
 void WriteClientId(const std::string& client_id) {
   DCHECK_EQ(client_id.size(), 36u);
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath client_id_path;
   if (GetClientIdPath(&client_id_path))
     base::WriteFile(client_id_path, client_id);
@@ -151,7 +151,7 @@ void Start(const std::string& submit_url,
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
   }
   if (ignore_system_crash_handler) {
@@ -218,7 +218,7 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
   // synchronous version of getUploadedReports is deprecated so we can remove
   // our patch.
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     list->LoadSync();
   }
   std::vector<UploadList::UploadInfo> uploads;

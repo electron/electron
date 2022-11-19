@@ -67,9 +67,7 @@ class ElectronSerialDelegate : public content::SerialDelegate,
       content::SerialChooser::Callback callback);
 
   base::ScopedObservation<SerialChooserContext,
-                          SerialChooserContext::PortObserver,
-                          &SerialChooserContext::AddPortObserver,
-                          &SerialChooserContext::RemovePortObserver>
+                          SerialChooserContext::PortObserver>
       port_observation_{this};
   base::ObserverList<content::SerialDelegate::Observer> observer_list_;
 
@@ -81,5 +79,25 @@ class ElectronSerialDelegate : public content::SerialDelegate,
 };
 
 }  // namespace electron
+
+namespace base {
+
+template <>
+struct base::ScopedObservationTraits<
+    electron::SerialChooserContext,
+    electron::SerialChooserContext::PortObserver> {
+  static void AddObserver(
+      electron::SerialChooserContext* source,
+      electron::SerialChooserContext::PortObserver* observer) {
+    source->AddPortObserver(observer);
+  }
+  static void RemoveObserver(
+      electron::SerialChooserContext* source,
+      electron::SerialChooserContext::PortObserver* observer) {
+    source->RemovePortObserver(observer);
+  }
+};
+
+}  // namespace base
 
 #endif  // ELECTRON_SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_

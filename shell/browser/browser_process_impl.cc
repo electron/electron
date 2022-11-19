@@ -32,6 +32,7 @@
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "services/network/public/cpp/network_switches.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_job_manager.h"
@@ -108,7 +109,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   base::FilePath prefs_path;
   CHECK(base::PathService::Get(electron::DIR_SESSION_DATA, &prefs_path));
   prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   scoped_refptr<JsonPrefStore> user_pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
   user_pref_store->ReadPrefs();

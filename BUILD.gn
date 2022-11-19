@@ -1477,7 +1477,7 @@ dist_zip("electron_ffmpeg_zip") {
 
 electron_chromedriver_deps = [
   ":licenses",
-  "//chrome/test/chromedriver",
+  "//chrome/test/chromedriver:chromedriver_server",
   "//electron/buildflags",
 ]
 

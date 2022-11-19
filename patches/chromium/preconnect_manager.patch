@@ -62,10 +62,10 @@ index 48b500a8ead699ef9d30d3219f41a913711bc4a0..f3e9c87c5ce29a4e9dc8204413f47a76
  
  void PreconnectManager::Start(const GURL& url,
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 9b89c3a93b68596d7a89d5cd8e10dc5e9126c2c4..968e8ac012af57ae48a6f9a26ee228938d969876 100644
+index 5f7e0db497a48829a330d7aae63d0da34cca7e33..d25f97a11174cb6e28b961cd7fc59ba3831e7a54 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
-@@ -18,7 +18,9 @@
+@@ -17,7 +17,9 @@
  #include "base/time/time.h"
  #include "chrome/browser/predictors/proxy_lookup_client_impl.h"
  #include "chrome/browser/predictors/resolve_host_client_impl.h"
@@ -75,7 +75,7 @@ index 9b89c3a93b68596d7a89d5cd8e10dc5e9126c2c4..968e8ac012af57ae48a6f9a26ee22893
  #include "net/base/network_anonymization_key.h"
  #include "url/gurl.h"
  
-@@ -34,7 +36,28 @@ class NetworkContext;
+@@ -33,7 +35,28 @@ class NetworkContext;
  
  namespace predictors {
  
