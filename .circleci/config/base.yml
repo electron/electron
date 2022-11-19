@@ -495,6 +495,11 @@ step-fix-sync: &step-fix-sync
         # Remove extra output from calling gclient getdep which always calls update_depot_tools
         sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
+
+        # Fix ninja (wrong binary)
+        echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
+        sed -i '' "s/Updating depot_tools... //g" ninja_ensure_file
+        cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
       fi
 
       cd src/third_party/angle
