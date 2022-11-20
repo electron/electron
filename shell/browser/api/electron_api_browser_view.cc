@@ -112,7 +112,8 @@ void BrowserView::SetOwnerWindow(BaseWindow* window) {
 int BrowserView::NonClientHitTest(const gfx::Point& point) {
   gfx::Rect bounds = GetBounds();
   gfx::Point local_point(point.x() - bounds.x(), point.y() - bounds.y());
-  SkRegion* region = api_web_contents_->draggable_region();
+  SkRegion* region =
+      api_web_contents_ ? api_web_contents_->draggable_region() : nullptr;
   if (region && region->contains(local_point.x(), local_point.y()))
     return HTCAPTION;
   return HTNOWHERE;
