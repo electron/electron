@@ -262,11 +262,11 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* tracing_agent = node::CreateAgent();
   auto* tracing_controller = new TracingControllerImpl();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
-  platform_ = node::CreatePlatform(
+  platform_ = node::MultiIsolatePlatform::Create(
       base::RecommendedMaxNumberOfThreadsInThreadGroup(3, 8, 0.1, 0),
       tracing_controller, gin::V8Platform::PageAllocator());
 
-  v8::V8::InitializePlatform(platform_);
+  v8::V8::InitializePlatform(platform_.get());
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::ArrayBufferAllocator::SharedInstance(),
                                  nullptr /* external_reference_table */,

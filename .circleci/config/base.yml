@@ -137,6 +137,7 @@ env-mas-apple-silicon: &env-mas-apple-silicon
   MAS_BUILD: 'true'
   TARGET_ARCH: arm64
   USE_PREBUILT_V8_CONTEXT_SNAPSHOT: 1
+  npm_config_arch: arm64
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
@@ -494,6 +495,11 @@ step-fix-sync: &step-fix-sync
         # Remove extra output from calling gclient getdep which always calls update_depot_tools
         sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
+
+        # Fix ninja (wrong binary)
+        echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
+        sed -i '' "s/Updating depot_tools... //g" ninja_ensure_file
+        cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
       fi
 
       cd src/third_party/angle
@@ -544,43 +550,6 @@ step-gn-check: &step-gn-check
       # Check the hunspell filenames
       node electron/script/gen-hunspell-filenames.js --check
       node electron/script/gen-libc++-filenames.js --check
-
-step-electron-build: &step-electron-build
-  run:
-    name: Electron build
-    no_output_timeout: 60m
-    command: |
-      # On arm platforms we generate a cross-arch ffmpeg that ninja does not seem
-      # to realize is not correct / should be rebuilt.  We delete it here so it is
-      # rebuilt
-      if [ "$TRIGGER_ARM_TEST" == "true" ]; then
-        rm -f src/out/Default/libffmpeg.so
-      fi
-      cd src
-      # Enable if things get really bad
-      # if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
-      #   diskutil erasevolume HFS+ "xcode_disk" `hdiutil attach -nomount ram://12582912`
-      #   mv /Applications/Xcode-12.beta.5.app /Volumes/xcode_disk/
-      #   ln -s /Volumes/xcode_disk/Xcode-12.beta.5.app /Applications/Xcode-12.beta.5.app
-      # fi
-
-      # Lets generate a snapshot and mksnapshot and then delete all the x-compiled generated files to save space
-      if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" == "1" ]; then
-        ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-        ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
-        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
-        (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
-        rm -rf out/Default/clang_x64_v8_arm64/gen
-        rm -rf out/Default/clang_x64_v8_arm64/obj
-        rm -rf out/Default/clang_x64_v8_arm64/thinlto-cache
-        rm -rf out/Default/clang_x64/obj
-
-        # Regenerate because we just deleted some ninja files 
-        gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-      fi
-      NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
-      cp out/Default/.ninja_log out/electron_ninja_log
-      node electron/script/check-symlinks.js
 
 step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
@@ -641,28 +610,6 @@ step-electron-publish: &step-electron-publish
         echo 'Uploading Electron release distribution to GitHub releases'
         script/release/uploaders/upload.py --verbose
       fi
-
-step-persist-data-for-tests: &step-persist-data-for-tests
-  persist_to_workspace:
-    root: .
-    paths:
-      # Build artifacts
-      - src/out/Default/dist.zip
-      - src/out/Default/mksnapshot.zip
-      - src/out/Default/chromedriver.zip
-      - src/out/Default/gen/node_headers
-      - src/out/Default/overlapped-checker
-      - src/out/ffmpeg/ffmpeg.zip
-      - src/electron
-      - src/third_party/electron_node
-      - src/third_party/nan
-      - src/cross-arch-snapshots
-      - src/third_party/llvm-build
-      - src/build/linux
-      - src/buildtools/third_party/libc++
-      - src/buildtools/third_party/libc++abi
-      - src/out/Default/obj/buildtools/third_party
-      - src/v8/tools/builtins-pgo
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -759,6 +706,13 @@ step-mksnapshot-build: &step-mksnapshot-build
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        # Remove unused args from mksnapshot_args
+        SEDOPTION=
+        if [ "`uname`" == "Darwin" ]; then
+          SEDOPTION="-i ''"
+        fi
+        sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
       fi
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
@@ -815,6 +769,16 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       export BUILD_PATH="$PWD/out/Default"
       ninja -C out/Default electron:licenses
       ninja -C out/Default electron:electron_version_file
+      electron/script/zip-symbols.py -b $BUILD_PATH
+
+step-maybe-zip-symbols-and-clean: &step-maybe-zip-symbols-and-clean
+  run:
+    name: Zip symbols
+    command: |
+      cd src
+      export BUILD_PATH="$PWD/out/Default"
+      ninja -C out/Default electron:licenses
+      ninja -C out/Default electron:electron_version_file
       DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
@@ -838,6 +802,12 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
         mkdir cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
+        # Clean up so that ninja does not get confused
+        if [ "`uname`" == "Linux" ]; then
+          rm -f out/Default/libffmpeg.so
+        elif [ "`uname`" == "Darwin" ]; then
+          rm -f out/Default/libffmpeg.dylib
+        fi
       fi
 
 step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
@@ -874,12 +844,12 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v15-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v16-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v15-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v16-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -893,14 +863,6 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
-
-step-restore-out-cache: &step-restore-out-cache
-  restore_cache:
-    paths:
-      - ./src/out/Default
-    keys:
-      - v10-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
-    name: Restoring out cache
 
 step-set-git-cache-path: &step-set-git-cache-path
   run:
@@ -918,13 +880,6 @@ step-save-git-cache: &step-save-git-cache
       - git-cache
     key: v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
-
-step-save-out-cache: &step-save-out-cache
-  save_cache:
-    paths:
-      - ./src/out/Default
-    key: v10-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
-    name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -955,13 +910,15 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf third_party/electron_node/deps/v8
       rm -rf chrome/test/data/xr/webvr_info
       rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
+      rm -rf src/third_party/swift-toolchain
+      rm -rf src/third_party/swiftshader/tests/regres/testlists
 
 # Save the src cache based on the deps hash
 step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v15-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v16-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -971,7 +928,7 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v15-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v16-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
   run:
@@ -1028,99 +985,6 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
 
     #Compile ts/js to verify doc change didn't break anything
     - *step-ts-compile
-
-steps-tests: &steps-tests
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-mksnapshot-unzip
-    - *step-chromedriver-unzip
-    - *step-setup-linux-for-headless-testing
-    - *step-restore-brew-cache
-    - *step-fix-known-hosts-linux
-    - install-python2-mac
-    - *step-install-signing-cert-on-mac
-
-    - run:
-        name: Run Electron tests
-        environment:
-          MOCHA_REPORTER: mocha-multi-reporters
-          ELECTRON_TEST_RESULTS_DIR: junit
-          MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
-          ELECTRON_DISABLE_SECURITY_WARNINGS: 1
-        command: |
-          cd src
-          if [ "$IS_ASAN" == "1" ]; then
-            ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
-            export ASAN_OPTIONS="symbolize=0 handle_abort=1"
-            export G_SLICE=always-malloc
-            export NSS_DISABLE_ARENA_FREE_LIST=1
-            export NSS_DISABLE_UNLOAD=1
-            export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
-            export MOCHA_TIMEOUT=180000
-            echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
-            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.ts | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
-          else
-            if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
-              export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
-              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
-            else
-              if [ "$TARGET_ARCH" == "ia32" ]; then
-                npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
-              fi
-              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.ts | circleci tests split --split-by=timings))
-            fi
-          fi
-    - run:
-        name: Check test results existence
-        command: |
-          cd src
-
-          # Check if test results exist and are not empty.
-          if [ ! -s "junit/test-results-main.xml" ]; then
-            exit 1
-          fi
-    - store_test_results:
-        path: src/junit
-
-    - *step-verify-mksnapshot
-    - *step-verify-chromedriver
-
-    - *step-maybe-notify-slack-failure
-
-    - *step-maybe-cleanup-arm64-mac
-
-steps-test-nan: &steps-test-nan
-  steps:
-    - attach_workspace:
-          at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-setup-linux-for-headless-testing
-    - *step-fix-known-hosts-linux
-    - run:
-        name: Run Nan Tests
-        command: |
-          cd src
-          node electron/script/nan-spec-runner.js
-
-steps-test-node: &steps-test-node
-  steps:
-    - attach_workspace:
-          at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-setup-linux-for-headless-testing
-    - *step-fix-known-hosts-linux
-    - run:
-        name: Run Node Tests
-        command: |
-          cd src
-          node electron/script/node-spec-runner.js --default --jUnitDir=junit
-    - store_test_results:
-        path: src/junit
 
 # Command Aliases
 commands:
@@ -1180,17 +1044,65 @@ commands:
               mv /var/portal/src ./
             fi
 
+  build_and_save_artifacts:
+    parameters:
+      artifact-key:
+        type: string
+      build-nonproprietary-ffmpeg:
+        type: boolean
+        default: true
+    steps:
+      - *step-gn-gen-default
+      - ninja_build_electron:
+          clean-prebuilt-snapshot: false
+      - *step-maybe-electron-dist-strip
+      - step-electron-dist-build:
+          additional-targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
+
+      - *step-show-goma-stats
+
+      # mksnapshot
+      - *step-mksnapshot-build
+      - *step-maybe-cross-arch-snapshot
+
+      # chromedriver
+      - *step-electron-chromedriver-build
+
+      - when:
+          condition: << parameters.build-nonproprietary-ffmpeg >>
+          steps:
+            # ffmpeg
+            - *step-ffmpeg-gn-gen
+            - *step-ffmpeg-build
+
+      - *step-maybe-generate-breakpad-symbols
+      - *step-maybe-zip-symbols
+
+      - move_and_store_all_artifacts:
+          artifact-key: << parameters.artifact-key >>
+
   move_and_store_all_artifacts:
+    parameters:
+      artifact-key:
+        type: string
     steps:
       - run:
           name: Move all generated artifacts to upload folder
           command: |
-            rm -rf generated_artifacts
-            mkdir generated_artifacts
+            rm -rf generated_artifacts_<< parameters.artifact-key >>
+            mkdir generated_artifacts_<< parameters.artifact-key >>
             mv_if_exist() {
               if [ -f "$1" ] || [ -d "$1" ]; then
                 echo Storing $1
-                mv $1 generated_artifacts
+                mv $1 generated_artifacts_<< parameters.artifact-key >>
+              else
+                echo Skipping $1 - It is not present on disk
+              fi
+            }
+            cp_if_exist() {
+              if [ -f "$1" ] || [ -d "$1" ]; then
+                echo Storing $1
+                cp $1 generated_artifacts_<< parameters.artifact-key >>
               else
                 echo Skipping $1 - It is not present on disk
               fi
@@ -1203,15 +1115,43 @@ commands:
             mv_if_exist src/out/ffmpeg/ffmpeg.zip
             mv_if_exist src/out/Default/hunspell_dictionaries.zip
             mv_if_exist src/cross-arch-snapshots
-            mv_if_exist src/out/electron_ninja_log
-            mv_if_exist src/out/Default/.ninja_log
+            cp_if_exist src/out/electron_ninja_log
+            cp_if_exist src/out/Default/.ninja_log
           when: always
       - store_artifacts:
-          path: generated_artifacts
-          destination: ./
+          path: generated_artifacts_<< parameters.artifact-key >>
+          destination: ./<< parameters.artifact-key >>
       - store_artifacts:
-          path: generated_artifacts/cross-arch-snapshots
-          destination: cross-arch-snapshots
+          path: generated_artifacts_<< parameters.artifact-key >>/cross-arch-snapshots
+          destination: << parameters.artifact-key >>/cross-arch-snapshots
+
+  restore_build_artifacts:
+    parameters:
+      artifact-key:
+        type: string
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Restore key specific artifacts
+          command: |
+            mv_if_exist() {
+              if [ -f "generated_artifacts_<< parameters.artifact-key >>/$1" ] || [ -d "generated_artifacts_<< parameters.artifact-key >>/$1" ]; then
+                echo Restoring $1 to $2
+                mkdir -p $2
+                mv generated_artifacts_<< parameters.artifact-key >>/$1 $2
+              else
+                echo Skipping $1 - It is not present on disk
+              fi
+            }
+            mv_if_exist dist.zip src/out/Default
+            mv_if_exist node_headers.tar.gz src/out/Default/gen
+            mv_if_exist symbols.zip src/out/Default
+            mv_if_exist mksnapshot.zip src/out/Default
+            mv_if_exist chromedriver.zip src/out/Default
+            mv_if_exist ffmpeg.zip src/out/ffmpeg
+            mv_if_exist hunspell_dictionaries.zip src/out/Default
+            mv_if_exist cross-arch-snapshots src
 
   checkout-from-cache:
     steps:
@@ -1245,7 +1185,7 @@ commands:
           command: |
             cd src
             if [ "$SKIP_DIST_ZIP" != "1" ]; then
-              ninja -C out/Default electron:electron_dist_zip << parameters.additional-targets >>
+              ninja -C out/Default electron:electron_dist_zip << parameters.additional-targets >> -j $NUMBER_OF_NINJA_PROCESSES
               if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
                 if [ "`uname`" == "Darwin" ]; then
                   target_os=mac
@@ -1270,6 +1210,47 @@ commands:
                 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
               fi
             fi
+
+  ninja_build_electron:
+    parameters:
+      clean-prebuilt-snapshot:
+        type: boolean
+        default: true
+    steps:
+      - run:
+          name: Electron build
+          no_output_timeout: 60m
+          command: |
+            cd src
+
+            # Lets generate a snapshot and mksnapshot and then delete all the x-compiled generated files to save space
+            if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" == "1" ]; then
+              ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+              ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
+              gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+              # Remove unused args from mksnapshot_args
+              SEDOPTION=
+              if [ "`uname`" == "Darwin" ]; then
+                SEDOPTION="-i ''"
+              fi
+              sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+              sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+              (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
+              if [ "<< parameters.clean-prebuilt-snapshot >>" == "true" ]; then
+                rm -rf out/Default/clang_x64_v8_arm64/gen
+                rm -rf out/Default/clang_x64_v8_arm64/obj
+                rm -rf out/Default/clang_x64_v8_arm64/thinlto-cache
+                rm -rf out/Default/clang_x64/obj
+                # Regenerate because we just deleted some ninja files
+                gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+              fi
+              # For x-compiles this will be built to the wrong arch after the context snapshot build
+              # so we wipe it before re-linking it below
+              rm -rf out/Default/libffmpeg.dylib
+            fi
+            NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+            cp out/Default/.ninja_log out/electron_ninja_log
+            node electron/script/check-symlinks.js
 
   electron-build:
     parameters:
@@ -1297,15 +1278,20 @@ commands:
       build:
         type: boolean
         default: true
-      use-out-cache:
-        type: boolean
-        default: true
       restore-src-cache:
         type: boolean
         default: true
       build-nonproprietary-ffmpeg:
         type: boolean
         default: true
+      artifact-key:
+        type: string
+      after-build-and-save:
+        type: steps
+        default: []
+      after-persist:
+        type: steps
+        default: []
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1421,71 +1407,147 @@ commands:
             - *step-fix-sync
             - *step-delete-git-directories
 
-            # Electron app
-            - when:
-                condition: << parameters.use-out-cache >>
-                steps:
-                  - *step-restore-out-cache
-            - *step-gn-gen-default
-            - *step-electron-build
-            - *step-maybe-electron-dist-strip
-            - step-electron-dist-build:
-                additional-targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
-
-            - *step-show-goma-stats
-
-            # mksnapshot
-            - *step-mksnapshot-build
-            - *step-maybe-cross-arch-snapshot
-
-            # chromedriver
-            - *step-electron-chromedriver-build
-
-            - when:
-                condition: << parameters.build-nonproprietary-ffmpeg >>
-                steps:
-                  # ffmpeg
-                  - *step-ffmpeg-gn-gen
-                  - *step-ffmpeg-build
-
-      # Save all data needed for a further tests run.
       - when:
-          condition: << parameters.persist >>
+          condition: << parameters.build >>
           steps:
-            - *step-minimize-workspace-size-from-checkout
-            - run: |
-                rm -rf src/third_party/electron_node/deps/openssl
-                rm -rf src/third_party/electron_node/deps/v8
-            - *step-persist-data-for-tests
+            - build_and_save_artifacts:
+                artifact-key: << parameters.artifact-key >>
+                build-nonproprietary-ffmpeg: << parameters.build-nonproprietary-ffmpeg >>
+            - steps: << parameters.after-build-and-save >>
+            
+            # Save all data needed for a further tests run.
+            - when:
+                condition: << parameters.persist >>
+                steps:
+                  - *step-minimize-workspace-size-from-checkout
+                  - run: |
+                      rm -rf src/third_party/electron_node/deps/openssl
+                      rm -rf src/third_party/electron_node/deps/v8
+                  - persist_to_workspace:
+                      root: .
+                      paths:
+                        # Build artifacts
+                        - generated_artifacts_<< parameters.artifact-key >>
+                        - src/out/Default/gen/node_headers
+                        - src/out/Default/overlapped-checker
+                        - src/electron
+                        - src/third_party/electron_node
+                        - src/third_party/nan
+                        - src/cross-arch-snapshots
+                        - src/third_party/llvm-build
+                        - src/build/linux
+                        - src/buildtools/third_party/libc++
+                        - src/buildtools/third_party/libc++abi
+                        - src/out/Default/obj/buildtools/third_party
+                        - src/v8/tools/builtins-pgo
+                  - steps: << parameters.after-persist >>
 
       - when:
           condition: << parameters.build >>
           steps:
-            - *step-maybe-generate-breakpad-symbols
-            - *step-maybe-zip-symbols
-
-      - when:
-          condition: << parameters.build >>
-          steps:
-            - move_and_store_all_artifacts
-            - run:
-                name: Remove the big things on macOS, this seems to be better on average
-                command: |
-                  if [ "`uname`" == "Darwin" ]; then
-                    mkdir -p src/out/Default
-                    cd src/out/Default
-                    find . -type f -size +50M -delete
-                    mkdir -p gen/electron
-                    cd gen/electron
-                    # These files do not seem to like being in a cache, let us remove them
-                    find . -type f -name '*_pkg_info' -delete
-                  fi
-            - when:
-                condition: << parameters.use-out-cache >>
-                steps:
-                  - *step-save-out-cache
-
             - *step-maybe-notify-slack-failure
+
+  electron-tests:
+    parameters:
+      artifact-key:
+        type: string
+    steps:
+      - restore_build_artifacts:
+          artifact-key: << parameters.artifact-key >>
+      - *step-depot-tools-add-to-path
+      - *step-electron-dist-unzip
+      - *step-mksnapshot-unzip
+      - *step-chromedriver-unzip
+      - *step-setup-linux-for-headless-testing
+      - *step-restore-brew-cache
+      - *step-fix-known-hosts-linux
+      - install-python2-mac
+      - *step-install-signing-cert-on-mac
+
+      - run:
+          name: Run Electron tests
+          environment:
+            MOCHA_REPORTER: mocha-multi-reporters
+            ELECTRON_TEST_RESULTS_DIR: junit
+            MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+            ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+          command: |
+            cd src
+            if [ "$IS_ASAN" == "1" ]; then
+              ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
+              export ASAN_OPTIONS="symbolize=0 handle_abort=1"
+              export G_SLICE=always-malloc
+              export NSS_DISABLE_ARENA_FREE_LIST=1
+              export NSS_DISABLE_UNLOAD=1
+              export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
+              export MOCHA_TIMEOUT=180000
+              echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
+              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.ts | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
+            else
+              if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+                export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
+                (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
+              else
+                if [ "$TARGET_ARCH" == "ia32" ]; then
+                  npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
+                fi
+                (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.ts | circleci tests split --split-by=timings))
+              fi
+            fi
+      - run:
+          name: Check test results existence
+          command: |
+            cd src
+
+            # Check if test results exist and are not empty.
+            if [ ! -s "junit/test-results-main.xml" ]; then
+              exit 1
+            fi
+      - store_test_results:
+          path: src/junit
+
+      - *step-verify-mksnapshot
+      - *step-verify-chromedriver
+
+      - *step-maybe-notify-slack-failure
+
+      - *step-maybe-cleanup-arm64-mac
+
+  nan-tests:
+    parameters:
+      artifact-key:
+        type: string
+    steps:
+      - restore_build_artifacts:
+          artifact-key: << parameters.artifact-key >>
+      - *step-depot-tools-add-to-path
+      - *step-electron-dist-unzip
+      - *step-setup-linux-for-headless-testing
+      - *step-fix-known-hosts-linux
+      - run:
+          name: Run Nan Tests
+          command: |
+            cd src
+            node electron/script/nan-spec-runner.js
+
+  node-tests:
+    parameters:
+      artifact-key:
+        type: string
+    steps:
+      - restore_build_artifacts:
+          artifact-key: << parameters.artifact-key >>
+      - *step-depot-tools-add-to-path
+      - *step-electron-dist-unzip
+      - *step-setup-linux-for-headless-testing
+      - *step-fix-known-hosts-linux
+      - run:
+          name: Run Node Tests
+          command: |
+            cd src
+            node electron/script/node-spec-runner.js --default --jUnitDir=junit
+      - store_test_results:
+          path: src/junit
 
   electron-publish:
     parameters:
@@ -1526,12 +1588,12 @@ commands:
       - *step-gn-gen-default
 
       # Electron app
-      - *step-electron-build
+      - ninja_build_electron
       - *step-show-goma-stats
       - *step-maybe-generate-breakpad-symbols
       - *step-maybe-electron-dist-strip
       - step-electron-dist-build
-      - *step-maybe-zip-symbols
+      - *step-maybe-zip-symbols-and-clean
 
       # mksnapshot
       - *step-mksnapshot-build
@@ -1557,7 +1619,8 @@ commands:
 
       # Publish
       - *step-electron-publish
-      - move_and_store_all_artifacts
+      - move_and_store_all_artifacts:
+          artifact-key: 'publish'
 
 # List of all jobs.
 jobs:
@@ -1587,6 +1650,7 @@ jobs:
           checkout: true
           save-git-cache: true
           checkout-to-create-src-cache: true
+          artifact-key: 'nil'
 
   mac-checkout:
     executor:
@@ -1604,6 +1668,7 @@ jobs:
           checkout: true
           persist-checkout: true
           restore-src-cache: false
+          artifact-key: 'nil'
 
   mac-make-src-cache:
     executor:
@@ -1621,6 +1686,7 @@ jobs:
           checkout: true
           save-git-cache: true
           checkout-to-create-src-cache: true
+          artifact-key: 'nil'
 
   # Layer 2: Builds.
   linux-x64-testing:
@@ -1637,7 +1703,7 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
+          artifact-key: 'linux-x64'
 
   linux-x64-testing-asan:
     executor:
@@ -1654,8 +1720,8 @@ jobs:
       - electron-build:
           persist: true
           checkout: true
-          use-out-cache: false
           build-nonproprietary-ffmpeg: false
+          artifact-key: 'linux-x64-asan'
 
   linux-x64-testing-no-run-as-node:
     executor:
@@ -1671,7 +1737,7 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
-          use-out-cache: false
+          artifact-key: 'linux-x64-no-run-as-node'
 
   linux-x64-testing-gn-check:
     executor:
@@ -1722,7 +1788,7 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
+          artifact-key: 'linux-arm'
 
   linux-arm-publish:
     executor:
@@ -1765,7 +1831,7 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
+          artifact-key: 'linux-arm64'
 
   linux-arm64-testing-gn-check:
     executor:
@@ -1817,6 +1883,22 @@ jobs:
           checkout: false
           checkout-and-assume-cache: true
           attach: true
+          artifact-key: 'darwin-x64'
+          after-build-and-save:
+            - run:
+                name: Configuring MAS build
+                command: |
+                  echo 'export GN_EXTRA_ARGS="is_mas_build = true $GN_EXTRA_ARGS"' >> $BASH_ENV
+                  echo 'export MAS_BUILD="true"' >> $BASH_ENV
+                  rm -rf "src/out/Default/Electron Framework.framework"
+                  rm -rf src/out/Default/Electron*.app
+            - build_and_save_artifacts:
+                artifact-key: 'mas-x64'
+          after-persist:
+            - persist_to_workspace:
+                root: .
+                paths:
+                  - generated_artifacts_mas-x64
 
   osx-testing-x64-gn-check:
     executor:
@@ -1889,35 +1971,22 @@ jobs:
           checkout: false
           checkout-and-assume-cache: true
           attach: true
-
-  mas-testing-x64:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-    environment:
-      <<: *env-mac-large
-      <<: *env-mas
-      <<: *env-testing-build
-      <<: *env-ninja-status
-      <<: *env-macos-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    steps:
-      - electron-build:
-          persist: true
-          checkout: false
-          checkout-and-assume-cache: true
-          attach: true
-
-  mas-testing-x64-gn-check:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-    environment:
-      <<: *env-machine-mac
-      <<: *env-mas
-      <<: *env-testing-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    <<: *steps-electron-gn-check
+          artifact-key: 'darwin-arm64'
+          after-build-and-save:
+            - run:
+                name: Configuring MAS build
+                command: |
+                  echo 'export GN_EXTRA_ARGS="is_mas_build = true $GN_EXTRA_ARGS"' >> $BASH_ENV
+                  echo 'export MAS_BUILD="true"' >> $BASH_ENV
+                  rm -rf "src/out/Default/Electron Framework.framework"
+                  rm -rf src/out/Default/Electron*.app
+            - build_and_save_artifacts:
+                artifact-key: 'mas-arm64'
+          after-persist:
+            - persist_to_workspace:
+                root: .
+                paths:
+                  - generated_artifacts_mas-arm64
 
   mas-publish-x64:
     executor:
@@ -1962,25 +2031,6 @@ jobs:
                 attach: true
                 checkout: false
 
-  mas-testing-arm64:
-    executor:
-      name: macos
-      size: macos.x86.medium.gen2
-    environment:
-      <<: *env-mac-large
-      <<: *env-testing-build
-      <<: *env-ninja-status
-      <<: *env-macos-build
-      <<: *env-mas-apple-silicon
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-      GENERATE_CROSS_ARCH_SNAPSHOT: true
-    steps:
-      - electron-build:
-          persist: true
-          checkout: false
-          checkout-and-assume-cache: true
-          attach: true
-
   # Layer 3: Tests.
   linux-x64-testing-tests:
     executor:
@@ -1991,7 +2041,9 @@ jobs:
       <<: *env-headless-testing
       <<: *env-stack-dumping
     parallelism: 3
-    <<: *steps-tests
+    steps:
+      - electron-tests:
+          artifact-key: linux-x64
 
   linux-x64-testing-asan-tests:
     executor:
@@ -2004,7 +2056,9 @@ jobs:
       IS_ASAN: '1'
       DISABLE_CRASH_REPORTER_TESTS: '1'
     parallelism: 3
-    <<: *steps-tests
+    steps:
+      - electron-tests:
+          artifact-key: linux-x64-asan
 
   linux-x64-testing-nan:
     executor:
@@ -2014,7 +2068,9 @@ jobs:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
-    <<: *steps-test-nan
+    steps:
+      - nan-tests:
+          artifact-key: linux-x64
 
   linux-x64-testing-node:
     executor:
@@ -2024,7 +2080,9 @@ jobs:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-stack-dumping
-    <<: *steps-test-node
+    steps:
+      - node-tests:
+          artifact-key: linux-x64
 
   linux-arm-testing-tests:
     executor: linux-arm
@@ -2033,7 +2091,9 @@ jobs:
       <<: *env-global
       <<: *env-headless-testing
       <<: *env-stack-dumping
-    <<: *steps-tests
+    steps:
+      - electron-tests:
+          artifact-key: linux-arm
 
   linux-arm64-testing-tests:
     executor: linux-arm64
@@ -2042,9 +2102,11 @@ jobs:
       <<: *env-global
       <<: *env-headless-testing
       <<: *env-stack-dumping
-    <<: *steps-tests
+    steps:
+      - electron-tests:
+          artifact-key: linux-arm64
 
-  osx-testing-x64-tests:
+  darwin-testing-x64-tests:
     executor:
       name: macos
       size: macos.x86.medium.gen2
@@ -2052,16 +2114,20 @@ jobs:
       <<: *env-mac-large
       <<: *env-stack-dumping
     parallelism: 2
-    <<: *steps-tests
+    steps:
+      - electron-tests:
+          artifact-key: darwin-x64
 
-  osx-testing-arm64-tests:  
+  darwin-testing-arm64-tests:  
     executor: apple-silicon
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
       <<: *env-apple-silicon
       <<: *env-runner
-    <<: *steps-tests
+    steps:
+      - electron-tests:
+          artifact-key: darwin-arm64
 
   mas-testing-x64-tests:
     executor:
@@ -2071,7 +2137,9 @@ jobs:
       <<: *env-mac-large
       <<: *env-stack-dumping
     parallelism: 2
-    <<: *steps-tests
+    steps:
+      - electron-tests:
+          artifact-key: mas-x64
 
   mas-testing-arm64-tests:
     executor: apple-silicon
@@ -2080,7 +2148,9 @@ jobs:
       <<: *env-stack-dumping
       <<: *env-apple-silicon
       <<: *env-runner
-    <<: *steps-tests
+    steps:
+      - electron-tests:
+          artifact-key: mas-arm64
 
 # List all workflows
 workflows:
@@ -2194,38 +2264,29 @@ workflows:
       - osx-testing-x64-gn-check:
           requires:
             - mac-make-src-cache
-      - osx-testing-x64-tests:
+      - darwin-testing-x64-tests:
           requires:
             - osx-testing-x64
       - osx-testing-arm64:
           requires:
             - mac-make-src-cache
-      - osx-testing-arm64-tests:
+      - darwin-testing-arm64-tests:
           filters:
             branches:
               # Do not run this on forked pull requests
               ignore: /pull\/[0-9]+/
           requires:
             - osx-testing-arm64
-      - mas-testing-x64:
-          requires:
-            - mac-make-src-cache
-      - mas-testing-x64-gn-check:
-          requires:
-            - mac-make-src-cache
       - mas-testing-x64-tests:
           requires:
-            - mas-testing-x64
-      - mas-testing-arm64:
-          requires:
-            - mac-make-src-cache
+            - osx-testing-x64
       - mas-testing-arm64-tests:
           filters:
             branches:
               # Do not run this on forked pull requests
               ignore: /pull\/[0-9]+/
           requires:
-            - mas-testing-arm64
+            - osx-testing-arm64
   lint:
     jobs:
       - lint

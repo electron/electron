@@ -8,10 +8,10 @@ match. node should eventually have this too once they roll up the newer
 v8.
 
 diff --git a/test/parallel/test-v8-stats.js b/test/parallel/test-v8-stats.js
-index 7503a08c5a67fa4bead4f768242b47f418ebfc85..98ad11f11f9b9bf5699801814f8234e84dfaf638 100644
+index 2eaa3c5b0609149271afb85d7ecc33272e0ada2e..3af7ea1e4a4598dc4125ff78e426d6dc6a025c66 100644
 --- a/test/parallel/test-v8-stats.js
 +++ b/test/parallel/test-v8-stats.js
-@@ -46,6 +46,8 @@ const expectedHeapSpaces = [
+@@ -47,6 +47,8 @@ const expectedHeapSpaces = [
    'new_space',
    'old_space',
    'read_only_space',

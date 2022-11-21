@@ -7,10 +7,10 @@ This was removed in:
 https://chromium-review.googlesource.com/c/v8/v8/+/3967841
 
 diff --git a/test/parallel/test-v8-stats.js b/test/parallel/test-v8-stats.js
-index 98ad11f11f9b9bf5699801814f8234e84dfaf638..678cb7626bc82bea17129ce2f8a4590350bf0983 100644
+index 3af7ea1e4a4598dc4125ff78e426d6dc6a025c66..83b375bd3c5b5dbd5189d48ad560580883ac91f6 100644
 --- a/test/parallel/test-v8-stats.js
 +++ b/test/parallel/test-v8-stats.js
-@@ -41,7 +41,6 @@ const expectedHeapSpaces = [
+@@ -42,7 +42,6 @@ const expectedHeapSpaces = [
    'code_large_object_space',
    'code_space',
    'large_object_space',

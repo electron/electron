@@ -6,7 +6,7 @@ Subject: build: allow electron to use exec_script
 This is similar to the //build usecase so we're OK adding ourselves here
 
 diff --git a/.gn b/.gn
-index 55f5ee19f13e49dfd0aa2300d980d813474c95ef..483e0f0598bfed76b4a4283be3cfa1fdb9eafe5a 100644
+index 53c9e4ec12aeffacf88b9aac2d20d095246ca9db..b8185b1c737f6e7459e58a676e02b26c65dd4a5c 100644
 --- a/.gn
 +++ b/.gn
 @@ -169,4 +169,6 @@ exec_script_whitelist =

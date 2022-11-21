@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index a3352d5caf21c7a6124a1438506bc822f6bfba08..1246f8514ca639aa8663b1eae9e8aaf3579fd7dc 100644
+index e8f85d713d06f8a4669ea34d5d1babb5c05c846e..be9293d86f245a96de42b0bf6f62935197cc7fa0 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1890,6 +1890,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1926,6 +1926,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -35,7 +35,7 @@ index a3352d5caf21c7a6124a1438506bc822f6bfba08..1246f8514ca639aa8663b1eae9e8aaf3
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index d9b3e3cbeb7fcf2dc410245167ccffa4828ae5b8..540ec189f33ad35aaae612e11cf5fc18a746f4b6 100644
+index 0df77c20339a87dd881e89eda88d16adca9f5067..2242d58ac828affc1361b9a5745b4695e2643140 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -96,6 +96,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -48,7 +48,7 @@ index d9b3e3cbeb7fcf2dc410245167ccffa4828ae5b8..540ec189f33ad35aaae612e11cf5fc18
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 893291f2c79dd921d03785bbef2eb4b1de1f3638..217f3efc64f55506d8dc6548c10830b38d5f5940 100644
+index 97996a8a897e0ac7d6ba2eb9d1f47da6da573b6b..d84292521466d7bb2d7794269a332b0f2fa2d6e7 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -24,6 +24,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -60,7 +60,7 @@ index 893291f2c79dd921d03785bbef2eb4b1de1f3638..217f3efc64f55506d8dc6548c10830b3
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index 5ca2e3b7999fb0c8da4953c6a20352a4b9de675d..86b4f9d2d1882e5706fd559e01442b02f629bda9 100644
+index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ced31730d3 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -17,6 +17,7 @@
@@ -69,7 +69,7 @@ index 5ca2e3b7999fb0c8da4953c6a20352a4b9de675d..86b4f9d2d1882e5706fd559e01442b02
  #include "ui/base/ui_base_switches.h"
 +#include "ui/gfx/switches.h"
  
- #if defined(USE_OZONE)
+ #if BUILDFLAG(IS_OZONE)
  #include "ui/ozone/public/ozone_platform.h"
 @@ -49,6 +50,8 @@ bool GetSwitchValueAsInt(const base::CommandLine* command_line,
  RendererSettings CreateRendererSettings() {
@@ -81,7 +81,7 @@ index 5ca2e3b7999fb0c8da4953c6a20352a4b9de675d..86b4f9d2d1882e5706fd559e01442b02
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index f04810f29948413128cb837c72a4d6ea63b8cda2..867347f86465b6361865757176ab104acb8548ef 100644
+index 0b2bd5d95561180ac4dfb261ded9aee2bcd57445..62e1f9976bf007d91d2e1d65bb58cd0645743186 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -230,6 +230,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -93,10 +93,10 @@ index f04810f29948413128cb837c72a4d6ea63b8cda2..867347f86465b6361865757176ab104a
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 92c10b616e04409b2758346c46b69ee94f4c0300..c3b9758697d21c2836ed826faa3b05baae478f58 100644
+index 05b41950ba338ef3a94046508863a9bcb38d7532..f45c56157a741e748718a6d176474b54b0e782ce 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -200,6 +200,7 @@
+@@ -202,6 +202,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -104,7 +104,7 @@ index 92c10b616e04409b2758346c46b69ee94f4c0300..c3b9758697d21c2836ed826faa3b05ba
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3236,6 +3237,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3261,6 +3262,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -156,10 +156,10 @@ index 318005b66e04ed03ce6d44931d9360c0e009cb94..0d622fddb95720141ccf8a285ace4714
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 191a45bd3844d3b1ea652e7df164d7b7c11767da..754998229bb1fb92ac8cbf783839a60b92db0320 100644
+index 047a135027e0df7949285ed9b9b44a41321cdb8c..8a43082138acc82f97c293a195fae3a770e4063a 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-@@ -25,6 +25,7 @@
+@@ -26,6 +26,7 @@
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
  #include "ui/base/ui_base_features.h"
  #include "ui/base/ui_base_switches.h"
@@ -167,7 +167,7 @@ index 191a45bd3844d3b1ea652e7df164d7b7c11767da..754998229bb1fb92ac8cbf783839a60b
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -184,6 +185,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -218,6 +219,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -178,7 +178,7 @@ index 191a45bd3844d3b1ea652e7df164d7b7c11767da..754998229bb1fb92ac8cbf783839a60b
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index d346af4fa91adfc2f031484252e4ae05435f94d7..88315bdf562451a2371e53d994bbb3821f357d0e 100644
+index c119ef410f437b27ae4d0ff76627af55a2679171..997558e36dc1aec86005d05a824336910468ba73 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -189,7 +189,7 @@ index d346af4fa91adfc2f031484252e4ae05435f94d7..88315bdf562451a2371e53d994bbb382
  
  namespace gfx {
  
-@@ -143,6 +144,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -150,6 +151,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -204,7 +204,7 @@ index d346af4fa91adfc2f031484252e4ae05435f94d7..88315bdf562451a2371e53d994bbb382
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -313,6 +322,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -320,6 +329,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
@@ -221,10 +221,10 @@ index d346af4fa91adfc2f031484252e4ae05435f94d7..88315bdf562451a2371e53d994bbb382
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 3efe109c57d7cdf2979bfd97d26ff351b48158f6..d549cb67409425238cf7cae57a34339650584fb7 100644
+index d497b6e3b8615d683589b2b9d43e810ed57e8eb8..873a084eeac8f50a1ce0be53bbdb47b4856e0bce 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
-@@ -11,6 +11,8 @@ namespace switches {
+@@ -13,6 +13,8 @@ namespace switches {
  // only apply to LinearAnimation and its subclasses.
  const char kAnimationDurationScale[] = "animation-duration-scale";
  
@@ -234,7 +234,7 @@ index 3efe109c57d7cdf2979bfd97d26ff351b48158f6..d549cb67409425238cf7cae57a343396
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index 96563c15f0849dfced900435e8eb20db4d50bc0d..01e6a4954866cdcdc9e8a2e05c092e059b05426b 100644
+index 8bb46cc8a5d521452ac0ef9cac975987e203404c..03ee7b511c6b8fcd0b7154365cf533778ff4d234 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -12,6 +12,7 @@
@@ -243,5 +243,5 @@ index 96563c15f0849dfced900435e8eb20db4d50bc0d..01e6a4954866cdcdc9e8a2e05c092e05
  GFX_SWITCHES_EXPORT extern const char kAnimationDurationScale[];
 +GFX_SWITCHES_EXPORT extern const char kDisableColorCorrectRendering[];
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
+ GFX_SWITCHES_EXPORT extern const char kDisablePPAPISharedImagesSwapChain[];
  GFX_SWITCHES_EXPORT extern const char kEnableNativeGpuMemoryBuffers[];
- GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];

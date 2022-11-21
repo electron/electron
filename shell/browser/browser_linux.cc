@@ -14,6 +14,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
@@ -29,9 +30,6 @@ const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
 // patch these as friends into the associated guard classes.
 class LaunchXdgUtilityScopedAllowBaseSyncPrimitives
     : public base::ScopedAllowBaseSyncPrimitivesForTesting {};
-
-class GetXdgAppOutputScopedAllowBlocking
-    : public base::ScopedAllowBlockingForTesting {};
 
 bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
   *exit_code = EXIT_FAILURE;
@@ -55,7 +53,7 @@ absl::optional<std::string> GetXdgAppOutput(
     const std::vector<std::string>& argv) {
   std::string reply;
   int success_code;
-  GetXdgAppOutputScopedAllowBlocking allow_blocking;
+  ScopedAllowBlockingForElectron allow_blocking;
   bool ran_ok = base::GetAppOutputWithExitCode(base::CommandLine(argv), &reply,
                                                &success_code);
 

@@ -7,10 +7,10 @@ With WCO, allow chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 9ca8ea82afdc9660384dd7224d810990f96bf5a5..65d4e0b5f99c398814f1746a8ab66528e766f373 100644
+index 2c29c97e36a10eaf25146b359c9172f39863404a..73f6bbf36efa3b2ae8a7e505cded44e196aaff8e 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1213,6 +1213,10 @@ void DesktopWindowTreeHostWin::HandleWindowScaleFactorChanged(
+@@ -1216,6 +1216,10 @@ void DesktopWindowTreeHostWin::HandleWindowScaleFactorChanged(
    }
  }
  
@@ -22,7 +22,7 @@ index 9ca8ea82afdc9660384dd7224d810990f96bf5a5..65d4e0b5f99c398814f1746a8ab66528
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index cec35ceb254777e447047e48fba11dd8d38af97d..17cf2b79963079e66050e29411baa5a398c8d68a 100644
+index 58c13ba42464553427584a98492fe11a4228e3ff..034134fea43ae7c88232e3969e2efcf815d9e4ab 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -265,6 +265,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin

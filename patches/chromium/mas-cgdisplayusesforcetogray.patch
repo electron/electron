@@ -6,14 +6,14 @@ Subject: mas: avoid usage of CGDisplayUsesForceToGray
 Removes usage of the CGDisplayUsesForceToGray private API.
 
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index a0c06e539088c6521793ecf9ba8d54311c4a6ff7..562fbe579639b7dd64e897d0f88fd23e492ac058 100644
+index a0c06e539088c6521793ecf9ba8d54311c4a6ff7..90c21bfc045df5c43dfa1d5305df28acb7d1123f 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -269,7 +269,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
      display.set_color_depth(Display::kDefaultBitsPerPixel);
      display.set_depth_per_component(Display::kDefaultBitsPerComponent);
    }
-+#ifdef MAS_BUILD
++#if IS_MAS_BUILD()
 +  // This is equivalent to the CGDisplayUsesForceToGray() API as at 2018-08-06,
 +  // but avoids usage of the private API.
 +  CFStringRef app = CFSTR("com.apple.CoreGraphics");

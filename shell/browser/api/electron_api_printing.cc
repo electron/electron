@@ -2,12 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "base/threading/thread_restrictions.h"
 #include "chrome/browser/browser_process.h"
 #include "gin/converter.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "base/task/task_traits.h"
@@ -51,7 +51,7 @@ printing::PrinterList GetPrinterList(v8::Isolate* isolate) {
   auto print_backend = printing::PrintBackend::CreateInstance(
       g_browser_process->GetApplicationLocale());
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    ScopedAllowBlockingForElectron allow_blocking;
     printing::mojom::ResultCode code =
         print_backend->EnumeratePrinters(printers);
     if (code != printing::mojom::ResultCode::kSuccess)
