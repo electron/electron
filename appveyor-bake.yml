@@ -6,7 +6,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: Windows_Default_Appveyor
+image: e-111.0.5518.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default

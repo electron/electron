@@ -1,4 +1,4 @@
-# NOTE IF CHANGING THIS FILE, ALSO APPLY THE CHANGE TO appveyor-woa.yml 
+# NOTE IF CHANGING THIS FILE, ALSO APPLY THE CHANGE TO appveyor.yml 
 # IF APPLICABLE!!!! 
 #
 #
@@ -43,9 +43,11 @@ environment:
 
   matrix:
 
-    - job_name: Build
-    - job_name: Test
-      job_depends_on: Build
+    - job_name: Build Arm on X64 Windows
+    - job_name: Test On Windows On Arm Hardware
+      job_depends_on: Build Arm on X64 Windows
+      APPVEYOR_BUILD_WORKER_IMAGE: base-woa
+      APPVEYOR_BUILD_WORKER_CLOUD: electronhq-woa
 
 clone_folder: C:\projects\src\electron
 
@@ -57,7 +59,7 @@ for:
 
   - matrix:
       only:
-        - job_name: Build
+        - job_name: Build Arm on X64 Windows
 
     build_script:
       - ps: |
@@ -203,13 +205,15 @@ for:
           }
   - matrix:
       only:
-        - job_name: Test
+        - job_name: Test On Windows On Arm Hardware
 
-    init:
-      - ps: |
-          if ($env:RUN_TESTS -ne 'true') {
-            Write-warning "Skipping tests for $env:APPVEYOR_PROJECT_NAME"; Exit-AppveyorBuild
-          }
+    environment:
+        IGNORE_YARN_INSTALL_ERROR: 1
+        ELECTRON_TEST_RESULTS_DIR: junit
+        MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
+        MOCHA_REPORTER: mocha-multi-reporters
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+
     build_script:
       - ps: |
           node script/yarn.js install --frozen-lockfile
@@ -225,9 +229,9 @@ for:
           # Download build artifacts
           $apiUrl = 'https://ci.appveyor.com/api'
           $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
-          $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib')
+          $artifacts_to_download = @('dist.zip','ffmpeg.zip','node_headers.zip','pdb.zip','electron.lib')
           foreach ($job in $build_info.build.jobs) {
-            if ($job.name -eq "Build") {
+            if ($job.name -eq "Build Arm on X64 Windows") {
               $jobId = $job.jobId
               foreach($artifact_name in $artifacts_to_download) {
                 if ($artifact_name -eq 'shell_browser_ui_unittests.exe' -Or $artifact_name -eq 'electron.lib') {
@@ -240,7 +244,7 @@ for:
             }
           }
       - ps: |
-          $out_default_zips = @('dist.zip','chromedriver.zip','mksnapshot.zip')
+          $out_default_zips = @('dist.zip','pdb.zip')
           foreach($zip_name in $out_default_zips) {
             7z x -y -osrc\out\Default $zip_name
           }
@@ -254,21 +258,17 @@ for:
           cd src
           New-Item .\out\Default\gen\node_headers\Release -Type directory
           Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
+      - set npm_config_nodedir=%cd%\out\Default\gen\node_headers          
+      - set npm_config_arch=arm64
       - cd electron
       # Explicitly set npm_config_arch because the .env doesn't persist
       - ps: >-
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:npm_config_arch = "ia32"
           }
-      - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log
-      - echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log
+      - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
-      - echo "About to verify mksnapshot"
-      - echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
-      - echo "Done verifying mksnapshot"
-      - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
-      - echo "Done verifying chromedriver"
     
     on_finish:
       # Uncomment these lines to enable RDP
