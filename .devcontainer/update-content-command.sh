@@ -9,4 +9,4 @@ buildtools_configs=/workspaces/buildtools-configs
 export PATH="$PATH:$buildtools/src"
 
 # Sync latest gclient
-e sync -vv
+e d gclient sync --with_branch_heads --with_tags
